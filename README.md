@@ -1,7 +1,8 @@
 # chimeraboost
 Python/numba-backend gradient boosting library
 
-<img width="700" height="700" alt="Gemini_Generated_Image_kgy4h1kgy4h1kgy4" src="https://github.com/user-attachments/assets/29ec5fc6-81f8-406d-8425-33253922e1f6" />
+<img width="500" height="500" alt="ChatGPT Image May 26, 2026, 05_12_17 PM" src="https://github.com/user-attachments/assets/ee98a4e2-9fa7-4ef1-9e64-e398f398966c" />
+
 
 * What?
     * GBDT library that only depends on numpy and numba
