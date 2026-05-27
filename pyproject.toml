@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chimeraboost"
+version = "0.5.0"
+description = "CatBoost-inspired gradient boosting in pure Python with a numba backend"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.22",
+    "numba>=0.57",
+]
+
+[project.optional-dependencies]
+dev = ["scikit-learn", "pytest"]
+
+[tool.setuptools.packages.find]
+include = ["chimeraboost*"]
