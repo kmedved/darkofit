@@ -158,9 +158,9 @@ DATASETS = {
 # --------------------------------------------------------------------------
 OPENML_SUITE = {
     # classification (binary)
-    #"credit-g":      dict(data_id=31,    task="binary",     cats="auto"),
-    #"adult":         dict(data_id=1590,  task="binary",     cats="auto"),
-    #"bank-marketing":dict(data_id=1461,  task="binary",     cats="auto"),
+    "credit-g":      dict(data_id=31,    task="binary",     cats="auto"),
+    "adult":         dict(data_id=1590,  task="binary",     cats="auto"),
+    "bank-marketing":dict(data_id=1461,  task="binary",     cats="auto"),
     "kc1":           dict(data_id=1067,  task="binary",     cats=None),
     "phoneme":       dict(data_id=1489,  task="binary",     cats=None),
     # classification (multiclass)
@@ -249,12 +249,12 @@ PATIENCE = 50
 
 
 def _run_chimera(task, Xtr, ytr, Xte, yte, cat, threads, lr=None,
-                 ordered_boosting=True):
+                 ordered_boosting=True, depth=6):
     Xf, Xv, yf, yv = _val_split(Xtr, ytr, task, 0)
     t = time.time()
     Est = ChimeraBoostRegressor if task == "regression" else ChimeraBoostClassifier
     m = Est(iterations=MAX_ITERS, early_stopping_rounds=PATIENCE,
-            learning_rate=lr, ordered_boosting=ordered_boosting,
+            learning_rate=lr, depth=depth, ordered_boosting=ordered_boosting,
             thread_count=threads, random_state=0)
     m.fit(Xf, yf, cat_features=cat, eval_set=(Xv, yv))
     return _score(task, yte, m, Xte), time.time() - t, m.best_iteration_
@@ -389,6 +389,10 @@ def main():
                           "with early stopping). Try --lr 0.05 to test whether "
                           "smaller steps + more trees improve accuracy on OpenML "
                           "before promoting to a new default."))
+    ap.add_argument("--chimera-depth", type=int, default=6,
+                    help=("override ChimeraBoost tree depth (default: 6). Use "
+                          "--chimera-depth 8 to A/B whether deeper trees close "
+                          "the bias gap on numeric-heavy datasets."))
     ap.add_argument("--patience", type=int, default=None,
                     help=("override early stopping patience rounds for ALL models "
                           "(default: PATIENCE=%d). Higher values let more trees "
@@ -413,7 +417,8 @@ def main():
     import functools
     active_runners = dict(RUNNERS)
     active_runners["ChimeraBoost"] = functools.partial(
-        _run_chimera, lr=args.lr, ordered_boosting=args.ordered_boosting
+        _run_chimera, lr=args.lr, ordered_boosting=args.ordered_boosting,
+        depth=args.chimera_depth,
     )
     if args.models:
         unknown = set(args.models) - set(active_runners)

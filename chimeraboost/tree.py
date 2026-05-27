@@ -53,11 +53,12 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
     For a candidate threshold t, bins <= t go left and bins > t go right, the
     same way in every current leaf. Gain is summed across leaves. Features with
     feat_mask[f] == 0 are skipped (column subsampling).
-
-    A threshold is only legal if EVERY non-empty leaf keeps at least
-    `min_child_weight` hessian mass on both sides of the split. This stops the
-    tree from carving off near-empty leaves whose gradient statistics are pure
-    noise -- the main cause of oblivious trees overfitting at higher depth.
+    
+    Gain Masking: A split is only evaluated for a specific leaf if it keeps
+    at least `min_child_weight` hessian mass on both sides locally. Leaves
+    failing this constraint simply contribute 0.0 to the shared split's gain,
+    preventing noise from driving the choice while allowing healthy leaves to
+    continue pulling the tree deeper.
     """
     n_features = hg.shape[0]
     max_bins = hg.shape[2]
@@ -82,35 +83,34 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
         best_t = -1
         # Threshold t means "left = bins [0..t]". Last bin can't be a threshold.
         for t in range(nb - 1):
-            # Pass 1: advance the running prefix sums for every leaf and check
-            # the min_child_weight constraint. The sums must be advanced for all
-            # leaves regardless of legality, since GL/HL carry into the next
-            # threshold and an early exit would desync them.
-            legal = True
+            gain = 0.0
+            any_legal = False
+            
             for l in range(n_leaves):
+                # Pass 1: Advance the running prefix sums for every leaf regardless
+                # of legality, so GL/HL carry correctly into the next threshold.
                 GL[l] += hg[f, l, t]
                 HL[l] += hh[f, l, t]
+                
                 if Ht[l] > 0.0:
-                    if HL[l] < min_child_weight or (Ht[l] - HL[l]) < min_child_weight:
-                        legal = False
-            if not legal:
-                continue
-            # Pass 2: accumulate the summed gain for this legal threshold. A
-            # non-empty leaf failing min_child_weight disqualifies the shared
-            # split, giving the tree a data-driven depth limit.
-            gain = 0.0
-            for l in range(n_leaves):
-                if Ht[l] > 0.0:
-                    gr = Gt[l] - GL[l]
-                    hr = Ht[l] - HL[l]
-                    gain += (
-                        GL[l] * GL[l] / (HL[l] + l2)
-                        + gr * gr / (hr + l2)
-                        - Gt[l] * Gt[l] / (Ht[l] + l2)
-                    )
-            if gain > best_g:
+                    hl = HL[l]
+                    hr = Ht[l] - hl
+                    # Pass 2 (Gain Masking): A leaf only contributes to the split's 
+                    # total gain if it satisfies the min_child_weight constraint locally.
+                    if hl >= min_child_weight and hr >= min_child_weight:
+                        any_legal = True
+                        gl = GL[l]
+                        gr = Gt[l] - gl
+                        gain += (
+                            gl * gl / (hl + l2)
+                            + gr * gr / (hr + l2)
+                            - Gt[l] * Gt[l] / (Ht[l] + l2)
+                        )
+            
+            if any_legal and gain > best_g:
                 best_g = gain
                 best_t = t
+                
         feat_gain[f] = best_g
         feat_thr[f] = best_t
 
