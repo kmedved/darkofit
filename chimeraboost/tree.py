@@ -99,6 +99,82 @@ def _build_histograms_selected_rows_into(X_binned, grad, hess, leaf, n_leaves,
             hh[f, l, b] += hess[i]
 
 
+@njit(cache=True, parallel=True)
+def _build_histograms_unit_hess_into(X_binned, grad, leaf, n_leaves, hg, hh):
+    """Fill histograms for unit-Hessian losses without loading hess[i]."""
+    n_samples, n_features = X_binned.shape
+    max_bins = hg.shape[2]
+    for f in prange(n_features):
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+        for i in range(n_samples):
+            l = leaf[i]
+            b = X_binned[i, f]
+            hg[f, l, b] += grad[i]
+            hh[f, l, b] += 1.0
+
+
+@njit(cache=True, parallel=True)
+def _build_histograms_selected_unit_hess_into(X_binned, grad, leaf, n_leaves,
+                                              hg, hh, feature_indices):
+    """Fill selected-feature histograms for unit-Hessian losses."""
+    n_samples = X_binned.shape[0]
+    max_bins = hg.shape[2]
+    for jj in prange(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+        for i in range(n_samples):
+            l = leaf[i]
+            b = X_binned[i, f]
+            hg[f, l, b] += grad[i]
+            hh[f, l, b] += 1.0
+
+
+@njit(cache=True, parallel=True)
+def _build_histograms_rows_unit_hess_into(X_binned, grad, leaf, n_leaves, hg,
+                                          hh, row_indices):
+    """Fill selected-row histograms for unit-Hessian losses."""
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[2]
+    for f in prange(n_features):
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+        for p in range(row_indices.shape[0]):
+            i = row_indices[p]
+            l = leaf[i]
+            b = X_binned[i, f]
+            hg[f, l, b] += grad[i]
+            hh[f, l, b] += 1.0
+
+
+@njit(cache=True, parallel=True)
+def _build_histograms_selected_rows_unit_hess_into(X_binned, grad, leaf,
+                                                   n_leaves, hg, hh,
+                                                   feature_indices,
+                                                   row_indices):
+    """Fill selected-row/feature histograms for unit-Hessian losses."""
+    max_bins = hg.shape[2]
+    for jj in prange(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+        for p in range(row_indices.shape[0]):
+            i = row_indices[p]
+            l = leaf[i]
+            b = X_binned[i, f]
+            hg[f, l, b] += grad[i]
+            hh[f, l, b] += 1.0
+
+
 @njit(cache=True)
 def _build_histograms_into_serial(X_binned, grad, hess, leaf, n_leaves, hg, hh):
     """Single-thread histogram fill with row-contiguous feature access.
@@ -194,6 +270,98 @@ def _build_histograms_selected_rows_into_serial(X_binned, grad, hess, leaf,
             b = X_binned[i, f]
             hg[f, l, b] += gi
             hh[f, l, b] += hi
+
+
+@njit(cache=True)
+def _build_histograms_unit_hess_into_serial(X_binned, grad, leaf, n_leaves,
+                                            hg, hh):
+    """Single-thread histogram fill for unit-Hessian losses."""
+    n_samples, n_features = X_binned.shape
+    max_bins = hg.shape[2]
+    for f in range(n_features):
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+
+    for i in range(n_samples):
+        l = leaf[i]
+        gi = grad[i]
+        for f in range(n_features):
+            b = X_binned[i, f]
+            hg[f, l, b] += gi
+            hh[f, l, b] += 1.0
+
+
+@njit(cache=True)
+def _build_histograms_rows_unit_hess_into_serial(X_binned, grad, leaf,
+                                                 n_leaves, hg, hh,
+                                                 row_indices):
+    """Single-thread selected-row histogram fill for unit-Hessian losses."""
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[2]
+    for f in range(n_features):
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+
+    for p in range(row_indices.shape[0]):
+        i = row_indices[p]
+        l = leaf[i]
+        gi = grad[i]
+        for f in range(n_features):
+            b = X_binned[i, f]
+            hg[f, l, b] += gi
+            hh[f, l, b] += 1.0
+
+
+@njit(cache=True)
+def _build_histograms_selected_unit_hess_into_serial(X_binned, grad, leaf,
+                                                     n_leaves, hg, hh,
+                                                     feature_indices):
+    """Single-thread selected-feature histogram fill for unit-Hessian losses."""
+    n_samples = X_binned.shape[0]
+    max_bins = hg.shape[2]
+    for jj in range(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+
+    for i in range(n_samples):
+        l = leaf[i]
+        gi = grad[i]
+        for jj in range(feature_indices.shape[0]):
+            f = feature_indices[jj]
+            b = X_binned[i, f]
+            hg[f, l, b] += gi
+            hh[f, l, b] += 1.0
+
+
+@njit(cache=True)
+def _build_histograms_selected_rows_unit_hess_into_serial(
+    X_binned, grad, leaf, n_leaves, hg, hh, feature_indices, row_indices
+):
+    """Single-thread selected-row/feature hist fill for unit-Hessian losses."""
+    max_bins = hg.shape[2]
+    for jj in range(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+
+    for p in range(row_indices.shape[0]):
+        i = row_indices[p]
+        l = leaf[i]
+        gi = grad[i]
+        for jj in range(feature_indices.shape[0]):
+            f = feature_indices[jj]
+            b = X_binned[i, f]
+            hg[f, l, b] += gi
+            hh[f, l, b] += 1.0
 
 
 @njit(cache=True, parallel=True)
@@ -454,7 +622,8 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                          max_depth, l2, lr, min_gain=1e-8, feature_mask=None,
                          min_child_weight=1.0, hist_buffers=None,
                          return_training_state=False, X_hist_binned=None,
-                         feature_indices=None, row_indices=None):
+                         feature_indices=None, row_indices=None,
+                         constant_hessian=False):
     """Grow one oblivious tree level by level and return an ObliviousTree.
 
     X_hist_binned: optional feature-contiguous view/copy of X_binned used only
@@ -466,6 +635,9 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     when supplied, histogram building zeroes and fills only those columns.
     row_indices: optional selected row indices for stochastic subsampling;
     histograms scan only these rows, while leaf routing still updates all rows.
+    constant_hessian: if True, histogram building treats every scanned row's
+    hessian as 1.0 and skips hess[i] loads. The caller must still pass a hess
+    vector matching the same unit-Hessian semantics for final leaf values.
     min_child_weight: minimum hessian mass each side of a split must retain in
     every non-empty leaf. Stops the tree growing once no legal split remains,
     which prevents sparse-leaf overfitting at higher depth.
@@ -524,7 +696,26 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     for d in range(max_depth):
         n_leaves = 1 << d
         if use_serial_kernels:
-            if row_indices is None and feature_indices is None:
+            if constant_hessian and row_indices is None and feature_indices is None:
+                _build_histograms_unit_hess_into_serial(
+                    X_binned, grad, leaf, n_leaves, hg, hh
+                )
+            elif constant_hessian and row_indices is None:
+                _build_histograms_selected_unit_hess_into_serial(
+                    X_binned, grad, leaf, n_leaves, hg, hh,
+                    feature_indices
+                )
+            elif constant_hessian and feature_indices is None:
+                _build_histograms_rows_unit_hess_into_serial(
+                    X_binned, grad, leaf, n_leaves, hg, hh,
+                    row_indices
+                )
+            elif constant_hessian:
+                _build_histograms_selected_rows_unit_hess_into_serial(
+                    X_binned, grad, leaf, n_leaves, hg, hh,
+                    feature_indices, row_indices
+                )
+            elif row_indices is None and feature_indices is None:
                 _build_histograms_into_serial(
                     X_binned, grad, hess, leaf, n_leaves, hg, hh
                 )
@@ -548,7 +739,26 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                 min_child_weight, n_leaves
             )
         else:
-            if row_indices is None and feature_indices is None:
+            if constant_hessian and row_indices is None and feature_indices is None:
+                _build_histograms_unit_hess_into(
+                    X_hist_binned, grad, leaf, n_leaves, hg, hh
+                )
+            elif constant_hessian and row_indices is None:
+                _build_histograms_selected_unit_hess_into(
+                    X_hist_binned, grad, leaf, n_leaves, hg, hh,
+                    feature_indices
+                )
+            elif constant_hessian and feature_indices is None:
+                _build_histograms_rows_unit_hess_into(
+                    X_hist_binned, grad, leaf, n_leaves, hg, hh,
+                    row_indices
+                )
+            elif constant_hessian:
+                _build_histograms_selected_rows_unit_hess_into(
+                    X_hist_binned, grad, leaf, n_leaves, hg, hh,
+                    feature_indices, row_indices
+                )
+            elif row_indices is None and feature_indices is None:
                 _build_histograms_into(
                     X_hist_binned, grad, hess, leaf, n_leaves, hg, hh
                 )

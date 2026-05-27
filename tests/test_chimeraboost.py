@@ -577,6 +577,131 @@ def test_row_and_feature_index_histograms_match_zeroed_subsample_serial():
     assert np.array_equal(zeroed_H, indexed_H)
 
 
+def test_constant_hessian_histograms_match_generic_threaded():
+    """Unit-Hessian histogram kernels must match generic hess=ones kernels."""
+    import numba
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_oblivious_tree
+
+    if numba.config.NUMBA_NUM_THREADS < 2:
+        pytest.skip("requires at least two numba threads")
+
+    rng = np.random.default_rng(9)
+    X = rng.normal(size=(900, 15))
+    y = 1.2 * X[:, 0] - 0.9 * X[:, 6] + 0.4 * X[:, 12] + rng.normal(0, 0.3, 900)
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = prep.fit_transform(X, [y], None)
+    Xb_hist = np.asfortranarray(Xb)
+    grad = y.mean() - y
+    hess = np.ones(len(y))
+    row_mask = rng.random(len(y)) < 0.55
+    row_indices = np.flatnonzero(row_mask).astype(np.int64)
+    g_sub = np.where(row_mask, grad, 0.0)
+    h_sub = np.where(row_mask, hess, 0.0)
+    selected = np.array([0, 3, 6, 12], dtype=np.int64)
+    feature_mask = np.zeros(Xb.shape[1], dtype=np.int64)
+    feature_mask[selected] = 1
+
+    cases = [
+        (grad, hess, {}),
+        (grad, hess, {"feature_mask": feature_mask, "feature_indices": selected}),
+        (g_sub, h_sub, {"row_indices": row_indices}),
+        (
+            g_sub,
+            h_sub,
+            {
+                "feature_mask": feature_mask,
+                "feature_indices": selected,
+                "row_indices": row_indices,
+            },
+        ),
+    ]
+
+    old_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(min(2, numba.config.NUMBA_NUM_THREADS))
+        for g, h, extra in cases:
+            generic = build_oblivious_tree(
+                Xb, g, h, prep.n_bins_, 5, 3.0, 0.1,
+                X_hist_binned=Xb_hist, return_training_state=True, **extra
+            )
+            fast = build_oblivious_tree(
+                Xb, g, h, prep.n_bins_, 5, 3.0, 0.1,
+                X_hist_binned=Xb_hist, return_training_state=True,
+                constant_hessian=True, **extra
+            )
+            generic_tree, generic_leaf, generic_G, generic_H = generic
+            fast_tree, fast_leaf, fast_G, fast_H = fast
+            assert np.array_equal(generic_tree.splits_feat, fast_tree.splits_feat)
+            assert np.array_equal(generic_tree.splits_thr, fast_tree.splits_thr)
+            assert np.array_equal(generic_tree.values, fast_tree.values)
+            assert np.array_equal(generic_leaf, fast_leaf)
+            assert np.array_equal(generic_G, fast_G)
+            assert np.array_equal(generic_H, fast_H)
+    finally:
+        numba.set_num_threads(old_threads)
+
+
+def test_constant_hessian_histograms_match_generic_serial():
+    """The single-thread unit-Hessian kernels must preserve tree state exactly."""
+    import numba
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_oblivious_tree
+
+    rng = np.random.default_rng(10)
+    X = rng.normal(size=(850, 13))
+    y = X[:, 2] + 0.8 * X[:, 8] - 0.4 * X[:, 10] + rng.normal(0, 0.3, 850)
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = prep.fit_transform(X, [y], None)
+    grad = y.mean() - y
+    hess = np.ones(len(y))
+    row_mask = rng.random(len(y)) < 0.5
+    row_indices = np.flatnonzero(row_mask).astype(np.int64)
+    g_sub = np.where(row_mask, grad, 0.0)
+    h_sub = np.where(row_mask, hess, 0.0)
+    selected = np.array([2, 5, 8, 10], dtype=np.int64)
+    feature_mask = np.zeros(Xb.shape[1], dtype=np.int64)
+    feature_mask[selected] = 1
+
+    cases = [
+        (grad, hess, {}),
+        (grad, hess, {"feature_mask": feature_mask, "feature_indices": selected}),
+        (g_sub, h_sub, {"row_indices": row_indices}),
+        (
+            g_sub,
+            h_sub,
+            {
+                "feature_mask": feature_mask,
+                "feature_indices": selected,
+                "row_indices": row_indices,
+            },
+        ),
+    ]
+
+    old_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(1)
+        for g, h, extra in cases:
+            generic = build_oblivious_tree(
+                Xb, g, h, prep.n_bins_, 5, 3.0, 0.1,
+                return_training_state=True, **extra
+            )
+            fast = build_oblivious_tree(
+                Xb, g, h, prep.n_bins_, 5, 3.0, 0.1,
+                return_training_state=True, constant_hessian=True, **extra
+            )
+            generic_tree, generic_leaf, generic_G, generic_H = generic
+            fast_tree, fast_leaf, fast_G, fast_H = fast
+            assert np.array_equal(generic_tree.splits_feat, fast_tree.splits_feat)
+            assert np.array_equal(generic_tree.splits_thr, fast_tree.splits_thr)
+            assert np.array_equal(generic_tree.values, fast_tree.values)
+            assert np.array_equal(generic_leaf, fast_leaf)
+            assert np.array_equal(generic_G, fast_G)
+            assert np.array_equal(generic_H, fast_H)
+    finally:
+        numba.set_num_threads(old_threads)
+
+
 # ---------------------------------------------------------------------------
 # sample_weight tests
 # ---------------------------------------------------------------------------

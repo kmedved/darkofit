@@ -67,6 +67,7 @@ class RMSE:
     name = "RMSE"
     is_classification = False
     adjusts_leaves = False
+    constant_hessian = True
 
     def init(self, y, sample_weight=None):
         return float(np.average(y, weights=sample_weight))
@@ -89,6 +90,7 @@ class Logloss:
     name = "Logloss"
     is_classification = True
     adjusts_leaves = False
+    constant_hessian = False
 
     def init(self, y, sample_weight=None):
         p = np.clip(np.average(y, weights=sample_weight), 1e-6, 1 - 1e-6)
@@ -119,6 +121,7 @@ class MAE:
     name = "MAE"
     is_classification = False
     adjusts_leaves = True   # sign gradients only pick structure; set leaf = median
+    constant_hessian = True
 
     def leaf_value(self, residuals, weights=None):
         return _weighted_median(residuals, weights)
@@ -144,6 +147,7 @@ class Quantile:
     name = "Quantile"
     is_classification = False
     adjusts_leaves = True
+    constant_hessian = True
 
     def __init__(self, alpha=0.5):
         self.alpha = float(alpha)
@@ -180,6 +184,7 @@ class MultiSoftmax:
 
     name = "MultiClass"
     is_classification = True
+    constant_hessian = False
 
     def __init__(self, n_classes):
         self.K = int(n_classes)
@@ -204,4 +209,3 @@ class MultiSoftmax:
 
 
 LOSSES = {"RMSE": RMSE, "Logloss": Logloss, "MAE": MAE, "Quantile": Quantile}
-

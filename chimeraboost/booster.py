@@ -157,6 +157,9 @@ class GradientBoosting(_BaseBooster):
 
         self.n_threads_ = _apply_thread_count(self.thread_count)
         self.loss_ = LOSSES[self.loss_name](**self.loss_kwargs)
+        use_constant_hessian = (
+            getattr(self.loss_, "constant_hessian", False) and w is None
+        )
         _es = self.early_stopping_rounds is not None and eval_set is not None
         self.lr_ = (self.learning_rate if self.learning_rate is not None
                     else _auto_learning_rate(n_samples, self.iterations, _es))
@@ -206,6 +209,7 @@ class GradientBoosting(_BaseBooster):
                 X_hist_binned=X_hist_binned,
                 feature_indices=findices,
                 row_indices=row_indices,
+                constant_hessian=use_constant_hessian,
             )
             # A depth-0 tree found no legal split; subsequent rounds on the same
             # gradients would too, so stop rather than append empty trees.
