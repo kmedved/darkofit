@@ -101,13 +101,16 @@ class _BaseBooster:
                                    self.random_state)
 
     def _maybe_subsample(self, grad, hess, rng):
-        """Stochastic row subsampling: zero out the gradient/hessian of rows not
-        in this tree's sample. Zeroed rows contribute nothing to the histograms
-        but are still routed to leaves, as in standard stochastic GBDT."""
+        """Return zeroed gradients plus sampled row indices for one tree.
+
+        Unsampled rows keep zero grad/hess so ordered boosting updates preserve
+        the old fallback behavior, while histogram builders can skip them.
+        """
         if self.subsample >= 1.0:
-            return grad, hess
+            return grad, hess, None
         mask = rng.random(grad.shape[0]) < self.subsample
-        return np.where(mask, grad, 0.0), np.where(mask, hess, 0.0)
+        row_indices = np.flatnonzero(mask).astype(np.int64)
+        return np.where(mask, grad, 0.0), np.where(mask, hess, 0.0), row_indices
 
     def _accumulate_importance(self, tree):
         """Add this tree's per-split gains to the running importance totals,
@@ -191,7 +194,7 @@ class GradientBoosting(_BaseBooster):
             if w is not None:
                 grad = grad * w
                 hess = hess * w
-            g, h = self._maybe_subsample(grad, hess, rng)
+            g, h, row_indices = self._maybe_subsample(grad, hess, rng)
             fmask, findices = self._feature_selection(X_binned.shape[1], rng)
             tree, leaf, leaf_G, leaf_H = build_oblivious_tree(
                 X_binned, g, h, n_bins, self.depth,
@@ -202,6 +205,7 @@ class GradientBoosting(_BaseBooster):
                 return_training_state=True,
                 X_hist_binned=X_hist_binned,
                 feature_indices=findices,
+                row_indices=row_indices,
             )
             # A depth-0 tree found no legal split; subsequent rounds on the same
             # gradients would too, so stop rather than append empty trees.
@@ -351,8 +355,10 @@ class MulticlassBoosting(_BaseBooster):
             fmask, findices = self._feature_selection(X_binned.shape[1], rng)
             round_trees = []
             for k in range(K):
-                g, h = self._maybe_subsample(np.ascontiguousarray(grad[:, k]),
-                                             np.ascontiguousarray(hess[:, k]), rng)
+                g, h, row_indices = self._maybe_subsample(
+                    np.ascontiguousarray(grad[:, k]),
+                    np.ascontiguousarray(hess[:, k]), rng
+                )
                 tree, leaf, leaf_G, leaf_H = build_oblivious_tree(
                     X_binned, g, h, n_bins, self.depth,
                     self.l2_leaf_reg, self.lr_,
@@ -362,6 +368,7 @@ class MulticlassBoosting(_BaseBooster):
                     return_training_state=True,
                     X_hist_binned=X_hist_binned,
                     feature_indices=findices,
+                    row_indices=row_indices,
                 )
                 round_trees.append(tree)
                 self._accumulate_importance(tree)

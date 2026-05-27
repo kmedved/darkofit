@@ -460,6 +460,123 @@ def test_feature_indices_must_match_feature_mask():
         )
 
 
+def test_row_index_histograms_match_zeroed_subsample():
+    """Selected-row histograms must match scanning all rows with zeroed grads."""
+    import numba
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_oblivious_tree
+
+    rng = np.random.default_rng(7)
+    X = rng.normal(size=(900, 12))
+    y = 1.5 * X[:, 0] - 0.7 * X[:, 5] + rng.normal(0, 0.4, 900)
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = prep.fit_transform(X, [y], None)
+    grad = y.mean() - y
+    hess = np.ones(len(y))
+    row_mask = rng.random(len(y)) < 0.45
+    row_indices = np.flatnonzero(row_mask).astype(np.int64)
+    g = np.where(row_mask, grad, 0.0)
+    h = np.where(row_mask, hess, 0.0)
+    selected = np.array([0, 2, 5, 8], dtype=np.int64)
+    feature_mask = np.zeros(Xb.shape[1], dtype=np.int64)
+    feature_mask[selected] = 1
+
+    old_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(min(2, numba.config.NUMBA_NUM_THREADS))
+        zeroed = build_oblivious_tree(
+            Xb, g, h, prep.n_bins_, 5, 3.0, 0.1,
+            return_training_state=True,
+        )
+        indexed = build_oblivious_tree(
+            Xb, g, h, prep.n_bins_, 5, 3.0, 0.1,
+            row_indices=row_indices, return_training_state=True,
+        )
+        zeroed_selected = build_oblivious_tree(
+            Xb, g, h, prep.n_bins_, 5, 3.0, 0.1,
+            feature_mask=feature_mask, feature_indices=selected,
+            return_training_state=True,
+        )
+        indexed_selected = build_oblivious_tree(
+            Xb, g, h, prep.n_bins_, 5, 3.0, 0.1,
+            feature_mask=feature_mask, feature_indices=selected,
+            row_indices=row_indices, return_training_state=True,
+        )
+    finally:
+        numba.set_num_threads(old_threads)
+
+    zeroed_tree, zeroed_leaf, zeroed_G, zeroed_H = zeroed
+    indexed_tree, indexed_leaf, indexed_G, indexed_H = indexed
+    assert np.array_equal(zeroed_tree.splits_feat, indexed_tree.splits_feat)
+    assert np.array_equal(zeroed_tree.splits_thr, indexed_tree.splits_thr)
+    assert np.array_equal(zeroed_tree.values, indexed_tree.values)
+    assert np.array_equal(zeroed_leaf, indexed_leaf)
+    assert np.array_equal(zeroed_G, indexed_G)
+    assert np.array_equal(zeroed_H, indexed_H)
+
+    ordered_update = -0.1 * (indexed_G[indexed_leaf] - g) / (
+        np.maximum(indexed_H[indexed_leaf] - h, 0.0) + 3.0
+    )
+    assert np.allclose(ordered_update[~row_mask],
+                       indexed_tree.predict(Xb)[~row_mask])
+
+    zeroed_tree, zeroed_leaf, zeroed_G, zeroed_H = zeroed_selected
+    indexed_tree, indexed_leaf, indexed_G, indexed_H = indexed_selected
+    assert np.array_equal(zeroed_tree.splits_feat, indexed_tree.splits_feat)
+    assert np.array_equal(zeroed_tree.splits_thr, indexed_tree.splits_thr)
+    assert np.array_equal(zeroed_tree.values, indexed_tree.values)
+    assert np.array_equal(zeroed_leaf, indexed_leaf)
+    assert np.array_equal(zeroed_G, indexed_G)
+    assert np.array_equal(zeroed_H, indexed_H)
+
+
+def test_row_and_feature_index_histograms_match_zeroed_subsample_serial():
+    """Selected rows compose with selected features in the single-thread path."""
+    import numba
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_oblivious_tree
+
+    rng = np.random.default_rng(8)
+    X = rng.normal(size=(850, 14))
+    y = X[:, 2] - 0.9 * X[:, 9] + 0.3 * X[:, 11] + rng.normal(0, 0.3, 850)
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = prep.fit_transform(X, [y], None)
+    grad = y.mean() - y
+    hess = np.ones(len(y))
+    row_mask = rng.random(len(y)) < 0.5
+    row_indices = np.flatnonzero(row_mask).astype(np.int64)
+    g = np.where(row_mask, grad, 0.0)
+    h = np.where(row_mask, hess, 0.0)
+    selected = np.array([2, 4, 9, 11], dtype=np.int64)
+    feature_mask = np.zeros(Xb.shape[1], dtype=np.int64)
+    feature_mask[selected] = 1
+
+    old_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(1)
+        zeroed = build_oblivious_tree(
+            Xb, g, h, prep.n_bins_, 5, 3.0, 0.1,
+            feature_mask=feature_mask, feature_indices=selected,
+            return_training_state=True,
+        )
+        indexed = build_oblivious_tree(
+            Xb, g, h, prep.n_bins_, 5, 3.0, 0.1,
+            feature_mask=feature_mask, feature_indices=selected,
+            row_indices=row_indices, return_training_state=True,
+        )
+    finally:
+        numba.set_num_threads(old_threads)
+
+    zeroed_tree, zeroed_leaf, zeroed_G, zeroed_H = zeroed
+    indexed_tree, indexed_leaf, indexed_G, indexed_H = indexed
+    assert np.array_equal(zeroed_tree.splits_feat, indexed_tree.splits_feat)
+    assert np.array_equal(zeroed_tree.splits_thr, indexed_tree.splits_thr)
+    assert np.array_equal(zeroed_tree.values, indexed_tree.values)
+    assert np.array_equal(zeroed_leaf, indexed_leaf)
+    assert np.array_equal(zeroed_G, indexed_G)
+    assert np.array_equal(zeroed_H, indexed_H)
+
+
 # ---------------------------------------------------------------------------
 # sample_weight tests
 # ---------------------------------------------------------------------------

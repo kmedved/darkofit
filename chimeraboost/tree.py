@@ -61,6 +61,44 @@ def _build_histograms_selected_into(X_binned, grad, hess, leaf, n_leaves,
             hh[f, l, b] += hess[i]
 
 
+@njit(cache=True, parallel=True)
+def _build_histograms_rows_into(X_binned, grad, hess, leaf, n_leaves, hg, hh,
+                                row_indices):
+    """Fill histograms from selected rows only, for all feature columns."""
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[2]
+    for f in prange(n_features):
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+        for p in range(row_indices.shape[0]):
+            i = row_indices[p]
+            l = leaf[i]
+            b = X_binned[i, f]
+            hg[f, l, b] += grad[i]
+            hh[f, l, b] += hess[i]
+
+
+@njit(cache=True, parallel=True)
+def _build_histograms_selected_rows_into(X_binned, grad, hess, leaf, n_leaves,
+                                         hg, hh, feature_indices, row_indices):
+    """Fill histograms from selected rows and selected feature columns."""
+    max_bins = hg.shape[2]
+    for jj in prange(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+        for p in range(row_indices.shape[0]):
+            i = row_indices[p]
+            l = leaf[i]
+            b = X_binned[i, f]
+            hg[f, l, b] += grad[i]
+            hh[f, l, b] += hess[i]
+
+
 @njit(cache=True)
 def _build_histograms_into_serial(X_binned, grad, hess, leaf, n_leaves, hg, hh):
     """Single-thread histogram fill with row-contiguous feature access.
@@ -87,6 +125,29 @@ def _build_histograms_into_serial(X_binned, grad, hess, leaf, n_leaves, hg, hh):
 
 
 @njit(cache=True)
+def _build_histograms_rows_into_serial(X_binned, grad, hess, leaf, n_leaves,
+                                       hg, hh, row_indices):
+    """Single-thread histogram fill from selected rows only."""
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[2]
+    for f in range(n_features):
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+
+    for p in range(row_indices.shape[0]):
+        i = row_indices[p]
+        l = leaf[i]
+        gi = grad[i]
+        hi = hess[i]
+        for f in range(n_features):
+            b = X_binned[i, f]
+            hg[f, l, b] += gi
+            hh[f, l, b] += hi
+
+
+@njit(cache=True)
 def _build_histograms_selected_into_serial(X_binned, grad, hess, leaf,
                                            n_leaves, hg, hh, feature_indices):
     """Single-thread histogram fill for selected columns only."""
@@ -100,6 +161,31 @@ def _build_histograms_selected_into_serial(X_binned, grad, hess, leaf,
                 hh[f, l, b] = 0.0
 
     for i in range(n_samples):
+        l = leaf[i]
+        gi = grad[i]
+        hi = hess[i]
+        for jj in range(feature_indices.shape[0]):
+            f = feature_indices[jj]
+            b = X_binned[i, f]
+            hg[f, l, b] += gi
+            hh[f, l, b] += hi
+
+
+@njit(cache=True)
+def _build_histograms_selected_rows_into_serial(X_binned, grad, hess, leaf,
+                                                n_leaves, hg, hh,
+                                                feature_indices, row_indices):
+    """Single-thread histogram fill for selected rows and columns."""
+    max_bins = hg.shape[2]
+    for jj in range(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+
+    for p in range(row_indices.shape[0]):
+        i = row_indices[p]
         l = leaf[i]
         gi = grad[i]
         hi = hess[i]
@@ -368,7 +454,7 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                          max_depth, l2, lr, min_gain=1e-8, feature_mask=None,
                          min_child_weight=1.0, hist_buffers=None,
                          return_training_state=False, X_hist_binned=None,
-                         feature_indices=None):
+                         feature_indices=None, row_indices=None):
     """Grow one oblivious tree level by level and return an ObliviousTree.
 
     X_hist_binned: optional feature-contiguous view/copy of X_binned used only
@@ -378,6 +464,8 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     this tree (column subsampling). None means all features are eligible.
     feature_indices: optional selected column indices matching feature_mask;
     when supplied, histogram building zeroes and fills only those columns.
+    row_indices: optional selected row indices for stochastic subsampling;
+    histograms scan only these rows, while leaf routing still updates all rows.
     min_child_weight: minimum hessian mass each side of a split must retain in
     every non-empty leaf. Stops the tree growing once no legal split remains,
     which prevents sparse-leaf overfitting at higher depth.
@@ -387,8 +475,15 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     """
     if X_hist_binned is None:
         X_hist_binned = X_binned
+    n_samples = X_binned.shape[0]
     n_features = X_binned.shape[1]
     max_bins = n_features and int(n_bins_per_feature.max())
+    if row_indices is not None:
+        row_indices = np.asarray(row_indices, dtype=np.int64)
+        if row_indices.ndim != 1:
+            raise ValueError("row_indices must be a 1-D array")
+        if np.any((row_indices < 0) | (row_indices >= n_samples)):
+            raise ValueError("row_indices contains out-of-range rows")
     if feature_indices is not None:
         feature_indices = np.asarray(feature_indices, dtype=np.int64)
         if feature_indices.ndim != 1:
@@ -429,28 +524,48 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     for d in range(max_depth):
         n_leaves = 1 << d
         if use_serial_kernels:
-            if feature_indices is None:
+            if row_indices is None and feature_indices is None:
                 _build_histograms_into_serial(
                     X_binned, grad, hess, leaf, n_leaves, hg, hh
                 )
-            else:
+            elif row_indices is None:
                 _build_histograms_selected_into_serial(
                     X_binned, grad, hess, leaf, n_leaves, hg, hh,
                     feature_indices
+                )
+            elif feature_indices is None:
+                _build_histograms_rows_into_serial(
+                    X_binned, grad, hess, leaf, n_leaves, hg, hh,
+                    row_indices
+                )
+            else:
+                _build_histograms_selected_rows_into_serial(
+                    X_binned, grad, hess, leaf, n_leaves, hg, hh,
+                    feature_indices, row_indices
                 )
             f, t, gain = _best_split_serial(
                 hg, hh, n_bins_per_feature, l2, feature_mask,
                 min_child_weight, n_leaves
             )
         else:
-            if feature_indices is None:
+            if row_indices is None and feature_indices is None:
                 _build_histograms_into(
                     X_hist_binned, grad, hess, leaf, n_leaves, hg, hh
                 )
-            else:
+            elif row_indices is None:
                 _build_histograms_selected_into(
                     X_hist_binned, grad, hess, leaf, n_leaves, hg, hh,
                     feature_indices
+                )
+            elif feature_indices is None:
+                _build_histograms_rows_into(
+                    X_hist_binned, grad, hess, leaf, n_leaves, hg, hh,
+                    row_indices
+                )
+            else:
+                _build_histograms_selected_rows_into(
+                    X_hist_binned, grad, hess, leaf, n_leaves, hg, hh,
+                    feature_indices, row_indices
                 )
             f, t, gain = _best_split(
                 hg, hh, n_bins_per_feature, l2, feature_mask,
