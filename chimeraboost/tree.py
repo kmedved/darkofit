@@ -389,8 +389,31 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
         X_hist_binned = X_binned
     n_features = X_binned.shape[1]
     max_bins = n_features and int(n_bins_per_feature.max())
-    if feature_mask is None:
+    if feature_indices is not None:
+        feature_indices = np.asarray(feature_indices, dtype=np.int64)
+        if feature_indices.ndim != 1:
+            raise ValueError("feature_indices must be a 1-D array")
+        if np.any((feature_indices < 0) | (feature_indices >= n_features)):
+            raise ValueError("feature_indices contains out-of-range columns")
+        if np.unique(feature_indices).shape[0] != feature_indices.shape[0]:
+            raise ValueError("feature_indices must be unique")
+
+        selected_mask = np.zeros(n_features, dtype=np.int64)
+        selected_mask[feature_indices] = 1
+        if feature_mask is None:
+            feature_mask = selected_mask
+        else:
+            feature_mask = np.asarray(feature_mask, dtype=np.int64)
+            if feature_mask.shape != selected_mask.shape:
+                raise ValueError("feature_mask must have one entry per feature")
+            if not np.array_equal(feature_mask, selected_mask):
+                raise ValueError("feature_indices must match feature_mask")
+    elif feature_mask is None:
         feature_mask = np.ones(n_features, dtype=np.int64)
+    else:
+        feature_mask = np.asarray(feature_mask, dtype=np.int64)
+        if feature_mask.shape != (n_features,):
+            raise ValueError("feature_mask must have one entry per feature")
     if hist_buffers is None:
         max_leaves = 1 << max_depth
         hg = np.zeros((n_features, max_leaves, max_bins))

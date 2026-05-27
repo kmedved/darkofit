@@ -392,6 +392,74 @@ def test_selected_feature_histograms_match_masked_full_histograms():
     assert np.array_equal(full_H, sel_H)
 
 
+def test_feature_indices_without_mask_self_mask_reused_histograms():
+    """Selected histograms must not let stale unselected columns enter splits."""
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_oblivious_tree
+
+    rng = np.random.default_rng(5)
+    X = rng.normal(size=(1000, 8))
+    y = 4.0 * X[:, 0] + 0.1 * X[:, 3] + rng.normal(0, 0.2, 1000)
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = prep.fit_transform(X, [y], None)
+    grad = y.mean() - y
+    hess = np.ones(len(y))
+    selected = np.array([2, 3, 5], dtype=np.int64)
+    mask = np.zeros(Xb.shape[1], dtype=np.int64)
+    mask[selected] = 1
+    hist_buffers = (
+        np.zeros((Xb.shape[1], 1 << 4, int(prep.n_bins_.max()))),
+        np.zeros((Xb.shape[1], 1 << 4, int(prep.n_bins_.max()))),
+    )
+
+    build_oblivious_tree(
+        Xb, grad, hess, prep.n_bins_, 4, 3.0, 0.1,
+        hist_buffers=hist_buffers, return_training_state=True,
+    )
+    inferred = build_oblivious_tree(
+        Xb, grad, hess, prep.n_bins_, 4, 3.0, 0.1,
+        feature_indices=selected, hist_buffers=hist_buffers,
+        return_training_state=True,
+    )
+    explicit = build_oblivious_tree(
+        Xb, grad, hess, prep.n_bins_, 4, 3.0, 0.1,
+        feature_mask=mask, feature_indices=selected,
+        return_training_state=True,
+    )
+
+    inferred_tree, inferred_leaf, inferred_G, inferred_H = inferred
+    explicit_tree, explicit_leaf, explicit_G, explicit_H = explicit
+    assert np.all(np.isin(inferred_tree.splits_feat, selected))
+    assert np.array_equal(inferred_tree.splits_feat, explicit_tree.splits_feat)
+    assert np.array_equal(inferred_tree.splits_thr, explicit_tree.splits_thr)
+    assert np.array_equal(inferred_tree.values, explicit_tree.values)
+    assert np.array_equal(inferred_leaf, explicit_leaf)
+    assert np.array_equal(inferred_G, explicit_G)
+    assert np.array_equal(inferred_H, explicit_H)
+
+
+def test_feature_indices_must_match_feature_mask():
+    """A mismatched selected-column mask would leave stale histograms eligible."""
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_oblivious_tree
+
+    rng = np.random.default_rng(6)
+    X = rng.normal(size=(256, 5))
+    y = X[:, 1] + rng.normal(0, 0.1, 256)
+    prep = FeaturePreprocessor(32, 1.0, 0)
+    Xb = prep.fit_transform(X, [y], None)
+    grad = y.mean() - y
+    hess = np.ones(len(y))
+    selected = np.array([1, 3], dtype=np.int64)
+    mismatched_mask = np.ones(Xb.shape[1], dtype=np.int64)
+
+    with pytest.raises(ValueError, match="feature_indices must match feature_mask"):
+        build_oblivious_tree(
+            Xb, grad, hess, prep.n_bins_, 3, 3.0, 0.1,
+            feature_mask=mismatched_mask, feature_indices=selected,
+        )
+
+
 # ---------------------------------------------------------------------------
 # sample_weight tests
 # ---------------------------------------------------------------------------
