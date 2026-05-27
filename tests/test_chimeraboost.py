@@ -356,6 +356,42 @@ def test_feature_contiguous_hist_layout_matches_c_order_tree_build():
     assert np.array_equal(base_H, layout_H)
 
 
+def test_selected_feature_histograms_match_masked_full_histograms():
+    """Column-subsampled histogram building must match the old mask-only path."""
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_oblivious_tree
+
+    rng = np.random.default_rng(4)
+    X = rng.normal(size=(1200, 16))
+    y = (X[:, 1] - 0.8 * X[:, 7] + 0.5 * X[:, 12] + rng.normal(0, 0.4, 1200))
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = prep.fit_transform(X, [y], None)
+    grad = y.mean() - y
+    hess = np.ones(len(y))
+    selected = np.array([1, 3, 7, 12], dtype=np.int64)
+    mask = np.zeros(Xb.shape[1], dtype=np.int64)
+    mask[selected] = 1
+
+    full = build_oblivious_tree(
+        Xb, grad, hess, prep.n_bins_, 5, 3.0, 0.1,
+        feature_mask=mask, return_training_state=True,
+    )
+    selected_only = build_oblivious_tree(
+        Xb, grad, hess, prep.n_bins_, 5, 3.0, 0.1,
+        feature_mask=mask, feature_indices=selected,
+        return_training_state=True,
+    )
+
+    full_tree, full_leaf, full_G, full_H = full
+    sel_tree, sel_leaf, sel_G, sel_H = selected_only
+    assert np.array_equal(full_tree.splits_feat, sel_tree.splits_feat)
+    assert np.array_equal(full_tree.splits_thr, sel_tree.splits_thr)
+    assert np.array_equal(full_tree.values, sel_tree.values)
+    assert np.array_equal(full_leaf, sel_leaf)
+    assert np.array_equal(full_G, sel_G)
+    assert np.array_equal(full_H, sel_H)
+
+
 # ---------------------------------------------------------------------------
 # sample_weight tests
 # ---------------------------------------------------------------------------

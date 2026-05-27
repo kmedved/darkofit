@@ -42,6 +42,25 @@ def _build_histograms_into(X_binned, grad, hess, leaf, n_leaves, hg, hh):
             hh[f, l, b] += hess[i]
 
 
+@njit(cache=True, parallel=True)
+def _build_histograms_selected_into(X_binned, grad, hess, leaf, n_leaves,
+                                    hg, hh, feature_indices):
+    """Fill histograms only for selected feature columns."""
+    n_samples = X_binned.shape[0]
+    max_bins = hg.shape[2]
+    for jj in prange(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+        for i in range(n_samples):
+            l = leaf[i]
+            b = X_binned[i, f]
+            hg[f, l, b] += grad[i]
+            hh[f, l, b] += hess[i]
+
+
 @njit(cache=True)
 def _build_histograms_into_serial(X_binned, grad, hess, leaf, n_leaves, hg, hh):
     """Single-thread histogram fill with row-contiguous feature access.
@@ -62,6 +81,30 @@ def _build_histograms_into_serial(X_binned, grad, hess, leaf, n_leaves, hg, hh):
         gi = grad[i]
         hi = hess[i]
         for f in range(n_features):
+            b = X_binned[i, f]
+            hg[f, l, b] += gi
+            hh[f, l, b] += hi
+
+
+@njit(cache=True)
+def _build_histograms_selected_into_serial(X_binned, grad, hess, leaf,
+                                           n_leaves, hg, hh, feature_indices):
+    """Single-thread histogram fill for selected columns only."""
+    n_samples = X_binned.shape[0]
+    max_bins = hg.shape[2]
+    for jj in range(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+
+    for i in range(n_samples):
+        l = leaf[i]
+        gi = grad[i]
+        hi = hess[i]
+        for jj in range(feature_indices.shape[0]):
+            f = feature_indices[jj]
             b = X_binned[i, f]
             hg[f, l, b] += gi
             hh[f, l, b] += hi
@@ -324,7 +367,8 @@ class ObliviousTree:
 def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                          max_depth, l2, lr, min_gain=1e-8, feature_mask=None,
                          min_child_weight=1.0, hist_buffers=None,
-                         return_training_state=False, X_hist_binned=None):
+                         return_training_state=False, X_hist_binned=None,
+                         feature_indices=None):
     """Grow one oblivious tree level by level and return an ObliviousTree.
 
     X_hist_binned: optional feature-contiguous view/copy of X_binned used only
@@ -332,6 +376,8 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     leaves still use X_binned, preserving row-wise locality for those paths.
     feature_mask: optional 0/1 array over features; 0 disables a feature for
     this tree (column subsampling). None means all features are eligible.
+    feature_indices: optional selected column indices matching feature_mask;
+    when supplied, histogram building zeroes and fills only those columns.
     min_child_weight: minimum hessian mass each side of a split must retain in
     every non-empty leaf. Stops the tree growing once no legal split remains,
     which prevents sparse-leaf overfitting at higher depth.
@@ -360,17 +406,29 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     for d in range(max_depth):
         n_leaves = 1 << d
         if use_serial_kernels:
-            _build_histograms_into_serial(
-                X_binned, grad, hess, leaf, n_leaves, hg, hh
-            )
+            if feature_indices is None:
+                _build_histograms_into_serial(
+                    X_binned, grad, hess, leaf, n_leaves, hg, hh
+                )
+            else:
+                _build_histograms_selected_into_serial(
+                    X_binned, grad, hess, leaf, n_leaves, hg, hh,
+                    feature_indices
+                )
             f, t, gain = _best_split_serial(
                 hg, hh, n_bins_per_feature, l2, feature_mask,
                 min_child_weight, n_leaves
             )
         else:
-            _build_histograms_into(
-                X_hist_binned, grad, hess, leaf, n_leaves, hg, hh
-            )
+            if feature_indices is None:
+                _build_histograms_into(
+                    X_hist_binned, grad, hess, leaf, n_leaves, hg, hh
+                )
+            else:
+                _build_histograms_selected_into(
+                    X_hist_binned, grad, hess, leaf, n_leaves, hg, hh,
+                    feature_indices
+                )
             f, t, gain = _best_split(
                 hg, hh, n_bins_per_feature, l2, feature_mask,
                 min_child_weight, n_leaves

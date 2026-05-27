@@ -85,14 +85,15 @@ class _BaseBooster:
         hh = np.zeros((n_features, max_leaves, max_bins))
         return (hg, hh)
 
-    def _feature_mask(self, n_cols, rng):
-        """0/1 mask selecting a random subset of columns for one tree."""
+    def _feature_selection(self, n_cols, rng):
+        """Return a 0/1 mask and selected column indices for one tree."""
         if self.colsample >= 1.0:
-            return None
+            return None, None
         k = max(1, int(round(self.colsample * n_cols)))
         mask = np.zeros(n_cols, dtype=np.int64)
-        mask[rng.choice(n_cols, size=k, replace=False)] = 1
-        return mask
+        idx = np.sort(rng.choice(n_cols, size=k, replace=False)).astype(np.int64)
+        mask[idx] = 1
+        return mask, idx
 
     def _new_preprocessor(self):
         """Build a FeaturePreprocessor configured from this booster's params."""
@@ -191,7 +192,7 @@ class GradientBoosting(_BaseBooster):
                 grad = grad * w
                 hess = hess * w
             g, h = self._maybe_subsample(grad, hess, rng)
-            fmask = self._feature_mask(X_binned.shape[1], rng)
+            fmask, findices = self._feature_selection(X_binned.shape[1], rng)
             tree, leaf, leaf_G, leaf_H = build_oblivious_tree(
                 X_binned, g, h, n_bins, self.depth,
                 self.l2_leaf_reg, self.lr_,
@@ -200,6 +201,7 @@ class GradientBoosting(_BaseBooster):
                 hist_buffers=hist_buffers,
                 return_training_state=True,
                 X_hist_binned=X_hist_binned,
+                feature_indices=findices,
             )
             # A depth-0 tree found no legal split; subsequent rounds on the same
             # gradients would too, so stop rather than append empty trees.
@@ -346,7 +348,7 @@ class MulticlassBoosting(_BaseBooster):
             if w is not None:
                 grad = grad * w[:, None]
                 hess = hess * w[:, None]
-            fmask = self._feature_mask(X_binned.shape[1], rng)
+            fmask, findices = self._feature_selection(X_binned.shape[1], rng)
             round_trees = []
             for k in range(K):
                 g, h = self._maybe_subsample(np.ascontiguousarray(grad[:, k]),
@@ -359,6 +361,7 @@ class MulticlassBoosting(_BaseBooster):
                     hist_buffers=hist_buffers,
                     return_training_state=True,
                     X_hist_binned=X_hist_binned,
+                    feature_indices=findices,
                 )
                 round_trees.append(tree)
                 self._accumulate_importance(tree)
