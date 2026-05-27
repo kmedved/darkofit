@@ -2,9 +2,10 @@
 
 import numpy as np
 from .booster import GradientBoosting, MulticlassBoosting
+from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin
 
 
-class ChimeraBoostRegressor:
+class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
     """Gradient boosted oblivious trees for regression.
 
     loss: "RMSE" (default), "MAE", or "Quantile". For "Quantile" pass the level
@@ -57,7 +58,7 @@ class ChimeraBoostRegressor:
         return self.model_.feature_importances_
 
 
-class ChimeraBoostClassifier:
+class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
     """Gradient boosted oblivious trees for classification.
 
     Automatically uses binary logloss for 2 classes and softmax multiclass for
