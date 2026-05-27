@@ -296,6 +296,36 @@ def test_returned_training_state_matches_tree_apply_and_bincount():
                                              minlength=len(leaf_H)))
 
 
+def test_row_indices_training_state_uses_only_selected_rows():
+    """Direct row-index tree builds should not include unselected row sums."""
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_oblivious_tree
+
+    rng = np.random.default_rng(11)
+    X = rng.normal(size=(700, 9))
+    y = X[:, 0] - 0.5 * X[:, 3] + rng.normal(0, 0.3, 700)
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = prep.fit_transform(X, [y], None)
+    grad = y.mean() - y
+    hess = np.ones(len(y))
+    row_indices = np.flatnonzero(rng.random(len(y)) < 0.4).astype(np.int64)
+
+    tree, leaf, leaf_G, leaf_H = build_oblivious_tree(
+        Xb, grad, hess, prep.n_bins_, 5, 3.0, 0.1,
+        row_indices=row_indices, return_training_state=True,
+    )
+
+    expected_G = np.bincount(
+        leaf[row_indices], weights=grad[row_indices], minlength=len(leaf_G)
+    )
+    expected_H = np.bincount(
+        leaf[row_indices], weights=hess[row_indices], minlength=len(leaf_H)
+    )
+    assert np.array_equal(leaf, tree.apply(Xb))
+    assert np.array_equal(leaf_G, expected_G)
+    assert np.array_equal(leaf_H, expected_H)
+
+
 def test_add_predict_matches_predict():
     """In-place tree prediction is an allocation-saving equivalent of predict."""
     from chimeraboost.preprocessing import FeaturePreprocessor
@@ -312,6 +342,44 @@ def test_add_predict_matches_predict():
     out = np.zeros(Xb.shape[0])
     tree.add_predict(Xb, out)
     assert np.array_equal(out, tree.predict(Xb))
+
+
+def test_l2_zero_illegal_splits_do_not_divide_by_zero():
+    """Illegal empty-side split candidates must be discarded before gain math."""
+    import numba
+    from chimeraboost.tree import _best_split, _best_split_serial
+
+    hg = np.zeros((1, 1, 3))
+    hh = np.zeros((1, 1, 3))
+    hg[0, 0, 0] = 5.0
+    hh[0, 0, 0] = 10.0
+    n_bins = np.array([3], dtype=np.int64)
+    feat_mask = np.array([1], dtype=np.int64)
+
+    assert _best_split_serial(hg, hh, n_bins, 0.0, feat_mask, 1.0, 1)[1] == -1
+
+    old_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(min(2, numba.config.NUMBA_NUM_THREADS))
+        assert _best_split(hg, hh, n_bins, 0.0, feat_mask, 1.0, 1)[1] == -1
+    finally:
+        numba.set_num_threads(old_threads)
+
+
+def test_ordered_leaf_update_l2_zero_singleton_is_finite():
+    """Leave-one-out ordered updates should remain finite when l2=0."""
+    from chimeraboost.booster import _ordered_leaf_update
+
+    leaf = np.array([0, 1, 1])
+    grad = np.array([1.0, 2.0, 3.0])
+    hess = np.ones(3)
+    leaf_G = np.array([1.0, 5.0])
+    leaf_H = np.array([1.0, 2.0])
+
+    update = _ordered_leaf_update(0.1, leaf, leaf_G, leaf_H, grad, hess, 0.0)
+
+    assert np.all(np.isfinite(update))
+    assert update[0] == 0.0
 
 
 def test_feature_contiguous_hist_layout_matches_c_order_tree_build():

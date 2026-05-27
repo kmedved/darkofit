@@ -42,6 +42,15 @@ def _auto_learning_rate(n_samples, iterations, early_stopping):
     return float(np.clip(lr, 0.03, 0.2))
 
 
+def _ordered_leaf_update(lr, leaf, leaf_G, leaf_H, grad, hess, l2):
+    """Leave-one-out update, finite even for singleton leaves with l2=0."""
+    numerator = leaf_G[leaf] - grad
+    denominator = np.maximum(leaf_H[leaf] - hess, 0.0) + l2
+    update = np.zeros_like(numerator, dtype=np.float64)
+    np.divide(-lr * numerator, denominator, out=update, where=denominator > 0.0)
+    return update
+
+
 class _BaseBooster:
     """Shared machinery for the scalar and multiclass boosters.
 
@@ -228,8 +237,9 @@ class GradientBoosting(_BaseBooster):
                 # tree.values keeps the standard Newton values for inference;
                 # only the training F uses this corrected update. Subsampled-out
                 # rows (g=h=0) fall back to the standard leaf value.
-                F += -self.lr_ * (leaf_G[leaf] - g) / (
-                    np.maximum(leaf_H[leaf] - h, 0.0) + self.l2_leaf_reg)
+                F += _ordered_leaf_update(
+                    self.lr_, leaf, leaf_G, leaf_H, g, h, self.l2_leaf_reg
+                )
             else:
                 tree.add_predict(X_binned, F)
             self.train_history_.append(self.loss_.eval(y, F, w))
@@ -377,8 +387,9 @@ class MulticlassBoosting(_BaseBooster):
                 round_trees.append(tree)
                 self._accumulate_importance(tree)
                 if self.ordered_boosting and tree.depth > 0:
-                    F[:, k] += -self.lr_ * (leaf_G[leaf] - g) / (
-                        np.maximum(leaf_H[leaf] - h, 0.0) + self.l2_leaf_reg)
+                    F[:, k] += _ordered_leaf_update(
+                        self.lr_, leaf, leaf_G, leaf_H, g, h, self.l2_leaf_reg
+                    )
                 else:
                     tree.add_predict(X_binned, F[:, k])
             # Stop only if EVERY class exhausted its splits this round; if even

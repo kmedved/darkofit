@@ -383,7 +383,7 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
     n_features = hg.shape[0]
     max_bins = hg.shape[2]
     feat_gain = np.full(n_features, -np.inf)
-    feat_thr = np.zeros(n_features, dtype=np.int64)
+    feat_thr = np.full(n_features, -1, dtype=np.int64)
 
     for f in prange(n_features):
         if feat_mask[f] == 0:
@@ -417,15 +417,25 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
                     any_nonempty = True
                     hl = HL[l]
                     hr = Ht[l] - hl
-                    if hl < min_child_weight or hr < min_child_weight:
+                    left_denom = hl + l2
+                    right_denom = hr + l2
+                    parent_denom = Ht[l] + l2
+                    if (
+                        hl < min_child_weight
+                        or hr < min_child_weight
+                        or left_denom <= 0.0
+                        or right_denom <= 0.0
+                        or parent_denom <= 0.0
+                    ):
                         legal = False
-                    gl = GL[l]
-                    gr = Gt[l] - gl
-                    gain += (
-                        gl * gl / (hl + l2)
-                        + gr * gr / (hr + l2)
-                        - Gt[l] * Gt[l] / (Ht[l] + l2)
-                    )
+                    else:
+                        gl = GL[l]
+                        gr = Gt[l] - gl
+                        gain += (
+                            gl * gl / left_denom
+                            + gr * gr / right_denom
+                            - Gt[l] * Gt[l] / parent_denom
+                        )
             
             if legal and any_nonempty and gain > best_g:
                 best_g = gain
@@ -454,7 +464,7 @@ def _best_split_serial(hg, hh, n_bins_per_feature, l2, feat_mask,
     HL = np.empty(n_leaves)
 
     best_f = 0
-    best_t = 0
+    best_t = -1
     best_gain = -np.inf
 
     for f in range(n_features):
@@ -486,15 +496,25 @@ def _best_split_serial(hg, hh, n_bins_per_feature, l2, feat_mask,
                     any_nonempty = True
                     hl = HL[l]
                     hr = Ht[l] - hl
-                    if hl < min_child_weight or hr < min_child_weight:
+                    left_denom = hl + l2
+                    right_denom = hr + l2
+                    parent_denom = Ht[l] + l2
+                    if (
+                        hl < min_child_weight
+                        or hr < min_child_weight
+                        or left_denom <= 0.0
+                        or right_denom <= 0.0
+                        or parent_denom <= 0.0
+                    ):
                         legal = False
-                    gl = GL[l]
-                    gr = Gt[l] - gl
-                    gain += (
-                        gl * gl / (hl + l2)
-                        + gr * gr / (hr + l2)
-                        - Gt[l] * Gt[l] / (Ht[l] + l2)
-                    )
+                    else:
+                        gl = GL[l]
+                        gr = Gt[l] - gl
+                        gain += (
+                            gl * gl / left_denom
+                            + gr * gr / right_denom
+                            - Gt[l] * Gt[l] / parent_denom
+                        )
             if legal and any_nonempty and gain > feat_best_gain:
                 feat_best_gain = gain
                 feat_best_t = t
@@ -553,6 +573,22 @@ def _leaf_values_and_sums(leaf, grad, hess, n_leaves, l2, lr):
     G = np.zeros(n_leaves)
     H = np.zeros(n_leaves)
     for i in range(leaf.shape[0]):
+        G[leaf[i]] += grad[i]
+        H[leaf[i]] += hess[i]
+    values = np.zeros(n_leaves)
+    for l in range(n_leaves):
+        if H[l] > 0.0:
+            values[l] = -lr * G[l] / (H[l] + l2)
+    return values, G, H
+
+
+@njit(cache=True)
+def _leaf_values_and_sums_rows(leaf, grad, hess, row_indices, n_leaves, l2, lr):
+    """Return leaf values/sums using only selected training rows."""
+    G = np.zeros(n_leaves)
+    H = np.zeros(n_leaves)
+    for p in range(row_indices.shape[0]):
+        i = row_indices[p]
         G[leaf[i]] += grad[i]
         H[leaf[i]] += hess[i]
     values = np.zeros(n_leaves)
@@ -791,9 +827,14 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     sf = np.array(splits_feat, dtype=np.int64)
     st = np.array(splits_thr, dtype=np.int64)
     n_leaves = 1 << len(splits_feat)
-    values, leaf_G, leaf_H = _leaf_values_and_sums(
-        leaf, grad, hess, n_leaves, l2, lr
-    )
+    if row_indices is None:
+        values, leaf_G, leaf_H = _leaf_values_and_sums(
+            leaf, grad, hess, n_leaves, l2, lr
+        )
+    else:
+        values, leaf_G, leaf_H = _leaf_values_and_sums_rows(
+            leaf, grad, hess, row_indices, n_leaves, l2, lr
+        )
     tree = ObliviousTree(sf, st, values, np.array(splits_gain, dtype=np.float64))
     if return_training_state:
         return tree, leaf, leaf_G, leaf_H
