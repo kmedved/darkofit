@@ -124,6 +124,52 @@ def test_multiclass_preserves_string_labels_and_categoricals():
     assert set(np.unique(m.predict(Xte))).issubset({"low", "mid", "high"})
 
 
+def test_multiclass_tree_builder_receives_class_column_views(monkeypatch):
+    """Multiclass gradients should be laid out so per-class slices avoid copies."""
+    import chimeraboost.booster as booster
+    from sklearn.datasets import load_wine
+
+    seen = []
+    original = booster.build_oblivious_tree
+
+    def wrapped_build_tree(X_binned, grad, hess, *args, **kwargs):
+        seen.append((grad.flags.c_contiguous, hess.flags.c_contiguous,
+                     grad.flags.owndata, hess.flags.owndata))
+        return original(X_binned, grad, hess, *args, **kwargs)
+
+    monkeypatch.setattr(booster, "build_oblivious_tree", wrapped_build_tree)
+    X, y = load_wine(return_X_y=True)
+    ChimeraBoostClassifier(iterations=2, random_state=0).fit(X, y)
+
+    assert seen
+    assert all(g_contig and h_contig for g_contig, h_contig, _, _ in seen)
+    assert not any(g_own or h_own for _, _, g_own, h_own in seen)
+
+
+def test_multiclass_class_major_loss_matches_row_major():
+    from chimeraboost.losses import MultiSoftmax
+
+    rng = np.random.default_rng(11)
+    Y = np.eye(4)[rng.integers(0, 4, size=200)]
+    F = rng.normal(size=(200, 4))
+    w = rng.uniform(0.5, 2.0, size=200)
+    loss = MultiSoftmax(4)
+
+    grad, hess = loss.grad_hess(Y, F)
+    grad_c, hess_c = loss.grad_hess_class_major(
+        np.ascontiguousarray(Y.T), np.ascontiguousarray(F.T)
+    )
+
+    assert np.array_equal(grad, grad_c.T)
+    assert np.array_equal(hess, hess_c.T)
+    assert loss.eval(Y, F) == loss.eval_class_major(
+        np.ascontiguousarray(Y.T), np.ascontiguousarray(F.T)
+    )
+    assert loss.eval(Y, F, w) == loss.eval_class_major(
+        np.ascontiguousarray(Y.T), np.ascontiguousarray(F.T), w
+    )
+
+
 def test_feature_importances():
     rng = np.random.default_rng(0)
     n = 3000
