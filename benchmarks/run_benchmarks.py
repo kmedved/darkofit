@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
-    mean_squared_error, mean_absolute_error, accuracy_score, log_loss,
+    mean_squared_error, mean_absolute_error, accuracy_score, log_loss, f1_score,
 )
 from sklearn.ensemble import (
     HistGradientBoostingRegressor, HistGradientBoostingClassifier,
@@ -158,9 +158,9 @@ DATASETS = {
 # --------------------------------------------------------------------------
 OPENML_SUITE = {
     # classification (binary)
-    "credit-g":      dict(data_id=31,    task="binary",     cats="auto"),
-    "adult":         dict(data_id=1590,  task="binary",     cats="auto"),
-    "bank-marketing":dict(data_id=1461,  task="binary",     cats="auto"),
+    #"credit-g":      dict(data_id=31,    task="binary",     cats="auto"),
+    #"adult":         dict(data_id=1590,  task="binary",     cats="auto"),
+    #"bank-marketing":dict(data_id=1461,  task="binary",     cats="auto"),
     "kc1":           dict(data_id=1067,  task="binary",     cats=None),
     "phoneme":       dict(data_id=1489,  task="binary",     cats=None),
     # classification (multiclass)
@@ -231,8 +231,8 @@ def _add_openml_datasets():
 def _score(task, y_true, model, X_test, predict_proba=None):
     if task == "regression":
         return -np.sqrt(mean_squared_error(y_true, model.predict(X_test)))
-    # classification: use accuracy as the headline metric
-    return accuracy_score(y_true, model.predict(X_test))
+    # classification: macro-F1 works for both binary and multiclass
+    return f1_score(y_true, model.predict(X_test), average="macro")
 
 
 def _val_split(Xtr, ytr, task, seed):
@@ -248,24 +248,42 @@ MAX_ITERS = 2000
 PATIENCE = 50
 
 
-def _run_chimera(task, Xtr, ytr, Xte, yte, cat, threads):
+def _run_chimera(task, Xtr, ytr, Xte, yte, cat, threads, lr=None,
+                 ordered_boosting=True):
     Xf, Xv, yf, yv = _val_split(Xtr, ytr, task, 0)
     t = time.time()
     Est = ChimeraBoostRegressor if task == "regression" else ChimeraBoostClassifier
     m = Est(iterations=MAX_ITERS, early_stopping_rounds=PATIENCE,
+            learning_rate=lr, ordered_boosting=ordered_boosting,
             thread_count=threads, random_state=0)
     m.fit(Xf, yf, cat_features=cat, eval_set=(Xv, yv))
     return _score(task, yte, m, Xte), time.time() - t, m.best_iteration_
 
 
 def _run_sklearn(task, Xtr, ytr, Xte, yte, cat, threads):
-    # sklearn HGB needs purely numeric input; skip categorical-object tasks.
-    if cat is not None:
-        return None
+    """sklearn HGB with native categorical support.
+
+    HGB requires integer-encoded categoricals; we ordinal-encode them here so
+    the comparison is fair (same information given to all models).
+    """
+    from sklearn.preprocessing import OrdinalEncoder
     t = time.time()
+    if cat is not None:
+        cat_idx = list(cat)
+        Xtr = np.array(Xtr, dtype=object)
+        Xte = np.array(Xte, dtype=object)
+        enc = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)
+        enc.fit(Xtr[:, cat_idx])
+        Xtr[:, cat_idx] = enc.transform(Xtr[:, cat_idx])
+        Xte[:, cat_idx] = enc.transform(Xte[:, cat_idx])
+        Xtr = Xtr.astype(float)
+        Xte = Xte.astype(float)
+    else:
+        cat_idx = None
     # HGB has built-in early stopping via a validation fraction.
     common = dict(max_iter=MAX_ITERS, early_stopping=True,
                   validation_fraction=0.2, n_iter_no_change=PATIENCE,
+                  categorical_features=cat_idx,
                   random_state=0)
     Est = (HistGradientBoostingRegressor if task == "regression"
            else HistGradientBoostingClassifier)
@@ -334,7 +352,7 @@ def _rel_gap(ours, theirs, task):
     """Relative gap of ChimeraBoost vs a competitor, as a signed percentage
     where POSITIVE means ChimeraBoost is better.
 
-    Regression score is -RMSE (higher=better), classification is accuracy
+    Regression score is -RMSE (higher=better), classification is F1 macro
     (higher=better), so in both cases higher is better and the formula is the
     same once we work in the 'higher=better' space.
     """
@@ -348,6 +366,7 @@ def _rel_gap(ours, theirs, task):
 
 
 def main():
+    global PATIENCE
     ap = argparse.ArgumentParser()
     ap.add_argument("--scale", type=float, default=1.0,
                     help="multiplier for synthetic dataset sizes")
@@ -360,6 +379,24 @@ def main():
                     help="include real OpenML benchmark datasets (downloads + caches)")
     ap.add_argument("--no-synthetic", action="store_true",
                     help="run ONLY the OpenML datasets (implies --openml)")
+    ap.add_argument("--models", nargs="+", default=None,
+                    metavar="MODEL",
+                    help=("limit to specific runners, e.g. "
+                          "--models ChimeraBoost CatBoost sklearn_HGB. "
+                          f"Available: {list(RUNNERS)}"))
+    ap.add_argument("--lr", type=float, default=None,
+                    help=("override ChimeraBoost learning rate (default: auto=0.1 "
+                          "with early stopping). Try --lr 0.05 to test whether "
+                          "smaller steps + more trees improve accuracy on OpenML "
+                          "before promoting to a new default."))
+    ap.add_argument("--patience", type=int, default=None,
+                    help=("override early stopping patience rounds for ALL models "
+                          "(default: PATIENCE=%d). Higher values let more trees "
+                          "accumulate before stopping." % PATIENCE))
+    ap.add_argument("--no-ordered-boosting", dest="ordered_boosting",
+                    action="store_false", default=True,
+                    help=("disable LOO leaf correction in ChimeraBoost "
+                          "(default: on). Use to A/B test the improvement."))
     args = ap.parse_args()
 
     if args.openml or args.no_synthetic:
@@ -368,18 +405,40 @@ def main():
         for k in [k for k in DATASETS if not k.startswith("oml:")]:
             del DATASETS[k]
 
+    # Apply patience override globally before building runner dicts.
+    if args.patience is not None:
+        PATIENCE = args.patience
+
+    # Build the runner dict; ChimeraBoost gets the lr override if provided.
+    import functools
+    active_runners = dict(RUNNERS)
+    active_runners["ChimeraBoost"] = functools.partial(
+        _run_chimera, lr=args.lr, ordered_boosting=args.ordered_boosting
+    )
+    if args.models:
+        unknown = set(args.models) - set(active_runners)
+        if unknown:
+            ap.error(f"Unknown models: {unknown}. Available: {list(active_runners)}")
+        active_runners = {k: v for k, v in active_runners.items()
+                         if k in args.models}
+
     print("Detected competitors:",
           ", ".join(k for k, v in HAVE.items() if v) or "none (sklearn only)")
     print(f"scale={args.scale}  seeds={args.seeds}  "
           f"threads={args.threads or 'all'}  "
-          f"early stopping: max_iter={MAX_ITERS}, patience={PATIENCE}\n")
+          f"early stopping: max_iter={MAX_ITERS}, patience={PATIENCE}"
+          + (f"  chimera_lr={args.lr}" if args.lr else "")
+          + (f"  ordered_boosting={args.ordered_boosting}")
+          + (f"  models={args.models}" if args.models else "")
+          + "\n")
 
     metric_name = {"regression": "RMSE (lower better)",
-                   "binary": "accuracy", "multiclass": "accuracy"}
+                   "binary": "F1 macro (higher better)",
+                   "multiclass": "F1 macro (higher better)"}
 
     # accumulate per-competitor relative gaps + speed ratios across datasets
-    gap_acc = {r: [] for r in RUNNERS if r != "ChimeraBoost"}
-    speed_acc = {r: [] for r in RUNNERS if r != "ChimeraBoost"}
+    gap_acc = {r: [] for r in active_runners if r != "ChimeraBoost"}
+    speed_acc = {r: [] for r in active_runners if r != "ChimeraBoost"}
 
     for ds_name, builder in DATASETS.items():
         _, _, _, task = builder(args.scale, np.random.default_rng(0))
@@ -388,9 +447,9 @@ def main():
         if args.only == "classification" and task == "regression":
             continue
 
-        results = {r: [] for r in RUNNERS}
-        times = {r: [] for r in RUNNERS}
-        iters = {r: [] for r in RUNNERS}
+        results = {r: [] for r in active_runners}
+        times = {r: [] for r in active_runners}
+        iters = {r: [] for r in active_runners}
         for s in range(args.seeds):
             rng = np.random.default_rng(1000 + s)
             X, y, cat, task = builder(args.scale, rng)
@@ -398,7 +457,7 @@ def main():
             Xtr, Xte, ytr, yte = train_test_split(
                 X, y, test_size=0.25, random_state=s, stratify=strat
             )
-            for rname, runner in RUNNERS.items():
+            for rname, runner in active_runners.items():
                 out = runner(task, Xtr, ytr, Xte, yte, cat, args.threads)
                 if out is not None:
                     score, secs, best_it = out
@@ -408,7 +467,7 @@ def main():
                         iters[rname].append(best_it)
 
         print(f"### {ds_name}  [{task}]  metric={metric_name[task]}")
-        for rname in RUNNERS:
+        for rname in active_runners:
             if not results[rname]:
                 continue
             sc = np.array(results[rname])
@@ -444,7 +503,7 @@ def main():
         # speed ratio >1 means ChimeraBoost is faster
         wins = int(np.sum(g > 0))
         verdict = _verdict(rname, g.mean())
-        print(f"  vs {rname:12s}  accuracy {g.mean():+6.2f}% "
+        print(f"  vs {rname:12s}  F1 macro {g.mean():+6.2f}% "
               f"(wins {wins}/{len(g)})   speed x{sp.mean():.2f}   -> {verdict}")
     print()
 

@@ -4,7 +4,6 @@ import numpy as np
 from .booster import GradientBoosting, MulticlassBoosting
 from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin
 
-
 class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
     """Gradient boosted oblivious trees for regression.
 
@@ -15,8 +14,8 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
     def __init__(self, iterations=500, learning_rate=None, depth=6,
                  l2_leaf_reg=3.0, max_bins=128, subsample=1.0, colsample=1.0,
                  cat_smoothing=1.0, early_stopping_rounds=None,
-                 loss="RMSE", alpha=0.5, thread_count=None,
-                 random_state=None, verbose=False):
+                 loss="RMSE", alpha=0.5, min_child_weight=1.0, thread_count=None,
+                 random_state=None, verbose=False, ordered_boosting=True):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -28,9 +27,11 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
         self.early_stopping_rounds = early_stopping_rounds
         self.loss = loss
         self.alpha = alpha
+        self.min_child_weight = min_child_weight
         self.thread_count = thread_count
         self.random_state = random_state
         self.verbose = verbose
+        self.ordered_boosting = ordered_boosting
 
     def fit(self, X, y, cat_features=None, eval_set=None):
         loss_kwargs = {"alpha": self.alpha} if self.loss == "Quantile" else {}
@@ -47,14 +48,6 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
     def staged_predict(self, X):
         """Yield the prediction after each successive tree."""
         yield from self.model_.staged_predict_raw(X)
-
-    def save(self, path):
-        save_model(self, path)
-        return path
-
-    @staticmethod
-    def load(path):
-        return load_model(path)
 
     @property
     def best_iteration_(self):
@@ -75,7 +68,8 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self, iterations=500, learning_rate=None, depth=6,
                  l2_leaf_reg=3.0, max_bins=128, subsample=1.0, colsample=1.0,
                  cat_smoothing=1.0, early_stopping_rounds=None,
-                 thread_count=None, random_state=None, verbose=False):
+                 min_child_weight=1.0, thread_count=None, random_state=None,
+                 verbose=False, ordered_boosting=True):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -85,9 +79,11 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
         self.colsample = colsample
         self.cat_smoothing = cat_smoothing
         self.early_stopping_rounds = early_stopping_rounds
+        self.min_child_weight = min_child_weight
         self.thread_count = thread_count
         self.random_state = random_state
         self.verbose = verbose
+        self.ordered_boosting = ordered_boosting
 
     def fit(self, X, y, cat_features=None, eval_set=None):
         y = np.asarray(y)
@@ -129,25 +125,3 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
     @property
     def feature_importances_(self):
         return self.model_.feature_importances_
-
-    def save(self, path):
-        save_model(self, path)
-        return path
-
-    @staticmethod
-    def load(path):
-        return load_model(path)
-
-
-def save_model(estimator, path):
-    """Persist a fitted ChimeraBoost estimator to disk (pickle)."""
-    import pickle
-    with open(path, "wb") as fh:
-        pickle.dump(estimator, fh, protocol=pickle.HIGHEST_PROTOCOL)
-
-
-def load_model(path):
-    """Load a ChimeraBoost estimator saved with save_model / .save()."""
-    import pickle
-    with open(path, "rb") as fh:
-        return pickle.load(fh)

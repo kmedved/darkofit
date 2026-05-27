@@ -162,30 +162,6 @@ def test_quantile_calibration_on_large_data():
     assert 0.7 < cov < 0.88           # ~0.80 target band
 
 
-def test_save_load_roundtrip(tmp_path):
-    from chimeraboost import load_model
-    X, y = load_breast_cancer(return_X_y=True)
-    Xtr, Xte, ytr, yte = train_test_split(
-        X, y, test_size=0.2, random_state=0, stratify=y
-    )
-    m = ChimeraBoostClassifier(iterations=80, random_state=0).fit(Xtr, ytr)
-    before = m.predict_proba(Xte)
-    fp = tmp_path / "model.pkl"
-    m.save(str(fp))
-    m2 = load_model(str(fp))
-    assert np.allclose(before, m2.predict_proba(Xte))
-
-
-def test_save_load_multiclass(tmp_path):
-    from sklearn.datasets import load_wine
-    from chimeraboost import load_model
-    X, y = load_wine(return_X_y=True)
-    m = ChimeraBoostClassifier(iterations=60, random_state=0).fit(X, y)
-    fp = tmp_path / "wine.pkl"
-    m.save(str(fp))
-    m2 = load_model(str(fp))
-    assert np.allclose(m.predict_proba(X), m2.predict_proba(X))
-
 
 def test_staged_predict_matches_final():
     X, y = load_diabetes(return_X_y=True)

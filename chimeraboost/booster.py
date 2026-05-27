@@ -41,6 +41,14 @@ def _auto_learning_rate(n_samples, iterations, early_stopping):
         (XGBoost / LightGBM / sklearn HGB all use ~0.1 here) and let early
         stopping decide the tree count. We use the field's well-validated
         constant rather than a value tuned on our own small benchmark suite.
+
+    Oblivious-tree note: because the same feature/threshold is shared across all
+    nodes of a level, each oblivious tree carries less information than a full
+    CART tree of the same depth. This means the model may genuinely benefit from
+    more trees at a smaller step than standard GBDT. If you observe that tree
+    count consistently correlates with accuracy on diverse (e.g. OpenML)
+    datasets, try --lr 0.05 in the benchmark harness. Promote a lower default
+    only after verifying on OpenML, not on the synthetic suite.
     Override with an explicit learning_rate any time.
     """
     if early_stopping:
@@ -54,7 +62,7 @@ class _BaseBooster:
                  l2_leaf_reg=3.0, max_bins=128, subsample=1.0,
                  colsample=1.0, cat_smoothing=1.0, early_stopping_rounds=None,
                  min_child_weight=1.0, thread_count=None, random_state=None,
-                 verbose=False):
+                 verbose=False, ordered_boosting=True):
         self.iterations = int(iterations)
         self.learning_rate = learning_rate
         self.depth = int(depth)
@@ -68,6 +76,7 @@ class _BaseBooster:
         self.thread_count = thread_count
         self.random_state = random_state
         self.verbose = verbose
+        self.ordered_boosting = bool(ordered_boosting)
 
     def _alloc_hist_buffers(self, n_features, n_bins):
         """Allocate reusable histogram buffers once per fit.
@@ -180,7 +189,20 @@ class GradientBoosting(_BaseBooster):
                 self._correct_leaves(tree, X_binned, y - F)
             self.trees_.append(tree)
             self._accumulate_importance(tree)
-            F += tree.predict(X_binned)
+            if self.ordered_boosting and not getattr(self.loss_, "adjusts_leaves", False):
+                # LOO leaf correction: remove each sample's self-influence from
+                # its leaf step.  tree.values keeps normal Newton values for
+                # prediction on new data; only the training F uses the corrected
+                # update.  For OOB samples (g_i = h_i = 0 from _maybe_subsample)
+                # the correction naturally reduces to the normal leaf value.
+                leaf = tree.apply(X_binned)
+                n_lv = tree.values.shape[0]
+                leaf_G = np.bincount(leaf, weights=g, minlength=n_lv)
+                leaf_H = np.bincount(leaf, weights=h, minlength=n_lv)
+                F += -self.lr_ * (leaf_G[leaf] - g) / (
+                    np.maximum(leaf_H[leaf] - h, 0.0) + self.l2_leaf_reg)
+            else:
+                F += tree.predict(X_binned)
             self.train_history_.append(self.loss_.eval(y, F))
 
             if Fv is not None:
@@ -299,7 +321,15 @@ class MulticlassBoosting(_BaseBooster):
                                             hist_buffers=hist_buffers)
                 round_trees.append(tree)
                 self._accumulate_importance(tree)
-                F[:, k] += tree.predict(X_binned)
+                if self.ordered_boosting and tree.depth > 0:
+                    leaf = tree.apply(X_binned)
+                    n_lv = tree.values.shape[0]
+                    leaf_G = np.bincount(leaf, weights=g, minlength=n_lv)
+                    leaf_H = np.bincount(leaf, weights=h, minlength=n_lv)
+                    F[:, k] += -self.lr_ * (leaf_G[leaf] - g) / (
+                        np.maximum(leaf_H[leaf] - h, 0.0) + self.l2_leaf_reg)
+                else:
+                    F[:, k] += tree.predict(X_binned)
             # Stop only if EVERY class exhausted its splits this round; if even
             # one class is still learning, the round was productive.
             if all(t.depth == 0 for t in round_trees):

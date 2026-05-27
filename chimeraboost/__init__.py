@@ -14,14 +14,10 @@ Public API:
 from .sklearn_api import (
     ChimeraBoostRegressor,
     ChimeraBoostClassifier,
-    save_model,
-    load_model,
 )
 
 __all__ = [
     "ChimeraBoostRegressor",
     "ChimeraBoostClassifier",
-    "save_model",
-    "load_model",
 ]
 __version__ = "0.4.0"
