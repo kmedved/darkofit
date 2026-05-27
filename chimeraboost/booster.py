@@ -159,6 +159,9 @@ class GradientBoosting(_BaseBooster):
 
         self.prep_ = self._new_preprocessor()
         X_binned = self.prep_.fit_transform(X, [y], cat_features)
+        X_hist_binned = (
+            np.asfortranarray(X_binned) if self.n_threads_ > 1 else X_binned
+        )
         n_bins = self.prep_.n_bins_
         hist_buffers = self._alloc_hist_buffers(X_binned.shape[1], n_bins)
         self._importance = np.zeros(self.prep_.n_input_features_)
@@ -196,6 +199,7 @@ class GradientBoosting(_BaseBooster):
                 min_child_weight=self.min_child_weight,
                 hist_buffers=hist_buffers,
                 return_training_state=True,
+                X_hist_binned=X_hist_binned,
             )
             # A depth-0 tree found no legal split; subsequent rounds on the same
             # gradients would too, so stop rather than append empty trees.
@@ -310,6 +314,9 @@ class MulticlassBoosting(_BaseBooster):
         self.prep_ = self._new_preprocessor()
         X_binned = self.prep_.fit_transform(X, [Y[:, k] for k in range(K)],
                                             cat_features)
+        X_hist_binned = (
+            np.asfortranarray(X_binned) if self.n_threads_ > 1 else X_binned
+        )
         n_bins = self.prep_.n_bins_
         hist_buffers = self._alloc_hist_buffers(X_binned.shape[1], n_bins)
         self._importance = np.zeros(self.prep_.n_input_features_)
@@ -351,6 +358,7 @@ class MulticlassBoosting(_BaseBooster):
                     min_child_weight=self.min_child_weight,
                     hist_buffers=hist_buffers,
                     return_training_state=True,
+                    X_hist_binned=X_hist_binned,
                 )
                 round_trees.append(tree)
                 self._accumulate_importance(tree)

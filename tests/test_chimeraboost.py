@@ -314,6 +314,48 @@ def test_add_predict_matches_predict():
     assert np.array_equal(out, tree.predict(Xb))
 
 
+def test_feature_contiguous_hist_layout_matches_c_order_tree_build():
+    """The optional F-order histogram matrix must not change tree structure."""
+    import numba
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_oblivious_tree
+
+    if numba.config.NUMBA_NUM_THREADS < 2:
+        pytest.skip("requires at least two numba threads")
+
+    rng = np.random.default_rng(3)
+    X = rng.normal(size=(1000, 14))
+    y = (X[:, 0] - 0.5 * X[:, 4] + rng.normal(0, 0.5, 1000))
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = prep.fit_transform(X, [y], None)
+    Xb_hist = np.asfortranarray(Xb)
+    grad = y.mean() - y
+    hess = np.ones(len(y))
+
+    old_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(min(2, numba.config.NUMBA_NUM_THREADS))
+        base = build_oblivious_tree(
+            Xb, grad, hess, prep.n_bins_, 5, 3.0, 0.1,
+            return_training_state=True,
+        )
+        layout = build_oblivious_tree(
+            Xb, grad, hess, prep.n_bins_, 5, 3.0, 0.1,
+            return_training_state=True, X_hist_binned=Xb_hist,
+        )
+    finally:
+        numba.set_num_threads(old_threads)
+
+    base_tree, base_leaf, base_G, base_H = base
+    layout_tree, layout_leaf, layout_G, layout_H = layout
+    assert np.array_equal(base_tree.splits_feat, layout_tree.splits_feat)
+    assert np.array_equal(base_tree.splits_thr, layout_tree.splits_thr)
+    assert np.array_equal(base_tree.values, layout_tree.values)
+    assert np.array_equal(base_leaf, layout_leaf)
+    assert np.array_equal(base_G, layout_G)
+    assert np.array_equal(base_H, layout_H)
+
+
 # ---------------------------------------------------------------------------
 # sample_weight tests
 # ---------------------------------------------------------------------------

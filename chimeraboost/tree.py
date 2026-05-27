@@ -324,9 +324,12 @@ class ObliviousTree:
 def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                          max_depth, l2, lr, min_gain=1e-8, feature_mask=None,
                          min_child_weight=1.0, hist_buffers=None,
-                         return_training_state=False):
+                         return_training_state=False, X_hist_binned=None):
     """Grow one oblivious tree level by level and return an ObliviousTree.
 
+    X_hist_binned: optional feature-contiguous view/copy of X_binned used only
+    by the multithreaded histogram builder. Leaf routing and returned training
+    leaves still use X_binned, preserving row-wise locality for those paths.
     feature_mask: optional 0/1 array over features; 0 disables a feature for
     this tree (column subsampling). None means all features are eligible.
     min_child_weight: minimum hessian mass each side of a split must retain in
@@ -336,6 +339,8 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     max_bins) reused across trees to avoid per-level allocation. If None, they
     are allocated here (convenient for one-off calls and tests).
     """
+    if X_hist_binned is None:
+        X_hist_binned = X_binned
     n_features = X_binned.shape[1]
     max_bins = n_features and int(n_bins_per_feature.max())
     if feature_mask is None:
@@ -363,7 +368,9 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                 min_child_weight, n_leaves
             )
         else:
-            _build_histograms_into(X_binned, grad, hess, leaf, n_leaves, hg, hh)
+            _build_histograms_into(
+                X_hist_binned, grad, hess, leaf, n_leaves, hg, hh
+            )
             f, t, gain = _best_split(
                 hg, hh, n_bins_per_feature, l2, feature_mask,
                 min_child_weight, n_leaves
