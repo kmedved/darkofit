@@ -270,6 +270,93 @@ def test_shared_histogram_buffers_match_standalone():
     assert np.allclose(again.values, fresh.values)
 
 
+# ---------------------------------------------------------------------------
+# sample_weight tests
+# ---------------------------------------------------------------------------
+
+def test_sample_weight_uniform_equals_no_weight_rmse():
+    """sample_weight=ones must give bitwise-identical predictions to no weight
+    for RMSE: normalized ones leave grad/hess unchanged, np.average(y,w=None)==mean."""
+    X, y = load_diabetes(return_X_y=True)
+    Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.2, random_state=0)
+    w = np.ones(len(ytr))
+    m_none = ChimeraBoostRegressor(iterations=80, random_state=0).fit(Xtr, ytr)
+    m_ones = ChimeraBoostRegressor(iterations=80, random_state=0).fit(
+        Xtr, ytr, sample_weight=w
+    )
+    assert np.array_equal(m_none.predict(Xte), m_ones.predict(Xte))
+
+
+def test_sample_weight_uniform_equals_no_weight_logloss():
+    """Same exact-equality check for binary classification (Logloss)."""
+    X, y = load_breast_cancer(return_X_y=True)
+    Xtr, Xte, ytr, yte = train_test_split(
+        X, y, test_size=0.2, random_state=0, stratify=y
+    )
+    w = np.ones(len(ytr))
+    m_none = ChimeraBoostClassifier(iterations=80, random_state=0).fit(Xtr, ytr)
+    m_ones = ChimeraBoostClassifier(iterations=80, random_state=0).fit(
+        Xtr, ytr, sample_weight=w
+    )
+    assert np.array_equal(m_none.predict_proba(Xte), m_ones.predict_proba(Xte))
+
+
+def test_sample_weight_uniform_equals_no_weight_multiclass():
+    """Same exact-equality check for multiclass (softmax)."""
+    from sklearn.datasets import load_wine
+    X, y = load_wine(return_X_y=True)
+    Xtr, Xte, ytr, yte = train_test_split(
+        X, y, test_size=0.25, random_state=0, stratify=y
+    )
+    w = np.ones(len(ytr))
+    m_none = ChimeraBoostClassifier(iterations=80, random_state=0).fit(Xtr, ytr)
+    m_ones = ChimeraBoostClassifier(iterations=80, random_state=0).fit(
+        Xtr, ytr, sample_weight=w
+    )
+    assert np.array_equal(m_none.predict_proba(Xte), m_ones.predict_proba(Xte))
+
+
+def test_sample_weight_shifts_predictions():
+    """Up-weighting the high-y half of the training set should push the mean
+    prediction higher on held-out data relative to the unweighted model."""
+    rng = np.random.default_rng(42)
+    n = 2000
+    X = rng.normal(size=(n, 5))
+    y = 3.0 * X[:, 0] + rng.normal(0, 0.5, n)   # strong signal in col 0
+    Xtr, Xte, ytr, _ = train_test_split(X, y, test_size=0.3, random_state=0)
+
+    # Build weights: samples with above-median y get weight 5, others get 1.
+    w_high = np.where(ytr >= np.median(ytr), 5.0, 1.0)
+    w_low  = np.where(ytr <  np.median(ytr), 5.0, 1.0)
+
+    m_base = ChimeraBoostRegressor(iterations=150, random_state=0).fit(Xtr, ytr)
+    m_high = ChimeraBoostRegressor(iterations=150, random_state=0).fit(
+        Xtr, ytr, sample_weight=w_high
+    )
+    m_low  = ChimeraBoostRegressor(iterations=150, random_state=0).fit(
+        Xtr, ytr, sample_weight=w_low
+    )
+    mean_base = m_base.predict(Xte).mean()
+    mean_high = m_high.predict(Xte).mean()
+    mean_low  = m_low.predict(Xte).mean()
+
+    # Up-weighting high-y samples → higher mean predictions, and vice-versa.
+    assert mean_high > mean_base > mean_low
+
+
+def test_sample_weight_early_stopping_slices_correctly():
+    """When early_stopping=True, the weight array must be sliced to match the
+    training split; the fit should complete without error and stop early."""
+    X, y = load_breast_cancer(return_X_y=True)
+    rng = np.random.default_rng(7)
+    w = rng.uniform(0.5, 2.0, len(y))
+    m = ChimeraBoostClassifier(
+        iterations=500, early_stopping=True, validation_fraction=0.15,
+        early_stopping_rounds=20, random_state=0
+    ).fit(X, y, sample_weight=w)
+    assert m.best_iteration_ < 500
+
+
 def test_empty_tree_stops_boosting_early():
     """When splits are exhausted, the booster should stop rather than bank
     useless depth-0 trees until the iteration ceiling."""

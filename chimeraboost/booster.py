@@ -131,13 +131,25 @@ class GradientBoosting(_BaseBooster):
         self.loss_name = loss
         self.loss_kwargs = loss_kwargs or {}
 
-    def fit(self, X, y, cat_features=None, eval_set=None):
+    def fit(self, X, y, cat_features=None, eval_set=None, sample_weight=None):
         """Fit the additive model. Optionally pass `cat_features` (column indices
-        to target-encode) and `eval_set=(X_val, y_val)` for early stopping."""
+        to target-encode) and `eval_set=(X_val, y_val)` for early stopping.
+        `sample_weight` is a 1-D array of per-sample weights; None means uniform.
+        Weights are normalized to mean 1 internally so the gradient scale stays
+        comparable to the no-weight case."""
         X = (np.asarray(X, dtype=object) if cat_features
              else np.asarray(X, dtype=np.float64))
         y = np.asarray(y, dtype=np.float64)
         n_samples = X.shape[0]
+
+        # Normalize weights to mean=1. np.ones(n) stays np.ones(n), so
+        # sample_weight=np.ones(n) is bitwise-equivalent to sample_weight=None
+        # for all losses except MAE/Quantile (which use a different quantile
+        # algorithm when weights are present).
+        w = None
+        if sample_weight is not None:
+            w = np.asarray(sample_weight, dtype=np.float64)
+            w = w * (n_samples / w.sum())
 
         self.n_threads_ = _apply_thread_count(self.thread_count)
         self.loss_ = LOSSES[self.loss_name](**self.loss_kwargs)
@@ -159,7 +171,7 @@ class GradientBoosting(_BaseBooster):
             yv = np.asarray(yv, dtype=np.float64)
             Xv_binned = self.prep_.transform(Xv)
 
-        self.init_ = self.loss_.init(y)
+        self.init_ = self.loss_.init(y, w)
         F = np.full(n_samples, self.init_, dtype=np.float64)
         if yv is not None:
             Fv = np.full(len(yv), self.init_)
@@ -172,6 +184,9 @@ class GradientBoosting(_BaseBooster):
 
         for m in range(self.iterations):
             grad, hess = self.loss_.grad_hess(y, F)
+            if w is not None:
+                grad = grad * w
+                hess = hess * w
             g, h = self._maybe_subsample(grad, hess, rng)
             fmask = self._feature_mask(X_binned.shape[1], rng)
             tree = build_oblivious_tree(X_binned, g, h, n_bins, self.depth,
@@ -186,7 +201,7 @@ class GradientBoosting(_BaseBooster):
                     print(f"No further splits at iteration {m}; stopping.")
                 break
             if getattr(self.loss_, "adjusts_leaves", False):
-                self._correct_leaves(tree, X_binned, y - F)
+                self._correct_leaves(tree, X_binned, y - F, w)
             self.trees_.append(tree)
             self._accumulate_importance(tree)
             if self.ordered_boosting and not getattr(self.loss_, "adjusts_leaves", False):
@@ -204,11 +219,11 @@ class GradientBoosting(_BaseBooster):
                     np.maximum(leaf_H[leaf] - h, 0.0) + self.l2_leaf_reg)
             else:
                 F += tree.predict(X_binned)
-            self.train_history_.append(self.loss_.eval(y, F))
+            self.train_history_.append(self.loss_.eval(y, F, w))
 
             if Fv is not None:
                 Fv += tree.predict(Xv_binned)
-                val = self.loss_.eval(yv, Fv)
+                val = self.loss_.eval(yv, Fv)   # validation is always unweighted
                 self.valid_history_.append(val)
                 if val < best_score - 1e-9:
                     best_score, best_iter = val, m
@@ -230,15 +245,17 @@ class GradientBoosting(_BaseBooster):
         self.best_iteration_ = len(self.trees_)
         return self
 
-    def _correct_leaves(self, tree, X_binned, residuals):
+    def _correct_leaves(self, tree, X_binned, residuals, sample_weight=None):
         """Override Newton leaf values with the loss-appropriate residual
         statistic (median for MAE, alpha-quantile for Quantile). The tree
         structure was chosen by the gradient; this fixes the step size."""
         leaf = tree.apply(X_binned)
         n_leaves = tree.values.shape[0]
         for l in range(n_leaves):
-            r = residuals[leaf == l]
-            tree.values[l] = self.lr_ * self.loss_.leaf_value(r)
+            mask = leaf == l
+            r = residuals[mask]
+            w = sample_weight[mask] if sample_weight is not None else None
+            tree.values[l] = self.lr_ * self.loss_.leaf_value(r, w)
 
     def predict_raw(self, X):
         """Return raw additive scores (pre-link): the regression prediction, or
@@ -265,9 +282,10 @@ class GradientBoosting(_BaseBooster):
 class MulticlassBoosting(_BaseBooster):
     """Softmax multiclass booster: fits K trees per round (one per class)."""
 
-    def fit(self, X, y, cat_features=None, eval_set=None):
+    def fit(self, X, y, cat_features=None, eval_set=None, sample_weight=None):
         """Fit K trees per boosting round (one per class) under softmax loss.
-        Same `cat_features` / `eval_set` semantics as the scalar booster."""
+        Same `cat_features` / `eval_set` / `sample_weight` semantics as the
+        scalar booster."""
         X = (np.asarray(X, dtype=object) if cat_features
              else np.asarray(X, dtype=np.float64))
         y = np.asarray(y)
@@ -277,6 +295,11 @@ class MulticlassBoosting(_BaseBooster):
         y_idx = np.searchsorted(self.classes_, y)
         Y = np.eye(K)[y_idx]                      # one-hot (n, K)
         n_samples = X.shape[0]
+
+        w = None
+        if sample_weight is not None:
+            w = np.asarray(sample_weight, dtype=np.float64)
+            w = w * (n_samples / w.sum())
 
         self.n_threads_ = _apply_thread_count(self.thread_count)
         self.loss_ = MultiSoftmax(K)
@@ -301,7 +324,7 @@ class MulticlassBoosting(_BaseBooster):
             Yv = np.eye(K)[yv_idx]
             Xv_binned = self.prep_.transform(Xv)
 
-        self.init_ = self.loss_.init(Y)            # (K,)
+        self.init_ = self.loss_.init(Y, w)         # (K,)
         F = np.tile(self.init_, (n_samples, 1))    # (n, K)
         if Yv is not None:
             Fv = np.tile(self.init_, (len(yv_idx), 1))
@@ -314,6 +337,9 @@ class MulticlassBoosting(_BaseBooster):
 
         for m in range(self.iterations):
             grad, hess = self.loss_.grad_hess(Y, F)   # (n, K) each
+            if w is not None:
+                grad = grad * w[:, None]
+                hess = hess * w[:, None]
             fmask = self._feature_mask(X_binned.shape[1], rng)
             round_trees = []
             for k in range(K):
@@ -343,12 +369,12 @@ class MulticlassBoosting(_BaseBooster):
                           f"stopping.")
                 break
             self.trees_.append(round_trees)
-            self.train_history_.append(self.loss_.eval(Y, F))
+            self.train_history_.append(self.loss_.eval(Y, F, w))
 
             if Fv is not None:
                 for k in range(K):
                     Fv[:, k] += round_trees[k].predict(Xv_binned)
-                val = self.loss_.eval(Yv, Fv)
+                val = self.loss_.eval(Yv, Fv)   # validation is always unweighted
                 self.valid_history_.append(val)
                 if val < best_score - 1e-9:
                     best_score, best_iter = val, m

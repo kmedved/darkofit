@@ -13,6 +13,44 @@ classification it is the log-odds, turned into a probability by a sigmoid.
 import numpy as np
 
 
+# --------------------------------------------------------------------------
+# Weighted statistical helpers
+# --------------------------------------------------------------------------
+
+def _weighted_median(values, weights):
+    """Weighted nearest-rank median.
+
+    When *weights* is None this delegates to ``np.median`` so the
+    ``sample_weight=None`` code path is bitwise identical to the original.
+    """
+    if weights is None:
+        return float(np.median(values)) if values.size else 0.0
+    if not values.size:
+        return 0.0
+    order = np.argsort(values)
+    sv, sw = values[order], weights[order]
+    cumw = np.cumsum(sw)
+    idx = min(int(np.searchsorted(cumw, cumw[-1] * 0.5)), len(sv) - 1)
+    return float(sv[idx])
+
+
+def _weighted_quantile(values, weights, alpha):
+    """Weighted nearest-rank quantile at level *alpha*.
+
+    When *weights* is None this delegates to ``np.quantile`` so the
+    ``sample_weight=None`` code path is bitwise identical to the original.
+    """
+    if weights is None:
+        return float(np.quantile(values, alpha)) if values.size else 0.0
+    if not values.size:
+        return 0.0
+    order = np.argsort(values)
+    sv, sw = values[order], weights[order]
+    cumw = np.cumsum(sw)
+    idx = min(int(np.searchsorted(cumw, cumw[-1] * alpha)), len(sv) - 1)
+    return float(sv[idx])
+
+
 def _sigmoid(z):
     # Numerically stable logistic.
     out = np.empty_like(z)
@@ -30,16 +68,16 @@ class RMSE:
     is_classification = False
     adjusts_leaves = False
 
-    def init(self, y):
-        return float(np.mean(y))
+    def init(self, y, sample_weight=None):
+        return float(np.average(y, weights=sample_weight))
 
     def grad_hess(self, y, raw):
         grad = raw - y
         hess = np.ones_like(raw)
         return grad, hess
 
-    def eval(self, y, raw):
-        return float(np.sqrt(np.mean((raw - y) ** 2)))
+    def eval(self, y, raw, sample_weight=None):
+        return float(np.sqrt(np.average((raw - y) ** 2, weights=sample_weight)))
 
     def transform(self, raw):
         return raw
@@ -52,8 +90,8 @@ class Logloss:
     is_classification = True
     adjusts_leaves = False
 
-    def init(self, y):
-        p = np.clip(np.mean(y), 1e-6, 1 - 1e-6)
+    def init(self, y, sample_weight=None):
+        p = np.clip(np.average(y, weights=sample_weight), 1e-6, 1 - 1e-6)
         return float(np.log(p / (1.0 - p)))
 
     def grad_hess(self, y, raw):
@@ -62,9 +100,10 @@ class Logloss:
         hess = np.maximum(p * (1.0 - p), 1e-6)
         return grad, hess
 
-    def eval(self, y, raw):
+    def eval(self, y, raw, sample_weight=None):
         p = np.clip(_sigmoid(raw), 1e-9, 1 - 1e-9)
-        return float(-np.mean(y * np.log(p) + (1 - y) * np.log(1 - p)))
+        ce = -(y * np.log(p) + (1 - y) * np.log(1 - p))
+        return float(np.average(ce, weights=sample_weight))
 
     def transform(self, raw):
         return _sigmoid(raw)
@@ -81,19 +120,19 @@ class MAE:
     is_classification = False
     adjusts_leaves = True   # sign gradients only pick structure; set leaf = median
 
-    def leaf_value(self, residuals):
-        return float(np.median(residuals)) if residuals.size else 0.0
+    def leaf_value(self, residuals, weights=None):
+        return _weighted_median(residuals, weights)
 
-    def init(self, y):
-        return float(np.median(y))
+    def init(self, y, sample_weight=None):
+        return _weighted_median(y, sample_weight)
 
     def grad_hess(self, y, raw):
         grad = np.sign(raw - y)
         hess = np.ones_like(raw)
         return grad, hess
 
-    def eval(self, y, raw):
-        return float(np.mean(np.abs(raw - y)))
+    def eval(self, y, raw, sample_weight=None):
+        return float(np.average(np.abs(raw - y), weights=sample_weight))
 
     def transform(self, raw):
         return raw
@@ -109,11 +148,11 @@ class Quantile:
     def __init__(self, alpha=0.5):
         self.alpha = float(alpha)
 
-    def leaf_value(self, residuals):
-        return float(np.quantile(residuals, self.alpha)) if residuals.size else 0.0
+    def leaf_value(self, residuals, weights=None):
+        return _weighted_quantile(residuals, weights, self.alpha)
 
-    def init(self, y):
-        return float(np.quantile(y, self.alpha))
+    def init(self, y, sample_weight=None):
+        return _weighted_quantile(y, sample_weight, self.alpha)
 
     def grad_hess(self, y, raw):
         a = self.alpha
@@ -121,9 +160,10 @@ class Quantile:
         hess = np.ones_like(raw)
         return grad, hess
 
-    def eval(self, y, raw):
+    def eval(self, y, raw, sample_weight=None):
         r = y - raw
-        return float(np.mean(np.maximum(self.alpha * r, (self.alpha - 1.0) * r)))
+        pinball = np.maximum(self.alpha * r, (self.alpha - 1.0) * r)
+        return float(np.average(pinball, weights=sample_weight))
 
     def transform(self, raw):
         return raw
@@ -144,8 +184,8 @@ class MultiSoftmax:
     def __init__(self, n_classes):
         self.K = int(n_classes)
 
-    def init(self, Y):  # Y one-hot (n, K)
-        p = np.clip(Y.mean(axis=0), 1e-6, 1.0)
+    def init(self, Y, sample_weight=None):  # Y one-hot (n, K)
+        p = np.clip(np.average(Y, axis=0, weights=sample_weight), 1e-6, 1.0)
         return np.log(p)  # (K,)
 
     def grad_hess(self, Y, F):  # F (n, K)
@@ -154,9 +194,10 @@ class MultiSoftmax:
         hess = np.maximum(P * (1.0 - P), 1e-6)
         return grad, hess
 
-    def eval(self, Y, F):
+    def eval(self, Y, F, sample_weight=None):
         P = np.clip(_softmax(F), 1e-12, 1.0)
-        return float(-np.mean(np.sum(Y * np.log(P), axis=1)))
+        row_ce = -np.sum(Y * np.log(P), axis=1)
+        return float(np.average(row_ce, weights=sample_weight))
 
     def transform(self, F):
         return _softmax(F)
