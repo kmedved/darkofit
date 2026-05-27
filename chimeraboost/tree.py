@@ -251,6 +251,21 @@ def _leaf_values(leaf, grad, hess, n_leaves, l2, lr):
 
 
 @njit(cache=True)
+def _leaf_values_and_sums(leaf, grad, hess, n_leaves, l2, lr):
+    """Return Newton leaf values plus the leaf gradient/hessian totals."""
+    G = np.zeros(n_leaves)
+    H = np.zeros(n_leaves)
+    for i in range(leaf.shape[0]):
+        G[leaf[i]] += grad[i]
+        H[leaf[i]] += hess[i]
+    values = np.zeros(n_leaves)
+    for l in range(n_leaves):
+        if H[l] > 0.0:
+            values[l] = -lr * G[l] / (H[l] + l2)
+    return values, G, H
+
+
+@njit(cache=True)
 def _predict_tree(X_binned, splits_feat, splits_thr, values):
     """Route each row to its leaf and return the leaf value for each row."""
     leaf = _assign_leaves(X_binned, splits_feat, splits_thr)
@@ -258,6 +273,21 @@ def _predict_tree(X_binned, splits_feat, splits_thr, values):
     for i in range(leaf.shape[0]):
         out[i] = values[leaf[i]]
     return out
+
+
+@njit(cache=True)
+def _predict_tree_add(X_binned, splits_feat, splits_thr, values, out):
+    """Route each row and add the leaf value into an existing output array."""
+    n = X_binned.shape[0]
+    depth = splits_feat.shape[0]
+    for i in range(n):
+        idx = 0
+        for d in range(depth):
+            f = splits_feat[d]
+            t = splits_thr[d]
+            bit = 1 if X_binned[i, f] > t else 0
+            idx = idx * 2 + bit
+        out[i] += values[idx]
 
 
 class ObliviousTree:
@@ -283,10 +313,18 @@ class ObliviousTree:
             return np.zeros(X_binned.shape[0], dtype=np.float64)
         return _predict_tree(X_binned, self.splits_feat, self.splits_thr, self.values)
 
+    def add_predict(self, X_binned, out):
+        """Add this tree's prediction into an existing output vector."""
+        if self.depth > 0:
+            _predict_tree_add(
+                X_binned, self.splits_feat, self.splits_thr, self.values, out
+            )
+
 
 def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                          max_depth, l2, lr, min_gain=1e-8, feature_mask=None,
-                         min_child_weight=1.0, hist_buffers=None):
+                         min_child_weight=1.0, hist_buffers=None,
+                         return_training_state=False):
     """Grow one oblivious tree level by level and return an ObliviousTree.
 
     feature_mask: optional 0/1 array over features; 0 disables a feature for
@@ -340,5 +378,10 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     sf = np.array(splits_feat, dtype=np.int64)
     st = np.array(splits_thr, dtype=np.int64)
     n_leaves = 1 << len(splits_feat)
-    values = _leaf_values(leaf, grad, hess, n_leaves, l2, lr)
-    return ObliviousTree(sf, st, values, np.array(splits_gain, dtype=np.float64))
+    values, leaf_G, leaf_H = _leaf_values_and_sums(
+        leaf, grad, hess, n_leaves, l2, lr
+    )
+    tree = ObliviousTree(sf, st, values, np.array(splits_gain, dtype=np.float64))
+    if return_training_state:
+        return tree, leaf, leaf_G, leaf_H
+    return tree

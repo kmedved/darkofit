@@ -270,6 +270,50 @@ def test_shared_histogram_buffers_match_standalone():
     assert np.allclose(again.values, fresh.values)
 
 
+def test_returned_training_state_matches_tree_apply_and_bincount():
+    """The optional training state returned by the tree builder must be exactly
+    the same leaf routing and sums that callers would recompute externally."""
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_oblivious_tree
+    rng = np.random.default_rng(1)
+    X = rng.normal(size=(900, 10))
+    y = (1.5 * X[:, 0] - 0.7 * X[:, 2] + rng.normal(0, 0.4, 900))
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = prep.fit_transform(X, [y], None)
+    grad = y.mean() - y
+    hess = np.ones(len(y))
+
+    tree, leaf, leaf_G, leaf_H = build_oblivious_tree(
+        Xb, grad, hess, prep.n_bins_, 5, 3.0, 0.1,
+        return_training_state=True,
+    )
+
+    expected_leaf = tree.apply(Xb)
+    assert np.array_equal(leaf, expected_leaf)
+    assert np.array_equal(leaf_G, np.bincount(leaf, weights=grad,
+                                             minlength=len(leaf_G)))
+    assert np.array_equal(leaf_H, np.bincount(leaf, weights=hess,
+                                             minlength=len(leaf_H)))
+
+
+def test_add_predict_matches_predict():
+    """In-place tree prediction is an allocation-saving equivalent of predict."""
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_oblivious_tree
+    rng = np.random.default_rng(2)
+    X = rng.normal(size=(700, 8))
+    y = (X[:, 0] + X[:, 1] ** 2 + rng.normal(0, 0.3, 700))
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = prep.fit_transform(X, [y], None)
+    grad = y.mean() - y
+    hess = np.ones(len(y))
+    tree = build_oblivious_tree(Xb, grad, hess, prep.n_bins_, 5, 3.0, 0.1)
+
+    out = np.zeros(Xb.shape[0])
+    tree.add_predict(Xb, out)
+    assert np.array_equal(out, tree.predict(Xb))
+
+
 # ---------------------------------------------------------------------------
 # sample_weight tests
 # ---------------------------------------------------------------------------

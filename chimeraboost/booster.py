@@ -189,11 +189,14 @@ class GradientBoosting(_BaseBooster):
                 hess = hess * w
             g, h = self._maybe_subsample(grad, hess, rng)
             fmask = self._feature_mask(X_binned.shape[1], rng)
-            tree = build_oblivious_tree(X_binned, g, h, n_bins, self.depth,
-                                        self.l2_leaf_reg, self.lr_,
-                                        feature_mask=fmask,
-                                        min_child_weight=self.min_child_weight,
-                                        hist_buffers=hist_buffers)
+            tree, leaf, leaf_G, leaf_H = build_oblivious_tree(
+                X_binned, g, h, n_bins, self.depth,
+                self.l2_leaf_reg, self.lr_,
+                feature_mask=fmask,
+                min_child_weight=self.min_child_weight,
+                hist_buffers=hist_buffers,
+                return_training_state=True,
+            )
             # A depth-0 tree found no legal split; subsequent rounds on the same
             # gradients would too, so stop rather than append empty trees.
             if tree.depth == 0:
@@ -211,18 +214,14 @@ class GradientBoosting(_BaseBooster):
                 # tree.values keeps the standard Newton values for inference;
                 # only the training F uses this corrected update. Subsampled-out
                 # rows (g=h=0) fall back to the standard leaf value.
-                leaf = tree.apply(X_binned)
-                n_lv = tree.values.shape[0]
-                leaf_G = np.bincount(leaf, weights=g, minlength=n_lv)
-                leaf_H = np.bincount(leaf, weights=h, minlength=n_lv)
                 F += -self.lr_ * (leaf_G[leaf] - g) / (
                     np.maximum(leaf_H[leaf] - h, 0.0) + self.l2_leaf_reg)
             else:
-                F += tree.predict(X_binned)
+                tree.add_predict(X_binned, F)
             self.train_history_.append(self.loss_.eval(y, F, w))
 
             if Fv is not None:
-                Fv += tree.predict(Xv_binned)
+                tree.add_predict(Xv_binned, Fv)
                 val = self.loss_.eval(yv, Fv)   # validation is always unweighted
                 self.valid_history_.append(val)
                 if val < best_score - 1e-9:
@@ -265,7 +264,7 @@ class GradientBoosting(_BaseBooster):
         X_binned = self.prep_.transform(X)
         F = np.full(X_binned.shape[0], self.init_, dtype=np.float64)
         for tree in self.trees_:
-            F += tree.predict(X_binned)
+            tree.add_predict(X_binned, F)
         return F
 
     def staged_predict_raw(self, X):
@@ -275,7 +274,7 @@ class GradientBoosting(_BaseBooster):
         X_binned = self.prep_.transform(X)
         F = np.full(X_binned.shape[0], self.init_, dtype=np.float64)
         for tree in self.trees_:
-            F += tree.predict(X_binned)
+            tree.add_predict(X_binned, F)
             yield F.copy()
 
 
@@ -345,22 +344,21 @@ class MulticlassBoosting(_BaseBooster):
             for k in range(K):
                 g, h = self._maybe_subsample(np.ascontiguousarray(grad[:, k]),
                                              np.ascontiguousarray(hess[:, k]), rng)
-                tree = build_oblivious_tree(X_binned, g, h, n_bins, self.depth,
-                                            self.l2_leaf_reg, self.lr_,
-                                            feature_mask=fmask,
-                                            min_child_weight=self.min_child_weight,
-                                            hist_buffers=hist_buffers)
+                tree, leaf, leaf_G, leaf_H = build_oblivious_tree(
+                    X_binned, g, h, n_bins, self.depth,
+                    self.l2_leaf_reg, self.lr_,
+                    feature_mask=fmask,
+                    min_child_weight=self.min_child_weight,
+                    hist_buffers=hist_buffers,
+                    return_training_state=True,
+                )
                 round_trees.append(tree)
                 self._accumulate_importance(tree)
                 if self.ordered_boosting and tree.depth > 0:
-                    leaf = tree.apply(X_binned)
-                    n_lv = tree.values.shape[0]
-                    leaf_G = np.bincount(leaf, weights=g, minlength=n_lv)
-                    leaf_H = np.bincount(leaf, weights=h, minlength=n_lv)
                     F[:, k] += -self.lr_ * (leaf_G[leaf] - g) / (
                         np.maximum(leaf_H[leaf] - h, 0.0) + self.l2_leaf_reg)
                 else:
-                    F[:, k] += tree.predict(X_binned)
+                    tree.add_predict(X_binned, F[:, k])
             # Stop only if EVERY class exhausted its splits this round; if even
             # one class is still learning, the round was productive.
             if all(t.depth == 0 for t in round_trees):
@@ -373,7 +371,7 @@ class MulticlassBoosting(_BaseBooster):
 
             if Fv is not None:
                 for k in range(K):
-                    Fv[:, k] += round_trees[k].predict(Xv_binned)
+                    round_trees[k].add_predict(Xv_binned, Fv[:, k])
                 val = self.loss_.eval(Yv, Fv)   # validation is always unweighted
                 self.valid_history_.append(val)
                 if val < best_score - 1e-9:
@@ -404,5 +402,5 @@ class MulticlassBoosting(_BaseBooster):
         F = np.tile(self.init_, (X_binned.shape[0], 1))
         for round_trees in self.trees_:
             for k in range(self.n_classes_):
-                F[:, k] += round_trees[k].predict(X_binned)
+                round_trees[k].add_predict(X_binned, F[:, k])
         return F
