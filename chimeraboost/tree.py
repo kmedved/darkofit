@@ -14,7 +14,7 @@ XGBoost-style gain over all current leaves.
 """
 
 import numpy as np
-from numba import njit, prange
+from numba import get_num_threads, njit, prange
 
 
 @njit(cache=True, parallel=True)
@@ -42,6 +42,31 @@ def _build_histograms_into(X_binned, grad, hess, leaf, n_leaves, hg, hh):
             hh[f, l, b] += hess[i]
 
 
+@njit(cache=True)
+def _build_histograms_into_serial(X_binned, grad, hess, leaf, n_leaves, hg, hh):
+    """Single-thread histogram fill with row-contiguous feature access.
+
+    For each histogram cell, rows are accumulated in the same increasing-index
+    order as the feature-parallel kernel, preserving floating-point results.
+    """
+    n_samples, n_features = X_binned.shape
+    max_bins = hg.shape[2]
+    for f in range(n_features):
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+
+    for i in range(n_samples):
+        l = leaf[i]
+        gi = grad[i]
+        hi = hess[i]
+        for f in range(n_features):
+            b = X_binned[i, f]
+            hg[f, l, b] += gi
+            hh[f, l, b] += hi
+
+
 @njit(cache=True, parallel=True)
 def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
                 n_leaves):
@@ -54,11 +79,9 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
     same way in every current leaf. Gain is summed across leaves. Features with
     feat_mask[f] == 0 are skipped (column subsampling).
     
-    Gain Masking: A split is only evaluated for a specific leaf if it keeps
-    at least `min_child_weight` hessian mass on both sides locally. Leaves
-    failing this constraint simply contribute 0.0 to the shared split's gain,
-    preventing noise from driving the choice while allowing healthy leaves to
-    continue pulling the tree deeper.
+    Min-child-weight legality: because an oblivious split is applied to every
+    active leaf, a threshold is legal only if it leaves at least
+    `min_child_weight` hessian mass on both sides of every non-empty leaf.
     """
     n_features = hg.shape[0]
     max_bins = hg.shape[2]
@@ -84,7 +107,8 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
         # Threshold t means "left = bins [0..t]". Last bin can't be a threshold.
         for t in range(nb - 1):
             gain = 0.0
-            any_legal = False
+            legal = True
+            any_nonempty = False
             
             for l in range(n_leaves):
                 # Pass 1: Advance the running prefix sums for every leaf regardless
@@ -93,21 +117,20 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
                 HL[l] += hh[f, l, t]
                 
                 if Ht[l] > 0.0:
+                    any_nonempty = True
                     hl = HL[l]
                     hr = Ht[l] - hl
-                    # Pass 2 (Gain Masking): A leaf only contributes to the split's 
-                    # total gain if it satisfies the min_child_weight constraint locally.
-                    if hl >= min_child_weight and hr >= min_child_weight:
-                        any_legal = True
-                        gl = GL[l]
-                        gr = Gt[l] - gl
-                        gain += (
-                            gl * gl / (hl + l2)
-                            + gr * gr / (hr + l2)
-                            - Gt[l] * Gt[l] / (Ht[l] + l2)
-                        )
+                    if hl < min_child_weight or hr < min_child_weight:
+                        legal = False
+                    gl = GL[l]
+                    gr = Gt[l] - gl
+                    gain += (
+                        gl * gl / (hl + l2)
+                        + gr * gr / (hr + l2)
+                        - Gt[l] * Gt[l] / (Ht[l] + l2)
+                    )
             
-            if any_legal and gain > best_g:
+            if legal and any_nonempty and gain > best_g:
                 best_g = gain
                 best_t = t
                 
@@ -121,6 +144,70 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
             best_gain = feat_gain[f]
             best_f = f
     return best_f, feat_thr[best_f], best_gain
+
+
+@njit(cache=True)
+def _best_split_serial(hg, hh, n_bins_per_feature, l2, feat_mask,
+                       min_child_weight, n_leaves):
+    """Single-thread split search without per-feature temporary allocations."""
+    n_features = hg.shape[0]
+    Gt = np.empty(n_leaves)
+    Ht = np.empty(n_leaves)
+    GL = np.empty(n_leaves)
+    HL = np.empty(n_leaves)
+
+    best_f = 0
+    best_t = 0
+    best_gain = -np.inf
+
+    for f in range(n_features):
+        if feat_mask[f] == 0:
+            continue
+        nb = n_bins_per_feature[f]
+        for l in range(n_leaves):
+            gt = 0.0
+            ht = 0.0
+            for b in range(nb):
+                gt += hg[f, l, b]
+                ht += hh[f, l, b]
+            Gt[l] = gt
+            Ht[l] = ht
+            GL[l] = 0.0
+            HL[l] = 0.0
+
+        feat_best_gain = -np.inf
+        feat_best_t = -1
+        for t in range(nb - 1):
+            gain = 0.0
+            legal = True
+            any_nonempty = False
+            for l in range(n_leaves):
+                GL[l] += hg[f, l, t]
+                HL[l] += hh[f, l, t]
+
+                if Ht[l] > 0.0:
+                    any_nonempty = True
+                    hl = HL[l]
+                    hr = Ht[l] - hl
+                    if hl < min_child_weight or hr < min_child_weight:
+                        legal = False
+                    gl = GL[l]
+                    gr = Gt[l] - gl
+                    gain += (
+                        gl * gl / (hl + l2)
+                        + gr * gr / (hr + l2)
+                        - Gt[l] * Gt[l] / (Ht[l] + l2)
+                    )
+            if legal and any_nonempty and gain > feat_best_gain:
+                feat_best_gain = gain
+                feat_best_t = t
+
+        if feat_best_gain > best_gain:
+            best_gain = feat_best_gain
+            best_f = f
+            best_t = feat_best_t
+
+    return best_f, best_t, best_gain
 
 
 @njit(cache=True)
@@ -138,6 +225,14 @@ def _assign_leaves(X_binned, splits_feat, splits_thr):
             idx = idx * 2 + bit
         leaf[i] = idx
     return leaf
+
+
+@njit(cache=True)
+def _update_leaves_with_split(X_binned, leaf, split_feat, split_thr):
+    """Append one split bit to existing leaf ids in place."""
+    for i in range(leaf.shape[0]):
+        bit = 1 if X_binned[i, split_feat] > split_thr else 0
+        leaf[i] = leaf[i] * 2 + bit
 
 
 @njit(cache=True)
@@ -217,20 +312,30 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     splits_thr = []
     splits_gain = []
     leaf = np.zeros(X_binned.shape[0], dtype=np.int64)
+    use_serial_kernels = get_num_threads() == 1
 
     for d in range(max_depth):
         n_leaves = 1 << d
-        _build_histograms_into(X_binned, grad, hess, leaf, n_leaves, hg, hh)
-        f, t, gain = _best_split(hg, hh, n_bins_per_feature, l2, feature_mask,
-                                 min_child_weight, n_leaves)
+        if use_serial_kernels:
+            _build_histograms_into_serial(
+                X_binned, grad, hess, leaf, n_leaves, hg, hh
+            )
+            f, t, gain = _best_split_serial(
+                hg, hh, n_bins_per_feature, l2, feature_mask,
+                min_child_weight, n_leaves
+            )
+        else:
+            _build_histograms_into(X_binned, grad, hess, leaf, n_leaves, hg, hh)
+            f, t, gain = _best_split(
+                hg, hh, n_bins_per_feature, l2, feature_mask,
+                min_child_weight, n_leaves
+            )
         if gain <= min_gain or t < 0:
             break
         splits_feat.append(f)
         splits_thr.append(t)
         splits_gain.append(gain)
-        sf = np.array(splits_feat, dtype=np.int64)
-        st = np.array(splits_thr, dtype=np.int64)
-        leaf = _assign_leaves(X_binned, sf, st)
+        _update_leaves_with_split(X_binned, leaf, f, t)
 
     sf = np.array(splits_feat, dtype=np.int64)
     st = np.array(splits_thr, dtype=np.int64)
