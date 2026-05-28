@@ -229,9 +229,10 @@ def _add_openml_datasets():
 
 
 # --------------------------------------------------------------------------
-# Model runners. Each returns (score, fit_seconds). Higher score = better,
-# so regression returns NEGATIVE rmse. Returns None if the model can't run
-# the task (e.g. competitor without native categorical support we skip).
+# Model runners return (score, fit_seconds, best_iteration), with an optional
+# fourth boost_seconds value for ChimeraBoost's post-preprocessing loop. Higher
+# score = better, so regression returns NEGATIVE rmse. Returns None if the
+# model can't run the task (e.g. competitor without native categoricals).
 # --------------------------------------------------------------------------
 def _score(task, y_true, model, X_test, predict_proba=None):
     if task == "regression":
@@ -277,7 +278,9 @@ def _run_chimera(task, Xtr, ytr, Xte, yte, cat, threads, lr=None,
             learning_rate=lr, depth=depth, ordered_boosting=ordered_boosting,
             thread_count=threads, random_state=0)
     m.fit(Xf, yf, cat_features=cat, eval_set=(Xv, yv))
-    return _score(task, yte, m, Xte), time.time() - t, m.best_iteration_
+    fit_seconds = time.time() - t
+    boost_seconds = getattr(m.model_, "fit_time_", None)
+    return _score(task, yte, m, Xte), fit_seconds, m.best_iteration_, boost_seconds
 
 
 def _run_sklearn(task, Xtr, ytr, Xte, yte, cat, threads):
@@ -480,6 +483,8 @@ def main():
 
         results = {r: [] for r in active_runners}
         times = {r: [] for r in active_runners}
+        boost_times = {r: [] for r in active_runners}
+        prep_times = {r: [] for r in active_runners}
         iters = {r: [] for r in active_runners}
         for s in range(args.seeds):
             rng = np.random.default_rng(1000 + s)
@@ -491,9 +496,12 @@ def main():
             for rname, runner in active_runners.items():
                 out = runner(task, Xtr, ytr, Xte, yte, cat, args.threads)
                 if out is not None:
-                    score, secs, best_it = out
+                    score, secs, best_it = out[:3]
                     results[rname].append(score)
                     times[rname].append(secs)
+                    if len(out) > 3 and out[3] is not None:
+                        boost_times[rname].append(out[3])
+                        prep_times[rname].append(max(secs - out[3], 0.0))
                     if best_it is not None:
                         iters[rname].append(best_it)
 
@@ -506,9 +514,15 @@ def main():
             disp = (-sc if task == "regression" else sc)
             it_str = (f"  trees~{int(np.mean(iters[rname]))}"
                       if iters[rname] else "")
+            timing_str = ""
+            if boost_times[rname]:
+                bt = np.array(boost_times[rname])
+                prep = np.array(prep_times[rname])
+                timing_str = (f"  boost {bt.mean():6.2f}s"
+                              f"  prep+setup {prep.mean():6.2f}s")
             star = " <-- ours" if rname == "ChimeraBoost" else ""
             print(f"  {rname:14s} {disp.mean():8.4f} +/- {disp.std():.4f}"
-                  f"   fit {tm.mean():6.2f}s{it_str}{star}")
+                  f"   fit {tm.mean():6.2f}s{timing_str}{it_str}{star}")
 
         # record relative gaps for the summary
         if results["ChimeraBoost"]:
