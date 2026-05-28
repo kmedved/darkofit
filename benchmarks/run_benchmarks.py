@@ -473,6 +473,7 @@ def main():
     # accumulate per-competitor relative gaps + speed ratios across datasets
     gap_acc = {r: [] for r in active_runners if r != "ChimeraBoost"}
     speed_acc = {r: [] for r in active_runners if r != "ChimeraBoost"}
+    paired_speed_acc = {r: [] for r in active_runners if r != "ChimeraBoost"}
 
     for ds_name, builder in DATASETS.items():
         _, _, _, task = builder(args.scale, np.random.default_rng(0))
@@ -524,8 +525,19 @@ def main():
             print(f"  {rname:14s} {disp.mean():8.4f} +/- {disp.std():.4f}"
                   f"   fit {tm.mean():6.2f}s{timing_str}{it_str}{star}")
 
+        if "ChimeraBoost" in results and results["ChimeraBoost"]:
+            our_times = np.array(times["ChimeraBoost"])
+            for rname in gap_acc:
+                if len(times[rname]) != len(our_times) or not times[rname]:
+                    continue
+                ratios = np.array(times[rname]) / np.maximum(our_times, 1e-9)
+                paired_speed_acc[rname].extend(ratios.tolist())
+                q25, q50, q75 = np.percentile(ratios, [25, 50, 75])
+                print(f"  paired speed vs {rname:12s}"
+                      f" median x{q50:.2f}  IQR {q25:.2f}-{q75:.2f}")
+
         # record relative gaps for the summary
-        if results["ChimeraBoost"]:
+        if "ChimeraBoost" in results and results["ChimeraBoost"]:
             our_score = np.mean(results["ChimeraBoost"])
             our_time = np.mean(times["ChimeraBoost"])
             for rname in gap_acc:
@@ -545,11 +557,17 @@ def main():
             continue
         g = np.array(gap_acc[rname])
         sp = np.array(speed_acc[rname])
+        paired_sp = np.array(paired_speed_acc[rname])
         # speed ratio >1 means ChimeraBoost is faster
         wins = int(np.sum(g > 0))
         verdict = _verdict(rname, g.mean())
-        print(f"  vs {rname:12s}  F1 macro {g.mean():+6.2f}% "
-              f"(wins {wins}/{len(g)})   speed x{sp.mean():.2f}   -> {verdict}")
+        if paired_sp.size:
+            q25, q50, q75 = np.percentile(paired_sp, [25, 50, 75])
+            speed_text = f"speed median x{q50:.2f} (IQR {q25:.2f}-{q75:.2f})"
+        else:
+            speed_text = f"speed x{sp.mean():.2f}"
+        print(f"  vs {rname:12s}  score gap {g.mean():+6.2f}% "
+              f"(wins {wins}/{len(g)})   {speed_text}   -> {verdict}")
     print()
 
 
