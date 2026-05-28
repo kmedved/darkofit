@@ -9,6 +9,30 @@ from sklearn.metrics import roc_auc_score, mean_squared_error
 from chimeraboost import ChimeraBoostRegressor, ChimeraBoostClassifier
 
 
+def test_binner_uses_smallest_safe_unsigned_dtype():
+    from chimeraboost.binning import Binner
+
+    X = np.arange(300.0)[:, None]
+    X[::17, 0] = np.nan
+
+    for max_bins, expected_dtype in [
+        (128, np.uint8),
+        (254, np.uint8),
+        (255, np.uint8),
+        (256, np.uint16),
+    ]:
+        binner = Binner(max_bins=max_bins).fit(X)
+        X_binned = binner.transform(X)
+
+        assert X_binned.dtype == np.dtype(expected_dtype)
+        assert int(X_binned.max()) < int(binner.n_bins_.max())
+        assert np.all(X_binned[~np.isfinite(X[:, 0]), 0] == binner.n_bins_[0] - 1)
+
+    low_cardinality = np.array([[0.0], [1.0], [2.0], [np.nan]])
+    X_binned = Binner(max_bins=512).fit_transform(low_cardinality)
+    assert X_binned.dtype == np.dtype(np.uint8)
+
+
 def test_regressor_beats_mean_baseline():
     X, y = load_diabetes(return_X_y=True)
     Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.2, random_state=0)
