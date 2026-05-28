@@ -43,29 +43,38 @@ from chimeraboost import ChimeraBoostRegressor, ChimeraBoostClassifier
 
 
 # --------------------------------------------------------------------------
-# Optional competitors: detected once, skipped silently if not installed.
+# Optional competitors: detected lazily, skipped silently if not installed.
+# Importing native OpenMP competitors before Numba initializes its thread pool
+# can segfault at interpreter shutdown on some macOS environments, so keep this
+# lazy and run ChimeraBoost warmup before native competitor imports.
 # --------------------------------------------------------------------------
-def _detect():
-    have = {}
-    try:
-        import catboost  # noqa
-        have["catboost"] = True
-    except Exception:
-        have["catboost"] = False
-    try:
-        import xgboost  # noqa
-        have["xgboost"] = True
-    except Exception:
-        have["xgboost"] = False
-    try:
-        import lightgbm  # noqa
-        have["lightgbm"] = True
-    except Exception:
-        have["lightgbm"] = False
-    return have
+_OPTIONAL_IMPORTS = {
+    "catboost": "catboost",
+    "xgboost": "xgboost",
+    "lightgbm": "lightgbm",
+}
+HAVE = {}
 
 
-HAVE = _detect()
+def _detect(names=None):
+    names = list(_OPTIONAL_IMPORTS) if names is None else list(names)
+    try:
+        import importlib
+    except Exception:
+        return HAVE
+    for name in names:
+        if name in HAVE:
+            continue
+        try:
+            importlib.import_module(_OPTIONAL_IMPORTS[name])
+            HAVE[name] = True
+        except Exception:
+            HAVE[name] = False
+    return HAVE
+
+
+def _has_competitor(name):
+    return _detect([name]).get(name, False)
 
 
 # --------------------------------------------------------------------------
@@ -316,7 +325,7 @@ def _run_sklearn(task, Xtr, ytr, Xte, yte, cat, threads):
 
 
 def _run_catboost(task, Xtr, ytr, Xte, yte, cat, threads):
-    if not HAVE["catboost"]:
+    if not _has_competitor("catboost"):
         return None
     from catboost import CatBoostRegressor, CatBoostClassifier
     Xf, Xv, yf, yv = _val_split(Xtr, ytr, task, 0)
@@ -330,7 +339,7 @@ def _run_catboost(task, Xtr, ytr, Xte, yte, cat, threads):
 
 
 def _run_xgboost(task, Xtr, ytr, Xte, yte, cat, threads):
-    if not HAVE["xgboost"] or cat is not None:
+    if cat is not None or not _has_competitor("xgboost"):
         return None
     import xgboost as xgb
     Xf, Xv, yf, yv = _val_split(Xtr, ytr, task, 0)
@@ -345,7 +354,7 @@ def _run_xgboost(task, Xtr, ytr, Xte, yte, cat, threads):
 
 
 def _run_lightgbm(task, Xtr, ytr, Xte, yte, cat, threads):
-    if not HAVE["lightgbm"] or cat is not None:
+    if cat is not None or not _has_competitor("lightgbm"):
         return None
     import lightgbm as lgb
     Xf, Xv, yf, yv = _val_split(Xtr, ytr, task, 0)
@@ -365,6 +374,12 @@ RUNNERS = {
     "CatBoost": _run_catboost,
     "XGBoost": _run_xgboost,
     "LightGBM": _run_lightgbm,
+}
+
+_RUNNER_TO_OPTIONAL = {
+    "CatBoost": "catboost",
+    "XGBoost": "xgboost",
+    "LightGBM": "lightgbm",
 }
 
 
@@ -456,8 +471,14 @@ def main():
         print("Warming up ChimeraBoost Numba kernels...")
         _warmup_chimera(args.threads)
 
+    optional_names = [
+        _RUNNER_TO_OPTIONAL[r] for r in active_runners
+        if r in _RUNNER_TO_OPTIONAL
+    ]
+    detected = _detect(optional_names)
+    detected_names = [name for name in optional_names if detected.get(name, False)]
     print("Detected competitors:",
-          ", ".join(k for k, v in HAVE.items() if v) or "none (sklearn only)")
+          ", ".join(detected_names) if detected_names else "none (sklearn only)")
     print(f"scale={args.scale}  seeds={args.seeds}  "
           f"threads={args.threads or 'all'}  "
           f"early stopping: max_iter={MAX_ITERS}, patience={PATIENCE}"

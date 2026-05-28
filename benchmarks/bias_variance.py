@@ -213,7 +213,7 @@ def main():
     if unknown:
         ap.error(f"unknown datasets: {unknown}\navailable: {list(B.DATASETS)}")
 
-    have_cb = args.catboost and B.HAVE.get("catboost", False)
+    have_cb = args.catboost and B._has_competitor("catboost")
     if not have_cb:
         print("NOTE: CatBoost not available -- reporting ChimeraBoost train/test "
               "gap only (no comparison verdict).\n")

@@ -112,10 +112,11 @@ def main():
     if unknown:
         ap.error(f"unknown datasets: {unknown}\navailable: {list(B.DATASETS)}")
 
-    have_cb = args.catboost and B.HAVE.get("catboost", False)
     if not args.no_warmup:
         print("Warming up ChimeraBoost Numba kernels...")
         B._warmup_chimera(args.threads)
+
+    have_cb = args.catboost and B._has_competitor("catboost")
 
     print(f"seeds={args.seeds}  threads={args.threads or 'all'}  "
           f"max_iter={B.MAX_ITERS}  patience={B.PATIENCE}\n"
