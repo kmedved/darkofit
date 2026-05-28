@@ -1,17 +1,12 @@
-"""Generate the 6 benchmark summary tables as PNG images.
+"""Generate the benchmark summary table as a PNG image.
 
-Reads a JSON file produced by `run_benchmarks.py --save` (the sidecar to the
-.txt log) and writes 6 PNGs into `benchmarks/results/figures/`:
+Reads a JSON file produced by `run_benchmarks.py --save` and writes a single
+`summary.png` into `images/`. The table has one row per model and six metric
+columns: RMSE %, Binary F1 %, Binary log loss %, Multiclass F1 %, Multiclass
+log loss %, and fit-time × slowdown vs fastest.
 
-  by_task_quality.png         by_task_speed.png
-  by_categorical_quality.png  by_categorical_speed.png
-  by_size_quality.png         by_size_speed.png
-
-Cells are "% relative to best" averaged across datasets in the bin. For each
-metric, the convention is: 100% = best model, lower = worse. For "higher is
-better" metrics (F1 macro), pct = ours / best * 100. For "lower is better"
-metrics (RMSE, log loss, fit time), pct = best / ours * 100. Cells are
-color-graded (green = good, red = bad), best per column shown in bold.
+For "% vs best" cells: 100% = best model, lower = worse. For the fit-time
+cell: 1× = fastest, higher = slower (log-color scale).
 
 Run:
     python benchmarks/make_tables.py benchmarks/results/<stamp>.json
@@ -27,16 +22,6 @@ import matplotlib.patches as mpatches
 
 
 MODEL_ORDER = ["ChimeraBoost", "CatBoost", "sklearn_HGB", "XGBoost", "LightGBM"]
-SMALL_THRESHOLD = 3000     # < SMALL is "small"
-LARGE_THRESHOLD = 20000    # >= LARGE is "large"; in-between is "medium"
-
-
-def size_bucket(n_train):
-    if n_train < SMALL_THRESHOLD:
-        return "small"
-    if n_train < LARGE_THRESHOLD:
-        return "medium"
-    return "large"
 
 
 def aggregate_metric(records, metric_key):
@@ -182,27 +167,25 @@ def render_table(data, row_labels, col_labels, col_groups, title, out_path,
         ax.text(fig_w / 2, 0.35, title, ha="center", va="center",
                 fontsize=13, fontweight="bold", color="#222")
 
-    # Absolute color scale (NOT per-column): every cell is graded on the same
-    # axis so different metrics are comparable.
-    #
-    # kind='pct'   : 60-100% linear, 100% green, 60% red. (quality)
-    # kind='speed' : 1x-10x log2, 1x green, 10x+ red. (fit-time multiple)
-    def cell_color(val, col_kind):
+    # Per-ROW color scale: each model's row is colored relative to its own
+    # best and worst cell. A cell's "goodness" is the % for pct columns and
+    # an inverse-log mapping for speed columns (1x = 100, 10x = 0). The row's
+    # max-goodness cell is the greenest; the min-goodness cell the reddest.
+    # This makes "what is this model strong/weak at?" jump out at a glance.
+    # Comparing colors ACROSS rows is not meaningful under this scheme.
+    import math
+
+    def _goodness(val, col_kind):
         if val is None:
-            return "#e8e8e8"
+            return None
         if col_kind == "speed":
-            # log2: 1x -> 0, 2x -> 1, 4x -> 2, 8x -> 3, 10x -> 3.32 ~ ceiling.
-            import math
+            # 1x -> 100, 10x -> 0, log2-spaced, clamped.
             norm = math.log2(max(val, 1.0)) / math.log2(10.0)
-            norm = max(0.0, min(1.0, norm))
-            # FLIP: 0 (1x) = green, 1 (10x+) = red.
-            norm = 1.0 - norm
-        else:
-            SCALE_FLOOR = 60.0
-            SCALE_CEIL = 100.0
-            norm = (val - SCALE_FLOOR) / (SCALE_CEIL - SCALE_FLOOR)
-            norm = max(0.0, min(1.0, norm))
-        # Smooth red->amber->green (norm=0 red, 1 green).
+            return 100.0 * (1.0 - max(0.0, min(1.0, norm)))
+        return float(val)   # already 0-100 for pct
+
+    def _grad_color(norm):
+        # Smooth red -> amber -> green; norm in [0, 1] (0 red, 1 green).
         if norm < 0.5:
             t = norm / 0.5
             r, g, b = 1.0, 0.65 * t + 0.35, 0.35 + 0.1 * t
@@ -213,10 +196,26 @@ def render_table(data, row_labels, col_labels, col_groups, title, out_path,
             b = 0.45 - 0.05 * t
         # Soften (mix with white) so text reads well
         mix = 0.45
-        r = r * (1 - mix) + 1.0 * mix
-        g = g * (1 - mix) + 1.0 * mix
-        b = b * (1 - mix) + 1.0 * mix
-        return (r, g, b)
+        return (r * (1 - mix) + mix, g * (1 - mix) + mix, b * (1 - mix) + mix)
+
+    def cell_color(val, col_kind, row_min, row_max):
+        if val is None:
+            return "#e8e8e8"
+        g = _goodness(val, col_kind)
+        if row_max - row_min < 1e-6:
+            return _grad_color(0.5)  # row is flat -> neutral
+        norm = (g - row_min) / (row_max - row_min)
+        return _grad_color(max(0.0, min(1.0, norm)))
+
+    # Precompute per-row goodness min/max so cell_color can normalize.
+    row_min_max = []
+    for r in range(n_rows):
+        goods = [_goodness(data[r][c], col_kinds[c]) for c in range(n_cols)]
+        goods = [g for g in goods if g is not None]
+        if not goods:
+            row_min_max.append((0.0, 0.0))
+        else:
+            row_min_max.append((min(goods), max(goods)))
 
     # Per-column best is still tracked, but only to bold the winning cell;
     # color shading no longer depends on it. For speed, "best" = lowest.
@@ -281,9 +280,10 @@ def render_table(data, row_labels, col_labels, col_groups, title, out_path,
                 fontweight="bold" if is_us else "normal")
         # Data cells
         x = label_w
+        row_min, row_max = row_min_max[r]
         for c in range(n_cols):
             val = data[r][c]
-            color = cell_color(val, col_kinds[c])
+            color = cell_color(val, col_kinds[c], row_min, row_max)
             rect = mpatches.Rectangle((x, y), cell_w, cell_h,
                                       linewidth=0, facecolor=color)
             ax.add_patch(rect)
@@ -326,197 +326,17 @@ def main():
     out_dir = os.path.abspath(out_dir)
     os.makedirs(out_dir, exist_ok=True)
 
-    # Bucket datasets by each axis.
-    by_task = defaultdict(list)
-    by_cats = defaultdict(list)
-    by_size = defaultdict(list)
-    for ds, meta in datasets.items():
-        by_task[meta["task"]].append(ds)
-        by_cats["with categoricals" if meta["has_cats"] else "no categoricals"].append(ds)
-        by_size[size_bucket(meta["n_train"])].append(ds)
-
     # Pre-aggregate per-(dataset, model) for each metric.
     f1 = aggregate_metric(records, "f1_macro")
     ll = aggregate_metric(records, "log_loss")
     rmse = aggregate_metric(records, "rmse")
     speed = aggregate_speed(records)
 
-    models = [m for m in MODEL_ORDER]
-    n_models = len(models)
-
-    def fill_row(d):
-        """Map a {model: pct} dict to a row in MODEL_ORDER, missing -> None."""
-        return [d.get(m) for m in models]
-
-    # ---- helper: build classification + regression quality block for a bin
-    def quality_block_for(bin_datasets):
-        """Returns three column dicts (RMSE%, F1%, LL%) for this bin."""
-        reg_ds = [d for d in bin_datasets if datasets[d]["task"] == "regression"]
-        cls_ds = [d for d in bin_datasets if datasets[d]["task"] != "regression"]
-        rmse_pct = pct_vs_best(rmse, reg_ds, lower_is_better=True) if reg_ds else {}
-        f1_pct = pct_vs_best(f1, cls_ds, lower_is_better=False) if cls_ds else {}
-        ll_pct = pct_vs_best(ll, cls_ds, lower_is_better=True) if cls_ds else {}
-        return rmse_pct, f1_pct, ll_pct
-
-    def speed_for(bin_datasets):
-        return multiple_vs_best(speed, bin_datasets)
+    models = list(MODEL_ORDER)
 
     # ============================================================
-    # Table 1: Quality by Task Type
-    # ============================================================
-    reg_ds = by_task.get("regression", [])
-    bin_ds = by_task.get("binary", [])
-    mul_ds = by_task.get("multiclass", [])
-    cols = []
-    col_labels = []
-    col_groups = []
-    if reg_ds:
-        cols.append(pct_vs_best(rmse, reg_ds, lower_is_better=True))
-        col_labels.append("RMSE")
-        col_groups.append((f"Regression\n({len(reg_ds)} datasets)", 1))
-    if bin_ds:
-        cols.append(pct_vs_best(f1, bin_ds, lower_is_better=False))
-        cols.append(pct_vs_best(ll, bin_ds, lower_is_better=True))
-        col_labels.extend(["F1 macro", "Log loss"])
-        col_groups.append((f"Binary\n({len(bin_ds)} datasets)", 2))
-    if mul_ds:
-        cols.append(pct_vs_best(f1, mul_ds, lower_is_better=False))
-        cols.append(pct_vs_best(ll, mul_ds, lower_is_better=True))
-        col_labels.extend(["F1 macro", "Log loss"])
-        col_groups.append((f"Multiclass\n({len(mul_ds)} datasets)", 2))
-    table = [[c.get(m) for c in cols] for m in models]
-    render_table(
-        table, models, col_labels, col_groups,
-        "Quality by task type  (avg % relative to best model)",
-        os.path.join(out_dir, "by_task_quality.png"),
-    )
-
-    # ============================================================
-    # Table 2: Speed by Task Type
-    # ============================================================
-    cols = []
-    col_labels = []
-    col_groups = []
-    for label, ds_list in [("Regression", reg_ds), ("Binary", bin_ds),
-                            ("Multiclass", mul_ds)]:
-        if not ds_list:
-            continue
-        cols.append(speed_for(ds_list))
-        col_labels.append("fit speed")
-        col_groups.append((f"{label}\n({len(ds_list)} datasets)", 1))
-    table = [[c.get(m) for c in cols] for m in models]
-    render_table(
-        table, models, col_labels, col_groups,
-        "Fit time by task type  (× slower than fastest, 1× = best)",
-        os.path.join(out_dir, "by_task_speed.png"),
-        kind="speed",
-    )
-
-    # ============================================================
-    # Table 3: Quality by Categorical
-    # ============================================================
-    cols, col_labels, col_groups = [], [], []
-    for label in ["with categoricals", "no categoricals"]:
-        ds_list = by_cats.get(label, [])
-        if not ds_list:
-            continue
-        rmse_pct, f1_pct, ll_pct = quality_block_for(ds_list)
-        sub_cols = []
-        sub_labels = []
-        if any(rmse_pct.values()):
-            sub_cols.append(rmse_pct); sub_labels.append("RMSE")
-        if any(f1_pct.values()):
-            sub_cols.append(f1_pct); sub_labels.append("F1 macro")
-        if any(ll_pct.values()):
-            sub_cols.append(ll_pct); sub_labels.append("Log loss")
-        if not sub_cols:
-            continue
-        cols.extend(sub_cols)
-        col_labels.extend(sub_labels)
-        col_groups.append((f"{label.title()}\n({len(ds_list)} datasets)", len(sub_cols)))
-    table = [[c.get(m) for c in cols] for m in models]
-    render_table(
-        table, models, col_labels, col_groups,
-        "Quality by categorical presence  (avg % relative to best model)",
-        os.path.join(out_dir, "by_categorical_quality.png"),
-    )
-
-    # ============================================================
-    # Table 4: Speed by Categorical
-    # ============================================================
-    cols, col_labels, col_groups = [], [], []
-    for label in ["with categoricals", "no categoricals"]:
-        ds_list = by_cats.get(label, [])
-        if not ds_list:
-            continue
-        cols.append(speed_for(ds_list))
-        col_labels.append("fit speed")
-        col_groups.append((f"{label.title()}\n({len(ds_list)} datasets)", 1))
-    table = [[c.get(m) for c in cols] for m in models]
-    render_table(
-        table, models, col_labels, col_groups,
-        "Fit time by categorical presence  (× slower than fastest, 1× = best)",
-        os.path.join(out_dir, "by_categorical_speed.png"),
-        kind="speed",
-    )
-
-    # ============================================================
-    # Table 5: Quality by Size
-    # ============================================================
-    cols, col_labels, col_groups = [], [], []
-    for label in ["small", "medium", "large"]:
-        ds_list = by_size.get(label, [])
-        if not ds_list:
-            continue
-        rmse_pct, f1_pct, ll_pct = quality_block_for(ds_list)
-        sub_cols, sub_labels = [], []
-        if any(rmse_pct.values()):
-            sub_cols.append(rmse_pct); sub_labels.append("RMSE")
-        if any(f1_pct.values()):
-            sub_cols.append(f1_pct); sub_labels.append("F1 macro")
-        if any(ll_pct.values()):
-            sub_cols.append(ll_pct); sub_labels.append("Log loss")
-        if not sub_cols:
-            continue
-        cols.extend(sub_cols)
-        col_labels.extend(sub_labels)
-        size_hdr = {"small": f"Small (<{SMALL_THRESHOLD // 1000}K)",
-                    "medium": f"Medium ({SMALL_THRESHOLD // 1000}K–{LARGE_THRESHOLD // 1000}K)",
-                    "large": f"Large (≥{LARGE_THRESHOLD // 1000}K)"}[label]
-        col_groups.append((f"{size_hdr}\n({len(ds_list)} datasets)", len(sub_cols)))
-    table = [[c.get(m) for c in cols] for m in models]
-    render_table(
-        table, models, col_labels, col_groups,
-        "Quality by dataset size  (avg % relative to best model)",
-        os.path.join(out_dir, "by_size_quality.png"),
-    )
-
-    # ============================================================
-    # Table 6: Speed by Size
-    # ============================================================
-    cols, col_labels, col_groups = [], [], []
-    for label in ["small", "medium", "large"]:
-        ds_list = by_size.get(label, [])
-        if not ds_list:
-            continue
-        cols.append(speed_for(ds_list))
-        col_labels.append("fit speed")
-        size_hdr = {"small": f"Small (<{SMALL_THRESHOLD // 1000}K)",
-                    "medium": f"Medium ({SMALL_THRESHOLD // 1000}K–{LARGE_THRESHOLD // 1000}K)",
-                    "large": f"Large (≥{LARGE_THRESHOLD // 1000}K)"}[label]
-        col_groups.append((f"{size_hdr}\n({len(ds_list)} datasets)", 1))
-    table = [[c.get(m) for c in cols] for m in models]
-    render_table(
-        table, models, col_labels, col_groups,
-        "Fit time by dataset size  (× slower than fastest, 1× = best)",
-        os.path.join(out_dir, "by_size_speed.png"),
-        kind="speed",
-    )
-
-    # ============================================================
-    # SUMMARY TABLE: one row per model, six metric columns total.
-    # This is the table embedded in the README; the other six are
-    # available for deeper inspection.
+    # Summary table: one row per model, columns = RMSE, Binary F1,
+    # Binary LL, Multiclass F1, Multiclass LL, fit-time multiplier.
     # ============================================================
     all_ds = list(datasets.keys())
     reg_ds_all = [d for d in all_ds if datasets[d]["task"] == "regression"]
@@ -567,7 +387,7 @@ def main():
         col_kinds=sum_col_kinds,
     )
 
-    print(f"Wrote 7 PNG tables to {out_dir}")
+    print(f"Wrote summary.png to {out_dir}")
 
 
 if __name__ == "__main__":

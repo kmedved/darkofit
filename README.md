@@ -51,7 +51,7 @@ reg.fit(X, y)
 
 ![Benchmark summary](images/summary.png)
 
-Each quality cell is **average % relative to the best model** in that column (100% = best; lower = worse). The fit-time column is the average **× slowdown relative to the fastest model** (1× = best; higher = slower). Deeper cuts by task type, categorical presence, and dataset size are in `images/by_*.png`.
+Each quality cell is **average % relative to the best model** in that column (100% = best; lower = worse). The fit-time column is the average **× slowdown relative to the fastest model** (1× = best; higher = slower).
 
 * **Reproduce the benchmark**
 
