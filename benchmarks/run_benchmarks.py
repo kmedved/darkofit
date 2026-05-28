@@ -475,10 +475,20 @@ def main():
         _RUNNER_TO_OPTIONAL[r] for r in active_runners
         if r in _RUNNER_TO_OPTIONAL
     ]
-    detected = _detect(optional_names)
-    detected_names = [name for name in optional_names if detected.get(name, False)]
-    print("Detected competitors:",
-          ", ".join(detected_names) if detected_names else "none (sklearn only)")
+    detect_lazily = (
+        args.no_warmup and "ChimeraBoost" in active_runners and optional_names
+    )
+    if detect_lazily:
+        detected_text = "checked lazily"
+    else:
+        detected = _detect(optional_names)
+        detected_names = [
+            name for name in optional_names if detected.get(name, False)
+        ]
+        detected_text = (
+            ", ".join(detected_names) if detected_names else "none (sklearn only)"
+        )
+    print("Detected competitors:", detected_text)
     print(f"scale={args.scale}  seeds={args.seeds}  "
           f"threads={args.threads or 'all'}  "
           f"early stopping: max_iter={MAX_ITERS}, patience={PATIENCE}"

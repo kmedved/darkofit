@@ -57,7 +57,10 @@ def _fit_chimera(task, Xf, yf, Xv, yv, cat, threads, mcw=1.0):
 
 
 def _fit_catboost(task, Xf, yf, Xv, yv, cat, threads):
-    from catboost import CatBoostRegressor, CatBoostClassifier
+    try:
+        from catboost import CatBoostRegressor, CatBoostClassifier
+    except Exception:
+        return None, 0.0
     Est = CatBoostRegressor if task == "regression" else CatBoostClassifier
     t = time.time()
     m = Est(iterations=B.MAX_ITERS, early_stopping_rounds=B.PATIENCE,
@@ -113,7 +116,8 @@ def _collect(builder, seeds, threads, have_cb, mcw_pair=None):
             add("ChimeraBoost", _hib(task, yf, m, Xf), _hib(task, yte, m, Xte))
             if have_cb:
                 mc, _ = _fit_catboost(task, Xf, yf, Xv, yv, cat, threads)
-                add("CatBoost", _hib(task, yf, mc, Xf), _hib(task, yte, mc, Xte))
+                if mc is not None:
+                    add("CatBoost", _hib(task, yf, mc, Xf), _hib(task, yte, mc, Xte))
     return task_seen, out
 
 
@@ -213,7 +217,9 @@ def main():
     if unknown:
         ap.error(f"unknown datasets: {unknown}\navailable: {list(B.DATASETS)}")
 
-    have_cb = args.catboost and B._has_competitor("catboost")
+    have_cb = args.catboost and (
+        args.no_warmup or B._has_competitor("catboost")
+    )
     if not have_cb:
         print("NOTE: CatBoost not available -- reporting ChimeraBoost train/test "
               "gap only (no comparison verdict).\n")

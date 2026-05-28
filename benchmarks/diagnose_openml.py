@@ -118,7 +118,9 @@ def main():
         print("Warming up ChimeraBoost Numba kernels...")
         B._warmup_chimera(args.threads)
 
-    have_cb = args.catboost and B._has_competitor("catboost")
+    have_cb = args.catboost and (
+        args.no_warmup or B._has_competitor("catboost")
+    )
     configs = _build_configs(args.quick)
 
     print(f"seeds={args.seeds}  threads={args.threads or 'all'}  "

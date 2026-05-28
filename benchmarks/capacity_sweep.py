@@ -73,7 +73,10 @@ def _fit_chimera(task, Xf, yf, Xv, yv, cat, threads, depth, l2, mcw, max_bins):
 
 
 def _fit_catboost(task, Xf, yf, Xv, yv, cat, threads):
-    from catboost import CatBoostRegressor, CatBoostClassifier
+    try:
+        from catboost import CatBoostRegressor, CatBoostClassifier
+    except Exception:
+        return None
     Est = CatBoostRegressor if task == "regression" else CatBoostClassifier
     m = Est(iterations=B.MAX_ITERS, early_stopping_rounds=B.PATIENCE,
             thread_count=threads or -1, verbose=False, random_seed=0)
@@ -116,7 +119,9 @@ def main():
         print("Warming up ChimeraBoost Numba kernels...")
         B._warmup_chimera(args.threads)
 
-    have_cb = args.catboost and B._has_competitor("catboost")
+    have_cb = args.catboost and (
+        args.no_warmup or B._has_competitor("catboost")
+    )
 
     print(f"seeds={args.seeds}  threads={args.threads or 'all'}  "
           f"max_iter={B.MAX_ITERS}  patience={B.PATIENCE}\n"
@@ -146,8 +151,9 @@ def main():
                     dp[label].append(_mean_depth(m))
                 if have_cb:
                     mc = _fit_catboost(task, Xf, yf, Xv, yv, cat, args.threads)
-                    cb_tr.append(B._score(task, yf, mc, Xf))
-                    cb_te.append(B._score(task, yte, mc, Xte))
+                    if mc is not None:
+                        cb_tr.append(B._score(task, yf, mc, Xf))
+                        cb_te.append(B._score(task, yte, mc, Xte))
         except Exception as e:
             print(f"### {ds}: SKIPPED ({e})\n")
             continue

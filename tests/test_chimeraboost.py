@@ -855,6 +855,50 @@ def test_feature_indices_must_match_feature_mask():
         )
 
 
+def test_hist_buffers_must_be_large_enough():
+    """Reusable histogram buffers should fail before Numba can write past them."""
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_oblivious_tree
+
+    rng = np.random.default_rng(17)
+    X = rng.normal(size=(128, 4))
+    y = X[:, 0] + rng.normal(0, 0.1, 128)
+    prep = FeaturePreprocessor(32, 1.0, 0)
+    Xb = prep.fit_transform(X, [y], None)
+    grad = y.mean() - y
+    hess = np.ones(len(y))
+    bad_buffers = (
+        np.zeros((Xb.shape[1] - 1, 1 << 3, int(prep.n_bins_.max()))),
+        np.zeros((Xb.shape[1] - 1, 1 << 3, int(prep.n_bins_.max()))),
+    )
+
+    with pytest.raises(ValueError, match="hist_buffers are too small"):
+        build_oblivious_tree(
+            Xb, grad, hess, prep.n_bins_, 3, 3.0, 0.1,
+            hist_buffers=bad_buffers,
+        )
+
+
+def test_histogram_layout_copy_must_match_training_shape():
+    """X_hist_binned is indexed with the same rows/leaves as X_binned."""
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_oblivious_tree
+
+    rng = np.random.default_rng(18)
+    X = rng.normal(size=(128, 4))
+    y = X[:, 0] + rng.normal(0, 0.1, 128)
+    prep = FeaturePreprocessor(32, 1.0, 0)
+    Xb = prep.fit_transform(X, [y], None)
+    grad = y.mean() - y
+    hess = np.ones(len(y))
+
+    with pytest.raises(ValueError, match="X_hist_binned must have the same shape"):
+        build_oblivious_tree(
+            Xb, grad, hess, prep.n_bins_, 3, 3.0, 0.1,
+            X_hist_binned=Xb[:-1],
+        )
+
+
 def test_row_index_histograms_match_zeroed_subsample():
     """Selected-row histograms must match scanning all rows with zeroed grads."""
     import numba

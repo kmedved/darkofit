@@ -701,6 +701,8 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     """
     if X_hist_binned is None:
         X_hist_binned = X_binned
+    elif X_hist_binned.shape != X_binned.shape:
+        raise ValueError("X_hist_binned must have the same shape as X_binned")
     n_samples = X_binned.shape[0]
     n_features = X_binned.shape[1]
     max_bins = n_features and int(n_bins_per_feature.max())
@@ -740,7 +742,17 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
         hg = np.zeros((n_features, max_leaves, max_bins))
         hh = np.zeros((n_features, max_leaves, max_bins))
     else:
+        if len(hist_buffers) != 2:
+            raise ValueError("hist_buffers must contain gradient and hessian arrays")
         hg, hh = hist_buffers
+        if hg.ndim != 3 or hh.ndim != 3 or hg.shape != hh.shape:
+            raise ValueError("hist_buffers must be matching 3-D arrays")
+        if (
+            hg.shape[0] < n_features
+            or hg.shape[1] < max_leaves
+            or hg.shape[2] < max_bins
+        ):
+            raise ValueError("hist_buffers are too small")
     splits_feat = []
     splits_thr = []
     splits_gain = []
