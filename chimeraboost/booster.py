@@ -61,6 +61,28 @@ def _one_hot_class_major(y_idx, n_classes):
     return out
 
 
+def _new_timing(enabled):
+    if not enabled:
+        return None
+    return {
+        "preprocess": 0.0,
+        "grad_hess": 0.0,
+        "tree_build": 0.0,
+        "train_update": 0.0,
+        "validation_predict": 0.0,
+        "loss_eval": 0.0,
+    }
+
+
+def _add_timing(timing, key, start):
+    if timing is not None:
+        timing[key] += time.perf_counter() - start
+
+
+def _start_timing(timing):
+    return time.perf_counter() if timing is not None else 0.0
+
+
 class _BaseBooster:
     """Shared machinery for the scalar and multiclass boosters.
 
@@ -74,7 +96,7 @@ class _BaseBooster:
                  l2_leaf_reg=3.0, max_bins=128, subsample=1.0,
                  colsample=1.0, cat_smoothing=1.0, early_stopping_rounds=None,
                  min_child_weight=1.0, thread_count=None, random_state=None,
-                 verbose=False, ordered_boosting=True):
+                 verbose=False, ordered_boosting=True, verbose_timing=False):
         self.iterations = int(iterations)
         self.learning_rate = learning_rate
         self.depth = int(depth)
@@ -89,6 +111,7 @@ class _BaseBooster:
         self.random_state = random_state
         self.verbose = verbose
         self.ordered_boosting = bool(ordered_boosting)
+        self.verbose_timing = bool(verbose_timing)
 
     def _alloc_hist_buffers(self, n_features, n_bins):
         """Allocate reusable histogram buffers once per fit.
@@ -188,6 +211,9 @@ class GradientBoosting(_BaseBooster):
         self.lr_ = (self.learning_rate if self.learning_rate is not None
                     else _auto_learning_rate(n_samples, self.iterations, _es))
 
+        timing = _new_timing(self.verbose_timing)
+        self.timing_ = timing
+        phase = _start_timing(timing)
         self.prep_ = self._new_preprocessor()
         X_binned = self.prep_.fit_transform(X, [y], cat_features)
         X_hist_binned = (
@@ -208,6 +234,7 @@ class GradientBoosting(_BaseBooster):
                   else np.asarray(Xv, dtype=np.float64))
             yv = np.asarray(yv, dtype=np.float64)
             Xv_binned = self.prep_.transform(Xv)
+        _add_timing(timing, "preprocess", phase)
 
         self.init_ = self.loss_.init(y, w)
         F = np.full(n_samples, self.init_, dtype=np.float64)
@@ -221,12 +248,16 @@ class GradientBoosting(_BaseBooster):
         t0 = time.time()
 
         for m in range(self.iterations):
+            phase = _start_timing(timing)
             grad, hess = self.loss_.grad_hess(y, F)
             if w is not None:
                 grad = grad * w
                 hess = hess * w
             g, h, row_indices = self._maybe_subsample(grad, hess, rng)
             fmask, findices = self._feature_selection(X_binned.shape[1], rng)
+            _add_timing(timing, "grad_hess", phase)
+
+            phase = _start_timing(timing)
             tree, leaf, leaf_G, leaf_H = build_oblivious_tree(
                 X_binned, g, h, n_bins, self.depth,
                 self.l2_leaf_reg, self.lr_,
@@ -240,12 +271,14 @@ class GradientBoosting(_BaseBooster):
                 row_indices=row_indices,
                 constant_hessian=use_constant_hessian,
             )
+            _add_timing(timing, "tree_build", phase)
             # A depth-0 tree found no legal split; subsequent rounds on the same
             # gradients would too, so stop rather than append empty trees.
             if tree.depth == 0:
                 if self.verbose:
                     print(f"No further splits at iteration {m}; stopping.")
                 break
+            phase = _start_timing(timing)
             if getattr(self.loss_, "adjusts_leaves", False):
                 self._correct_leaves(tree, X_binned, y - F, w, leaf=leaf)
             self.trees_.append(tree)
@@ -262,11 +295,19 @@ class GradientBoosting(_BaseBooster):
                 )
             else:
                 tree.add_predict(X_binned, F)
+            _add_timing(timing, "train_update", phase)
+
+            phase = _start_timing(timing)
             self.train_history_.append(self.loss_.eval(y, F, w))
+            _add_timing(timing, "loss_eval", phase)
 
             if Fv is not None:
+                phase = _start_timing(timing)
                 tree.add_predict(Xv_binned, Fv)
+                _add_timing(timing, "validation_predict", phase)
+                phase = _start_timing(timing)
                 val = self.loss_.eval(yv, Fv)   # validation is always unweighted
+                _add_timing(timing, "loss_eval", phase)
                 self.valid_history_.append(val)
                 if val < best_score - 1e-9:
                     best_score, best_iter = val, m
@@ -366,6 +407,9 @@ class MulticlassBoosting(_BaseBooster):
         self.lr_ = (self.learning_rate if self.learning_rate is not None
                     else _auto_learning_rate(n_samples, self.iterations, _es))
 
+        timing = _new_timing(self.verbose_timing)
+        self.timing_ = timing
+        phase = _start_timing(timing)
         # One ordered-TS target per class (CatBoost-style per-class statistics).
         self.prep_ = self._new_preprocessor()
         X_binned = self.prep_.fit_transform(X, [Y_class[k] for k in range(K)],
@@ -389,6 +433,7 @@ class MulticlassBoosting(_BaseBooster):
             yv_idx = np.searchsorted(self.classes_, np.asarray(yv))
             Yv_class = _one_hot_class_major(yv_idx, K)
             Xv_binned = self.prep_.transform(Xv)
+        _add_timing(timing, "preprocess", phase)
 
         self.init_ = self.loss_.init_class_major(Y_class, w)  # (K,)
         F = np.tile(self.init_[:, None], (1, n_samples))  # class-major (K, n)
@@ -402,16 +447,21 @@ class MulticlassBoosting(_BaseBooster):
         t0 = time.time()
 
         for m in range(self.iterations):
+            phase = _start_timing(timing)
             grad, hess = self.loss_.grad_hess_class_major(Y_class, F)
             if w is not None:
                 grad = grad * w[None, :]
                 hess = hess * w[None, :]
             fmask, findices = self._feature_selection(X_binned.shape[1], rng)
+            _add_timing(timing, "grad_hess", phase)
             round_trees = []
             for k in range(K):
+                phase = _start_timing(timing)
                 g, h, row_indices = self._maybe_subsample(
                     grad[k], hess[k], rng
                 )
+                _add_timing(timing, "grad_hess", phase)
+                phase = _start_timing(timing)
                 tree, leaf, leaf_G, leaf_H = build_oblivious_tree(
                     X_binned, g, h, n_bins, self.depth,
                     self.l2_leaf_reg, self.lr_,
@@ -424,6 +474,8 @@ class MulticlassBoosting(_BaseBooster):
                     feature_indices=findices,
                     row_indices=row_indices,
                 )
+                _add_timing(timing, "tree_build", phase)
+                phase = _start_timing(timing)
                 round_trees.append(tree)
                 self._accumulate_importance(tree)
                 if self.ordered_boosting and tree.depth > 0:
@@ -432,6 +484,7 @@ class MulticlassBoosting(_BaseBooster):
                     )
                 else:
                     tree.add_predict(X_binned, F[k])
+                _add_timing(timing, "train_update", phase)
             # Stop only if EVERY class exhausted its splits this round; if even
             # one class is still learning, the round was productive.
             if all(t.depth == 0 for t in round_trees):
@@ -440,12 +493,18 @@ class MulticlassBoosting(_BaseBooster):
                           f"stopping.")
                 break
             self.trees_.append(round_trees)
+            phase = _start_timing(timing)
             self.train_history_.append(self.loss_.eval_class_major(Y_class, F, w))
+            _add_timing(timing, "loss_eval", phase)
 
             if Fv is not None:
+                phase = _start_timing(timing)
                 for k in range(K):
                     round_trees[k].add_predict(Xv_binned, Fv[k])
+                _add_timing(timing, "validation_predict", phase)
+                phase = _start_timing(timing)
                 val = self.loss_.eval_class_major(Yv_class, Fv)
+                _add_timing(timing, "loss_eval", phase)
                 self.valid_history_.append(val)
                 if val < best_score - 1e-9:
                     best_score, best_iter = val, m

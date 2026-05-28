@@ -89,7 +89,8 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
                  cat_smoothing=1.0, early_stopping_rounds=None,
                  loss="RMSE", alpha=0.5, min_child_weight=1.0, thread_count=None,
                  random_state=None, verbose=False, ordered_boosting=True,
-                 early_stopping=False, validation_fraction=0.1):
+                 early_stopping=False, validation_fraction=0.1,
+                 verbose_timing=False):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -108,6 +109,7 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
         self.ordered_boosting = ordered_boosting
         self.early_stopping = early_stopping
         self.validation_fraction = validation_fraction
+        self.verbose_timing = verbose_timing
 
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
             sample_weight=None):
@@ -178,6 +180,10 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
     def feature_importances_(self):
         return self.model_.feature_importances_
 
+    @property
+    def timing_(self):
+        return self.model_.timing_
+
 
 class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
     """Gradient boosted oblivious trees for classification.
@@ -199,7 +205,8 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
                  cat_smoothing=1.0, early_stopping_rounds=None,
                  min_child_weight=1.0, thread_count=None, random_state=None,
                  verbose=False, ordered_boosting=True,
-                 early_stopping=False, validation_fraction=0.1):
+                 early_stopping=False, validation_fraction=0.1,
+                 verbose_timing=False):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -216,6 +223,7 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
         self.ordered_boosting = ordered_boosting
         self.early_stopping = early_stopping
         self.validation_fraction = validation_fraction
+        self.verbose_timing = verbose_timing
 
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
             sample_weight=None):
@@ -304,3 +312,7 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
     @property
     def feature_importances_(self):
         return self.model_.feature_importances_
+
+    @property
+    def timing_(self):
+        return self.model_.timing_

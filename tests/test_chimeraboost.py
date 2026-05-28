@@ -116,6 +116,39 @@ def test_explicit_lr_overrides_auto():
     assert m.model_.lr_ == 0.123
 
 
+def test_verbose_timing_records_regression_fit_phases():
+    X, y = load_diabetes(return_X_y=True)
+    Xtr, Xv, ytr, yv = train_test_split(X, y, test_size=0.2, random_state=0)
+    m = ChimeraBoostRegressor(
+        iterations=5, depth=2, early_stopping_rounds=3,
+        verbose_timing=True, random_state=0
+    ).fit(Xtr, ytr, eval_set=(Xv, yv))
+
+    expected = {
+        "preprocess", "grad_hess", "tree_build", "train_update",
+        "validation_predict", "loss_eval",
+    }
+    assert set(m.timing_) == expected
+    assert all(v >= 0.0 for v in m.timing_.values())
+    assert m.timing_["preprocess"] > 0.0
+    assert m.timing_["tree_build"] > 0.0
+    assert m.timing_["validation_predict"] > 0.0
+
+
+def test_verbose_timing_records_multiclass_fit_phases():
+    from sklearn.datasets import load_wine
+
+    X, y = load_wine(return_X_y=True)
+    m = ChimeraBoostClassifier(
+        iterations=3, depth=2, verbose_timing=True, random_state=0
+    ).fit(X, y)
+
+    assert m.timing_["preprocess"] > 0.0
+    assert m.timing_["grad_hess"] > 0.0
+    assert m.timing_["tree_build"] > 0.0
+    assert m.timing_["validation_predict"] == 0.0
+
+
 def test_multiclass_accuracy():
     from sklearn.datasets import load_wine, load_iris
     for load in (load_wine, load_iris):
