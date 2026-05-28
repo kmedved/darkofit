@@ -247,7 +247,8 @@ def test_mae_loss_beats_rmse_on_mae_metric():
 @pytest.mark.parametrize("weights", [None, np.array([
     1.0, 2.0, 0.5, 1.5, 3.0, 0.75, 1.25, 2.5, 0.8, 1.2, 1.7, 0.9
 ])])
-def test_grouped_leaf_correction_matches_mask_semantics(loss_name, weights):
+@pytest.mark.parametrize("n_leaves", [8, 32])
+def test_leaf_correction_matches_mask_semantics(loss_name, weights, n_leaves):
     from chimeraboost.booster import GradientBoosting
     from chimeraboost.losses import MAE, Quantile
     from chimeraboost.tree import ObliviousTree
@@ -255,7 +256,6 @@ def test_grouped_leaf_correction_matches_mask_semantics(loss_name, weights):
     residuals = np.array([1.2, -0.4, 2.5, 0.0, -1.5, 3.2,
                           -0.7, 1.1, 0.8, -2.0, 4.1, -3.3])
     leaf = np.array([3, 0, 3, 1, 7, 1, 3, 0, 6, 7, 1, 3])
-    n_leaves = 8
     lr = 0.37
     loss_obj = MAE() if loss_name == "MAE" else Quantile(alpha=0.3)
 

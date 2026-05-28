@@ -12,6 +12,8 @@ from .losses import LOSSES, MultiSoftmax
 from .preprocessing import FeaturePreprocessor
 from .tree import build_oblivious_tree
 
+_LEAF_CORRECTION_SORT_MIN_LEAVES = 16
+
 
 def _apply_thread_count(thread_count):
     """Set numba's thread pool size. None / -1 means use all detected cores.
@@ -283,6 +285,14 @@ class GradientBoosting(_BaseBooster):
         if leaf is None:
             leaf = tree.apply(X_binned)
         n_leaves = tree.values.shape[0]
+        if n_leaves < _LEAF_CORRECTION_SORT_MIN_LEAVES:
+            for l in range(n_leaves):
+                mask = leaf == l
+                r = residuals[mask]
+                w = sample_weight[mask] if sample_weight is not None else None
+                tree.values[l] = self.lr_ * self.loss_.leaf_value(r, w)
+            return
+
         order = np.argsort(leaf)
         residuals_sorted = residuals[order]
         weights_sorted = sample_weight[order] if sample_weight is not None else None
