@@ -99,6 +99,8 @@ def main():
     ap.add_argument("--datasets", nargs="+", default=None)
     ap.add_argument("--no-catboost", dest="catboost", action="store_false",
                     default=True)
+    ap.add_argument("--no-warmup", action="store_true",
+                    help="include first-call ChimeraBoost Numba compile time")
     args = ap.parse_args()
 
     requested = args.datasets
@@ -111,6 +113,10 @@ def main():
         ap.error(f"unknown datasets: {unknown}\navailable: {list(B.DATASETS)}")
 
     have_cb = args.catboost and B.HAVE.get("catboost", False)
+    if not args.no_warmup:
+        print("Warming up ChimeraBoost Numba kernels...")
+        B._warmup_chimera(args.threads)
+
     print(f"seeds={args.seeds}  threads={args.threads or 'all'}  "
           f"max_iter={B.MAX_ITERS}  patience={B.PATIENCE}\n"
           "train/test in natural units; depth = achieved mean tree depth; "

@@ -98,6 +98,8 @@ def main():
                          "Accepts synthetic keys too, e.g. cat_binary.")
     ap.add_argument("--no-catboost", dest="catboost", action="store_false",
                     default=True, help="skip the CatBoost gap column")
+    ap.add_argument("--no-warmup", action="store_true",
+                    help="include first-call ChimeraBoost Numba compile time")
     args = ap.parse_args()
 
     # Register oml:* datasets if needed.
@@ -114,6 +116,10 @@ def main():
 
     have_cb = args.catboost and B.HAVE.get("catboost", False)
     configs = _build_configs(args.quick)
+
+    if not args.no_warmup:
+        print("Warming up ChimeraBoost Numba kernels...")
+        B._warmup_chimera(args.threads)
 
     print(f"seeds={args.seeds}  threads={args.threads or 'all'}  "
           f"max_iter={B.MAX_ITERS}  patience={B.PATIENCE}  "

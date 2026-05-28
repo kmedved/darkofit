@@ -175,7 +175,13 @@ def main():
                     help="validate the instrument: loose vs tight min_child_weight "
                          "on a noisy synthetic; the loose model MUST show the "
                          "wider train-test gap")
+    ap.add_argument("--no-warmup", action="store_true",
+                    help="include first-call ChimeraBoost Numba compile time")
     args = ap.parse_args()
+
+    if not args.no_warmup:
+        print("Warming up ChimeraBoost Numba kernels...")
+        B._warmup_chimera(args.threads)
 
     if args.self_check:
         # A noisy regression where an unconstrained tree can memorize.
