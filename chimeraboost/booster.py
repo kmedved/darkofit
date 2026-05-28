@@ -317,6 +317,7 @@ class MulticlassBoosting(_BaseBooster):
         self.n_classes_ = K
         y_idx = np.searchsorted(self.classes_, y)
         Y = np.eye(K)[y_idx]                      # one-hot (n, K)
+        Y_class = np.ascontiguousarray(Y.T)       # class-major (K, n)
         n_samples = X.shape[0]
 
         w = None
@@ -348,12 +349,13 @@ class MulticlassBoosting(_BaseBooster):
                   else np.asarray(Xv, dtype=np.float64))
             yv_idx = np.searchsorted(self.classes_, np.asarray(yv))
             Yv = np.eye(K)[yv_idx]
+            Yv_class = np.ascontiguousarray(Yv.T)
             Xv_binned = self.prep_.transform(Xv)
 
         self.init_ = self.loss_.init(Y, w)         # (K,)
-        F = np.tile(self.init_, (n_samples, 1))    # (n, K)
+        F = np.tile(self.init_[:, None], (1, n_samples))  # class-major (K, n)
         if Yv is not None:
-            Fv = np.tile(self.init_, (len(yv_idx), 1))
+            Fv = np.tile(self.init_[:, None], (1, len(yv_idx)))
 
         rng = np.random.default_rng(self.random_state)
         self.trees_ = []                           # list of rounds; each = K trees
@@ -362,16 +364,15 @@ class MulticlassBoosting(_BaseBooster):
         t0 = time.time()
 
         for m in range(self.iterations):
-            grad, hess = self.loss_.grad_hess(Y, F)   # (n, K) each
+            grad, hess = self.loss_.grad_hess_class_major(Y_class, F)
             if w is not None:
-                grad = grad * w[:, None]
-                hess = hess * w[:, None]
+                grad = grad * w[None, :]
+                hess = hess * w[None, :]
             fmask, findices = self._feature_selection(X_binned.shape[1], rng)
             round_trees = []
             for k in range(K):
                 g, h, row_indices = self._maybe_subsample(
-                    np.ascontiguousarray(grad[:, k]),
-                    np.ascontiguousarray(hess[:, k]), rng
+                    grad[k], hess[k], rng
                 )
                 tree, leaf, leaf_G, leaf_H = build_oblivious_tree(
                     X_binned, g, h, n_bins, self.depth,
@@ -387,11 +388,11 @@ class MulticlassBoosting(_BaseBooster):
                 round_trees.append(tree)
                 self._accumulate_importance(tree)
                 if self.ordered_boosting and tree.depth > 0:
-                    F[:, k] += _ordered_leaf_update(
+                    F[k] += _ordered_leaf_update(
                         self.lr_, leaf, leaf_G, leaf_H, g, h, self.l2_leaf_reg
                     )
                 else:
-                    tree.add_predict(X_binned, F[:, k])
+                    tree.add_predict(X_binned, F[k])
             # Stop only if EVERY class exhausted its splits this round; if even
             # one class is still learning, the round was productive.
             if all(t.depth == 0 for t in round_trees):
@@ -400,12 +401,12 @@ class MulticlassBoosting(_BaseBooster):
                           f"stopping.")
                 break
             self.trees_.append(round_trees)
-            self.train_history_.append(self.loss_.eval(Y, F, w))
+            self.train_history_.append(self.loss_.eval_class_major(Y_class, F, w))
 
             if Fv is not None:
                 for k in range(K):
-                    round_trees[k].add_predict(Xv_binned, Fv[:, k])
-                val = self.loss_.eval(Yv, Fv)   # validation is always unweighted
+                    round_trees[k].add_predict(Xv_binned, Fv[k])
+                val = self.loss_.eval_class_major(Yv_class, Fv)
                 self.valid_history_.append(val)
                 if val < best_score - 1e-9:
                     best_score, best_iter = val, m
@@ -432,8 +433,8 @@ class MulticlassBoosting(_BaseBooster):
         X = (np.asarray(X, dtype=object) if self.prep_.cat_features_
              else np.asarray(X, dtype=np.float64))
         X_binned = self.prep_.transform(X)
-        F = np.tile(self.init_, (X_binned.shape[0], 1))
+        F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
         for round_trees in self.trees_:
             for k in range(self.n_classes_):
-                round_trees[k].add_predict(X_binned, F[:, k])
-        return F
+                round_trees[k].add_predict(X_binned, F[k])
+        return F.T
