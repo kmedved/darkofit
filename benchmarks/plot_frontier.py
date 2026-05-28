@@ -177,11 +177,9 @@ def main():
                     
         if not results_list: continue
         
-        # 2. Sort results to assign ranks
-        # Classification (e.g., F1): Higher score is better -> reverse=True
-        # Regression (e.g., RMSE): Lower score is better -> reverse=False
-        is_classification = (task == "classification")
-        results_list.sort(key=lambda x: x[0], reverse=is_classification)
+        # 2. Sort results to assign ranks. B._score is higher-is-better for
+        # every task: classification is F1, regression is -RMSE.
+        results_list.sort(key=lambda x: x[0], reverse=True)
         
         # 3. Assign ranks (1 is the best)
         ranks_dict = {}

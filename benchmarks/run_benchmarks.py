@@ -19,12 +19,17 @@ Usage:
 """
 
 import argparse
+import os
+import sys
 import time
 import warnings
 
 import numpy as np
 
 warnings.filterwarnings("ignore")
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(_HERE))
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
@@ -248,6 +253,21 @@ MAX_ITERS = 2000
 PATIENCE = 50
 
 
+def _warmup_chimera(threads=None):
+    """Compile ChimeraBoost's common Numba kernels outside measured timings."""
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(96, 4))
+    y_reg = X[:, 0] - 0.5 * X[:, 1] + rng.normal(0.0, 0.1, size=X.shape[0])
+    ChimeraBoostRegressor(
+        iterations=2, depth=2, max_bins=16, thread_count=threads, random_state=0
+    ).fit(X, y_reg)
+
+    y_bin = (X[:, 0] + X[:, 2] > 0.0).astype(int)
+    ChimeraBoostClassifier(
+        iterations=2, depth=2, max_bins=16, thread_count=threads, random_state=0
+    ).fit(X, y_bin)
+
+
 def _run_chimera(task, Xtr, ytr, Xte, yte, cat, threads, lr=None,
                  ordered_boosting=True, depth=6):
     Xf, Xv, yf, yv = _val_split(Xtr, ytr, task, 0)
@@ -401,6 +421,8 @@ def main():
                     action="store_false", default=True,
                     help=("disable LOO leaf correction in ChimeraBoost "
                           "(default: on). Use to A/B test the improvement."))
+    ap.add_argument("--no-warmup", action="store_true",
+                    help="include first-call ChimeraBoost Numba compile time")
     args = ap.parse_args()
 
     if args.openml or args.no_synthetic:
@@ -426,6 +448,10 @@ def main():
             ap.error(f"Unknown models: {unknown}. Available: {list(active_runners)}")
         active_runners = {k: v for k, v in active_runners.items()
                          if k in args.models}
+
+    if "ChimeraBoost" in active_runners and not args.no_warmup:
+        print("Warming up ChimeraBoost Numba kernels...")
+        _warmup_chimera(args.threads)
 
     print("Detected competitors:",
           ", ".join(k for k, v in HAVE.items() if v) or "none (sklearn only)")
