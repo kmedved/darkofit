@@ -227,7 +227,7 @@ class GradientBoosting(_BaseBooster):
                     print(f"No further splits at iteration {m}; stopping.")
                 break
             if getattr(self.loss_, "adjusts_leaves", False):
-                self._correct_leaves(tree, X_binned, y - F, w)
+                self._correct_leaves(tree, X_binned, y - F, w, leaf=leaf)
             self.trees_.append(tree)
             self._accumulate_importance(tree)
             if self.ordered_boosting and not getattr(self.loss_, "adjusts_leaves", False):
@@ -268,17 +268,25 @@ class GradientBoosting(_BaseBooster):
         self.best_iteration_ = len(self.trees_)
         return self
 
-    def _correct_leaves(self, tree, X_binned, residuals, sample_weight=None):
+    def _correct_leaves(self, tree, X_binned, residuals, sample_weight=None, leaf=None):
         """Override Newton leaf values with the loss-appropriate residual
         statistic (median for MAE, alpha-quantile for Quantile). The tree
         structure was chosen by the gradient; this fixes the step size."""
-        leaf = tree.apply(X_binned)
+        if leaf is None:
+            leaf = tree.apply(X_binned)
         n_leaves = tree.values.shape[0]
+        order = np.argsort(leaf)
+        residuals_sorted = residuals[order]
+        weights_sorted = sample_weight[order] if sample_weight is not None else None
+        counts = np.bincount(leaf, minlength=n_leaves)
+
+        start = 0
         for l in range(n_leaves):
-            mask = leaf == l
-            r = residuals[mask]
-            w = sample_weight[mask] if sample_weight is not None else None
+            end = start + counts[l]
+            r = residuals_sorted[start:end]
+            w = weights_sorted[start:end] if weights_sorted is not None else None
             tree.values[l] = self.lr_ * self.loss_.leaf_value(r, w)
+            start = end
 
     def predict_raw(self, X):
         """Return raw additive scores (pre-link): the regression prediction, or

@@ -194,6 +194,45 @@ def test_mae_loss_beats_rmse_on_mae_metric():
             <= mean_absolute_error(yte, rmse.predict(Xte)) + 1.0)
 
 
+@pytest.mark.parametrize("loss_name", ["MAE", "Quantile"])
+@pytest.mark.parametrize("weights", [None, np.array([
+    1.0, 2.0, 0.5, 1.5, 3.0, 0.75, 1.25, 2.5, 0.8, 1.2, 1.7, 0.9
+])])
+def test_grouped_leaf_correction_matches_mask_semantics(loss_name, weights):
+    from chimeraboost.booster import GradientBoosting
+    from chimeraboost.losses import MAE, Quantile
+    from chimeraboost.tree import ObliviousTree
+
+    residuals = np.array([1.2, -0.4, 2.5, 0.0, -1.5, 3.2,
+                          -0.7, 1.1, 0.8, -2.0, 4.1, -3.3])
+    leaf = np.array([3, 0, 3, 1, 7, 1, 3, 0, 6, 7, 1, 3])
+    n_leaves = 8
+    lr = 0.37
+    loss_obj = MAE() if loss_name == "MAE" else Quantile(alpha=0.3)
+
+    expected = np.zeros(n_leaves)
+    for l in range(n_leaves):
+        mask = leaf == l
+        w = weights[mask] if weights is not None else None
+        expected[l] = lr * loss_obj.leaf_value(residuals[mask], w)
+
+    tree = ObliviousTree(
+        np.array([0, 1, 2]),
+        np.array([0, 0, 0]),
+        np.full(n_leaves, -999.0),
+    )
+    booster = GradientBoosting(loss=loss_name, learning_rate=lr)
+    booster.lr_ = lr
+    booster.loss_ = loss_obj
+
+    booster._correct_leaves(
+        tree, np.empty((residuals.shape[0], 0), dtype=np.uint16),
+        residuals, weights, leaf=leaf
+    )
+
+    assert np.allclose(tree.values, expected)
+
+
 def test_quantile_calibration_on_large_data():
     rng = np.random.default_rng(0)
     n = 10000
