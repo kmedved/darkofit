@@ -500,6 +500,29 @@ def test_l2_zero_illegal_splits_do_not_divide_by_zero():
         numba.set_num_threads(old_threads)
 
 
+def test_best_split_serial_matches_parallel_histogram_search():
+    """Parent-gain optimizations must not diverge between split-search paths."""
+    import numba
+    from chimeraboost.tree import _best_split, _best_split_serial
+
+    rng = np.random.default_rng(12)
+    hg = rng.normal(size=(7, 4, 8))
+    hh = rng.uniform(0.05, 2.0, size=(7, 4, 8))
+    n_bins = np.array([8, 7, 6, 8, 5, 4, 7], dtype=np.int64)
+    feat_mask = np.array([1, 1, 0, 1, 1, 0, 1], dtype=np.int64)
+
+    serial = _best_split_serial(hg, hh, n_bins, 2.0, feat_mask, 0.1, 4)
+    old_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(min(2, numba.config.NUMBA_NUM_THREADS))
+        parallel = _best_split(hg, hh, n_bins, 2.0, feat_mask, 0.1, 4)
+    finally:
+        numba.set_num_threads(old_threads)
+
+    assert serial[:2] == parallel[:2]
+    assert np.isclose(serial[2], parallel[2])
+
+
 def test_ordered_leaf_update_l2_zero_singleton_is_finite():
     """Leave-one-out ordered updates should remain finite when l2=0."""
     from chimeraboost.booster import _ordered_leaf_update

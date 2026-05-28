@@ -396,6 +396,11 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
             for b in range(nb):
                 Gt[l] += hg[f, l, b]
                 Ht[l] += hh[f, l, b]
+        parent_gain = np.zeros(n_leaves)
+        for l in range(n_leaves):
+            parent_denom = Ht[l] + l2
+            if Ht[l] > 0.0 and parent_denom > 0.0:
+                parent_gain[l] = Gt[l] * Gt[l] / parent_denom
 
         GL = np.zeros(n_leaves)
         HL = np.zeros(n_leaves)
@@ -434,7 +439,7 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
                         gain += (
                             gl * gl / left_denom
                             + gr * gr / right_denom
-                            - Gt[l] * Gt[l] / parent_denom
+                            - parent_gain[l]
                         )
             
             if legal and any_nonempty and gain > best_g:
@@ -462,6 +467,7 @@ def _best_split_serial(hg, hh, n_bins_per_feature, l2, feat_mask,
     Ht = np.empty(n_leaves)
     GL = np.empty(n_leaves)
     HL = np.empty(n_leaves)
+    parent_gain = np.empty(n_leaves)
 
     best_f = 0
     best_t = -1
@@ -481,6 +487,11 @@ def _best_split_serial(hg, hh, n_bins_per_feature, l2, feat_mask,
             Ht[l] = ht
             GL[l] = 0.0
             HL[l] = 0.0
+            parent_denom = ht + l2
+            if ht > 0.0 and parent_denom > 0.0:
+                parent_gain[l] = gt * gt / parent_denom
+            else:
+                parent_gain[l] = 0.0
 
         feat_best_gain = -np.inf
         feat_best_t = -1
@@ -513,7 +524,7 @@ def _best_split_serial(hg, hh, n_bins_per_feature, l2, feat_mask,
                         gain += (
                             gl * gl / left_denom
                             + gr * gr / right_denom
-                            - Gt[l] * Gt[l] / parent_denom
+                            - parent_gain[l]
                         )
             if legal and any_nonempty and gain > feat_best_gain:
                 feat_best_gain = gain
