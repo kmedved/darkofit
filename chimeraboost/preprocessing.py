@@ -67,13 +67,17 @@ class FeaturePreprocessor:
             return np.empty((X.shape[0], 0), dtype=np.int64)
         codes = np.empty((X.shape[0], len(self.cat_features_)), dtype=np.int64)
         for j, f in enumerate(self.cat_features_):
-            m = self.cat_maps_[j]
             col = X[:, f]
-            for i in range(X.shape[0]):
-                v = col[i]
-                if v is None or (isinstance(v, float) and v != v):
-                    v = "__nan__"
-                codes[i, j] = m.get(v, -1)   # unseen -> prior fallback
+            m = self.cat_maps_[j]
+            if "__nan__" in m:
+                for i in range(X.shape[0]):
+                    v = col[i]
+                    if v is None or (isinstance(v, float) and v != v):
+                        v = "__nan__"
+                    codes[i, j] = m.get(v, -1)   # unseen -> prior fallback
+            else:
+                for i in range(X.shape[0]):
+                    codes[i, j] = m.get(col[i], -1)
         return codes
 
     # ---- fit / transform -----------------------------------------------------

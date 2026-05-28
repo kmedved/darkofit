@@ -19,7 +19,25 @@ Unseen categories fall back to the prior.
 """
 
 import numpy as np
+import sys
 from numba import njit
+
+_MISSING_CATEGORY = "__nan__"
+
+
+def _factorize_with_loaded_pandas(col):
+    """Use pandas' fast hashtable factorizer only if pandas is already loaded."""
+    pd = sys.modules.get("pandas")
+    if pd is None:
+        return None
+    try:
+        s = pd.Series(col, dtype=object)
+        if s.hasnans:
+            s = s.where(pd.notna(s), _MISSING_CATEGORY)
+        codes, categories = pd.factorize(s, sort=False, use_na_sentinel=False)
+    except Exception:
+        return None
+    return codes.astype(np.int64), np.asarray(categories, dtype=object)
 
 
 @njit(cache=True)
@@ -101,13 +119,32 @@ def factorize(column):
 
     NaN / None map to a dedicated code. Returns (codes, categories).
     """
+    col_raw = np.asarray(column)
+    if col_raw.dtype != object:
+        try:
+            if np.issubdtype(col_raw.dtype, np.floating):
+                missing = np.isnan(col_raw)
+                if np.any(missing):
+                    col_obj = col_raw.astype(object)
+                    col_obj[missing] = _MISSING_CATEGORY
+                    categories, codes = np.unique(col_obj, return_inverse=True)
+                    return codes.astype(np.int64), categories.astype(object)
+            categories, codes = np.unique(col_raw, return_inverse=True)
+            return codes.astype(np.int64), categories.astype(object)
+        except TypeError:
+            pass
+
     col = np.asarray(column, dtype=object)
+    pandas_result = _factorize_with_loaded_pandas(col)
+    if pandas_result is not None:
+        return pandas_result
+
     cats = {}
     codes = np.empty(col.shape[0], dtype=np.int64)
     for i, v in enumerate(col):
         # Normalize missing values to a single key.
         if v is None or (isinstance(v, float) and np.isnan(v)):
-            v = "__nan__"
+            v = _MISSING_CATEGORY
         if v not in cats:
             cats[v] = len(cats)
         codes[i] = cats[v]

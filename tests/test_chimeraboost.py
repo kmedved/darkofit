@@ -110,6 +110,66 @@ def test_handles_nan_and_unseen_categories():
     assert np.all((p >= 0) & (p <= 1))
 
 
+def test_categorical_transform_preserves_missing_and_unseen_codes():
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.target_encoding import factorize
+
+    raw = np.array(["b", "a", "b", None, np.nan, "__nan__"], dtype=object)
+    codes, categories = factorize(raw)
+    cat_to_code = {v: i for i, v in enumerate(categories)}
+    assert codes[3] == cat_to_code["__nan__"]
+    assert codes[4] == cat_to_code["__nan__"]
+    assert codes[5] == cat_to_code["__nan__"]
+
+    X = np.array([
+        ["red", 1.0],
+        ["blue", 2.0],
+        ["red", 3.0],
+        ["__nan__", 4.0],
+    ], dtype=object)
+    prep = FeaturePreprocessor(16, 1.0, 0)
+    prep.fit_transform(X, [np.array([0.0, 1.0, 0.0, 1.0])], cat_features=[0])
+
+    Xt = np.array([
+        ["red", 10.0],
+        ["green", 11.0],
+        [None, 12.0],
+        [np.nan, 13.0],
+        ["__nan__", 14.0],
+    ], dtype=object)
+    transformed = prep._codes_for_transform(Xt)[:, 0]
+    expected = np.array([
+        prep.cat_maps_[0]["red"],
+        -1,
+        prep.cat_maps_[0]["__nan__"],
+        prep.cat_maps_[0]["__nan__"],
+        prep.cat_maps_[0]["__nan__"],
+    ])
+    assert np.array_equal(transformed, expected)
+
+    X_num = np.array([[1.0], [2.0], [1.0], [3.0]], dtype=object)
+    prep_num = FeaturePreprocessor(16, 1.0, 0)
+    prep_num.fit_transform(X_num, [np.array([0.0, 1.0, 0.0, 1.0])], [0])
+    Xt_num = np.array([[2.0], [4.0], [np.nan], [None]], dtype=object)
+    expected_num = np.array([prep_num.cat_maps_[0][2.0], -1, -1, -1])
+    assert np.array_equal(prep_num._codes_for_transform(Xt_num)[:, 0], expected_num)
+
+
+def test_loaded_pandas_factorize_fast_path_preserves_missing_codes():
+    pytest.importorskip("pandas")
+    from chimeraboost.target_encoding import factorize
+
+    raw = np.array(["b", "a", "b", None, np.nan, "__nan__"], dtype=object)
+    codes, categories = factorize(raw)
+    cat_to_code = {v: i for i, v in enumerate(categories)}
+
+    assert codes[0] == codes[2]
+    assert codes[1] != codes[0]
+    assert codes[3] == cat_to_code["__nan__"]
+    assert codes[4] == cat_to_code["__nan__"]
+    assert codes[5] == cat_to_code["__nan__"]
+
+
 def test_explicit_lr_overrides_auto():
     X, y = load_diabetes(return_X_y=True)
     m = ChimeraBoostRegressor(iterations=50, learning_rate=0.123).fit(X, y)
