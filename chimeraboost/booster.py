@@ -104,6 +104,11 @@ class _BaseBooster:
         hh = np.zeros((n_features, max_leaves, max_bins))
         return (hg, hh)
 
+    def _alloc_split_buffers(self, n_features):
+        """Allocate reusable per-feature split-search scratch buffers."""
+        max_leaves = 1 << self.depth
+        return tuple(np.empty((n_features, max_leaves)) for _ in range(5))
+
     def _feature_selection(self, n_cols, rng):
         """Return a 0/1 mask and selected column indices for one tree."""
         if self.colsample >= 1.0:
@@ -190,6 +195,10 @@ class GradientBoosting(_BaseBooster):
         )
         n_bins = self.prep_.n_bins_
         hist_buffers = self._alloc_hist_buffers(X_binned.shape[1], n_bins)
+        split_buffers = (
+            self._alloc_split_buffers(X_binned.shape[1])
+            if self.n_threads_ > 1 else None
+        )
         self._importance = np.zeros(self.prep_.n_input_features_)
 
         Xv_binned = yv = Fv = None
@@ -224,6 +233,7 @@ class GradientBoosting(_BaseBooster):
                 feature_mask=fmask,
                 min_child_weight=self.min_child_weight,
                 hist_buffers=hist_buffers,
+                split_buffers=split_buffers,
                 return_training_state=True,
                 X_hist_binned=X_hist_binned,
                 feature_indices=findices,
@@ -365,6 +375,10 @@ class MulticlassBoosting(_BaseBooster):
         )
         n_bins = self.prep_.n_bins_
         hist_buffers = self._alloc_hist_buffers(X_binned.shape[1], n_bins)
+        split_buffers = (
+            self._alloc_split_buffers(X_binned.shape[1])
+            if self.n_threads_ > 1 else None
+        )
         self._importance = np.zeros(self.prep_.n_input_features_)
 
         Xv_binned = Yv_class = Fv = yv_idx = None
@@ -404,6 +418,7 @@ class MulticlassBoosting(_BaseBooster):
                     feature_mask=fmask,
                     min_child_weight=self.min_child_weight,
                     hist_buffers=hist_buffers,
+                    split_buffers=split_buffers,
                     return_training_state=True,
                     X_hist_binned=X_hist_binned,
                     feature_indices=findices,

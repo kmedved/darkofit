@@ -338,6 +338,20 @@ def test_thread_count_does_not_change_predictions():
     assert np.allclose(a.predict(Xte), b.predict(Xte))
 
 
+def test_single_thread_fit_skips_threaded_split_buffers(monkeypatch):
+    """Serial split search should not allocate threaded scratch buffers."""
+    import chimeraboost.booster as booster
+
+    def fail_if_called(self, n_features):
+        raise AssertionError("threaded split buffers should not be allocated")
+
+    monkeypatch.setattr(booster._BaseBooster, "_alloc_split_buffers", fail_if_called)
+    X, y = load_diabetes(return_X_y=True)
+    ChimeraBoostRegressor(
+        iterations=3, depth=2, thread_count=1, random_state=0
+    ).fit(X[:120], y[:120])
+
+
 def test_min_child_weight_controls_depth_overfitting():
     """With min_child_weight active, increasing depth should NOT degrade test
     accuracy (the constraint stops growth before sparse leaves overfit). This is
@@ -402,6 +416,61 @@ def test_shared_histogram_buffers_match_standalone():
     fresh = build_oblivious_tree(Xb, g2, hess, nb, depth, 3.0, 0.1)
     assert np.array_equal(again.splits_feat, fresh.splits_feat)
     assert np.allclose(again.values, fresh.values)
+
+
+def test_shared_split_buffers_match_standalone_threaded():
+    """Threaded split-search scratch buffers must be reusable across trees."""
+    import numba
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_oblivious_tree
+
+    if numba.config.NUMBA_NUM_THREADS < 2:
+        pytest.skip("requires at least two numba threads")
+
+    rng = np.random.default_rng(13)
+    X = rng.normal(size=(1000, 14))
+    y = 1.2 * X[:, 0] - 0.9 * X[:, 3] + rng.normal(0, 0.4, 1000)
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = prep.fit_transform(X, [y], None)
+    grad = y - y.mean()
+    hess = np.ones(len(y))
+    depth = 5
+    split_buffers = tuple(np.empty((Xb.shape[1], 1 << depth)) for _ in range(5))
+
+    old_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(min(2, numba.config.NUMBA_NUM_THREADS))
+        standalone = build_oblivious_tree(
+            Xb, grad, hess, prep.n_bins_, depth, 3.0, 0.1,
+            return_training_state=True,
+        )
+        shared = build_oblivious_tree(
+            Xb, grad, hess, prep.n_bins_, depth, 3.0, 0.1,
+            split_buffers=split_buffers, return_training_state=True,
+        )
+
+        y2 = X[:, 5] + 0.8 * X[:, 6] + rng.normal(0, 0.4, 1000)
+        g2 = y2 - y2.mean()
+        again = build_oblivious_tree(
+            Xb, g2, hess, prep.n_bins_, depth, 3.0, 0.1,
+            split_buffers=split_buffers, return_training_state=True,
+        )
+        fresh = build_oblivious_tree(
+            Xb, g2, hess, prep.n_bins_, depth, 3.0, 0.1,
+            return_training_state=True,
+        )
+    finally:
+        numba.set_num_threads(old_threads)
+
+    for a, b in [(standalone, shared), (fresh, again)]:
+        tree_a, leaf_a, G_a, H_a = a
+        tree_b, leaf_b, G_b, H_b = b
+        assert np.array_equal(tree_a.splits_feat, tree_b.splits_feat)
+        assert np.array_equal(tree_a.splits_thr, tree_b.splits_thr)
+        assert np.allclose(tree_a.values, tree_b.values)
+        assert np.array_equal(leaf_a, leaf_b)
+        assert np.allclose(G_a, G_b)
+        assert np.allclose(H_a, H_b)
 
 
 def test_returned_training_state_matches_tree_apply_and_bincount():
@@ -489,13 +558,17 @@ def test_l2_zero_illegal_splits_do_not_divide_by_zero():
     hh[0, 0, 0] = 10.0
     n_bins = np.array([3], dtype=np.int64)
     feat_mask = np.array([1], dtype=np.int64)
+    scratch = tuple(np.empty((1, 1)) for _ in range(5))
 
     assert _best_split_serial(hg, hh, n_bins, 0.0, feat_mask, 1.0, 1)[1] == -1
 
     old_threads = numba.get_num_threads()
     try:
         numba.set_num_threads(min(2, numba.config.NUMBA_NUM_THREADS))
-        assert _best_split(hg, hh, n_bins, 0.0, feat_mask, 1.0, 1)[1] == -1
+        assert _best_split(
+            hg, hh, n_bins, 0.0, feat_mask, 1.0, 1,
+            scratch[0], scratch[1], scratch[2], scratch[3], scratch[4],
+        )[1] == -1
     finally:
         numba.set_num_threads(old_threads)
 
@@ -510,12 +583,16 @@ def test_best_split_serial_matches_parallel_histogram_search():
     hh = rng.uniform(0.05, 2.0, size=(7, 4, 8))
     n_bins = np.array([8, 7, 6, 8, 5, 4, 7], dtype=np.int64)
     feat_mask = np.array([1, 1, 0, 1, 1, 0, 1], dtype=np.int64)
+    scratch = tuple(np.empty((hg.shape[0], 4)) for _ in range(5))
 
     serial = _best_split_serial(hg, hh, n_bins, 2.0, feat_mask, 0.1, 4)
     old_threads = numba.get_num_threads()
     try:
         numba.set_num_threads(min(2, numba.config.NUMBA_NUM_THREADS))
-        parallel = _best_split(hg, hh, n_bins, 2.0, feat_mask, 0.1, 4)
+        parallel = _best_split(
+            hg, hh, n_bins, 2.0, feat_mask, 0.1, 4,
+            scratch[0], scratch[1], scratch[2], scratch[3], scratch[4],
+        )
     finally:
         numba.set_num_threads(old_threads)
 

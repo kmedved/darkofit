@@ -366,7 +366,8 @@ def _build_histograms_selected_rows_unit_hess_into_serial(
 
 @njit(cache=True, parallel=True)
 def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
-                n_leaves):
+                n_leaves, scratch_Gt, scratch_Ht, scratch_GL, scratch_HL,
+                scratch_parent):
     """Find the (feature, threshold) with the highest total gain.
 
     hg/hh may be oversized buffers (shape max_leaves); `n_leaves` says how many
@@ -390,20 +391,23 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
             continue
         nb = n_bins_per_feature[f]
         # Totals per leaf for this feature (same regardless of threshold).
-        Gt = np.zeros(n_leaves)
-        Ht = np.zeros(n_leaves)
         for l in range(n_leaves):
+            scratch_Gt[f, l] = 0.0
+            scratch_Ht[f, l] = 0.0
             for b in range(nb):
-                Gt[l] += hg[f, l, b]
-                Ht[l] += hh[f, l, b]
-        parent_gain = np.zeros(n_leaves)
+                scratch_Gt[f, l] += hg[f, l, b]
+                scratch_Ht[f, l] += hh[f, l, b]
         for l in range(n_leaves):
-            parent_denom = Ht[l] + l2
-            if Ht[l] > 0.0 and parent_denom > 0.0:
-                parent_gain[l] = Gt[l] * Gt[l] / parent_denom
+            scratch_GL[f, l] = 0.0
+            scratch_HL[f, l] = 0.0
+            parent_denom = scratch_Ht[f, l] + l2
+            if scratch_Ht[f, l] > 0.0 and parent_denom > 0.0:
+                scratch_parent[f, l] = (
+                    scratch_Gt[f, l] * scratch_Gt[f, l] / parent_denom
+                )
+            else:
+                scratch_parent[f, l] = 0.0
 
-        GL = np.zeros(n_leaves)
-        HL = np.zeros(n_leaves)
         best_g = -np.inf
         best_t = -1
         # Threshold t means "left = bins [0..t]". Last bin can't be a threshold.
@@ -415,16 +419,16 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
             for l in range(n_leaves):
                 # Pass 1: Advance the running prefix sums for every leaf regardless
                 # of legality, so GL/HL carry correctly into the next threshold.
-                GL[l] += hg[f, l, t]
-                HL[l] += hh[f, l, t]
+                scratch_GL[f, l] += hg[f, l, t]
+                scratch_HL[f, l] += hh[f, l, t]
                 
-                if Ht[l] > 0.0:
+                if scratch_Ht[f, l] > 0.0:
                     any_nonempty = True
-                    hl = HL[l]
-                    hr = Ht[l] - hl
+                    hl = scratch_HL[f, l]
+                    hr = scratch_Ht[f, l] - hl
                     left_denom = hl + l2
                     right_denom = hr + l2
-                    parent_denom = Ht[l] + l2
+                    parent_denom = scratch_Ht[f, l] + l2
                     if (
                         hl < min_child_weight
                         or hr < min_child_weight
@@ -434,12 +438,12 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
                     ):
                         legal = False
                     else:
-                        gl = GL[l]
-                        gr = Gt[l] - gl
+                        gl = scratch_GL[f, l]
+                        gr = scratch_Gt[f, l] - gl
                         gain += (
                             gl * gl / left_denom
                             + gr * gr / right_denom
-                            - parent_gain[l]
+                            - scratch_parent[f, l]
                         )
             
             if legal and any_nonempty and gain > best_g:
@@ -668,6 +672,7 @@ class ObliviousTree:
 def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                          max_depth, l2, lr, min_gain=1e-8, feature_mask=None,
                          min_child_weight=1.0, hist_buffers=None,
+                         split_buffers=None,
                          return_training_state=False, X_hist_binned=None,
                          feature_indices=None, row_indices=None,
                          constant_hessian=False):
@@ -691,6 +696,8 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     hist_buffers: optional (hg, hh) arrays of shape (n_features, 2**max_depth,
     max_bins) reused across trees to avoid per-level allocation. If None, they
     are allocated here (convenient for one-off calls and tests).
+    split_buffers: optional five-array tuple of shape
+    (n_features, 2**max_depth) reused by the threaded split search.
     """
     if X_hist_binned is None:
         X_hist_binned = X_binned
@@ -728,8 +735,8 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
         feature_mask = np.asarray(feature_mask, dtype=np.int64)
         if feature_mask.shape != (n_features,):
             raise ValueError("feature_mask must have one entry per feature")
+    max_leaves = 1 << max_depth
     if hist_buffers is None:
-        max_leaves = 1 << max_depth
         hg = np.zeros((n_features, max_leaves, max_bins))
         hh = np.zeros((n_features, max_leaves, max_bins))
     else:
@@ -739,6 +746,23 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     splits_gain = []
     leaf = np.zeros(X_binned.shape[0], dtype=np.int64)
     use_serial_kernels = get_num_threads() == 1
+    if use_serial_kernels:
+        split_scratch = None
+    elif split_buffers is None:
+        split_scratch = (
+            np.empty((n_features, max_leaves)),
+            np.empty((n_features, max_leaves)),
+            np.empty((n_features, max_leaves)),
+            np.empty((n_features, max_leaves)),
+            np.empty((n_features, max_leaves)),
+        )
+    else:
+        if len(split_buffers) != 5:
+            raise ValueError("split_buffers must contain five scratch arrays")
+        for buf in split_buffers:
+            if buf.shape[0] < n_features or buf.shape[1] < max_leaves:
+                raise ValueError("split_buffers are too small")
+        split_scratch = split_buffers
 
     for d in range(max_depth):
         n_leaves = 1 << d
@@ -826,7 +850,9 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                 )
             f, t, gain = _best_split(
                 hg, hh, n_bins_per_feature, l2, feature_mask,
-                min_child_weight, n_leaves
+                min_child_weight, n_leaves, split_scratch[0],
+                split_scratch[1], split_scratch[2], split_scratch[3],
+                split_scratch[4]
             )
         if gain <= min_gain or t < 0:
             break
