@@ -51,6 +51,14 @@ def _ordered_leaf_update(lr, leaf, leaf_G, leaf_H, grad, hess, l2):
     return update
 
 
+def _one_hot_class_major(y_idx, n_classes):
+    """Build one-hot targets directly as class-major rows."""
+    y_idx = np.asarray(y_idx, dtype=np.int64)
+    out = np.zeros((int(n_classes), y_idx.shape[0]), dtype=np.float64)
+    out[y_idx, np.arange(y_idx.shape[0])] = 1.0
+    return out
+
+
 class _BaseBooster:
     """Shared machinery for the scalar and multiclass boosters.
 
@@ -324,8 +332,7 @@ class MulticlassBoosting(_BaseBooster):
         K = self.classes_.size
         self.n_classes_ = K
         y_idx = np.searchsorted(self.classes_, y)
-        Y = np.eye(K)[y_idx]                      # one-hot (n, K)
-        Y_class = np.ascontiguousarray(Y.T)       # class-major (K, n)
+        Y_class = _one_hot_class_major(y_idx, K)  # class-major (K, n)
         n_samples = X.shape[0]
 
         w = None
@@ -341,7 +348,7 @@ class MulticlassBoosting(_BaseBooster):
 
         # One ordered-TS target per class (CatBoost-style per-class statistics).
         self.prep_ = self._new_preprocessor()
-        X_binned = self.prep_.fit_transform(X, [Y[:, k] for k in range(K)],
+        X_binned = self.prep_.fit_transform(X, [Y_class[k] for k in range(K)],
                                             cat_features)
         X_hist_binned = (
             np.asfortranarray(X_binned) if self.n_threads_ > 1 else X_binned
@@ -350,19 +357,18 @@ class MulticlassBoosting(_BaseBooster):
         hist_buffers = self._alloc_hist_buffers(X_binned.shape[1], n_bins)
         self._importance = np.zeros(self.prep_.n_input_features_)
 
-        Xv_binned = Yv = Fv = yv_idx = None
+        Xv_binned = Yv_class = Fv = yv_idx = None
         if eval_set is not None:
             Xv, yv = eval_set
             Xv = (np.asarray(Xv, dtype=object) if cat_features
                   else np.asarray(Xv, dtype=np.float64))
             yv_idx = np.searchsorted(self.classes_, np.asarray(yv))
-            Yv = np.eye(K)[yv_idx]
-            Yv_class = np.ascontiguousarray(Yv.T)
+            Yv_class = _one_hot_class_major(yv_idx, K)
             Xv_binned = self.prep_.transform(Xv)
 
-        self.init_ = self.loss_.init(Y, w)         # (K,)
+        self.init_ = self.loss_.init_class_major(Y_class, w)  # (K,)
         F = np.tile(self.init_[:, None], (1, n_samples))  # class-major (K, n)
-        if Yv is not None:
+        if Yv_class is not None:
             Fv = np.tile(self.init_[:, None], (1, len(yv_idx)))
 
         rng = np.random.default_rng(self.random_state)

@@ -199,6 +199,10 @@ class MultiSoftmax:
         p = np.clip(np.average(Y, axis=0, weights=sample_weight), 1e-6, 1.0)
         return np.log(p)  # (K,)
 
+    def init_class_major(self, Y, sample_weight=None):  # Y one-hot (K, n)
+        p = np.clip(np.average(Y, axis=1, weights=sample_weight), 1e-6, 1.0)
+        return np.log(p)  # (K,)
+
     def grad_hess(self, Y, F):  # F (n, K)
         P = _softmax(F)
         grad = P - Y

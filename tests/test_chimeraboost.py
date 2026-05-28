@@ -170,6 +170,31 @@ def test_multiclass_tree_builder_receives_class_column_views(monkeypatch):
     assert not any(g_own or h_own for _, _, g_own, h_own in seen)
 
 
+def test_multiclass_preprocessor_receives_class_major_target_views(monkeypatch):
+    """Per-class target-stat targets should be row views of one class-major Y."""
+    import chimeraboost.booster as booster
+    from sklearn.datasets import load_wine
+
+    seen = []
+    original = booster.FeaturePreprocessor.fit_transform
+
+    def wrapped_fit_transform(self, X, encode_targets, cat_features):
+        seen.append([
+            (target.flags.c_contiguous, target.flags.owndata)
+            for target in encode_targets
+        ])
+        return original(self, X, encode_targets, cat_features)
+
+    monkeypatch.setattr(
+        booster.FeaturePreprocessor, "fit_transform", wrapped_fit_transform
+    )
+    X, y = load_wine(return_X_y=True)
+    ChimeraBoostClassifier(iterations=1, random_state=0).fit(X, y)
+
+    assert seen
+    assert all(contiguous and not owns_data for contiguous, owns_data in seen[0])
+
+
 def test_multiclass_class_major_loss_matches_row_major():
     from chimeraboost.losses import MultiSoftmax
 
@@ -180,18 +205,18 @@ def test_multiclass_class_major_loss_matches_row_major():
     loss = MultiSoftmax(4)
 
     grad, hess = loss.grad_hess(Y, F)
+    Y_class = np.ascontiguousarray(Y.T)
+    F_class = np.ascontiguousarray(F.T)
     grad_c, hess_c = loss.grad_hess_class_major(
-        np.ascontiguousarray(Y.T), np.ascontiguousarray(F.T)
+        Y_class, F_class
     )
 
+    assert np.array_equal(loss.init(Y), loss.init_class_major(Y_class))
+    assert np.allclose(loss.init(Y, w), loss.init_class_major(Y_class, w))
     assert np.array_equal(grad, grad_c.T)
     assert np.array_equal(hess, hess_c.T)
-    assert loss.eval(Y, F) == loss.eval_class_major(
-        np.ascontiguousarray(Y.T), np.ascontiguousarray(F.T)
-    )
-    assert loss.eval(Y, F, w) == loss.eval_class_major(
-        np.ascontiguousarray(Y.T), np.ascontiguousarray(F.T), w
-    )
+    assert loss.eval(Y, F) == loss.eval_class_major(Y_class, F_class)
+    assert loss.eval(Y, F, w) == loss.eval_class_major(Y_class, F_class, w)
 
 
 def test_feature_importances():
