@@ -1,25 +1,19 @@
 # chimeraboost
-### What if CatBoost, but way faster, slightly worse, and all in Python?
+### What if CatBoost, but 30x faster, slightly worse, and all in Python?
 
-<img width="500" height="500" alt="ChatGPT Image May 26, 2026, 05_12_17 PM" src="https://github.com/user-attachments/assets/ee98a4e2-9fa7-4ef1-9e64-e398f398966c" />
+> ⚠️ **Project is in active development:** breaking changes should be expected.
 
-* **What?**
-    * GBDT library that only depends on common Python libraries
-    * Supports regression, binary and multiclass classification, quantile regression
-    * Categorical features, sample weights, and automatic early stopping
-    * Within ~3% F1 / ~5% RMSE of CatBoost on a 34-dataset OpenML benchmark, at ~18× the speed
+<center>
+<img width="500" height="500" alt="chimeraboost logo" src="https://github.com/user-attachments/assets/ee98a4e2-9fa7-4ef1-9e64-e398f398966c" />
+</center>
 
-* **Why?**
-    * I want to be able to modify my GBDT library at will
-    * I know Python and I don't know C
-
-* **Install**
+* **Installation**
 
 ```
 pip install chimeraboost
 ```
 
-* **How?**
+* **Sample code:**
 
 ```python
 from chimeraboost import ChimeraBoostClassifier, ChimeraBoostRegressor
@@ -34,28 +28,15 @@ reg = ChimeraBoostRegressor(loss="Quantile", alpha=0.9, early_stopping=True)
 reg.fit(X, y)
 ```
 
-* **Some parameters**
+<p><a href="https://github.com/bbstats/chimeraboost/blob/main/images/summary.png"><img src="https://raw.githubusercontent.com/bbstats/chimeraboost/main/images/summary.png" width="500" alt="Benchmark summary" /></a></p>
+<p><a href="https://github.com/bbstats/chimeraboost/blob/main/images/slowdown_hist.png"><img src="https://raw.githubusercontent.com/bbstats/chimeraboost/main/images/slowdown_hist.png" width="500" alt="Slowdown distribution" /></a></p>
 
-| Param | Default | What it does |
-|---|---|---|
-| `iterations` | 500 | Max boosting rounds (capped earlier by early stopping). |
-| `learning_rate` | auto | Per-round shrinkage; auto-picked when `None`. |
-| `depth` | 6 | Oblivious-tree depth (same split applied across each level). |
-| `l2_leaf_reg` | 3.0 | L2 regularization on leaf values. |
-| `max_bins` | 128 | Quantile bins per numeric feature. |
-| `cat_n_permutations` | 4 | Ordered target-statistic permutations for categoricals. |
-| `early_stopping` | False | Auto train/validation split; stop when val stops improving. |
-| `cat_combinations` | False | Generate pairwise categorical combo features (helps all-cat datasets). |
+* **What?**
+    * GBDT library that only depends on common Python libraries
+    * Supports regression, quantile regression, binary and multiclass classification.
+    * Categorical features, sample weights, and automatic early stopping
+    * Within ~3% F1 / ~5% RMSE of CatBoost on a 34-dataset OpenML benchmark, at ~30× the speed
 
-* **Benchmark**
-
-![Benchmark summary](images/summary.png)
-
-* **Reproduce the benchmark**
-
-```
-python benchmarks/run_benchmarks.py --openml --seeds 5 --save
-python benchmarks/make_tables.py benchmarks/results/<stamp>.json
-```
-
-Results land in `benchmarks/results/<stamp>.txt` (text log) and `.json` (raw per-seed metrics). Table PNG is written to `images/`. Competitors are auto-detected; install any of `catboost`, `xgboost`, `lightgbm` to see them.
+* **Why?**
+    * I want to be able to modify my GBDT library at will
+    * I know Python and I don't know C

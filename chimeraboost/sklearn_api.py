@@ -92,6 +92,7 @@ def _make_eval_split(X, y, validation_fraction, random_state,
 
     return train_idx, val_idx
 
+
 class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
     """Gradient boosted oblivious trees for regression.
 

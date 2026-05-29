@@ -248,17 +248,17 @@ def test_shared_histogram_buffers_match_standalone():
     X = rng.normal(size=(800, 12))
     y = (X[:, 0] + 0.5 * X[:, 1] + rng.normal(0, 0.5, 800)).astype(float)
     prep = FeaturePreprocessor(64, 1.0, 0)
-    Xb = prep.fit_transform(X, [y], None)
+    # Tree builder consumes a feature-major (n_features, n_samples) matrix.
+    Xb = np.ascontiguousarray(prep.fit_transform(X, [y], None).T)
     nb = prep.n_bins_
     grad = (y - y.mean()); hess = np.ones(len(y))
 
     depth = 6
-    standalone = build_oblivious_tree(Xb, grad, hess, nb, depth, 3.0, 0.1)
-    nfeat = Xb.shape[1]; maxbins = int(nb.max()); maxleaves = 1 << depth
-    bufs = (np.zeros((nfeat, maxleaves, maxbins)),
-            np.zeros((nfeat, maxleaves, maxbins)))
-    shared = build_oblivious_tree(Xb, grad, hess, nb, depth, 3.0, 0.1,
-                                  hist_buffers=bufs)
+    standalone, _ = build_oblivious_tree(Xb, grad, hess, nb, depth, 3.0, 0.1)
+    nfeat = Xb.shape[0]; maxbins = int(nb.max()); maxleaves = 1 << depth
+    bufs = np.zeros((nfeat, maxleaves, maxbins, 2))   # interleaved grad/hess
+    shared, _ = build_oblivious_tree(Xb, grad, hess, nb, depth, 3.0, 0.1,
+                                     hist_buffers=bufs)
     assert np.array_equal(standalone.splits_feat, shared.splits_feat)
     assert np.array_equal(standalone.splits_thr, shared.splits_thr)
     assert np.allclose(standalone.values, shared.values)
@@ -266,9 +266,9 @@ def test_shared_histogram_buffers_match_standalone():
     # Reusing the SAME buffers for a second, different tree must not leak state.
     y2 = (X[:, 3] - X[:, 4] + rng.normal(0, 0.5, 800)).astype(float)
     g2 = (y2 - y2.mean())
-    again = build_oblivious_tree(Xb, g2, hess, nb, depth, 3.0, 0.1,
-                                 hist_buffers=bufs)
-    fresh = build_oblivious_tree(Xb, g2, hess, nb, depth, 3.0, 0.1)
+    again, _ = build_oblivious_tree(Xb, g2, hess, nb, depth, 3.0, 0.1,
+                                    hist_buffers=bufs)
+    fresh, _ = build_oblivious_tree(Xb, g2, hess, nb, depth, 3.0, 0.1)
     assert np.array_equal(again.splits_feat, fresh.splits_feat)
     assert np.allclose(again.values, fresh.values)
 
@@ -358,6 +358,34 @@ def test_sample_weight_early_stopping_slices_correctly():
         early_stopping_rounds=20, random_state=0
     ).fit(X, y, sample_weight=w)
     assert m.best_iteration_ < 500
+
+
+def test_groups_kept_intact_in_early_stopping_split():
+    """The grouped early-stopping split must keep every group entirely on one
+    side of the train/validation boundary, on both the regression
+    (GroupShuffleSplit) and classification (StratifiedGroupKFold) paths. The
+    end-to-end classifier fit with groups should also run and predict."""
+    from chimeraboost.sklearn_api import _make_eval_split
+    rng = np.random.default_rng(0)
+    n = 400
+    groups = rng.integers(0, 40, size=n)        # 40 groups, repeated across rows
+    X = rng.normal(size=(n, 5))
+    y_cls = rng.integers(0, 2, size=n)
+    y_reg = rng.normal(size=n)
+
+    # Regression path: GroupShuffleSplit, no stratification.
+    tr, va = _make_eval_split(X, y_reg, 0.2, 0, groups=groups, stratify=None)
+    assert set(groups[tr]).isdisjoint(set(groups[va]))
+
+    # Classification path: StratifiedGroupKFold.
+    tr, va = _make_eval_split(X, y_cls, 0.2, 0, groups=groups, stratify=y_cls)
+    assert set(groups[tr]).isdisjoint(set(groups[va]))
+
+    # End-to-end: early stopping + groups fits and predicts the right shape.
+    m = ChimeraBoostClassifier(iterations=200, early_stopping=True,
+                               validation_fraction=0.2, early_stopping_rounds=15,
+                               random_state=0).fit(X, y_cls, groups=groups)
+    assert m.predict(X).shape == (n,)
 
 
 def test_empty_tree_stops_boosting_early():

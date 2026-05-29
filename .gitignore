@@ -222,7 +222,5 @@ catboost_info/
 .claude/scheduled_tasks.lock
 
 benchmarks/results/*
-tests/__pycache__/*
-.gitignore
 .claude/settings.json
 .githooks/
