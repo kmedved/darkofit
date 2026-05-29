@@ -59,11 +59,3 @@ python benchmarks/make_tables.py benchmarks/results/<stamp>.json
 ```
 
 Results land in `benchmarks/results/<stamp>.txt` (text log) and `.json` (raw per-seed metrics). Table PNG is written to `images/`. Competitors are auto-detected; install any of `catboost`, `xgboost`, `lightgbm` to see them.
-
-* **Pre-push hook (optional)**
-
-Run the test suite before every `git push`:
-
-```
-git config core.hooksPath .githooks
-```

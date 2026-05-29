@@ -225,3 +225,4 @@ benchmarks/results/*
 tests/__pycache__/*
 .gitignore
 .claude/settings.json
+.githooks/
