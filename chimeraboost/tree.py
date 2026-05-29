@@ -53,12 +53,11 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
     For a candidate threshold t, bins <= t go left and bins > t go right, the
     same way in every current leaf. Gain is summed across leaves. Features with
     feat_mask[f] == 0 are skipped (column subsampling).
-    
-    Gain Masking: A split is only evaluated for a specific leaf if it keeps
-    at least `min_child_weight` hessian mass on both sides locally. Leaves
-    failing this constraint simply contribute 0.0 to the shared split's gain,
-    preventing noise from driving the choice while allowing healthy leaves to
-    continue pulling the tree deeper.
+
+    A threshold is legal only if *every* non-empty leaf keeps at least
+    min_child_weight hessian mass on both sides; otherwise it is rejected
+    outright (an illegal split in one leaf is illegal for the shared level).
+    This is what stops growth and prevents sparse-leaf overfitting.
     """
     n_features = hg.shape[0]
     max_bins = hg.shape[2]
@@ -114,7 +113,7 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
             if legal and gain > best_g:
                 best_g = gain
                 best_t = t
-                
+
         feat_gain[f] = best_g
         feat_thr[f] = best_t
 

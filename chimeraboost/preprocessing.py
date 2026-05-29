@@ -47,6 +47,13 @@ class FeaturePreprocessor:
         self.cat_combinations = bool(cat_combinations)
 
     # ---- helpers -------------------------------------------------------------
+    @staticmethod
+    def _combo_values(X, f_a, f_b):
+        """The synthetic "val_a_x_val_b" string column for a feature pair."""
+        col_a = np.asarray(X[:, f_a], dtype=str)
+        col_b = np.asarray(X[:, f_b], dtype=str)
+        return np.char.add(np.char.add(col_a, "_x_"), col_b)
+
     def _split_columns_fit(self, X, cat_features):
         """Split input into a numeric matrix and an integer-code matrix for the
         categorical columns, learning the category->code maps on the way.
@@ -70,27 +77,22 @@ class FeaturePreprocessor:
             codes = np.empty((X.shape[0], 0), dtype=np.int64)
             self.cat_maps_ = []
 
-        # 2-way combinations: each pair (f_a, f_b) becomes a new categorical
-        # column whose values are "val_a_x_val_b" strings, target-encoded like
-        # any other cat column. Captures interaction effects CatBoost leverages.
+        # 2-way combinations: each pair becomes a new categorical column of
+        # "val_a_x_val_b" strings, target-encoded like any other cat column, so
+        # the tree sees interaction effects single columns can't express.
         self.combo_pairs_ = []
         self.combo_maps_ = []
         if self.cat_combinations and len(self.cat_features_) >= 2:
             combo_cols = []
-            cats_list = self.cat_features_
-            for a_idx in range(len(cats_list)):
-                for b_idx in range(a_idx + 1, len(cats_list)):
-                    f_a, f_b = cats_list[a_idx], cats_list[b_idx]
-                    col_a = np.asarray(X[:, f_a], dtype=str)
-                    col_b = np.asarray(X[:, f_b], dtype=str)
-                    combo_vals = np.char.add(np.char.add(col_a, "_x_"), col_b)
-                    c, cats = factorize(combo_vals)
+            for a in range(len(self.cat_features_)):
+                for b in range(a + 1, len(self.cat_features_)):
+                    f_a, f_b = self.cat_features_[a], self.cat_features_[b]
+                    c, cats = factorize(self._combo_values(X, f_a, f_b))
                     self.combo_pairs_.append((f_a, f_b))
                     self.combo_maps_.append({v: i for i, v in enumerate(cats)})
                     combo_cols.append(c)
-            if combo_cols:
-                codes = np.hstack([codes,
-                                   np.column_stack(combo_cols).astype(np.int64)])
+            codes = np.hstack([codes,
+                               np.column_stack(combo_cols).astype(np.int64)])
         return num, codes
 
     def _codes_for_transform(self, X):
@@ -111,14 +113,11 @@ class FeaturePreprocessor:
 
     def _combo_codes_for_transform(self, X):
         """Reconstruct combination codes for transform using stored combo maps."""
-        n = X.shape[0]
-        combo_codes = np.full((n, len(self.combo_pairs_)), -1, dtype=np.int64)
+        combo_codes = np.full((X.shape[0], len(self.combo_pairs_)), -1, dtype=np.int64)
         for k, (f_a, f_b) in enumerate(self.combo_pairs_):
-            col_a = np.asarray(X[:, f_a], dtype=str)
-            col_b = np.asarray(X[:, f_b], dtype=str)
-            combo_vals = np.char.add(np.char.add(col_a, "_x_"), col_b)
             m = self.combo_maps_[k]
-            combo_codes[:, k] = [m.get(v, -1) for v in combo_vals.tolist()]
+            vals = self._combo_values(X, f_a, f_b)
+            combo_codes[:, k] = [m.get(v, -1) for v in vals.tolist()]
         return combo_codes
 
     # ---- fit / transform -----------------------------------------------------
@@ -139,7 +138,7 @@ class FeaturePreprocessor:
                 self.encoders_.append(enc)
 
         feat = self._stack(num, encoded_blocks)
-        self._build_feature_map(num.shape[1], codes.shape[1], len(encode_targets))
+        self._build_feature_map(len(encode_targets))
 
         self.binner_ = Binner(self.max_bins)
         X_binned = self.binner_.fit_transform(feat)
@@ -169,20 +168,19 @@ class FeaturePreprocessor:
             return num
         return np.hstack(mats) if len(mats) > 1 else mats[0]
 
-    def _build_feature_map(self, n_num, n_cat, n_targets):
-        """Combined column index -> original input column index.
-        Combo features are mapped back to the lower-indexed original feature of
-        the pair so their split gains fold into an existing importance bucket."""
+    def _build_feature_map(self, n_targets):
+        """Map each combined-matrix column back to its original input column.
+        The numeric block comes first, then one (cat + combo) block per encode
+        target. Combo columns map to the lower-indexed feature of their pair so
+        their split gains fold into an existing importance bucket."""
+        combo_orig = [min(i, j) for i, j in self.combo_pairs_]
         fmap = list(self.num_features_)
-        combo_orig = [min(i, j) for i, j in getattr(self, "combo_pairs_", [])]
         for _ in range(n_targets):
             fmap.extend(self.cat_features_)
             fmap.extend(combo_orig)
         self.feature_map_ = np.array(fmap, dtype=np.int64)
-        self.n_input_features_ = (
-            (max(self.num_features_) if self.num_features_ else -1)
-        )
+
+        max_idx = max(self.num_features_, default=-1)
         if self.cat_features_:
-            self.n_input_features_ = max(self.n_input_features_,
-                                         max(self.cat_features_))
-        self.n_input_features_ += 1
+            max_idx = max(max_idx, max(self.cat_features_))
+        self.n_input_features_ = max_idx + 1

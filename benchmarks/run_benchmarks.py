@@ -463,38 +463,26 @@ def main():
                           "--models ChimeraBoost CatBoost sklearn_HGB. "
                           f"Available: {list(RUNNERS)}"))
     ap.add_argument("--lr", type=float, default=None,
-                    help=("override ChimeraBoost learning rate (default: auto=0.1 "
-                          "with early stopping). Try --lr 0.05 to test whether "
-                          "smaller steps + more trees improve accuracy on OpenML "
-                          "before promoting to a new default."))
+                    help="ChimeraBoost learning rate (default: auto).")
     ap.add_argument("--chimera-depth", type=int, default=6,
-                    help=("override ChimeraBoost tree depth (default: 6). Use "
-                          "--chimera-depth 8 to A/B whether deeper trees close "
-                          "the bias gap on numeric-heavy datasets."))
+                    help="ChimeraBoost tree depth (default: 6).")
     ap.add_argument("--patience", type=int, default=None,
-                    help=("override early stopping patience rounds for ALL models "
-                          "(default: PATIENCE=%d). Higher values let more trees "
-                          "accumulate before stopping." % PATIENCE))
+                    help="early-stopping patience for ALL models "
+                         "(default: %d)." % PATIENCE)
     ap.add_argument("--no-ordered-boosting", dest="ordered_boosting",
                     action="store_false", default=True,
-                    help=("disable LOO leaf correction in ChimeraBoost "
-                          "(default: on). Use to A/B test the improvement."))
+                    help="disable ChimeraBoost's LOO leaf correction.")
     ap.add_argument("--chimera-subsample", type=float, default=1.0,
                     dest="chimera_subsample",
-                    help=("ChimeraBoost row subsample fraction (default: 1.0=off). "
-                          "Uses MVS (gradient-weighted) sampling when < 1. "
-                          "Try 0.8 to test whether stochastic boosting helps."))
+                    help="ChimeraBoost row subsample fraction; "
+                         "MVS sampling when < 1.0 (default: 1.0 = off).")
     ap.add_argument("--chimera-mcw", type=float, default=1.0,
                     dest="chimera_mcw",
-                    help=("ChimeraBoost min_child_weight (default: 1.0). "
-                          "Try 0.5 or 0.0 to see whether relaxing the hessian "
-                          "constraint allows better splits on small datasets."))
+                    help="ChimeraBoost min_child_weight (default: 1.0).")
     ap.add_argument("--chimera-cat-combinations", action="store_true",
                     default=False, dest="cat_combinations",
-                    help=("Enable 2-way categorical feature combinations in "
-                          "ChimeraBoost (default: off). Generates all C(n_cat,2) "
-                          "pairwise combo columns before target encoding, mirroring "
-                          "CatBoost's feature combination step."))
+                    help="enable 2-way categorical feature combinations "
+                         "(default: off).")
     ap.add_argument("--datasets", nargs="+", default=None,
                     metavar="DS",
                     help=("run only these datasets, e.g. --datasets diabetes "

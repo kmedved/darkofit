@@ -11,35 +11,11 @@ classification it is the log-odds, turned into a probability by a sigmoid.
 """
 
 import numpy as np
-
-
-# --------------------------------------------------------------------------
-# Weighted statistical helpers
-# --------------------------------------------------------------------------
-
-def _weighted_median(values, weights):
-    """Weighted nearest-rank median.
-
-    When *weights* is None this delegates to ``np.median`` so the
-    ``sample_weight=None`` code path is bitwise identical to the original.
-    """
-    if weights is None:
-        return float(np.median(values)) if values.size else 0.0
-    if not values.size:
-        return 0.0
-    order = np.argsort(values)
-    sv, sw = values[order], weights[order]
-    cumw = np.cumsum(sw)
-    idx = min(int(np.searchsorted(cumw, cumw[-1] * 0.5)), len(sv) - 1)
-    return float(sv[idx])
+from numba import njit, prange
 
 
 def _weighted_quantile(values, weights, alpha):
-    """Weighted nearest-rank quantile at level *alpha*.
-
-    When *weights* is None this delegates to ``np.quantile`` so the
-    ``sample_weight=None`` code path is bitwise identical to the original.
-    """
+    """Nearest-rank quantile at level *alpha*; unweighted when *weights* is None."""
     if weights is None:
         return float(np.quantile(values, alpha)) if values.size else 0.0
     if not values.size:
@@ -49,9 +25,6 @@ def _weighted_quantile(values, weights, alpha):
     cumw = np.cumsum(sw)
     idx = min(int(np.searchsorted(cumw, cumw[-1] * alpha)), len(sv) - 1)
     return float(sv[idx])
-
-
-from numba import njit, prange
 
 
 @njit(cache=True, parallel=True)
@@ -119,21 +92,19 @@ class Logloss:
 
 
 class MAE:
-    """Mean absolute error. grad = sign(pred - y), hess = 1 (constant).
-
-    Uses the gradient-step approximation for leaf values rather than exact
-    medians, which is simple and converges fine with enough small steps.
-    """
+    """Mean absolute error. The sign gradient only picks the tree structure;
+    leaf values are set to the (weighted) median of the residuals, which is the
+    minimizer of absolute error."""
 
     name = "MAE"
     is_classification = False
-    adjusts_leaves = True   # sign gradients only pick structure; set leaf = median
+    adjusts_leaves = True
 
     def leaf_value(self, residuals, weights=None):
-        return _weighted_median(residuals, weights)
+        return _weighted_quantile(residuals, weights, 0.5)
 
     def init(self, y, sample_weight=None):
-        return _weighted_median(y, sample_weight)
+        return _weighted_quantile(y, sample_weight, 0.5)
 
     def grad_hess(self, y, raw):
         grad = np.sign(raw - y)

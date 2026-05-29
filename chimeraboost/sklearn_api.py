@@ -5,53 +5,36 @@ from .booster import GradientBoosting, MulticlassBoosting
 from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin
 
 
-def _fit_temperature(raw, y_idx, multiclass):
-    """Learn a scalar T > 0 minimizing the log loss of sigmoid(raw/T)
-    (binary) or softmax(raw/T) (multiclass) against y_idx.
-
-    Temperature scaling is monotonic in z = raw / T, so argmax/sign predictions
-    are unchanged for any T > 0 — only probability magnitudes (and therefore
-    log loss) are affected. We fit T on a held-out validation set after the
-    booster has converged, so the calibration is decoupled from tree growth.
-    Returns the scalar T.
-    """
+def _fit_temperature(raw, y, multiclass):
+    """Learn the scalar T > 0 minimizing validation log loss of sigmoid(raw/T)
+    (binary) or softmax(raw/T) (multiclass). Dividing logits by T is monotonic,
+    so predictions are unchanged — only their probabilities are recalibrated.
+    `y` is the 0/1 label (binary) or the class index (multiclass)."""
     from scipy.optimize import minimize_scalar
 
     raw = np.asarray(raw, dtype=np.float64)
-    y_idx = np.asarray(y_idx)
-
     if multiclass:
-        n = raw.shape[0]
-        idx_rows = np.arange(n)
+        rows = np.arange(raw.shape[0])
 
         def loss(T):
-            if T <= 0:
-                return 1e18
             logits = raw / T
             mx = logits.max(axis=1, keepdims=True)
             log_z = mx[:, 0] + np.log(np.exp(logits - mx).sum(axis=1))
-            return float(np.mean(log_z - logits[idx_rows, y_idx]))
+            return float(np.mean(log_z - logits[rows, y]))
     else:
-        # y_idx here is the 0/1 binary label.
         def loss(T):
-            if T <= 0:
-                return 1e18
             z = raw / T
-            # Numerically stable BCE: log1p(exp(-|z|)) + max(z, 0) - y*z
+            # Stable binary cross-entropy: softplus(z) - y*z.
             return float(np.mean(np.log1p(np.exp(-np.abs(z)))
-                                 + np.maximum(z, 0.0) - y_idx * z))
+                                 + np.maximum(z, 0.0) - y * z))
 
     res = minimize_scalar(loss, bounds=(0.05, 50.0), method="bounded",
                           options={"xatol": 1e-4})
     return float(res.x) if res.success else 1.0
 
+
 # Parameters that exist only on the sklearn wrappers, not on the core boosters.
 _SKLEARN_ONLY = frozenset({"early_stopping", "validation_fraction"})
-
-
-def _should_early_stop(setting):
-    """Resolve early_stopping to a bool."""
-    return bool(setting)
 
 
 def _make_eval_split(X, y, validation_fraction, random_state,
@@ -182,7 +165,7 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
         if sample_weight is not None:
             sample_weight = np.asarray(sample_weight, dtype=np.float64)
 
-        es_active = _should_early_stop(self.early_stopping)
+        es_active = bool(self.early_stopping)
         if es_active and eval_set is None:
             train_idx, val_idx = _make_eval_split(
                 X, y, self.validation_fraction, self.random_state,
@@ -297,7 +280,7 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
         if sample_weight is not None:
             sample_weight = np.asarray(sample_weight, dtype=np.float64)
 
-        es_active = _should_early_stop(self.early_stopping)
+        es_active = bool(self.early_stopping)
         if es_active and eval_set is None:
             train_idx, val_idx = _make_eval_split(
                 X, y, self.validation_fraction, self.random_state,
@@ -318,39 +301,33 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
               if k not in _SKLEARN_ONLY}
         kw["early_stopping_rounds"] = es_rounds
 
-        if self.n_classes_ == 2:
-            self._multiclass = False
-            y01 = (y == self.classes_[1]).astype(np.float64)
-            cal_xv = cal_y_idx = None
-            if eval_set is not None:
-                Xv, yv = eval_set
-                yv01 = (np.asarray(yv) == self.classes_[1]).astype(np.float64)
-                eval_set = (Xv, yv01)
-                cal_xv, cal_y_idx = Xv, yv01
-            self.model_ = GradientBoosting(loss="Logloss", **kw)
-            self.model_.fit(X, y01, cat_features=cat_features, eval_set=eval_set,
-                            sample_weight=sample_weight)
-        else:
-            self._multiclass = True
+        self._multiclass = self.n_classes_ > 2
+        cal_Xv = cal_y = None   # validation set used to calibrate temperature
+        if self._multiclass:
             self.model_ = MulticlassBoosting(**kw)
             self.model_.fit(X, y, cat_features=cat_features, eval_set=eval_set,
                             sample_weight=sample_weight)
             self.classes_ = self.model_.classes_
-            cal_xv = cal_y_idx = None
             if eval_set is not None:
-                Xv, yv = eval_set
-                cal_xv = Xv
-                cal_y_idx = np.searchsorted(self.classes_, np.asarray(yv))
+                cal_Xv = eval_set[0]
+                cal_y = np.searchsorted(self.classes_, np.asarray(eval_set[1]))
+        else:
+            y01 = (y == self.classes_[1]).astype(np.float64)
+            if eval_set is not None:
+                cal_Xv = eval_set[0]
+                cal_y = (np.asarray(eval_set[1]) == self.classes_[1]).astype(np.float64)
+                eval_set = (cal_Xv, cal_y)
+            self.model_ = GradientBoosting(loss="Logloss", **kw)
+            self.model_.fit(X, y01, cat_features=cat_features, eval_set=eval_set,
+                            sample_weight=sample_weight)
 
-        # Temperature calibration: learn T on the validation set so that
-        # softmax(raw/T) / sigmoid(raw/T) gives well-calibrated probabilities.
-        # T preserves argmax, so predict() is unchanged — only log loss improves.
+        # Temperature scaling on the validation set: dividing raw scores by T > 0
+        # is monotonic, so predict() is unchanged while predict_proba() becomes
+        # better calibrated (lower log loss).
         self.temperature_ = 1.0
-        if cal_xv is not None:
-            raw_v = self.model_.predict_raw(cal_xv)
-            self.temperature_ = _fit_temperature(
-                raw_v, cal_y_idx, multiclass=self._multiclass,
-            )
+        if cal_Xv is not None:
+            raw = self.model_.predict_raw(cal_Xv)
+            self.temperature_ = _fit_temperature(raw, cal_y, self._multiclass)
         return self
 
     def predict_proba(self, X):
