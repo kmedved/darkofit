@@ -34,7 +34,55 @@ def _fit_temperature(raw, y, multiclass):
 
 
 # Parameters that exist only on the sklearn wrappers, not on the core boosters.
-_SKLEARN_ONLY = frozenset({"early_stopping", "validation_fraction"})
+_SKLEARN_ONLY = frozenset({"early_stopping", "validation_fraction",
+                           "n_ensembles", "ensemble_n_jobs"})
+
+
+def _fit_bagged(estimator, X, y, cat_features, eval_set, groups, sample_weight):
+    """Train ``estimator.n_ensembles`` bootstrap clones and return them as a list.
+
+    Each member is a clone of ``estimator`` with bagging switched off
+    (``n_ensembles=None``) and its own seed, fit on a bootstrap resample (drawn
+    with replacement, same size as the training set). Because a member is the
+    same estimator class, all per-model machinery — binary/multiclass dispatch,
+    ``cat_features``, the early-stopping auto-split, temperature scaling — is
+    reused unchanged, and ``cat_features``/``sample_weight``/``groups`` forward
+    naturally (which a ``sklearn.ensemble.Bagging`` wrapper would not do).
+
+    Members are independent, so they fit across ``ensemble_n_jobs`` processes.
+    When that is >1 and ``thread_count`` is unset, numba threads are divided
+    among the workers so the members don't oversubscribe the cores.
+    """
+    from sklearn.base import clone
+    from joblib import Parallel, delayed
+
+    X = (np.asarray(X, dtype=object) if cat_features
+         else np.asarray(X, dtype=np.float64))
+    y = np.asarray(y)
+    groups = None if groups is None else np.asarray(groups)
+    n = X.shape[0]
+    K = int(estimator.n_ensembles)
+    n_jobs = int(estimator.ensemble_n_jobs)
+
+    member_threads = estimator.thread_count
+    if n_jobs != 1 and member_threads is None:
+        import numba
+        member_threads = max(1, numba.config.NUMBA_NUM_THREADS // abs(n_jobs))
+
+    seeds = np.random.default_rng(estimator.random_state).integers(
+        0, 2**31 - 1, size=K)
+
+    def _fit_one(seed):
+        member = clone(estimator).set_params(
+            n_ensembles=None, random_state=int(seed), thread_count=member_threads)
+        idx = np.random.default_rng(seed).integers(0, n, size=n)  # bootstrap
+        wb = None if sample_weight is None else np.asarray(sample_weight)[idx]
+        gb = None if groups is None else groups[idx]
+        member.fit(X[idx], y[idx], cat_features=cat_features, eval_set=eval_set,
+                   groups=gb, sample_weight=wb)
+        return member
+
+    return Parallel(n_jobs=n_jobs)(delayed(_fit_one)(s) for s in seeds)
 
 
 def _make_eval_split(X, y, validation_fraction, random_state,
@@ -107,6 +155,14 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
         Fraction of training data to hold out as a validation set when
         *early_stopping* is active and no explicit *eval_set* is passed.
         Ignored when an explicit *eval_set* is given to ``fit``.
+    n_ensembles : int or None, default None
+        Bagging. ``None`` or ``1`` trains a single model. An int >= 2 trains that
+        many independent members on bootstrap resamples and averages their
+        predictions, which cuts variance and smooths the output (works well with
+        *early_stopping*, since each member early-stops on its own bootstrap).
+    ensemble_n_jobs : int, default 1
+        Processes used to fit ensemble members in parallel (1 = sequential).
+        When >1 and *thread_count* is None, numba threads are split among workers.
     """
 
     def __init__(self, iterations=500, learning_rate=None, depth=6,
@@ -116,7 +172,8 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
                  loss="RMSE", alpha=0.5, min_child_weight=1.0, thread_count=None,
                  random_state=None, verbose=False, ordered_boosting=True,
                  cat_combinations=False,
-                 early_stopping=False, validation_fraction=0.1):
+                 early_stopping=False, validation_fraction=0.1,
+                 n_ensembles=None, ensemble_n_jobs=1):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -137,6 +194,8 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
         self.cat_combinations = cat_combinations
         self.early_stopping = early_stopping
         self.validation_fraction = validation_fraction
+        self.n_ensembles = n_ensembles
+        self.ensemble_n_jobs = ensemble_n_jobs
 
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
             sample_weight=None):
@@ -160,6 +219,16 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
             Per-sample weights.  Normalized to mean 1 internally.  Only applied
             to the training set; the validation eval metric is always unweighted.
         """
+        if self.n_ensembles and self.n_ensembles > 1:
+            self.estimators_ = _fit_bagged(self, X, y, cat_features, eval_set,
+                                           groups, sample_weight)
+            return self
+        self.estimators_ = None
+        return self._fit_single(X, y, cat_features, eval_set, groups,
+                                sample_weight)
+
+    def _fit_single(self, X, y, cat_features, eval_set, groups, sample_weight):
+        """Fit one (non-bagged) model on the data as given."""
         X = (np.asarray(X, dtype=object) if cat_features
              else np.asarray(X, dtype=np.float64))
         y = np.asarray(y, dtype=np.float64)
@@ -195,18 +264,28 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
         return self
 
     def predict(self, X):
+        if self.estimators_ is not None:
+            return np.mean([m.predict(X) for m in self.estimators_], axis=0)
         return self.model_.predict_raw(X)
 
     def staged_predict(self, X):
         """Yield the prediction after each successive tree."""
+        if self.estimators_ is not None:
+            raise NotImplementedError("staged_predict is not defined for a "
+                                      "bagged ensemble (n_ensembles > 1).")
         yield from self.model_.staged_predict_raw(X)
 
     @property
     def best_iteration_(self):
+        if self.estimators_ is not None:
+            return int(round(np.mean([m.best_iteration_ for m in self.estimators_])))
         return self.model_.best_iteration_
 
     @property
     def feature_importances_(self):
+        if self.estimators_ is not None:
+            return np.mean([m.feature_importances_ for m in self.estimators_],
+                           axis=0)
         return self.model_.feature_importances_
 
 
@@ -223,6 +302,14 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
     validation_fraction : float, default 0.1
         Fraction of training data held out for the automatic validation set.
         Ignored when an explicit *eval_set* is given to ``fit``.
+    n_ensembles : int or None, default None
+        Bagging. ``None`` or ``1`` trains a single model. An int >= 2 trains that
+        many independent members on bootstrap resamples and averages their
+        (temperature-calibrated) class probabilities, which cuts variance and
+        smooths the output.
+    ensemble_n_jobs : int, default 1
+        Processes used to fit ensemble members in parallel (1 = sequential).
+        When >1 and *thread_count* is None, numba threads are split among workers.
     """
 
     def __init__(self, iterations=500, learning_rate=None, depth=6,
@@ -232,7 +319,8 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
                  min_child_weight=1.0, thread_count=None, random_state=None,
                  verbose=False, ordered_boosting=True,
                  cat_combinations=False,
-                 early_stopping=False, validation_fraction=0.1):
+                 early_stopping=False, validation_fraction=0.1,
+                 n_ensembles=None, ensemble_n_jobs=1):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -251,6 +339,8 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
         self.cat_combinations = cat_combinations
         self.early_stopping = early_stopping
         self.validation_fraction = validation_fraction
+        self.n_ensembles = n_ensembles
+        self.ensemble_n_jobs = ensemble_n_jobs
 
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
             sample_weight=None):
@@ -273,6 +363,24 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
             Per-sample weights.  Normalized to mean 1 internally.  Only applied
             to the training set; the validation eval metric is always unweighted.
         """
+        if self.n_ensembles and self.n_ensembles > 1:
+            # Fix the global class set up front: a member's bootstrap may miss a
+            # rare class, and predict_proba aligns each member's columns to this.
+            yarr = np.asarray(y)
+            self.classes_ = np.unique(yarr)
+            self.n_classes_ = self.classes_.size
+            if self.n_classes_ < 2:
+                raise ValueError("Need at least 2 classes.")
+            self._multiclass = self.n_classes_ > 2
+            self.estimators_ = _fit_bagged(self, X, yarr, cat_features, eval_set,
+                                           groups, sample_weight)
+            return self
+        self.estimators_ = None
+        return self._fit_single(X, y, cat_features, eval_set, groups,
+                                sample_weight)
+
+    def _fit_single(self, X, y, cat_features, eval_set, groups, sample_weight):
+        """Fit one (non-bagged) classifier on the data as given."""
         X = (np.asarray(X, dtype=object) if cat_features
              else np.asarray(X, dtype=np.float64))
         y = np.asarray(y)
@@ -334,6 +442,16 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
         return self
 
     def predict_proba(self, X):
+        if self.estimators_ is not None:
+            # Soft-vote: average members' calibrated probabilities, aligning each
+            # member's class columns to the global class set (a member whose
+            # bootstrap missed a class simply contributes 0 to that column).
+            probas = [m.predict_proba(X) for m in self.estimators_]
+            acc = np.zeros((probas[0].shape[0], self.n_classes_))
+            for m, p in zip(self.estimators_, probas):
+                cols = np.searchsorted(self.classes_, m.classes_)
+                acc[:, cols] += p
+            return acc / len(self.estimators_)
         raw = self.model_.predict_raw(X) / self.temperature_
         if self._multiclass:
             return self.model_.loss_.transform(raw)            # (n, K)
@@ -346,8 +464,13 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
 
     @property
     def best_iteration_(self):
+        if self.estimators_ is not None:
+            return int(round(np.mean([m.best_iteration_ for m in self.estimators_])))
         return self.model_.best_iteration_
 
     @property
     def feature_importances_(self):
+        if self.estimators_ is not None:
+            return np.mean([m.feature_importances_ for m in self.estimators_],
+                           axis=0)
         return self.model_.feature_importances_

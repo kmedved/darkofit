@@ -21,11 +21,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-MODEL_ORDER = ["ChimeraBoost", "CatBoost", "sklearn_HGB", "XGBoost", "LightGBM"]
+MODEL_ORDER = ["ChimeraBoost", "ChimeraBoostEns10", "CatBoost", "sklearn_HGB",
+               "XGBoost", "LightGBM"]
 
 # Distinct, muted colors; ChimeraBoost gets the same blue it has in summary.png.
 MODEL_COLOR = {
     "ChimeraBoost": "#3b6fb0",
+    "ChimeraBoostEns10": "#2b4a73",   # darker blue, kin to ChimeraBoost
     "CatBoost": "#d1495b",
     "sklearn_HGB": "#e0a32e",
     "XGBoost": "#8d6cab",

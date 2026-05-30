@@ -21,7 +21,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
 
-MODEL_ORDER = ["ChimeraBoost", "CatBoost", "sklearn_HGB", "XGBoost", "LightGBM"]
+MODEL_ORDER = ["ChimeraBoost", "ChimeraBoostEns10", "CatBoost", "sklearn_HGB",
+               "XGBoost", "LightGBM"]
 
 
 def aggregate_metric(records, metric_key):
@@ -43,12 +44,18 @@ def aggregate_speed(records):
             for ds, models in bucket.items()}
 
 
-def pct_vs_best(per_dataset, datasets_in_bin, lower_is_better):
+def pct_vs_best(per_dataset, datasets_in_bin, lower_is_better, skip_best_below=None):
     """Average per-model % vs best across `datasets_in_bin`.
 
     For each dataset, compute every model's % relative to that dataset's best
     score (100% = best, less = worse). Then average per model. Returns
     {model: avg_pct or None}.
+
+    skip_best_below: for loss columns, drop datasets where the best model's loss
+    is below this threshold. On a near-perfectly-solved dataset (e.g. mushroom,
+    Brier ~1e-6 for everyone) the best/value ratio explodes a meaningless 1e-4
+    difference into a 0%-vs-100% gap, distorting the whole-column average. Such
+    datasets carry no probability-quality signal, so we exclude them.
     """
     sums = defaultdict(list)
     for ds in datasets_in_bin:
@@ -62,6 +69,8 @@ def pct_vs_best(per_dataset, datasets_in_bin, lower_is_better):
             continue
         best = min(vals) if lower_is_better else max(vals)
         if best == 0:
+            continue
+        if skip_best_below is not None and best < skip_best_below:
             continue
         for m, v in scores.items():
             if v is None:
@@ -324,9 +333,12 @@ def main():
     out_dir = os.path.abspath(out_dir)
     os.makedirs(out_dir, exist_ok=True)
 
-    # Pre-aggregate per-(dataset, model) for each metric.
+    # Pre-aggregate per-(dataset, model) for each metric. Brier (not log loss)
+    # is the probability-quality column: it's bounded and proper, so a single
+    # near-separable dataset can't distort the cross-dataset aggregate the way
+    # unbounded log loss does (e.g. mushroom, where best/value explodes).
     f1 = aggregate_metric(records, "f1_macro")
-    ll = aggregate_metric(records, "log_loss")
+    brier = aggregate_metric(records, "brier")
     rmse = aggregate_metric(records, "rmse")
     speed = aggregate_speed(records)
 
@@ -355,15 +367,17 @@ def main():
         sum_cols.append(pct_vs_best(f1, bin_ds_all, lower_is_better=False))
         sum_col_labels.append("F1 macro")
         sum_col_kinds.append("pct")
-        sum_cols.append(pct_vs_best(ll, bin_ds_all, lower_is_better=True))
-        sum_col_labels.append("Log loss")
+        sum_cols.append(pct_vs_best(brier, bin_ds_all, lower_is_better=True,
+                                    skip_best_below=1e-3))
+        sum_col_labels.append("Brier")
         sum_col_kinds.append("pct")
     if mul_ds_all:
         sum_cols.append(pct_vs_best(f1, mul_ds_all, lower_is_better=False))
         sum_col_labels.append("F1 macro")
         sum_col_kinds.append("pct")
-        sum_cols.append(pct_vs_best(ll, mul_ds_all, lower_is_better=True))
-        sum_col_labels.append("Log loss")
+        sum_cols.append(pct_vs_best(brier, mul_ds_all, lower_is_better=True,
+                                    skip_best_below=1e-3))
+        sum_col_labels.append("Brier")
         sum_col_kinds.append("pct")
     # Single speed column across all datasets.
     sum_cols.append(multiple_vs_best(speed, all_ds))

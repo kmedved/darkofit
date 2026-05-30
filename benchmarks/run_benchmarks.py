@@ -271,9 +271,16 @@ def _compute_metrics(task, y_true, model, X_test):
         return {"primary": -rmse, "rmse": rmse}
     f1 = float(f1_score(y_true, model.predict(X_test), average="macro"))
     proba = model.predict_proba(X_test)
+    classes = getattr(model, "classes_", np.unique(y_true))
     # log_loss needs labels= for safety when a class is missing from y_true.
-    ll = float(log_loss(y_true, proba, labels=np.unique(np.concatenate([y_true]))))
-    return {"primary": f1, "f1_macro": f1, "log_loss": ll}
+    ll = float(log_loss(y_true, proba, labels=classes))
+    # Multiclass Brier: mean over samples of sum_k (p_k - onehot_k)^2. Bounded,
+    # outlier-robust, and a proper scoring rule like log loss, but it aggregates
+    # far more stably across datasets (no unbounded tail). Used for binary too
+    # (the K=2 sum form), so the two tasks share one definition.
+    onehot = (np.asarray(y_true)[:, None] == np.asarray(classes)[None, :]).astype(float)
+    brier = float(np.mean(np.sum((proba - onehot) ** 2, axis=1)))
+    return {"primary": f1, "f1_macro": f1, "log_loss": ll, "brier": brier}
 
 
 def _val_split(Xtr, ytr, task, seed):
@@ -301,6 +308,23 @@ def _run_chimera(task, Xtr, ytr, Xte, yte, cat, threads, lr=None,
             cat_combinations=cat_combinations,
             thread_count=threads, random_state=0)
     m.fit(Xf, yf, cat_features=cat, eval_set=(Xv, yv))
+    return _compute_metrics(task, yte, m, Xte), time.time() - t, m.best_iteration_
+
+
+# Bagged ChimeraBoost: train N members on bootstrap resamples, each early-stopping
+# on its own bootstrap, and average. ensemble_n_jobs=1 (members sequential, each
+# using the job's thread budget) so we don't nest a joblib pool inside the
+# harness's --jobs ProcessPool. For a faster dedicated sweep, run with --jobs 1.
+ENSEMBLE_N = 10
+
+
+def _run_chimera_ensemble(task, Xtr, ytr, Xte, yte, cat, threads):
+    t = time.time()
+    Est = ChimeraBoostRegressor if task == "regression" else ChimeraBoostClassifier
+    m = Est(iterations=MAX_ITERS, early_stopping=True, early_stopping_rounds=PATIENCE,
+            n_ensembles=ENSEMBLE_N, ensemble_n_jobs=1,
+            thread_count=threads, random_state=0)
+    m.fit(Xtr, ytr, cat_features=cat)
     return _compute_metrics(task, yte, m, Xte), time.time() - t, m.best_iteration_
 
 
@@ -437,14 +461,18 @@ def _run_lightgbm(task, Xtr, ytr, Xte, yte, cat, threads):
 
 RUNNERS = {
     "ChimeraBoost": _run_chimera,
+    "ChimeraBoostEns10": _run_chimera_ensemble,
     "sklearn_HGB": _run_sklearn,
     "CatBoost": _run_catboost,
     "XGBoost": _run_xgboost,
     "LightGBM": _run_lightgbm,
 }
 
-# Always available (hard deps); the rest are gated on _detect().
+# Always available (hard deps); the rest are gated on _detect(). ChimeraBoostEns10
+# is also dep-free but ~N× slower, so it's selectable via --models but off by
+# default (like XGBoost).
 _ALWAYS = ("ChimeraBoost", "sklearn_HGB")
+_OFF_BY_DEFAULT = ("XGBoost", "ChimeraBoostEns10")
 _OPTIONAL = ("CatBoost", "XGBoost", "LightGBM")
 
 
@@ -460,9 +488,11 @@ def _run_seed_task(task):
     """Fit every requested model on one (dataset, seed) draw. Top-level and
     picklable so it can run in a worker process. Returns
     (ds_name, seed, meta, {model: (metrics, secs, best_iter) or None})."""
-    global PATIENCE
-    ds_name, seed, scale, threads, model_names, chimera_cfg, patience, need_openml = task
+    global PATIENCE, ENSEMBLE_N
+    (ds_name, seed, scale, threads, model_names, chimera_cfg, patience,
+     ensemble_n, need_openml) = task
     PATIENCE = patience
+    ENSEMBLE_N = ensemble_n
     if need_openml:
         _add_openml_datasets()
 
@@ -502,7 +532,7 @@ def _rel_gap(ours, theirs, task):
 
 
 def main():
-    global PATIENCE
+    global PATIENCE, ENSEMBLE_N
     ap = argparse.ArgumentParser()
     ap.add_argument("--scale", type=float, default=1.0,
                     help="multiplier for synthetic dataset sizes")
@@ -536,6 +566,9 @@ def main():
     ap.add_argument("--patience", type=int, default=None,
                     help="early-stopping patience for ALL models "
                          "(default: %d)." % PATIENCE)
+    ap.add_argument("--ensemble-n", type=int, default=None, dest="ensemble_n",
+                    help="number of members for the ChimeraBoostEns10 bagged "
+                         "runner (default: %d)." % ENSEMBLE_N)
     ap.add_argument("--no-ordered-boosting", dest="ordered_boosting",
                     action="store_false", default=True,
                     help="disable ChimeraBoost's LOO leaf correction.")
@@ -587,6 +620,8 @@ def main():
 
     if args.patience is not None:
         PATIENCE = args.patience
+    if args.ensemble_n is not None:
+        ENSEMBLE_N = args.ensemble_n
 
     need_openml = (args.openml or args.no_synthetic or bool(
         args.datasets and any(d.startswith("oml:") for d in args.datasets)))
@@ -598,15 +633,16 @@ def main():
 
     # Resolve the model set. Competitors are gated on install; XGBoost is off
     # by default (it tracks LightGBM). --models overrides everything.
-    available = list(_ALWAYS) + [m for m in _OPTIONAL if HAVE[m.lower()]]
+    available = (list(_ALWAYS) + ["ChimeraBoostEns10"]
+                 + [m for m in _OPTIONAL if HAVE[m.lower()]])
     if args.models:
         unknown = set(args.models) - set(RUNNERS)
         if unknown:
             ap.error(f"Unknown models: {unknown}. Available: {list(RUNNERS)}")
         model_names = [m for m in args.models if m in available]
     else:
-        model_names = [m for m in available
-                       if m != "XGBoost" or args.with_xgboost]
+        model_names = [m for m in available if m not in _OFF_BY_DEFAULT
+                       or (m == "XGBoost" and args.with_xgboost)]
     if "ChimeraBoost" not in model_names:
         ap.error("ChimeraBoost must be one of the models (it is the baseline).")
 
@@ -638,7 +674,7 @@ def main():
 
     # Run every (dataset, seed) draw, in parallel processes unless jobs == 1.
     tasks = [(ds, s, args.scale, threads_per, model_names, chimera_cfg,
-              PATIENCE, need_openml)
+              PATIENCE, ENSEMBLE_N, need_openml)
              for ds in selected for s in range(args.seeds)]
     collected = defaultdict(dict)   # collected[ds][seed] = (meta, out)
     if jobs == 1:
@@ -731,7 +767,7 @@ def main():
             _json.dump({
                 "config": {
                     "seeds": args.seeds, "max_iters": MAX_ITERS,
-                    "patience": PATIENCE,
+                    "patience": PATIENCE, "ensemble_n": ENSEMBLE_N,
                 },
                 "datasets": dataset_meta,
                 "records": raw_records,

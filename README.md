@@ -31,8 +31,19 @@ reg.fit(X, y)
 <p><a href="https://github.com/bbstats/chimeraboost/blob/main/images/summary.png"><img src="https://raw.githubusercontent.com/bbstats/chimeraboost/main/images/summary.png" width="500" alt="Benchmark summary" /></a></p>
 <p><a href="https://github.com/bbstats/chimeraboost/blob/main/images/slowdown_hist.png"><img src="https://raw.githubusercontent.com/bbstats/chimeraboost/main/images/slowdown_hist.png" width="500" alt="Slowdown distribution" /></a></p>
 
+<sub><i><code>ChimeraBoostEns10</code> is ChimeraBoost bagged with 10 base gradient boosters.</i></sub>
+
+* **Reproduce the benchmark**
+
+```
+python benchmarks/run_benchmarks.py --openml --seeds 5 --save --models ChimeraBoost ChimeraBoostEns10 sklearn_HGB CatBoost LightGBM
+```
+
 * **What?**
-    * GBDT library that only depends on common Python libraries
+    * Exceedingly opinionated GBDT library that only depends on common Python libraries
+        * Accepts categorical features, with catboost-like feature processing
+        * Bagging as a first-class feature
+        * Automatic early stopping, with automatic grouped splitting for the validation set available
     * Supports regression, quantile regression, binary and multiclass classification.
     * Categorical features, sample weights, and automatic early stopping
     * Within ~3% F1 / ~5% RMSE of CatBoost on a 34-dataset OpenML benchmark, at ~30× the speed

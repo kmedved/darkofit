@@ -388,6 +388,83 @@ def test_groups_kept_intact_in_early_stopping_split():
     assert m.predict(X).shape == (n,)
 
 
+def test_bagging_none_matches_single_model():
+    """n_ensembles=None and =1 must be the plain single model, bit-identical."""
+    X, y = load_diabetes(return_X_y=True)
+    base = ChimeraBoostRegressor(iterations=80, random_state=0).fit(X, y)
+    none_ = ChimeraBoostRegressor(iterations=80, random_state=0,
+                                  n_ensembles=None).fit(X, y)
+    one = ChimeraBoostRegressor(iterations=80, random_state=0,
+                                n_ensembles=1).fit(X, y)
+    assert base.estimators_ is None and one.estimators_ is None
+    assert np.array_equal(base.predict(X), none_.predict(X))
+    assert np.array_equal(base.predict(X), one.predict(X))
+
+
+def test_bagging_regressor_runs_and_averages_members():
+    """A bagged regressor trains the requested members and its prediction is
+    exactly the mean of the members' predictions, and it beats the naive
+    mean-baseline on held-out data."""
+    from sklearn.datasets import make_regression
+    X, y = make_regression(n_samples=1500, n_features=15, noise=25.0,
+                           random_state=0)
+    Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.25, random_state=0)
+    bag = ChimeraBoostRegressor(iterations=150, random_state=0,
+                                n_ensembles=8).fit(Xtr, ytr)
+    assert len(bag.estimators_) == 8
+    # The ensemble prediction is the average of its members.
+    members = np.mean([m.predict(Xte) for m in bag.estimators_], axis=0)
+    assert np.allclose(bag.predict(Xte), members)
+    # Sanity: clearly better than predicting the training mean.
+    base_rmse = np.sqrt(mean_squared_error(yte, np.full_like(yte, ytr.mean())))
+    bag_rmse = np.sqrt(mean_squared_error(yte, bag.predict(Xte)))
+    assert bag_rmse < 0.5 * base_rmse
+
+
+def test_bagging_classifier_multiclass_proba():
+    """Bagged multiclass classifier: proper proba shape, normalized rows, and
+    preserved class labels."""
+    from sklearn.datasets import load_wine
+    X, y = load_wine(return_X_y=True)
+    clf = ChimeraBoostClassifier(iterations=120, random_state=0,
+                                 n_ensembles=8).fit(X, y)
+    assert len(clf.estimators_) == 8
+    proba = clf.predict_proba(X)
+    assert proba.shape == (len(y), 3)
+    assert np.allclose(proba.sum(axis=1), 1.0)
+    assert np.array_equal(clf.classes_, np.unique(y))
+    assert clf.predict(X).shape == (len(y),)
+
+
+def test_bagging_parallel_matches_sequential():
+    """ensemble_n_jobs only changes scheduling: members are independently
+    seeded, so predictions must be identical to the sequential fit."""
+    from sklearn.datasets import load_wine
+    X, y = load_wine(return_X_y=True)
+    seq = ChimeraBoostClassifier(iterations=80, random_state=3,
+                                 n_ensembles=4, ensemble_n_jobs=1).fit(X, y)
+    par = ChimeraBoostClassifier(iterations=80, random_state=3,
+                                 n_ensembles=4, ensemble_n_jobs=2).fit(X, y)
+    assert np.allclose(seq.predict_proba(X), par.predict_proba(X))
+
+
+def test_bagging_with_categoricals():
+    """Bagging forwards cat_features to every member (the advantage over a
+    sklearn.ensemble.Bagging wrapper, which would drop it)."""
+    rng = np.random.default_rng(0)
+    n = 800
+    X = np.empty((n, 3), dtype=object)
+    X[:, 0] = rng.choice(["a", "b", "c"], n)
+    X[:, 1] = rng.normal(size=n)
+    X[:, 2] = rng.choice(["x", "y"], n)
+    y = ((X[:, 0] == "a").astype(int) ^ (X[:, 2] == "x").astype(int))
+    clf = ChimeraBoostClassifier(iterations=100, random_state=0,
+                                 n_ensembles=5).fit(X, y, cat_features=[0, 2])
+    proba = clf.predict_proba(X)
+    assert proba.shape == (n, 2)
+    assert np.allclose(proba.sum(axis=1), 1.0)
+
+
 def test_empty_tree_stops_boosting_early():
     """When splits are exhausted, the booster should stop rather than bank
     useless depth-0 trees until the iteration ceiling."""
