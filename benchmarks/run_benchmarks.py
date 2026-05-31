@@ -388,7 +388,7 @@ PATIENCE = 50
 
 def _run_chimera(task, Xtr, ytr, Xte, yte, cat, threads, lr=None,
                  ordered_boosting=None, depth=6, subsample=1.0, mcw=1.0,
-                 cat_combinations=False):
+                 cat_combinations=False, leaf_estimation_iterations=1):
     Xf, Xv, yf, yv = _val_split(Xtr, ytr, task, 0)
     t = time.time()
     Est = ChimeraBoostRegressor if task == "regression" else ChimeraBoostClassifier
@@ -399,6 +399,7 @@ def _run_chimera(task, Xtr, ytr, Xte, yte, cat, threads, lr=None,
             learning_rate=lr, depth=depth,
             subsample=subsample, min_child_weight=mcw,
             cat_combinations=cat_combinations,
+            leaf_estimation_iterations=leaf_estimation_iterations,
             thread_count=threads, random_state=0, **kw)
     m.fit(Xf, yf, cat_features=cat, eval_set=(Xv, yv))
     return _compute_metrics(task, yte, m, Xte), time.time() - t, m.best_iteration_
@@ -681,6 +682,12 @@ def main():
                     default=False, dest="cat_combinations",
                     help="enable 2-way categorical feature combinations "
                          "(default: off).")
+    ap.add_argument("--chimera-lei", type=int, default=1,
+                    dest="leaf_estimation_iterations",
+                    help="leaf estimation iterations: additional Newton steps to "
+                         "refine leaf values after tree structure is fixed. "
+                         "1 = standard single step (default). Only applies on the "
+                         "non-LOO path (regression by default).")
     ap.add_argument("--datasets", nargs="+", default=None,
                     metavar="DS",
                     help=("run only these datasets, e.g. --datasets diabetes "
@@ -759,7 +766,8 @@ def main():
     ob_override = None if args.ordered_boosting else False
     chimera_cfg = dict(lr=args.lr, ordered_boosting=ob_override,
                        depth=args.chimera_depth, subsample=args.chimera_subsample,
-                       mcw=args.chimera_mcw, cat_combinations=args.cat_combinations)
+                       mcw=args.chimera_mcw, cat_combinations=args.cat_combinations,
+                       leaf_estimation_iterations=args.leaf_estimation_iterations)
 
     # Split the thread budget across parallel jobs: GBDT thread scaling is
     # sublinear, so running J seeds at threads/J each beats one fit at all cores.

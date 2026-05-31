@@ -171,7 +171,7 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
                  early_stopping_rounds=None,
                  loss="RMSE", alpha=0.5, min_child_weight=1.0, thread_count=None,
                  random_state=None, verbose=False, ordered_boosting=False,
-                 cat_combinations=False,
+                 cat_combinations=False, leaf_estimation_iterations=1,
                  early_stopping=False, validation_fraction=0.1,
                  n_ensembles=None, ensemble_n_jobs=1):
         self.iterations = iterations
@@ -192,6 +192,7 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
         self.verbose = verbose
         self.ordered_boosting = ordered_boosting
         self.cat_combinations = cat_combinations
+        self.leaf_estimation_iterations = leaf_estimation_iterations
         self.early_stopping = early_stopping
         self.validation_fraction = validation_fraction
         self.n_ensembles = n_ensembles
@@ -318,7 +319,7 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
                  early_stopping_rounds=None,
                  min_child_weight=1.0, thread_count=None, random_state=None,
                  verbose=False, ordered_boosting=True,
-                 cat_combinations=False,
+                 cat_combinations=False, leaf_estimation_iterations=1,
                  early_stopping=False, validation_fraction=0.1,
                  n_ensembles=None, ensemble_n_jobs=1):
         self.iterations = iterations
@@ -337,6 +338,7 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
         self.verbose = verbose
         self.ordered_boosting = ordered_boosting
         self.cat_combinations = cat_combinations
+        self.leaf_estimation_iterations = leaf_estimation_iterations
         self.early_stopping = early_stopping
         self.validation_fraction = validation_fraction
         self.n_ensembles = n_ensembles

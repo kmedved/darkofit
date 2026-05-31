@@ -10,7 +10,7 @@ import numpy as np
 
 from .losses import LOSSES, MultiSoftmax
 from .preprocessing import FeaturePreprocessor
-from .tree import build_oblivious_tree, _loo_leaf_step, _predict_forest, pack_forest
+from .tree import build_oblivious_tree, _loo_leaf_step, _leaf_values, _predict_forest, pack_forest
 
 
 def _apply_thread_count(thread_count):
@@ -72,7 +72,8 @@ class _BaseBooster:
                  colsample=1.0, cat_smoothing=1.0, cat_n_permutations=4,
                  early_stopping_rounds=None, min_child_weight=1.0,
                  thread_count=None, random_state=None, verbose=False,
-                 ordered_boosting=True, cat_combinations=False):
+                 ordered_boosting=True, cat_combinations=False,
+                 leaf_estimation_iterations=1):
         self.iterations = int(iterations)
         self.learning_rate = learning_rate
         self.depth = int(depth)
@@ -89,6 +90,7 @@ class _BaseBooster:
         self.verbose = verbose
         self.ordered_boosting = bool(ordered_boosting)
         self.cat_combinations = bool(cat_combinations)
+        self.leaf_estimation_iterations = int(leaf_estimation_iterations)
 
     def _alloc_hist_buffers(self, n_features, n_bins):
         """Allocate the reusable histogram buffer once per fit.
@@ -287,6 +289,17 @@ class GradientBoosting(_BaseBooster):
             if self.ordered_boosting and not adjusts_leaves:
                 F += self._loo_update(tree, leaf, g, h)
             else:
+                # Additional Newton steps refine the leaf values using the updated
+                # residuals after each step. For constant-hessian losses (RMSE)
+                # this converges in a few steps; for Logloss it reaches a better
+                # per-leaf approximation than the single first-order step.
+                for _ in range(self.leaf_estimation_iterations - 1):
+                    F_tmp = F + tree.values[leaf]
+                    g2, h2 = self.loss_.grad_hess(y, F_tmp)
+                    if w is not None:
+                        g2, h2 = g2 * w, h2 * w
+                    tree.values += _leaf_values(leaf, g2, h2, tree.values.shape[0],
+                                                self.l2_leaf_reg, self.lr_)
                 F += tree.values[leaf]
             if self.verbose:
                 self.train_history_.append(self.loss_.eval(y, F, w))
