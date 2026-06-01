@@ -14,11 +14,15 @@ Run:
 import argparse
 import json
 import os
+import sys
 from collections import defaultdict
 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from summarize import near_solved_datasets  # noqa: E402  (shared RMSE guard)
 
 
 MODEL_ORDER = ["ChimeraBoost", "ChimeraBoostEns10", "CatBoost", "sklearn_HGB",
@@ -380,8 +384,15 @@ def main():
     sum_col_labels = []
     sum_col_kinds = []
 
+    # Exclude near-solved regression datasets (best NRMSE below threshold) from
+    # the RMSE column -- their "% vs best" ratio is a near-zero/near-zero artifact.
+    # Shared with summarize.py so the table and the Pareto agree.
+    reg_y_std = {d: datasets[d].get("y_std") for d in reg_ds_all}
+    reg_near = near_solved_datasets(rmse, reg_ds_all, reg_y_std)
+    reg_ds_scored = [d for d in reg_ds_all if d not in reg_near]
+
     if reg_ds_all:
-        sum_cols.append(pct_vs_best(rmse, reg_ds_all, lower_is_better=True))
+        sum_cols.append(pct_vs_best(rmse, reg_ds_scored, lower_is_better=True))
         sum_col_labels.append("RMSE")
         sum_col_kinds.append("pct")
     if bin_ds_all:
@@ -424,7 +435,9 @@ def main():
         sum_table, models, sum_col_labels, sum_groups,
         title="ChimeraBoost vs other GBMs",
         subtitle=("avg % vs best  ·  Calib = miscalibration ×10⁻³ (lower better)  "
-                  f"·  fit time as × slowdown  ·  Grinsztajn et al. (2022)"),
+                  f"·  fit time as × slowdown  ·  Grinsztajn et al. (2022)"
+                  + (f"  ·  {len(reg_near)} near-solved excl. from RMSE"
+                     if reg_near else "")),
         out_path=os.path.join(out_dir, "summary.png"),
         col_kinds=sum_col_kinds,
     )

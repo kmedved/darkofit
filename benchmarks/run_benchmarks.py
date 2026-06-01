@@ -601,6 +601,11 @@ def _run_seed_task(task):
     meta = {"task": ttype, "n_train": int(Xtr.shape[0]),
             "n_total": int(X.shape[0]), "n_features": int(X.shape[1]),
             "has_cats": bool(cat)}
+    # Target scale, so the table layer can flag "near-solved" regression datasets
+    # (best NRMSE = best_RMSE / y_std below a threshold), where the "% vs best"
+    # RMSE ratio explodes a negligible absolute gap. See summarize.NEAR_SOLVED_NRMSE.
+    if ttype == "regression":
+        meta["y_std"] = float(np.std(y))
 
     out = {}
     for name, runner in _make_runners(model_names, chimera_cfg).items():

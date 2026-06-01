@@ -29,6 +29,30 @@ MODEL_ORDER = ["ChimeraBoost", "ChimeraBoostEns10", "CatBoost", "LightGBM",
                "sklearn_HGB", "XGBoost"]
 COLS = ["Reg RMSE%", "Bin F1%", "Bin Brier%", "Bin Calib", "Speed"]
 
+# Regression datasets where the BEST model's NRMSE (best_RMSE / y_std) is below
+# this are "near-solved": every model nails them (R^2 ~ 1), so the "% vs best"
+# RMSE ratio turns a practically-zero absolute gap into a huge fake deficit. We
+# drop them from the RMSE aggregate -- the regression analog of the Brier
+# skip_best_below guard. The threshold is in a flat valley: anything in
+# [~1.6%, ~7%] excludes the same 2 datasets on the Grinsztajn suite (clean cliff
+# between artifacts <1.5% and the next real dataset at 7.5%), so it isn't tuned.
+NEAR_SOLVED_NRMSE = 0.02
+
+
+def near_solved_datasets(rmse_per_ds, ds_list, y_std, thresh=NEAR_SOLVED_NRMSE):
+    """Subset of ds_list that is near-perfectly solved (best NRMSE < thresh).
+
+    rmse_per_ds: {dataset: {model: mean RMSE}}. y_std: {dataset: target std}.
+    Datasets with no recorded y_std can't be judged and are never skipped.
+    """
+    out = []
+    for ds in ds_list:
+        scores = [v for v in rmse_per_ds.get(ds, {}).values() if v is not None]
+        scale = y_std.get(ds)
+        if scores and scale and min(scores) / scale < thresh:
+            out.append(ds)
+    return out
+
 
 def load(json_path):
     with open(json_path, encoding="utf-8") as f:
@@ -115,15 +139,22 @@ def aggregate(data):
     bin_ds = [d for d in all_ds if datasets[d]["task"] == "binary"]
     mul_ds = [d for d in all_ds if datasets[d]["task"] == "multiclass"]
 
+    # Drop near-solved regression datasets from the RMSE column (see the guard
+    # comment above). Needs per-dataset target std, stored in dataset meta by
+    # run_benchmarks; older JSONs without it simply skip nothing.
+    y_std = {d: datasets[d].get("y_std") for d in reg_ds}
+    near = near_solved_datasets(rmse, reg_ds, y_std)
+    reg_scored = [d for d in reg_ds if d not in near]
+
     cols = {
-        "Reg RMSE%": _pct_vs_best(rmse, reg_ds, lower=True),
+        "Reg RMSE%": _pct_vs_best(rmse, reg_scored, lower=True),
         "Bin F1%": _pct_vs_best(f1, bin_ds, lower=False),
         "Bin Brier%": _pct_vs_best(brier, bin_ds, lower=True, skip_below=1e-3),
         "Bin Calib": _mean_over(cal, bin_ds),
         "Speed": _mult_vs_best(speed, all_ds),
     }
     meta = {"n_reg": len(reg_ds), "n_bin": len(bin_ds), "n_mul": len(mul_ds),
-            "n_total": len(all_ds),
+            "n_reg_excl": len(near), "n_total": len(all_ds),
             "seeds": data.get("config", {}).get("seeds")}
     return cols, meta
 
@@ -160,8 +191,10 @@ def format_table(data, label=None):
         row = f"{m:<22}" + "".join(_fmt(cols[c].get(m), c) for c in COLS)
         lines.append(row)
     seeds = f" | {meta['seeds']} seeds" if meta.get("seeds") else ""
+    excl = (f" [{meta['n_reg_excl']} near-solved excl from RMSE]"
+            if meta.get("n_reg_excl") else "")
     cap = (f"Grinsztajn et al. (2022) — {meta['n_total']} datasets "
-           f"({meta['n_reg']} reg, {meta['n_bin']} binary, "
+           f"({meta['n_reg']} reg{excl}, {meta['n_bin']} binary, "
            f"{meta['n_mul']} multiclass){seeds} | "
            f"100% = best | Calib MCB x10^-3 lower=better | Speed vs fastest")
     lines.append(cap)
