@@ -58,10 +58,12 @@ def _best_split(hist, n_bins_per_feature, l2, feat_mask, min_child_weight,
     same way in every current leaf. Gain is summed across leaves. Features with
     feat_mask[f] == 0 are skipped (column subsampling).
 
-    A threshold is legal only if *every* non-empty leaf keeps at least
-    min_child_weight hessian mass on both sides; otherwise it is rejected
-    outright (an illegal split in one leaf is illegal for the shared level).
-    This is what stops growth and prevents sparse-leaf overfitting.
+    A threshold is legal unless some leaf would gain a *sparse non-empty* child
+    (0 < hessian mass < min_child_weight) -- that is the sparse-leaf overfit risk,
+    and since the split is shared it is rejected for the whole level. Children
+    that come out EMPTY (a leaf whose samples all go one way) are exempt: pure
+    leaves are normal in an oblivious tree and must not block the shared split,
+    or effective depth caps far below what the data supports.
     """
     n_features = hist.shape[0]
     feat_gain = np.full(n_features, -np.inf)
@@ -102,7 +104,17 @@ def _best_split(hist, n_bins_per_feature, l2, feat_mask, min_child_weight,
                 if Ht[l] > 0.0:
                     hl = HL[l]
                     hr = Ht[l] - hl
-                    if hl < min_child_weight or hr < min_child_weight:
+                    # Empty children are exempt: a leaf sending ALL its samples
+                    # one way (hl==0 or hr==0) is simply not subdivided by this
+                    # shared split -- a normal, harmless event in an oblivious
+                    # tree (every level has pure leaves). Only a genuinely SPARSE
+                    # non-empty child (0 < mass < min_child_weight) is the
+                    # sparse-leaf overfit risk the constraint guards against.
+                    # Vetoing on empty children instead capped effective depth
+                    # far below what the data supports (one pure leaf blocked the
+                    # whole shared level), which is the depth anomaly this fixes.
+                    if (hl > 0.0 and hl < min_child_weight) or \
+                       (hr > 0.0 and hr < min_child_weight):
                         legal = False
                         break
                     gl = GL[l]

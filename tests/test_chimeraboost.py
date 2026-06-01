@@ -207,10 +207,19 @@ def test_thread_count_does_not_change_predictions():
     assert np.allclose(a.predict(Xte), b.predict(Xte))
 
 
-def test_min_child_weight_controls_depth_overfitting():
-    """With min_child_weight active, increasing depth should NOT degrade test
-    accuracy (the constraint stops growth before sparse leaves overfit). This is
-    the property that fixes the oblivious-tree depth anomaly."""
+def test_min_child_weight_regularizes_sparse_leaves():
+    """min_child_weight regularizes by forbidding SPARSE non-empty leaves, so at a
+    fixed (deep) depth, raising it reduces overfitting.
+
+    History (read before changing): an earlier version asserted that mcw *caps
+    depth* -- that depth 8 ~= depth 6 because growth stops. That encoded a BUG.
+    The oblivious veto rejected a shared split whenever any leaf gained an EMPTY
+    child (a pure leaf, all samples one way), which is normal in symmetric trees
+    (cf. CatBoost). One pure leaf vetoed the whole level, so effective depth
+    self-capped ~4-6 regardless of the `depth` arg, and large interaction-heavy
+    datasets (e.g. pol) were stuck ~79% of sklearn with no way to improve. The
+    fix exempts empty children (only 0 < mass < mcw is illegal). depth is a real
+    lever again; mcw still guards sparse leaves. Do NOT reassert the depth cap."""
     from sklearn.datasets import make_regression
     X, y = make_regression(n_samples=4000, n_features=30, n_informative=20,
                            noise=20, random_state=1000)
@@ -223,11 +232,14 @@ def test_min_child_weight_controls_depth_overfitting():
                                   random_state=0).fit(Xf, yf, eval_set=(Xv, yv))
         return np.sqrt(np.mean((yte - m.predict(Xte)) ** 2))
 
-    # Unconstrained (mcw=1): deeper overfits -> depth 8 clearly worse than depth 4.
+    # depth is a real lever: unconstrained (mcw=1), deeper overfits this noisy
+    # target -> depth 8 clearly worse than depth 4.
     assert rmse_at(8, 1) > rmse_at(4, 1)
-    # Constrained (mcw=20): depth 8 should be no worse than a small tolerance
-    # above depth 6 -- growth is capped, so extra depth is harmless.
-    assert rmse_at(8, 20) <= rmse_at(6, 20) + 0.5
+    # mcw regularizes sparse leaves: at the same deep depth, a strong mcw sharply
+    # reduces the overfit a weak one allows.
+    assert rmse_at(8, 80) < rmse_at(8, 1)
+    # ...and it is monotone in the right direction (more mass -> less overfit).
+    assert rmse_at(8, 80) <= rmse_at(8, 20)
 
 
 def test_min_child_weight_param_plumbing():
