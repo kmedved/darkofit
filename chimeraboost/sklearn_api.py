@@ -252,6 +252,23 @@ def _check_predict_input(estimator, X):
             f"expecting {estimator.n_features_in_} features as input.")
 
 
+def _auto_min_child_weight(n_train):
+    """Size-adaptive ``min_child_weight`` used when the classifier leaves it None.
+
+    Oblivious trees UNDERFIT large data at the historical mcw=1: the shared-split
+    veto amplifies the min-leaf constraint (one sparse leaf among 2**depth vetoes
+    the whole level), so they want a lower min-leaf than leaf-wise trees -- which
+    is why CatBoost uses min_data_in_leaf=1. But mcw~0 OVERFITS small data,
+    because (unlike CatBoost) we run plain boosting without ordered-boosting
+    regularization. So fade the veto by training size: keep the full veto below
+    ~500 rows, drop it above ~2000, linear between. The midpoint (~1250 rows ->
+    ~20 samples/leaf at depth 6) lines up with the field-standard
+    min_data_in_leaf=20. Validated on the Grinsztajn suite (large -> mcw~0, broad
+    Brier gain) plus an independent OpenML check (small datasets recover).
+    """
+    return float(np.clip((2000.0 - n_train) / 1500.0, 0.0, 1.0))
+
+
 class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
     """Gradient boosted oblivious trees for regression.
 
@@ -381,6 +398,10 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
         kw = {k: v for k, v in self.get_params().items()
               if k not in {"loss", "alpha"} | _SKLEARN_ONLY}
         kw["early_stopping_rounds"] = es_rounds
+        # min_child_weight is a no-op for regression in [0, 1] (a non-empty child
+        # always holds >=1 sample = hess >= 1); resolve an explicit None to 1.0.
+        if kw.get("min_child_weight") is None:
+            kw["min_child_weight"] = 1.0
         self.model_ = GradientBoosting(loss=self.loss, loss_kwargs=loss_kwargs,
                                        **kw)
         self.model_.fit(X, y, cat_features=cat_features, eval_set=eval_set,
@@ -442,7 +463,7 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
                  l2_leaf_reg=3.0, max_bins=128, subsample=1.0, colsample=1.0,
                  cat_smoothing=1.0, cat_n_permutations=4,
                  early_stopping_rounds=None,
-                 min_child_weight=1.0, thread_count=None, random_state=None,
+                 min_child_weight=None, thread_count=None, random_state=None,
                  verbose=False, ordered_boosting=False,
                  cat_combinations=False, leaf_estimation_iterations=3,
                  early_stopping=False, validation_fraction=0.1,
@@ -552,6 +573,10 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
         kw = {k: v for k, v in self.get_params().items()
               if k not in _SKLEARN_ONLY}
         kw["early_stopping_rounds"] = es_rounds
+        # Size-adaptive min_child_weight (see _auto_min_child_weight): resolved
+        # on the FINAL training set (post early-stopping split).
+        if kw.get("min_child_weight") is None:
+            kw["min_child_weight"] = _auto_min_child_weight(len(X))
 
         self._multiclass = self.n_classes_ > 2
         cal_Xv = cal_y = None   # validation set used to calibrate temperature

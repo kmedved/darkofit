@@ -4,6 +4,17 @@ All notable changes to ChimeraBoost are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
+### Changed
+- **Classifier `min_child_weight` is now size-adaptive by default** (`None` → auto:
+  full veto ~1 below ~500 training rows, fading to 0 above ~2000). The old flat
+  `mcw=1` silently capped oblivious classification tree depth (~4.9 of 6),
+  under-fitting larger data; the new default lifts binary Brier broadly (18W/0L on
+  the Grinsztajn suite, +1.6pp, reaching the speed/accuracy Pareto frontier) while
+  the size ramp protects small datasets (validated on an independent OpenML set).
+  Root-caused by matching a stripped-down CatBoost: the gap was our min-leaf veto,
+  not the oblivious tree structure. Regression is unaffected (a no-op in [0,1]
+  post empty-child-exemption); explicit `min_child_weight` values are still honored.
+
 ### Added
 - **Input validation** across both estimators: clear, actionable errors instead
   of cryptic numpy/numba tracebacks for predict-before-fit (`NotFittedError`),

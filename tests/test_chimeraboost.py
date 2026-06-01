@@ -561,6 +561,25 @@ def test_continuous_target_to_classifier_raises():
         ChimeraBoostClassifier(iterations=10, random_state=0).fit(X, yr)
 
 
+def test_auto_min_child_weight_is_size_adaptive():
+    """Classifier default min_child_weight=None resolves to a size-adaptive veto:
+    full (~1) on small data, off (~0) on large -- monotone in training size."""
+    from chimeraboost.sklearn_api import _auto_min_child_weight as f
+    assert f(300) == 1.0 and f(5000) == 0.0          # endpoints clamp
+    assert f(400) > f(1250) > f(2500)                 # monotone decreasing
+    # The resolved value lands on the fitted booster.
+    rng = np.random.default_rng(0)
+    Xs = rng.normal(size=(400, 6)); Xl = rng.normal(size=(4000, 6))
+    cs = ChimeraBoostClassifier(iterations=20, random_state=0).fit(Xs, (Xs[:, 0] > 0).astype(int))
+    cl = ChimeraBoostClassifier(iterations=20, random_state=0).fit(Xl, (Xl[:, 0] > 0).astype(int))
+    assert cs.model_.min_child_weight == 1.0          # small -> full veto
+    assert cl.model_.min_child_weight == 0.0          # large -> no veto
+    # An explicit value is still honored (overrides auto).
+    ce = ChimeraBoostClassifier(iterations=20, min_child_weight=0.5,
+                                random_state=0).fit(Xl, (Xl[:, 0] > 0).astype(int))
+    assert ce.model_.min_child_weight == 0.5
+
+
 @pytest.mark.parametrize("Est", [ChimeraBoostRegressor, ChimeraBoostClassifier])
 def test_sklearn_check_estimator_compliance(Est):
     """Full sklearn check_estimator must pass, except the one documented

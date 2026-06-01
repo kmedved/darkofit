@@ -387,19 +387,22 @@ PATIENCE = 50
 
 
 def _run_chimera(task, Xtr, ytr, Xte, yte, cat, threads, lr=None,
-                 ordered_boosting=None, depth=6, subsample=1.0, mcw=1.0,
+                 ordered_boosting=None, depth=6, subsample=1.0, mcw=None,
                  cat_combinations=False, leaf_estimation_iterations=None):
     Xf, Xv, yf, yv = _val_split(Xtr, ytr, task, 0)
     t = time.time()
     Est = ChimeraBoostRegressor if task == "regression" else ChimeraBoostClassifier
-    # None = use the class default (False for Regressor, True for Classifier).
-    # An explicit bool overrides both (e.g. --no-ordered-boosting forces False).
+    # None = use the class default. For ordered_boosting that's False (Reg) /
+    # False (Clf); for min_child_weight it's the classifier's size-adaptive auto.
+    # An explicit value overrides (e.g. --no-ordered-boosting, --chimera-mcw 0).
     kw = {} if ordered_boosting is None else {"ordered_boosting": ordered_boosting}
     if leaf_estimation_iterations is not None:
         kw["leaf_estimation_iterations"] = leaf_estimation_iterations
+    if mcw is not None:
+        kw["min_child_weight"] = mcw
     m = Est(iterations=MAX_ITERS, early_stopping_rounds=PATIENCE,
             learning_rate=lr, depth=depth,
-            subsample=subsample, min_child_weight=mcw,
+            subsample=subsample,
             cat_combinations=cat_combinations,
             thread_count=threads, random_state=0, **kw)
     m.fit(Xf, yf, cat_features=cat, eval_set=(Xv, yv))
@@ -740,9 +743,10 @@ def main():
                     dest="chimera_subsample",
                     help="ChimeraBoost row subsample fraction; "
                          "MVS sampling when < 1.0 (default: 1.0 = off).")
-    ap.add_argument("--chimera-mcw", type=float, default=1.0,
+    ap.add_argument("--chimera-mcw", type=float, default=None,
                     dest="chimera_mcw",
-                    help="ChimeraBoost min_child_weight (default: 1.0).")
+                    help="ChimeraBoost min_child_weight (default: None = the "
+                         "classifier's size-adaptive auto rule).")
     ap.add_argument("--chimera-cat-combinations", action="store_true",
                     default=False, dest="cat_combinations",
                     help="enable 2-way categorical feature combinations "
