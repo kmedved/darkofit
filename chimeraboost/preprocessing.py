@@ -97,18 +97,17 @@ class FeaturePreprocessor:
 
     def _codes_for_transform(self, X):
         """Map categorical columns to the codes learned at fit time; unseen
-        categories get -1 (the encoder then falls back to the prior)."""
+        categories get -1 (the encoder then falls back to the prior). Vectorized
+        via pandas; identical to the per-element dict lookup it replaced."""
         if not self.cat_features_:
             return np.empty((X.shape[0], 0), dtype=np.int64)
+        import pandas as pd
         codes = np.empty((X.shape[0], len(self.cat_features_)), dtype=np.int64)
         for j, f in enumerate(self.cat_features_):
-            m = self.cat_maps_[j]
-            col = X[:, f]
-            for i in range(X.shape[0]):
-                v = col[i]
-                if v is None or (isinstance(v, float) and v != v):
-                    v = "__nan__"
-                codes[i, j] = m.get(v, -1)   # unseen -> prior fallback
+            s = pd.Series(X[:, f], dtype=object)
+            s = s.where(~pd.isna(s), "__nan__")
+            mapped = s.map(self.cat_maps_[j])          # unseen -> NaN
+            codes[:, j] = mapped.fillna(-1).astype(np.int64).to_numpy()
         return codes
 
     def _combo_codes_for_transform(self, X):

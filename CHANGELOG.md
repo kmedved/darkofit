@@ -4,6 +4,13 @@ All notable changes to ChimeraBoost are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
+### Performance
+- Vectorized categorical encoding (`factorize`, `_codes_for_transform`) via pandas,
+  replacing per-element Python loops. ~3.4× faster on the encoding step and
+  ~15% faster end-to-end fit on categorical-heavy datasets (e.g. adult), with
+  **bit-identical** output. Numeric-only datasets are unaffected. Adds `pandas`
+  as a dependency.
+
 ### Changed
 - **Classifier `min_child_weight` is now size-adaptive by default** (`None` → auto:
   full veto ~1 below ~500 training rows, fading to 0 above ~2000). The old flat

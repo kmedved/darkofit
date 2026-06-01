@@ -109,21 +109,19 @@ class OrderedTargetEncoder:
 
 
 def factorize(column):
-    """Map an arbitrary 1D column to integer codes in [0, K).
+    """Map an arbitrary 1D column to integer codes in [0, K), in first-appearance
+    order. NaN / None map to a dedicated "__nan__" category. Returns
+    (codes, categories).
 
-    NaN / None map to a dedicated code. Returns (codes, categories).
+    Vectorized via ``pandas.factorize``; bit-identical to the per-element dict
+    mapping it replaced (codes are internal labels and the ordered target
+    encoder is invariant to their permutation regardless).
     """
+    import pandas as pd
     col = np.asarray(column, dtype=object)
-    cats = {}
-    codes = np.empty(col.shape[0], dtype=np.int64)
-    for i, v in enumerate(col):
-        # Normalize missing values to a single key.
-        if v is None or (isinstance(v, float) and np.isnan(v)):
-            v = "__nan__"
-        if v not in cats:
-            cats[v] = len(cats)
-        codes[i] = cats[v]
-    categories = np.empty(len(cats), dtype=object)
-    for v, k in cats.items():
-        categories[k] = v
-    return codes, categories
+    na = pd.isna(col)
+    if na.any():
+        col = col.copy()
+        col[na] = "__nan__"
+    codes, categories = pd.factorize(col, sort=False)   # first-appearance order
+    return codes.astype(np.int64), np.asarray(categories, dtype=object)
