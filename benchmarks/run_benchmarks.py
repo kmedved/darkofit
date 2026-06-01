@@ -388,18 +388,19 @@ PATIENCE = 50
 
 def _run_chimera(task, Xtr, ytr, Xte, yte, cat, threads, lr=None,
                  ordered_boosting=None, depth=6, subsample=1.0, mcw=1.0,
-                 cat_combinations=False, leaf_estimation_iterations=1):
+                 cat_combinations=False, leaf_estimation_iterations=None):
     Xf, Xv, yf, yv = _val_split(Xtr, ytr, task, 0)
     t = time.time()
     Est = ChimeraBoostRegressor if task == "regression" else ChimeraBoostClassifier
     # None = use the class default (False for Regressor, True for Classifier).
     # An explicit bool overrides both (e.g. --no-ordered-boosting forces False).
     kw = {} if ordered_boosting is None else {"ordered_boosting": ordered_boosting}
+    if leaf_estimation_iterations is not None:
+        kw["leaf_estimation_iterations"] = leaf_estimation_iterations
     m = Est(iterations=MAX_ITERS, early_stopping_rounds=PATIENCE,
             learning_rate=lr, depth=depth,
             subsample=subsample, min_child_weight=mcw,
             cat_combinations=cat_combinations,
-            leaf_estimation_iterations=leaf_estimation_iterations,
             thread_count=threads, random_state=0, **kw)
     m.fit(Xf, yf, cat_features=cat, eval_set=(Xv, yv))
     return _compute_metrics(task, yte, m, Xte), time.time() - t, m.best_iteration_
@@ -650,10 +651,11 @@ class _Progress:
             self.results_json = None
         self.total = total
         self.start = time.time()
+        lei = args.leaf_estimation_iterations
         self.config = (f"seeds={args.seeds} jobs={args.jobs} "
                        f"grinsztajn={args.grinsztajn} "
                        f"depth={args.chimera_depth} "
-                       f"lei={args.leaf_estimation_iterations} "
+                       f"lei={'default' if lei is None else lei} "
                        f"ob={'off' if not args.ordered_boosting else 'on'}")
         self.models = list(model_names)
         self.started_iso = datetime.datetime.now().isoformat(timespec="seconds")
@@ -740,12 +742,12 @@ def main():
                     default=False, dest="cat_combinations",
                     help="enable 2-way categorical feature combinations "
                          "(default: off).")
-    ap.add_argument("--chimera-lei", type=int, default=1,
+    ap.add_argument("--chimera-lei", type=int, default=None,
                     dest="leaf_estimation_iterations",
                     help="leaf estimation iterations: additional Newton steps to "
                          "refine leaf values after tree structure is fixed. "
-                         "1 = standard single step (default). Only applies on the "
-                         "non-LOO path (regression by default).")
+                         "None = use each class default (Regressor=1, Classifier=3). "
+                         "Only applies on the non-LOO path.")
     ap.add_argument("--datasets", nargs="+", default=None,
                     metavar="DS",
                     help=("run only these datasets, e.g. --datasets diabetes "

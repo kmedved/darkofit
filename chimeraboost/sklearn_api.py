@@ -319,7 +319,7 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
                  early_stopping_rounds=None,
                  min_child_weight=1.0, thread_count=None, random_state=None,
                  verbose=False, ordered_boosting=False,
-                 cat_combinations=False, leaf_estimation_iterations=1,
+                 cat_combinations=False, leaf_estimation_iterations=3,
                  early_stopping=False, validation_fraction=0.1,
                  n_ensembles=None, ensemble_n_jobs=1):
         self.iterations = iterations
