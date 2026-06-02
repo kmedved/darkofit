@@ -4,6 +4,8 @@ All notable changes to ChimeraBoost are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
+
+## [0.9.2] - 2026-06-02
 ### Performance
 - Vectorized categorical encoding (`factorize`, `_codes_for_transform`) via pandas,
   replacing per-element Python loops. ~3.4× faster on the encoding step and
@@ -12,6 +14,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/).
   as a dependency.
 
 ### Changed
+- **Default `l2_leaf_reg` lowered 3.0 → 1.0.** Lifts Grinsztajn binary Brier
+  95.7% → 97.2% of best (+1.5pp), pulling the classification leg even with
+  LightGBM, with RMSE and F1 flat (all 24 regression deltas <0.2% noise).
 - **Classifier `min_child_weight` is now size-adaptive by default** (`None` → auto:
   full veto ~1 below ~500 training rows, fading to 0 above ~2000). The old flat
   `mcw=1` silently capped oblivious classification tree depth (~4.9 of 6),
@@ -32,9 +37,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/).
   `DataConversionWarning`; a continuous target passed to the classifier raises.
 - **scikit-learn `check_estimator` compliance** for both estimators, with a
   single documented deviation: `sample_weight` reweights the loss but is not
-  bit-exactly equivalent to integer row repetition. See the README
-  "scikit-learn compatibility" section for the full list of deviations
-  (NaN-in-X accepted as missing, dense-only, `cat_features`/`eval_set` kwargs).
+  bit-exactly equivalent to integer row repetition. Other intentional deviations:
+  NaN-in-X accepted as missing, dense-only input, and the `cat_features` /
+  `eval_set` fit kwargs.
+
+### Docs
+- README "Tuning tips": interaction-heavy regression (e.g. `pol`) benefits from
+  `depth=8–10` — at `depth=10` ChimeraBoost is best-in-field on `pol` (+12% vs
+  CatBoost/LightGBM/sklearn). The `depth=6` default stays conservative for
+  small-data safety.
 
 ## [0.9.1] - 2026-06-01
 ### Changed
