@@ -25,8 +25,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from summarize import near_solved_datasets  # noqa: E402  (shared RMSE guard)
 
 
-MODEL_ORDER = ["ChimeraBoost", "ChimeraBoostEns10", "CatBoost", "sklearn_HGB",
-               "XGBoost", "LightGBM"]
+MODEL_ORDER = ["ChimeraBoost", "ChimeraBoostEns2", "ChimeraBoostEns5",
+               "ChimeraBoostEns10", "CatBoost", "sklearn_HGB", "XGBoost", "LightGBM"]
 
 
 def aggregate_metric(records, metric_key):
