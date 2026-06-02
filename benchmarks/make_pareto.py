@@ -188,7 +188,7 @@ def render_image(data, out_path):
                    color=color, edgecolor="#222" if on_front else "white",
                    linewidth=1.8 if on_front else 1.0,
                    zorder=4 if is_us else 3, alpha=0.95)
-        label = m + ("  (ours)" if m.startswith("ChimeraBoost") else "")
+        label = m
         # Per-model nudges to avoid label collisions.
         _offsets = {
             "ChimeraBoostEns2": (-9, 5, "right"),
@@ -196,7 +196,8 @@ def render_image(data, out_path):
         ox, oy, ha = _offsets.get(m, (9, 5, "left"))
         ax.annotate(label, (s["slowdown"], s["blended"]),
                     textcoords="offset points", xytext=(ox, oy), ha=ha,
-                    fontsize=9.5, fontweight="bold" if is_us else "normal",
+                    fontsize=9.5,
+                    fontweight="bold" if m.startswith("ChimeraBoost") else "normal",
                     color="#1a1a1a")
 
     ax.set_xscale("log")
