@@ -93,26 +93,16 @@ def _best_split(hist, n_bins_per_feature, l2, feat_mask, min_child_weight,
                 GL[l] += hist[f, l, t, 0]
                 HL[l] += hist[f, l, t, 1]
 
-            # Pass 2: A threshold is legal only if every non-empty active leaf
-            # retains at least min_child_weight hessian mass on both sides.
-            # Splitting a leaf that violates this constraint would create sparse
-            # children that overfit; rejecting the threshold entirely is correct
-            # for oblivious trees where all leaves share the same split.
+            # Pass 2: gain of this threshold, and its legality (see docstring:
+            # only a sparse non-empty child vetoes the shared split).
             gain = 0.0
             legal = True
             for l in range(n_leaves):
                 if Ht[l] > 0.0:
                     hl = HL[l]
                     hr = Ht[l] - hl
-                    # Empty children are exempt: a leaf sending ALL its samples
-                    # one way (hl==0 or hr==0) is simply not subdivided by this
-                    # shared split -- a normal, harmless event in an oblivious
-                    # tree (every level has pure leaves). Only a genuinely SPARSE
-                    # non-empty child (0 < mass < min_child_weight) is the
-                    # sparse-leaf overfit risk the constraint guards against.
-                    # Vetoing on empty children instead capped effective depth
-                    # far below what the data supports (one pure leaf blocked the
-                    # whole shared level), which is the depth anomaly this fixes.
+                    # Empty child (hl==0 or hr==0) is exempt; only 0 < mass <
+                    # min_child_weight is illegal.
                     if (hl > 0.0 and hl < min_child_weight) or \
                        (hr > 0.0 and hr < min_child_weight):
                         legal = False
