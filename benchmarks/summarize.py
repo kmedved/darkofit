@@ -25,8 +25,8 @@ import numpy as np
 
 
 RESULTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results")
-MODEL_ORDER = ["ChimeraBoost", "ChimeraBoostEns10", "CatBoost", "LightGBM",
-               "sklearn_HGB", "XGBoost"]
+MODEL_ORDER = ["ChimeraBoost", "ChimeraBoostEns2", "ChimeraBoostEns5",
+               "ChimeraBoostEns10", "CatBoost", "LightGBM", "sklearn_HGB", "XGBoost"]
 COLS = ["Reg RMSE%", "Bin F1%", "Bin Brier%", "Bin Calib", "Speed"]
 
 # Regression datasets where the BEST model's NRMSE (best_RMSE / y_std) is below

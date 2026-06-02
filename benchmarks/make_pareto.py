@@ -39,6 +39,8 @@ import summarize  # noqa: E402  (canonical aggregation: % vs best, speed multipl
 # Same palette as make_slowdown_hist so ChimeraBoost is the consistent blue.
 MODEL_COLOR = {
     "ChimeraBoost": "#3b6fb0",
+    "ChimeraBoostEns2": "#5b8fc8",
+    "ChimeraBoostEns5": "#4070a8",
     "ChimeraBoostEns10": "#2b4a73",
     "CatBoost": "#d1495b",
     "sklearn_HGB": "#e0a32e",
@@ -186,7 +188,7 @@ def render_image(data, out_path):
                    color=color, edgecolor="#222" if on_front else "white",
                    linewidth=1.8 if on_front else 1.0,
                    zorder=4 if is_us else 3, alpha=0.95)
-        label = m + ("  (ours)" if is_us else "")
+        label = m + ("  (ours)" if m.startswith("ChimeraBoost") else "")
         ax.annotate(label, (s["slowdown"], s["blended"]),
                     textcoords="offset points", xytext=(9, 5),
                     fontsize=9.5, fontweight="bold" if is_us else "normal",

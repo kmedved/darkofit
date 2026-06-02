@@ -416,14 +416,27 @@ def _run_chimera(task, Xtr, ytr, Xte, yte, cat, threads, lr=None,
 ENSEMBLE_N = 10
 
 
-def _run_chimera_ensemble(task, Xtr, ytr, Xte, yte, cat, threads):
+def _chimera_ens(n, task, Xtr, ytr, Xte, yte, cat, threads):
+    """Shared implementation for all bagged-ChimeraBoost runners."""
     t = time.time()
     Est = ChimeraBoostRegressor if task == "regression" else ChimeraBoostClassifier
     m = Est(iterations=MAX_ITERS, early_stopping=True, early_stopping_rounds=PATIENCE,
-            n_ensembles=ENSEMBLE_N, ensemble_n_jobs=1,
+            n_ensembles=n, ensemble_n_jobs=1,
             thread_count=threads, random_state=0)
     m.fit(Xtr, ytr, cat_features=cat)
     return _compute_metrics(task, yte, m, Xte), time.time() - t, m.best_iteration_
+
+
+def _run_chimera_ensemble(task, Xtr, ytr, Xte, yte, cat, threads):
+    return _chimera_ens(ENSEMBLE_N, task, Xtr, ytr, Xte, yte, cat, threads)
+
+
+def _run_chimera_ensemble_2(task, Xtr, ytr, Xte, yte, cat, threads):
+    return _chimera_ens(2, task, Xtr, ytr, Xte, yte, cat, threads)
+
+
+def _run_chimera_ensemble_5(task, Xtr, ytr, Xte, yte, cat, threads):
+    return _chimera_ens(5, task, Xtr, ytr, Xte, yte, cat, threads)
 
 
 def _run_sklearn(task, Xtr, ytr, Xte, yte, cat, threads):
@@ -559,6 +572,8 @@ def _run_lightgbm(task, Xtr, ytr, Xte, yte, cat, threads):
 
 RUNNERS = {
     "ChimeraBoost": _run_chimera,
+    "ChimeraBoostEns2": _run_chimera_ensemble_2,
+    "ChimeraBoostEns5": _run_chimera_ensemble_5,
     "ChimeraBoostEns10": _run_chimera_ensemble,
     "sklearn_HGB": _run_sklearn,
     "CatBoost": _run_catboost,
@@ -566,11 +581,11 @@ RUNNERS = {
     "LightGBM": _run_lightgbm,
 }
 
-# Always available (hard deps); the rest are gated on _detect(). ChimeraBoostEns10
-# is also dep-free but ~N× slower, so it's selectable via --models but off by
+# Always available (hard deps); the rest are gated on _detect(). Ensemble variants
+# are also dep-free but N× slower, so they're selectable via --models but off by
 # default (like XGBoost).
 _ALWAYS = ("ChimeraBoost", "sklearn_HGB")
-_OFF_BY_DEFAULT = ("XGBoost", "ChimeraBoostEns10")
+_OFF_BY_DEFAULT = ("XGBoost", "ChimeraBoostEns2", "ChimeraBoostEns5", "ChimeraBoostEns10")
 _OPTIONAL = ("CatBoost", "XGBoost", "LightGBM")
 
 
@@ -817,7 +832,8 @@ def main():
 
     # Resolve the model set. Competitors are gated on install; XGBoost is off
     # by default (it tracks LightGBM). --models overrides everything.
-    available = (list(_ALWAYS) + ["ChimeraBoostEns10"]
+    available = (list(_ALWAYS)
+                 + [m for m in _OFF_BY_DEFAULT if not HAVE.get(m.lower(), False)]
                  + [m for m in _OPTIONAL if HAVE[m.lower()]])
     if args.models:
         unknown = set(args.models) - set(RUNNERS)
