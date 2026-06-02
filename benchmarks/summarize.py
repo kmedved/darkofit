@@ -153,9 +153,12 @@ def aggregate(data):
         "Bin Calib": _mean_over(cal, bin_ds),
         "Speed": _mult_vs_best(speed, all_ds),
     }
+    cfg = data.get("config", {})
     meta = {"n_reg": len(reg_ds), "n_bin": len(bin_ds), "n_mul": len(mul_ds),
             "n_reg_excl": len(near), "n_total": len(all_ds),
-            "seeds": data.get("config", {}).get("seeds")}
+            "seeds": cfg.get("seeds"),
+            "max_iters": cfg.get("max_iters", 2000),
+            "patience": cfg.get("patience", 50)}
     return cols, meta
 
 

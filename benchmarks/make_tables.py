@@ -182,12 +182,14 @@ def render_table(data, row_labels, col_labels, col_groups, title, out_path,
     ax.invert_yaxis()
     ax.axis("off")
 
-    # Title (optional subtitle on 2nd line)
+    # Title (optional subtitle on 2nd line; two-line subtitles use a smaller font)
     if subtitle:
-        ax.text(fig_w / 2, 0.25, title, ha="center", va="center",
+        two_line = "\n" in subtitle
+        ax.text(fig_w / 2, 0.22, title, ha="center", va="center",
                 fontsize=13, fontweight="bold", color="#222")
-        ax.text(fig_w / 2, 0.55, subtitle, ha="center", va="center",
-                fontsize=10.5, color="#555")
+        ax.text(fig_w / 2, 0.50 if two_line else 0.55, subtitle,
+                ha="center", va="center",
+                fontsize=8.5 if two_line else 10.5, color="#555")
     else:
         ax.text(fig_w / 2, 0.35, title, ha="center", va="center",
                 fontsize=13, fontweight="bold", color="#222")
@@ -355,6 +357,10 @@ def main():
 
     records = data["records"]
     datasets = data["datasets"]
+    cfg = data.get("config", {})
+    max_iters = cfg.get("max_iters", 2000)
+    patience  = cfg.get("patience", 50)
+    seeds     = cfg.get("seeds", 3)
 
     out_dir = args.out_dir or os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "..", "images"
@@ -440,7 +446,9 @@ def main():
         sum_table, models, sum_col_labels, sum_groups,
         title="ChimeraBoost vs other GBMs",
         subtitle=("avg % vs best  ·  Calib = miscalibration ×10⁻³ (lower better)  "
-                  f"·  fit time as × slowdown  ·  Grinsztajn et al. (2022)"),
+                  f"·  fit time as × slowdown  ·  Grinsztajn et al. (2022)\n"
+                  f"max {max_iters:,} trees  ·  patience {patience}  ·  "
+                  f"20% val split  ·  {seeds} seeds"),
         out_path=os.path.join(out_dir, "summary.png"),
         col_kinds=sum_col_kinds,
         footnote=(

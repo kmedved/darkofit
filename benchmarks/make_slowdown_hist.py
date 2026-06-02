@@ -61,7 +61,7 @@ def per_dataset_slowdowns(records):
     return slow
 
 
-def render(slowdowns, n_datasets, out_path):
+def render(slowdowns, n_datasets, out_path, cfg=None):
     models = [m for m in MODEL_ORDER if m in slowdowns]
 
     # Shared log-spaced bins across all models so the panels are comparable.
@@ -110,12 +110,21 @@ def render(slowdowns, n_datasets, out_path):
     axes[-1].set_xlabel("fit-time slowdown vs fastest model on each dataset (log scale)",
                         fontsize=10)
 
+    cfg = cfg or {}
+    max_iters = cfg.get("max_iters", 2000)
+    patience  = cfg.get("patience", 50)
+    seeds     = cfg.get("seeds", 3)
     fig.suptitle("Fit-time slowdown distribution — Grinsztajn et al. (2022)",
                  fontsize=13, fontweight="bold",
                  y=0.98)
-    fig.text(0.5, 0.93, "dashed line = median   ·   1× = fastest on that dataset",
+    fig.text(0.5, 0.945,
+             "dashed line = median   ·   1× = fastest on that dataset",
              ha="center", fontsize=9.5, color="#666")
-    fig.tight_layout(rect=[0, 0, 1, 0.92])
+    fig.text(0.5, 0.925,
+             f"max {max_iters:,} trees  ·  patience {patience}  ·  "
+             f"20% val split  ·  {seeds} seeds",
+             ha="center", fontsize=8.5, color="#888")
+    fig.tight_layout(rect=[0, 0, 1, 0.91])
     fig.savefig(out_path, dpi=150, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
@@ -137,7 +146,7 @@ def main():
 
     slowdowns = per_dataset_slowdowns(data["records"])
     out_path = os.path.join(out_dir, "slowdown_hist.png")
-    render(slowdowns, len(data["datasets"]), out_path)
+    render(slowdowns, len(data["datasets"]), out_path, cfg=data.get("config", {}))
     print(f"Wrote slowdown_hist.png to {out_dir}")
 
 

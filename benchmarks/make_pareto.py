@@ -226,13 +226,15 @@ def render_image(data, out_path):
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
 
-    seeds = f" · {meta['seeds']} seeds" if meta.get("seeds") else ""
+    seeds_s = f"{meta['seeds']} seeds  ·  " if meta.get("seeds") else ""
+    max_iter_s = f"{meta.get('max_iters', 2000):,}"
+    patience_s = str(meta.get('patience', 50))
     fig.suptitle("Blended strength vs slowdown — Grinsztajn et al. (2022)",
                  fontsize=13, fontweight="bold", y=0.98)
     ax.set_title(
         f"Blended = HarmonicMean(RMSE%, ⅔·Brier% + ⅓·F1%)  ·  "
-        f"{meta['n_total']} datasets ({meta['n_reg']} reg, {meta['n_bin']} bin)"
-        f"{seeds}",
+        f"{meta['n_total']} datasets ({meta['n_reg']} reg, {meta['n_bin']} bin)  ·  "
+        f"{seeds_s}max {max_iter_s} trees  ·  patience {patience_s}  ·  20% val split",
         fontsize=9.5, color="#555", pad=8)
     ax.legend(loc="lower right", fontsize=9, frameon=False)
 
