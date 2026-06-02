@@ -5,6 +5,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-06-02
+### Changed
+- **Out-of-the-box defaults now early-stop.** Both estimators default to
+  `early_stopping=True`, `iterations=2000` (was 500), and `validation_fraction=0.2`
+  (was 0.1). A plain `model.fit(X, y)` now carves an internal stratified holdout,
+  early-stops on it (patience 50), and uses the best iteration — instead of
+  building a fixed 500 trees with no stopping (which could overfit). This makes
+  the **out-of-box defaults match the benchmarked/Pareto configuration exactly**.
+  Pass `early_stopping=False` for the old fixed-iteration behavior; an explicit
+  `eval_set` still overrides the internal split.
+- **Benchmarks measure default behavior.** The ChimeraBoost benchmark runner now
+  calls the bare default estimator (no external `eval_set`), so it performs its
+  own internal early-stopping split exactly like a user's `.fit(X, y)`. The
+  published Pareto/summary/slowdown images are regenerated from this run.
+
+### Fixed
+- Early stopping degrades gracefully on tiny data: when the training set is too
+  small to carve a valid (stratified) validation split, `early_stopping` is
+  silently disabled for that fit instead of raising — so `early_stopping=True`
+  is safe as the new default even on very small or few-member-class datasets.
+
 ## [0.9.2] - 2026-06-02
 ### Performance
 - Vectorized categorical encoding (`factorize`, `_codes_for_transform`) via pandas,

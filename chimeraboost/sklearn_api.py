@@ -115,6 +115,11 @@ def _make_eval_split(X, y, validation_fraction, random_state,
         groups are kept intact across the split boundary.  For classification,
         ``StratifiedGroupKFold`` is used so class proportions are preserved;
         for regression ``GroupShuffleSplit`` is used.
+
+    Returns ``None`` when the data is too small to carve a valid validation set
+    (e.g. tiny ``n``, or a class with too few members for a stratified split).
+    The caller treats ``None`` as "train on all rows, early stopping disabled"
+    rather than crashing on a degenerate split.
     """
     from sklearn.model_selection import (
         ShuffleSplit,
@@ -123,37 +128,49 @@ def _make_eval_split(X, y, validation_fraction, random_state,
         StratifiedGroupKFold,
     )
 
-    if groups is not None:
-        groups = np.asarray(groups)
-        if stratify is not None:
-            # StratifiedGroupKFold approximates the desired val fraction via
-            # n_splits = round(1 / validation_fraction).
-            n_splits = max(2, round(1.0 / validation_fraction))
-            splitter = StratifiedGroupKFold(n_splits=n_splits)
-            train_idx, val_idx = next(
-                splitter.split(X, stratify, groups=groups)
-            )
-        else:
-            splitter = GroupShuffleSplit(
+    # Cheap size precheck: each side of the split needs at least one row per
+    # class (or >=2 rows for regression) for the holdout to be usable.
+    n = len(y)
+    min_per_side = len(np.unique(stratify)) if stratify is not None else 2
+    n_val = int(round(n * validation_fraction))
+    if n_val < min_per_side or (n - n_val) < min_per_side:
+        return None
+
+    try:
+        if groups is not None:
+            groups = np.asarray(groups)
+            if stratify is not None:
+                # StratifiedGroupKFold approximates the desired val fraction via
+                # n_splits = round(1 / validation_fraction).
+                n_splits = max(2, round(1.0 / validation_fraction))
+                splitter = StratifiedGroupKFold(n_splits=n_splits)
+                train_idx, val_idx = next(
+                    splitter.split(X, stratify, groups=groups)
+                )
+            else:
+                splitter = GroupShuffleSplit(
+                    n_splits=1,
+                    test_size=validation_fraction,
+                    random_state=random_state,
+                )
+                train_idx, val_idx = next(splitter.split(X, y, groups=groups))
+        elif stratify is not None:
+            splitter = StratifiedShuffleSplit(
                 n_splits=1,
                 test_size=validation_fraction,
                 random_state=random_state,
             )
-            train_idx, val_idx = next(splitter.split(X, y, groups=groups))
-    elif stratify is not None:
-        splitter = StratifiedShuffleSplit(
-            n_splits=1,
-            test_size=validation_fraction,
-            random_state=random_state,
-        )
-        train_idx, val_idx = next(splitter.split(X, stratify))
-    else:
-        splitter = ShuffleSplit(
-            n_splits=1,
-            test_size=validation_fraction,
-            random_state=random_state,
-        )
-        train_idx, val_idx = next(splitter.split(X))
+            train_idx, val_idx = next(splitter.split(X, stratify))
+        else:
+            splitter = ShuffleSplit(
+                n_splits=1,
+                test_size=validation_fraction,
+                random_state=random_state,
+            )
+            train_idx, val_idx = next(splitter.split(X))
+    except ValueError:
+        # Degenerate stratified split (e.g. a class with a single member).
+        return None
 
     return train_idx, val_idx
 
@@ -290,11 +307,11 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
     loss: "RMSE" (default), "MAE", or "Quantile". For "Quantile" pass the level
     via `alpha` (e.g. alpha=0.9 for the 90th-percentile predictor).
 
-    early_stopping : bool, default False
+    early_stopping : bool, default True
         Whether to use early stopping to terminate training when the validation
         score stops improving.  Requires ``early_stopping_rounds`` (defaults
         to 50 when early stopping is active but the param is None).
-    validation_fraction : float, default 0.1
+    validation_fraction : float, default 0.2
         Fraction of training data to hold out as a validation set when
         *early_stopping* is active and no explicit *eval_set* is passed.
         Ignored when an explicit *eval_set* is given to ``fit``.
@@ -308,14 +325,14 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
         When >1 and *thread_count* is None, numba threads are split among workers.
     """
 
-    def __init__(self, iterations=500, learning_rate=None, depth=6,
+    def __init__(self, iterations=2000, learning_rate=None, depth=6,
                  l2_leaf_reg=1.0, max_bins=128, subsample=1.0, colsample=1.0,
                  cat_smoothing=1.0, cat_n_permutations=4,
                  early_stopping_rounds=None,
                  loss="RMSE", alpha=0.5, min_child_weight=1.0, thread_count=None,
                  random_state=None, verbose=False, ordered_boosting=False,
                  cat_combinations=False, leaf_estimation_iterations=1,
-                 early_stopping=False, validation_fraction=0.1,
+                 early_stopping=True, validation_fraction=0.2,
                  n_ensembles=None, ensemble_n_jobs=1):
         self.iterations = iterations
         self.learning_rate = learning_rate
@@ -393,14 +410,18 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
 
         es_active = bool(self.early_stopping)
         if es_active and eval_set is None:
-            train_idx, val_idx = _make_eval_split(
+            split = _make_eval_split(
                 X, y, self.validation_fraction, self.random_state,
                 groups=groups, stratify=None,
             )
-            eval_set = (X[val_idx], y[val_idx])
-            X, y = X[train_idx], y[train_idx]
-            if sample_weight is not None:
-                sample_weight = sample_weight[train_idx]
+            if split is None:
+                es_active = False  # data too small to hold out a val set
+            else:
+                train_idx, val_idx = split
+                eval_set = (X[val_idx], y[val_idx])
+                X, y = X[train_idx], y[train_idx]
+                if sample_weight is not None:
+                    sample_weight = sample_weight[train_idx]
 
         # If early stopping is active but patience not explicitly set, use 50.
         # 50 beats 10 on 25/34 benchmark datasets (lr=0.1 keeps improving past a
@@ -457,11 +478,11 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
     Automatically uses binary logloss for 2 classes and softmax multiclass for
     3+. `classes_` preserves the original label values.
 
-    early_stopping : bool, default False
+    early_stopping : bool, default True
         Whether to use early stopping.  The validation split is always
         stratified to preserve class proportions; when *groups* is passed,
         ``StratifiedGroupKFold`` is used instead.
-    validation_fraction : float, default 0.1
+    validation_fraction : float, default 0.2
         Fraction of training data held out for the automatic validation set.
         Ignored when an explicit *eval_set* is given to ``fit``.
     n_ensembles : int or None, default None
@@ -474,14 +495,14 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
         When >1 and *thread_count* is None, numba threads are split among workers.
     """
 
-    def __init__(self, iterations=500, learning_rate=None, depth=6,
+    def __init__(self, iterations=2000, learning_rate=None, depth=6,
                  l2_leaf_reg=1.0, max_bins=128, subsample=1.0, colsample=1.0,
                  cat_smoothing=1.0, cat_n_permutations=4,
                  early_stopping_rounds=None,
                  min_child_weight=None, thread_count=None, random_state=None,
                  verbose=False, ordered_boosting=False,
                  cat_combinations=False, leaf_estimation_iterations=3,
-                 early_stopping=False, validation_fraction=0.1,
+                 early_stopping=True, validation_fraction=0.2,
                  n_ensembles=None, ensemble_n_jobs=1):
         self.iterations = iterations
         self.learning_rate = learning_rate
@@ -570,16 +591,20 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
 
         es_active = bool(self.early_stopping)
         if es_active and eval_set is None:
-            train_idx, val_idx = _make_eval_split(
+            split = _make_eval_split(
                 X, y, self.validation_fraction, self.random_state,
                 groups=groups, stratify=y,  # always stratify for classification
             )
-            eval_set = (X[val_idx], y[val_idx])
-            X, y = X[train_idx], y[train_idx]
-            if sample_weight is not None:
-                sample_weight = sample_weight[train_idx]
-            self.classes_ = np.unique(y)
-            self.n_classes_ = self.classes_.size
+            if split is None:
+                es_active = False  # data too small to hold out a val set
+            else:
+                train_idx, val_idx = split
+                eval_set = (X[val_idx], y[val_idx])
+                X, y = X[train_idx], y[train_idx]
+                if sample_weight is not None:
+                    sample_weight = sample_weight[train_idx]
+                self.classes_ = np.unique(y)
+                self.n_classes_ = self.classes_.size
 
         es_rounds = self.early_stopping_rounds
         if es_active and es_rounds is None:

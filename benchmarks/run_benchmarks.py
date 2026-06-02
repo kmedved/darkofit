@@ -389,7 +389,6 @@ PATIENCE = 50
 def _run_chimera(task, Xtr, ytr, Xte, yte, cat, threads, lr=None,
                  ordered_boosting=None, depth=6, subsample=1.0, mcw=None,
                  cat_combinations=False, leaf_estimation_iterations=None):
-    Xf, Xv, yf, yv = _val_split(Xtr, ytr, task, 0)
     t = time.time()
     Est = ChimeraBoostRegressor if task == "regression" else ChimeraBoostClassifier
     # None = use the class default. For ordered_boosting that's False (Reg) /
@@ -400,12 +399,18 @@ def _run_chimera(task, Xtr, ytr, Xte, yte, cat, threads, lr=None,
         kw["leaf_estimation_iterations"] = leaf_estimation_iterations
     if mcw is not None:
         kw["min_child_weight"] = mcw
+    # IMPORTANT: this measures OUT-OF-BOX DEFAULT behavior. We call fit(Xtr, ytr)
+    # with NO explicit eval_set, so ChimeraBoost performs its own internal
+    # early-stopping split (early_stopping=True, validation_fraction default) —
+    # exactly what a user gets from `ChimeraBoostX().fit(X, y)`. iterations and
+    # early_stopping_rounds come from the shared harness budget, which equals the
+    # class defaults for the headline run, so the benchmark == the default.
     m = Est(iterations=MAX_ITERS, early_stopping_rounds=PATIENCE,
             learning_rate=lr, depth=depth,
             subsample=subsample,
             cat_combinations=cat_combinations,
             thread_count=threads, random_state=0, **kw)
-    m.fit(Xf, yf, cat_features=cat, eval_set=(Xv, yv))
+    m.fit(Xtr, ytr, cat_features=cat)
     return _compute_metrics(task, yte, m, Xte), time.time() - t, m.best_iteration_
 
 
