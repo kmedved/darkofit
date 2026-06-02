@@ -459,11 +459,13 @@ def _run_sklearn(task, Xtr, ytr, Xte, yte, cat, threads):
         Xte = Xte.astype(float)
     else:
         cat_idx = None
-    # HGB has built-in early stopping via a validation fraction.
+    # HGB has built-in early stopping via a validation fraction. NOTE: HGB has
+    # NO n_jobs constructor arg (it parallelises via OpenMP, set through
+    # OMP_NUM_THREADS / threadpoolctl), so we must not pass `threads` here —
+    # doing so raised TypeError and silently dropped the sklearn column.
     common = dict(max_iter=MAX_ITERS, early_stopping=True,
                   validation_fraction=0.2, n_iter_no_change=PATIENCE,
                   categorical_features=cat_idx,
-                  n_jobs=threads or -1,
                   random_state=0)
     Est = (HistGradientBoostingRegressor if task == "regression"
            else HistGradientBoostingClassifier)
