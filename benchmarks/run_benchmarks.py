@@ -463,6 +463,7 @@ def _run_sklearn(task, Xtr, ytr, Xte, yte, cat, threads):
     common = dict(max_iter=MAX_ITERS, early_stopping=True,
                   validation_fraction=0.2, n_iter_no_change=PATIENCE,
                   categorical_features=cat_idx,
+                  n_jobs=threads or -1,
                   random_state=0)
     Est = (HistGradientBoostingRegressor if task == "regression"
            else HistGradientBoostingClassifier)
@@ -989,6 +990,9 @@ def main():
                 "config": {
                     "seeds": args.seeds, "max_iters": MAX_ITERS,
                     "patience": PATIENCE, "ensemble_n": ENSEMBLE_N,
+                    "threads_per_model": threads_per,
+                    "total_threads": total_threads,
+                    "jobs": jobs,
                 },
                 "datasets": dataset_meta,
                 "records": raw_records,

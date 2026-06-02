@@ -158,7 +158,8 @@ def aggregate(data):
             "n_reg_excl": len(near), "n_total": len(all_ds),
             "seeds": cfg.get("seeds"),
             "max_iters": cfg.get("max_iters", 2000),
-            "patience": cfg.get("patience", 50)}
+            "patience": cfg.get("patience", 50),
+            "threads_per_model": cfg.get("threads_per_model")}
     return cols, meta
 
 

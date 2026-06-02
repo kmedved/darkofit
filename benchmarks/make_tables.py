@@ -358,9 +358,10 @@ def main():
     records = data["records"]
     datasets = data["datasets"]
     cfg = data.get("config", {})
-    max_iters = cfg.get("max_iters", 2000)
-    patience  = cfg.get("patience", 50)
-    seeds     = cfg.get("seeds", 3)
+    max_iters  = cfg.get("max_iters", 2000)
+    patience   = cfg.get("patience", 50)
+    seeds      = cfg.get("seeds", 3)
+    threads_pm = cfg.get("threads_per_model")
 
     out_dir = args.out_dir or os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "..", "images"
@@ -447,8 +448,9 @@ def main():
         title="ChimeraBoost vs other GBMs",
         subtitle=("avg % vs best  ·  Calib = miscalibration ×10⁻³ (lower better)  "
                   f"·  fit time as × slowdown  ·  Grinsztajn et al. (2022)\n"
-                  f"max {max_iters:,} trees  ·  patience {patience}  ·  "
-                  f"20% val split  ·  {seeds} seeds"),
+                  f"max {max_iters:,} trees  ·  patience {patience}  ·  20% val split  ·  "
+                  f"{seeds} seeds"
+                  + (f"  ·  {threads_pm} cores/model" if threads_pm is not None else "")),
         out_path=os.path.join(out_dir, "summary.png"),
         col_kinds=sum_col_kinds,
         footnote=(

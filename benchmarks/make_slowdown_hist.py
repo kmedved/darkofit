@@ -111,9 +111,11 @@ def render(slowdowns, n_datasets, out_path, cfg=None):
                         fontsize=10)
 
     cfg = cfg or {}
-    max_iters = cfg.get("max_iters", 2000)
-    patience  = cfg.get("patience", 50)
-    seeds     = cfg.get("seeds", 3)
+    max_iters  = cfg.get("max_iters", 2000)
+    patience   = cfg.get("patience", 50)
+    seeds      = cfg.get("seeds", 3)
+    threads_pm = cfg.get("threads_per_model")
+    threads_s  = f"  ·  {threads_pm} cores/model" if threads_pm is not None else ""
     fig.suptitle("Fit-time slowdown distribution — Grinsztajn et al. (2022)",
                  fontsize=13, fontweight="bold",
                  y=0.98)
@@ -122,7 +124,7 @@ def render(slowdowns, n_datasets, out_path, cfg=None):
              ha="center", fontsize=9.5, color="#666")
     fig.text(0.5, 0.925,
              f"max {max_iters:,} trees  ·  patience {patience}  ·  "
-             f"20% val split  ·  {seeds} seeds",
+             f"20% val split  ·  {seeds} seeds{threads_s}",
              ha="center", fontsize=8.5, color="#888")
     fig.tight_layout(rect=[0, 0, 1, 0.91])
     fig.savefig(out_path, dpi=150, bbox_inches="tight", facecolor="white")
