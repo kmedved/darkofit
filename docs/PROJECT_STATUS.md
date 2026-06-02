@@ -201,9 +201,9 @@ speed wins must be algorithmic (less compute), not dtype/parallel tricks.
   behind CatBoost. (A diagnostic subtlety: two datasets — `visualizing_soil`, `SGEMM` —
   looked catastrophic but are **metric artifacts** where best-RMSE→0; we added a
   `NEAR_SOLVED_NRMSE=0.02` guard that drops them from the RMSE column. R² confirms
-  regression parity.) Genuine remaining reg gaps: `pol` (interaction-heavy underfit,
-  hits the tree wall), `Brazilian_houses`, `nyc-taxi`, `sulfur` — all isolated, not a
-  size law.
+  regression parity.) Genuine remaining reg gaps: `pol` (interaction-heavy underfit
+  **at the default depth=6 — CURED by `depth=10`, where we become best-in-field +12%;
+  see §9.7**), `Brazilian_houses`, `nyc-taxi`, `sulfur` — all isolated, not a size law.
 - **The weak leg is classification Brier** (97.2%). It's largely the **oblivious-tree
   sharpness tax**: on high-signal/low-noise sets (electricity, covertype, `pol`) leaf-wise
   LightGBM/sklearn are sharper; CatBoost (also oblivious) trails them there too. We're
@@ -560,3 +560,40 @@ that actually reproduces a *Chimera-worse-than-LightGBM* signal — which none o
 Until such a proxy exists, the real Brier gap stays where §6/the prior decisions left it:
 the oblivious-vs-leaf-wise sharpness tax on high-signal data, **not chased** (would
 overfit), and we remain on the blended Pareto frontier (§2) at 98.0.
+
+### 9.7 Capacity GATE for "discrete logical-AND splits" (Alt A) — split verdict, A NOT justified (2026-06-02)
+
+`benchmarks/stage1_capacity_gate.py`: before building AND splits (≈ depth-2d interaction
+at depth-d leaf count), test the cheap proxy — does raw extra DEPTH close the gap?
+
+**[A] pol regression (n=15k) — depth DECISIVELY helps; we already WIN with the existing
+knob.** RMSE: d6 **4.55** (ties LightGBM), d8 **4.13**, **d10 4.05 (BEST IN FIELD)**, d12
+4.13 (overfit). Refs: LightGBM 4.55, sklearn_HGB 4.58, **CatBoost 4.77 (worst)**. So
+ChimeraBoost at depth-10 beats the best competitor by **+12%** (4.05 vs 4.55). `mcw=0` was
+**redundant** (d10==d10-mcw0) — the empty-child fix (§4) already made depth a clean lever,
+so the old "depth-10+mcw=0 → 111%" is now depth alone. **⇒ pol's "underfit" (§6, 79% of
+best at d6) is a DEFAULT-DEPTH artifact, fully curable with the existing `depth` knob — NOT
+a structural gap, and NOT something AND splits are needed for.**
+
+**[B] Family A v2 — extra depth does NOTHING** (d6→d12 all ~0.0072; CatBoost 0.0035). Raw
+oblivious depth can't help because isolating 4 disjoint pockets needs splitting all 8
+pocket-features *globally* → 2^8 fragmented leaves. This IS the one case AND splits would
+*uniquely* address (one AND level = one pocket in a single split) — but Family A v2 is NOT
+a real-data proxy (§9.6), so a win here wouldn't promise real-world value.
+
+**VERDICT — do NOT build Alternative A now.** The gate dissolves both motivations:
+- A's one *real* target (pol) is already solved by the existing `depth` knob (we become
+  best-in-field at d10); A would at most be a more-surgical route to capacity we already
+  have, and a size-adaptive-depth *default* for regression was already REJECTED (§ADAPTIVE
+  DEPTH: only pol benefits, elevators/Miami regress — benchmark-overfit).
+- A's unique-value case (disjoint pockets, where depth can't help) exists only on synthetic
+  data we've shown is not a faithful proxy.
+Building A is real engineering (pair split-search, 2D histograms, predictor change) with
+`cat_combinations`-style overfit risk (§5), and the gate produced **no evidence A closes a
+gap existing knobs can't**. Stop — consistent with the session's pattern: cheap tests keep
+shrinking the case for added complexity.
+
+**Documentable side win (real):** ChimeraBoost is **best-in-field on pol at depth=10**
+(+12% vs LightGBM/CatBoost). §6's "pol = genuine remaining underfit" is depth-default
+dependent; the cure is the existing knob, not new machinery. Worth a README/§6 note that
+interaction-heavy regression wants `depth≈8–10` (default stays 6 for small-data safety).

@@ -46,6 +46,9 @@ python benchmarks/run_benchmarks.py --grinsztajn --save
     * Supports regression, quantile regression, binary and multiclass classification
     * Matches CatBoost within ~0.5% F1, ~0.5% Brier, and ~2% RMSE (% of best) on the 59-dataset Grinsztajn (2022) tabular benchmark, at ~5× the speed
 
+* **Tuning tips**
+    * **Interaction-heavy regression** (many features with strong cross-terms — e.g. the `pol` dataset): raise `depth` to **8–10**. The `depth=6` default is deliberately conservative to keep small datasets from overfitting; on large, interaction-heavy tasks a deeper oblivious tree is decisively better. On `pol` (n≈15k), `depth=10` cuts RMSE ~11% below `depth=6` and beats CatBoost, LightGBM and sklearn HGB by ~12%. Keep `depth=6` for small (≲4k-row) data, where deeper trees overfit.
+
 * **Why?**
     * I want to be able to modify my GBDT library at will
     * I know Python and I don't know C
