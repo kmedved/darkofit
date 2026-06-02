@@ -45,7 +45,7 @@ python benchmarks/run_benchmarks.py --grinsztajn --save
         * Automatic early stopping, with automatic grouped splitting for the validation set available
     * Supports regression, quantile regression, binary and multiclass classification.
     * Categorical features, sample weights, and automatic early stopping
-    * Matches CatBoost within ~0.5% F1 and ~2% RMSE (% of best) on the 59-dataset Grinsztajn (2022) tabular benchmark, at ~5× the speed
+    * Matches CatBoost within ~0.5% F1, ~0.5% Brier, and ~2% RMSE (% of best) on the 59-dataset Grinsztajn (2022) tabular benchmark, at ~5× the speed
 
 * **Why?**
     * I want to be able to modify my GBDT library at will
