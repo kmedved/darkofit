@@ -1,5 +1,5 @@
 # chimeraboost
-### What if CatBoost, but ~5× faster with bagging built in, and all in Python?
+### What if CatBoost was slightly worse, 12× faster, and all in Python?
 
 > ⚠️ **Project is in active development:** breaking changes should be expected.
 
@@ -19,8 +19,8 @@ pip install chimeraboost
 from chimeraboost import ChimeraBoostClassifier, ChimeraBoostRegressor
 
 # classification
-clf = ChimeraBoostClassifier(early_stopping=True)
-clf.fit(X, y, cat_features=[0, 1], sample_weight=w, n_ensembles=2)
+clf = ChimeraBoostClassifier(early_stopping=True, n_ensembles=2)
+clf.fit(X, y, cat_features=[0, 1], sample_weight=w)
 proba = clf.predict_proba(X_test)
 
 # regression (RMSE, MAE, or Quantile)
@@ -28,15 +28,7 @@ reg = ChimeraBoostRegressor(loss="Quantile", alpha=0.9, early_stopping=True, n_e
 reg.fit(X, y)
 ```
 
-<p><a href="https://github.com/bbstats/chimeraboost/blob/main/images/summary.png"><img src="https://raw.githubusercontent.com/bbstats/chimeraboost/main/images/summary.png" width="500" alt="Benchmark summary" /></a></p>
-<p><a href="https://github.com/bbstats/chimeraboost/blob/main/images/pareto.png"><img src="https://raw.githubusercontent.com/bbstats/chimeraboost/main/images/pareto.png" width="500" alt="Blended strength vs slowdown Pareto" /></a></p>
-<p><a href="https://github.com/bbstats/chimeraboost/blob/main/images/slowdown_hist.png"><img src="https://raw.githubusercontent.com/bbstats/chimeraboost/main/images/slowdown_hist.png" width="500" alt="Slowdown distribution" /></a></p>
-
-* **Reproduce the benchmark**
-
-```
-python benchmarks/run_benchmarks.py --grinsztajn --save
-```
+<p><a href="https://github.com/bbstats/chimeraboost/blob/main/images/tabarena_pareto.png"><img src="https://raw.githubusercontent.com/bbstats/chimeraboost/main/images/tabarena_pareto.png" width="500" alt="TabArena-Lite Elo vs speed Pareto" /></a></p>
 
 * **What?**
     * Exceedingly opinionated GBDT library that only depends on common Python libraries
@@ -44,10 +36,17 @@ python benchmarks/run_benchmarks.py --grinsztajn --save
         * Bagging as a first-class feature (`n_ensembles`)
         * Automatic early stopping, with optional grouped splitting for the validation set
     * Supports regression, quantile regression, binary and multiclass classification
-    * Matches CatBoost within ~0.5% F1, ~0.5% Brier, and ~2% RMSE (% of best) on the 59-dataset Grinsztajn (2022) tabular benchmark, at ~5× the speed
+    * On **TabArena-Lite** (default configs, 51 tasks): beats XGBoost and LightGBM on **both** Elo and speed, and trails only CatBoost (−~10% Elo) at **~12× its speed** — on the strength-vs-speed Pareto frontier (chart above)
 
 * **Tuning tips**
-    * **Interaction-heavy regression** (many features with strong cross-terms — e.g. the `pol` dataset): raise `depth` to **8–10**. The `depth=6` default is deliberately conservative to keep small datasets from overfitting; on large, interaction-heavy tasks a deeper oblivious tree is decisively better. On `pol` (n≈15k), `depth=10` cuts RMSE ~11% below `depth=6` and beats CatBoost, LightGBM and sklearn HGB by ~12%. Keep `depth=6` for small (≲4k-row) data, where deeper trees overfit.
+    * Interaction-heavy regression: raise `depth` to 8–10 (default 6 is conservative to protect small data).
+
+* **Inspirations / Citations**
+    * **CatBoost** — Prokhorenkova et al., *NeurIPS* 2018 — ordered boosting, ordered target statistics, oblivious trees
+    * **Gradient boosting** — Friedman, *Annals of Statistics* 2001 — the GBM framework
+    * **XGBoost** — Chen & Guestrin, *KDD* 2016 — regularized objective, Newton leaf estimation, column subsampling
+    * **LightGBM** — Ke et al., *NeurIPS* 2017 — histogram-based split finding
+    * **TabArena** — Erickson et al., *NeurIPS* 2025 (arXiv:2506.16791) — the benchmark
 
 * **Why?**
     * I want to be able to modify my GBDT library at will
