@@ -36,7 +36,6 @@ reg.fit(X, y)
         * Bagging as a first-class feature (`n_ensembles`)
         * Automatic early stopping, with optional grouped splitting for the validation set
     * Supports regression, quantile regression, binary and multiclass classification
-    * On **TabArena-Lite** (default configs, 51 tasks): beats XGBoost and LightGBM on **both** Elo and speed, and trails only CatBoost (−~10% Elo) at **~12× its speed** — on the strength-vs-speed Pareto frontier (chart above)
 
 * **Tuning tips**
     * Interaction-heavy regression: raise `depth` to 8–10 (default 6 is conservative to protect small data).
