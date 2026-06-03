@@ -580,6 +580,191 @@ def test_auto_min_child_weight_is_size_adaptive():
     assert ce.model_.min_child_weight == 0.5
 
 
+# ---------------------------------------------------------------------------
+# hierarchical shrinkage (hs_lambda)
+# ---------------------------------------------------------------------------
+
+def _hs_leaf_case():
+    """A depth-2 (4-leaf) case with one empty leaf, for kernel-level tests.
+    leaf0: g=-2,h=1 | leaf1: g=3,h=2 | leaf2: EMPTY | leaf3: g=1,h=1."""
+    leaf = np.array([0, 1, 1, 3], dtype=np.int64)
+    grad = np.array([-2.0, 1.5, 1.5, 1.0])
+    hess = np.array([1.0, 1.0, 1.0, 1.0])
+    return leaf, grad, hess
+
+
+def test_hs_kernel_matches_plain_newton_at_tiny_lambda():
+    """As hs_lambda -> 0+, non-empty leaves match the plain per-leaf Newton
+    value (the shrinkage weight a = H/(H+hs) -> 1)."""
+    from chimeraboost.tree import _leaf_values, _leaf_values_hs
+    leaf, grad, hess = _hs_leaf_case()
+    l2, lr = 1.0, 0.3
+    plain = _leaf_values(leaf, grad, hess, 4, l2, lr)
+    hs = _leaf_values_hs(leaf, grad, hess, 4, l2, lr, 1e-9)
+    mass = np.bincount(leaf, weights=hess, minlength=4)
+    nonempty = mass > 0
+    assert np.allclose(plain[nonempty], hs[nonempty], atol=1e-6)
+
+
+def test_hs_kernel_collapses_to_root_at_large_lambda():
+    """As hs_lambda -> infinity every leaf is pulled to the root's global Newton
+    value (one shared step over all samples)."""
+    from chimeraboost.tree import _leaf_values_hs
+    leaf, grad, hess = _hs_leaf_case()
+    l2, lr = 1.0, 1.0
+    root = lr * (-grad.sum() / (hess.sum() + l2))
+    hs = _leaf_values_hs(leaf, grad, hess, 4, l2, lr, 1e12)
+    assert np.allclose(hs, root, atol=1e-3)
+
+
+def test_hs_kernel_shrinks_monotonically():
+    """Increasing hs_lambda pulls leaf values toward their ancestors, so the
+    spread (variance) of leaf values is non-increasing."""
+    from chimeraboost.tree import _leaf_values_hs
+    leaf, grad, hess = _hs_leaf_case()
+    spreads = [float(np.var(_leaf_values_hs(leaf, grad, hess, 4, 1.0, 1.0, hl)))
+               for hl in (0.0, 0.5, 2.0, 10.0, 100.0)]
+    assert all(a >= b - 1e-12 for a, b in zip(spreads, spreads[1:]))
+
+
+def test_hs_kernel_empty_leaf_inherits_ancestor():
+    """An empty leaf (no samples) takes its parent's shrunk value -- unlike the
+    plain Newton estimate, which would leave it at 0."""
+    from chimeraboost.tree import _leaf_values, _leaf_values_hs
+    leaf, grad, hess = _hs_leaf_case()
+    plain = _leaf_values(leaf, grad, hess, 4, 1.0, 1.0)
+    hs = _leaf_values_hs(leaf, grad, hess, 4, 1.0, 1.0, 1.0)
+    assert plain[2] == 0.0          # leaf2 is empty -> plain leaves it at 0
+    assert hs[2] != 0.0             # HS fills it from the ancestor instead
+
+
+@pytest.mark.parametrize("Est", [ChimeraBoostRegressor, ChimeraBoostClassifier])
+def test_hs_lambda_plumbs_and_changes_predictions(Est):
+    """hs_lambda reaches the fitted booster, hs=0 is the default path, and a
+    positive value perturbs predictions while keeping the model usable."""
+    if Est is ChimeraBoostClassifier:
+        X, y = load_breast_cancer(return_X_y=True)
+        Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.25,
+                                              random_state=0)
+        base = Est(iterations=120, random_state=0).fit(Xtr, ytr)
+        hs = Est(iterations=120, hs_lambda=2.0, random_state=0).fit(Xtr, ytr)
+        assert base.model_.hs_lambda == 0.0 and hs.model_.hs_lambda == 2.0
+        pb = base.predict_proba(Xte)[:, 1]
+        ph = hs.predict_proba(Xte)[:, 1]
+        assert not np.allclose(pb, ph)
+        assert roc_auc_score(yte, ph) > 0.95           # still strong
+    else:
+        X, y = load_diabetes(return_X_y=True)
+        Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.25,
+                                              random_state=0)
+        base = Est(iterations=120, random_state=0).fit(Xtr, ytr)
+        hs = Est(iterations=120, hs_lambda=2.0, random_state=0).fit(Xtr, ytr)
+        assert base.model_.hs_lambda == 0.0 and hs.model_.hs_lambda == 2.0
+        assert not np.allclose(base.predict(Xte), hs.predict(Xte))
+
+
+# ---------------------------------------------------------------------------
+# linear leaf models (linear_leaves)
+# ---------------------------------------------------------------------------
+
+def test_linear_leaves_beat_constant_on_smooth_target():
+    """On a smooth ~linear target with a limited tree budget, per-leaf linear
+    models fit the slope within each leaf far better than constant leaves."""
+    rng = np.random.default_rng(0)
+    X = rng.uniform(-3, 3, size=(3000, 3))
+    y = 3.0 * X[:, 0] - 2.0 * X[:, 1] + 0.5 * X[:, 2] + 0.05 * rng.normal(size=3000)
+    Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.3, random_state=0)
+    common = dict(iterations=60, depth=3, random_state=0, thread_count=4)
+    const = ChimeraBoostRegressor(**common).fit(Xtr, ytr)
+    lin = ChimeraBoostRegressor(linear_leaves=True, **common).fit(Xtr, ytr)
+    r_const = mean_squared_error(yte, const.predict(Xte)) ** 0.5
+    r_lin = mean_squared_error(yte, lin.predict(Xte)) ** 0.5
+    assert r_lin < 0.5 * r_const          # a large, unambiguous improvement
+
+
+def _big_reg(n=1500, d=4, seed=0):
+    rng = np.random.default_rng(seed)
+    X = rng.uniform(-3, 3, size=(n, d))
+    y = 2.0 * X[:, 0] - X[:, 1] + 0.4 * X[:, 2] + 0.1 * rng.normal(size=n)
+    return X, y
+
+
+def test_linear_leaves_default_off_uses_fused_path():
+    """linear_leaves defaults to off: the fast fused-forest path is used
+    (no centers table built), so default behavior is unchanged."""
+    X, y = _big_reg()
+    off = ChimeraBoostRegressor(iterations=30, random_state=0).fit(X, y)
+    on = ChimeraBoostRegressor(iterations=30, linear_leaves=True,
+                               random_state=0).fit(X, y)
+    assert off.model_._centers_std_ is None        # fused (constant) path
+    assert on.model_._centers_std_ is not None      # linear path active (n>=1000)
+    assert on.model_.linear_leaves is True
+
+
+def test_linear_leaves_small_data_guard_falls_back_to_constant():
+    """Below LINEAR_LEAVES_MIN_SAMPLES rows, linear leaves silently fall back to
+    constant leaves (noisy small data overfits per-leaf slopes) -- so the result
+    is bitwise identical to a plain constant-leaf model."""
+    from chimeraboost.booster import LINEAR_LEAVES_MIN_SAMPLES
+    X, y = load_diabetes(return_X_y=True)          # 442 rows < the guard
+    assert len(X) < LINEAR_LEAVES_MIN_SAMPLES
+    const = ChimeraBoostRegressor(iterations=40, random_state=0).fit(X, y)
+    lin = ChimeraBoostRegressor(iterations=40, linear_leaves=True,
+                                random_state=0).fit(X, y)
+    assert lin.model_._centers_std_ is None        # guard tripped -> constant
+    assert np.array_equal(const.predict(X), lin.predict(X))   # bit-identical
+
+
+def test_linear_leaves_predict_matches_staged_and_is_finite():
+    """The fused-bypass predict path and the staged per-tree path agree, and
+    linear-leaf predictions are finite (no solve blow-ups)."""
+    X, y = _big_reg(seed=1)
+    Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.25, random_state=1)
+    m = ChimeraBoostRegressor(iterations=40, linear_leaves=True,
+                              random_state=1, early_stopping=False).fit(Xtr, ytr)
+    assert m.model_._centers_std_ is not None       # linear actually engaged
+    pred = m.predict(Xte)
+    staged_last = list(m.staged_predict(Xte))[-1]
+    assert np.all(np.isfinite(pred))
+    assert np.allclose(pred, staged_last)
+
+
+def test_linear_leaves_classifier_auto_default():
+    """The classifier default (linear_leaves=None) auto-enables linear leaves for
+    BINARY (above the size guard) and disables them for multiclass WITHOUT
+    raising -- only an explicit True on multiclass raises."""
+    rng = np.random.default_rng(0)
+    n = 1500
+    X = rng.normal(size=(n, 5))
+    yb = (rng.random(n) < 1 / (1 + np.exp(-(1.4 * X[:, 0] - X[:, 1])))).astype(int)
+    mb = ChimeraBoostClassifier(random_state=0, thread_count=4).fit(X, yb)
+    assert mb.model_.linear_leaves is True                # auto-on for binary
+    assert mb.model_._centers_std_ is not None
+    # multiclass default must NOT raise and must train fine (linear auto-off).
+    ym = rng.integers(0, 3, size=n)
+    mm = ChimeraBoostClassifier(random_state=0, thread_count=4).fit(X, ym)
+    assert mm.predict(X).shape == (n,)
+
+
+def test_linear_leaves_multiclass_explicit_true_raises():
+    from sklearn.datasets import load_wine
+    X, y = load_wine(return_X_y=True)
+    with pytest.raises(NotImplementedError, match="multiclass"):
+        ChimeraBoostClassifier(linear_leaves=True, random_state=0).fit(X, y)
+
+
+def test_linear_leaves_binary_runs_and_keeps_auc():
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(2000, 6))                  # >= guard so linear engages
+    logit = 1.5 * X[:, 0] - 1.2 * X[:, 1] + 0.8 * X[:, 2]
+    y = (rng.random(2000) < 1 / (1 + np.exp(-logit))).astype(int)
+    Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.25, random_state=0)
+    m = ChimeraBoostClassifier(linear_leaves=True, random_state=0,
+                               thread_count=4).fit(Xtr, ytr)
+    assert m.model_._centers_std_ is not None        # linear engaged
+    assert roc_auc_score(yte, m.predict_proba(Xte)[:, 1]) > 0.85
+
+
 @pytest.mark.parametrize("Est", [ChimeraBoostRegressor, ChimeraBoostClassifier])
 def test_sklearn_check_estimator_compliance(Est):
     """Full sklearn check_estimator must pass, except the one documented

@@ -47,6 +47,33 @@ class Binner:
         self.max_bins = int(max_bins)
         self.borders_ = None       # list of np.ndarray, one per feature
         self.n_bins_ = None        # np.ndarray int, width per feature
+        self.bin_centers_ = None   # list of np.ndarray: representative value/bin
+
+    @staticmethod
+    def _centers_for(borders):
+        """A representative continuous value for each bin of one feature.
+
+        Bin layout is bins 0..m (the searchsorted buckets for m borders) plus a
+        trailing NaN bin. Interior bins use the midpoint of their border pair;
+        the two edge bins extrapolate by half the adjacent gap; the NaN bin gets
+        NaN (callers using these for a linear term map it to the feature mean).
+        Used by the optional linear-leaf models to evaluate a within-leaf slope.
+        """
+        m = len(borders)
+        centers = np.empty(m + 2, dtype=np.float64)
+        if m == 0:
+            centers[:] = 0.0
+            centers[1] = np.nan
+            return centers
+        if m == 1:
+            centers[0] = borders[0]
+            centers[1] = borders[0]
+        else:
+            centers[0] = borders[0] - 0.5 * (borders[1] - borders[0])
+            centers[1:m] = 0.5 * (borders[:-1] + borders[1:])
+            centers[m] = borders[m - 1] + 0.5 * (borders[m - 1] - borders[m - 2])
+        centers[m + 1] = np.nan                     # NaN bin
+        return centers
 
     def fit(self, X):
         """Learn quantile borders for each column from training data."""
@@ -59,6 +86,7 @@ class Binner:
         self.n_bins_ = np.array(
             [len(b) + 2 for b in self.borders_], dtype=np.int64
         )
+        self.bin_centers_ = [self._centers_for(b) for b in self.borders_]
         return self
 
     def transform(self, X):

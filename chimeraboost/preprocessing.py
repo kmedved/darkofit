@@ -138,6 +138,11 @@ class FeaturePreprocessor:
 
         feat = self._stack(num, encoded_blocks)
         self._build_feature_map(len(encode_targets))
+        # The numeric block is stacked first, then the (cat/combo) encoded blocks.
+        # Only numeric columns carry an ordinal meaning usable by linear-leaf
+        # models; mark them so the booster can pick linear-term features.
+        self.is_numeric_binned_ = np.zeros(feat.shape[1], dtype=bool)
+        self.is_numeric_binned_[:num.shape[1]] = True
 
         self.binner_ = Binner(self.max_bins)
         X_binned = self.binner_.fit_transform(feat)

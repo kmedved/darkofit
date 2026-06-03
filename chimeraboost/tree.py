@@ -162,6 +162,153 @@ def _leaf_values(leaf, grad, hess, n_leaves, l2, lr):
 
 
 @njit(cache=True)
+def _leaf_values_hs(leaf, grad, hess, n_leaves, l2, lr, hs_lambda):
+    """Hierarchical-shrinkage leaf values for an oblivious tree.
+
+    Instead of estimating every leaf independently (``_leaf_values``), each
+    leaf's Newton value is recursively shrunk toward its ancestors' values, with
+    the shrinkage strength set by ``hs_lambda`` and damped by the node's hessian
+    mass (a sample-count proxy). Low-mass / deep leaves -- the ones that overfit
+    local gradient noise -- are pulled hardest toward the smoother parent; large,
+    high-signal leaves keep their sharp value. See Agarwal et al., ICML 2022.
+
+    Oblivious trees are perfectly symmetric, so leaf ``j`` at depth D and its
+    coarser ancestors form a complete binary tree under ``parent(j) = j >> 1``.
+    We lay that tree out heap-style (root 0, children of i at 2i+1/2i+2; the
+    2**D leaves occupy [n_leaves-1, 2*n_leaves-1)), aggregate grad/hess upward,
+    then blend downward:
+
+        w_i      = -G_i / (H_i + l2)                      (raw Newton update)
+        theta_i  = a_i * w_i + (1 - a_i) * theta_parent,  a_i = H_i/(H_i + hs)
+
+    Returns ``lr * theta`` for the leaves. Note this is intentionally NOT
+    bit-identical to ``_leaf_values`` at hs_lambda=0 (different op order), so the
+    caller keeps using ``_leaf_values`` when hs_lambda == 0."""
+    n_nodes = 2 * n_leaves - 1          # complete binary tree, 2**(D+1) - 1
+    base = n_leaves - 1                 # heap index of the first (depth-D) leaf
+    G = np.zeros(n_nodes)
+    H = np.zeros(n_nodes)
+    for i in range(leaf.shape[0]):
+        node = base + leaf[i]
+        G[node] += grad[i]
+        H[node] += hess[i]
+    # Upward pass: a node's mass is the sum of its two children's masses.
+    for i in range(base - 1, -1, -1):
+        G[i] = G[2 * i + 1] + G[2 * i + 2]
+        H[i] = H[2 * i + 1] + H[2 * i + 2]
+    # Downward pass: shrink each node toward its (already-shrunk) parent.
+    theta = np.zeros(n_nodes)
+    if H[0] > 0.0:
+        theta[0] = -G[0] / (H[0] + l2)
+    for i in range(1, n_nodes):
+        h = H[i]
+        parent = (i - 1) // 2
+        if h > 0.0:
+            w = -G[i] / (h + l2)
+            a = h / (h + hs_lambda)
+            theta[i] = a * w + (1.0 - a) * theta[parent]
+        else:
+            # Empty leaf (no samples): inherit the parent's value outright.
+            theta[i] = theta[parent]
+    values = np.empty(n_leaves)
+    for j in range(n_leaves):
+        values[j] = lr * theta[base + j]
+    return values
+
+
+@njit(cache=True)
+def _linear_leaf_fit(leaf, grad, hess, n_leaves, lin_feats, centers_std, Xb,
+                     l2_intercept, lin_lambda, lr):
+    """Fit a small hessian-weighted ridge per leaf (local linear-leaf models).
+
+    For samples in a leaf we solve the second-order objective
+        min_beta  sum_i [ g_i f_i + 1/2 h_i f_i^2 ] + 1/2 ( l2*b^2 + lin*||w||^2 )
+    with f_i = b + w . x_std_i over the leaf's numeric split features -- i.e. the
+    normal equations  (A^T diag(h) A + Lambda) beta = -A^T g,  A = [1, x_std],
+    accumulated directly (no per-leaf design matrix). The fitted output is
+    `lr * beta`. Leaves with too few samples to support the slope (or empty
+    leaves) fall back to the plain constant Newton value, so the linear model
+    only ever ADDS local slope where the data supports it. Returns `lin_coef` of
+    shape (n_leaves, 1 + len(lin_feats)) (column 0 = intercept).
+
+    `centers_std` is the per-feature table of standardized bin-center values;
+    NaN (missing) bins are treated as 0 (= the feature mean)."""
+    n = leaf.shape[0]
+    k = lin_feats.shape[0]
+    d = 1 + k
+    coef = np.zeros((n_leaves, d))
+    # Standardized design columns (k, n); missing bins -> 0.
+    Xs = np.empty((k, n))
+    for j in range(k):
+        f = lin_feats[j]
+        for i in range(n):
+            v = centers_std[f, Xb[f, i]]
+            Xs[j, i] = v if np.isfinite(v) else 0.0
+    # Per-leaf grad/hess totals (for the constant fallback) and counts.
+    counts = np.zeros(n_leaves, dtype=np.int64)
+    Gtot = np.zeros(n_leaves)
+    Htot = np.zeros(n_leaves)
+    for i in range(n):
+        l = leaf[i]
+        counts[l] += 1
+        Gtot[l] += grad[i]
+        Htot[l] += hess[i]
+    # Accumulate normal equations per leaf in one pass (M is d*d, rhs is d).
+    M = np.zeros((n_leaves, d, d))
+    rhs = np.zeros((n_leaves, d))
+    for i in range(n):
+        l = leaf[i]
+        if counts[l] < 2 * d or k == 0:
+            continue                      # this leaf will use the constant value
+        h = hess[i]
+        g = grad[i]
+        M[l, 0, 0] += h
+        rhs[l, 0] += -g
+        for j in range(k):
+            xj = Xs[j, i]
+            M[l, 0, 1 + j] += h * xj
+            M[l, 1 + j, 0] += h * xj
+            rhs[l, 1 + j] += -g * xj
+            for jj in range(k):
+                M[l, 1 + j, 1 + jj] += h * xj * Xs[jj, i]
+    for l in range(n_leaves):
+        if counts[l] == 0:
+            continue
+        if counts[l] < 2 * d or k == 0:
+            if Htot[l] > 0.0:
+                coef[l, 0] = -lr * Gtot[l] / (Htot[l] + l2_intercept)
+            continue
+        Ml = M[l]
+        Ml[0, 0] += l2_intercept
+        for j in range(1, d):
+            Ml[j, j] += lin_lambda
+        for j in range(d):
+            Ml[j, j] += 1e-9              # jitter: keep the solve well-posed
+        beta = np.linalg.solve(Ml, rhs[l])
+        for j in range(d):
+            coef[l, j] = lr * beta[j]
+    return coef
+
+
+@njit(cache=True)
+def _linear_predict(leaf, lin_feats, lin_coef, centers_std, Xb):
+    """Per-sample output of a linear-leaf tree: intercept + slope . x_std."""
+    n = leaf.shape[0]
+    k = lin_feats.shape[0]
+    out = np.empty(n)
+    for i in range(n):
+        l = leaf[i]
+        s = lin_coef[l, 0]
+        for j in range(k):
+            f = lin_feats[j]
+            v = centers_std[f, Xb[f, i]]
+            if np.isfinite(v):
+                s += lin_coef[l, 1 + j] * v
+        out[i] = s
+    return out
+
+
+@njit(cache=True)
 def _loo_leaf_step(leaf, grad, hess, n_leaves, l2, lr):
     """Leave-one-out training step for every row, fused into two passes.
 
@@ -253,20 +400,102 @@ def pack_forest(trees, max_depth):
     return feats, thrs, depths, vals, voff
 
 
+def pack_forest_linear(trees, max_depth):
+    """Flatten a forest of (possibly) linear-leaf trees for `_predict_forest_linear`.
+
+    A constant-leaf tree is just a linear tree with k=0 features (its coef block
+    is the leaf intercepts), so one packed layout + kernel serves both. Per tree:
+    `lin_k[t]` linear features at `lin_feat_idx[featoff[t]:featoff[t+1]]`, and a
+    leaf-major coef block at `coef[coefoff[t]:coefoff[t+1]]` of shape
+    (n_leaves, 1 + lin_k[t]) flattened (column 0 = intercept)."""
+    n_trees = len(trees)
+    feats = np.zeros((n_trees, max_depth), dtype=np.int64)
+    thrs = np.zeros((n_trees, max_depth), dtype=np.int64)
+    depths = np.empty(n_trees, dtype=np.int64)
+    lin_k = np.empty(n_trees, dtype=np.int64)
+    featoff = np.empty(n_trees + 1, dtype=np.int64)
+    coefoff = np.empty(n_trees + 1, dtype=np.int64)
+    featoff[0] = 0
+    coefoff[0] = 0
+    for t, tree in enumerate(trees):
+        d = tree.depth
+        depths[t] = d
+        feats[t, :d] = tree.splits_feat
+        thrs[t, :d] = tree.splits_thr
+        n_leaves = (1 << d) if d > 0 else 1
+        k = tree.lin_feats.shape[0] if tree.lin_coef is not None else 0
+        lin_k[t] = k
+        featoff[t + 1] = featoff[t] + k
+        coefoff[t + 1] = coefoff[t] + n_leaves * (1 + k)
+    lin_feat_idx = np.empty(featoff[-1], dtype=np.int64)
+    coef = np.empty(coefoff[-1], dtype=np.float64)
+    for t, tree in enumerate(trees):
+        if lin_k[t] > 0:
+            lin_feat_idx[featoff[t]:featoff[t + 1]] = tree.lin_feats
+            coef[coefoff[t]:coefoff[t + 1]] = tree.lin_coef.reshape(-1)
+        else:
+            coef[coefoff[t]:coefoff[t + 1]] = tree.values
+    return feats, thrs, depths, lin_k, featoff, lin_feat_idx, coefoff, coef
+
+
+@njit(cache=True, parallel=True)
+def _predict_forest_linear(Xb, feats, thrs, depths, lin_k, featoff,
+                           lin_feat_idx, coefoff, coef, centers_std, init):
+    """Sum a forest of linear-leaf (or constant, k=0) oblivious trees in one
+    parallel pass over samples -- the linear-leaf analogue of `_predict_forest`.
+
+    Each leaf contributes intercept + sum_j slope_j * centers_std[feat_j, bin],
+    matching `_linear_predict`/`ObliviousTree.predict` so the fused path agrees
+    with the per-tree path bit-for-bit (same accumulation order)."""
+    n = Xb.shape[1]
+    n_trees = feats.shape[0]
+    out = np.empty(n, dtype=np.float64)
+    for i in prange(n):
+        acc = init
+        for t in range(n_trees):
+            d = depths[t]
+            if d == 0:
+                continue
+            leaf = 0
+            for dd in range(d):
+                if Xb[feats[t, dd], i] > thrs[t, dd]:
+                    leaf = leaf * 2 + 1
+                else:
+                    leaf = leaf * 2
+            k = lin_k[t]
+            row = coefoff[t] + leaf * (1 + k)
+            val = coef[row]                      # intercept
+            fb = featoff[t]
+            for j in range(k):
+                f = lin_feat_idx[fb + j]
+                v = centers_std[f, Xb[f, i]]
+                if np.isfinite(v):
+                    val += coef[row + 1 + j] * v
+            acc += val
+        out[i] = acc
+    return out
+
+
 class ObliviousTree:
     """A single symmetric tree. Stores its splits and leaf values.
 
     Its `apply`/`predict` take a feature-major binned matrix (n_features,
     n_samples) -- the same layout the builder consumes."""
 
-    __slots__ = ("splits_feat", "splits_thr", "values", "gains", "depth")
+    __slots__ = ("splits_feat", "splits_thr", "values", "gains", "depth",
+                 "lin_feats", "lin_coef", "centers_std")
 
-    def __init__(self, splits_feat, splits_thr, values, gains=None):
+    def __init__(self, splits_feat, splits_thr, values, gains=None,
+                 lin_feats=None, lin_coef=None, centers_std=None):
         self.splits_feat = splits_feat
         self.splits_thr = splits_thr
         self.values = values
         self.gains = gains if gains is not None else np.zeros(len(splits_feat))
         self.depth = len(splits_feat)
+        # Optional linear-leaf models (None => plain constant leaves).
+        self.lin_feats = lin_feats
+        self.lin_coef = lin_coef
+        self.centers_std = centers_std
 
     def apply(self, Xb):
         """Return the leaf index of each sample."""
@@ -277,12 +506,18 @@ class ObliviousTree:
     def predict(self, Xb):
         if self.depth == 0:
             return np.zeros(Xb.shape[1], dtype=np.float64)
+        if self.lin_coef is not None:
+            leaf = _assign_leaves(Xb, self.splits_feat, self.splits_thr)
+            return _linear_predict(leaf, self.lin_feats, self.lin_coef,
+                                   self.centers_std, Xb)
         return _predict_tree(Xb, self.splits_feat, self.splits_thr, self.values)
 
 
 def build_oblivious_tree(Xb, grad, hess, n_bins_per_feature,
                          max_depth, l2, lr, min_gain=1e-8, feature_mask=None,
-                         min_child_weight=1.0, hist_buffers=None):
+                         min_child_weight=1.0, hist_buffers=None, hs_lambda=0.0,
+                         linear_leaves=False, centers_std=None, is_numeric=None,
+                         linear_lambda=1.0):
     """Grow one oblivious tree level by level. Returns (tree, train_leaf), where
     train_leaf is the tree's leaf index for every training sample.
 
@@ -295,6 +530,14 @@ def build_oblivious_tree(Xb, grad, hess, n_bins_per_feature,
     hist_buffers: optional interleaved buffer of shape (n_features,
     2**max_depth, max_bins, 2) reused across trees to avoid per-level
     allocation. If None, it is allocated here (for one-off calls and tests).
+    hs_lambda: hierarchical-shrinkage strength for the leaf values (0 = off,
+    the plain per-leaf Newton estimate). When > 0, leaf values are shrunk
+    toward their ancestors via `_leaf_values_hs` as a cheap post-pass over the
+    finished structure (the split search is unaffected).
+    linear_leaves: when True, attach a per-leaf ridge linear model over the
+    tree's numeric split features (`centers_std`/`is_numeric` required;
+    `linear_lambda` is the slope penalty). Low-count leaves fall back to the
+    constant Newton value. The split search is unaffected.
     """
     n_features, n_samples = Xb.shape
     max_bins = n_features and int(n_bins_per_feature.max())
@@ -326,8 +569,24 @@ def build_oblivious_tree(Xb, grad, hess, n_bins_per_feature,
     sf = np.array(splits_feat, dtype=np.int64)
     st = np.array(splits_thr, dtype=np.int64)
     n_leaves = 1 << len(splits_feat)
-    values = _leaf_values(leaf, grad, hess, n_leaves, l2, lr)
-    tree = ObliviousTree(sf, st, values, np.array(splits_gain, dtype=np.float64))
+    if hs_lambda > 0.0:
+        values = _leaf_values_hs(leaf, grad, hess, n_leaves, l2, lr, hs_lambda)
+    else:
+        values = _leaf_values(leaf, grad, hess, n_leaves, l2, lr)
+    lin_feats = lin_coef = None
+    if linear_leaves and len(splits_feat) > 0 and centers_std is not None:
+        # Linear term uses the NUMERIC features the tree actually split on.
+        seen = []
+        for f in splits_feat:
+            if is_numeric[f] and f not in seen:
+                seen.append(f)
+        if seen:
+            lin_feats = np.array(seen, dtype=np.int64)
+            lin_coef = _linear_leaf_fit(leaf, grad, hess, n_leaves, lin_feats,
+                                        centers_std, Xb, l2, linear_lambda, lr)
+    tree = ObliviousTree(sf, st, values, np.array(splits_gain, dtype=np.float64),
+                         lin_feats=lin_feats, lin_coef=lin_coef,
+                         centers_std=centers_std if lin_coef is not None else None)
     # `leaf` is the training-set assignment, returned so callers (LOO update,
     # leaf correction) reuse it instead of recomputing tree.apply(Xb).
     return tree, leaf

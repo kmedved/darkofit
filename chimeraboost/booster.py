@@ -10,7 +10,18 @@ import numpy as np
 
 from .losses import LOSSES, MultiSoftmax
 from .preprocessing import FeaturePreprocessor
-from .tree import build_oblivious_tree, _loo_leaf_step, _leaf_values, _predict_forest, pack_forest
+from .tree import (build_oblivious_tree, _loo_leaf_step, _leaf_values,
+                   _leaf_values_hs, _linear_predict, _predict_forest, pack_forest,
+                   _predict_forest_linear, pack_forest_linear)
+
+
+# Below this many training rows, per-leaf linear models overfit (noisy small
+# data has too little signal per leaf to support a stable slope), so linear
+# leaves silently fall back to constant leaves. Matches the codebase's recurring
+# "sub-~1k rows is the small-data danger zone" boundary (cf. _auto_min_child_weight,
+# the max_bins sub-1k overfit). Validated: protects kc2 (~313 train) from a -4.6%
+# Brier loss while keeping the wins on larger sets (sick/spambase/electricity).
+LINEAR_LEAVES_MIN_SAMPLES = 1000
 
 
 def _apply_thread_count(thread_count):
@@ -73,7 +84,8 @@ class _BaseBooster:
                  early_stopping_rounds=None, min_child_weight=1.0,
                  thread_count=None, random_state=None, verbose=False,
                  ordered_boosting=True, cat_combinations=False,
-                 leaf_estimation_iterations=1):
+                 leaf_estimation_iterations=1, hs_lambda=0.0,
+                 linear_leaves=False, linear_lambda=1.0):
         self.iterations = int(iterations)
         self.learning_rate = learning_rate
         self.depth = int(depth)
@@ -91,6 +103,9 @@ class _BaseBooster:
         self.ordered_boosting = bool(ordered_boosting)
         self.cat_combinations = bool(cat_combinations)
         self.leaf_estimation_iterations = int(leaf_estimation_iterations)
+        self.hs_lambda = float(hs_lambda)
+        self.linear_leaves = bool(linear_leaves)
+        self.linear_lambda = float(linear_lambda)
 
     def _alloc_hist_buffers(self, n_features, n_bins):
         """Allocate the reusable histogram buffer once per fit.
@@ -103,6 +118,32 @@ class _BaseBooster:
         max_leaves = 1 << self.depth
         max_bins = int(n_bins.max()) if len(n_bins) else 1
         return np.zeros((n_features, max_leaves, max_bins, 2))
+
+    def _build_centers_std(self, Xb, n_bins):
+        """Per-(feature, bin) table of STANDARDIZED bin-center values for the
+        optional linear-leaf models. Standardizing per feature over the training
+        distribution makes the linear ridge penalty scale-fair across features.
+        Non-numeric (target-encoded) columns get zeros (never used as linear
+        terms); the NaN/missing bin keeps NaN (treated as 0 = mean downstream)."""
+        n_features = Xb.shape[0]
+        max_bins = int(n_bins.max()) if len(n_bins) else 1
+        centers_std = np.zeros((n_features, max_bins))
+        is_num = self.prep_.is_numeric_binned_
+        bc = self.prep_.binner_.bin_centers_
+        for f in range(n_features):
+            if not is_num[f]:
+                continue
+            c = bc[f]
+            per_sample = c[Xb[f]]
+            finite = per_sample[np.isfinite(per_sample)]
+            if finite.size == 0:
+                continue
+            mu = float(finite.mean())
+            sd = float(finite.std())
+            if sd <= 0.0:
+                sd = 1.0
+            centers_std[f, :c.shape[0]] = (c - mu) / sd
+        return centers_std
 
     def _feature_mask(self, n_cols, rng):
         """0/1 mask selecting a random subset of columns for one tree."""
@@ -258,6 +299,14 @@ class GradientBoosting(_BaseBooster):
             Fv = np.full(len(yv), self.init_)
 
         adjusts_leaves = getattr(self.loss_, "adjusts_leaves", False)
+        # Linear leaves are incompatible with the median/quantile leaf override
+        # (adjusts_leaves) and with ordered boosting (a linear LOO step is not
+        # implemented); they take over the leaf value otherwise. Below
+        # LINEAR_LEAVES_MIN_SAMPLES rows they overfit, so fall back to constant.
+        ll_active = (self.linear_leaves and not adjusts_leaves
+                     and n_samples >= LINEAR_LEAVES_MIN_SAMPLES)
+        self._centers_std_ = (self._build_centers_std(Xb, n_bins)
+                              if ll_active else None)
         rng = np.random.default_rng(self.random_state)
         self.trees_ = []
         self._forest_ = None   # packed-forest cache; built lazily on predict
@@ -275,7 +324,12 @@ class GradientBoosting(_BaseBooster):
                                               self.l2_leaf_reg, self.lr_,
                                               feature_mask=fmask,
                                               min_child_weight=self.min_child_weight,
-                                              hist_buffers=hist_buffers)
+                                              hist_buffers=hist_buffers,
+                                              hs_lambda=self.hs_lambda,
+                                              linear_leaves=ll_active,
+                                              centers_std=self._centers_std_,
+                                              is_numeric=self.prep_.is_numeric_binned_,
+                                              linear_lambda=self.linear_lambda)
             # A depth-0 tree found no legal split; the next round on the same
             # gradients would too, so stop rather than bank empty trees.
             if tree.depth == 0:
@@ -286,7 +340,12 @@ class GradientBoosting(_BaseBooster):
             self._accumulate_importance(tree)
             # Ordered boosting and leaf adjustment are mutually exclusive: the
             # former rewrites the training step, the latter the leaf value.
-            if self.ordered_boosting and not adjusts_leaves:
+            if ll_active and tree.lin_coef is not None:
+                # Linear-leaf path: training update is the leaf's local linear
+                # model (no ordered boosting / no leaf_estimation refinement).
+                F += _linear_predict(leaf, tree.lin_feats, tree.lin_coef,
+                                     self._centers_std_, Xb)
+            elif self.ordered_boosting and not adjusts_leaves:
                 F += self._loo_update(tree, leaf, g, h)
             else:
                 # Additional Newton steps refine the leaf values using the updated
@@ -298,8 +357,14 @@ class GradientBoosting(_BaseBooster):
                     g2, h2 = self.loss_.grad_hess(y, F_tmp)
                     if w is not None:
                         g2, h2 = g2 * w, h2 * w
-                    tree.values += _leaf_values(leaf, g2, h2, tree.values.shape[0],
-                                                self.l2_leaf_reg, self.lr_)
+                    n_lv = tree.values.shape[0]
+                    if self.hs_lambda > 0.0:
+                        tree.values += _leaf_values_hs(leaf, g2, h2, n_lv,
+                                                       self.l2_leaf_reg, self.lr_,
+                                                       self.hs_lambda)
+                    else:
+                        tree.values += _leaf_values(leaf, g2, h2, n_lv,
+                                                    self.l2_leaf_reg, self.lr_)
                 F += tree.values[leaf]
             if self.verbose:
                 self.train_history_.append(self.loss_.eval(y, F, w))
@@ -344,6 +409,15 @@ class GradientBoosting(_BaseBooster):
         Xb = np.ascontiguousarray(self.prep_.transform(X).T)
         if not self.trees_:
             return np.full(Xb.shape[1], self.init_, dtype=np.float64)
+        if getattr(self, "_centers_std_", None) is not None:
+            # Linear-leaf path: a dedicated fused kernel walks the whole forest
+            # in one parallel pass (constant trees ride along as k=0).
+            if self._forest_ is None:
+                self._forest_ = pack_forest_linear(self.trees_, self.depth)
+            feats, thrs, depths, lin_k, foff, lidx, coff, coef = self._forest_
+            return _predict_forest_linear(Xb, feats, thrs, depths, lin_k, foff,
+                                          lidx, coff, coef, self._centers_std_,
+                                          self.init_)
         if self._forest_ is None:
             self._forest_ = pack_forest(self.trees_, self.depth)
         feats, thrs, depths, vals, voff = self._forest_
@@ -427,7 +501,8 @@ class MulticlassBoosting(_BaseBooster):
                                                   self.l2_leaf_reg, self.lr_,
                                                   feature_mask=fmask,
                                                   min_child_weight=self.min_child_weight,
-                                                  hist_buffers=hist_buffers)
+                                                  hist_buffers=hist_buffers,
+                                                  hs_lambda=self.hs_lambda)
                 round_trees.append(tree)
                 self._accumulate_importance(tree)
                 if self.ordered_boosting and tree.depth > 0:

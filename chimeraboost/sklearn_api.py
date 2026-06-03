@@ -306,6 +306,23 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
     loss: "RMSE" (default), "MAE", or "Quantile". For "Quantile" pass the level
     via `alpha` (e.g. alpha=0.9 for the 90th-percentile predictor).
 
+    hs_lambda : float, default 0.0
+        Hierarchical-shrinkage strength on the leaf values. ``0`` keeps the plain
+        per-leaf Newton estimate. When > 0, each leaf value is recursively shrunk
+        toward its ancestors (low-mass / deep leaves hardest), a cheap post-pass
+        over the finished tree that adds no inference cost. Larger = more shrinkage.
+
+    linear_leaves : bool, default False
+        When True, each leaf predicts a small ridge-regularized LINEAR model of
+        the numeric features the tree split on (evaluated at bin centers) instead
+        of a constant -- adding local slope where step leaves underfit smooth
+        structure. Leaves with too few rows fall back to the constant value, so
+        irregular data is protected. Not compatible with MAE/Quantile loss or
+        multiclass (yet). (Reference path; not yet fused for fastest inference.)
+    linear_lambda : float, default 1.0
+        Ridge penalty on the per-leaf linear slopes. Larger = closer to constant
+        leaves; smaller = more aggressive local linear fits.
+
     early_stopping : bool, default True
         Whether to use early stopping to terminate training when the validation
         score stops improving.  Requires ``early_stopping_rounds`` (defaults
@@ -331,6 +348,7 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
                  loss="RMSE", alpha=0.5, min_child_weight=1.0, thread_count=None,
                  random_state=None, verbose=False, ordered_boosting=False,
                  cat_combinations=False, leaf_estimation_iterations=1,
+                 hs_lambda=0.0, linear_leaves=False, linear_lambda=1.0,
                  early_stopping=True, validation_fraction=0.2,
                  n_ensembles=None, ensemble_n_jobs=1):
         self.iterations = iterations
@@ -352,6 +370,9 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
         self.ordered_boosting = ordered_boosting
         self.cat_combinations = cat_combinations
         self.leaf_estimation_iterations = leaf_estimation_iterations
+        self.hs_lambda = hs_lambda
+        self.linear_leaves = linear_leaves
+        self.linear_lambda = linear_lambda
         self.early_stopping = early_stopping
         self.validation_fraction = validation_fraction
         self.n_ensembles = n_ensembles
@@ -477,6 +498,23 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
     Automatically uses binary logloss for 2 classes and softmax multiclass for
     3+. `classes_` preserves the original label values.
 
+    hs_lambda : float, default 0.0
+        Hierarchical-shrinkage strength on the leaf values. ``0`` keeps the plain
+        per-leaf Newton estimate. When > 0, each leaf value is recursively shrunk
+        toward its ancestors (low-mass / deep leaves hardest), a cheap post-pass
+        over the finished tree that adds no inference cost. Larger = more shrinkage.
+
+    linear_leaves : bool or None, default None
+        Whether each leaf predicts a small ridge-regularized LINEAR model of the
+        numeric features the tree split on (instead of a constant), adding local
+        slope where step leaves underfit. ``None`` auto-enables it for BINARY
+        classification (a broad Brier improvement validated on Grinsztajn +
+        OpenML that survives bagging) and disables it for multiclass (unsupported).
+        Pass ``True``/``False`` to force it. Below ~1000 training rows it falls
+        back to constant leaves (small data overfits per-leaf slopes).
+    linear_lambda : float, default 1.0
+        Ridge penalty on the per-leaf linear slopes (larger = closer to constant).
+
     early_stopping : bool, default True
         Whether to use early stopping.  The validation split is always
         stratified to preserve class proportions; when *groups* is passed,
@@ -501,6 +539,7 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
                  min_child_weight=None, thread_count=None, random_state=None,
                  verbose=False, ordered_boosting=False,
                  cat_combinations=False, leaf_estimation_iterations=3,
+                 hs_lambda=0.0, linear_leaves=None, linear_lambda=1.0,
                  early_stopping=True, validation_fraction=0.2,
                  n_ensembles=None, ensemble_n_jobs=1):
         self.iterations = iterations
@@ -520,6 +559,9 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
         self.ordered_boosting = ordered_boosting
         self.cat_combinations = cat_combinations
         self.leaf_estimation_iterations = leaf_estimation_iterations
+        self.hs_lambda = hs_lambda
+        self.linear_leaves = linear_leaves
+        self.linear_lambda = linear_lambda
         self.early_stopping = early_stopping
         self.validation_fraction = validation_fraction
         self.n_ensembles = n_ensembles
@@ -618,6 +660,16 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
             kw["min_child_weight"] = _auto_min_child_weight(len(X))
 
         self._multiclass = self.n_classes_ > 2
+        # Resolve the linear_leaves auto-default: ON for binary (a clean broad
+        # Brier win that survives bagging), OFF for multiclass (unsupported).
+        # An explicit True on multiclass is a user error -> raise; explicit
+        # False is honored everywhere.
+        if self.linear_leaves is None:
+            kw["linear_leaves"] = not self._multiclass
+        elif self.linear_leaves and self._multiclass:
+            raise NotImplementedError(
+                "linear_leaves is not supported for multiclass classification "
+                "yet; use it on regression or binary classification.")
         cal_Xv = cal_y = None   # validation set used to calibrate temperature
         if self._multiclass:
             self.model_ = MulticlassBoosting(**kw)
