@@ -113,9 +113,8 @@ def factorize(column):
     order. NaN / None map to a dedicated "__nan__" category. Returns
     (codes, categories).
 
-    Vectorized via ``pandas.factorize``; bit-identical to the per-element dict
-    mapping it replaced (codes are internal labels and the ordered target
-    encoder is invariant to their permutation regardless).
+    Codes are internal labels; the ordered target encoder is invariant to their
+    particular values.
     """
     import pandas as pd
     col = np.asarray(column, dtype=object)

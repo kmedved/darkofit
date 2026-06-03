@@ -295,8 +295,7 @@ def _auto_min_child_weight(n_train):
     regularization. So fade the veto by training size: keep the full veto below
     ~500 rows, drop it above ~2000, linear between. The midpoint (~1250 rows ->
     ~20 samples/leaf at depth 6) lines up with the field-standard
-    min_data_in_leaf=20. Validated on the Grinsztajn suite (large -> mcw~0, broad
-    Brier gain) plus an independent OpenML check (small datasets recover).
+    min_data_in_leaf=20.
     """
     return float(np.clip((2000.0 - n_train) / 1500.0, 0.0, 1.0))
 

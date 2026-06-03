@@ -97,8 +97,8 @@ class FeaturePreprocessor:
 
     def _codes_for_transform(self, X):
         """Map categorical columns to the codes learned at fit time; unseen
-        categories get -1 (the encoder then falls back to the prior). Vectorized
-        via pandas; identical to the per-element dict lookup it replaced."""
+        categories get -1 (the encoder then falls back to the prior).
+        Vectorized via pandas."""
         if not self.cat_features_:
             return np.empty((X.shape[0], 0), dtype=np.int64)
         import pandas as pd
