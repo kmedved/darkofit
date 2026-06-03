@@ -388,7 +388,8 @@ PATIENCE = 50
 
 def _run_chimera(task, Xtr, ytr, Xte, yte, cat, threads, lr=None,
                  ordered_boosting=None, depth=6, subsample=1.0, mcw=None,
-                 cat_combinations=False, leaf_estimation_iterations=None):
+                 cat_combinations=False, leaf_estimation_iterations=None,
+                 linear_leaves=False, linear_lambda=1.0):
     t = time.time()
     Est = ChimeraBoostRegressor if task == "regression" else ChimeraBoostClassifier
     # None = use the class default. For ordered_boosting that's False (Reg) /
@@ -399,6 +400,13 @@ def _run_chimera(task, Xtr, ytr, Xte, yte, cat, threads, lr=None,
         kw["leaf_estimation_iterations"] = leaf_estimation_iterations
     if mcw is not None:
         kw["min_child_weight"] = mcw
+    if linear_leaves:
+        # multiclass doesn't support linear leaves yet; fall back to constant
+        # leaves there so a full-suite run doesn't crash on multiclass tasks.
+        is_multiclass = task != "regression" and len(np.unique(ytr)) > 2
+        if not is_multiclass:
+            kw["linear_leaves"] = True
+            kw["linear_lambda"] = linear_lambda
     # IMPORTANT: this measures OUT-OF-BOX DEFAULT behavior. We call fit(Xtr, ytr)
     # with NO explicit eval_set, so ChimeraBoost performs its own internal
     # early-stopping split (early_stopping=True, validation_fraction default) —
@@ -780,6 +788,13 @@ def main():
                          "refine leaf values after tree structure is fixed. "
                          "None = use each class default (Regressor=1, Classifier=3). "
                          "Only applies on the non-LOO path.")
+    ap.add_argument("--chimera-linear-leaves", action="store_true",
+                    dest="linear_leaves",
+                    help="enable per-leaf linear models (regression + binary; "
+                         "multiclass falls back to constant leaves). Default off.")
+    ap.add_argument("--chimera-linear-lambda", type=float, default=1.0,
+                    dest="linear_lambda",
+                    help="ridge penalty on per-leaf linear slopes (default 1.0).")
     ap.add_argument("--datasets", nargs="+", default=None,
                     metavar="DS",
                     help=("run only these datasets, e.g. --datasets diabetes "
@@ -860,7 +875,9 @@ def main():
     chimera_cfg = dict(lr=args.lr, ordered_boosting=ob_override,
                        depth=args.chimera_depth, subsample=args.chimera_subsample,
                        mcw=args.chimera_mcw, cat_combinations=args.cat_combinations,
-                       leaf_estimation_iterations=args.leaf_estimation_iterations)
+                       leaf_estimation_iterations=args.leaf_estimation_iterations,
+                       linear_leaves=args.linear_leaves,
+                       linear_lambda=args.linear_lambda)
 
     # Split the thread budget across parallel jobs: GBDT thread scaling is
     # sublinear, so running J seeds at threads/J each beats one fit at all cores.
