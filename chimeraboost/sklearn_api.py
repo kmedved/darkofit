@@ -37,7 +37,140 @@ def _fit_temperature(raw, y, multiclass):
 
 # Parameters that exist only on the sklearn wrappers, not on the core boosters.
 _SKLEARN_ONLY = frozenset({"early_stopping", "validation_fraction",
-                           "n_ensembles", "ensemble_n_jobs"})
+                           "n_ensembles", "ensemble_n_jobs", "cat_features"})
+
+
+def _validate_hyperparams(estimator):
+    """Reject malformed constructor parameters with clear, named errors.
+
+    Called at the start of ``fit`` (sklearn's recommended place for parameter
+    validation -- never in ``__init__``). Without this, bad values either fail
+    cryptically deep in numba (e.g. ``depth=-1`` -> "negative shift count"),
+    silently produce a broken model (``learning_rate=-0.1`` diverges to garbage;
+    ``iterations=0`` builds an empty model), or OOM (``depth=30`` allocates a
+    2**30-leaf histogram). ``None`` is left to the documented per-parameter
+    default resolution and is not rejected here.
+    """
+    p = estimator.get_params()
+
+    def _pos_int(name, lo=1):
+        v = p[name]
+        if not (isinstance(v, (int, np.integer)) and not isinstance(v, bool)
+                and v >= lo):
+            raise ValueError(f"{name} must be an integer >= {lo}; got {v!r}.")
+
+    def _in_range(name, lo, hi, *, lo_incl=True, hi_incl=True, allow_none=False):
+        v = p[name]
+        if v is None and allow_none:
+            return
+        ok = isinstance(v, (int, float, np.number)) and not isinstance(v, bool)
+        if ok:
+            ok = (v >= lo if lo_incl else v > lo) and \
+                 (v <= hi if hi_incl else v < hi)
+        if not ok:
+            lb = "[" if lo_incl else "("
+            rb = "]" if hi_incl else ")"
+            raise ValueError(
+                f"{name} must be in {lb}{lo}, {hi}{rb}; got {v!r}.")
+
+    _pos_int("iterations")
+    _pos_int("cat_n_permutations")
+    _pos_int("leaf_estimation_iterations")
+    # depth: a depth-d tree allocates 2**d leaves in the histogram buffer, so an
+    # unbounded depth OOMs. 16 matches CatBoost's documented maximum. None is the
+    # regressor's loss-adaptive default, resolved at fit.
+    v = p["depth"]
+    if v is not None and not (isinstance(v, (int, np.integer))
+                              and not isinstance(v, bool) and 1 <= v <= 16):
+        raise ValueError(f"depth must be an integer in [1, 16] or None; got {v!r}.")
+    _in_range("max_bins", 2, 65534)
+    _in_range("learning_rate", 0.0, np.inf, lo_incl=False, allow_none=True)
+    _in_range("l2_leaf_reg", 0.0, np.inf)
+    _in_range("subsample", 0.0, 1.0, lo_incl=False)
+    _in_range("colsample", 0.0, 1.0, lo_incl=False)
+    # cat_smoothing is a Bayesian pseudocount in the ordered-TS denominator
+    # (count + a); a=0 makes the first occurrence of every category divide 0/0.
+    _in_range("cat_smoothing", 0.0, np.inf, lo_incl=False)
+    _in_range("hs_lambda", 0.0, np.inf)
+    _in_range("linear_lambda", 0.0, np.inf)
+    _in_range("min_child_weight", 0.0, np.inf, allow_none=True)
+    _in_range("validation_fraction", 0.0, 1.0, lo_incl=False, hi_incl=False)
+    _in_range("early_stopping_rounds", 1, np.inf, allow_none=True)
+    if p.get("n_ensembles") is not None:
+        _pos_int("n_ensembles")
+    # Regressor-only loss / alpha (the classifier picks its loss automatically).
+    if "loss" in p:
+        if p["loss"] not in ("RMSE", "MAE", "Quantile"):
+            raise ValueError(
+                f"loss must be one of 'RMSE', 'MAE', 'Quantile'; got {p['loss']!r}.")
+        if p["loss"] == "Quantile":
+            _in_range("alpha", 0.0, 1.0, lo_incl=False, hi_incl=False)
+
+
+def _resolve_cat_features(estimator, cat_features):
+    """Resolve the effective cat_features: the ``fit`` argument when given,
+    otherwise the ``cat_features`` constructor argument. The fit argument wins so
+    a one-off call can override, while the constructor form lets sklearn meta-
+    estimators (GridSearchCV/Pipeline) carry it -- a fit-only kwarg cannot. Never
+    mutates ``estimator.cat_features`` (sklearn forbids fit changing init params)."""
+    if cat_features is not None:
+        return cat_features
+    return getattr(estimator, "cat_features", None)
+
+
+def _check_eval_set(eval_set, n_features):
+    """Validate a user-passed ``eval_set`` up front with a named error instead of
+    a cryptic IndexError/broadcast failure deep in the booster."""
+    if not (isinstance(eval_set, (tuple, list)) and len(eval_set) == 2):
+        raise ValueError("eval_set must be a (X_val, y_val) tuple.")
+    Xv, yv = eval_set
+    shape = getattr(Xv, "shape", None)
+    if shape is None or len(shape) != 2:
+        shape = np.asarray(Xv, dtype=object).shape
+    nfv = shape[1] if len(shape) == 2 else None
+    if nfv != n_features:
+        raise ValueError(
+            f"eval_set X has {nfv} features, but the training data has "
+            f"{n_features}; they must match.")
+    if len(yv) != shape[0]:
+        raise ValueError(
+            f"eval_set X and y have inconsistent lengths: {shape[0]} vs "
+            f"{len(yv)}.")
+
+
+def _is_numeric_dtype(dt):
+    """True if a column dtype is numeric, across numpy / pandas / polars."""
+    try:
+        return bool(np.issubdtype(np.dtype(dt), np.number))
+    except TypeError:
+        pass  # not a numpy-castable dtype (e.g. a polars DataType object)
+    is_num = getattr(dt, "is_numeric", None)  # polars DataType
+    if callable(is_num):
+        try:
+            return bool(is_num())
+        except Exception:
+            pass
+    s = str(dt).lower()
+    return (any(k in s for k in ("int", "float", "uint", "double", "decimal"))
+            and "object" not in s)
+
+
+def _describe_nonnumeric_columns(X):
+    """Name the non-numeric columns of a DataFrame-like X (pandas/polars) so a
+    user who forgot ``cat_features`` gets "column 'city' (index 2)" instead of
+    a bare ``could not convert string to float: 'NYC'``. Returns [] for inputs
+    without column metadata (plain ndarrays)."""
+    cols = getattr(X, "columns", None)
+    dtypes = getattr(X, "dtypes", None)
+    if cols is None or dtypes is None:
+        return []
+    try:
+        col_list, dtype_list = list(cols), list(dtypes)
+    except TypeError:
+        return []
+    return [f"'{c}' (index {i})"
+            for i, (c, dt) in enumerate(zip(col_list, dtype_list))
+            if not _is_numeric_dtype(dt)]
 
 
 def _fit_bagged(estimator, X, y, cat_features, eval_set, groups, sample_weight):
@@ -175,6 +308,39 @@ def _make_eval_split(X, y, validation_fraction, random_state,
     return train_idx, val_idx
 
 
+def _extract_feature_names(X):
+    """Return X's column names as a 1-D object array, or None.
+
+    Handles the trap that ``pyarrow.Table.columns`` is the column *data* (a list
+    of arrays), not names -- which would otherwise pollute ``feature_names_in_``
+    with the data itself. Prefer ``.column_names`` (pyarrow) over ``.columns``
+    (pandas/polars), and reject anything that isn't a flat sequence of scalar
+    names (e.g. arrays, or pandas MultiIndex tuples)."""
+    names = getattr(X, "column_names", None)        # pyarrow.Table
+    if names is None:
+        names = getattr(X, "columns", None)          # pandas / polars
+    if names is None:
+        return None
+    try:
+        arr = np.asarray(list(names), dtype=object)
+    except Exception:
+        return None
+    if arr.ndim != 1 or any(not isinstance(v, str) and hasattr(v, "__len__")
+                            for v in arr):
+        return None                                  # data masquerading as names
+    return arr
+
+
+def _reject_masked(X, where):
+    """Masked arrays silently drop the mask under ``np.asarray`` (the hidden
+    values are used), inverting the user's "these are missing" intent. Reject
+    with guidance instead of misbehaving silently."""
+    if np.ma.isMaskedArray(X):
+        raise TypeError(
+            f"Masked arrays are not supported ({where}). Convert with "
+            "X.filled(np.nan) -- NaN is treated as missing.")
+
+
 def _validate_fit_input(estimator, X, y, cat_features, sample_weight, *,
                         classification):
     """Shared fit-time input validation + feature-metadata capture.
@@ -193,8 +359,8 @@ def _validate_fit_input(estimator, X, y, cat_features, sample_weight, *,
             "This estimator requires y to be passed, but the target y is None.")
     if sp.issparse(X):
         raise TypeError("Sparse input is not supported; pass a dense array.")
-    feature_names = (np.asarray(X.columns, dtype=object)
-                     if hasattr(X, "columns") else None)
+    _reject_masked(X, "fit")
+    feature_names = _extract_feature_names(X)
     shape = getattr(X, "shape", None)
     Xc = None
     if shape is None or len(shape) != 2:
@@ -211,13 +377,40 @@ def _validate_fit_input(estimator, X, y, cat_features, sample_weight, *,
     if n == 0:
         raise ValueError(
             f"X has 0 sample(s) (shape=(0, {nf})) while a minimum of 1 is required.")
+    if cat_features:
+        ci = np.asarray(list(cat_features))
+        if ci.size:
+            if not np.issubdtype(ci.dtype, np.integer):
+                raise ValueError(
+                    "cat_features must be integer column indices.")
+            if ci.min() < 0 or ci.max() >= nf:
+                raise ValueError(
+                    f"cat_features index out of range for X with {nf} "
+                    f"column(s): {sorted(set(ci.tolist()))}.")
+            if len(set(ci.tolist())) != ci.size:
+                raise ValueError("cat_features contains duplicate indices.")
     if not cat_features:
         # Check complex BEFORE the float64 cast (which would raise its own
         # TypeError on complex input instead of our clear ValueError).
         Xraw = Xc if Xc is not None else np.asarray(X)
         if np.iscomplexobj(Xraw):
             raise ValueError("Complex data not supported.")
-        Xc = np.asarray(Xraw, dtype=np.float64)
+        try:
+            Xc = np.asarray(Xraw, dtype=np.float64)
+        except (ValueError, TypeError) as e:
+            # A non-numeric column (string/category/datetime/pandas-NA) in a
+            # DataFrame with no cat_features: name the offending columns and
+            # point at cat_features. For bare arrays (no column metadata) keep
+            # the original numpy error -- some sklearn estimator checks rely on
+            # its exact type/message.
+            bad = _describe_nonnumeric_columns(X)
+            if bad:
+                raise ValueError(
+                    f"X could not be converted to numeric: column(s) "
+                    f"{', '.join(bad)} are non-numeric. Pass their integer "
+                    f"positions in cat_features=[...], or encode them first."
+                ) from e
+            raise
         if np.isinf(Xc).any():
             raise ValueError(
                 "X contains infinity. NaN is accepted (treated as missing), but "
@@ -256,10 +449,69 @@ def _validate_fit_input(estimator, X, y, cat_features, sample_weight, *,
         if sw.ndim != 1 or sw.shape[0] != n:
             raise ValueError(
                 f"sample_weight must be 1D of length {n}; got shape {sw.shape}.")
+        # Non-finite or negative weights, or an all-zero vector, otherwise fit
+        # without error and silently yield an all-NaN model (mean-1 weight
+        # normalization divides by the weight sum).
+        if not np.isfinite(sw).all():
+            raise ValueError("sample_weight contains NaN or infinity.")
+        if (sw < 0).any():
+            raise ValueError("sample_weight must be non-negative.")
+        if sw.sum() <= 0:
+            raise ValueError("sample_weight sums to zero; at least one weight "
+                             "must be positive.")
     estimator.n_features_in_ = nf
     if feature_names is not None:
         estimator.feature_names_in_ = feature_names
     return y
+
+
+def _check_feature_names_match(estimator, X):
+    """Enforce that predict-time feature names agree with fit (name and order).
+
+    A DataFrame whose columns are renamed or *reordered* relative to training
+    otherwise yields silently-wrong predictions, since the booster consumes
+    columns positionally. Mirrors sklearn: warn when names are present on only
+    one side, raise when they disagree. Uses the same ``X.columns`` extraction
+    as fit-time capture so the two are directly comparable (pandas/polars)."""
+    train_names = getattr(estimator, "feature_names_in_", None)
+    x_names = _extract_feature_names(X)
+    if train_names is None and x_names is None:
+        return
+    if train_names is None:
+        warnings.warn("X has feature names, but this estimator was fitted "
+                      "without feature names.", UserWarning, stacklevel=3)
+        return
+    if x_names is None:
+        warnings.warn("This estimator was fitted with feature names, but X was "
+                      "passed without feature names.", UserWarning, stacklevel=3)
+        return
+    if not np.array_equal(np.asarray(train_names, dtype=object), x_names):
+        raise ValueError(
+            "The feature names of X do not match those seen during fit. "
+            f"Fitted on {list(train_names)}, got {list(x_names)}. Columns must "
+            "match in name and order (no automatic reordering is performed).")
+
+
+def _assume_finite():
+    """Honor scikit-learn's global ``assume_finite`` config. When a user sets
+    ``sklearn.set_config(assume_finite=True)`` (or uses ``config_context``), the
+    O(n) predict-time finiteness scan is skipped for maximum inference
+    throughput -- the same escape hatch sklearn's own ``check_array`` offers."""
+    try:
+        from sklearn import get_config
+        return bool(get_config().get("assume_finite", False))
+    except Exception:
+        return False
+
+
+def _was_fit_with_cats(estimator):
+    """True if the fitted model used categorical features (so X is the object
+    path and a numeric finiteness check does not apply)."""
+    m = getattr(estimator, "model_", None)
+    if m is None:
+        members = getattr(estimator, "estimators_", None)
+        m = members[0].model_ if members else None
+    return bool(getattr(getattr(m, "prep_", None), "cat_features_", None))
 
 
 def _check_predict_input(estimator, X):
@@ -268,9 +520,16 @@ def _check_predict_input(estimator, X):
     mismatched input. Messages match scikit-learn's wording for compatibility."""
     from sklearn.utils.validation import check_is_fitted
     check_is_fitted(estimator)
+    # Enforce feature-name agreement with fit (reuse sklearn's logic): a
+    # DataFrame whose columns are renamed or *reordered* relative to training
+    # otherwise produces silently-wrong predictions. Warns when names are
+    # present on only one side, raises when they disagree -- like every sklearn
+    # estimator.
+    _check_feature_names_match(estimator, X)
     import scipy.sparse as sp
     if sp.issparse(X):
         raise TypeError("Sparse input is not supported; pass a dense array.")
+    _reject_masked(X, "predict")
     shape = getattr(X, "shape", None)
     if shape is None or len(shape) != 2:
         shape = np.asarray(X, dtype=object).shape
@@ -282,6 +541,20 @@ def _check_predict_input(estimator, X):
         raise ValueError(
             f"X has {shape[1]} features, but {type(estimator).__name__} is "
             f"expecting {estimator.n_features_in_} features as input.")
+    # Reject inf at predict for the numeric path, mirroring fit (which rejects
+    # it). Without this, an inf serving value is silently routed to the missing
+    # bin and returns the "missing" prediction with no error. This is the only
+    # O(n) check on the hot predict path, so it is skippable via sklearn's
+    # ``assume_finite`` config for latency-critical serving.
+    if not _was_fit_with_cats(estimator) and not _assume_finite():
+        try:
+            Xf = np.asarray(X, dtype=np.float64)
+        except (ValueError, TypeError):
+            Xf = None
+        if Xf is not None and np.isinf(Xf).any():
+            raise ValueError(
+                "X contains infinity. NaN is accepted (treated as missing), but "
+                "inf is not -- clip or clean it first.")
 
 
 def _auto_min_child_weight(n_train):
@@ -315,10 +588,14 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
     learning_rate : float or None, default None
         Shrinkage applied to each tree. ``None`` resolves to 0.1 when early
         stopping is active.
-    depth : int, default 6
-        Depth of each oblivious tree; a depth-d tree makes d splits. Raise to 8-10
-        for large, interaction-heavy problems. The default is conservative to
-        avoid overfitting small data.
+    depth : int or None, default None
+        Depth of each oblivious tree; a depth-d tree makes d splits. ``None``
+        resolves to 6 for squared-error/absolute-error losses, and to 4 for
+        ``loss="Quantile"`` -- estimating an extreme conditional quantile from a
+        leaf needs more samples per leaf than estimating a mean, so deep trees
+        overfit the tails and the predicted quantiles collapse toward the median.
+        Raise to 8-10 for large, interaction-heavy problems; set it explicitly to
+        override the per-loss default.
     l2_leaf_reg : float, default 1.0
         L2 regularization on leaf values.
     max_bins : int, default 128
@@ -330,7 +607,8 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
         Fraction of features eligible for each tree.
     cat_smoothing : float, default 1.0
         Prior strength for ordered target statistics; higher shrinks rare
-        categories harder toward the global mean.
+        categories harder toward the global mean. Must be > 0 -- it is the
+        Bayesian pseudocount in the encoder denominator, so 0 is undefined.
     cat_n_permutations : int, default 4
         Number of random orderings averaged by the ordered target encoder.
     early_stopping_rounds : int or None, default None
@@ -375,6 +653,10 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
         averages independent members fit on bootstrap resamples.
     ensemble_n_jobs : int, default 1
         Processes used to fit ensemble members; -1 uses all cores.
+    cat_features : list of int or None, default None
+        Default categorical column indices. Used when ``fit`` is called without
+        its own ``cat_features`` (the fit argument overrides). Provided as a
+        constructor argument so ``GridSearchCV``/``Pipeline`` can carry it.
 
     Attributes
     ----------
@@ -389,7 +671,7 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
         Fitted members when ``n_ensembles > 1``, otherwise ``None``.
     """
 
-    def __init__(self, iterations=2000, learning_rate=None, depth=6,
+    def __init__(self, iterations=2000, learning_rate=None, depth=None,
                  l2_leaf_reg=1.0, max_bins=128, subsample=1.0, colsample=1.0,
                  cat_smoothing=1.0, cat_n_permutations=4,
                  early_stopping_rounds=None,
@@ -398,7 +680,7 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
                  cat_combinations=False, leaf_estimation_iterations=1,
                  hs_lambda=0.0, linear_leaves=False, linear_lambda=1.0,
                  early_stopping=True, validation_fraction=0.2,
-                 n_ensembles=None, ensemble_n_jobs=1):
+                 n_ensembles=None, ensemble_n_jobs=1, cat_features=None):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -409,6 +691,7 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
         self.cat_smoothing = cat_smoothing
         self.cat_n_permutations = cat_n_permutations
         self.early_stopping_rounds = early_stopping_rounds
+        self.cat_features = cat_features
         self.loss = loss
         self.alpha = alpha
         self.min_child_weight = min_child_weight
@@ -435,7 +718,10 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
         X, y : array-like
             Training data.
         cat_features : list of int or None
-            Column indices to treat as categoricals.
+            Column indices to treat as categoricals. Falls back to the
+            ``cat_features`` constructor argument when not given here; passing it
+            here overrides the constructor value. (The constructor form lets
+            ``GridSearchCV``/``Pipeline`` carry it, which a fit-only kwarg can't.)
         eval_set : (X_val, y_val) tuple or None
             Explicit validation set.  When provided, automatic splitting is
             skipped regardless of the *early_stopping* setting.
@@ -448,8 +734,12 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
             Per-sample weights.  Normalized to mean 1 internally.  Only applied
             to the training set; the validation eval metric is always unweighted.
         """
+        cat_features = _resolve_cat_features(self, cat_features)
+        _validate_hyperparams(self)
         y = _validate_fit_input(self, X, y, cat_features, sample_weight,
                                 classification=False)
+        if eval_set is not None:
+            _check_eval_set(eval_set, self.n_features_in_)
         if self.n_ensembles and self.n_ensembles > 1:
             self.estimators_ = _fit_bagged(self, X, y, cat_features, eval_set,
                                            groups, sample_weight)
@@ -475,6 +765,13 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
         y = np.asarray(y, dtype=np.float64)
         if sample_weight is not None:
             sample_weight = np.asarray(sample_weight, dtype=np.float64)
+        # linear_leaves is silently dropped by the booster for MAE/Quantile
+        # (their leaf values are the residual median/quantile, not a Newton step
+        # a ridge slope could refine). Warn so it isn't mistaken for active.
+        if self.linear_leaves and self.loss in ("MAE", "Quantile"):
+            warnings.warn(
+                f"linear_leaves is not supported with loss={self.loss!r} and "
+                "will be ignored.", UserWarning, stacklevel=2)
 
         es_active = bool(self.early_stopping)
         if es_active and eval_set is None:
@@ -502,6 +799,11 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
         kw = {k: v for k, v in self.get_params().items()
               if k not in {"loss", "alpha"} | _SKLEARN_ONLY}
         kw["early_stopping_rounds"] = es_rounds
+        # Resolve the loss-adaptive depth default (see the `depth` docstring):
+        # 6 for RMSE/MAE (unchanged), 4 for Quantile, where deep leaves overfit
+        # the tail quantile and predictions collapse toward the median.
+        if kw.get("depth") is None:
+            kw["depth"] = 4 if self.loss == "Quantile" else 6
         # min_child_weight is a no-op for regression in [0, 1] (a non-empty child
         # always holds >=1 sample = hess >= 1); resolve an explicit None to 1.0.
         if kw.get("min_child_weight") is None:
@@ -587,7 +889,8 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
     colsample : float, default 1.0
         Fraction of features eligible for each tree.
     cat_smoothing : float, default 1.0
-        Prior strength for ordered target statistics.
+        Prior strength for ordered target statistics. Must be > 0 (a Bayesian
+        pseudocount in the encoder denominator; 0 is undefined).
     cat_n_permutations : int, default 4
         Number of random orderings averaged by the ordered target encoder.
     early_stopping_rounds : int or None, default None
@@ -629,6 +932,10 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
         soft-votes the calibrated probabilities of members fit on bootstraps.
     ensemble_n_jobs : int, default 1
         Processes used to fit ensemble members; -1 uses all cores.
+    cat_features : list of int or None, default None
+        Default categorical column indices. Used when ``fit`` is called without
+        its own ``cat_features`` (the fit argument overrides). Provided as a
+        constructor argument so ``GridSearchCV``/``Pipeline`` can carry it.
 
     Attributes
     ----------
@@ -655,7 +962,7 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
                  cat_combinations=False, leaf_estimation_iterations=3,
                  hs_lambda=0.0, linear_leaves=None, linear_lambda=1.0,
                  early_stopping=True, validation_fraction=0.2,
-                 n_ensembles=None, ensemble_n_jobs=1):
+                 n_ensembles=None, ensemble_n_jobs=1, cat_features=None):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -666,6 +973,7 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
         self.cat_smoothing = cat_smoothing
         self.cat_n_permutations = cat_n_permutations
         self.early_stopping_rounds = early_stopping_rounds
+        self.cat_features = cat_features
         self.min_child_weight = min_child_weight
         self.thread_count = thread_count
         self.random_state = random_state
@@ -690,7 +998,10 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
         X, y : array-like
             Training data.
         cat_features : list of int or None
-            Column indices to treat as categoricals.
+            Column indices to treat as categoricals. Falls back to the
+            ``cat_features`` constructor argument when not given here; passing it
+            here overrides the constructor value. (The constructor form lets
+            ``GridSearchCV``/``Pipeline`` carry it, which a fit-only kwarg can't.)
         eval_set : (X_val, y_val) tuple or None
             Explicit validation set with original class labels.  When provided,
             automatic splitting is skipped.
@@ -702,8 +1013,12 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
             Per-sample weights.  Normalized to mean 1 internally.  Only applied
             to the training set; the validation eval metric is always unweighted.
         """
+        cat_features = _resolve_cat_features(self, cat_features)
+        _validate_hyperparams(self)
         y = _validate_fit_input(self, X, y, cat_features, sample_weight,
                                 classification=True)
+        if eval_set is not None:
+            _check_eval_set(eval_set, self.n_features_in_)
         if self.n_ensembles and self.n_ensembles > 1:
             # Fix the global class set up front: a member's bootstrap may miss a
             # rare class, and predict_proba aligns each member's columns to this.

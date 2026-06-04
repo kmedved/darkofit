@@ -14,7 +14,7 @@ For exact types and the auto-generated reference, see the [API reference](api.md
 |---|---|:--:|---|
 | `iterations` | `2000` | rarely | Maximum boosting rounds. With early stopping on, an upper bound rather than a target. |
 | `learning_rate` | `None` (auto) | rarely | Per-tree shrinkage. `None` resolves to 0.1 with early stopping. Lower trades more trees for slightly better fit. |
-| `depth` | `6` | **yes** | Tree depth (a depth-d tree is d splits). Conservative by default; raise to 8–10 for large, interaction-heavy regression. |
+| `depth` | `None`→auto | **yes** | Tree depth (a depth-d tree is d splits). The regressor's `None` resolves to 6 for squared/absolute error and 4 for `loss="Quantile"` (deep leaves overfit the tail quantile). Conservative by default; raise to 8–10 for large, interaction-heavy regression. |
 | `l2_leaf_reg` | `1.0` | rarely | L2 penalty on leaf values. Higher is smoother. |
 | `min_child_weight` | `1.0` (reg) / `None`→auto (clf) | rarely | Minimum hessian mass on each side of a split. The classifier's `None` is size-adaptive: full veto below ~500 rows, off above ~2000. |
 | `leaf_estimation_iterations` | `1` (reg) / `3` (clf) | rarely | Extra Newton refinement steps per leaf. Helps logloss; little effect on squared error. |
@@ -36,11 +36,13 @@ For exact types and the auto-generated reference, see the [API reference](api.md
 
 | Parameter | Default | Tune? | Effect |
 |---|---|:--:|---|
-| `cat_smoothing` | `1.0` | rarely | Prior strength for ordered target statistics; higher shrinks rare categories toward the global mean. |
+| `cat_smoothing` | `1.0` | rarely | Prior strength for ordered target statistics; higher shrinks rare categories toward the global mean. Must be `> 0` (a Bayesian pseudocount; `0` is rejected). |
 | `cat_n_permutations` | `4` | no | Random orderings averaged by the ordered target encoder. |
 | `cat_combinations` | `False` | optional | Add all pairwise category-by-category features. Helps mostly-categorical data, can crowd out numerics on mixed data. |
 
-Which columns are categorical is passed to `fit(..., cat_features=[...])`, not the constructor.
+Which columns are categorical can be passed either to `fit(..., cat_features=[...])` or as the
+`cat_features` constructor argument. The constructor form lets `GridSearchCV`/`Pipeline` carry
+it; a value passed to `fit` overrides the constructor one.
 
 ## Loss (regressor only)
 
@@ -63,7 +65,7 @@ The classifier picks its loss automatically: binary logloss for 2 classes, softm
 
 | Parameter | Default | Tune? | Effect |
 |---|---|:--:|---|
-| `ordered_boosting` | `False` | no | Leave-one-out leaf training step. Off by default; mutually exclusive with `leaf_estimation_iterations` in the booster. |
+| `ordered_boosting` | `False` | no | Leave-one-out leaf training step. Off by default; mutually exclusive with `leaf_estimation_iterations` in the booster. Tends to *hurt* accuracy here (the plain Newton path plus leaf refinement wins broadly), so leave it off unless you have a specific reason. |
 
 ## Early stopping
 

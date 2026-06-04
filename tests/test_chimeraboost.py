@@ -561,6 +561,208 @@ def test_continuous_target_to_classifier_raises():
         ChimeraBoostClassifier(iterations=10, random_state=0).fit(X, yr)
 
 
+@pytest.mark.parametrize("params, match", [
+    (dict(iterations=0), "iterations"),
+    (dict(depth=0), "depth"),
+    (dict(depth=30), "depth"),
+    (dict(learning_rate=-0.1), "learning_rate"),
+    (dict(learning_rate=0.0), "learning_rate"),
+    (dict(l2_leaf_reg=-1.0), "l2_leaf_reg"),
+    (dict(subsample=0.0), "subsample"),
+    (dict(subsample=1.5), "subsample"),
+    (dict(colsample=2.0), "colsample"),
+    (dict(cat_smoothing=0.0), "cat_smoothing"),  # 0 pseudocount -> 0/0 in ordered TS
+    (dict(cat_smoothing=-1.0), "cat_smoothing"),
+    (dict(min_child_weight=-3.0), "min_child_weight"),
+    (dict(validation_fraction=1.0), "validation_fraction"),
+    (dict(cat_n_permutations=0), "cat_n_permutations"),
+    (dict(leaf_estimation_iterations=0), "leaf_estimation_iterations"),
+    (dict(loss="bogus"), "loss"),
+    (dict(loss="Quantile", alpha=0.0), "alpha"),
+    (dict(loss="Quantile", alpha=1.0), "alpha"),
+])
+def test_invalid_hyperparams_raise(params, match):
+    X, yr, _ = _Xy()
+    with pytest.raises(ValueError, match=match):
+        ChimeraBoostRegressor(**params).fit(X, yr)
+
+
+def test_sample_weight_value_validation():
+    X, yr, _ = _Xy()
+    n = X.shape[0]
+    with pytest.raises(ValueError, match="NaN or infinity"):
+        ChimeraBoostRegressor(iterations=10).fit(X, yr, sample_weight=np.full(n, np.nan))
+    with pytest.raises(ValueError, match="non-negative"):
+        ChimeraBoostRegressor(iterations=10).fit(X, yr, sample_weight=-np.ones(n))
+    with pytest.raises(ValueError, match="sums to zero"):
+        ChimeraBoostRegressor(iterations=10).fit(X, yr, sample_weight=np.zeros(n))
+
+
+def test_cat_features_index_validation():
+    X, _, yc = _Xy()                       # 4 numeric columns
+    with pytest.raises(ValueError, match="out of range"):
+        ChimeraBoostClassifier(iterations=10).fit(X, yc, cat_features=[9])
+    with pytest.raises(ValueError, match="out of range"):
+        ChimeraBoostClassifier(iterations=10).fit(X, yc, cat_features=[-1])
+    with pytest.raises(ValueError, match="duplicate"):
+        ChimeraBoostClassifier(iterations=10).fit(X, yc, cat_features=[1, 1])
+
+
+def test_eval_set_shape_validation():
+    X, yr, _ = _Xy()
+    Xt, yt, Xv, yv = X[:30], yr[:30], X[30:], yr[30:]
+    with pytest.raises(ValueError, match="features"):
+        ChimeraBoostRegressor(iterations=10).fit(Xt, yt, eval_set=(Xv[:, :2], yv))
+    with pytest.raises(ValueError, match="inconsistent lengths"):
+        ChimeraBoostRegressor(iterations=10).fit(Xt, yt, eval_set=(Xv, yv[:3]))
+
+
+def test_nonnumeric_column_error_names_the_column():
+    pd = pytest.importorskip("pandas")
+    X, _, yc = _Xy()
+    df = pd.DataFrame(X, columns=list("abcd"))
+    df["g"] = np.random.default_rng(0).choice(list("XY"), len(df))
+    with pytest.raises(ValueError, match="cat_features"):
+        ChimeraBoostClassifier(iterations=10).fit(df, yc)
+    # The friendly message names the offending column.
+    try:
+        ChimeraBoostClassifier(iterations=10).fit(df, yc)
+    except ValueError as e:
+        assert "'g'" in str(e)
+
+
+@pytest.mark.parametrize("Est", [ChimeraBoostRegressor, ChimeraBoostClassifier])
+def test_predict_enforces_feature_names(Est):
+    pd = pytest.importorskip("pandas")
+    X, yr, yc = _Xy()
+    y = yr if Est is ChimeraBoostRegressor else yc
+    df = pd.DataFrame(X, columns=list("abcd"))
+    m = Est(iterations=20, random_state=0).fit(df, y)
+    # Same order -> fine.
+    m.predict(df.iloc[:3])
+    # Reordered columns -> raise (would otherwise be silently wrong).
+    with pytest.raises(ValueError, match="feature names"):
+        m.predict(df[list("dcba")])
+    # Renamed columns -> raise.
+    with pytest.raises(ValueError, match="feature names"):
+        m.predict(df.rename(columns={"a": "Z"}))
+    # Fitted with names, predicted without -> warn (sklearn-consistent).
+    with pytest.warns(UserWarning, match="without feature names"):
+        m.predict(X[:3])
+
+
+@pytest.mark.parametrize("Est", [ChimeraBoostRegressor, ChimeraBoostClassifier])
+def test_inf_rejected_at_predict(Est):
+    X, yr, yc = _Xy()
+    y = yr if Est is ChimeraBoostRegressor else yc
+    m = Est(iterations=20, random_state=0).fit(X, y)
+    Xinf = X[:1].copy(); Xinf[0, 0] = np.inf
+    with pytest.raises(ValueError, match="infinity"):
+        m.predict(Xinf)
+    # sklearn's assume_finite config skips the predict-time finiteness scan.
+    from sklearn import config_context
+    with config_context(assume_finite=True):
+        assert np.isfinite(m.predict(Xinf)).shape == (1,)  # no raise
+
+
+def test_linear_leaves_warns_when_dropped_for_mae_quantile():
+    X, yr, _ = _Xy()
+    with pytest.warns(UserWarning, match="linear_leaves"):
+        ChimeraBoostRegressor(iterations=20, loss="MAE", linear_leaves=True).fit(X, yr)
+    with pytest.warns(UserWarning, match="linear_leaves"):
+        ChimeraBoostRegressor(iterations=20, loss="Quantile", alpha=0.5,
+                              linear_leaves=True).fit(X, yr)
+
+
+def test_cat_features_constructor_param():
+    """cat_features can be set on the constructor (so GridSearchCV/Pipeline can
+    carry it); the fit argument overrides and never mutates the stored param."""
+    from sklearn.base import clone
+    from sklearn.model_selection import GridSearchCV
+    rng = np.random.default_rng(0)
+    n = 600
+    city = rng.choice(["NYC", "SF", "LA"], n)
+    age = rng.normal(40, 10, n)
+    y = ((city == "SF") | (age > 45)).astype(int)
+    X = np.empty((n, 2), dtype=object); X[:, 0] = city; X[:, 1] = age
+
+    # Constructor cat_features is used when fit gets none.
+    m = ChimeraBoostClassifier(iterations=40, random_state=0,
+                               cat_features=[0]).fit(X, y)
+    assert (m.predict(X) == y).mean() > 0.9
+    # It survives clone and a meta-estimator (the whole point).
+    assert clone(m).get_params()["cat_features"] == [0]
+    gs = GridSearchCV(ChimeraBoostClassifier(iterations=30, random_state=0,
+                                             cat_features=[0]), {"depth": [3, 6]}, cv=3)
+    gs.fit(X, y)                                   # would crash if cat col hit float cast
+    # The fit argument overrides, without mutating the stored constructor value.
+    m2 = ChimeraBoostClassifier(iterations=20, random_state=0, cat_features=[1])
+    m2.fit(X, y, cat_features=[0])
+    assert m2.cat_features == [1]
+
+
+def test_pyarrow_feature_names_not_polluted_by_data():
+    pa = pytest.importorskip("pyarrow")
+    X, _, yc = _Xy()
+    tbl = pa.table({c: X[:, i] for i, c in enumerate("abcd")})
+    m = ChimeraBoostClassifier(iterations=10, random_state=0).fit(tbl, yc)
+    # .columns is column DATA in pyarrow; names must come from .column_names.
+    assert list(m.feature_names_in_) == list("abcd")
+    assert m.n_features_in_ == 4
+
+
+@pytest.mark.parametrize("Est", [ChimeraBoostRegressor, ChimeraBoostClassifier])
+def test_masked_array_rejected(Est):
+    X, yr, yc = _Xy()
+    y = yr if Est is ChimeraBoostRegressor else yc
+    Xm = np.ma.array(X, mask=np.zeros_like(X, dtype=bool))
+    Xm[0, 0] = np.ma.masked
+    with pytest.raises(TypeError, match="[Mm]asked"):
+        Est(iterations=10).fit(Xm, y)
+    m = Est(iterations=10, random_state=0).fit(X, y)
+    with pytest.raises(TypeError, match="[Mm]asked"):
+        m.predict(Xm)
+
+
+def test_quantile_depth_default_is_loss_adaptive():
+    """depth=None resolves to 6 for RMSE/MAE (unchanged) but 4 for Quantile,
+    because deep oblivious leaves overfit the tail quantile -- predicted
+    quantiles otherwise collapse toward the median on held-out data."""
+    X, yr, _ = _Xy()
+    assert ChimeraBoostRegressor(iterations=10, random_state=0).fit(X, yr).model_.depth == 6
+    assert ChimeraBoostRegressor(iterations=10, loss="MAE", random_state=0).fit(X, yr).model_.depth == 6
+    mq = ChimeraBoostRegressor(iterations=10, loss="Quantile", alpha=0.9,
+                               random_state=0).fit(X, yr)
+    assert mq.model_.depth == 4
+    # Explicit depth still wins.
+    assert ChimeraBoostRegressor(iterations=10, loss="Quantile", alpha=0.9, depth=8,
+                                 random_state=0).fit(X, yr).model_.depth == 8
+
+
+def test_quantile_calibration_beats_deep_trees():
+    """The shallower default quantile depth is better calibrated on held-out data
+    than a deep model: the tails are less collapsed toward the median."""
+    rng = np.random.default_rng(0)
+    n = 4000
+    X = rng.normal(size=(n, 8))
+    y = 3.0 * X[:, 0] - 2.0 * X[:, 1] + rng.normal(0, 1.5, n)
+    Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.3, random_state=0)
+
+    def coverage(depth, a):
+        m = ChimeraBoostRegressor(iterations=400, loss="Quantile", alpha=a,
+                                  depth=depth, random_state=0).fit(Xtr, ytr)
+        return float(np.mean(yte <= m.predict(Xte)))
+
+    # Default (None -> 4) vs an explicit deep (8) model.
+    lo_def = coverage(None, 0.1); hi_def = coverage(None, 0.9)
+    lo_deep = coverage(8, 0.1);   hi_deep = coverage(8, 0.9)
+    # 80% prediction interval: the default covers closer to the nominal 0.80.
+    assert (hi_def - lo_def) > (hi_deep - lo_deep)
+    # And lands in a sensible band (not collapsed to the median).
+    assert 0.78 <= hi_def <= 0.95
+    assert 0.05 <= lo_def <= 0.22
+
+
 def test_auto_min_child_weight_is_size_adaptive():
     """Classifier default min_child_weight=None resolves to a size-adaptive veto:
     full (~1) on small data, off (~0) on large -- monotone in training size."""
