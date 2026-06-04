@@ -1,8 +1,8 @@
 name: docs
 
-# Build the MkDocs site and publish it to GitHub Pages (free for public repos).
-# One-time repo setup: Settings -> Pages -> "Build and deployment" -> Source =
-# "GitHub Actions". No gh-pages branch needed.
+# Build the MkDocs site and publish it to the gh-pages branch on every docs
+# change. To serve it: Settings -> Pages -> Build and deployment ->
+# Source = "Deploy from a branch" -> Branch = gh-pages / (root).
 
 on:
   push:
@@ -15,34 +15,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
+  contents: write
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install -r requirements-docs.txt
-      - run: mkdocs build --strict
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - run: mkdocs gh-deploy --force

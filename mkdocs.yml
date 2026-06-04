@@ -50,6 +50,19 @@ markdown_extensions:
 
 plugins:
   - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]              # find the chimeraboost package without installing it
+          options:
+            docstring_style: numpy
+            show_root_heading: true
+            show_source: true
+            heading_level: 2
+            members_order: source
+            separate_signature: true
+            show_signature_annotations: true
+            filters: ["!^_"]
 
 # PROJECT_STATUS.md is an internal dev/handoff briefing — keep it in the repo but
 # out of the published site.
@@ -59,3 +72,6 @@ exclude_docs: |
 nav:
   - Home: index.md
   - Recipes: recipes.md
+  - Parameters: parameters.md
+  - SHAP: shap.md
+  - API reference: api.md

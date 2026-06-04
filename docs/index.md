@@ -30,6 +30,14 @@ preds = reg.predict(X_test)
 A bare `fit(X, y)` already does the sensible thing: it carves an internal
 validation split, early-stops on it, and predicts from the best iteration.
 
+## Where it sits
+
+[![TabArena-Lite Elo vs speed Pareto](https://raw.githubusercontent.com/bbstats/chimeraboost/main/images/tabarena_pareto.png){ width="560" }](https://raw.githubusercontent.com/bbstats/chimeraboost/main/images/tabarena_pareto.png)
+
+ChimeraBoost sits on the strength-vs-speed Pareto frontier: roughly CatBoost-class
+accuracy at a fraction of the training time, ahead of XGBoost and LightGBM defaults
+on both axes — all in pure Python.
+
 ## What you get
 
 - **Regression, quantile regression, binary and multiclass classification** under one API.

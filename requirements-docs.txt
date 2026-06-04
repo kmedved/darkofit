@@ -3,3 +3,5 @@
 #   pip install -r requirements-docs.txt
 # Preview locally with:  mkdocs serve
 mkdocs-material>=9.5
+mkdocstrings[python]>=0.24
+black>=24.0          # used by mkdocstrings to pretty-format API signatures
