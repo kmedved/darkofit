@@ -672,6 +672,29 @@ def test_linear_leaves_warns_when_dropped_for_mae_quantile():
                               linear_leaves=True).fit(X, yr)
 
 
+def test_pyarrow_feature_names_not_polluted_by_data():
+    pa = pytest.importorskip("pyarrow")
+    X, _, yc = _Xy()
+    tbl = pa.table({c: X[:, i] for i, c in enumerate("abcd")})
+    m = ChimeraBoostClassifier(iterations=10, random_state=0).fit(tbl, yc)
+    # .columns is column DATA in pyarrow; names must come from .column_names.
+    assert list(m.feature_names_in_) == list("abcd")
+    assert m.n_features_in_ == 4
+
+
+@pytest.mark.parametrize("Est", [ChimeraBoostRegressor, ChimeraBoostClassifier])
+def test_masked_array_rejected(Est):
+    X, yr, yc = _Xy()
+    y = yr if Est is ChimeraBoostRegressor else yc
+    Xm = np.ma.array(X, mask=np.zeros_like(X, dtype=bool))
+    Xm[0, 0] = np.ma.masked
+    with pytest.raises(TypeError, match="[Mm]asked"):
+        Est(iterations=10).fit(Xm, y)
+    m = Est(iterations=10, random_state=0).fit(X, y)
+    with pytest.raises(TypeError, match="[Mm]asked"):
+        m.predict(Xm)
+
+
 def test_quantile_depth_default_is_loss_adaptive():
     """depth=None resolves to 6 for RMSE/MAE (unchanged) but 4 for Quantile,
     because deep oblivious leaves overfit the tail quantile -- predicted

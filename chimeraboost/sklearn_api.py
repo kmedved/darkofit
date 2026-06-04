@@ -295,6 +295,39 @@ def _make_eval_split(X, y, validation_fraction, random_state,
     return train_idx, val_idx
 
 
+def _extract_feature_names(X):
+    """Return X's column names as a 1-D object array, or None.
+
+    Handles the trap that ``pyarrow.Table.columns`` is the column *data* (a list
+    of arrays), not names -- which would otherwise pollute ``feature_names_in_``
+    with the data itself. Prefer ``.column_names`` (pyarrow) over ``.columns``
+    (pandas/polars), and reject anything that isn't a flat sequence of scalar
+    names (e.g. arrays, or pandas MultiIndex tuples)."""
+    names = getattr(X, "column_names", None)        # pyarrow.Table
+    if names is None:
+        names = getattr(X, "columns", None)          # pandas / polars
+    if names is None:
+        return None
+    try:
+        arr = np.asarray(list(names), dtype=object)
+    except Exception:
+        return None
+    if arr.ndim != 1 or any(not isinstance(v, str) and hasattr(v, "__len__")
+                            for v in arr):
+        return None                                  # data masquerading as names
+    return arr
+
+
+def _reject_masked(X, where):
+    """Masked arrays silently drop the mask under ``np.asarray`` (the hidden
+    values are used), inverting the user's "these are missing" intent. Reject
+    with guidance instead of misbehaving silently."""
+    if np.ma.isMaskedArray(X):
+        raise TypeError(
+            f"Masked arrays are not supported ({where}). Convert with "
+            "X.filled(np.nan) -- NaN is treated as missing.")
+
+
 def _validate_fit_input(estimator, X, y, cat_features, sample_weight, *,
                         classification):
     """Shared fit-time input validation + feature-metadata capture.
@@ -313,8 +346,8 @@ def _validate_fit_input(estimator, X, y, cat_features, sample_weight, *,
             "This estimator requires y to be passed, but the target y is None.")
     if sp.issparse(X):
         raise TypeError("Sparse input is not supported; pass a dense array.")
-    feature_names = (np.asarray(X.columns, dtype=object)
-                     if hasattr(X, "columns") else None)
+    _reject_masked(X, "fit")
+    feature_names = _extract_feature_names(X)
     shape = getattr(X, "shape", None)
     Xc = None
     if shape is None or len(shape) != 2:
@@ -428,8 +461,7 @@ def _check_feature_names_match(estimator, X):
     one side, raise when they disagree. Uses the same ``X.columns`` extraction
     as fit-time capture so the two are directly comparable (pandas/polars)."""
     train_names = getattr(estimator, "feature_names_in_", None)
-    cols = getattr(X, "columns", None)
-    x_names = np.asarray(list(cols), dtype=object) if cols is not None else None
+    x_names = _extract_feature_names(X)
     if train_names is None and x_names is None:
         return
     if train_names is None:
@@ -484,6 +516,7 @@ def _check_predict_input(estimator, X):
     import scipy.sparse as sp
     if sp.issparse(X):
         raise TypeError("Sparse input is not supported; pass a dense array.")
+    _reject_masked(X, "predict")
     shape = getattr(X, "shape", None)
     if shape is None or len(shape) != 2:
         shape = np.asarray(X, dtype=object).shape
