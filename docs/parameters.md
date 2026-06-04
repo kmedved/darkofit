@@ -40,7 +40,9 @@ For exact types and the auto-generated reference, see the [API reference](api.md
 | `cat_n_permutations` | `4` | no | Random orderings averaged by the ordered target encoder. |
 | `cat_combinations` | `False` | optional | Add all pairwise category-by-category features. Helps mostly-categorical data, can crowd out numerics on mixed data. |
 
-Which columns are categorical is passed to `fit(..., cat_features=[...])`, not the constructor.
+Which columns are categorical can be passed either to `fit(..., cat_features=[...])` or as the
+`cat_features` constructor argument. The constructor form lets `GridSearchCV`/`Pipeline` carry
+it; a value passed to `fit` overrides the constructor one.
 
 ## Loss (regressor only)
 
