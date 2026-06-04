@@ -7,15 +7,9 @@ every line.
 
 > *What if CatBoost was slightly worse, 12× faster, and all in Python?*
 
-## Install
-
 ```bash
 pip install chimeraboost
 ```
-
-Python 3.9 or newer.
-
-## Quickstart
 
 ```python
 from chimeraboost import ChimeraBoostClassifier, ChimeraBoostRegressor
@@ -23,20 +17,16 @@ from chimeraboost import ChimeraBoostClassifier, ChimeraBoostRegressor
 clf = ChimeraBoostClassifier(random_state=0)
 clf.fit(X_train, y_train, cat_features=[0, 1])
 proba = clf.predict_proba(X_test)
-
-reg = ChimeraBoostRegressor(random_state=0)
-reg.fit(X_train, y_train)
-preds = reg.predict(X_test)
 ```
 
-`fit(X, y)` holds out an internal validation split, early-stops on it, and predicts
-from the best round. Categorical columns are passed by index (`cat_features=`); NaNs
-route to a dedicated bin, so no imputation is needed.
+New here? Start with [Getting started](getting-started.md) — a runnable walkthrough with
+real output.
 
 ## What it does
 
 - Regression (squared error, absolute error, quantile), binary and multiclass classification.
 - Categorical features via ordered target statistics — pass column indices, no manual encoding.
+- Missing values handled directly (NaN routes to its own bin), no imputation.
 - Sample weights, bagging (`n_ensembles`), and grouped validation splits.
 - Calibrated probabilities (`predict_proba` is temperature-scaled on the validation split).
 - Exact SHAP attributions ([`shap_values`](shap.md)), including the per-leaf linear models.
@@ -52,16 +42,10 @@ accuracy at a fraction of its training time.
 
 ## Documentation
 
+- [Getting started](getting-started.md) — install and a runnable end-to-end example.
 - [Recipes](recipes.md) — worked examples for every task.
+- [How it works](concepts.md) — the design behind the defaults.
 - [Parameters](parameters.md) — what each option does and when to change it.
 - [SHAP](shap.md) — exact feature attributions.
 - [API reference](api.md) — classes, methods, and signatures.
-
-## How the trees work
-
-Every node at a given depth splits on the same `(feature, threshold)`, so a depth-`d`
-tree is `d` splits and a leaf is a `d`-bit number. That symmetry makes prediction a
-handful of comparisons plus an array lookup (vectorized across the whole forest in one
-numba pass) and provides much of the regularization, since a tree has only `d` splits
-shared across its level. Categoricals use ordered target statistics, leaves can carry
-small linear models, and probabilities are temperature-scaled after fitting.
+- [FAQ](faq.md)
