@@ -9,6 +9,7 @@ on:
     branches: [main]
     paths:
       - "docs/**"
+      - "chimeraboost/**"          # docstrings drive the auto-generated API reference
       - "mkdocs.yml"
       - "requirements-docs.txt"
       - ".github/workflows/docs.yml"
