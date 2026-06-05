@@ -512,6 +512,42 @@ def test_target_stat_columns_can_use_lower_bin_cap():
     assert prep.n_bins_[n_numeric:].max() <= 9
 
 
+def test_ordered_target_encoder_uniform_weights_match_unweighted():
+    from chimeraboost.target_encoding import OrderedTargetEncoder
+
+    rng = np.random.default_rng(0)
+    codes = rng.integers(0, 5, size=(200, 2))
+    y = rng.normal(size=200)
+    kwargs = dict(smoothing=2.0, random_state=3, n_permutations=3)
+
+    plain = OrderedTargetEncoder(**kwargs)
+    weighted = OrderedTargetEncoder(**kwargs)
+    enc_plain = plain.fit_transform(codes, y)
+    enc_weighted = weighted.fit_transform(codes, y, np.ones_like(y))
+
+    assert np.allclose(enc_weighted, enc_plain)
+    assert np.allclose(weighted.transform(codes), plain.transform(codes))
+
+
+def test_ordered_target_encoder_uses_sample_weight_in_totals():
+    from chimeraboost.target_encoding import OrderedTargetEncoder
+
+    codes = np.array([[0], [0], [1], [1]], dtype=np.int64)
+    y = np.array([0.0, 0.0, 0.0, 1.0])
+    weight = np.array([1.0, 1.0, 1.0, 20.0])
+
+    plain = OrderedTargetEncoder(smoothing=1.0, random_state=0,
+                                 n_permutations=1)
+    weighted = OrderedTargetEncoder(smoothing=1.0, random_state=0,
+                                    n_permutations=1)
+    plain.fit_transform(codes, y)
+    weighted.fit_transform(codes, y, weight)
+
+    cat_one = np.array([[1]], dtype=np.int64)
+    assert weighted.transform(cat_one)[0, 0] > plain.transform(cat_one)[0, 0]
+    assert weighted.prior_ > plain.prior_
+
+
 # ---------------------------------------------------------------------------
 # sample_weight tests
 # ---------------------------------------------------------------------------
@@ -541,6 +577,30 @@ def test_sample_weight_uniform_equals_no_weight_logloss():
         Xtr, ytr, sample_weight=w
     )
     assert np.array_equal(m_none.predict_proba(Xte), m_ones.predict_proba(Xte))
+
+
+def test_sample_weight_reaches_ordered_target_encoder():
+    rng = np.random.default_rng(0)
+    n = 300
+    city = rng.choice(["A", "B", "C"], size=n)
+    x = rng.normal(size=n)
+    y = ((city == "C") | (x > 1.0)).astype(int)
+    weight = np.where(city == "C", 10.0, 1.0)
+    X = np.empty((n, 2), dtype=object)
+    X[:, 0] = city
+    X[:, 1] = x
+
+    m_default = ChimeraBoostClassifier(n_estimators=5, early_stopping=False,
+                                       random_state=0).fit(
+        X, y, cat_features=[0], sample_weight=weight)
+    m_weighted = ChimeraBoostClassifier(n_estimators=5, early_stopping=False,
+                                        weighted_target_stats=True,
+                                        random_state=0).fit(
+        X, y, cat_features=[0], sample_weight=weight)
+
+    assert m_default.model_.prep_.encoders_[0].prior_ == pytest.approx(y.mean())
+    assert m_weighted.model_.prep_.encoders_[0].prior_ == pytest.approx(
+        np.average(y, weights=weight))
 
 
 def test_sample_weight_uniform_equals_no_weight_multiclass():

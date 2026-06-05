@@ -56,6 +56,7 @@ class FitConfig:
     depth: int = 6
     learning_rate: Optional[float] = None
     max_bins_ts: Optional[int] = None
+    weighted_target_stats: bool = False
     threads: Optional[int] = None
     ordered_boosting: bool = False
     verbose_timing: bool = True
@@ -342,6 +343,7 @@ def estimator_kwargs(estimator_cls, config: FitConfig, variant: RevisionSpec, se
     set_if("depth", config.depth)
     set_if("learning_rate", config.learning_rate)
     set_if("max_bins_ts", config.max_bins_ts)
+    set_if("weighted_target_stats", config.weighted_target_stats)
     set_if("thread_count", config.threads)
     set_if("random_state", seed)
     set_if("ordered_boosting", config.ordered_boosting)

@@ -688,6 +688,11 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
         Bayesian pseudocount in the encoder denominator, so 0 is undefined.
     cat_n_permutations : int, default 4
         Number of random orderings averaged by the ordered target encoder.
+    weighted_target_stats : bool, default False
+        When True, sample weights also affect ordered target-stat categorical
+        encodings. The default keeps target statistics unweighted because
+        weights can represent frequency, cost, or reliability depending on the
+        use case.
     early_stopping_rounds : int or None, default None
         Rounds without validation improvement before stopping. ``None`` becomes 50
         when early stopping is active.
@@ -762,6 +767,7 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
                  l2_leaf_reg=1.0, max_bins=128, max_bins_ts=None,
                  subsample=1.0, colsample=1.0, cat_smoothing=1.0,
                  cat_n_permutations=4,
+                 weighted_target_stats=False,
                  early_stopping_rounds=None,
                  loss="RMSE", alpha=0.5, min_child_weight=1.0, thread_count=None,
                  random_state=None, verbose=False, ordered_boosting=False,
@@ -780,6 +786,7 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
         self.colsample = colsample
         self.cat_smoothing = cat_smoothing
         self.cat_n_permutations = cat_n_permutations
+        self.weighted_target_stats = weighted_target_stats
         self.early_stopping_rounds = early_stopping_rounds
         self.cat_features = cat_features
         self.loss = loss
@@ -995,6 +1002,11 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
         pseudocount in the encoder denominator; 0 is undefined).
     cat_n_permutations : int, default 4
         Number of random orderings averaged by the ordered target encoder.
+    weighted_target_stats : bool, default False
+        When True, sample weights also affect ordered target-stat categorical
+        encodings. The default keeps target statistics unweighted because
+        weights can represent frequency, cost, or reliability depending on the
+        use case.
     early_stopping_rounds : int or None, default None
         Rounds without validation improvement before stopping. ``None`` becomes 50
         when early stopping is active.
@@ -1070,6 +1082,7 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
                  l2_leaf_reg=1.0, max_bins=128, max_bins_ts=None,
                  subsample=1.0, colsample=1.0, cat_smoothing=1.0,
                  cat_n_permutations=4,
+                 weighted_target_stats=False,
                  early_stopping_rounds=None,
                  min_child_weight=None, thread_count=None, random_state=None,
                  verbose=False, ordered_boosting=False,
@@ -1088,6 +1101,7 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
         self.colsample = colsample
         self.cat_smoothing = cat_smoothing
         self.cat_n_permutations = cat_n_permutations
+        self.weighted_target_stats = weighted_target_stats
         self.early_stopping_rounds = early_stopping_rounds
         self.cat_features = cat_features
         self.min_child_weight = min_child_weight

@@ -154,7 +154,8 @@ class _BaseBooster:
                  ordered_boosting=True, cat_combinations=False,
                  leaf_estimation_iterations=1, hs_lambda=0.0,
                  linear_leaves=False, linear_lambda=1.0,
-                 tree_mode="catboost", verbose_timing=False):
+                 tree_mode="catboost", verbose_timing=False,
+                 weighted_target_stats=False):
         self.n_estimators = int(n_estimators)
         self.learning_rate = learning_rate
         self.depth = int(depth)
@@ -179,6 +180,7 @@ class _BaseBooster:
         self.linear_lambda = float(linear_lambda)
         self.tree_mode = tree_mode
         self.tree_mode_ = _normalize_tree_mode(tree_mode)
+        self.weighted_target_stats = bool(weighted_target_stats)
         self.supports_exact_shap = self.tree_mode_ == "catboost"
         self.supports_linear_leaves = self.tree_mode_ == "catboost"
         if self.tree_mode_ != "catboost" and self.hs_lambda > 0.0:
@@ -385,7 +387,10 @@ class GradientBoosting(_BaseBooster):
         t_phase = time.perf_counter()
         self.prep_ = self._new_preprocessor()
         # Tree kernels consume a feature-major matrix; transpose once here.
-        Xb = np.ascontiguousarray(self.prep_.fit_transform(X, [y], cat_features).T)
+        ts_weight = w if self.weighted_target_stats else None
+        Xb = np.ascontiguousarray(
+            self.prep_.fit_transform(
+                X, [y], cat_features, sample_weight=ts_weight).T)
         n_bins = self.prep_.n_bins_
         hist_buffers = self._alloc_hist_buffers(Xb.shape[0], n_bins)
         self._importance = np.zeros(self.prep_.n_input_features_)
@@ -656,7 +661,9 @@ class MulticlassBoosting(_BaseBooster):
         self.prep_ = self._new_preprocessor()
         Xb = np.ascontiguousarray(
             self.prep_.fit_transform(X, [Y_class[k] for k in range(K)],
-                                     cat_features).T)
+                                     cat_features,
+                                     sample_weight=(w if self.weighted_target_stats
+                                                    else None)).T)
         n_bins = self.prep_.n_bins_
         hist_buffers = self._alloc_hist_buffers(Xb.shape[0], n_bins)
         self._importance = np.zeros(self.prep_.n_input_features_)

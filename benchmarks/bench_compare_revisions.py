@@ -348,6 +348,12 @@ def parse_args(argv):
         default=None,
         help="optional target-stat encoded column bin cap for revisions that support it",
     )
+    parser.add_argument(
+        "--weighted-target-stats",
+        action="store_true",
+        default=False,
+        help="let sample weights affect ordered target-stat encodings when supported",
+    )
     parser.add_argument("--ordered-boosting", action="store_true", default=False)
     parser.add_argument(
         "--weight-modes",
@@ -397,6 +403,7 @@ def main(argv=None):
         depth=args.depth,
         learning_rate=args.learning_rate,
         max_bins_ts=args.max_bins_ts,
+        weighted_target_stats=args.weighted_target_stats,
         threads=args.threads,
         ordered_boosting=args.ordered_boosting,
     )

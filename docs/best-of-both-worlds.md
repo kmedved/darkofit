@@ -261,6 +261,48 @@ Grad/Hess phase improved, the end-to-end fit did not. The current NumPy path is
 fast enough relative to tree building, and a useful replacement likely needs a
 deeper fused histogram accumulator rather than only in-place loss arrays.
 
+## Weighted Target-Stat Encoding
+
+Implemented `weighted_target_stats=False` as an explicit opt-in. When enabled,
+ordered target-stat categorical encodings use normalized `sample_weight` as
+category mass; when disabled, weighted fits keep the historical unweighted
+target-stat encodings while still using weights for gradients, validation
+metrics, temperature scaling, and diagnostics.
+
+Raw opt-in benchmark rows are tracked in:
+
+`benchmarks/weighted_target_stats_medium_20260605.csv`
+
+Command:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_compare_revisions.py \
+  --fork /private/tmp/chimeraboost-before-weighted-ts-b474ae9 \
+  --candidate . \
+  --models fork_catboost_matched fork_lightgbm_matched candidate_catboost candidate_lightgbm \
+  --datasets categorical_reg categorical_binary categorical_multiclass \
+  --sizes medium \
+  --seeds 2 \
+  --repeat 2 \
+  --iterations 300 \
+  --patience 25 \
+  --threads 4 \
+  --weight-modes none stress \
+  --weighted-target-stats \
+  --csv benchmarks/weighted_target_stats_medium_20260605.csv
+```
+
+Summary versus the previous default:
+
+| Mode | Metric ratio | Fit-time ratio | Iteration ratio |
+| --- | ---: | ---: | ---: |
+| `candidate_catboost` opt-in | 1.0073 | 1.8620 | 0.9841 |
+| `candidate_lightgbm` opt-in | 1.0075 | 1.2789 | 0.9886 |
+
+Decision: keep the default off. The option is useful when weights are intended
+as frequency/reliability mass for categorical priors, but the benchmark does not
+support silently changing default weighted-fit semantics.
+
 ## Target-Stat Bin Budget Probe
 
 Implemented an opt-in `max_bins_ts` parameter that caps only ordered-target-stat
