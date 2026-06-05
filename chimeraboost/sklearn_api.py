@@ -698,6 +698,9 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
         Seed for reproducibility (deterministic for a fixed ``thread_count``).
     verbose : bool, default False
         Print per-round train and validation metrics.
+    verbose_timing : bool, default False
+        Record per-phase fit timings in ``model_.timing_`` for benchmark and
+        profiling diagnostics.
     ordered_boosting : bool, default False
         Use the leave-one-out leaf training step instead of plain Newton updates.
     cat_combinations : bool, default False
@@ -760,7 +763,7 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
                  hs_lambda=0.0, linear_leaves=False, linear_lambda=1.0,
                  early_stopping=True, validation_fraction=0.2,
                  n_ensembles=None, ensemble_n_jobs=1, cat_features=None,
-                 tree_mode="catboost"):
+                 tree_mode="catboost", verbose_timing=False):
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.depth = depth
@@ -789,6 +792,7 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
         self.n_ensembles = n_ensembles
         self.ensemble_n_jobs = ensemble_n_jobs
         self.tree_mode = tree_mode
+        self.verbose_timing = verbose_timing
 
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
             sample_weight=None):
@@ -992,6 +996,9 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
         Seed for reproducibility (deterministic for a fixed ``thread_count``).
     verbose : bool, default False
         Print per-round train and validation metrics.
+    verbose_timing : bool, default False
+        Record per-phase fit timings in ``model_.timing_`` for benchmark and
+        profiling diagnostics.
     ordered_boosting : bool, default False
         Use the leave-one-out leaf training step instead of plain Newton updates.
     cat_combinations : bool, default False
@@ -1057,7 +1064,7 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
                  hs_lambda=0.0, linear_leaves=None, linear_lambda=1.0,
                  early_stopping=True, validation_fraction=0.2,
                  n_ensembles=None, ensemble_n_jobs=1, cat_features=None,
-                 tree_mode="catboost"):
+                 tree_mode="catboost", verbose_timing=False):
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.depth = depth
@@ -1084,6 +1091,7 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
         self.n_ensembles = n_ensembles
         self.ensemble_n_jobs = ensemble_n_jobs
         self.tree_mode = tree_mode
+        self.verbose_timing = verbose_timing
 
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
             sample_weight=None):

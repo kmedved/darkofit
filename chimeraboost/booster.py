@@ -35,6 +35,15 @@ LINEAR_LEAVES_MIN_SAMPLES = 1000
 # Default number of training rows retained as the SHAP background distribution.
 SHAP_BACKGROUND_SIZE = 200
 
+TIMING_KEYS = (
+    "preprocess",
+    "grad_hess",
+    "tree_build",
+    "train_update",
+    "validation_predict",
+    "loss_eval",
+)
+
 
 def _apply_thread_count(thread_count):
     """Set numba's thread pool size. None / -1 means use all detected cores.
@@ -135,7 +144,7 @@ class _BaseBooster:
                  ordered_boosting=True, cat_combinations=False,
                  leaf_estimation_iterations=1, hs_lambda=0.0,
                  linear_leaves=False, linear_lambda=1.0,
-                 tree_mode="catboost"):
+                 tree_mode="catboost", verbose_timing=False):
         self.n_estimators = int(n_estimators)
         self.learning_rate = learning_rate
         self.depth = int(depth)
@@ -150,6 +159,7 @@ class _BaseBooster:
         self.thread_count = thread_count
         self.random_state = random_state
         self.verbose = verbose
+        self.verbose_timing = bool(verbose_timing)
         self.ordered_boosting = bool(ordered_boosting)
         self.cat_combinations = bool(cat_combinations)
         self.leaf_estimation_iterations = int(leaf_estimation_iterations)
@@ -164,6 +174,9 @@ class _BaseBooster:
             raise NotImplementedError(
                 "tree_mode='lightgbm' is not implemented yet. "
                 "Use tree_mode='catboost' for the upstream oblivious-tree path.")
+
+    def _reset_timing(self):
+        self.timing_ = {key: 0.0 for key in TIMING_KEYS}
 
     def _alloc_hist_buffers(self, n_features, n_bins):
         """Allocate the reusable histogram buffer once per fit.
@@ -337,7 +350,10 @@ class GradientBoosting(_BaseBooster):
         self.n_threads_ = _apply_thread_count(self.thread_count)
         self.loss_ = LOSSES[self.loss_name](**self.loss_kwargs)
         self.lr_ = self._resolve_lr(n_samples, eval_set)
+        self._reset_timing()
+        timing_enabled = self.verbose_timing
 
+        t_phase = time.perf_counter()
         self.prep_ = self._new_preprocessor()
         # Tree kernels consume a feature-major matrix; transpose once here.
         Xb = np.ascontiguousarray(self.prep_.fit_transform(X, [y], cat_features).T)
@@ -361,6 +377,8 @@ class GradientBoosting(_BaseBooster):
             wv = None if wv is None else np.asarray(wv, dtype=np.float64)
             Xvb = np.ascontiguousarray(self.prep_.transform(Xv).T)
         self.validation_weight_sum_ = None if wv is None else float(wv.sum())
+        if timing_enabled:
+            self.timing_["preprocess"] += time.perf_counter() - t_phase
 
         self.init_ = self.loss_.init(y, w)
         F = np.full(n_samples, self.init_, dtype=np.float64)
@@ -384,11 +402,15 @@ class GradientBoosting(_BaseBooster):
         t0 = time.time()
 
         for m in range(self.n_estimators):
+            t_phase = time.perf_counter()
             grad, hess = self.loss_.grad_hess(y, F)
             if w is not None:
                 grad, hess = grad * w, hess * w
             g, h = self._maybe_subsample(grad, hess, rng)
             fmask = self._feature_mask(Xb.shape[0], rng)
+            if timing_enabled:
+                self.timing_["grad_hess"] += time.perf_counter() - t_phase
+            t_phase = time.perf_counter()
             tree, leaf = build_oblivious_tree(Xb, g, h, n_bins, self.depth,
                                               self.l2_leaf_reg, self.lr_,
                                               feature_mask=fmask,
@@ -399,10 +421,13 @@ class GradientBoosting(_BaseBooster):
                                               centers_std=self._centers_std_,
                                               is_numeric=self.prep_.is_numeric_binned_,
                                               linear_lambda=self.linear_lambda)
+            if timing_enabled:
+                self.timing_["tree_build"] += time.perf_counter() - t_phase
             # A depth-0 tree found no legal split; the next round on the same
             # gradients would too, so stop rather than bank empty trees.
             if tree.depth == 0:
                 break
+            t_phase = time.perf_counter()
             if adjusts_leaves:
                 self._correct_leaves(tree, leaf, y - F, w)
             self.trees_.append(tree)
@@ -435,13 +460,24 @@ class GradientBoosting(_BaseBooster):
                         tree.values += _leaf_values(leaf, g2, h2, n_lv,
                                                     self.l2_leaf_reg, self.lr_)
                 F += tree.values[leaf]
+            if timing_enabled:
+                self.timing_["train_update"] += time.perf_counter() - t_phase
             if self.verbose:
+                t_phase = time.perf_counter()
                 self.train_history_.append(self.loss_.eval(y, F, w))
+                if timing_enabled:
+                    self.timing_["loss_eval"] += time.perf_counter() - t_phase
 
             if Fv is not None:
+                t_phase = time.perf_counter()
                 Fv += tree.predict(Xvb)
+                if timing_enabled:
+                    self.timing_["validation_predict"] += time.perf_counter() - t_phase
+                t_phase = time.perf_counter()
                 val = self.loss_.eval(yv, Fv, wv)
                 self.valid_history_.append(val)
+                if timing_enabled:
+                    self.timing_["loss_eval"] += time.perf_counter() - t_phase
                 if stopper.step(val, m):
                     if self.verbose:
                         print(f"Early stop at {m} (best {stopper.best_iter})")
@@ -568,8 +604,11 @@ class MulticlassBoosting(_BaseBooster):
         self.n_threads_ = _apply_thread_count(self.thread_count)
         self.loss_ = MultiSoftmax(K)
         self.lr_ = self._resolve_lr(n_samples, eval_set)
+        self._reset_timing()
+        timing_enabled = self.verbose_timing
 
         # One ordered-TS target per class (CatBoost-style per-class statistics).
+        t_phase = time.perf_counter()
         self.prep_ = self._new_preprocessor()
         Xb = np.ascontiguousarray(
             self.prep_.fit_transform(X, [Y[:, k] for k in range(K)],
@@ -588,6 +627,8 @@ class MulticlassBoosting(_BaseBooster):
             wv = None if wv is None else np.asarray(wv, dtype=np.float64)
             Xvb = np.ascontiguousarray(self.prep_.transform(Xv).T)
         self.validation_weight_sum_ = None if wv is None else float(wv.sum())
+        if timing_enabled:
+            self.timing_["preprocess"] += time.perf_counter() - t_phase
 
         self.init_ = self.loss_.init(Y, w)         # (K,)
         F = np.tile(self.init_, (n_samples, 1))    # (n, K)
@@ -603,12 +644,16 @@ class MulticlassBoosting(_BaseBooster):
         t0 = time.time()
 
         for m in range(self.n_estimators):
+            t_phase = time.perf_counter()
             grad, hess = self.loss_.grad_hess(Y, F)   # (n, K) each
             if w is not None:
                 grad, hess = grad * w[:, None], hess * w[:, None]
             fmask = self._feature_mask(Xb.shape[0], rng)
+            if timing_enabled:
+                self.timing_["grad_hess"] += time.perf_counter() - t_phase
             round_trees = []
             for k in range(K):
+                t_phase = time.perf_counter()
                 g, h = self._maybe_subsample(
                     np.ascontiguousarray(grad[:, k]),
                     np.ascontiguousarray(hess[:, k]) * coupling, rng)
@@ -618,6 +663,9 @@ class MulticlassBoosting(_BaseBooster):
                                                   min_child_weight=self.min_child_weight,
                                                   hist_buffers=hist_buffers,
                                                   hs_lambda=self.hs_lambda)
+                if timing_enabled:
+                    self.timing_["tree_build"] += time.perf_counter() - t_phase
+                t_phase = time.perf_counter()
                 round_trees.append(tree)
                 self._accumulate_importance(tree)
                 if self.ordered_boosting and tree.depth > 0:
@@ -625,19 +673,30 @@ class MulticlassBoosting(_BaseBooster):
                 elif tree.depth > 0:
                     F[:, k] += tree.values[leaf]
                 # depth-0 trees contribute nothing (predict would be zeros).
+                if timing_enabled:
+                    self.timing_["train_update"] += time.perf_counter() - t_phase
             # Stop only once EVERY class has exhausted its splits; a single class
             # still learning makes the round productive.
             if all(t.depth == 0 for t in round_trees):
                 break
             self.trees_.append(round_trees)
             if self.verbose:
+                t_phase = time.perf_counter()
                 self.train_history_.append(self.loss_.eval(Y, F, w))
+                if timing_enabled:
+                    self.timing_["loss_eval"] += time.perf_counter() - t_phase
 
             if Fv is not None:
+                t_phase = time.perf_counter()
                 for k in range(K):
                     Fv[:, k] += round_trees[k].predict(Xvb)
+                if timing_enabled:
+                    self.timing_["validation_predict"] += time.perf_counter() - t_phase
+                t_phase = time.perf_counter()
                 val = self.loss_.eval(Yv, Fv, wv)
                 self.valid_history_.append(val)
+                if timing_enabled:
+                    self.timing_["loss_eval"] += time.perf_counter() - t_phase
                 if stopper.step(val, m):
                     if self.verbose:
                         print(f"Early stop at {m} (best {stopper.best_iter})")

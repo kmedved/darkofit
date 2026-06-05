@@ -207,6 +207,36 @@ def test_thread_count_does_not_change_predictions():
     assert np.allclose(a.predict(Xte), b.predict(Xte))
 
 
+def test_verbose_timing_records_phase_breakdown():
+    X, y = load_breast_cancer(return_X_y=True)
+    m = ChimeraBoostClassifier(n_estimators=4, early_stopping=False,
+                               verbose_timing=True, random_state=0).fit(X, y)
+    assert m.get_params()["verbose_timing"] is True
+    timing = m.model_.timing_
+    assert set(timing) == {
+        "preprocess",
+        "grad_hess",
+        "tree_build",
+        "train_update",
+        "validation_predict",
+        "loss_eval",
+    }
+    assert timing["preprocess"] > 0.0
+    assert timing["grad_hess"] > 0.0
+    assert timing["tree_build"] > 0.0
+    assert timing["train_update"] > 0.0
+
+
+def test_verbose_timing_records_multiclass_tree_builds():
+    from sklearn.datasets import load_wine
+
+    X, y = load_wine(return_X_y=True)
+    m = ChimeraBoostClassifier(n_estimators=3, early_stopping=False,
+                               verbose_timing=True, random_state=0).fit(X, y)
+    assert m.model_.timing_["tree_build"] > 0.0
+    assert m.model_.timing_["grad_hess"] > 0.0
+
+
 def test_min_child_weight_regularizes_sparse_leaves():
     """min_child_weight regularizes by forbidding SPARSE non-empty leaves, so at a
     fixed (deep) depth, raising it reduces overfitting.
