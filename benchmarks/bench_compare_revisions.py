@@ -213,9 +213,12 @@ def _fit_worker(payload):
             fit_kwargs["sample_weight"] = w_train
     else:
         fit_args = (data["X_fit"], data["y_fit"])
+        eval_set = (data["X_val"], data["y_val"])
+        if data["w_val"] is not None and variant.label.startswith("candidate"):
+            eval_set = (data["X_val"], data["y_val"], data["w_val"])
         fit_kwargs = {
             "cat_features": cat_features,
-            "eval_set": (data["X_val"], data["y_val"]),
+            "eval_set": eval_set,
         }
         if data["w_fit"] is not None:
             fit_kwargs["sample_weight"] = data["w_fit"]

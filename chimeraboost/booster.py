@@ -94,6 +94,14 @@ def _normalize_tree_mode(tree_mode):
             f"got {tree_mode!r}.") from exc
 
 
+def _unpack_eval_set(eval_set):
+    if eval_set is None:
+        return None, None, None
+    if len(eval_set) == 2:
+        return eval_set[0], eval_set[1], None
+    return eval_set[0], eval_set[1], eval_set[2]
+
+
 class _EarlyStopper:
     """Tracks the best validation score and signals when patience runs out."""
 
@@ -314,7 +322,8 @@ class GradientBoosting(_BaseBooster):
 
     def fit(self, X, y, cat_features=None, eval_set=None, sample_weight=None):
         """Fit the additive model. Optionally pass `cat_features` (column indices
-        to target-encode) and `eval_set=(X_val, y_val)` for early stopping.
+        to target-encode) and `eval_set=(X_val, y_val[, sample_weight_val])`
+        for early stopping.
         `sample_weight` is a 1-D array of per-sample weights; None means uniform.
         Weights are normalized to mean 1 internally so the gradient scale stays
         comparable to the no-weight case."""
@@ -323,6 +332,7 @@ class GradientBoosting(_BaseBooster):
         y = np.asarray(y, dtype=np.float64)
         n_samples = X.shape[0]
         w = self._normalize_weights(sample_weight, n_samples)
+        self.train_weight_sum_ = None if w is None else float(w.sum())
 
         self.n_threads_ = _apply_thread_count(self.thread_count)
         self.loss_ = LOSSES[self.loss_name](**self.loss_kwargs)
@@ -342,13 +352,15 @@ class GradientBoosting(_BaseBooster):
             n_samples, bg_n, replace=False)
         self._shap_background_ = np.ascontiguousarray(Xb[:, bg_idx])
 
-        Xvb = yv = Fv = None
+        Xvb = yv = Fv = wv = None
         if eval_set is not None:
-            Xv, yv = eval_set
+            Xv, yv, wv = _unpack_eval_set(eval_set)
             Xv = (np.asarray(Xv, dtype=object) if cat_features
                   else np.asarray(Xv, dtype=np.float64))
             yv = np.asarray(yv, dtype=np.float64)
+            wv = None if wv is None else np.asarray(wv, dtype=np.float64)
             Xvb = np.ascontiguousarray(self.prep_.transform(Xv).T)
+        self.validation_weight_sum_ = None if wv is None else float(wv.sum())
 
         self.init_ = self.loss_.init(y, w)
         F = np.full(n_samples, self.init_, dtype=np.float64)
@@ -428,7 +440,7 @@ class GradientBoosting(_BaseBooster):
 
             if Fv is not None:
                 Fv += tree.predict(Xvb)
-                val = self.loss_.eval(yv, Fv)   # validation is always unweighted
+                val = self.loss_.eval(yv, Fv, wv)
                 self.valid_history_.append(val)
                 if stopper.step(val, m):
                     if self.verbose:
@@ -551,6 +563,7 @@ class MulticlassBoosting(_BaseBooster):
         Y = np.eye(K)[y_idx]                      # one-hot (n, K)
         n_samples = X.shape[0]
         w = self._normalize_weights(sample_weight, n_samples)
+        self.train_weight_sum_ = None if w is None else float(w.sum())
 
         self.n_threads_ = _apply_thread_count(self.thread_count)
         self.loss_ = MultiSoftmax(K)
@@ -565,14 +578,16 @@ class MulticlassBoosting(_BaseBooster):
         hist_buffers = self._alloc_hist_buffers(Xb.shape[0], n_bins)
         self._importance = np.zeros(self.prep_.n_input_features_)
 
-        Xvb = Yv = Fv = yv_idx = None
+        Xvb = Yv = Fv = yv_idx = wv = None
         if eval_set is not None:
-            Xv, yv = eval_set
+            Xv, yv, wv = _unpack_eval_set(eval_set)
             Xv = (np.asarray(Xv, dtype=object) if cat_features
                   else np.asarray(Xv, dtype=np.float64))
             yv_idx = np.searchsorted(self.classes_, np.asarray(yv))
             Yv = np.eye(K)[yv_idx]
+            wv = None if wv is None else np.asarray(wv, dtype=np.float64)
             Xvb = np.ascontiguousarray(self.prep_.transform(Xv).T)
+        self.validation_weight_sum_ = None if wv is None else float(wv.sum())
 
         self.init_ = self.loss_.init(Y, w)         # (K,)
         F = np.tile(self.init_, (n_samples, 1))    # (n, K)
@@ -621,7 +636,7 @@ class MulticlassBoosting(_BaseBooster):
             if Fv is not None:
                 for k in range(K):
                     Fv[:, k] += round_trees[k].predict(Xvb)
-                val = self.loss_.eval(Yv, Fv)   # validation is always unweighted
+                val = self.loss_.eval(Yv, Fv, wv)
                 self.valid_history_.append(val)
                 if stopper.step(val, m):
                     if self.verbose:

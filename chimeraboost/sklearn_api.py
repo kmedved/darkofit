@@ -7,7 +7,7 @@ from .booster import GradientBoosting, MulticlassBoosting, _normalize_tree_mode
 from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin
 
 
-def _fit_temperature(raw, y, multiclass):
+def _fit_temperature(raw, y, multiclass, sample_weight=None):
     """Learn the scalar T > 0 minimizing validation log loss of sigmoid(raw/T)
     (binary) or softmax(raw/T) (multiclass). Dividing logits by T is monotonic,
     so predictions are unchanged — only their probabilities are recalibrated.
@@ -15,6 +15,8 @@ def _fit_temperature(raw, y, multiclass):
     from scipy.optimize import minimize_scalar
 
     raw = np.asarray(raw, dtype=np.float64)
+    sample_weight = (None if sample_weight is None
+                     else np.asarray(sample_weight, dtype=np.float64))
     if multiclass:
         rows = np.arange(raw.shape[0])
 
@@ -22,13 +24,15 @@ def _fit_temperature(raw, y, multiclass):
             logits = raw / T
             mx = logits.max(axis=1, keepdims=True)
             log_z = mx[:, 0] + np.log(np.exp(logits - mx).sum(axis=1))
-            return float(np.mean(log_z - logits[rows, y]))
+            return float(np.average(log_z - logits[rows, y],
+                                    weights=sample_weight))
     else:
         def loss(T):
             z = raw / T
             # Stable binary cross-entropy: softplus(z) - y*z.
-            return float(np.mean(np.log1p(np.exp(-np.abs(z)))
-                                 + np.maximum(z, 0.0) - y * z))
+            ce = (np.log1p(np.exp(-np.abs(z)))
+                  + np.maximum(z, 0.0) - y * z)
+            return float(np.average(ce, weights=sample_weight))
 
     res = minimize_scalar(loss, bounds=(0.05, 50.0), method="bounded",
                           options={"xatol": 1e-4})
@@ -157,12 +161,45 @@ def _resolve_cat_feature_names(cat_features, X):
     return resolved
 
 
+def _check_sample_weight_array(sample_weight, n, name="sample_weight"):
+    if sample_weight is None:
+        return None
+    sw = np.asarray(sample_weight, dtype=np.float64)
+    if sw.ndim != 1 or sw.shape[0] != n:
+        raise ValueError(
+            f"{name} must be 1D of length {n}; got shape {sw.shape}.")
+    if not np.isfinite(sw).all():
+        raise ValueError(f"{name} contains NaN or infinity.")
+    if (sw < 0).any():
+        raise ValueError(f"{name} must be non-negative.")
+    if sw.sum() <= 0:
+        raise ValueError(f"{name} sums to zero; at least one weight "
+                         "must be positive.")
+    return sw
+
+
+def _unpack_eval_set(eval_set):
+    if eval_set is None:
+        return None, None, None
+    if len(eval_set) == 2:
+        return eval_set[0], eval_set[1], None
+    return eval_set[0], eval_set[1], eval_set[2]
+
+
+def _pack_eval_set(Xv, yv, sample_weight=None):
+    if sample_weight is None:
+        return (Xv, yv)
+    return (Xv, yv, sample_weight)
+
+
 def _check_eval_set(eval_set, n_features):
     """Validate a user-passed ``eval_set`` up front with a named error instead of
     a cryptic IndexError/broadcast failure deep in the booster."""
-    if not (isinstance(eval_set, (tuple, list)) and len(eval_set) == 2):
-        raise ValueError("eval_set must be a (X_val, y_val) tuple.")
-    Xv, yv = eval_set
+    if not (isinstance(eval_set, (tuple, list)) and len(eval_set) in (2, 3)):
+        raise ValueError(
+            "eval_set must be (X_val, y_val) or "
+            "(X_val, y_val, sample_weight_val).")
+    Xv, yv, wv = _unpack_eval_set(eval_set)
     shape = getattr(Xv, "shape", None)
     if shape is None or len(shape) != 2:
         shape = np.asarray(Xv, dtype=object).shape
@@ -175,6 +212,8 @@ def _check_eval_set(eval_set, n_features):
         raise ValueError(
             f"eval_set X and y have inconsistent lengths: {shape[0]} vs "
             f"{len(yv)}.")
+    wv = _check_sample_weight_array(wv, shape[0], "eval_set sample_weight")
+    return _pack_eval_set(Xv, yv, wv)
 
 
 def _is_numeric_dtype(dt):
@@ -264,7 +303,12 @@ def _fit_bagged(estimator, X, y, cat_features, eval_set, groups, sample_weight):
             oob_idx = np.where(oob_mask)[0]
             # Degenerate case: every row drawn (possible for tiny n). Fall back
             # to letting the member auto-split rather than training with no eval.
-            member_eval = (X[oob_idx], y[oob_idx]) if len(oob_idx) > 0 else None
+            if len(oob_idx) > 0:
+                w_oob = (None if sample_weight is None
+                         else np.asarray(sample_weight)[oob_idx])
+                member_eval = _pack_eval_set(X[oob_idx], y[oob_idx], w_oob)
+            else:
+                member_eval = None
         else:
             member_eval = eval_set
         member.fit(X[idx], y[idx], cat_features=cat_features, eval_set=member_eval,
@@ -483,21 +527,10 @@ def _validate_fit_input(estimator, X, y, cat_features, sample_weight, *,
             raise ValueError("y contains NaN or infinity.")
     elif not np.isfinite(np.asarray(y, np.float64)).all():
         raise ValueError("y contains NaN or infinity; targets must be finite.")
-    if sample_weight is not None:
-        sw = np.asarray(sample_weight, dtype=np.float64)
-        if sw.ndim != 1 or sw.shape[0] != n:
-            raise ValueError(
-                f"sample_weight must be 1D of length {n}; got shape {sw.shape}.")
-        # Non-finite or negative weights, or an all-zero vector, otherwise fit
-        # without error and silently yield an all-NaN model (mean-1 weight
-        # normalization divides by the weight sum).
-        if not np.isfinite(sw).all():
-            raise ValueError("sample_weight contains NaN or infinity.")
-        if (sw < 0).any():
-            raise ValueError("sample_weight must be non-negative.")
-        if sw.sum() <= 0:
-            raise ValueError("sample_weight sums to zero; at least one weight "
-                             "must be positive.")
+    # Non-finite or negative weights, or an all-zero vector, otherwise fit
+    # without error and silently yield an all-NaN model (mean-1 weight
+    # normalization divides by the weight sum).
+    _check_sample_weight_array(sample_weight, n)
     estimator.n_features_in_ = nf
     if feature_names is not None:
         estimator.feature_names_in_ = feature_names
@@ -771,17 +804,19 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
             ``cat_features`` constructor argument when not given here; passing it
             here overrides the constructor value. (The constructor form lets
             ``GridSearchCV``/``Pipeline`` carry it, which a fit-only kwarg can't.)
-        eval_set : (X_val, y_val) tuple or None
+        eval_set : (X_val, y_val) or (X_val, y_val, sample_weight_val) tuple, or None
             Explicit validation set.  When provided, automatic splitting is
-            skipped regardless of the *early_stopping* setting.
+            skipped regardless of the *early_stopping* setting.  Validation
+            weights, when supplied, are used for validation scoring.
         groups : array-like of shape (n_samples,) or None
             Group labels for the samples (e.g. ``df['subject_id']``).  When
             supplied and *early_stopping* triggers an automatic split, groups
             are kept intact across the train/validation boundary using
             ``GroupShuffleSplit``.
         sample_weight : array-like of shape (n_samples,) or None
-            Per-sample weights.  Normalized to mean 1 internally.  Only applied
-            to the training set; the validation eval metric is always unweighted.
+            Per-sample weights.  Normalized to mean 1 internally.  When automatic
+            early stopping creates a validation split, validation weights are
+            sliced from the same array and used for validation scoring.
         """
         cat_features = _resolve_cat_features(self, cat_features)
         cat_features = _resolve_cat_feature_names(cat_features, X)
@@ -789,7 +824,7 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
         y = _validate_fit_input(self, X, y, cat_features, sample_weight,
                                 classification=False)
         if eval_set is not None:
-            _check_eval_set(eval_set, self.n_features_in_)
+            eval_set = _check_eval_set(eval_set, self.n_features_in_)
         if self.n_ensembles and self.n_ensembles > 1:
             self.estimators_ = _fit_bagged(self, X, y, cat_features, eval_set,
                                            groups, sample_weight)
@@ -833,7 +868,9 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
                 es_active = False  # data too small to hold out a val set
             else:
                 train_idx, val_idx = split
-                eval_set = (X[val_idx], y[val_idx])
+                eval_weight = (None if sample_weight is None
+                               else sample_weight[val_idx])
+                eval_set = _pack_eval_set(X[val_idx], y[val_idx], eval_weight)
                 X, y = X[train_idx], y[train_idx]
                 if sample_weight is not None:
                     sample_weight = sample_weight[train_idx]
@@ -1062,16 +1099,19 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
             ``cat_features`` constructor argument when not given here; passing it
             here overrides the constructor value. (The constructor form lets
             ``GridSearchCV``/``Pipeline`` carry it, which a fit-only kwarg can't.)
-        eval_set : (X_val, y_val) tuple or None
+        eval_set : (X_val, y_val) or (X_val, y_val, sample_weight_val) tuple, or None
             Explicit validation set with original class labels.  When provided,
-            automatic splitting is skipped.
+            automatic splitting is skipped. Validation weights, when supplied,
+            are used for validation scoring and probability calibration.
         groups : array-like of shape (n_samples,) or None
             Group labels (e.g. ``df['subject_id']``).  When supplied and early
             stopping triggers an automatic split, ``StratifiedGroupKFold`` keeps
             groups intact and class proportions balanced across the split.
         sample_weight : array-like of shape (n_samples,) or None
-            Per-sample weights.  Normalized to mean 1 internally.  Only applied
-            to the training set; the validation eval metric is always unweighted.
+            Per-sample weights.  Normalized to mean 1 internally.  When automatic
+            early stopping creates a validation split, validation weights are
+            sliced from the same array and used for validation scoring and
+            probability calibration.
         """
         cat_features = _resolve_cat_features(self, cat_features)
         cat_features = _resolve_cat_feature_names(cat_features, X)
@@ -1079,7 +1119,7 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
         y = _validate_fit_input(self, X, y, cat_features, sample_weight,
                                 classification=True)
         if eval_set is not None:
-            _check_eval_set(eval_set, self.n_features_in_)
+            eval_set = _check_eval_set(eval_set, self.n_features_in_)
         if self.n_ensembles and self.n_ensembles > 1:
             # Fix the global class set up front: a member's bootstrap may miss a
             # rare class, and predict_proba aligns each member's columns to this.
@@ -1130,7 +1170,9 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
                 es_active = False  # data too small to hold out a val set
             else:
                 train_idx, val_idx = split
-                eval_set = (X[val_idx], y[val_idx])
+                eval_weight = (None if sample_weight is None
+                               else sample_weight[val_idx])
+                eval_set = _pack_eval_set(X[val_idx], y[val_idx], eval_weight)
                 X, y = X[train_idx], y[train_idx]
                 if sample_weight is not None:
                     sample_weight = sample_weight[train_idx]
@@ -1160,21 +1202,21 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
             raise NotImplementedError(
                 "linear_leaves is not supported for multiclass classification "
                 "yet; use it on regression or binary classification.")
-        cal_Xv = cal_y = None   # validation set used to calibrate temperature
+        cal_Xv = cal_y = cal_w = None  # validation set used to calibrate temperature
         if self._multiclass:
             self.model_ = MulticlassBoosting(**kw)
             self.model_.fit(X, y, cat_features=cat_features, eval_set=eval_set,
                             sample_weight=sample_weight)
             self.classes_ = self.model_.classes_
             if eval_set is not None:
-                cal_Xv = eval_set[0]
-                cal_y = np.searchsorted(self.classes_, np.asarray(eval_set[1]))
+                cal_Xv, cal_y_raw, cal_w = _unpack_eval_set(eval_set)
+                cal_y = np.searchsorted(self.classes_, np.asarray(cal_y_raw))
         else:
             y01 = (y == self.classes_[1]).astype(np.float64)
             if eval_set is not None:
-                cal_Xv = eval_set[0]
-                cal_y = (np.asarray(eval_set[1]) == self.classes_[1]).astype(np.float64)
-                eval_set = (cal_Xv, cal_y)
+                cal_Xv, cal_y_raw, cal_w = _unpack_eval_set(eval_set)
+                cal_y = (np.asarray(cal_y_raw) == self.classes_[1]).astype(np.float64)
+                eval_set = _pack_eval_set(cal_Xv, cal_y, cal_w)
             self.model_ = GradientBoosting(loss="Logloss", **kw)
             self.model_.fit(X, y01, cat_features=cat_features, eval_set=eval_set,
                             sample_weight=sample_weight)
@@ -1185,7 +1227,8 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
         self.temperature_ = 1.0
         if cal_Xv is not None:
             raw = self.model_.predict_raw(cal_Xv)
-            self.temperature_ = _fit_temperature(raw, cal_y, self._multiclass)
+            self.temperature_ = _fit_temperature(raw, cal_y, self._multiclass,
+                                                 sample_weight=cal_w)
         return self
 
     def predict_proba(self, X):

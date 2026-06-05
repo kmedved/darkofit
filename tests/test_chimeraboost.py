@@ -372,6 +372,77 @@ def test_sample_weight_early_stopping_slices_correctly():
     assert m.best_iteration_ < 500
 
 
+def test_eval_set_sample_weight_controls_valid_history():
+    rng = np.random.default_rng(9)
+    X = rng.normal(size=(600, 4))
+    y = 2.0 * X[:, 0] - X[:, 1] + 0.2 * rng.normal(size=600)
+    Xtr, Xv, ytr, yv = train_test_split(X, y, test_size=0.25, random_state=0)
+    wv = np.where(yv > np.median(yv), 12.0, 1.0)
+
+    m = ChimeraBoostRegressor(n_estimators=6, depth=3, learning_rate=0.1,
+                              early_stopping=False, random_state=0)
+    m.fit(Xtr, ytr, eval_set=(Xv, yv, wv))
+
+    staged = list(m.staged_predict(Xv))
+    weighted = [
+        np.sqrt(np.average((pred - yv) ** 2, weights=wv))
+        for pred in staged
+    ]
+    unweighted = [
+        np.sqrt(np.mean((pred - yv) ** 2))
+        for pred in staged
+    ]
+    assert np.allclose(m.model_.valid_history_, weighted)
+    assert np.max(np.abs(np.asarray(weighted) - np.asarray(unweighted))) > 1e-4
+    assert m.model_.validation_weight_sum_ == pytest.approx(wv.sum())
+
+
+def test_sample_weight_auto_split_preserves_validation_weights():
+    from chimeraboost.sklearn_api import _make_eval_split
+
+    rng = np.random.default_rng(10)
+    X = rng.normal(size=(500, 5))
+    y = X[:, 0] - 0.5 * X[:, 1] + rng.normal(size=500)
+    w = rng.uniform(0.2, 4.0, len(y))
+    tr, va = _make_eval_split(X, y, 0.2, 42, groups=None, stratify=None)
+
+    m = ChimeraBoostRegressor(n_estimators=10, early_stopping=True,
+                              validation_fraction=0.2,
+                              early_stopping_rounds=3,
+                              random_state=42).fit(X, y, sample_weight=w)
+    assert m.model_.train_weight_sum_ == pytest.approx(len(tr))
+    assert m.model_.validation_weight_sum_ == pytest.approx(w[va].sum())
+
+
+def test_eval_set_sample_weight_validation():
+    X, yr, _ = _Xy()
+    Xt, yt, Xv, yv = X[:30], yr[:30], X[30:], yr[30:]
+    with pytest.raises(ValueError, match="eval_set sample_weight"):
+        ChimeraBoostRegressor(n_estimators=10).fit(
+            Xt, yt, eval_set=(Xv, yv, np.ones(len(yv) - 1)))
+    with pytest.raises(ValueError, match="eval_set sample_weight"):
+        ChimeraBoostRegressor(n_estimators=10).fit(
+            Xt, yt, eval_set=(Xv, yv, -np.ones(len(yv))))
+
+
+def test_eval_set_sample_weight_controls_temperature_scaling():
+    from chimeraboost.sklearn_api import _fit_temperature
+
+    X, y = load_breast_cancer(return_X_y=True)
+    Xtr, Xv, ytr, yv = train_test_split(
+        X, y, test_size=0.25, random_state=3, stratify=y
+    )
+    wv = np.where(yv == 1, 8.0, 1.0)
+    m = ChimeraBoostClassifier(n_estimators=12, early_stopping=False,
+                               random_state=0)
+    m.fit(Xtr, ytr, eval_set=(Xv, yv, wv))
+
+    raw = m.model_.predict_raw(Xv)
+    y01 = (yv == m.classes_[1]).astype(np.float64)
+    expected = _fit_temperature(raw, y01, multiclass=False, sample_weight=wv)
+    assert m.temperature_ == pytest.approx(expected)
+
+
 def test_groups_kept_intact_in_early_stopping_split():
     """The grouped early-stopping split must keep every group entirely on one
     side of the train/validation boundary, on both the regression
