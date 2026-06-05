@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import inspect
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable, Optional
 
 import numpy as np
@@ -356,15 +357,33 @@ def estimator_kwargs(estimator_cls, config: FitConfig, variant: RevisionSpec, se
     return kwargs
 
 
+def _revision_supports_tree_mode(path):
+    """Cheap source-level capability check used before subprocess import."""
+    root = Path(path)
+    for rel in ("chimeraboost/sklearn_api.py", "chimeraboost/booster.py"):
+        try:
+            if "tree_mode" in (root / rel).read_text():
+                return True
+        except OSError:
+            continue
+    return False
+
+
 def default_revision_specs(upstream=None, fork=None, candidate=None):
     specs: list[RevisionSpec] = []
     if upstream:
         specs.append(RevisionSpec("upstream_default", upstream, use_defaults=True))
         specs.append(RevisionSpec("upstream_matched", upstream))
     if fork:
-        specs.append(RevisionSpec("fork_catboost_matched", fork, tree_mode="catboost"))
-        specs.append(RevisionSpec("fork_lightgbm_matched", fork, tree_mode="lightgbm"))
+        if _revision_supports_tree_mode(fork):
+            specs.append(RevisionSpec("fork_catboost_matched", fork, tree_mode="catboost"))
+            specs.append(RevisionSpec("fork_lightgbm_matched", fork, tree_mode="lightgbm"))
+        else:
+            specs.append(RevisionSpec("fork_matched", fork))
     if candidate:
-        specs.append(RevisionSpec("candidate_catboost", candidate, tree_mode="catboost"))
-        specs.append(RevisionSpec("candidate_lightgbm", candidate, tree_mode="lightgbm"))
+        if _revision_supports_tree_mode(candidate):
+            specs.append(RevisionSpec("candidate_catboost", candidate, tree_mode="catboost"))
+            specs.append(RevisionSpec("candidate_lightgbm", candidate, tree_mode="lightgbm"))
+        else:
+            specs.append(RevisionSpec("candidate_matched", candidate))
     return specs

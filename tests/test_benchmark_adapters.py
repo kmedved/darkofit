@@ -111,8 +111,21 @@ def test_estimator_kwargs_default_variant_keeps_defaults():
     assert kwargs == {"thread_count": 3, "random_state": 12}
 
 
-def test_default_revision_specs_expand_expected_labels():
-    specs = default_revision_specs("/up", "/fork", "/candidate")
+def _write_revision(tmp_path, name, supports_tree_mode):
+    root = tmp_path / name
+    pkg = root / "chimeraboost"
+    pkg.mkdir(parents=True)
+    text = "def __init__(self, tree_mode=None): pass\n" if supports_tree_mode else "pass\n"
+    (pkg / "sklearn_api.py").write_text(text)
+    return str(root)
+
+
+def test_default_revision_specs_expand_expected_labels(tmp_path):
+    upstream = _write_revision(tmp_path, "upstream", supports_tree_mode=False)
+    fork = _write_revision(tmp_path, "fork", supports_tree_mode=True)
+    candidate = _write_revision(tmp_path, "candidate", supports_tree_mode=True)
+
+    specs = default_revision_specs(upstream, fork, candidate)
 
     assert [s.label for s in specs] == [
         "upstream_default",
@@ -124,6 +137,23 @@ def test_default_revision_specs_expand_expected_labels():
     ]
     assert specs[3].tree_mode == "lightgbm"
     assert specs[0].use_defaults is True
+
+
+def test_default_revision_specs_handles_legacy_fork_without_tree_mode(tmp_path):
+    upstream = _write_revision(tmp_path, "upstream", supports_tree_mode=False)
+    fork = _write_revision(tmp_path, "fork", supports_tree_mode=False)
+    candidate = _write_revision(tmp_path, "candidate", supports_tree_mode=True)
+
+    specs = default_revision_specs(upstream, fork, candidate)
+
+    assert [s.label for s in specs] == [
+        "upstream_default",
+        "upstream_matched",
+        "fork_matched",
+        "candidate_catboost",
+        "candidate_lightgbm",
+    ]
+    assert specs[2].tree_mode is None
 
 
 def test_split_case_preserves_weight_modes():
