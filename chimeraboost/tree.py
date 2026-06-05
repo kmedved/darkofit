@@ -46,6 +46,24 @@ def _build_histograms_into(Xb, grad, hess, leaf, n_leaves, hist):
 
 
 @njit(cache=True, parallel=True)
+def _build_histograms_unit_hess_into(Xb, grad, leaf, n_leaves, hist):
+    """Histogram fill for losses whose scanned rows all have Hessian 1."""
+    n_features, n_samples = Xb.shape
+    max_bins = hist.shape[2]
+    for f in prange(n_features):
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hist[f, l, b, 0] = 0.0
+                hist[f, l, b, 1] = 0.0
+        Xf = Xb[f]
+        for i in range(n_samples):
+            l = leaf[i]
+            b = Xf[i]
+            hist[f, l, b, 0] += grad[i]
+            hist[f, l, b, 1] += 1.0
+
+
+@njit(cache=True, parallel=True)
 def _best_split(hist, n_bins_per_feature, l2, feat_mask, min_child_weight,
                 n_leaves):
     """Find the (feature, threshold) with the highest total gain.
@@ -633,7 +651,7 @@ def build_oblivious_tree(Xb, grad, hess, n_bins_per_feature,
                          max_depth, l2, lr, min_gain=1e-8, feature_mask=None,
                          min_child_weight=1.0, hist_buffers=None, hs_lambda=0.0,
                          linear_leaves=False, centers_std=None, is_numeric=None,
-                         linear_lambda=1.0):
+                         linear_lambda=1.0, constant_hessian=False):
     """Grow one oblivious tree level by level. Returns (tree, train_leaf), where
     train_leaf is the tree's leaf index for every training sample.
 
@@ -654,6 +672,9 @@ def build_oblivious_tree(Xb, grad, hess, n_bins_per_feature,
     tree's numeric split features (`centers_std`/`is_numeric` required;
     `linear_lambda` is the slope penalty). Low-count leaves fall back to the
     constant Newton value. The split search is unaffected.
+    constant_hessian: when True, histogram fill treats every scanned row's
+    Hessian as exactly 1. Only valid for unweighted, unsubsampled constant-
+    Hessian losses.
     """
     n_features, n_samples = Xb.shape
     max_bins = n_features and int(n_bins_per_feature.max())
@@ -670,7 +691,10 @@ def build_oblivious_tree(Xb, grad, hess, n_bins_per_feature,
 
     for d in range(max_depth):
         n_leaves = 1 << d
-        _build_histograms_into(Xb, grad, hess, leaf, n_leaves, hist)
+        if constant_hessian:
+            _build_histograms_unit_hess_into(Xb, grad, leaf, n_leaves, hist)
+        else:
+            _build_histograms_into(Xb, grad, hess, leaf, n_leaves, hist)
         f, t, gain = _best_split(hist, n_bins_per_feature, l2, feature_mask,
                                  min_child_weight, n_leaves)
         if gain <= min_gain or t < 0:

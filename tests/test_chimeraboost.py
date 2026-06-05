@@ -315,6 +315,27 @@ def test_shared_histogram_buffers_match_standalone():
     assert np.allclose(again.values, fresh.values)
 
 
+def test_constant_hessian_tree_matches_general_histogram_path():
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_oblivious_tree
+
+    rng = np.random.default_rng(1)
+    X = rng.normal(size=(700, 10))
+    y = X[:, 0] - 0.7 * X[:, 2] + rng.normal(0, 0.4, 700)
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = np.ascontiguousarray(prep.fit_transform(X, [y], None).T)
+    grad = y - y.mean()
+    hess = np.ones(len(y))
+    general, leaf_general = build_oblivious_tree(
+        Xb, grad, hess, prep.n_bins_, 5, 1.0, 0.1)
+    unit, leaf_unit = build_oblivious_tree(
+        Xb, grad, hess, prep.n_bins_, 5, 1.0, 0.1, constant_hessian=True)
+    assert np.array_equal(unit.splits_feat, general.splits_feat)
+    assert np.array_equal(unit.splits_thr, general.splits_thr)
+    assert np.array_equal(leaf_unit, leaf_general)
+    assert np.allclose(unit.values, general.values)
+
+
 def test_binner_uses_smallest_safe_unsigned_dtype():
     from chimeraboost.binning import Binner
 

@@ -386,6 +386,11 @@ class GradientBoosting(_BaseBooster):
             Fv = np.full(len(yv), self.init_)
 
         adjusts_leaves = getattr(self.loss_, "adjusts_leaves", False)
+        use_constant_hessian = (
+            getattr(self.loss_, "constant_hessian", False)
+            and w is None
+            and self.subsample >= 1.0
+        )
         # Linear leaves are incompatible with the median/quantile leaf override
         # (adjusts_leaves) and with ordered boosting (a linear LOO step is not
         # implemented); they take over the leaf value otherwise. Below
@@ -420,7 +425,8 @@ class GradientBoosting(_BaseBooster):
                                               linear_leaves=ll_active,
                                               centers_std=self._centers_std_,
                                               is_numeric=self.prep_.is_numeric_binned_,
-                                              linear_lambda=self.linear_lambda)
+                                              linear_lambda=self.linear_lambda,
+                                              constant_hessian=use_constant_hessian)
             if timing_enabled:
                 self.timing_["tree_build"] += time.perf_counter() - t_phase
             # A depth-0 tree found no legal split; the next round on the same
