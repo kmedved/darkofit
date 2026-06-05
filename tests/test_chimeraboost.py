@@ -429,6 +429,38 @@ def test_selected_row_histograms_match_zeroed_full_histograms():
     assert np.allclose(selected.values, masked.values)
 
 
+def test_histogram_subtraction_builder_matches_direct_builder():
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import (
+        build_oblivious_tree,
+        build_oblivious_tree_hist_subtract,
+    )
+
+    rng = np.random.default_rng(4)
+    X = rng.normal(size=(900, 10))
+    y = (
+        1.4 * X[:, 0]
+        - 0.8 * X[:, 3]
+        + 0.5 * np.sin(X[:, 5])
+        + rng.normal(0, 0.4, 900)
+    )
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = np.ascontiguousarray(prep.fit_transform(X, [y], None).T)
+    grad = y - y.mean()
+    hess = rng.uniform(0.5, 2.0, len(y))
+
+    direct, leaf_direct = build_oblivious_tree(
+        Xb, grad, hess, prep.n_bins_, 5, 1.0, 0.1)
+    subtract, leaf_subtract = build_oblivious_tree_hist_subtract(
+        Xb, grad, hess, prep.n_bins_, 5, 1.0, 0.1)
+
+    assert np.array_equal(subtract.splits_feat, direct.splits_feat)
+    assert np.array_equal(subtract.splits_thr, direct.splits_thr)
+    assert np.array_equal(leaf_subtract, leaf_direct)
+    assert np.allclose(subtract.values, direct.values)
+    assert np.allclose(subtract.predict(Xb), direct.predict(Xb))
+
+
 def test_binner_uses_smallest_safe_unsigned_dtype():
     from chimeraboost.binning import Binner
 

@@ -184,6 +184,91 @@ def _build_histograms_selected_rows_unit_hess_into(Xb, grad, leaf, n_leaves,
             hist[f, l, b, 1] += 1.0
 
 
+@njit(cache=True)
+def _partition_row_order_by_split(Xf, threshold, row_order, starts, n_leaves,
+                                  next_order, next_starts):
+    """Partition leaf-grouped rows into child leaf groups for one split."""
+    out_pos = 0
+    for l in range(n_leaves):
+        start = starts[l]
+        end = starts[l + 1]
+        left_pos = out_pos
+        left_count = 0
+        for p in range(start, end):
+            i = row_order[p]
+            if Xf[i] <= threshold:
+                next_order[left_pos + left_count] = i
+                left_count += 1
+        right_pos = left_pos + left_count
+        right_count = 0
+        for p in range(start, end):
+            i = row_order[p]
+            if Xf[i] > threshold:
+                next_order[right_pos + right_count] = i
+                right_count += 1
+
+        child = 2 * l
+        next_starts[child] = left_pos
+        next_starts[child + 1] = right_pos
+        next_starts[child + 2] = right_pos + right_count
+        out_pos = right_pos + right_count
+
+
+@njit(cache=True, parallel=True)
+def _build_histograms_subtracted_into(Xb, grad, hess, row_order, starts,
+                                      n_leaves, parent_hist, hist):
+    """Build child histograms by scanning the smaller child and subtracting.
+
+    `row_order` is grouped by the current `n_leaves` leaves. `starts` has
+    offsets for those leaves. `parent_hist` holds the previous level's
+    histograms for `n_leaves // 2` parent leaves.
+    """
+    n_features = Xb.shape[0]
+    max_bins = hist.shape[2]
+    n_parents = n_leaves // 2
+    for f in prange(n_features):
+        Xf = Xb[f]
+        for parent in range(n_parents):
+            left = 2 * parent
+            right = left + 1
+            left_start = starts[left]
+            left_end = starts[left + 1]
+            right_start = starts[right]
+            right_end = starts[right + 1]
+            left_count = left_end - left_start
+            right_count = right_end - right_start
+            if left_count <= right_count:
+                small = left
+                large = right
+                small_start = left_start
+                small_end = left_end
+            else:
+                small = right
+                large = left
+                small_start = right_start
+                small_end = right_end
+
+            for b in range(max_bins):
+                hist[f, left, b, 0] = 0.0
+                hist[f, left, b, 1] = 0.0
+                hist[f, right, b, 0] = 0.0
+                hist[f, right, b, 1] = 0.0
+
+            for p in range(small_start, small_end):
+                i = row_order[p]
+                b = Xf[i]
+                hist[f, small, b, 0] += grad[i]
+                hist[f, small, b, 1] += hess[i]
+
+            for b in range(max_bins):
+                hist[f, large, b, 0] = (
+                    parent_hist[f, parent, b, 0] - hist[f, small, b, 0]
+                )
+                hist[f, large, b, 1] = (
+                    parent_hist[f, parent, b, 1] - hist[f, small, b, 1]
+                )
+
+
 @njit(cache=True, parallel=True)
 def _best_split(hist, n_bins_per_feature, l2, feat_mask, min_child_weight,
                 n_leaves):
@@ -1223,6 +1308,77 @@ def build_oblivious_tree(Xb, grad, hess, n_bins_per_feature,
                          centers_std=centers_std if lin_coef is not None else None)
     # `leaf` is the training-set assignment, returned so callers (LOO update,
     # leaf correction) reuse it instead of recomputing tree.apply(Xb).
+    return tree, leaf
+
+
+def build_oblivious_tree_hist_subtract(Xb, grad, hess, n_bins_per_feature,
+                                       max_depth, l2, lr, min_gain=1e-8,
+                                       feature_mask=None,
+                                       min_child_weight=1.0):
+    """Experimental oblivious grower using row grouping + histogram subtraction.
+
+    This first slice supports the full-row constant-leaf path. It is deliberately
+    separate from ``build_oblivious_tree`` so benchmarks can prove value before
+    changing the production grower or the feature/subsample/linear-leaf paths.
+    """
+    n_features, n_samples = Xb.shape
+    max_bins = n_features and int(n_bins_per_feature.max())
+    if feature_mask is None:
+        feature_mask = np.ones(n_features, dtype=np.int64)
+    else:
+        feature_mask = np.asarray(feature_mask, dtype=np.int64)
+
+    max_leaves = 1 << max_depth
+    hist_a = np.zeros((n_features, max_leaves, max_bins, 2))
+    hist_b = np.zeros_like(hist_a)
+
+    splits_feat = []
+    splits_thr = []
+    splits_gain = []
+    leaf = np.zeros(n_samples, dtype=np.int64)
+
+    row_order = np.arange(n_samples, dtype=np.int64)
+    next_order = np.empty_like(row_order)
+    starts = np.empty(max_leaves + 1, dtype=np.int64)
+    next_starts = np.empty_like(starts)
+    starts[0] = 0
+    starts[1] = n_samples
+
+    parent_hist = hist_a
+    current_hist = hist_b
+    for d in range(max_depth):
+        n_leaves = 1 << d
+        if d == 0:
+            _build_histograms_into(Xb, grad, hess, leaf, n_leaves, parent_hist)
+            hist_for_split = parent_hist
+        else:
+            _build_histograms_subtracted_into(
+                Xb, grad, hess, row_order, starts, n_leaves,
+                parent_hist, current_hist)
+            hist_for_split = current_hist
+
+        f, t, gain = _best_split(
+            hist_for_split, n_bins_per_feature, l2, feature_mask,
+            min_child_weight, n_leaves)
+        if gain <= min_gain or t < 0:
+            break
+
+        splits_feat.append(f)
+        splits_thr.append(t)
+        splits_gain.append(gain)
+        leaf = (leaf << 1) + (Xb[f] > t).astype(np.int64)
+        _partition_row_order_by_split(
+            Xb[f], t, row_order, starts, n_leaves, next_order, next_starts)
+        row_order, next_order = next_order, row_order
+        starts, next_starts = next_starts, starts
+        if d > 0:
+            parent_hist, current_hist = current_hist, parent_hist
+
+    sf = np.array(splits_feat, dtype=np.int64)
+    st = np.array(splits_thr, dtype=np.int64)
+    n_leaves = 1 << len(splits_feat)
+    values = _leaf_values(leaf, grad, hess, n_leaves, l2, lr)
+    tree = ObliviousTree(sf, st, values, np.array(splits_gain, dtype=np.float64))
     return tree, leaf
 
 

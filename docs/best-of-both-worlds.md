@@ -182,6 +182,44 @@ per-iteration gap likely needs a different attack, such as histogram
 subtraction/leaf-partitioned row order, lower histogram width for encoded
 target-stat columns, or a more substantial grower rewrite.
 
+## Histogram Subtraction Probe
+
+Implemented an experimental full-row oblivious-tree builder,
+`build_oblivious_tree_hist_subtract`, using leaf-grouped row order plus
+histogram subtraction. It is not wired into `fit`; the production grower still
+uses direct per-level histogram rebuilds.
+
+Raw microbenchmark rows are tracked in:
+
+`benchmarks/hist_subtraction_microbench_20260605.csv`
+
+Command:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_hist_subtraction.py \
+  --rows 50000 250000 \
+  --features 12 40 \
+  --repeat 5 \
+  --csv benchmarks/hist_subtraction_microbench_20260605.csv
+```
+
+Summary:
+
+| Rows | Features | Subtract/direct time | Same tree? | Max prediction diff |
+| ---: | ---: | ---: | --- | ---: |
+| 50k | 12 | 1.33x | yes | 0.0 |
+| 50k | 40 | 0.88x | yes | 0.0 |
+| 250k | 12 | 1.45x | no | 0.0104 |
+| 250k | 40 | 1.08x | yes | 0.0 |
+
+Decision: keep this as an experimental builder and do not route training through
+it. The current feature-major direct rebuild is still very hard to beat; the
+subtraction path adds row partitioning overhead and can change split decisions
+through floating accumulation order. A production version would need a stronger
+gate, likely a more integrated grower rewrite that uses row grouping for both
+split search and leaf-value accumulation instead of bolting subtraction onto the
+existing feature-parallel layout.
+
 ## Target-Stat Bin Budget Probe
 
 Implemented an opt-in `max_bins_ts` parameter that caps only ordered-target-stat
