@@ -572,6 +572,20 @@ def _predict_levelwise_tree(Xb, node_features, node_thresholds, values):
     return out
 
 
+@njit(cache=True)
+def _predict_levelwise_tree_multiclass(Xb, node_features, node_thresholds,
+                                       values):
+    leaf = _assign_levelwise_leaves(Xb, node_features, node_thresholds)
+    n = Xb.shape[1]
+    K = values.shape[1]
+    out = np.empty((n, K), dtype=np.float64)
+    for i in range(n):
+        l = leaf[i]
+        for k in range(K):
+            out[i, k] = values[l, k]
+    return out
+
+
 @njit(cache=True, parallel=True)
 def _best_splits_by_leaf(hist, n_bins_per_feature, l2, feat_mask,
                          min_child_weight, n_leaves, out_feat, out_thr,
@@ -620,6 +634,105 @@ def _best_splits_by_leaf(hist, n_bins_per_feature, l2, feat_mask,
         out_feat[l] = best_f
         out_thr[l] = best_t
         out_gain[l] = best_gain
+
+
+@njit(cache=True, parallel=True)
+def _build_histograms_multiclass_into(Xb, grad, hess, leaf, n_leaves, hist):
+    """Feature-parallel histograms for class-major grad/hess buffers."""
+    n_features, n_samples = Xb.shape
+    K = grad.shape[0]
+    max_bins = hist.shape[2]
+    for f in prange(n_features):
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                for k in range(K):
+                    hist[f, l, b, k, 0] = 0.0
+                    hist[f, l, b, k, 1] = 0.0
+        Xf = Xb[f]
+        for i in range(n_samples):
+            l = leaf[i]
+            b = Xf[i]
+            for k in range(K):
+                hist[f, l, b, k, 0] += grad[k, i]
+                hist[f, l, b, k, 1] += hess[k, i]
+
+
+@njit(cache=True, parallel=True)
+def _best_splits_by_leaf_multiclass(hist, n_bins_per_feature, l2, feat_mask,
+                                    min_child_weight, n_leaves, out_feat,
+                                    out_thr, out_gain):
+    """Find leaf-local splits by summed gain across classes."""
+    n_features = hist.shape[0]
+    K = hist.shape[3]
+    for l in prange(n_leaves):
+        best_f = -1
+        best_t = -1
+        best_gain = -np.inf
+        for f in range(n_features):
+            if feat_mask[f] == 0:
+                continue
+            nb = n_bins_per_feature[f]
+            Gt = np.zeros(K)
+            Ht = np.zeros(K)
+            Ht_total = 0.0
+            parent_gain = 0.0
+            for k in range(K):
+                for b in range(nb):
+                    Gt[k] += hist[f, l, b, k, 0]
+                    Ht[k] += hist[f, l, b, k, 1]
+                Ht_total += Ht[k]
+                denom = Ht[k] + l2
+                if denom > 0.0:
+                    parent_gain += Gt[k] * Gt[k] / denom
+            if Ht_total <= 0.0:
+                continue
+            GL = np.zeros(K)
+            HL = np.zeros(K)
+            for t in range(nb - 1):
+                HL_total = 0.0
+                HR_total = 0.0
+                for k in range(K):
+                    GL[k] += hist[f, l, t, k, 0]
+                    HL[k] += hist[f, l, t, k, 1]
+                    HL_total += HL[k]
+                    HR_total += Ht[k] - HL[k]
+                if HL_total < min_child_weight or HR_total < min_child_weight:
+                    continue
+                gain = -parent_gain
+                for k in range(K):
+                    HR = Ht[k] - HL[k]
+                    GR = Gt[k] - GL[k]
+                    left_denom = HL[k] + l2
+                    right_denom = HR + l2
+                    if left_denom > 0.0:
+                        gain += GL[k] * GL[k] / left_denom
+                    if right_denom > 0.0:
+                        gain += GR * GR / right_denom
+                if gain > best_gain:
+                    best_gain = gain
+                    best_f = f
+                    best_t = t
+        out_feat[l] = best_f
+        out_thr[l] = best_t
+        out_gain[l] = best_gain
+
+
+@njit(cache=True)
+def _leaf_values_multiclass(leaf, grad, hess, n_leaves, l2, lr):
+    K = grad.shape[0]
+    G = np.zeros((n_leaves, K))
+    H = np.zeros((n_leaves, K))
+    for i in range(leaf.shape[0]):
+        l = leaf[i]
+        for k in range(K):
+            G[l, k] += grad[k, i]
+            H[l, k] += hess[k, i]
+    values = np.zeros((n_leaves, K))
+    for l in range(n_leaves):
+        for k in range(K):
+            if H[l, k] > 0.0:
+                values[l, k] = -lr * G[l, k] / (H[l, k] + l2)
+    return values
 
 
 @njit(cache=True, parallel=True)
@@ -939,6 +1052,38 @@ class LevelwiseTree:
                                        self.node_thresholds, self.values)
 
 
+class MultiLevelwiseTree:
+    """A shared-structure level-wise multiclass tree with vector leaves."""
+
+    __slots__ = (
+        "node_features", "node_thresholds", "values", "splits_feat",
+        "splits_thr", "gains", "depth",
+    )
+
+    def __init__(self, node_features, node_thresholds, values, splits_feat,
+                 splits_thr, gains):
+        self.node_features = node_features
+        self.node_thresholds = node_thresholds
+        self.values = values
+        self.splits_feat = splits_feat
+        self.splits_thr = splits_thr
+        self.gains = gains
+        self.depth = node_features.shape[0]
+
+    def apply(self, Xb):
+        if self.depth == 0:
+            return np.zeros(Xb.shape[1], dtype=np.int64)
+        return _assign_levelwise_leaves(Xb, self.node_features,
+                                        self.node_thresholds)
+
+    def predict(self, Xb):
+        if self.depth == 0:
+            return np.zeros((Xb.shape[1], self.values.shape[1]),
+                            dtype=np.float64)
+        return _predict_levelwise_tree_multiclass(
+            Xb, self.node_features, self.node_thresholds, self.values)
+
+
 def build_oblivious_tree(Xb, grad, hess, n_bins_per_feature,
                          max_depth, l2, lr, min_gain=1e-8, feature_mask=None,
                          min_child_weight=1.0, hist_buffers=None, hs_lambda=0.0,
@@ -1197,6 +1342,77 @@ def build_levelwise_tree(Xb, grad, hess, n_bins_per_feature,
     else:
         values = _leaf_values(leaf, grad, hess, n_leaves, l2, lr)
     tree = LevelwiseTree(
+        node_features,
+        node_thresholds,
+        values,
+        np.array(flat_features, dtype=np.int64),
+        np.array(flat_thresholds, dtype=np.int64),
+        np.array(flat_gains, dtype=np.float64),
+    )
+    return tree, leaf
+
+
+def build_levelwise_multiclass_tree(Xb, grad, hess, n_bins_per_feature,
+                                    max_depth, l2, lr, min_gain=1e-8,
+                                    feature_mask=None, min_child_weight=1.0,
+                                    hist_buffers=None):
+    """Grow one shared-structure level-wise multiclass tree.
+
+    ``grad`` and ``hess`` are class-major arrays of shape ``(K, n_samples)``.
+    Split gain is summed across classes, while leaf values remain K-dimensional.
+    """
+    n_features, n_samples = Xb.shape
+    K = grad.shape[0]
+    max_bins = n_features and int(n_bins_per_feature.max())
+    if feature_mask is None:
+        feature_mask = np.ones(n_features, dtype=np.int64)
+    else:
+        feature_mask = np.asarray(feature_mask, dtype=np.int64)
+    if hist_buffers is None:
+        hist = np.zeros((n_features, 1 << max_depth, max_bins, K, 2))
+    else:
+        hist = hist_buffers
+
+    max_leaves = 1 << max_depth
+    node_features = np.full((max_depth, max_leaves), -1, dtype=np.int64)
+    node_thresholds = np.full((max_depth, max_leaves), -1, dtype=np.int64)
+    leaf_best_feat = np.empty(max_leaves, dtype=np.int64)
+    leaf_best_thr = np.empty(max_leaves, dtype=np.int64)
+    leaf_best_gain = np.empty(max_leaves, dtype=np.float64)
+    flat_features = []
+    flat_thresholds = []
+    flat_gains = []
+    leaf = np.zeros(n_samples, dtype=np.int64)
+    actual_depth = 0
+
+    for d in range(max_depth):
+        n_leaves = 1 << d
+        _build_histograms_multiclass_into(
+            Xb, grad, hess, leaf, n_leaves, hist)
+        _best_splits_by_leaf_multiclass(
+            hist, n_bins_per_feature, l2, feature_mask, min_child_weight,
+            n_leaves, leaf_best_feat, leaf_best_thr, leaf_best_gain)
+
+        any_split = False
+        for l in range(n_leaves):
+            if leaf_best_thr[l] >= 0 and leaf_best_gain[l] > min_gain:
+                node_features[d, l] = leaf_best_feat[l]
+                node_thresholds[d, l] = leaf_best_thr[l]
+                flat_features.append(leaf_best_feat[l])
+                flat_thresholds.append(leaf_best_thr[l])
+                flat_gains.append(leaf_best_gain[l])
+                any_split = True
+        if not any_split:
+            break
+        actual_depth = d + 1
+        _update_leaves_with_level_splits(
+            Xb, leaf, node_features[d], node_thresholds[d])
+
+    node_features = node_features[:actual_depth].copy()
+    node_thresholds = node_thresholds[:actual_depth].copy()
+    n_leaves = 1 << actual_depth
+    values = _leaf_values_multiclass(leaf, grad, hess, n_leaves, l2, lr)
+    tree = MultiLevelwiseTree(
         node_features,
         node_thresholds,
         values,

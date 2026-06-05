@@ -10,10 +10,11 @@ import numpy as np
 
 from .losses import LOSSES, MultiSoftmax
 from .preprocessing import FeaturePreprocessor
-from .tree import (build_levelwise_tree, build_oblivious_tree, _loo_leaf_step,
-                   _leaf_values, _leaf_values_hs, _linear_predict,
-                   _predict_forest, pack_forest, _predict_forest_linear,
-                   pack_forest_linear, _shap_forest_linear)
+from .tree import (build_levelwise_multiclass_tree, build_levelwise_tree,
+                   build_oblivious_tree, _loo_leaf_step, _leaf_values,
+                   _leaf_values_hs, _linear_predict, _predict_forest,
+                   pack_forest, _predict_forest_linear, pack_forest_linear,
+                   _shap_forest_linear)
 
 
 def _factorials(n):
@@ -680,7 +681,19 @@ class MulticlassBoosting(_BaseBooster):
 
         coupling = (K - 1) / K   # softmax Hessian has rank K-1, not K
         rng = np.random.default_rng(self.random_state)
-        self.trees_ = []                           # list of rounds; each = K trees
+        use_shared_levelwise = (
+            self.tree_mode_ == "lightgbm"
+            and self.subsample >= 1.0
+            and not self.ordered_boosting
+        )
+        self._multiclass_shared_trees_ = use_shared_levelwise
+        if use_shared_levelwise:
+            max_bins = int(n_bins.max()) if len(n_bins) else 1
+            hist_buffers_multi = np.zeros(
+                (Xb.shape[0], 1 << self.depth, max_bins, K, 2))
+        else:
+            hist_buffers_multi = None
+        self.trees_ = []                           # rounds: K trees or one vector tree
         self._forests_ = None   # per-class packed-forest cache (lazy on predict)
         self.train_history_, self.valid_history_ = [], []
         stopper = _EarlyStopper(self.early_stopping_rounds)
@@ -695,6 +708,55 @@ class MulticlassBoosting(_BaseBooster):
             findices = self._feature_indices(fmask)
             if timing_enabled:
                 self.timing_["grad_hess"] += time.perf_counter() - t_phase
+            if use_shared_levelwise:
+                t_phase = time.perf_counter()
+                tree, leaf = build_levelwise_multiclass_tree(
+                    Xb, grad, hess * coupling, n_bins, self.depth,
+                    self.l2_leaf_reg, self.lr_,
+                    feature_mask=fmask,
+                    min_child_weight=self.min_child_weight,
+                    hist_buffers=hist_buffers_multi)
+                if timing_enabled:
+                    self.timing_["tree_build"] += time.perf_counter() - t_phase
+                if tree.depth == 0:
+                    break
+                t_phase = time.perf_counter()
+                self.trees_.append(tree)
+                self._accumulate_importance(tree)
+                F += tree.values[leaf].T
+                if timing_enabled:
+                    self.timing_["train_update"] += time.perf_counter() - t_phase
+
+                if self.verbose:
+                    t_phase = time.perf_counter()
+                    self.train_history_.append(
+                        self.loss_.eval_class_major(Y_class, F, w))
+                    if timing_enabled:
+                        self.timing_["loss_eval"] += time.perf_counter() - t_phase
+
+                if Fv is not None:
+                    t_phase = time.perf_counter()
+                    Fv += tree.predict(Xvb).T
+                    if timing_enabled:
+                        self.timing_["validation_predict"] += time.perf_counter() - t_phase
+                    t_phase = time.perf_counter()
+                    val = self.loss_.eval_class_major(Yv_class, Fv, wv)
+                    self.valid_history_.append(val)
+                    if timing_enabled:
+                        self.timing_["loss_eval"] += time.perf_counter() - t_phase
+                    if stopper.step(val, m):
+                        if self.verbose:
+                            print(f"Early stop at {m} (best {stopper.best_iter})")
+                        self.trees_ = self.trees_[: stopper.best_iter + 1]
+                        break
+
+                if self.verbose and (m % max(1, self.n_estimators // 10) == 0):
+                    msg = f"[{m}] train {self.train_history_[-1]:.5f}"
+                    if Fv is not None:
+                        msg += f"  val {self.valid_history_[-1]:.5f}"
+                    print(msg)
+                continue
+
             round_trees = []
             for k in range(K):
                 t_phase = time.perf_counter()
@@ -768,6 +830,10 @@ class MulticlassBoosting(_BaseBooster):
         Xb = np.ascontiguousarray(self.prep_.transform(X).T)
         F = np.tile(self.init_, (Xb.shape[1], 1))
         if not self.trees_:
+            return F
+        if getattr(self, "_multiclass_shared_trees_", False):
+            for tree in self.trees_:
+                F += tree.predict(Xb)
             return F
         if self.tree_mode_ != "catboost":
             for round_trees in self.trees_:

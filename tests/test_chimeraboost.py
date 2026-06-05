@@ -932,6 +932,21 @@ def test_tree_mode_levelwise_multiclass_runs():
                                tree_mode="lightgbm").fit(X, y)
     proba = m.predict_proba(X[:7])
     assert m.model_.tree_mode_ == "lightgbm"
+    assert m.model_._multiclass_shared_trees_ is True
+    assert m.model_.trees_[0].values.ndim == 2
+    assert proba.shape == (7, 3)
+    assert np.allclose(proba.sum(axis=1), 1.0)
+
+
+def test_tree_mode_levelwise_multiclass_subsample_uses_per_class_fallback():
+    from sklearn.datasets import load_wine
+    X, y = load_wine(return_X_y=True)
+    m = ChimeraBoostClassifier(n_estimators=5, depth=3, subsample=0.8,
+                               early_stopping=False, random_state=0,
+                               tree_mode="lightgbm").fit(X, y)
+    assert m.model_._multiclass_shared_trees_ is False
+    assert len(m.model_.trees_[0]) == 3
+    proba = m.predict_proba(X[:7])
     assert proba.shape == (7, 3)
     assert np.allclose(proba.sum(axis=1), 1.0)
 

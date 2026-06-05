@@ -145,3 +145,27 @@ Summary:
 Decision: keep `max_bins_ts` opt-in. It is a useful categorical-speed/regularity
 knob, but not a universal default because multiclass quality regressed in the
 first gate.
+
+## Shared Multiclass Levelwise Trees
+
+Implemented shared-structure, vector-leaf multiclass trees for
+`tree_mode="lightgbm"` when training is full-row and unordered. This replaces
+the previous K scalar levelwise trees per boosting round with one shared split
+structure and K-dimensional leaf values. The old per-class path remains the
+fallback for subsampling or ordered boosting.
+
+Raw medium rows are tracked in:
+
+`benchmarks/shared_multiclass_levelwise_medium_20260605.csv`
+
+Summary versus the previous levelwise gate:
+
+| Dataset | Catboost log loss | Previous levelwise | Shared vector levelwise | Fit result |
+| --- | ---: | ---: | ---: | --- |
+| `numeric_multiclass` | 0.4718 | 0.5121 | 0.4847 | Quality much closer to catboost, but fit slower than old levelwise |
+| `categorical_multiclass` | 0.5572 | 0.5866 | 0.5824 | Slight quality and speed improvement over old levelwise |
+
+Decision: keep the shared vector tree for opt-in levelwise multiclass because it
+moves the quality gap in the right direction and preserves the fallback path.
+Do not use it to justify `auto` or default selection yet; catboost still wins
+the primary metric.
