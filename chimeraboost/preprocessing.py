@@ -39,8 +39,10 @@ class FeaturePreprocessor:
     """
 
     def __init__(self, max_bins=128, cat_smoothing=1.0, random_state=None,
-                 cat_n_permutations=4, cat_combinations=False):
+                 cat_n_permutations=4, cat_combinations=False,
+                 max_bins_ts=None):
         self.max_bins = int(max_bins)
+        self.max_bins_ts = None if max_bins_ts is None else int(max_bins_ts)
         self.cat_smoothing = float(cat_smoothing)
         self.random_state = random_state
         self.cat_n_permutations = int(cat_n_permutations)
@@ -144,7 +146,13 @@ class FeaturePreprocessor:
         self.is_numeric_binned_ = np.zeros(feat.shape[1], dtype=bool)
         self.is_numeric_binned_[:num.shape[1]] = True
 
-        self.binner_ = Binner(self.max_bins)
+        max_bins_per_feature = None
+        if self.max_bins_ts is not None and feat.shape[1] > num.shape[1]:
+            max_bins_per_feature = np.full(
+                feat.shape[1], self.max_bins, dtype=np.int64)
+            max_bins_per_feature[num.shape[1]:] = self.max_bins_ts
+
+        self.binner_ = Binner(self.max_bins, max_bins_per_feature)
         X_binned = self.binner_.fit_transform(feat)
         self.n_bins_ = self.binner_.n_bins_
         return X_binned

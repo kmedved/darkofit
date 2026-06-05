@@ -28,6 +28,7 @@ class IterationsEstimator:
         early_stopping_rounds=None,
         depth=6,
         learning_rate=None,
+        max_bins_ts=None,
         thread_count=None,
         random_state=None,
         ordered_boosting=True,
@@ -45,6 +46,7 @@ class NEstimatorsEstimator:
         early_stopping_rounds=None,
         depth=6,
         learning_rate=None,
+        max_bins_ts=None,
         thread_count=None,
         random_state=None,
         ordered_boosting=False,
@@ -59,6 +61,7 @@ def test_estimator_kwargs_maps_iterations_api():
         patience=4,
         depth=3,
         learning_rate=0.2,
+        max_bins_ts=32,
         threads=2,
         ordered_boosting=True,
     )
@@ -70,6 +73,7 @@ def test_estimator_kwargs_maps_iterations_api():
     assert kwargs["early_stopping_rounds"] == 4
     assert kwargs["depth"] == 3
     assert kwargs["learning_rate"] == 0.2
+    assert kwargs["max_bins_ts"] == 32
     assert kwargs["thread_count"] == 2
     assert kwargs["random_state"] == 11
     assert kwargs["ordered_boosting"] is True

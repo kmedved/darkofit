@@ -146,7 +146,7 @@ class _BaseBooster:
     """
 
     def __init__(self, n_estimators=500, learning_rate=None, depth=6,
-                 l2_leaf_reg=1.0, max_bins=128, subsample=1.0,
+                 l2_leaf_reg=1.0, max_bins=128, max_bins_ts=None, subsample=1.0,
                  colsample=1.0, cat_smoothing=1.0, cat_n_permutations=4,
                  early_stopping_rounds=None, min_child_weight=1.0,
                  thread_count=None, random_state=None, verbose=False,
@@ -159,6 +159,7 @@ class _BaseBooster:
         self.depth = int(depth)
         self.l2_leaf_reg = float(l2_leaf_reg)
         self.max_bins = int(max_bins)
+        self.max_bins_ts = None if max_bins_ts is None else int(max_bins_ts)
         self.subsample = float(subsample)
         self.colsample = float(colsample)
         self.cat_smoothing = float(cat_smoothing)
@@ -248,7 +249,7 @@ class _BaseBooster:
         """Build a FeaturePreprocessor configured from this booster's params."""
         return FeaturePreprocessor(self.max_bins, self.cat_smoothing,
                                    self.random_state, self.cat_n_permutations,
-                                   self.cat_combinations)
+                                   self.cat_combinations, self.max_bins_ts)
 
     @staticmethod
     def _normalize_weights(sample_weight, n_samples):

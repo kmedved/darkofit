@@ -46,7 +46,7 @@ def _feature_borders(col, max_bins):
 class Binner:
     """Learns per-feature borders and maps a float matrix to bins."""
 
-    def __init__(self, max_bins=128):
+    def __init__(self, max_bins=128, max_bins_per_feature=None):
         if int(max_bins) > _MAX_SUPPORTED_BINS:
             raise ValueError(
                 f"max_bins={max_bins} exceeds {_MAX_SUPPORTED_BINS} "
@@ -55,6 +55,10 @@ class Binner:
         if int(max_bins) < 2:
             raise ValueError(f"max_bins={max_bins} must be >= 2.")
         self.max_bins = int(max_bins)
+        self.max_bins_per_feature = (
+            None if max_bins_per_feature is None
+            else np.asarray(max_bins_per_feature, dtype=np.int64)
+        )
         self.borders_ = None       # list of np.ndarray, one per feature
         self.n_bins_ = None        # np.ndarray int, width per feature
         self.bin_centers_ = None   # list of np.ndarray: representative value/bin
@@ -90,8 +94,26 @@ class Binner:
         """Learn quantile borders for each column from training data."""
         X = np.asarray(X, dtype=np.float64)
         n_features = X.shape[1]
+        if self.max_bins_per_feature is None:
+            max_bins = np.full(n_features, self.max_bins, dtype=np.int64)
+        else:
+            if self.max_bins_per_feature.shape != (n_features,):
+                raise ValueError(
+                    "max_bins_per_feature must have one entry per feature; "
+                    f"got shape {self.max_bins_per_feature.shape}, expected "
+                    f"({n_features},)."
+                )
+            if np.any(self.max_bins_per_feature < 2):
+                raise ValueError("all max_bins_per_feature values must be >= 2.")
+            if np.any(self.max_bins_per_feature > _MAX_SUPPORTED_BINS):
+                raise ValueError(
+                    "max_bins_per_feature exceeds "
+                    f"{_MAX_SUPPORTED_BINS} for at least one feature."
+                )
+            max_bins = self.max_bins_per_feature
         self.borders_ = [
-            _feature_borders(X[:, f], self.max_bins) for f in range(n_features)
+            _feature_borders(X[:, f], int(max_bins[f]))
+            for f in range(n_features)
         ]
         # +1 for the searchsorted upper bucket, +1 for the NaN bucket.
         self.n_bins_ = np.array(

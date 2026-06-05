@@ -447,6 +447,39 @@ def test_binner_uses_smallest_safe_unsigned_dtype():
     assert wide.max() <= np.iinfo(wide.dtype).max
 
 
+def test_binner_accepts_per_feature_bin_caps():
+    from chimeraboost.binning import Binner
+
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(500, 3))
+    binner = Binner(max_bins=64, max_bins_per_feature=np.array([64, 8, 4]))
+    binner.fit(X)
+    assert binner.n_bins_[0] > binner.n_bins_[1] > binner.n_bins_[2]
+    assert binner.n_bins_[1] <= 9
+    assert binner.n_bins_[2] <= 5
+
+
+def test_target_stat_columns_can_use_lower_bin_cap():
+    from chimeraboost.preprocessing import FeaturePreprocessor
+
+    rng = np.random.default_rng(0)
+    n = 500
+    city = rng.choice(["NYC", "SF", "LA", "CHI", "SEA"], n)
+    num = rng.normal(size=(n, 2))
+    y = (city == "SF").astype(float) + num[:, 0] + rng.normal(0, 0.1, n)
+    X = np.empty((n, 3), dtype=object)
+    X[:, 0] = city
+    X[:, 1:] = num
+
+    prep = FeaturePreprocessor(max_bins=64, cat_smoothing=1.0,
+                               random_state=0, max_bins_ts=8)
+    prep.fit_transform(X, [y], cat_features=[0])
+    n_numeric = len(prep.num_features_)
+    assert n_numeric == 2
+    assert prep.n_bins_[:n_numeric].max() > 9
+    assert prep.n_bins_[n_numeric:].max() <= 9
+
+
 # ---------------------------------------------------------------------------
 # sample_weight tests
 # ---------------------------------------------------------------------------
@@ -800,6 +833,7 @@ def test_continuous_target_to_classifier_raises():
     (dict(depth=30), "depth"),
     (dict(learning_rate=-0.1), "learning_rate"),
     (dict(learning_rate=0.0), "learning_rate"),
+    (dict(max_bins_ts=1), "max_bins_ts"),
     (dict(l2_leaf_reg=-1.0), "l2_leaf_reg"),
     (dict(subsample=0.0), "subsample"),
     (dict(subsample=1.5), "subsample"),

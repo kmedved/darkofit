@@ -121,3 +121,27 @@ existing feature-major layout is still extremely efficient. The large-data
 per-iteration gap likely needs a different attack, such as histogram
 subtraction/leaf-partitioned row order, lower histogram width for encoded
 target-stat columns, or a more substantial grower rewrite.
+
+## Target-Stat Bin Budget Probe
+
+Implemented an opt-in `max_bins_ts` parameter that caps only ordered-target-stat
+encoded categorical columns. Raw numeric columns still use `max_bins`, and
+`max_bins_ts=None` preserves the old behavior exactly.
+
+Raw medium categorical rows are tracked in:
+
+- `benchmarks/ts_bin_cap_default_medium_20260605.csv`
+- `benchmarks/ts_bin_cap64_medium_20260605.csv`
+- `benchmarks/ts_bin_cap32_medium_20260605.csv`
+
+Summary:
+
+| Dataset | Default metric | `max_bins_ts=64` | `max_bins_ts=32` | Decision |
+| --- | ---: | ---: | ---: | --- |
+| `categorical_reg` RMSE | 2.5458 | 2.5362 | 2.5816 | 64 slightly better |
+| `categorical_binary` log loss | 0.2546 | 0.2538 | 0.2535 | 32/64 slightly better |
+| `categorical_multiclass` log loss | 0.5572 | 0.5660 | 0.5611 | default better |
+
+Decision: keep `max_bins_ts` opt-in. It is a useful categorical-speed/regularity
+knob, but not a universal default because multiclass quality regressed in the
+first gate.

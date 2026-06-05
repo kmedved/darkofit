@@ -342,6 +342,12 @@ def parse_args(argv):
     parser.add_argument("--patience", type=int, default=50)
     parser.add_argument("--depth", type=int, default=6)
     parser.add_argument("--learning-rate", type=float, default=None)
+    parser.add_argument(
+        "--max-bins-ts",
+        type=int,
+        default=None,
+        help="optional target-stat encoded column bin cap for revisions that support it",
+    )
     parser.add_argument("--ordered-boosting", action="store_true", default=False)
     parser.add_argument(
         "--weight-modes",
@@ -390,6 +396,7 @@ def main(argv=None):
         patience=args.patience,
         depth=args.depth,
         learning_rate=args.learning_rate,
+        max_bins_ts=args.max_bins_ts,
         threads=args.threads,
         ordered_boosting=args.ordered_boosting,
     )

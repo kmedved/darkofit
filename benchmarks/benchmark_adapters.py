@@ -54,6 +54,7 @@ class FitConfig:
     patience: int = 50
     depth: int = 6
     learning_rate: Optional[float] = None
+    max_bins_ts: Optional[int] = None
     threads: Optional[int] = None
     ordered_boosting: bool = False
     verbose_timing: bool = True
@@ -339,6 +340,7 @@ def estimator_kwargs(estimator_cls, config: FitConfig, variant: RevisionSpec, se
     set_if("early_stopping_rounds", config.patience)
     set_if("depth", config.depth)
     set_if("learning_rate", config.learning_rate)
+    set_if("max_bins_ts", config.max_bins_ts)
     set_if("thread_count", config.threads)
     set_if("random_state", seed)
     set_if("ordered_boosting", config.ordered_boosting)

@@ -88,6 +88,7 @@ def _validate_hyperparams(estimator):
                               and not isinstance(v, bool) and 1 <= v <= 16):
         raise ValueError(f"depth must be an integer in [1, 16] or None; got {v!r}.")
     _in_range("max_bins", 2, 65534)
+    _in_range("max_bins_ts", 2, 65534, allow_none=True)
     _in_range("learning_rate", 0.0, np.inf, lo_incl=False, allow_none=True)
     _in_range("l2_leaf_reg", 0.0, np.inf)
     _in_range("subsample", 0.0, 1.0, lo_incl=False)
@@ -671,7 +672,11 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
     l2_leaf_reg : float, default 1.0
         L2 regularization on leaf values.
     max_bins : int, default 128
-        Histogram bins per numeric feature.
+        Histogram bins per raw numeric feature, and per target-stat encoded
+        categorical feature when ``max_bins_ts`` is not set.
+    max_bins_ts : int or None, default None
+        Optional lower bin cap for ordered-target-stat encoded categorical
+        columns. ``None`` keeps the same cap as ``max_bins``.
     subsample : float, default 1.0
         Row subsampling fraction per tree. Below 1.0, rows are drawn by Minimum
         Variance Sampling (gradient-weighted, unbiased) rather than uniformly.
@@ -754,8 +759,9 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
     """
 
     def __init__(self, n_estimators=2000, learning_rate=None, depth=None,
-                 l2_leaf_reg=1.0, max_bins=128, subsample=1.0, colsample=1.0,
-                 cat_smoothing=1.0, cat_n_permutations=4,
+                 l2_leaf_reg=1.0, max_bins=128, max_bins_ts=None,
+                 subsample=1.0, colsample=1.0, cat_smoothing=1.0,
+                 cat_n_permutations=4,
                  early_stopping_rounds=None,
                  loss="RMSE", alpha=0.5, min_child_weight=1.0, thread_count=None,
                  random_state=None, verbose=False, ordered_boosting=False,
@@ -769,6 +775,7 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
         self.depth = depth
         self.l2_leaf_reg = l2_leaf_reg
         self.max_bins = max_bins
+        self.max_bins_ts = max_bins_ts
         self.subsample = subsample
         self.colsample = colsample
         self.cat_smoothing = cat_smoothing
@@ -974,7 +981,11 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
     l2_leaf_reg : float, default 1.0
         L2 regularization on leaf values.
     max_bins : int, default 128
-        Histogram bins per numeric feature.
+        Histogram bins per raw numeric feature, and per target-stat encoded
+        categorical feature when ``max_bins_ts`` is not set.
+    max_bins_ts : int or None, default None
+        Optional lower bin cap for ordered-target-stat encoded categorical
+        columns. ``None`` keeps the same cap as ``max_bins``.
     subsample : float, default 1.0
         Row subsampling fraction per tree (Minimum Variance Sampling below 1.0).
     colsample : float, default 1.0
@@ -1056,8 +1067,9 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
     """
 
     def __init__(self, n_estimators=2000, learning_rate=None, depth=6,
-                 l2_leaf_reg=1.0, max_bins=128, subsample=1.0, colsample=1.0,
-                 cat_smoothing=1.0, cat_n_permutations=4,
+                 l2_leaf_reg=1.0, max_bins=128, max_bins_ts=None,
+                 subsample=1.0, colsample=1.0, cat_smoothing=1.0,
+                 cat_n_permutations=4,
                  early_stopping_rounds=None,
                  min_child_weight=None, thread_count=None, random_state=None,
                  verbose=False, ordered_boosting=False,
@@ -1071,6 +1083,7 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
         self.depth = depth
         self.l2_leaf_reg = l2_leaf_reg
         self.max_bins = max_bins
+        self.max_bins_ts = max_bins_ts
         self.subsample = subsample
         self.colsample = colsample
         self.cat_smoothing = cat_smoothing
