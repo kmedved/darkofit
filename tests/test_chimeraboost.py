@@ -315,6 +315,24 @@ def test_shared_histogram_buffers_match_standalone():
     assert np.allclose(again.values, fresh.values)
 
 
+def test_binner_uses_smallest_safe_unsigned_dtype():
+    from chimeraboost.binning import Binner
+
+    rng = np.random.default_rng(0)
+    X_small = rng.normal(size=(500, 3))
+    X_small[0, 0] = np.nan
+    small_binner = Binner(max_bins=128)
+    small = small_binner.fit_transform(X_small)
+    assert small.dtype == np.uint8
+    assert small[0, 0] == small_binner.n_bins_[0] - 1
+
+    X_wide = np.arange(400, dtype=np.float64).reshape(-1, 1)
+    wide_binner = Binner(max_bins=300)
+    wide = wide_binner.fit_transform(X_wide)
+    assert wide.dtype == np.uint16
+    assert wide.max() <= np.iinfo(wide.dtype).max
+
+
 # ---------------------------------------------------------------------------
 # sample_weight tests
 # ---------------------------------------------------------------------------

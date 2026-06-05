@@ -19,6 +19,16 @@ BIN_DTYPE = np.uint16
 _MAX_SUPPORTED_BINS = np.iinfo(BIN_DTYPE).max - 1
 
 
+def _bin_dtype_for_n_bins(n_bins):
+    """Smallest unsigned dtype that can represent every learned bin id."""
+    max_bin = int(np.max(n_bins)) - 1 if len(n_bins) else 0
+    if max_bin <= np.iinfo(np.uint8).max:
+        return np.uint8
+    if max_bin <= np.iinfo(np.uint16).max:
+        return np.uint16
+    return np.uint32
+
+
 def _feature_borders(col, max_bins):
     """Quantile borders for one numeric column, ignoring NaNs."""
     finite = col[np.isfinite(col)]
@@ -48,6 +58,7 @@ class Binner:
         self.borders_ = None       # list of np.ndarray, one per feature
         self.n_bins_ = None        # np.ndarray int, width per feature
         self.bin_centers_ = None   # list of np.ndarray: representative value/bin
+        self.bin_dtype_ = None
 
     @staticmethod
     def _centers_for(borders):
@@ -87,18 +98,20 @@ class Binner:
             [len(b) + 2 for b in self.borders_], dtype=np.int64
         )
         self.bin_centers_ = [self._centers_for(b) for b in self.borders_]
+        self.bin_dtype_ = _bin_dtype_for_n_bins(self.n_bins_)
         return self
 
     def transform(self, X):
         """Map a float matrix to integer bin indices; NaNs go to the top bin."""
         X = np.asarray(X, dtype=np.float64)
         n_samples, n_features = X.shape
-        out = np.empty((n_samples, n_features), dtype=BIN_DTYPE)
+        dtype = self.bin_dtype_ or BIN_DTYPE
+        out = np.empty((n_samples, n_features), dtype=dtype)
         for f in range(n_features):
             col = X[:, f]
             borders = self.borders_[f]
             nan_bin = len(borders) + 1
-            binned = np.searchsorted(borders, col, side="right").astype(BIN_DTYPE)
+            binned = np.searchsorted(borders, col, side="right").astype(dtype)
             binned[~np.isfinite(col)] = nan_bin
             out[:, f] = binned
         return out
