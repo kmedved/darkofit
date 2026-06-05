@@ -111,6 +111,14 @@ def _unpack_eval_set(eval_set):
     return eval_set[0], eval_set[1], eval_set[2]
 
 
+def _one_hot_class_major(y_idx, n_classes):
+    """Build one-hot targets directly as class-major rows."""
+    y_idx = np.asarray(y_idx, dtype=np.int64)
+    out = np.zeros((int(n_classes), y_idx.shape[0]), dtype=np.float64)
+    out[y_idx, np.arange(y_idx.shape[0])] = 1.0
+    return out
+
+
 class _EarlyStopper:
     """Tracks the best validation score and signals when patience runs out."""
 
@@ -615,7 +623,7 @@ class MulticlassBoosting(_BaseBooster):
         K = self.classes_.size
         self.n_classes_ = K
         y_idx = np.searchsorted(self.classes_, y)
-        Y = np.eye(K)[y_idx]                      # one-hot (n, K)
+        Y_class = _one_hot_class_major(y_idx, K)  # one-hot (K, n)
         n_samples = X.shape[0]
         w = self._normalize_weights(sample_weight, n_samples)
         self.train_weight_sum_ = None if w is None else float(w.sum())
@@ -630,29 +638,29 @@ class MulticlassBoosting(_BaseBooster):
         t_phase = time.perf_counter()
         self.prep_ = self._new_preprocessor()
         Xb = np.ascontiguousarray(
-            self.prep_.fit_transform(X, [Y[:, k] for k in range(K)],
+            self.prep_.fit_transform(X, [Y_class[k] for k in range(K)],
                                      cat_features).T)
         n_bins = self.prep_.n_bins_
         hist_buffers = self._alloc_hist_buffers(Xb.shape[0], n_bins)
         self._importance = np.zeros(self.prep_.n_input_features_)
 
-        Xvb = Yv = Fv = yv_idx = wv = None
+        Xvb = Yv_class = Fv = yv_idx = wv = None
         if eval_set is not None:
             Xv, yv, wv = _unpack_eval_set(eval_set)
             Xv = (np.asarray(Xv, dtype=object) if cat_features
                   else np.asarray(Xv, dtype=np.float64))
             yv_idx = np.searchsorted(self.classes_, np.asarray(yv))
-            Yv = np.eye(K)[yv_idx]
+            Yv_class = _one_hot_class_major(yv_idx, K)
             wv = None if wv is None else np.asarray(wv, dtype=np.float64)
             Xvb = np.ascontiguousarray(self.prep_.transform(Xv).T)
         self.validation_weight_sum_ = None if wv is None else float(wv.sum())
         if timing_enabled:
             self.timing_["preprocess"] += time.perf_counter() - t_phase
 
-        self.init_ = self.loss_.init(Y, w)         # (K,)
-        F = np.tile(self.init_, (n_samples, 1))    # (n, K)
-        if Yv is not None:
-            Fv = np.tile(self.init_, (len(yv_idx), 1))
+        self.init_ = self.loss_.init_class_major(Y_class, w)  # (K,)
+        F = np.tile(self.init_[:, None], (1, n_samples))      # (K, n)
+        if Yv_class is not None:
+            Fv = np.tile(self.init_[:, None], (1, len(yv_idx)))
 
         coupling = (K - 1) / K   # softmax Hessian has rank K-1, not K
         rng = np.random.default_rng(self.random_state)
@@ -664,9 +672,9 @@ class MulticlassBoosting(_BaseBooster):
 
         for m in range(self.n_estimators):
             t_phase = time.perf_counter()
-            grad, hess = self.loss_.grad_hess(Y, F)   # (n, K) each
+            grad, hess = self.loss_.grad_hess_class_major(Y_class, F)
             if w is not None:
-                grad, hess = grad * w[:, None], hess * w[:, None]
+                grad, hess = grad * w[None, :], hess * w[None, :]
             fmask = self._feature_mask(Xb.shape[0], rng)
             findices = self._feature_indices(fmask)
             if timing_enabled:
@@ -675,8 +683,8 @@ class MulticlassBoosting(_BaseBooster):
             for k in range(K):
                 t_phase = time.perf_counter()
                 g, h, row_indices = self._maybe_subsample(
-                    np.ascontiguousarray(grad[:, k]),
-                    np.ascontiguousarray(hess[:, k]) * coupling, rng)
+                    grad[k],
+                    hess[k] * coupling, rng)
                 tree, leaf = build_oblivious_tree(Xb, g, h, n_bins, self.depth,
                                                   self.l2_leaf_reg, self.lr_,
                                                   feature_mask=fmask,
@@ -691,9 +699,9 @@ class MulticlassBoosting(_BaseBooster):
                 round_trees.append(tree)
                 self._accumulate_importance(tree)
                 if self.ordered_boosting and tree.depth > 0:
-                    F[:, k] += self._loo_update(tree, leaf, g, h)
+                    F[k] += self._loo_update(tree, leaf, g, h)
                 elif tree.depth > 0:
-                    F[:, k] += tree.values[leaf]
+                    F[k] += tree.values[leaf]
                 # depth-0 trees contribute nothing (predict would be zeros).
                 if timing_enabled:
                     self.timing_["train_update"] += time.perf_counter() - t_phase
@@ -704,18 +712,19 @@ class MulticlassBoosting(_BaseBooster):
             self.trees_.append(round_trees)
             if self.verbose:
                 t_phase = time.perf_counter()
-                self.train_history_.append(self.loss_.eval(Y, F, w))
+                self.train_history_.append(
+                    self.loss_.eval_class_major(Y_class, F, w))
                 if timing_enabled:
                     self.timing_["loss_eval"] += time.perf_counter() - t_phase
 
             if Fv is not None:
                 t_phase = time.perf_counter()
                 for k in range(K):
-                    Fv[:, k] += round_trees[k].predict(Xvb)
+                    Fv[k] += round_trees[k].predict(Xvb)
                 if timing_enabled:
                     self.timing_["validation_predict"] += time.perf_counter() - t_phase
                 t_phase = time.perf_counter()
-                val = self.loss_.eval(Yv, Fv, wv)
+                val = self.loss_.eval_class_major(Yv_class, Fv, wv)
                 self.valid_history_.append(val)
                 if timing_enabled:
                     self.timing_["loss_eval"] += time.perf_counter() - t_phase

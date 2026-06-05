@@ -107,6 +107,24 @@ def test_multiclass_accuracy():
         assert (m.predict(Xte) == yte).mean() > 0.9
 
 
+def test_multisoftmax_class_major_matches_row_major():
+    from chimeraboost.losses import MultiSoftmax
+
+    rng = np.random.default_rng(0)
+    y_idx = rng.integers(0, 4, size=80)
+    Y = np.eye(4)[y_idx]
+    F = rng.normal(size=(80, 4))
+    w = rng.uniform(0.2, 3.0, size=80)
+    loss = MultiSoftmax(4)
+
+    assert np.allclose(loss.init_class_major(Y.T, w), loss.init(Y, w))
+    grad, hess = loss.grad_hess(Y, F)
+    grad_cm, hess_cm = loss.grad_hess_class_major(Y.T, F.T)
+    assert np.allclose(grad_cm, grad.T)
+    assert np.allclose(hess_cm, hess.T)
+    assert loss.eval_class_major(Y.T, F.T, w) == pytest.approx(loss.eval(Y, F, w))
+
+
 def test_multiclass_preserves_string_labels_and_categoricals():
     rng = np.random.default_rng(0)
     n = 2000

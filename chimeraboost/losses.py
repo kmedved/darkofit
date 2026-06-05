@@ -159,6 +159,12 @@ def _softmax(F):
     return ez / ez.sum(axis=1, keepdims=True)
 
 
+def _softmax_class_major(F):
+    z = F - F.max(axis=0, keepdims=True)
+    ez = np.exp(z)
+    return ez / ez.sum(axis=0, keepdims=True)
+
+
 class MultiSoftmax:
     """Multinomial logistic loss. Operates on raw scores F of shape (n, K)."""
 
@@ -173,8 +179,18 @@ class MultiSoftmax:
         p = np.clip(np.average(Y, axis=0, weights=sample_weight), 1e-6, 1.0)
         return np.log(p)  # (K,)
 
+    def init_class_major(self, Y, sample_weight=None):  # Y one-hot (K, n)
+        p = np.clip(np.average(Y, axis=1, weights=sample_weight), 1e-6, 1.0)
+        return np.log(p)  # (K,)
+
     def grad_hess(self, Y, F):  # F (n, K)
         P = _softmax(F)
+        grad = P - Y
+        hess = np.maximum(P * (1.0 - P), 1e-6)
+        return grad, hess
+
+    def grad_hess_class_major(self, Y, F):  # F/Y (K, n)
+        P = _softmax_class_major(F)
         grad = P - Y
         hess = np.maximum(P * (1.0 - P), 1e-6)
         return grad, hess
@@ -182,6 +198,11 @@ class MultiSoftmax:
     def eval(self, Y, F, sample_weight=None):
         P = np.clip(_softmax(F), 1e-12, 1.0)
         row_ce = -np.sum(Y * np.log(P), axis=1)
+        return float(np.average(row_ce, weights=sample_weight))
+
+    def eval_class_major(self, Y, F, sample_weight=None):
+        P = np.clip(_softmax_class_major(F), 1e-12, 1.0)
+        row_ce = -np.sum(Y * np.log(P), axis=0)
         return float(np.average(row_ce, weights=sample_weight))
 
     def transform(self, F):
