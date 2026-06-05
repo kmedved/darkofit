@@ -22,6 +22,13 @@ clf = ChimeraBoostClassifier(early_stopping=True)
 clf.fit(X, y, sample_weight=w)
 ```
 
+Tree builders are selectable:
+
+```
+ChimeraBoostClassifier(tree_mode="catboost")  # symmetric/oblivious default
+ChimeraBoostClassifier(tree_mode="lightgbm")  # level-wise, non-oblivious
+```
+
 
 
 * **To Do:**

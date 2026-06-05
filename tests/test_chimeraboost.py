@@ -640,6 +640,63 @@ def test_add_predict_matches_predict():
     assert np.array_equal(out, tree.predict(Xb))
 
 
+def test_levelwise_tree_add_predict_matches_predict():
+    """The LightGBM-like tree representation must route predict paths alike."""
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_levelwise_tree
+
+    rng = np.random.default_rng(2026)
+    X = rng.normal(size=(900, 10))
+    y = (
+        1.5 * X[:, 0]
+        + np.where(X[:, 1] > 0, X[:, 2], -X[:, 3])
+        + rng.normal(0, 0.3, 900)
+    )
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = prep.fit_transform(X, [y], None)
+    grad = y.mean() - y
+    hess = np.ones(len(y))
+
+    tree, leaf, leaf_G, leaf_H = build_levelwise_tree(
+        Xb, grad, hess, prep.n_bins_, 4, 3.0, 0.1,
+        return_training_state=True,
+    )
+
+    out = np.zeros(Xb.shape[0])
+    tree.add_predict(Xb, out)
+    assert tree.depth > 0
+    assert np.array_equal(out, tree.predict(Xb))
+    assert np.array_equal(leaf, tree.apply(Xb))
+    assert np.array_equal(leaf_G, np.bincount(leaf, weights=grad,
+                                             minlength=len(leaf_G)))
+    assert np.array_equal(leaf_H, np.bincount(leaf, weights=hess,
+                                             minlength=len(leaf_H)))
+
+
+def test_tree_mode_aliases_and_lightgbm_plumbing():
+    X, y = load_breast_cancer(return_X_y=True)
+    Xtr, Xte, ytr, _ = train_test_split(
+        X, y, test_size=0.2, random_state=0, stratify=y
+    )
+
+    catboost = ChimeraBoostClassifier(
+        iterations=12, depth=3, tree_mode="catboost", random_state=0
+    ).fit(Xtr, ytr)
+    oblivious = ChimeraBoostClassifier(
+        iterations=12, depth=3, tree_mode="oblivious", random_state=0
+    ).fit(Xtr, ytr)
+    lightgbm = ChimeraBoostClassifier(
+        iterations=12, depth=3, tree_mode="lightgbm", random_state=0
+    ).fit(Xtr, ytr)
+
+    assert catboost.model_.tree_mode_ == "catboost"
+    assert oblivious.model_.tree_mode_ == "catboost"
+    assert lightgbm.model_.tree_mode_ == "lightgbm"
+    assert np.array_equal(catboost.predict_proba(Xte), oblivious.predict_proba(Xte))
+    assert lightgbm.predict_proba(Xte).shape == (len(Xte), 2)
+    assert abs(lightgbm.feature_importances_.sum() - 1.0) < 1e-6
+
+
 def test_l2_zero_illegal_splits_do_not_divide_by_zero():
     """Illegal empty-side split candidates must be discarded before gain math."""
     import numba

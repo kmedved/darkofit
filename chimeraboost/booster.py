@@ -10,7 +10,7 @@ import numpy as np
 
 from .losses import LOSSES, MultiSoftmax
 from .preprocessing import FeaturePreprocessor
-from .tree import build_oblivious_tree
+from .tree import build_levelwise_tree, build_oblivious_tree
 
 _LEAF_CORRECTION_SORT_MIN_LEAVES = 16
 
@@ -83,6 +83,21 @@ def _start_timing(timing):
     return time.perf_counter() if timing is not None else 0.0
 
 
+def _normalize_tree_mode(tree_mode):
+    """Map public tree-mode aliases to the internal builder family."""
+    if tree_mode is None:
+        tree_mode = "catboost"
+    mode = str(tree_mode).lower().replace("-", "_")
+    if mode in {"catboost", "oblivious", "symmetric"}:
+        return "catboost"
+    if mode in {"lightgbm", "levelwise", "level_wise", "non_oblivious"}:
+        return "lightgbm"
+    raise ValueError(
+        "tree_mode must be one of 'catboost', 'oblivious', "
+        "'lightgbm', or 'levelwise'"
+    )
+
+
 class _BaseBooster:
     """Shared machinery for the scalar and multiclass boosters.
 
@@ -96,7 +111,8 @@ class _BaseBooster:
                  l2_leaf_reg=3.0, max_bins=128, subsample=1.0,
                  colsample=1.0, cat_smoothing=1.0, early_stopping_rounds=None,
                  min_child_weight=1.0, thread_count=None, random_state=None,
-                 verbose=False, ordered_boosting=True, verbose_timing=False):
+                 verbose=False, ordered_boosting=True, verbose_timing=False,
+                 tree_mode="catboost"):
         self.iterations = int(iterations)
         self.learning_rate = learning_rate
         self.depth = int(depth)
@@ -112,6 +128,8 @@ class _BaseBooster:
         self.verbose = verbose
         self.ordered_boosting = bool(ordered_boosting)
         self.verbose_timing = bool(verbose_timing)
+        self.tree_mode = tree_mode
+        self.tree_mode_ = _normalize_tree_mode(tree_mode)
 
     def _alloc_hist_buffers(self, n_features, n_bins):
         """Allocate reusable histogram buffers once per fit.
@@ -146,6 +164,11 @@ class _BaseBooster:
         """Build a FeaturePreprocessor configured from this booster's params."""
         return FeaturePreprocessor(self.max_bins, self.cat_smoothing,
                                    self.random_state)
+
+    def _tree_builder(self):
+        if self.tree_mode_ == "lightgbm":
+            return build_levelwise_tree
+        return build_oblivious_tree
 
     def _maybe_subsample(self, grad, hess, rng):
         """Return zeroed gradients plus sampled row indices for one tree.
@@ -203,6 +226,7 @@ class GradientBoosting(_BaseBooster):
             w = w * (n_samples / w.sum())
 
         self.n_threads_ = _apply_thread_count(self.thread_count)
+        self.tree_mode_ = _normalize_tree_mode(self.tree_mode)
         self.loss_ = LOSSES[self.loss_name](**self.loss_kwargs)
         use_constant_hessian = (
             getattr(self.loss_, "constant_hessian", False) and w is None
@@ -258,7 +282,7 @@ class GradientBoosting(_BaseBooster):
             _add_timing(timing, "grad_hess", phase)
 
             phase = _start_timing(timing)
-            tree, leaf, leaf_G, leaf_H = build_oblivious_tree(
+            tree, leaf, leaf_G, leaf_H = self._tree_builder()(
                 X_binned, g, h, n_bins, self.depth,
                 self.l2_leaf_reg, self.lr_,
                 feature_mask=fmask,
@@ -402,6 +426,7 @@ class MulticlassBoosting(_BaseBooster):
             w = w * (n_samples / w.sum())
 
         self.n_threads_ = _apply_thread_count(self.thread_count)
+        self.tree_mode_ = _normalize_tree_mode(self.tree_mode)
         self.loss_ = MultiSoftmax(K)
         _es = self.early_stopping_rounds is not None and eval_set is not None
         self.lr_ = (self.learning_rate if self.learning_rate is not None
@@ -462,7 +487,7 @@ class MulticlassBoosting(_BaseBooster):
                 )
                 _add_timing(timing, "grad_hess", phase)
                 phase = _start_timing(timing)
-                tree, leaf, leaf_G, leaf_H = build_oblivious_tree(
+                tree, leaf, leaf_G, leaf_H = self._tree_builder()(
                     X_binned, g, h, n_bins, self.depth,
                     self.l2_leaf_reg, self.lr_,
                     feature_mask=fmask,

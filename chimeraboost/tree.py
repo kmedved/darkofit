@@ -568,6 +568,19 @@ def _update_leaves_with_split(X_binned, leaf, split_feat, split_thr):
 
 
 @njit(cache=True)
+def _update_leaves_with_level_splits(X_binned, leaf, level_features,
+                                     level_thresholds):
+    """Append one leaf-local split bit to existing leaf ids in place."""
+    for i in range(leaf.shape[0]):
+        l = leaf[i]
+        f = level_features[l]
+        bit = 0
+        if f >= 0:
+            bit = 1 if X_binned[i, f] > level_thresholds[l] else 0
+        leaf[i] = l * 2 + bit
+
+
+@njit(cache=True)
 def _leaf_values(leaf, grad, hess, n_leaves, l2, lr):
     """Newton leaf values: value = -G / (H + l2), scaled by learning rate."""
     G = np.zeros(n_leaves)
@@ -638,6 +651,102 @@ def _predict_tree_add(X_binned, splits_feat, splits_thr, values, out):
         out[i] += values[idx]
 
 
+@njit(cache=True)
+def _assign_levelwise_leaves(X_binned, node_features, node_thresholds):
+    """Map rows through a level-wise tree with one split per node."""
+    n = X_binned.shape[0]
+    depth = node_features.shape[0]
+    leaf = np.zeros(n, dtype=np.int64)
+    for i in range(n):
+        idx = 0
+        for d in range(depth):
+            f = node_features[d, idx]
+            bit = 0
+            if f >= 0:
+                bit = 1 if X_binned[i, f] > node_thresholds[d, idx] else 0
+            idx = idx * 2 + bit
+        leaf[i] = idx
+    return leaf
+
+
+@njit(cache=True)
+def _predict_levelwise_tree(X_binned, node_features, node_thresholds, values):
+    leaf = _assign_levelwise_leaves(X_binned, node_features, node_thresholds)
+    out = np.empty(X_binned.shape[0], dtype=np.float64)
+    for i in range(leaf.shape[0]):
+        out[i] = values[leaf[i]]
+    return out
+
+
+@njit(cache=True)
+def _predict_levelwise_tree_add(X_binned, node_features, node_thresholds,
+                                values, out):
+    n = X_binned.shape[0]
+    depth = node_features.shape[0]
+    for i in range(n):
+        idx = 0
+        for d in range(depth):
+            f = node_features[d, idx]
+            bit = 0
+            if f >= 0:
+                bit = 1 if X_binned[i, f] > node_thresholds[d, idx] else 0
+            idx = idx * 2 + bit
+        out[i] += values[idx]
+
+
+@njit(cache=True, parallel=True)
+def _best_splits_by_leaf(hg, hh, n_bins_per_feature, l2, feat_mask,
+                         min_child_weight, n_leaves, out_feat, out_thr,
+                         out_gain):
+    """Find the best split independently for every active leaf."""
+    n_features = hg.shape[0]
+    for l in prange(n_leaves):
+        best_f = -1
+        best_t = -1
+        best_gain = -np.inf
+
+        for f in range(n_features):
+            if feat_mask[f] == 0:
+                continue
+            nb = n_bins_per_feature[f]
+            Gt = 0.0
+            Ht = 0.0
+            for b in range(nb):
+                Gt += hg[f, l, b]
+                Ht += hh[f, l, b]
+            parent_denom = Ht + l2
+            if Ht <= 0.0 or parent_denom <= 0.0:
+                continue
+            parent_gain = Gt * Gt / parent_denom
+
+            GL = 0.0
+            HL = 0.0
+            for t in range(nb - 1):
+                GL += hg[f, l, t]
+                HL += hh[f, l, t]
+                HR = Ht - HL
+                if HL < min_child_weight or HR < min_child_weight:
+                    continue
+                left_denom = HL + l2
+                right_denom = HR + l2
+                if left_denom <= 0.0 or right_denom <= 0.0:
+                    continue
+                GR = Gt - GL
+                gain = (
+                    GL * GL / left_denom
+                    + GR * GR / right_denom
+                    - parent_gain
+                )
+                if gain > best_gain:
+                    best_gain = gain
+                    best_f = f
+                    best_t = t
+
+        out_feat[l] = best_f
+        out_thr[l] = best_t
+        out_gain[l] = best_gain
+
+
 class ObliviousTree:
     """A single symmetric tree. Stores its splits and leaf values."""
 
@@ -666,6 +775,46 @@ class ObliviousTree:
         if self.depth > 0:
             _predict_tree_add(
                 X_binned, self.splits_feat, self.splits_thr, self.values, out
+            )
+
+
+class LevelwiseTree:
+    """A level-wise tree with one feature/threshold decision per active node."""
+
+    __slots__ = (
+        "node_features", "node_thresholds", "values", "splits_feat",
+        "splits_thr", "gains", "depth",
+    )
+
+    def __init__(self, node_features, node_thresholds, values, splits_feat,
+                 splits_thr, gains):
+        self.node_features = node_features
+        self.node_thresholds = node_thresholds
+        self.values = values
+        self.splits_feat = splits_feat
+        self.splits_thr = splits_thr
+        self.gains = gains
+        self.depth = node_features.shape[0]
+
+    def apply(self, X_binned):
+        if self.depth == 0:
+            return np.zeros(X_binned.shape[0], dtype=np.int64)
+        return _assign_levelwise_leaves(
+            X_binned, self.node_features, self.node_thresholds
+        )
+
+    def predict(self, X_binned):
+        if self.depth == 0:
+            return np.zeros(X_binned.shape[0], dtype=np.float64)
+        return _predict_levelwise_tree(
+            X_binned, self.node_features, self.node_thresholds, self.values
+        )
+
+    def add_predict(self, X_binned, out):
+        if self.depth > 0:
+            _predict_levelwise_tree_add(
+                X_binned, self.node_features, self.node_thresholds,
+                self.values, out
             )
 
 
@@ -885,6 +1034,215 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
             leaf, grad, hess, row_indices, n_leaves, l2, lr
         )
     tree = ObliviousTree(sf, st, values, np.array(splits_gain, dtype=np.float64))
+    if return_training_state:
+        return tree, leaf, leaf_G, leaf_H
+    return tree
+
+
+def build_levelwise_tree(X_binned, grad, hess, n_bins_per_feature,
+                         max_depth, l2, lr, min_gain=1e-8, feature_mask=None,
+                         min_child_weight=1.0, hist_buffers=None,
+                         split_buffers=None,
+                         return_training_state=False, X_hist_binned=None,
+                         feature_indices=None, row_indices=None,
+                         constant_hessian=False):
+    """Grow a level-wise, non-oblivious tree.
+
+    Unlike ``build_oblivious_tree``, this builder chooses one best split per
+    active leaf at each depth. It intentionally accepts the same call surface as
+    the oblivious builder so boosters can switch between CatBoost-like and
+    LightGBM-like tree modes without changing the surrounding training loop.
+    """
+    del split_buffers
+    if X_hist_binned is None:
+        X_hist_binned = X_binned
+    elif X_hist_binned.shape != X_binned.shape:
+        raise ValueError("X_hist_binned must have the same shape as X_binned")
+    n_samples = X_binned.shape[0]
+    n_features = X_binned.shape[1]
+    max_bins = n_features and int(n_bins_per_feature.max())
+    if row_indices is not None:
+        row_indices = np.asarray(row_indices, dtype=np.int64)
+        if row_indices.ndim != 1:
+            raise ValueError("row_indices must be a 1-D array")
+        if np.any((row_indices < 0) | (row_indices >= n_samples)):
+            raise ValueError("row_indices contains out-of-range rows")
+    if feature_indices is not None:
+        feature_indices = np.asarray(feature_indices, dtype=np.int64)
+        if feature_indices.ndim != 1:
+            raise ValueError("feature_indices must be a 1-D array")
+        if np.any((feature_indices < 0) | (feature_indices >= n_features)):
+            raise ValueError("feature_indices contains out-of-range columns")
+        if np.unique(feature_indices).shape[0] != feature_indices.shape[0]:
+            raise ValueError("feature_indices must be unique")
+
+        selected_mask = np.zeros(n_features, dtype=np.int64)
+        selected_mask[feature_indices] = 1
+        if feature_mask is None:
+            feature_mask = selected_mask
+        else:
+            feature_mask = np.asarray(feature_mask, dtype=np.int64)
+            if feature_mask.shape != selected_mask.shape:
+                raise ValueError("feature_mask must have one entry per feature")
+            if not np.array_equal(feature_mask, selected_mask):
+                raise ValueError("feature_indices must match feature_mask")
+    elif feature_mask is None:
+        feature_mask = np.ones(n_features, dtype=np.int64)
+    else:
+        feature_mask = np.asarray(feature_mask, dtype=np.int64)
+        if feature_mask.shape != (n_features,):
+            raise ValueError("feature_mask must have one entry per feature")
+
+    max_leaves = 1 << max_depth
+    if hist_buffers is None:
+        hg = np.zeros((n_features, max_leaves, max_bins))
+        hh = np.zeros((n_features, max_leaves, max_bins))
+    else:
+        if len(hist_buffers) != 2:
+            raise ValueError("hist_buffers must contain gradient and hessian arrays")
+        hg, hh = hist_buffers
+        if hg.ndim != 3 or hh.ndim != 3 or hg.shape != hh.shape:
+            raise ValueError("hist_buffers must be matching 3-D arrays")
+        if (
+            hg.shape[0] < n_features
+            or hg.shape[1] < max_leaves
+            or hg.shape[2] < max_bins
+        ):
+            raise ValueError("hist_buffers are too small")
+
+    node_features = np.full((max_depth, max_leaves), -1, dtype=np.int64)
+    node_thresholds = np.full((max_depth, max_leaves), -1, dtype=np.int64)
+    leaf_best_feat = np.empty(max_leaves, dtype=np.int64)
+    leaf_best_thr = np.empty(max_leaves, dtype=np.int64)
+    leaf_best_gain = np.empty(max_leaves, dtype=np.float64)
+    flat_features = []
+    flat_thresholds = []
+    flat_gains = []
+    leaf = np.zeros(X_binned.shape[0], dtype=np.int64)
+    use_serial_kernels = get_num_threads() == 1
+    actual_depth = 0
+
+    for d in range(max_depth):
+        n_leaves = 1 << d
+        if use_serial_kernels:
+            if constant_hessian and row_indices is None and feature_indices is None:
+                _build_histograms_unit_hess_into_serial(
+                    X_binned, grad, leaf, n_leaves, hg, hh
+                )
+            elif constant_hessian and row_indices is None:
+                _build_histograms_selected_unit_hess_into_serial(
+                    X_binned, grad, leaf, n_leaves, hg, hh,
+                    feature_indices
+                )
+            elif constant_hessian and feature_indices is None:
+                _build_histograms_rows_unit_hess_into_serial(
+                    X_binned, grad, leaf, n_leaves, hg, hh,
+                    row_indices
+                )
+            elif constant_hessian:
+                _build_histograms_selected_rows_unit_hess_into_serial(
+                    X_binned, grad, leaf, n_leaves, hg, hh,
+                    feature_indices, row_indices
+                )
+            elif row_indices is None and feature_indices is None:
+                _build_histograms_into_serial(
+                    X_binned, grad, hess, leaf, n_leaves, hg, hh
+                )
+            elif row_indices is None:
+                _build_histograms_selected_into_serial(
+                    X_binned, grad, hess, leaf, n_leaves, hg, hh,
+                    feature_indices
+                )
+            elif feature_indices is None:
+                _build_histograms_rows_into_serial(
+                    X_binned, grad, hess, leaf, n_leaves, hg, hh,
+                    row_indices
+                )
+            else:
+                _build_histograms_selected_rows_into_serial(
+                    X_binned, grad, hess, leaf, n_leaves, hg, hh,
+                    feature_indices, row_indices
+                )
+        else:
+            if constant_hessian and row_indices is None and feature_indices is None:
+                _build_histograms_unit_hess_into(
+                    X_hist_binned, grad, leaf, n_leaves, hg, hh
+                )
+            elif constant_hessian and row_indices is None:
+                _build_histograms_selected_unit_hess_into(
+                    X_hist_binned, grad, leaf, n_leaves, hg, hh,
+                    feature_indices
+                )
+            elif constant_hessian and feature_indices is None:
+                _build_histograms_rows_unit_hess_into(
+                    X_hist_binned, grad, leaf, n_leaves, hg, hh,
+                    row_indices
+                )
+            elif constant_hessian:
+                _build_histograms_selected_rows_unit_hess_into(
+                    X_hist_binned, grad, leaf, n_leaves, hg, hh,
+                    feature_indices, row_indices
+                )
+            elif row_indices is None and feature_indices is None:
+                _build_histograms_into(
+                    X_hist_binned, grad, hess, leaf, n_leaves, hg, hh
+                )
+            elif row_indices is None:
+                _build_histograms_selected_into(
+                    X_hist_binned, grad, hess, leaf, n_leaves, hg, hh,
+                    feature_indices
+                )
+            elif feature_indices is None:
+                _build_histograms_rows_into(
+                    X_hist_binned, grad, hess, leaf, n_leaves, hg, hh,
+                    row_indices
+                )
+            else:
+                _build_histograms_selected_rows_into(
+                    X_hist_binned, grad, hess, leaf, n_leaves, hg, hh,
+                    feature_indices, row_indices
+                )
+
+        _best_splits_by_leaf(
+            hg, hh, n_bins_per_feature, l2, feature_mask, min_child_weight,
+            n_leaves, leaf_best_feat, leaf_best_thr, leaf_best_gain
+        )
+
+        any_split = False
+        for l in range(n_leaves):
+            if leaf_best_thr[l] >= 0 and leaf_best_gain[l] > min_gain:
+                node_features[d, l] = leaf_best_feat[l]
+                node_thresholds[d, l] = leaf_best_thr[l]
+                flat_features.append(leaf_best_feat[l])
+                flat_thresholds.append(leaf_best_thr[l])
+                flat_gains.append(leaf_best_gain[l])
+                any_split = True
+        if not any_split:
+            break
+        actual_depth = d + 1
+        _update_leaves_with_level_splits(
+            X_binned, leaf, node_features[d], node_thresholds[d]
+        )
+
+    node_features = node_features[:actual_depth].copy()
+    node_thresholds = node_thresholds[:actual_depth].copy()
+    n_leaves = 1 << actual_depth
+    if row_indices is None:
+        values, leaf_G, leaf_H = _leaf_values_and_sums(
+            leaf, grad, hess, n_leaves, l2, lr
+        )
+    else:
+        values, leaf_G, leaf_H = _leaf_values_and_sums_rows(
+            leaf, grad, hess, row_indices, n_leaves, l2, lr
+        )
+    tree = LevelwiseTree(
+        node_features,
+        node_thresholds,
+        values,
+        np.array(flat_features, dtype=np.int64),
+        np.array(flat_thresholds, dtype=np.int64),
+        np.array(flat_gains, dtype=np.float64),
+    )
     if return_training_state:
         return tree, leaf, leaf_G, leaf_H
     return tree

@@ -90,7 +90,7 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
                  loss="RMSE", alpha=0.5, min_child_weight=1.0, thread_count=None,
                  random_state=None, verbose=False, ordered_boosting=True,
                  early_stopping=False, validation_fraction=0.1,
-                 verbose_timing=False):
+                 verbose_timing=False, tree_mode="catboost"):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -110,6 +110,7 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
         self.early_stopping = early_stopping
         self.validation_fraction = validation_fraction
         self.verbose_timing = verbose_timing
+        self.tree_mode = tree_mode
 
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
             sample_weight=None):
@@ -206,7 +207,7 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
                  min_child_weight=1.0, thread_count=None, random_state=None,
                  verbose=False, ordered_boosting=True,
                  early_stopping=False, validation_fraction=0.1,
-                 verbose_timing=False):
+                 verbose_timing=False, tree_mode="catboost"):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -224,6 +225,7 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
         self.early_stopping = early_stopping
         self.validation_fraction = validation_fraction
         self.verbose_timing = verbose_timing
+        self.tree_mode = tree_mode
 
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
             sample_weight=None):
