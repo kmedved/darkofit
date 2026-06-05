@@ -75,3 +75,30 @@ does not yet clear the out-of-sample metric bar for `auto` or default selection.
 4. Consider `tree_mode="auto"` only after broader multi-seed and large-data
    benchmarks show levelwise wins primary weighted holdout metrics often enough
    to justify the added default complexity.
+
+## Levelwise Tuning Follow-Up
+
+Raw tuning rows are tracked in:
+
+- `benchmarks/levelwise_tuning_numeric_binary_capacity_20260605.csv`
+- `benchmarks/levelwise_tuning_numeric_binary_leafiters_20260605.csv`
+- `benchmarks/levelwise_tuning_mixed_best_candidates_20260605.csv`
+
+The tuning script is:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_levelwise_tuning.py
+```
+
+Result: no safe levelwise default change yet. On medium `numeric_binary`, deeper
+levelwise trees plus lower learning rate improved log loss from the original
+mode-gate row (`0.2123`) to `0.1853`, but still trailed catboost/upstream
+(`0.1679`) and cost more rounds. Applying that best numeric-binary candidate
+across the mixed panel worsened regression materially (`friedman_numeric`
+`1.2679` RMSE and `wide_numeric_reg` `96.58` RMSE versus catboost `1.0840` and
+`40.50`) and did not beat catboost on classification log loss.
+
+Decision: keep `tree_mode="lightgbm"` opt-in with no mode-specific public
+defaults for now. The next useful work is not another coarse global default
+sweep; it is either a quality fix in the levelwise implementation/objective or
+the separate large-data histogram-scaling work.
