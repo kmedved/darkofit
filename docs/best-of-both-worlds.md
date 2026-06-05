@@ -220,6 +220,47 @@ gate, likely a more integrated grower rewrite that uses row grouping for both
 split search and leaf-value accumulation instead of bolting subtraction onto the
 existing feature-parallel layout.
 
+## Fused Classification Gradient/Hessian Probe
+
+Prototyped an in-place classification loss pipeline for binary Logloss and
+class-major multiclass softmax, then rejected it after before/after timing. The
+production code remains on the existing allocating NumPy loss path.
+
+Raw medium classification rows are tracked in:
+
+`benchmarks/fused_grad_hess_medium_20260605.csv`
+
+Command:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_compare_revisions.py \
+  --fork /private/tmp/chimeraboost-before-fused-grad-29f6c91 \
+  --candidate . \
+  --models fork_catboost_matched fork_lightgbm_matched candidate_catboost candidate_lightgbm \
+  --datasets numeric_binary numeric_multiclass categorical_binary categorical_multiclass \
+  --sizes medium \
+  --seeds 2 \
+  --repeat 2 \
+  --iterations 300 \
+  --patience 25 \
+  --threads 4 \
+  --weight-modes none stress \
+  --csv benchmarks/fused_grad_hess_medium_20260605.csv
+```
+
+The vectorized in-place version preserved metrics, but did not improve wall
+clock:
+
+| Mode | Metric ratio | Fit-time ratio | Grad/Hess timing ratio |
+| --- | ---: | ---: | ---: |
+| `candidate_catboost` vs previous | 0.9998 | 1.2121 | 0.7477 |
+| `candidate_lightgbm` vs previous | 0.9998 | 2.2088 | 1.4102 |
+
+Decision: do not merge the fused loss pipeline. Even where the measured
+Grad/Hess phase improved, the end-to-end fit did not. The current NumPy path is
+fast enough relative to tree building, and a useful replacement likely needs a
+deeper fused histogram accumulator rather than only in-place loss arrays.
+
 ## Target-Stat Bin Budget Probe
 
 Implemented an opt-in `max_bins_ts` parameter that caps only ordered-target-stat
