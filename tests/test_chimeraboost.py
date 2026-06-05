@@ -336,6 +336,39 @@ def test_constant_hessian_tree_matches_general_histogram_path():
     assert np.allclose(unit.values, general.values)
 
 
+def test_selected_feature_histograms_match_masked_full_histograms():
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_oblivious_tree
+
+    rng = np.random.default_rng(2)
+    X = rng.normal(size=(650, 9))
+    y = X[:, 1] + X[:, 4] - 0.5 * X[:, 7] + rng.normal(0, 0.3, 650)
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = np.ascontiguousarray(prep.fit_transform(X, [y], None).T)
+    grad = y - y.mean()
+    hess = np.ones(len(y))
+    feature_indices = np.array([1, 4, 7], dtype=np.int64)
+    mask = np.zeros(Xb.shape[0], dtype=np.int64)
+    mask[feature_indices] = 1
+
+    full, leaf_full = build_oblivious_tree(
+        Xb, grad, hess, prep.n_bins_, 5, 1.0, 0.1, feature_mask=mask)
+    selected, leaf_selected = build_oblivious_tree(
+        Xb, grad, hess, prep.n_bins_, 5, 1.0, 0.1,
+        feature_mask=mask, feature_indices=feature_indices)
+    selected_unit, leaf_selected_unit = build_oblivious_tree(
+        Xb, grad, hess, prep.n_bins_, 5, 1.0, 0.1,
+        feature_mask=mask, feature_indices=feature_indices,
+        constant_hessian=True)
+
+    for tree, leaf in ((selected, leaf_selected),
+                       (selected_unit, leaf_selected_unit)):
+        assert np.array_equal(tree.splits_feat, full.splits_feat)
+        assert np.array_equal(tree.splits_thr, full.splits_thr)
+        assert np.array_equal(leaf, leaf_full)
+        assert np.allclose(tree.values, full.values)
+
+
 def test_binner_uses_smallest_safe_unsigned_dtype():
     from chimeraboost.binning import Binner
 

@@ -225,6 +225,12 @@ class _BaseBooster:
         mask[rng.choice(n_cols, size=k, replace=False)] = 1
         return mask
 
+    @staticmethod
+    def _feature_indices(feature_mask):
+        if feature_mask is None:
+            return None
+        return np.flatnonzero(feature_mask).astype(np.int64)
+
     def _new_preprocessor(self):
         """Build a FeaturePreprocessor configured from this booster's params."""
         return FeaturePreprocessor(self.max_bins, self.cat_smoothing,
@@ -413,6 +419,7 @@ class GradientBoosting(_BaseBooster):
                 grad, hess = grad * w, hess * w
             g, h = self._maybe_subsample(grad, hess, rng)
             fmask = self._feature_mask(Xb.shape[0], rng)
+            findices = self._feature_indices(fmask)
             if timing_enabled:
                 self.timing_["grad_hess"] += time.perf_counter() - t_phase
             t_phase = time.perf_counter()
@@ -426,7 +433,8 @@ class GradientBoosting(_BaseBooster):
                                               centers_std=self._centers_std_,
                                               is_numeric=self.prep_.is_numeric_binned_,
                                               linear_lambda=self.linear_lambda,
-                                              constant_hessian=use_constant_hessian)
+                                              constant_hessian=use_constant_hessian,
+                                              feature_indices=findices)
             if timing_enabled:
                 self.timing_["tree_build"] += time.perf_counter() - t_phase
             # A depth-0 tree found no legal split; the next round on the same
@@ -655,6 +663,7 @@ class MulticlassBoosting(_BaseBooster):
             if w is not None:
                 grad, hess = grad * w[:, None], hess * w[:, None]
             fmask = self._feature_mask(Xb.shape[0], rng)
+            findices = self._feature_indices(fmask)
             if timing_enabled:
                 self.timing_["grad_hess"] += time.perf_counter() - t_phase
             round_trees = []
@@ -668,7 +677,8 @@ class MulticlassBoosting(_BaseBooster):
                                                   feature_mask=fmask,
                                                   min_child_weight=self.min_child_weight,
                                                   hist_buffers=hist_buffers,
-                                                  hs_lambda=self.hs_lambda)
+                                                  hs_lambda=self.hs_lambda,
+                                                  feature_indices=findices)
                 if timing_enabled:
                     self.timing_["tree_build"] += time.perf_counter() - t_phase
                 t_phase = time.perf_counter()

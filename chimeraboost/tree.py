@@ -64,6 +64,46 @@ def _build_histograms_unit_hess_into(Xb, grad, leaf, n_leaves, hist):
 
 
 @njit(cache=True, parallel=True)
+def _build_histograms_selected_into(Xb, grad, hess, leaf, n_leaves, hist,
+                                    feature_indices):
+    """Fill histograms only for selected feature columns."""
+    max_bins = hist.shape[2]
+    n_samples = Xb.shape[1]
+    for jj in prange(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hist[f, l, b, 0] = 0.0
+                hist[f, l, b, 1] = 0.0
+        Xf = Xb[f]
+        for i in range(n_samples):
+            l = leaf[i]
+            b = Xf[i]
+            hist[f, l, b, 0] += grad[i]
+            hist[f, l, b, 1] += hess[i]
+
+
+@njit(cache=True, parallel=True)
+def _build_histograms_selected_unit_hess_into(Xb, grad, leaf, n_leaves, hist,
+                                              feature_indices):
+    """Selected-feature histogram fill for unit-Hessian losses."""
+    max_bins = hist.shape[2]
+    n_samples = Xb.shape[1]
+    for jj in prange(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hist[f, l, b, 0] = 0.0
+                hist[f, l, b, 1] = 0.0
+        Xf = Xb[f]
+        for i in range(n_samples):
+            l = leaf[i]
+            b = Xf[i]
+            hist[f, l, b, 0] += grad[i]
+            hist[f, l, b, 1] += 1.0
+
+
+@njit(cache=True, parallel=True)
 def _best_split(hist, n_bins_per_feature, l2, feat_mask, min_child_weight,
                 n_leaves):
     """Find the (feature, threshold) with the highest total gain.
@@ -651,7 +691,8 @@ def build_oblivious_tree(Xb, grad, hess, n_bins_per_feature,
                          max_depth, l2, lr, min_gain=1e-8, feature_mask=None,
                          min_child_weight=1.0, hist_buffers=None, hs_lambda=0.0,
                          linear_leaves=False, centers_std=None, is_numeric=None,
-                         linear_lambda=1.0, constant_hessian=False):
+                         linear_lambda=1.0, constant_hessian=False,
+                         feature_indices=None):
     """Grow one oblivious tree level by level. Returns (tree, train_leaf), where
     train_leaf is the tree's leaf index for every training sample.
 
@@ -675,11 +716,33 @@ def build_oblivious_tree(Xb, grad, hess, n_bins_per_feature,
     constant_hessian: when True, histogram fill treats every scanned row's
     Hessian as exactly 1. Only valid for unweighted, unsubsampled constant-
     Hessian losses.
+    feature_indices: optional selected feature columns matching `feature_mask`;
+    lets column-subsampled fits skip histogram work for masked-out features.
     """
     n_features, n_samples = Xb.shape
     max_bins = n_features and int(n_bins_per_feature.max())
-    if feature_mask is None:
+    if feature_indices is not None:
+        feature_indices = np.asarray(feature_indices, dtype=np.int64)
+        if feature_indices.ndim != 1:
+            raise ValueError("feature_indices must be a 1-D array")
+        if np.any((feature_indices < 0) | (feature_indices >= n_features)):
+            raise ValueError("feature_indices contains out-of-range columns")
+        if np.unique(feature_indices).shape[0] != feature_indices.shape[0]:
+            raise ValueError("feature_indices must be unique")
+        selected_mask = np.zeros(n_features, dtype=np.int64)
+        selected_mask[feature_indices] = 1
+        if feature_mask is None:
+            feature_mask = selected_mask
+        else:
+            feature_mask = np.asarray(feature_mask, dtype=np.int64)
+            if feature_mask.shape != selected_mask.shape:
+                raise ValueError("feature_mask has the wrong shape")
+            if not np.array_equal(feature_mask, selected_mask):
+                raise ValueError("feature_indices must match feature_mask")
+    elif feature_mask is None:
         feature_mask = np.ones(n_features, dtype=np.int64)
+    else:
+        feature_mask = np.asarray(feature_mask, dtype=np.int64)
     if hist_buffers is None:
         hist = np.zeros((n_features, 1 << max_depth, max_bins, 2))
     else:
@@ -691,8 +754,14 @@ def build_oblivious_tree(Xb, grad, hess, n_bins_per_feature,
 
     for d in range(max_depth):
         n_leaves = 1 << d
-        if constant_hessian:
+        if constant_hessian and feature_indices is not None:
+            _build_histograms_selected_unit_hess_into(
+                Xb, grad, leaf, n_leaves, hist, feature_indices)
+        elif constant_hessian:
             _build_histograms_unit_hess_into(Xb, grad, leaf, n_leaves, hist)
+        elif feature_indices is not None:
+            _build_histograms_selected_into(
+                Xb, grad, hess, leaf, n_leaves, hist, feature_indices)
         else:
             _build_histograms_into(Xb, grad, hess, leaf, n_leaves, hist)
         f, t, gain = _best_split(hist, n_bins_per_feature, l2, feature_mask,
