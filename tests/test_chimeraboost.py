@@ -369,6 +369,48 @@ def test_selected_feature_histograms_match_masked_full_histograms():
         assert np.allclose(tree.values, full.values)
 
 
+def test_selected_row_histograms_match_zeroed_full_histograms():
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_oblivious_tree
+
+    rng = np.random.default_rng(3)
+    X = rng.normal(size=(750, 8))
+    y = X[:, 0] - X[:, 3] + 0.4 * rng.normal(size=750)
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = np.ascontiguousarray(prep.fit_transform(X, [y], None).T)
+    grad = y - y.mean()
+    hess = rng.uniform(0.5, 2.0, len(y))
+    row_mask = rng.random(len(y)) < 0.45
+    row_indices = np.flatnonzero(row_mask).astype(np.int64)
+    g_zero = np.where(row_mask, grad, 0.0)
+    h_zero = np.where(row_mask, hess, 0.0)
+
+    full, leaf_full = build_oblivious_tree(
+        Xb, g_zero, h_zero, prep.n_bins_, 5, 1.0, 0.1)
+    rows, leaf_rows = build_oblivious_tree(
+        Xb, grad, hess, prep.n_bins_, 5, 1.0, 0.1,
+        row_indices=row_indices)
+    assert np.array_equal(rows.splits_feat, full.splits_feat)
+    assert np.array_equal(rows.splits_thr, full.splits_thr)
+    assert np.array_equal(leaf_rows, leaf_full)
+    assert np.allclose(rows.values, full.values)
+
+    feature_indices = np.array([0, 3, 5], dtype=np.int64)
+    feature_mask = np.zeros(Xb.shape[0], dtype=np.int64)
+    feature_mask[feature_indices] = 1
+    masked, leaf_masked = build_oblivious_tree(
+        Xb, g_zero, h_zero, prep.n_bins_, 5, 1.0, 0.1,
+        feature_mask=feature_mask)
+    selected, leaf_selected = build_oblivious_tree(
+        Xb, grad, hess, prep.n_bins_, 5, 1.0, 0.1,
+        feature_mask=feature_mask, feature_indices=feature_indices,
+        row_indices=row_indices)
+    assert np.array_equal(selected.splits_feat, masked.splits_feat)
+    assert np.array_equal(selected.splits_thr, masked.splits_thr)
+    assert np.array_equal(leaf_selected, leaf_masked)
+    assert np.allclose(selected.values, masked.values)
+
+
 def test_binner_uses_smallest_safe_unsigned_dtype():
     from chimeraboost.binning import Binner
 

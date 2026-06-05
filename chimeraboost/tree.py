@@ -104,6 +104,87 @@ def _build_histograms_selected_unit_hess_into(Xb, grad, leaf, n_leaves, hist,
 
 
 @njit(cache=True, parallel=True)
+def _build_histograms_rows_into(Xb, grad, hess, leaf, n_leaves, hist,
+                                row_indices):
+    """Fill histograms from selected rows only, for all feature columns."""
+    n_features = Xb.shape[0]
+    max_bins = hist.shape[2]
+    for f in prange(n_features):
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hist[f, l, b, 0] = 0.0
+                hist[f, l, b, 1] = 0.0
+        Xf = Xb[f]
+        for p in range(row_indices.shape[0]):
+            i = row_indices[p]
+            l = leaf[i]
+            b = Xf[i]
+            hist[f, l, b, 0] += grad[i]
+            hist[f, l, b, 1] += hess[i]
+
+
+@njit(cache=True, parallel=True)
+def _build_histograms_selected_rows_into(Xb, grad, hess, leaf, n_leaves, hist,
+                                         feature_indices, row_indices):
+    """Fill histograms from selected rows and selected feature columns."""
+    max_bins = hist.shape[2]
+    for jj in prange(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hist[f, l, b, 0] = 0.0
+                hist[f, l, b, 1] = 0.0
+        Xf = Xb[f]
+        for p in range(row_indices.shape[0]):
+            i = row_indices[p]
+            l = leaf[i]
+            b = Xf[i]
+            hist[f, l, b, 0] += grad[i]
+            hist[f, l, b, 1] += hess[i]
+
+
+@njit(cache=True, parallel=True)
+def _build_histograms_rows_unit_hess_into(Xb, grad, leaf, n_leaves, hist,
+                                          row_indices):
+    """Selected-row histogram fill for unit-Hessian losses."""
+    n_features = Xb.shape[0]
+    max_bins = hist.shape[2]
+    for f in prange(n_features):
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hist[f, l, b, 0] = 0.0
+                hist[f, l, b, 1] = 0.0
+        Xf = Xb[f]
+        for p in range(row_indices.shape[0]):
+            i = row_indices[p]
+            l = leaf[i]
+            b = Xf[i]
+            hist[f, l, b, 0] += grad[i]
+            hist[f, l, b, 1] += 1.0
+
+
+@njit(cache=True, parallel=True)
+def _build_histograms_selected_rows_unit_hess_into(Xb, grad, leaf, n_leaves,
+                                                   hist, feature_indices,
+                                                   row_indices):
+    """Selected-row/feature histogram fill for unit-Hessian losses."""
+    max_bins = hist.shape[2]
+    for jj in prange(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hist[f, l, b, 0] = 0.0
+                hist[f, l, b, 1] = 0.0
+        Xf = Xb[f]
+        for p in range(row_indices.shape[0]):
+            i = row_indices[p]
+            l = leaf[i]
+            b = Xf[i]
+            hist[f, l, b, 0] += grad[i]
+            hist[f, l, b, 1] += 1.0
+
+
+@njit(cache=True, parallel=True)
 def _best_split(hist, n_bins_per_feature, l2, feat_mask, min_child_weight,
                 n_leaves):
     """Find the (feature, threshold) with the highest total gain.
@@ -220,6 +301,22 @@ def _leaf_values(leaf, grad, hess, n_leaves, l2, lr):
 
 
 @njit(cache=True)
+def _leaf_values_rows(leaf, grad, hess, row_indices, n_leaves, l2, lr):
+    """Newton leaf values using only selected training rows."""
+    G = np.zeros(n_leaves)
+    H = np.zeros(n_leaves)
+    for p in range(row_indices.shape[0]):
+        i = row_indices[p]
+        G[leaf[i]] += grad[i]
+        H[leaf[i]] += hess[i]
+    values = np.zeros(n_leaves)
+    for l in range(n_leaves):
+        if H[l] > 0.0:
+            values[l] = -lr * G[l] / (H[l] + l2)
+    return values
+
+
+@njit(cache=True)
 def _leaf_values_hs(leaf, grad, hess, n_leaves, l2, lr, hs_lambda):
     """Hierarchical-shrinkage leaf values for an oblivious tree.
 
@@ -267,6 +364,40 @@ def _leaf_values_hs(leaf, grad, hess, n_leaves, l2, lr, hs_lambda):
             theta[i] = a * w + (1.0 - a) * theta[parent]
         else:
             # Empty leaf (no samples): inherit the parent's value outright.
+            theta[i] = theta[parent]
+    values = np.empty(n_leaves)
+    for j in range(n_leaves):
+        values[j] = lr * theta[base + j]
+    return values
+
+
+@njit(cache=True)
+def _leaf_values_hs_rows(leaf, grad, hess, row_indices, n_leaves, l2, lr,
+                         hs_lambda):
+    """Hierarchical-shrinkage leaf values using only selected training rows."""
+    n_nodes = 2 * n_leaves - 1
+    base = n_leaves - 1
+    G = np.zeros(n_nodes)
+    H = np.zeros(n_nodes)
+    for p in range(row_indices.shape[0]):
+        i = row_indices[p]
+        node = base + leaf[i]
+        G[node] += grad[i]
+        H[node] += hess[i]
+    for i in range(base - 1, -1, -1):
+        G[i] = G[2 * i + 1] + G[2 * i + 2]
+        H[i] = H[2 * i + 1] + H[2 * i + 2]
+    theta = np.zeros(n_nodes)
+    if H[0] > 0.0:
+        theta[0] = -G[0] / (H[0] + l2)
+    for i in range(1, n_nodes):
+        h = H[i]
+        parent = (i - 1) // 2
+        if h > 0.0:
+            w = -G[i] / (h + l2)
+            a = h / (h + hs_lambda)
+            theta[i] = a * w + (1.0 - a) * theta[parent]
+        else:
             theta[i] = theta[parent]
     values = np.empty(n_leaves)
     for j in range(n_leaves):
@@ -692,7 +823,7 @@ def build_oblivious_tree(Xb, grad, hess, n_bins_per_feature,
                          min_child_weight=1.0, hist_buffers=None, hs_lambda=0.0,
                          linear_leaves=False, centers_std=None, is_numeric=None,
                          linear_lambda=1.0, constant_hessian=False,
-                         feature_indices=None):
+                         feature_indices=None, row_indices=None):
     """Grow one oblivious tree level by level. Returns (tree, train_leaf), where
     train_leaf is the tree's leaf index for every training sample.
 
@@ -718,9 +849,18 @@ def build_oblivious_tree(Xb, grad, hess, n_bins_per_feature,
     Hessian losses.
     feature_indices: optional selected feature columns matching `feature_mask`;
     lets column-subsampled fits skip histogram work for masked-out features.
+    row_indices: optional selected training rows; lets subsampled fits skip
+    histogram work for zero-weighted rows while keeping full-length grad/hess
+    arrays for the training update.
     """
     n_features, n_samples = Xb.shape
     max_bins = n_features and int(n_bins_per_feature.max())
+    if row_indices is not None:
+        row_indices = np.asarray(row_indices, dtype=np.int64)
+        if row_indices.ndim != 1:
+            raise ValueError("row_indices must be a 1-D array")
+        if np.any((row_indices < 0) | (row_indices >= n_samples)):
+            raise ValueError("row_indices contains out-of-range rows")
     if feature_indices is not None:
         feature_indices = np.asarray(feature_indices, dtype=np.int64)
         if feature_indices.ndim != 1:
@@ -754,11 +894,25 @@ def build_oblivious_tree(Xb, grad, hess, n_bins_per_feature,
 
     for d in range(max_depth):
         n_leaves = 1 << d
-        if constant_hessian and feature_indices is not None:
+        if (constant_hessian and feature_indices is not None
+                and row_indices is not None):
+            _build_histograms_selected_rows_unit_hess_into(
+                Xb, grad, leaf, n_leaves, hist, feature_indices, row_indices)
+        elif constant_hessian and row_indices is not None:
+            _build_histograms_rows_unit_hess_into(
+                Xb, grad, leaf, n_leaves, hist, row_indices)
+        elif constant_hessian and feature_indices is not None:
             _build_histograms_selected_unit_hess_into(
                 Xb, grad, leaf, n_leaves, hist, feature_indices)
         elif constant_hessian:
             _build_histograms_unit_hess_into(Xb, grad, leaf, n_leaves, hist)
+        elif feature_indices is not None and row_indices is not None:
+            _build_histograms_selected_rows_into(
+                Xb, grad, hess, leaf, n_leaves, hist,
+                feature_indices, row_indices)
+        elif row_indices is not None:
+            _build_histograms_rows_into(
+                Xb, grad, hess, leaf, n_leaves, hist, row_indices)
         elif feature_indices is not None:
             _build_histograms_selected_into(
                 Xb, grad, hess, leaf, n_leaves, hist, feature_indices)
@@ -778,8 +932,13 @@ def build_oblivious_tree(Xb, grad, hess, n_bins_per_feature,
     sf = np.array(splits_feat, dtype=np.int64)
     st = np.array(splits_thr, dtype=np.int64)
     n_leaves = 1 << len(splits_feat)
-    if hs_lambda > 0.0:
+    if hs_lambda > 0.0 and row_indices is not None:
+        values = _leaf_values_hs_rows(
+            leaf, grad, hess, row_indices, n_leaves, l2, lr, hs_lambda)
+    elif hs_lambda > 0.0:
         values = _leaf_values_hs(leaf, grad, hess, n_leaves, l2, lr, hs_lambda)
+    elif row_indices is not None:
+        values = _leaf_values_rows(leaf, grad, hess, row_indices, n_leaves, l2, lr)
     else:
         values = _leaf_values(leaf, grad, hess, n_leaves, l2, lr)
     lin_feats = lin_coef = None

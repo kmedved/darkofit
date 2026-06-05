@@ -299,7 +299,7 @@ class _BaseBooster:
         samples — CatBoost's approach. Falls back to uniform when subsample=1.
         """
         if self.subsample >= 1.0:
-            return grad, hess
+            return grad, hess, None
         n = grad.shape[0]
         target = self.subsample * n
         abs_g = np.abs(grad)
@@ -307,14 +307,18 @@ class _BaseBooster:
         if lam == 0.0:
             # degenerate or all rows selected: uniform fallback
             mask = rng.random(n) < self.subsample
-            return np.where(mask, grad, 0.0), np.where(mask, hess, 0.0)
+            row_indices = np.flatnonzero(mask).astype(np.int64)
+            return (np.where(mask, grad, 0.0),
+                    np.where(mask, hess, 0.0),
+                    row_indices)
         prob = np.minimum(abs_g / lam, 1.0)
         mask = rng.random(n) < prob
         # importance weight = 1/p; capped at 1/subsample to avoid blowup on
         # near-zero-gradient rows (whose effective contribution g_i/p_i = λ)
         max_w = 1.0 / max(self.subsample, 1e-3)
         w = np.where(mask, np.minimum(1.0 / np.maximum(prob, 1e-10), max_w), 0.0)
-        return grad * w, hess * w
+        row_indices = np.flatnonzero(mask).astype(np.int64)
+        return grad * w, hess * w, row_indices
 
     def _accumulate_importance(self, tree):
         """Add this tree's per-split gains to the running importance totals,
@@ -417,7 +421,7 @@ class GradientBoosting(_BaseBooster):
             grad, hess = self.loss_.grad_hess(y, F)
             if w is not None:
                 grad, hess = grad * w, hess * w
-            g, h = self._maybe_subsample(grad, hess, rng)
+            g, h, row_indices = self._maybe_subsample(grad, hess, rng)
             fmask = self._feature_mask(Xb.shape[0], rng)
             findices = self._feature_indices(fmask)
             if timing_enabled:
@@ -434,7 +438,8 @@ class GradientBoosting(_BaseBooster):
                                               is_numeric=self.prep_.is_numeric_binned_,
                                               linear_lambda=self.linear_lambda,
                                               constant_hessian=use_constant_hessian,
-                                              feature_indices=findices)
+                                              feature_indices=findices,
+                                              row_indices=row_indices)
             if timing_enabled:
                 self.timing_["tree_build"] += time.perf_counter() - t_phase
             # A depth-0 tree found no legal split; the next round on the same
@@ -669,7 +674,7 @@ class MulticlassBoosting(_BaseBooster):
             round_trees = []
             for k in range(K):
                 t_phase = time.perf_counter()
-                g, h = self._maybe_subsample(
+                g, h, row_indices = self._maybe_subsample(
                     np.ascontiguousarray(grad[:, k]),
                     np.ascontiguousarray(hess[:, k]) * coupling, rng)
                 tree, leaf = build_oblivious_tree(Xb, g, h, n_bins, self.depth,
@@ -678,7 +683,8 @@ class MulticlassBoosting(_BaseBooster):
                                                   min_child_weight=self.min_child_weight,
                                                   hist_buffers=hist_buffers,
                                                   hs_lambda=self.hs_lambda,
-                                                  feature_indices=findices)
+                                                  feature_indices=findices,
+                                                  row_indices=row_indices)
                 if timing_enabled:
                     self.timing_["tree_build"] += time.perf_counter() - t_phase
                 t_phase = time.perf_counter()
