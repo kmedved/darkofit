@@ -710,7 +710,7 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
     hs_lambda : float, default 0.0
         Hierarchical-shrinkage strength. Above 0, leaf values are recursively
         shrunk toward their ancestors, hardest for deep or low-mass leaves. Adds
-        no inference cost.
+        no inference cost. Not available with ``tree_mode="lightgbm"``.
     linear_leaves : bool, default False
         Fit a ridge linear model per leaf over the numeric split features instead
         of a constant value, adding local slope where step leaves underfit. Leaves
@@ -737,8 +737,8 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
     tree_mode : {"catboost", "oblivious", "symmetric", "lightgbm", "levelwise"}, default "catboost"
         Tree-family selector. The CatBoost aliases use the upstream oblivious
         tree implementation with exact SHAP and linear-leaf support. The
-        LightGBM/levelwise aliases are reserved for the future non-oblivious
-        builder and currently raise ``NotImplementedError`` at fit time.
+        LightGBM/levelwise aliases use an opt-in non-oblivious level-wise tree
+        builder; exact SHAP and linear leaves are not available for that mode.
 
     Attributes
     ----------
@@ -1007,7 +1007,8 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
         Newton refinement steps per leaf.
     hs_lambda : float, default 0.0
         Hierarchical-shrinkage strength. Above 0, leaf values are recursively
-        shrunk toward their ancestors, hardest for deep or low-mass leaves.
+        shrunk toward their ancestors, hardest for deep or low-mass leaves. Not
+        available with ``tree_mode="lightgbm"``.
     linear_leaves : bool or None, default None
         Fit a ridge linear model per leaf over the numeric split features instead
         of a constant. ``None`` enables it for binary classification and disables
@@ -1035,8 +1036,8 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
     tree_mode : {"catboost", "oblivious", "symmetric", "lightgbm", "levelwise"}, default "catboost"
         Tree-family selector. The CatBoost aliases use the upstream oblivious
         tree implementation with exact SHAP and linear-leaf support. The
-        LightGBM/levelwise aliases are reserved for the future non-oblivious
-        builder and currently raise ``NotImplementedError`` at fit time.
+        LightGBM/levelwise aliases use an opt-in non-oblivious level-wise tree
+        builder; exact SHAP and linear leaves are not available for that mode.
 
     Attributes
     ----------
@@ -1204,8 +1205,13 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
         # Brier win that survives bagging), OFF for multiclass (unsupported).
         # An explicit True on multiclass is a user error -> raise; explicit
         # False is honored everywhere.
+        tree_mode = _normalize_tree_mode(self.tree_mode)
         if self.linear_leaves is None:
-            kw["linear_leaves"] = not self._multiclass
+            kw["linear_leaves"] = (not self._multiclass
+                                   and tree_mode == "catboost")
+        elif self.linear_leaves and tree_mode != "catboost":
+            raise NotImplementedError(
+                "linear_leaves is not supported for tree_mode='lightgbm'.")
         elif self.linear_leaves and self._multiclass:
             raise NotImplementedError(
                 "linear_leaves is not supported for multiclass classification "

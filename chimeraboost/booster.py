@@ -10,9 +10,10 @@ import numpy as np
 
 from .losses import LOSSES, MultiSoftmax
 from .preprocessing import FeaturePreprocessor
-from .tree import (build_oblivious_tree, _loo_leaf_step, _leaf_values,
-                   _leaf_values_hs, _linear_predict, _predict_forest, pack_forest,
-                   _predict_forest_linear, pack_forest_linear, _shap_forest_linear)
+from .tree import (build_levelwise_tree, build_oblivious_tree, _loo_leaf_step,
+                   _leaf_values, _leaf_values_hs, _linear_predict,
+                   _predict_forest, pack_forest, _predict_forest_linear,
+                   pack_forest_linear, _shap_forest_linear)
 
 
 def _factorials(n):
@@ -178,13 +179,17 @@ class _BaseBooster:
         self.tree_mode_ = _normalize_tree_mode(tree_mode)
         self.supports_exact_shap = self.tree_mode_ == "catboost"
         self.supports_linear_leaves = self.tree_mode_ == "catboost"
-        if self.tree_mode_ != "catboost":
+        if self.tree_mode_ != "catboost" and self.hs_lambda > 0.0:
             raise NotImplementedError(
-                "tree_mode='lightgbm' is not implemented yet. "
-                "Use tree_mode='catboost' for the upstream oblivious-tree path.")
+                "hs_lambda is not supported for tree_mode='lightgbm'.")
 
     def _reset_timing(self):
         self.timing_ = {key: 0.0 for key in TIMING_KEYS}
+
+    def _tree_builder(self):
+        if self.tree_mode_ == "lightgbm":
+            return build_levelwise_tree
+        return build_oblivious_tree
 
     def _alloc_hist_buffers(self, n_features, n_bins):
         """Allocate the reusable histogram buffer once per fit.
@@ -370,6 +375,10 @@ class GradientBoosting(_BaseBooster):
         self.lr_ = self._resolve_lr(n_samples, eval_set)
         self._reset_timing()
         timing_enabled = self.verbose_timing
+        tree_builder = self._tree_builder()
+        if self.tree_mode_ != "catboost" and self.linear_leaves:
+            raise NotImplementedError(
+                "linear_leaves is not supported for tree_mode='lightgbm'.")
 
         t_phase = time.perf_counter()
         self.prep_ = self._new_preprocessor()
@@ -413,7 +422,8 @@ class GradientBoosting(_BaseBooster):
         # (adjusts_leaves) and with ordered boosting (a linear LOO step is not
         # implemented); they take over the leaf value otherwise. Below
         # LINEAR_LEAVES_MIN_SAMPLES rows they overfit, so fall back to constant.
-        ll_active = (self.linear_leaves and not adjusts_leaves
+        ll_active = (self.linear_leaves and self.supports_linear_leaves
+                     and not adjusts_leaves
                      and n_samples >= LINEAR_LEAVES_MIN_SAMPLES)
         self._centers_std_ = (self._build_centers_std(Xb, n_bins)
                               if ll_active else None)
@@ -435,19 +445,15 @@ class GradientBoosting(_BaseBooster):
             if timing_enabled:
                 self.timing_["grad_hess"] += time.perf_counter() - t_phase
             t_phase = time.perf_counter()
-            tree, leaf = build_oblivious_tree(Xb, g, h, n_bins, self.depth,
-                                              self.l2_leaf_reg, self.lr_,
-                                              feature_mask=fmask,
-                                              min_child_weight=self.min_child_weight,
-                                              hist_buffers=hist_buffers,
-                                              hs_lambda=self.hs_lambda,
-                                              linear_leaves=ll_active,
-                                              centers_std=self._centers_std_,
-                                              is_numeric=self.prep_.is_numeric_binned_,
-                                              linear_lambda=self.linear_lambda,
-                                              constant_hessian=use_constant_hessian,
-                                              feature_indices=findices,
-                                              row_indices=row_indices)
+            tree, leaf = tree_builder(
+                Xb, g, h, n_bins, self.depth, self.l2_leaf_reg, self.lr_,
+                feature_mask=fmask, min_child_weight=self.min_child_weight,
+                hist_buffers=hist_buffers, hs_lambda=self.hs_lambda,
+                linear_leaves=ll_active, centers_std=self._centers_std_,
+                is_numeric=self.prep_.is_numeric_binned_,
+                linear_lambda=self.linear_lambda,
+                constant_hessian=use_constant_hessian,
+                feature_indices=findices, row_indices=row_indices)
             if timing_enabled:
                 self.timing_["tree_build"] += time.perf_counter() - t_phase
             # A depth-0 tree found no legal split; the next round on the same
@@ -541,6 +547,11 @@ class GradientBoosting(_BaseBooster):
         Xb = np.ascontiguousarray(self.prep_.transform(X).T)
         if not self.trees_:
             return np.full(Xb.shape[1], self.init_, dtype=np.float64)
+        if self.tree_mode_ != "catboost":
+            F = np.full(Xb.shape[1], self.init_, dtype=np.float64)
+            for tree in self.trees_:
+                F += tree.predict(Xb)
+            return F
         if getattr(self, "_centers_std_", None) is not None:
             # Linear-leaf path: a dedicated fused kernel walks the whole forest
             # in one parallel pass (constant trees ride along as k=0).
@@ -579,6 +590,9 @@ class GradientBoosting(_BaseBooster):
         ``background`` is the reference distribution SHAP integrates over
         (defaults to the training-data sample captured at fit); ``max_background``
         subsamples it for speed (cost is linear in the background size)."""
+        if not self.supports_exact_shap:
+            raise NotImplementedError(
+                "shap_values is not supported for tree_mode='lightgbm'.")
         X = (np.asarray(X, dtype=object) if self.prep_.cat_features_
              else np.asarray(X, dtype=np.float64))
         Xb = np.ascontiguousarray(self.prep_.transform(X).T)
@@ -633,6 +647,7 @@ class MulticlassBoosting(_BaseBooster):
         self.lr_ = self._resolve_lr(n_samples, eval_set)
         self._reset_timing()
         timing_enabled = self.verbose_timing
+        tree_builder = self._tree_builder()
 
         # One ordered-TS target per class (CatBoost-style per-class statistics).
         t_phase = time.perf_counter()
@@ -685,14 +700,14 @@ class MulticlassBoosting(_BaseBooster):
                 g, h, row_indices = self._maybe_subsample(
                     grad[k],
                     hess[k] * coupling, rng)
-                tree, leaf = build_oblivious_tree(Xb, g, h, n_bins, self.depth,
-                                                  self.l2_leaf_reg, self.lr_,
-                                                  feature_mask=fmask,
-                                                  min_child_weight=self.min_child_weight,
-                                                  hist_buffers=hist_buffers,
-                                                  hs_lambda=self.hs_lambda,
-                                                  feature_indices=findices,
-                                                  row_indices=row_indices)
+                tree, leaf = tree_builder(
+                    Xb, g, h, n_bins, self.depth, self.l2_leaf_reg, self.lr_,
+                    feature_mask=fmask,
+                    min_child_weight=self.min_child_weight,
+                    hist_buffers=hist_buffers,
+                    hs_lambda=self.hs_lambda,
+                    feature_indices=findices,
+                    row_indices=row_indices)
                 if timing_enabled:
                     self.timing_["tree_build"] += time.perf_counter() - t_phase
                 t_phase = time.perf_counter()
@@ -752,6 +767,11 @@ class MulticlassBoosting(_BaseBooster):
         Xb = np.ascontiguousarray(self.prep_.transform(X).T)
         F = np.tile(self.init_, (Xb.shape[1], 1))
         if not self.trees_:
+            return F
+        if self.tree_mode_ != "catboost":
+            for round_trees in self.trees_:
+                for k in range(self.n_classes_):
+                    F[:, k] += round_trees[k].predict(Xb)
             return F
         if self._forests_ is None:
             # One packed forest per class: class k's trees are round_trees[k]

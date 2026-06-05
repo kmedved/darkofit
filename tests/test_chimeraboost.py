@@ -846,11 +846,60 @@ def test_tree_mode_catboost_aliases_are_noop():
     "non_oblivious",
     "non-oblivious",
 ])
-def test_tree_mode_levelwise_aliases_raise_until_ported(alias):
+def test_tree_mode_levelwise_aliases_fit_opt_in(alias):
     X, _, yc = _Xy()
-    with pytest.raises(NotImplementedError, match="tree_mode='lightgbm'"):
-        ChimeraBoostClassifier(n_estimators=5, early_stopping=False,
-                               random_state=0, tree_mode=alias).fit(X, yc)
+    m = ChimeraBoostClassifier(n_estimators=5, depth=3,
+                               early_stopping=False, random_state=0,
+                               tree_mode=alias).fit(X, yc)
+    assert m.model_.tree_mode_ == "lightgbm"
+    assert m.model_.supports_exact_shap is False
+    assert m.model_.supports_linear_leaves is False
+    proba = m.predict_proba(X[:5])
+    assert proba.shape == (5, 2)
+    assert np.allclose(proba.sum(axis=1), 1.0)
+
+
+def test_tree_mode_levelwise_regressor_predicts_and_stages():
+    X, yr, _ = _Xy(n=80)
+    m = ChimeraBoostRegressor(n_estimators=6, depth=3,
+                              early_stopping=False, random_state=0,
+                              tree_mode="lightgbm").fit(X, yr)
+    pred = m.predict(X[:10])
+    stages = list(m.staged_predict(X[:10]))
+    assert pred.shape == (10,)
+    assert np.isfinite(pred).all()
+    assert len(stages) == m.best_iteration_
+    assert np.allclose(stages[-1], pred)
+
+
+def test_tree_mode_levelwise_blocks_unsupported_oblivious_features():
+    X, yr, _ = _Xy(n=80)
+    m = ChimeraBoostRegressor(n_estimators=5, depth=3,
+                              early_stopping=False, random_state=0,
+                              tree_mode="lightgbm").fit(X, yr)
+    with pytest.raises(NotImplementedError, match="shap_values"):
+        m.shap_values(X[:5])
+    with pytest.raises(NotImplementedError, match="linear_leaves"):
+        ChimeraBoostRegressor(n_estimators=5, depth=3,
+                              early_stopping=False, random_state=0,
+                              tree_mode="lightgbm",
+                              linear_leaves=True).fit(X, yr)
+    with pytest.raises(NotImplementedError, match="hs_lambda"):
+        ChimeraBoostRegressor(n_estimators=5, depth=3,
+                              early_stopping=False, random_state=0,
+                              tree_mode="lightgbm", hs_lambda=1.0).fit(X, yr)
+
+
+def test_tree_mode_levelwise_multiclass_runs():
+    from sklearn.datasets import load_wine
+    X, y = load_wine(return_X_y=True)
+    m = ChimeraBoostClassifier(n_estimators=5, depth=3,
+                               early_stopping=False, random_state=0,
+                               tree_mode="lightgbm").fit(X, y)
+    proba = m.predict_proba(X[:7])
+    assert m.model_.tree_mode_ == "lightgbm"
+    assert proba.shape == (7, 3)
+    assert np.allclose(proba.sum(axis=1), 1.0)
 
 
 def test_sample_weight_value_validation():
