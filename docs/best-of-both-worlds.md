@@ -102,3 +102,22 @@ Decision: keep `tree_mode="lightgbm"` opt-in with no mode-specific public
 defaults for now. The next useful work is not another coarse global default
 sweep; it is either a quality fix in the levelwise implementation/objective or
 the separate large-data histogram-scaling work.
+
+## Row-Parallel Histogram Probe
+
+A first thread-local row-parallel histogram implementation was tested against the
+current feature-parallel kernel and rejected. The implementation was correct
+(`np.allclose` to feature-parallel histograms), but slower:
+
+- 12 features, 300k rows, 16 leaves, 128 bins, 4 threads:
+  feature-parallel `0.0031s` best vs row-parallel `0.0049s` best.
+- 2 features, 1M rows, 16 leaves, 128 bins, 4 threads:
+  feature-parallel `0.0045s` best vs row-parallel `0.0059s` best.
+- A row-major binned view did not fix it; feature-parallel still won on 2,
+  12, and 16 feature microbenchmarks.
+
+Decision: do not merge this row-parallel/thread-local histogram shape. The
+existing feature-major layout is still extremely efficient. The large-data
+per-iteration gap likely needs a different attack, such as histogram
+subtraction/leaf-partitioned row order, lower histogram width for encoded
+target-stat columns, or a more substantial grower rewrite.
