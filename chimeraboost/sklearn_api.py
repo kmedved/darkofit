@@ -3,7 +3,7 @@
 import warnings
 
 import numpy as np
-from .booster import GradientBoosting, MulticlassBoosting
+from .booster import GradientBoosting, MulticlassBoosting, _normalize_tree_mode
 from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin
 
 
@@ -98,6 +98,7 @@ def _validate_hyperparams(estimator):
     _in_range("early_stopping_rounds", 1, np.inf, allow_none=True)
     if p.get("n_ensembles") is not None:
         _pos_int("n_ensembles")
+    _normalize_tree_mode(p["tree_mode"])
     # Regressor-only loss / alpha (the classifier picks its loss automatically).
     if "loss" in p:
         if p["loss"] not in ("RMSE", "MAE", "Quantile"):
@@ -697,6 +698,11 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
         called without its own ``cat_features`` (the fit argument overrides).
         Provided as a constructor argument so ``GridSearchCV``/``Pipeline`` can
         carry it.
+    tree_mode : {"catboost", "oblivious", "symmetric", "lightgbm", "levelwise"}, default "catboost"
+        Tree-family selector. The CatBoost aliases use the upstream oblivious
+        tree implementation with exact SHAP and linear-leaf support. The
+        LightGBM/levelwise aliases are reserved for the future non-oblivious
+        builder and currently raise ``NotImplementedError`` at fit time.
 
     Attributes
     ----------
@@ -720,7 +726,8 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
                  cat_combinations=False, leaf_estimation_iterations=1,
                  hs_lambda=0.0, linear_leaves=False, linear_lambda=1.0,
                  early_stopping=True, validation_fraction=0.2,
-                 n_ensembles=None, ensemble_n_jobs=1, cat_features=None):
+                 n_ensembles=None, ensemble_n_jobs=1, cat_features=None,
+                 tree_mode="catboost"):
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.depth = depth
@@ -748,6 +755,7 @@ class ChimeraBoostRegressor(RegressorMixin, BaseEstimator):
         self.validation_fraction = validation_fraction
         self.n_ensembles = n_ensembles
         self.ensemble_n_jobs = ensemble_n_jobs
+        self.tree_mode = tree_mode
 
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
             sample_weight=None):
@@ -980,6 +988,11 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
         called without its own ``cat_features`` (the fit argument overrides).
         Provided as a constructor argument so ``GridSearchCV``/``Pipeline`` can
         carry it.
+    tree_mode : {"catboost", "oblivious", "symmetric", "lightgbm", "levelwise"}, default "catboost"
+        Tree-family selector. The CatBoost aliases use the upstream oblivious
+        tree implementation with exact SHAP and linear-leaf support. The
+        LightGBM/levelwise aliases are reserved for the future non-oblivious
+        builder and currently raise ``NotImplementedError`` at fit time.
 
     Attributes
     ----------
@@ -1006,7 +1019,8 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
                  cat_combinations=False, leaf_estimation_iterations=3,
                  hs_lambda=0.0, linear_leaves=None, linear_lambda=1.0,
                  early_stopping=True, validation_fraction=0.2,
-                 n_ensembles=None, ensemble_n_jobs=1, cat_features=None):
+                 n_ensembles=None, ensemble_n_jobs=1, cat_features=None,
+                 tree_mode="catboost"):
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.depth = depth
@@ -1032,6 +1046,7 @@ class ChimeraBoostClassifier(ClassifierMixin, BaseEstimator):
         self.validation_fraction = validation_fraction
         self.n_ensembles = n_ensembles
         self.ensemble_n_jobs = ensemble_n_jobs
+        self.tree_mode = tree_mode
 
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
             sample_weight=None):

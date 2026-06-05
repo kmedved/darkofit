@@ -65,6 +65,35 @@ def _auto_learning_rate(n_samples, n_estimators, early_stopping):
     return float(np.clip(20.0 / max(n_estimators, 1), 0.03, 0.2))
 
 
+_TREE_MODE_ALIASES = {
+    "catboost": "catboost",
+    "oblivious": "catboost",
+    "symmetric": "catboost",
+    "lightgbm": "lightgbm",
+    "levelwise": "lightgbm",
+    "level_wise": "lightgbm",
+    "non_oblivious": "lightgbm",
+    "non-oblivious": "lightgbm",
+}
+
+
+def _normalize_tree_mode(tree_mode):
+    """Return the canonical tree mode name or raise a clear ValueError."""
+    if not isinstance(tree_mode, str):
+        raise ValueError(
+            "tree_mode must be a string alias in {'catboost', 'oblivious', "
+            "'symmetric', 'lightgbm', 'levelwise'}; "
+            f"got {tree_mode!r}.")
+    key = tree_mode.lower()
+    try:
+        return _TREE_MODE_ALIASES[key]
+    except KeyError as exc:
+        raise ValueError(
+            "tree_mode must be one of {'catboost', 'oblivious', 'symmetric', "
+            "'lightgbm', 'levelwise'}; "
+            f"got {tree_mode!r}.") from exc
+
+
 class _EarlyStopper:
     """Tracks the best validation score and signals when patience runs out."""
 
@@ -97,7 +126,8 @@ class _BaseBooster:
                  thread_count=None, random_state=None, verbose=False,
                  ordered_boosting=True, cat_combinations=False,
                  leaf_estimation_iterations=1, hs_lambda=0.0,
-                 linear_leaves=False, linear_lambda=1.0):
+                 linear_leaves=False, linear_lambda=1.0,
+                 tree_mode="catboost"):
         self.n_estimators = int(n_estimators)
         self.learning_rate = learning_rate
         self.depth = int(depth)
@@ -118,6 +148,14 @@ class _BaseBooster:
         self.hs_lambda = float(hs_lambda)
         self.linear_leaves = bool(linear_leaves)
         self.linear_lambda = float(linear_lambda)
+        self.tree_mode = tree_mode
+        self.tree_mode_ = _normalize_tree_mode(tree_mode)
+        self.supports_exact_shap = self.tree_mode_ == "catboost"
+        self.supports_linear_leaves = self.tree_mode_ == "catboost"
+        if self.tree_mode_ != "catboost":
+            raise NotImplementedError(
+                "tree_mode='lightgbm' is not implemented yet. "
+                "Use tree_mode='catboost' for the upstream oblivious-tree path.")
 
     def _alloc_hist_buffers(self, n_features, n_bins):
         """Allocate the reusable histogram buffer once per fit.

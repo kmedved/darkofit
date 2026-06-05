@@ -580,11 +580,44 @@ def test_continuous_target_to_classifier_raises():
     (dict(loss="bogus"), "loss"),
     (dict(loss="Quantile", alpha=0.0), "alpha"),
     (dict(loss="Quantile", alpha=1.0), "alpha"),
+    (dict(tree_mode="bogus"), "tree_mode"),
 ])
 def test_invalid_hyperparams_raise(params, match):
     X, yr, _ = _Xy()
     with pytest.raises(ValueError, match=match):
         ChimeraBoostRegressor(**params).fit(X, yr)
+
+
+def test_tree_mode_catboost_aliases_are_noop():
+    X, yr, _ = _Xy()
+    common = dict(n_estimators=12, depth=3, early_stopping=False,
+                  random_state=0, tree_mode="catboost")
+    base = ChimeraBoostRegressor(**common).fit(X, yr)
+    assert base.get_params()["tree_mode"] == "catboost"
+    assert base.model_.tree_mode_ == "catboost"
+    assert base.model_.supports_exact_shap is True
+    assert base.model_.supports_linear_leaves is True
+
+    for alias in ("oblivious", "symmetric"):
+        m = ChimeraBoostRegressor(**{**common, "tree_mode": alias}).fit(X, yr)
+        assert m.model_.tree_mode_ == "catboost"
+        assert m.model_.supports_exact_shap is True
+        assert m.model_.supports_linear_leaves is True
+        assert np.allclose(m.predict(X), base.predict(X))
+
+
+@pytest.mark.parametrize("alias", [
+    "lightgbm",
+    "levelwise",
+    "level_wise",
+    "non_oblivious",
+    "non-oblivious",
+])
+def test_tree_mode_levelwise_aliases_raise_until_ported(alias):
+    X, _, yc = _Xy()
+    with pytest.raises(NotImplementedError, match="tree_mode='lightgbm'"):
+        ChimeraBoostClassifier(n_estimators=5, early_stopping=False,
+                               random_state=0, tree_mode=alias).fit(X, yc)
 
 
 def test_sample_weight_value_validation():
