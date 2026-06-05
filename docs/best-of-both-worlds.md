@@ -10,10 +10,29 @@ fork work forward behind benchmark-gated seams. The target shape is:
 - `tree_mode="auto"`: future validation-selected mode, only after broader
   holdout evidence shows it beats the catboost default on the primary metric.
 
+## Integration Roles
+
+The upstream branch is the product trunk. It owns the modern public API
+(`n_estimators`, constructor-level `cat_features`), validation defaults, exact
+oblivious-tree SHAP, linear leaves, hierarchical shrinkage, bagging, docs, and
+CI. The legacy fork is the performance research source: phase timing, compact
+binning, histogram kernel specializations, class-major multiclass buffers, and
+the non-oblivious `tree_mode="lightgbm"` experiment.
+
+Port fork ideas forward into upstream-shaped code; do not port upstream product
+surface backward into the old fork. `tree_mode="catboost"` must preserve the
+upstream product guarantees. `tree_mode="lightgbm"` is allowed to be less
+feature-complete in v1, but it must fail explicitly for unsupported guarantees
+such as exact SHAP, linear leaves, or hierarchical shrinkage.
+
+Default selection is metric-gated, not ideology-gated. The primary decision
+criterion is weighted out-of-sample loss when weights exist, ordinary holdout
+loss otherwise; speed breaks ties.
+
 ## Completed Integration Phases
 
 1. Added a three-way revision benchmark harness that compares upstream,
-   fork-style modes, and the current integration candidate in isolated
+   legacy fork, and the current integration candidate in isolated
    subprocesses.
 2. Added a no-op `tree_mode` seam on the upstream trunk, preserving catboost
    behavior and blocking unimplemented levelwise aliases.
@@ -23,6 +42,47 @@ fork work forward behind benchmark-gated seams. The target shape is:
    selected-row histogram fills, and class-major multiclass buffers.
 5. Added opt-in `tree_mode="lightgbm"` with a level-wise tree representation
    for regression, binary classification, and multiclass classification.
+
+## Current Upstream/Fork/Candidate Benchmark
+
+Raw rows and summary rows are tracked in:
+
+- `benchmarks/tri_compare_medium_20260605.csv`
+- `benchmarks/tri_compare_medium_summary_20260605.csv`
+
+Command:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_compare_revisions.py \
+  --upstream /private/tmp/chimeraboost-upstream-ddaf272-bobw \
+  --fork /private/tmp/chimeraboost-fork-origin-main-bobw \
+  --candidate . \
+  --models upstream_matched fork_matched candidate_catboost candidate_lightgbm \
+  --datasets friedman_numeric wide_numeric_reg categorical_reg numeric_binary \
+    numeric_multiclass categorical_binary categorical_multiclass \
+  --sizes medium \
+  --seeds 3 \
+  --repeat 2 \
+  --iterations 300 \
+  --patience 25 \
+  --threads 4 \
+  --weight-modes none stress \
+  --csv benchmarks/tri_compare_medium_20260605.csv
+```
+
+All 168 rows completed successfully. Ratios below are against
+`upstream_matched`; lower is better for both primary metric and fit time.
+
+| Variant | Primary-metric wins/ties | Mean metric ratio | Mean fit ratio | Interpretation |
+| --- | ---: | ---: | ---: | --- |
+| `candidate_catboost` | 14 / 14 | 1.000 | 1.196 | Preserves upstream quality exactly; speed is mixed and not yet a broad win. |
+| `fork_matched` | 2 / 14 | 1.093 | 1.275 | Legacy fork can be faster, but usually gives up holdout quality and often runs to the iteration cap. |
+| `candidate_lightgbm` | 0 / 14 | 1.222 | 0.941 | Often uses fewer rounds and can be faster, but still fails the primary-metric gate. |
+
+Decision: keep upstream-shaped `tree_mode="catboost"` as the product/default
+path. The legacy fork is useful as a source of implementation ideas, not as the
+integration base. `tree_mode="lightgbm"` remains opt-in until it wins weighted
+or ordinary holdout loss, not just speed.
 
 ## Current Mode-Gate Benchmark
 
