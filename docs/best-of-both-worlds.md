@@ -204,6 +204,34 @@ they have behavior proofs or measured wins. It does **not** yet strictly
 dominate bbstats v2 on every timing row, so no further default-changing
 catboost patch should land without a targeted benchmark proving row-level wins.
 
+### Strict-Domination Gate
+
+The revision harness now separates the two weighted-validation lanes:
+
+- `--validation-weight-policy upstream-compatible` forces candidate rows to use
+  the same two-tuple validation eval set as bbstats v2. Use this lane to claim
+  literal catboost-path domination.
+- `--validation-weight-policy product` preserves the candidate's product
+  improvement of using validation weights when the benchmark supplies them.
+  Use this lane to evaluate the enhanced semantics, not literal equivalence.
+
+The checker is:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/check_strict_domination.py \
+  benchmarks/catboost_strict_medium_20260606.csv \
+  --mode upstream-compatible \
+  --out benchmarks/catboost_strict_medium_report_20260606.json
+```
+
+It compares `candidate_catboost` against `upstream_matched` by
+dataset/size/split/weight/ensemble/seed and exits nonzero on named blocking
+failures: `quality_regression`, `timing_regression`,
+`semantic_non_equivalence`, `missing_row`, `error_row`, or aggregate fit-time
+regression. This gate should be added before any further catboost model-code
+change. A strict candidate run should use `--repeat 7`, at least five seeds for
+the core/quantile rows, and the upstream-compatible validation policy.
+
 ## Quantile Benchmark Coverage
 
 Raw medium quantile rows are tracked in:

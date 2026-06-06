@@ -80,6 +80,7 @@ CSV_FIELDS = [
     "seed",
     "split_mode",
     "weight_mode",
+    "validation_weight_policy",
     "ensemble_size",
     "n_train",
     "n_val",
@@ -219,6 +220,24 @@ def _peak_rss_mb():
     return rss / 1024.0
 
 
+def _validation_eval_set(data, variant, config):
+    """Build the eval_set tuple according to the benchmark policy.
+
+    ``product`` preserves the candidate's improved weighted-validation
+    semantics. ``upstream-compatible`` forces candidate rows onto the same
+    two-tuple validation contract used by bbstats v2, making strict-domination
+    rows literal implementation comparisons.
+    """
+    use_validation_weights = (
+        data["w_val"] is not None
+        and variant.label.startswith("candidate")
+        and config.validation_weight_policy == "product"
+    )
+    if use_validation_weights:
+        return (data["X_val"], data["y_val"], data["w_val"])
+    return (data["X_val"], data["y_val"])
+
+
 def _fit_worker(payload):
     variant = RevisionSpec(**payload["variant"])
     config = FitConfig(**payload["fit_config"])
@@ -264,12 +283,9 @@ def _fit_worker(payload):
             fit_kwargs["sample_weight"] = w_train
     else:
         fit_args = (data["X_fit"], data["y_fit"])
-        eval_set = (data["X_val"], data["y_val"])
-        if data["w_val"] is not None and variant.label.startswith("candidate"):
-            eval_set = (data["X_val"], data["y_val"], data["w_val"])
         fit_kwargs = {
             "cat_features": cat_features,
-            "eval_set": eval_set,
+            "eval_set": _validation_eval_set(data, variant, config),
         }
         if data["w_fit"] is not None:
             fit_kwargs["sample_weight"] = data["w_fit"]
@@ -361,6 +377,7 @@ def _base_row(
     seed,
     split_mode,
     weight_mode,
+    validation_weight_policy,
     ensemble_size,
     split,
 ):
@@ -380,6 +397,7 @@ def _base_row(
         "seed": seed,
         "split_mode": split_mode,
         "weight_mode": weight_mode,
+        "validation_weight_policy": validation_weight_policy,
         "ensemble_size": "default" if variant.use_defaults else ensemble_size,
         "n_train": split["n_train"],
         "n_val": split["n_val"],
@@ -461,6 +479,16 @@ def parse_args(argv):
         ),
     )
     parser.add_argument(
+        "--validation-weight-policy",
+        choices=["product", "upstream-compatible"],
+        default="product",
+        help=(
+            "product = pass validation weights to candidate rows when "
+            "available; upstream-compatible = force candidate rows to the "
+            "same unweighted validation eval_set shape as bbstats v2"
+        ),
+    )
+    parser.add_argument(
         "--weight-modes",
         nargs="+",
         choices=["none", "uniform", "stress"],
@@ -529,6 +557,7 @@ def main(argv=None):
         threads=args.threads,
         ordered_boosting=args.ordered_boosting,
         verbose_timing=args.verbose_timing,
+        validation_weight_policy=args.validation_weight_policy,
     )
     args.csv.parent.mkdir(parents=True, exist_ok=True)
 
@@ -604,6 +633,7 @@ def main(argv=None):
                                         row = _base_row(
                                             variant, spec, size, seed,
                                             split_mode, weight_mode,
+                                            args.validation_weight_policy,
                                             ensemble_size, split)
                                         row.update(_run_worker(payload_path))
                                         writer.writerow(_complete_row(row))

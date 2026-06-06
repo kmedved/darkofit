@@ -137,6 +137,7 @@ class FitConfig:
     threads: Optional[int] = None
     ordered_boosting: bool = False
     verbose_timing: bool = False
+    validation_weight_policy: str = "product"
 
 
 def _resample_rows(X, y, n, rng, stratify=False):

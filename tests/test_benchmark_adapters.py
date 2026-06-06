@@ -25,8 +25,14 @@ from benchmark_adapters import (  # noqa: E402
     register_external_datasets,
     split_case,
 )
-from bench_compare_revisions import _base_row, _path_token, _peak_rss_mb  # noqa: E402
+from bench_compare_revisions import (  # noqa: E402
+    _base_row,
+    _path_token,
+    _peak_rss_mb,
+    _validation_eval_set,
+)
 from bench_compare_revisions import main as compare_revisions_main  # noqa: E402
+from check_strict_domination import evaluate_rows  # noqa: E402
 from bench_levelwise_tuning import main as levelwise_tuning_main  # noqa: E402
 from summarize_revision_compare import aggregate  # noqa: E402
 from weighted_metrics import metric_bundle  # noqa: E402
@@ -116,6 +122,43 @@ def test_estimator_kwargs_can_enable_verbose_timing():
     kwargs = estimator_kwargs(IterationsEstimator, cfg, variant, seed=11)
 
     assert kwargs["verbose_timing"] is True
+
+
+def test_validation_weight_policy_controls_candidate_eval_set():
+    data = {
+        "X_val": np.array([[1.0], [2.0]]),
+        "y_val": np.array([0.0, 1.0]),
+        "w_val": np.array([1.0, 3.0]),
+    }
+    candidate = RevisionSpec("candidate_catboost", "/repo", tree_mode="catboost")
+    upstream = RevisionSpec("upstream_matched", "/repo")
+
+    product = _validation_eval_set(
+        data,
+        candidate,
+        FitConfig(validation_weight_policy="product"),
+    )
+    compatible = _validation_eval_set(
+        data,
+        candidate,
+        FitConfig(validation_weight_policy="upstream-compatible"),
+    )
+    upstream_product = _validation_eval_set(
+        data,
+        upstream,
+        FitConfig(validation_weight_policy="product"),
+    )
+
+    assert len(product) == 3
+    assert product[0] is data["X_val"]
+    assert product[1] is data["y_val"]
+    assert product[2] is data["w_val"]
+    assert len(compatible) == 2
+    assert compatible[0] is data["X_val"]
+    assert compatible[1] is data["y_val"]
+    assert len(upstream_product) == 2
+    assert upstream_product[0] is data["X_val"]
+    assert upstream_product[1] is data["y_val"]
 
 
 def test_estimator_kwargs_maps_n_estimators_api_and_rejects_tree_mode():
@@ -356,6 +399,7 @@ def test_default_variant_row_does_not_claim_quantile_loss():
         seed=0,
         split_mode="row",
         weight_mode="none",
+        validation_weight_policy="product",
         ensemble_size=3,
         split=split,
     )
@@ -366,6 +410,7 @@ def test_default_variant_row_does_not_claim_quantile_loss():
         seed=0,
         split_mode="row",
         weight_mode="none",
+        validation_weight_policy="product",
         ensemble_size=3,
         split=split,
     )
@@ -376,6 +421,99 @@ def test_default_variant_row_does_not_claim_quantile_loss():
     assert matched_row["loss"] == "Quantile"
     assert matched_row["alpha"] == 0.9
     assert matched_row["ensemble_size"] == 3
+    assert matched_row["validation_weight_policy"] == "product"
+
+
+def _strict_row(
+    variant,
+    *,
+    primary=1.0,
+    fit=1.0,
+    weight_mode="none",
+    status="ok",
+    policy="upstream-compatible",
+):
+    return {
+        "status": status,
+        "error": "" if status == "ok" else "boom",
+        "variant": variant,
+        "dataset": "d",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": weight_mode,
+        "validation_weight_policy": policy,
+        "ensemble_size": "1",
+        "seed": "0",
+        "primary_metric": (
+            "weighted_log_loss" if weight_mode != "none" else "log_loss"
+        ),
+        "primary_value": str(primary),
+        "fit_seconds": str(fit),
+    }
+
+
+def test_strict_domination_checker_passes_ties_within_tolerance():
+    rows = [
+        _strict_row("upstream_matched", primary=1.0, fit=1.0),
+        _strict_row("candidate_catboost", primary=1.0, fit=1.0),
+    ]
+
+    report = evaluate_rows(rows)
+
+    assert report["passed"] is True
+    assert report["n_compared"] == 1
+
+
+def test_strict_domination_checker_fails_timing_regression():
+    rows = [
+        _strict_row("upstream_matched", primary=1.0, fit=1.0),
+        _strict_row("candidate_catboost", primary=1.0, fit=1.10),
+    ]
+
+    report = evaluate_rows(rows)
+
+    assert report["passed"] is False
+    assert {f["kind"] for f in report["failures"]} == {
+        "timing_regression",
+        "aggregate_timing_regression",
+    }
+
+
+def test_strict_domination_checker_fails_quality_regression():
+    rows = [
+        _strict_row("upstream_matched", primary=1.0, fit=1.0),
+        _strict_row("candidate_catboost", primary=1.01, fit=1.0),
+    ]
+
+    report = evaluate_rows(rows)
+
+    assert report["passed"] is False
+    assert any(f["kind"] == "quality_regression" for f in report["failures"])
+
+
+def test_strict_domination_checker_fails_semantic_non_equivalence():
+    rows = [
+        _strict_row(
+            "upstream_matched",
+            primary=1.0,
+            fit=1.0,
+            weight_mode="stress",
+        ),
+        _strict_row(
+            "candidate_catboost",
+            primary=1.0,
+            fit=1.0,
+            weight_mode="stress",
+            policy="product",
+        ),
+    ]
+
+    report = evaluate_rows(rows, mode="upstream-compatible")
+
+    assert report["passed"] is False
+    assert {f["kind"] for f in report["failures"]} == {
+        "semantic_non_equivalence"
+    }
 
 
 def test_benchmark_clis_reject_zero_ensemble_jobs(tmp_path):
