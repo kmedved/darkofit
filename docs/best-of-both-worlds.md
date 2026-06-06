@@ -145,6 +145,65 @@ parity with bbstats v2, with a few row-specific speed wins, not that it has a
 general speed advantage. Use `--verbose-timing` only for phase diagnostics, not
 for headline cross-revision speed ratios.
 
+### Catboost Cleanup Checkpoint
+
+After refreshing `upstream/main` on 2026-06-06, the current bbstats v2 baseline
+was still `ddaf272`. A focused repeat-3, two-seed catboost retest is tracked in:
+
+- `benchmarks/catboost_cleanup_baseline_20260606.csv`
+- `benchmarks/catboost_cleanup_suspects_20260606.csv`
+
+Command:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_compare_revisions.py \
+  --upstream /private/tmp/chimeraboost-upstream-ddaf272-bobw \
+  --candidate . \
+  --models upstream_matched candidate_catboost \
+  --datasets friedman_numeric wide_numeric_reg categorical_reg numeric_binary \
+    numeric_multiclass categorical_binary categorical_multiclass \
+  --sizes medium \
+  --seeds 2 \
+  --repeat 3 \
+  --iterations 300 \
+  --patience 25 \
+  --threads 4 \
+  --weight-modes none stress \
+  --csv benchmarks/catboost_cleanup_baseline_20260606.csv
+```
+
+Result: `candidate_catboost` preserved upstream primary metrics on ordinary
+rows and matched weighted rows up to the known validation-weight semantic
+difference. Mean fit ratio was `0.979` against `upstream_matched`; candidate
+won 8 rows, tied 1 row, and lost 5 rows by a 1% threshold. A repeat-5 rerun of
+the apparent suspect rows showed the losses were not broad: categorical
+multiclass moved to parity, numeric binary was mixed by weight mode, and the
+Friedman rows were timing-sensitive.
+
+Rejected cleanup: an upstream-shaped plain-tree helper was tested to route
+non-specialized catboost fits through bbstats-v2-style code. It did not clear
+the one-change bar: it helped Friedman in one sample but slowed numeric binary
+and categorical multiclass. The patch was reverted and is not part of catboost
+mode.
+
+Kept cleanup decisions:
+
+- Keep constant-Hessian RMSE histograms; candidate-internal ablations showed
+  identical predictions with a faster tree-build path on the Friedman seed.
+- Keep compact binned dtypes; forcing upstream-style `uint16` bins produced
+  identical predictions but mixed timings, with clear losses on numeric binary,
+  categorical multiclass, and wide regression.
+- Keep weighted validation support when a user supplies
+  `eval_set=(X_val, y_val, sample_weight_val)`. This is a product semantic
+  improvement over bbstats v2, even though it means weighted benchmark rows are
+  not a literal upstream-equivalence test.
+
+Decision: current `tree_mode="catboost"` is the best available product path:
+upstream v2 behavior remains the trunk, and fork optimizations stay only where
+they have behavior proofs or measured wins. It does **not** yet strictly
+dominate bbstats v2 on every timing row, so no further default-changing
+catboost patch should land without a targeted benchmark proving row-level wins.
+
 ## Quantile Benchmark Coverage
 
 Raw medium quantile rows are tracked in:
