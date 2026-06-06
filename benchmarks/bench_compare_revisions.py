@@ -90,7 +90,9 @@ CSV_FIELDS = [
     "n_groups_val",
     "n_groups_test",
     "fit_seconds",
+    "fit_repeat_seconds",
     "predict_seconds",
+    "predict_repeat_seconds",
     "peak_rss_mb",
     "boost_seconds",
     "best_iteration",
@@ -292,11 +294,13 @@ def _fit_worker(payload):
 
     best_model = None
     fit_seconds = None
+    fit_repeat_seconds = []
     for _ in range(repeat):
         model = estimator_cls(**kwargs)
         start = time.perf_counter()
         model.fit(*fit_args, **fit_kwargs)
         elapsed = time.perf_counter() - start
+        fit_repeat_seconds.append(elapsed)
         if fit_seconds is None or elapsed < fit_seconds:
             best_model = model
             fit_seconds = elapsed
@@ -311,8 +315,10 @@ def _fit_worker(payload):
         return pred, proba, time.perf_counter() - start
 
     pred, proba, predict_seconds = predict_once()
+    predict_repeat_seconds = [predict_seconds]
     for _ in range(repeat - 1):
         cand_pred, cand_proba, elapsed = predict_once()
+        predict_repeat_seconds.append(elapsed)
         if elapsed < predict_seconds:
             pred, proba, predict_seconds = cand_pred, cand_proba, elapsed
 
@@ -331,7 +337,11 @@ def _fit_worker(payload):
         "status": "ok",
         "error": "",
         "fit_seconds": float(fit_seconds),
+        "fit_repeat_seconds": ";".join(
+            f"{elapsed:.12g}" for elapsed in fit_repeat_seconds),
         "predict_seconds": float(predict_seconds),
+        "predict_repeat_seconds": ";".join(
+            f"{elapsed:.12g}" for elapsed in predict_repeat_seconds),
         "peak_rss_mb": _peak_rss_mb(),
         "boost_seconds": "" if boost_seconds is None else float(boost_seconds),
         "best_iteration": _best_iteration(best_model) or "",

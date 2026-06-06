@@ -19,14 +19,15 @@ benchmark-gated toggle instead of changing the product default.
 | Fork point / bbstats v1 | `78397b27d7d27fc055490bb21ab8dd1b68893e13` | Merge base of `origin/main` and `upstream/main`. |
 | darko v1 | `origin/main@1eacb51e8945df90f48b3c0dfb5719f91f44dcf7` | Local fork work before the bbstats v2 rewrite was integrated. |
 | bbstats v2 | `upstream/main@ddaf2725c1f13d567bf8828963377d152ca9a8c8` | Current upstream rewrite baseline. |
-| Best-of-both-worlds branch | `codex/best-of-both-worlds@9e13d694b0d57918d312926da286909e384fb477` | Upstream v2 trunk plus benchmark-gated darko patches. |
+| Best-of-both-worlds branch | `codex/best-of-both-worlds` | Upstream v2 trunk plus benchmark-gated darko patches. |
 
 Patch counts from the fork point:
 
 - bbstats v2: 86 commits, 81 non-merge commits.
 - darko v1: 14 changed files, mostly benchmark harnesses and kernel speed work.
-- current branch over bbstats v2: 47 changed files, mostly benchmark gates,
-  docs, and opt-in tree/kernel paths.
+- current branch over bbstats v2: benchmark gates, docs, and opt-in
+  tree/kernel paths. The exact file count changes as tracked benchmark
+  artifacts land.
 
 ## Decision Labels
 
@@ -305,6 +306,18 @@ Completed:
   (`geomean_fit_ratio=0.9402`), and repeat 50 failed after upstream found lower
   timing minima (`geomean_fit_ratio=1.1260`). Keep the behavior-preserving
   cleanup, but do not call strict domination complete yet.
+- Numeric-binary repeat trace:
+  `benchmarks/catboost_numeric_binary_stress_trace_r20_20260606.csv`,
+  `benchmarks/catboost_numeric_binary_stress_trace_r20_repeat_summary_20260606.csv`,
+  and `benchmarks/catboost_numeric_binary_stress_phase_r10_20260606.csv`.
+  Outcome: the harness now records semicolon-delimited `fit_repeat_seconds`
+  and `predict_repeat_seconds` columns. The real repeat-20 trace passes the
+  aggregate min-of-repeat gate (`geomean_fit_ratio=0.9736`) but still has two
+  row-level timing failures (seed 1 ratio `1.0580`, seed 4 ratio `1.0381`).
+  The repeat distribution is not pure noise: median-repeat geomean is `1.1354`
+  in favor of upstream. The phase run is candidate-only because upstream v2
+  does not expose `verbose_timing`; use it only to locate candidate work, not
+  to compare phases across revisions.
 - Selected row/feature kernels:
   code inspection plus `tests/test_chimeraboost.py` show these kernels are
   inactive under the strict default matrix (`subsample=1.0`,
@@ -315,8 +328,9 @@ Next:
 
 1. For stable blockers, run exactly one ablation at a time:
    class-major multiclass if multiclass reappears as a blocker, validation
-   semantics lane if weighted quality diverges, or a better-isolated
-   phase-level explanation for the remaining numeric-binary stress timing row.
+   semantics lane if weighted quality diverges, or a default catboost scalar
+   loop/tree-builder overhead ablation for the remaining numeric-binary stress
+   timing row.
 2. Promote only ablations that improve the blocker without introducing a new
    quality, semantic, or timing regression.
 3. Keep `tree_mode="lightgbm"` work paused until catboost mode is either

@@ -591,6 +591,42 @@ covered, and clears q90. Treat numeric-binary stress as the last unresolved
 strict timing case; it now looks dominated by row-level timing stability rather
 than metrics, iterations, or a known semantic difference.
 
+### Numeric-Binary Repeat Trace
+
+To separate real overhead from min-of-repeat timing luck, the revision harness
+now records semicolon-delimited repeat traces in:
+
+- `fit_repeat_seconds`
+- `predict_repeat_seconds`
+
+The focused numeric-binary stress trace is tracked in:
+
+- `benchmarks/catboost_numeric_binary_stress_trace_r20_20260606.csv`
+- `benchmarks/catboost_numeric_binary_stress_trace_r20_summary_20260606.csv`
+- `benchmarks/catboost_numeric_binary_stress_trace_r20_report_20260606.json`
+- `benchmarks/catboost_numeric_binary_stress_trace_r20_repeat_summary_20260606.csv`
+
+Result: the repeat-20 run passes the aggregate min-of-repeat gate
+(`geomean_fit_ratio=0.9736`) but still fails two row-level timing checks: seed 1
+at `1.0580` and seed 4 at `1.0381`. The repeat distribution shows this is not
+only an extreme-min artifact: the geomean median-repeat ratio is `1.1354`,
+favoring upstream, while metrics and iterations remain identical.
+
+A phase-timing diagnostic is tracked in:
+
+- `benchmarks/catboost_numeric_binary_stress_phase_r10_20260606.csv`
+- `benchmarks/catboost_numeric_binary_stress_phase_r10_summary_20260606.csv`
+- `benchmarks/catboost_numeric_binary_stress_phase_r10_report_20260606.json`
+
+Important caveat: upstream v2 does not expose `verbose_timing`, so phase columns
+are candidate-only. Use that file to locate candidate work, not to compare phase
+totals directly across revisions.
+
+Decision: keep the trace columns in the harness. Numeric-binary stress remains
+the final catboost strict-domination blocker, and it now looks like a true
+default scalar/tree-builder overhead issue rather than a quality, iteration, or
+validation-semantics issue.
+
 ### Selected Row/Feature Kernels
 
 The selected-row and selected-feature histogram kernels are inactive in the
