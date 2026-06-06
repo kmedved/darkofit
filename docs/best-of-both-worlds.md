@@ -10,6 +10,12 @@ fork work forward behind benchmark-gated seams. The target shape is:
 - `tree_mode="auto"`: future validation-selected mode, only after broader
   holdout evidence shows it beats the catboost default on the primary metric.
 
+The upstream rewrite audit is tracked in
+[`docs/bbstats-v2-patch-audit.md`](bbstats-v2-patch-audit.md). That file is the
+patch-by-patch checklist for deciding whether each bbstats v2 change stays as
+the catboost product path, yields to a behavior-equivalent darko optimization,
+or needs a benchmark-gated toggle.
+
 ## Integration Roles
 
 The upstream branch is the product trunk. It owns the modern public API
