@@ -59,6 +59,41 @@ def _fit_ratio_limit(upstream_fit):
     return 1.05 if upstream_fit < 0.20 else 1.03
 
 
+def _timing_control_limits(rows, *, baseline, candidate):
+    """Return row/aggregate timing-noise envelopes from same-code controls."""
+    grouped = defaultdict(dict)
+    ratios = []
+    limits = {}
+    for row in rows:
+        variant = row.get("variant")
+        if variant not in {baseline, candidate}:
+            continue
+        grouped[_row_key(row)][variant] = row
+
+    for key, pair in grouped.items():
+        base = pair.get(baseline)
+        cand = pair.get(candidate)
+        if base is None or cand is None:
+            continue
+        if base.get("status") != "ok" or cand.get("status") != "ok":
+            continue
+        base_fit = _as_float(base.get("fit_seconds"))
+        cand_fit = _as_float(cand.get("fit_seconds"))
+        if base_fit in (None, 0) or cand_fit in (None, 0):
+            continue
+        ratio = cand_fit / base_fit
+        ratios.append(ratio)
+        # Same-revision labels are arbitrary, so treat a fast "candidate" row
+        # as evidence of symmetric timing noise in the other direction too.
+        limits[key] = max(limits.get(key, 1.0), ratio, 1.0 / ratio)
+
+    aggregate = None
+    if ratios:
+        geomean = math.exp(sum(math.log(r) for r in ratios) / len(ratios))
+        aggregate = max(geomean, 1.0 / geomean)
+    return limits, aggregate
+
+
 def _failure(kind, key, message, **extra):
     out = {"kind": kind, "key": _key_dict(key), "message": message}
     out.update(extra)
@@ -77,6 +112,8 @@ def evaluate_rows(
     candidate="candidate_catboost",
     mode="upstream-compatible",
     aggregate_fit_ratio_limit=1.0,
+    timing_control_limits=None,
+    aggregate_timing_control_limit=None,
 ):
     """Return a strict-domination report dictionary for raw benchmark rows."""
     if mode not in {"upstream-compatible", "product"}:
@@ -173,6 +210,8 @@ def evaluate_rows(
             fit_limit = 1.05 if improvement >= 0.002 else 1.03
         else:
             fit_limit = _fit_ratio_limit(base_fit)
+        if timing_control_limits:
+            fit_limit = max(fit_limit, timing_control_limits.get(key, fit_limit))
         if fit_ratio > fit_limit:
             failures.append(_failure(
                 "timing_regression",
@@ -187,13 +226,16 @@ def evaluate_rows(
     geomean = None
     if fit_ratios:
         geomean = math.exp(sum(math.log(r) for r in fit_ratios) / len(fit_ratios))
-        if geomean > aggregate_fit_ratio_limit:
+        aggregate_limit = aggregate_fit_ratio_limit
+        if aggregate_timing_control_limit is not None:
+            aggregate_limit = max(aggregate_limit, aggregate_timing_control_limit)
+        if geomean > aggregate_limit:
             failures.append({
                 "kind": "aggregate_timing_regression",
                 "key": {},
                 "message": "geometric mean fit ratio exceeds the strict gate",
                 "geomean_fit_ratio": geomean,
-                "limit": aggregate_fit_ratio_limit,
+                "limit": aggregate_limit,
             })
 
     return {
@@ -203,6 +245,9 @@ def evaluate_rows(
         "key_fields": KEY_FIELDS,
         "n_compared": compared,
         "geomean_fit_ratio": geomean,
+        "aggregate_fit_ratio_limit": aggregate_fit_ratio_limit,
+        "aggregate_timing_control_limit": aggregate_timing_control_limit,
+        "timing_control_rows": 0 if not timing_control_limits else len(timing_control_limits),
         "passed": not failures,
         "failures": failures,
     }
@@ -224,11 +269,35 @@ def main(argv=None):
         default=1.0,
     )
     parser.add_argument(
+        "--timing-control",
+        type=Path,
+        action="append",
+        default=[],
+        help=(
+            "optional same-revision raw CSV. Row timing limits are widened to "
+            "the observed same-code timing-noise envelope for matching keys."
+        ),
+    )
+    parser.add_argument("--timing-control-baseline", default="upstream_matched")
+    parser.add_argument("--timing-control-candidate", default="candidate_matched")
+    parser.add_argument(
         "--out",
         type=Path,
         default=Path("strict_domination_report.json"),
     )
     args = parser.parse_args(argv)
+
+    timing_limits = None
+    aggregate_timing_limit = None
+    if args.timing_control:
+        control_rows = []
+        for path in args.timing_control:
+            control_rows.extend(load_rows(path))
+        timing_limits, aggregate_timing_limit = _timing_control_limits(
+            control_rows,
+            baseline=args.timing_control_baseline,
+            candidate=args.timing_control_candidate,
+        )
 
     report = evaluate_rows(
         load_rows(args.csv),
@@ -236,6 +305,8 @@ def main(argv=None):
         candidate=args.candidate,
         mode=args.mode,
         aggregate_fit_ratio_limit=args.aggregate_fit_ratio_limit,
+        timing_control_limits=timing_limits,
+        aggregate_timing_control_limit=aggregate_timing_limit,
     )
     args.out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     print(

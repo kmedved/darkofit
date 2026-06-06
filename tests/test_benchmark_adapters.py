@@ -34,6 +34,7 @@ from bench_compare_revisions import (  # noqa: E402
 )
 from bench_compare_revisions import main as compare_revisions_main  # noqa: E402
 from check_strict_domination import evaluate_rows  # noqa: E402
+from check_strict_domination import _timing_control_limits  # noqa: E402
 from bench_levelwise_tuning import main as levelwise_tuning_main  # noqa: E402
 from summarize_revision_compare import aggregate  # noqa: E402
 from weighted_metrics import metric_bundle  # noqa: E402
@@ -360,6 +361,46 @@ def test_stress_weights_are_mean_normalized():
     assert np.isclose(w_cls.mean(), 1.0)
     assert w_reg[-1] > w_reg[0]
     assert w_cls[y_cls == 1].mean() > w_cls[y_cls == 0].mean()
+
+
+def test_timing_control_can_calibrate_strict_timing_only():
+    base = {
+        "status": "ok",
+        "dataset": "numeric_binary",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "stress",
+        "ensemble_size": "1",
+        "seed": "0",
+        "primary_metric": "weighted_log_loss",
+        "primary_value": "1.0",
+        "validation_weight_policy": "upstream-compatible",
+    }
+    rows = [
+        {**base, "variant": "upstream_matched", "fit_seconds": "1.0"},
+        {**base, "variant": "candidate_catboost", "fit_seconds": "1.08"},
+    ]
+    control_rows = [
+        {**base, "variant": "upstream_matched", "fit_seconds": "1.0"},
+        {**base, "variant": "candidate_matched", "fit_seconds": "1.10"},
+    ]
+
+    strict = evaluate_rows(rows, mode="upstream-compatible")
+    limits, aggregate_limit = _timing_control_limits(
+        control_rows,
+        baseline="upstream_matched",
+        candidate="candidate_matched",
+    )
+    calibrated = evaluate_rows(
+        rows,
+        mode="upstream-compatible",
+        timing_control_limits=limits,
+        aggregate_timing_control_limit=aggregate_limit,
+    )
+
+    assert any(f["kind"] == "timing_regression" for f in strict["failures"])
+    assert calibrated["passed"] is True
+    assert calibrated["timing_control_rows"] == 1
 
 
 def test_quantile_dataset_specs_carry_loss_and_use_regression_splits():

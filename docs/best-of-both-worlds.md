@@ -744,6 +744,49 @@ matrix to binary fits, so the risk/reward is poor.
 Decision: product code was reverted. Linear-leaf speed is still a plausible
 area, but this broad precompute is not the right cut.
 
+### Same-Revision Timing Control
+
+The numeric-binary stress blocker exposed a problem with the raw timing gate:
+it fails even when both labels point at the same bbstats v2 checkout. The
+same-revision controls are tracked in:
+
+- `benchmarks/catboost_same_revision_numeric_binary_stress_trace_r20_20260606.csv`
+- `benchmarks/catboost_same_revision_numeric_binary_stress_trace_r20_summary_20260606.csv`
+- `benchmarks/catboost_same_revision_numeric_binary_stress_trace_r20_report_20260606.json`
+- `benchmarks/catboost_same_revision_numeric_binary_stress_trace_r20_repeat_summary_20260606.csv`
+- `benchmarks/catboost_same_revision_reversed_numeric_binary_stress_trace_r20_20260606.csv`
+- `benchmarks/catboost_same_revision_reversed_numeric_binary_stress_trace_r20_summary_20260606.csv`
+- `benchmarks/catboost_same_revision_reversed_numeric_binary_stress_trace_r20_report_20260606.json`
+- `benchmarks/catboost_same_revision_reversed_numeric_binary_stress_trace_r20_repeat_summary_20260606.csv`
+
+Result: the raw checker is too sensitive for row-level fit minima on this case.
+Default-order bbstats-v2-vs-bbstats-v2 failed with
+`geomean_fit_ratio=1.0943` and four row-level timing failures. Reversing the
+labels still left two row-level failures, despite aggregate
+`geomean_fit_ratio=0.9878`. That is worse than the current
+candidate-vs-upstream trace (`geomean_fit_ratio=0.9736`, two row failures).
+
+The checker now accepts optional same-revision timing controls:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/check_strict_domination.py \
+  benchmarks/catboost_numeric_binary_stress_trace_r20_20260606.csv \
+  --mode upstream-compatible \
+  --timing-control benchmarks/catboost_same_revision_numeric_binary_stress_trace_r20_20260606.csv \
+  --timing-control benchmarks/catboost_same_revision_reversed_numeric_binary_stress_trace_r20_20260606.csv \
+  --out benchmarks/catboost_numeric_binary_stress_trace_r20_calibrated_report_20260606.json
+```
+
+The calibrated report passes (`passed=true`, zero failures,
+`geomean_fit_ratio=0.9736`). This does not prove the whole catboost matrix is
+finished, but it does retire numeric-binary stress as a product-code blocker
+under the measured timing-noise floor.
+
+Decision: stop micro-optimizing numeric-binary stress against the uncalibrated
+row-min gate. The next acceptance step is a full catboost gate rerun with
+same-revision timing controls; only calibrated failures should drive more
+catboost-mode product changes.
+
 ### Selected Row/Feature Kernels
 
 The selected-row and selected-feature histogram kernels are inactive in the

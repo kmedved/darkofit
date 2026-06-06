@@ -1,0 +1,89 @@
+{
+  "baseline": "upstream_matched",
+  "candidate": "candidate_matched",
+  "failures": [
+    {
+      "candidate_fit_seconds": 0.4508497909992002,
+      "fit_ratio": 1.231670182171815,
+      "key": {
+        "dataset": "numeric_binary",
+        "ensemble_size": "1",
+        "seed": "0",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "stress"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 0.36604749999241903
+    },
+    {
+      "candidate_fit_seconds": 0.5120193750044564,
+      "fit_ratio": 1.0701955700382422,
+      "key": {
+        "dataset": "numeric_binary",
+        "ensemble_size": "1",
+        "seed": "2",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "stress"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 0.47843533400737215
+    },
+    {
+      "candidate_fit_seconds": 0.5164145410089986,
+      "fit_ratio": 1.135181385782619,
+      "key": {
+        "dataset": "numeric_binary",
+        "ensemble_size": "1",
+        "seed": "3",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "stress"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 0.4549180839967448
+    },
+    {
+      "candidate_fit_seconds": 0.3370600420021219,
+      "fit_ratio": 1.094495447433377,
+      "key": {
+        "dataset": "numeric_binary",
+        "ensemble_size": "1",
+        "seed": "4",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "stress"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 0.3079592910071369
+    },
+    {
+      "geomean_fit_ratio": 1.0942787055615808,
+      "key": {},
+      "kind": "aggregate_timing_regression",
+      "limit": 1.0,
+      "message": "geometric mean fit ratio exceeds the strict gate"
+    }
+  ],
+  "geomean_fit_ratio": 1.0942787055615808,
+  "key_fields": [
+    "dataset",
+    "size",
+    "split_mode",
+    "weight_mode",
+    "ensemble_size",
+    "seed"
+  ],
+  "mode": "upstream-compatible",
+  "n_compared": 5,
+  "passed": false
+}

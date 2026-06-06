@@ -367,6 +367,19 @@ Completed:
   still failed seed 0 (`fit_ratio=1.1966`) and every seed's median-repeat ratio
   still favored upstream. The product code was reverted; do not promote this
   linear-leaf precompute without a broader redesign.
+- Same-revision timing control:
+  `benchmarks/catboost_same_revision_numeric_binary_stress_trace_r20_20260606.csv`,
+  `benchmarks/catboost_same_revision_reversed_numeric_binary_stress_trace_r20_20260606.csv`,
+  and
+  `benchmarks/catboost_numeric_binary_stress_trace_r20_calibrated_report_20260606.json`.
+  Outcome: the raw strict timing gate fails when comparing bbstats v2 against
+  itself. In default order the same-code control failed with
+  `geomean_fit_ratio=1.0943`; in reversed order it still had two row failures
+  despite aggregate `geomean_fit_ratio=0.9878`. The current candidate's
+  numeric-binary stress trace passes once timing limits are calibrated to that
+  same-revision noise envelope (`passed=true`, zero failures). Treat the
+  remaining raw row failures as below the current harness timing floor, not as
+  proved product regressions.
 - Selected row/feature kernels:
   code inspection plus `tests/test_chimeraboost.py` show these kernels are
   inactive under the strict default matrix (`subsample=1.0`,
@@ -375,15 +388,15 @@ Completed:
 
 Next:
 
-1. For stable blockers, run exactly one ablation at a time:
-   class-major multiclass if multiclass reappears as a blocker, validation
-   semantics lane if weighted quality diverges, or a deeper default catboost
-   scalar/tree-builder overhead ablation for the remaining numeric-binary
-   stress timing row. Call-shape-only routing and benchmark-order bias are
-   already rejected, native-int bin indexing is rejected, dtype alone is not
+1. Rerun the full catboost strict medium gate with same-revision timing controls
+   before declaring catboost mode clean. The uncalibrated row-level timing gate
+   is invalidated by same-code failures on the numeric-binary stress blocker.
+2. For any blocker that survives the calibrated gate, run exactly one ablation
+   at a time. Call-shape-only routing and benchmark-order bias are already
+   rejected, native-int bin indexing is rejected, dtype alone is not
    explanatory, and linear-leaf precompute is rejected.
-2. Promote only ablations that improve the blocker without introducing a new
+3. Promote only ablations that improve the blocker without introducing a new
    quality, semantic, or timing regression.
-3. Keep `tree_mode="lightgbm"` work paused until catboost mode is either
+4. Keep `tree_mode="lightgbm"` work paused until catboost mode is either
    strictly dominating bbstats v2 or the remaining non-domination cases are
    documented as irreducible timing noise under the accepted gate.
