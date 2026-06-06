@@ -172,7 +172,7 @@ tracked CSVs and the strict-domination checker.
 | `71726da` | 2026-06-01 | Robustness pass: input validation + scikit-learn check_estimator compliance | `KEEP-UPSTREAM` |
 | `9f76502` | 2026-06-01 | Size-adaptive classifier min_child_weight (closes the Brier gap, reaches Pareto frontier) | `KEEP-UPSTREAM + STRICT-GATE` |
 | `0699407` | 2026-06-01 | Update README to remove scikit-learn compatibility section | `DOCS/RELEASE/ADVISORY` |
-| `20ad819` | 2026-06-01 | Vectorize categorical encoding via pandas (~15% faster cat fits, bit-identical) | `BENCHMARK-TOGGLE` |
+| `20ad819` | 2026-06-01 | Vectorize categorical encoding via pandas (~15% faster cat fits, bit-identical) | `KEEP-UPSTREAM + BENCHMARK-TOGGLE` |
 | `f1fb307` | 2026-06-01 | Update benchmark images (cat-encoding speedup: 2.7x -> 2.6x slowdown, accuracy unchanged) | `DOCS/RELEASE/ADVISORY` |
 | `ae884ed` | 2026-06-02 | Lower l2_leaf_reg default 3.0 -> 1.0 (Brier +1.5pp, RMSE flat) | `KEEP-UPSTREAM + STRICT-GATE` |
 | `9349302` | 2026-06-02 | Bump to 0.9.2; update benchmark images and README | `DOCS/RELEASE/ADVISORY` |
@@ -245,13 +245,20 @@ Completed:
   and median quantile unweighted rows, but hurts Friedman, quantile-10,
   quantile-90, and wide regression. Keep the shortcut by default; treat the
   general-Hessian path as a possible narrow adaptive toggle only.
+- Categorical-encoding ablation:
+  `benchmarks/catboost_ablate_manual_cats_focus_20260606.csv`.
+  Outcome: restoring the older manual/lazy categorical mapping improves
+  aggregate categorical timing and helps categorical regression plus weighted
+  categorical multiclass, but it hurts categorical-binary unweighted and still
+  leaves row-level strict failures. Keep upstream's pandas-vectorized path by
+  default; treat manual mapping as a possible narrow adaptive toggle only.
 
 Next:
 
 1. For stable blockers, run exactly one ablation at a time:
-   categorical encoding path, class-major multiclass, selected row/feature
-   kernels, validation semantics lane, or an adaptive bin dtype / hessian-path
-   policy if the row pattern remains stable.
+   class-major multiclass, selected row/feature kernels, validation semantics
+   lane, or an adaptive bin dtype / hessian / categorical-mapping policy if the
+   row pattern remains stable.
 2. Promote only ablations that improve the blocker without introducing a new
    quality, semantic, or timing regression.
 3. Keep `tree_mode="lightgbm"` work paused until catboost mode is either

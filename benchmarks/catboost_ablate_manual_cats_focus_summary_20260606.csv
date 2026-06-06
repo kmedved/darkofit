@@ -1,0 +1,13 @@
+dataset,size,split_mode,weight_mode,ensemble_size,variant,n,primary_metric,primary_value,metric_vs_base,fit_seconds,fit_vs_base,best_iteration,iter_vs_base
+categorical_binary,medium,row,none,1,candidate_catboost,5,log_loss,0.2711,1.000,0.081,1.023,82.8,1.000
+categorical_binary,medium,row,none,1,upstream_matched,5,log_loss,0.2711,1.000,0.079,1.000,82.8,1.000
+categorical_binary,medium,row,stress,1,candidate_catboost,5,weighted_log_loss,0.2765,1.000,0.094,1.029,97.2,1.000
+categorical_binary,medium,row,stress,1,upstream_matched,5,weighted_log_loss,0.2765,1.000,0.091,1.000,97.2,1.000
+categorical_multiclass,medium,row,none,1,candidate_catboost,5,log_loss,0.5502,1.000,0.241,0.907,53.6,1.000
+categorical_multiclass,medium,row,none,1,upstream_matched,5,log_loss,0.5502,1.000,0.266,1.000,53.6,1.000
+categorical_multiclass,medium,row,stress,1,candidate_catboost,5,weighted_log_loss,0.5576,1.000,0.236,0.838,57.6,1.000
+categorical_multiclass,medium,row,stress,1,upstream_matched,5,weighted_log_loss,0.5576,1.000,0.281,1.000,57.6,1.000
+categorical_reg,medium,row,none,1,candidate_catboost,5,rmse,2.5628,1.000,0.072,0.954,157.6,1.000
+categorical_reg,medium,row,none,1,upstream_matched,5,rmse,2.5628,1.000,0.076,1.000,157.6,1.000
+categorical_reg,medium,row,stress,1,candidate_catboost,5,weighted_rmse,2.5401,1.000,0.094,1.017,204.2,1.000
+categorical_reg,medium,row,stress,1,upstream_matched,5,weighted_rmse,2.5401,1.000,0.092,1.000,204.2,1.000

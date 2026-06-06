@@ -347,6 +347,38 @@ largest remaining blockers (`numeric_binary` stress and `quantile_reg_50`
 stress). At most it is a future narrow adaptive toggle for categorical
 regression or median quantile unweighted rows.
 
+### Categorical-Encoding Ablation
+
+Upstream commit `20ad819` replaced per-element Python categorical mapping with
+the pandas-vectorized `factorize` / `Series.map` path. The current branch keeps
+that upstream path, plus the branch-only weighted target-stat hook. A focused
+one-change ablation restored the older manual/lazy mapping mechanics in a
+temporary worktree for categorical datasets only. Results are tracked in:
+
+- `benchmarks/catboost_ablate_manual_cats_focus_20260606.csv`
+- `benchmarks/catboost_ablate_manual_cats_focus_summary_20260606.csv`
+- `benchmarks/catboost_ablate_manual_cats_focus_report_20260606.json`
+
+Result: manual categorical mapping did not clear the strict gate
+(`geomean_fit_ratio=0.9638`, 6 timing failures). Metrics and iterations stayed
+identical. The path is faster in aggregate on the categorical focus set, but
+still has stable categorical-binary timing failures and mixed unweighted
+categorical-multiclass behavior.
+
+| Dataset / weight | Pandas-vectorized ratio | Manual/lazy ratio | Decision |
+| --- | ---: | ---: | --- |
+| `categorical_reg` / none | 1.012 | 0.952 | manual helps. |
+| `categorical_multiclass` / stress | 0.896 | 0.840 | manual helps. |
+| `categorical_binary` / stress | 1.053 | 1.047 | manual slightly helps but still fails rows. |
+| `categorical_binary` / none | 0.890 | 1.021 | pandas helps. |
+| `categorical_multiclass` / none | 0.886 | 0.923 | pandas helps. |
+| `categorical_reg` / stress | 0.982 | 1.016 | pandas helps. |
+
+Decision: keep upstream's pandas-vectorized categorical encoding as the
+catboost default. The older manual/lazy mapping is not a broad revert, but it
+is a possible benchmark-gated adaptive path for categorical regression or
+weighted categorical multiclass after the larger blockers are resolved.
+
 ## Quantile Benchmark Coverage
 
 Raw medium quantile rows are tracked in:
