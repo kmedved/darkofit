@@ -351,6 +351,22 @@ Completed:
   `int` before indexing did not clear the gate (`geomean_fit_ratio=0.9759`) and
   worsened row failures on seeds 1 and 2 (`1.2292`, `1.1161`). The product code
   was reverted; do not promote this kernel-indexing tweak.
+- Tree-kernel dtype microprobe:
+  `benchmarks/catboost_tree_kernel_dtype_microprobe_20260606.csv`.
+  Outcome: direct candidate-kernel timings on the failing seed show compact
+  `uint8` and upstream-style `uint16` binned matrices are essentially tied for
+  full `build_oblivious_tree`, direct histogram fill, and direct split search.
+  That rules out dtype specialization alone as the remaining numeric-binary
+  stress explanation.
+- Linear-leaf precompute probe:
+  `benchmarks/catboost_linear_xstd_numeric_binary_stress_trace_r20_20260606.csv`
+  and
+  `benchmarks/catboost_linear_xstd_numeric_binary_stress_trace_r20_repeat_summary_20260606.csv`.
+  Outcome: precomputing standardized binned feature values once per binary fit
+  improved the aggregate min-of-repeat ratio (`geomean_fit_ratio=0.9875`) but
+  still failed seed 0 (`fit_ratio=1.1966`) and every seed's median-repeat ratio
+  still favored upstream. The product code was reverted; do not promote this
+  linear-leaf precompute without a broader redesign.
 - Selected row/feature kernels:
   code inspection plus `tests/test_chimeraboost.py` show these kernels are
   inactive under the strict default matrix (`subsample=1.0`,
@@ -364,7 +380,8 @@ Next:
    semantics lane if weighted quality diverges, or a deeper default catboost
    scalar/tree-builder overhead ablation for the remaining numeric-binary
    stress timing row. Call-shape-only routing and benchmark-order bias are
-   already rejected, and native-int bin indexing is rejected.
+   already rejected, native-int bin indexing is rejected, dtype alone is not
+   explanatory, and linear-leaf precompute is rejected.
 2. Promote only ablations that improve the blocker without introducing a new
    quality, semantic, or timing regression.
 3. Keep `tree_mode="lightgbm"` work paused until catboost mode is either

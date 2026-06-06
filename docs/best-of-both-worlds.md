@@ -702,6 +702,48 @@ still favored upstream on four of five seeds.
 Decision: product code was reverted. The remaining overhead is still in the
 default tree-kernel path, but native-int bin indexing is not the fix.
 
+### Tree-Kernel Dtype Microprobe
+
+The direct dtype microprobe is tracked in:
+
+- `benchmarks/catboost_tree_kernel_dtype_microprobe_20260606.csv`
+
+It uses the failing numeric-binary stress seed, current candidate kernels, and
+the same gradients/Hessians to compare compact `uint8` bins against
+upstream-style `uint16` bins without changing the whole product path.
+
+Result: dtype alone is not the explanation. Full `build_oblivious_tree` timing
+was effectively tied (`uint8` mean `0.000910s`, `uint16` mean `0.000941s`), and
+direct histogram/split timings were also tied. This explains why the earlier
+forced-`uint16` result did not survive as a strict adaptive policy: whatever it
+was improving was not a stable raw Numba dtype advantage.
+
+Decision: keep compact bins by default. Do not spend another pass on dtype
+specialization unless a broader, row-level product ablation justifies it.
+
+### Linear-Leaf Precompute Probe
+
+Binary catboost defaults use linear leaves, and each tree currently remaps the
+selected split-feature bin ids to standardized bin-center values inside
+`_linear_leaf_fit`. A product-code probe precomputed all standardized binned
+features once per fit and passed that matrix into the linear-leaf fitter.
+
+The run is tracked in:
+
+- `benchmarks/catboost_linear_xstd_numeric_binary_stress_trace_r20_20260606.csv`
+- `benchmarks/catboost_linear_xstd_numeric_binary_stress_trace_r20_summary_20260606.csv`
+- `benchmarks/catboost_linear_xstd_numeric_binary_stress_trace_r20_report_20260606.json`
+- `benchmarks/catboost_linear_xstd_numeric_binary_stress_trace_r20_repeat_summary_20260606.csv`
+
+Result: reject. The aggregate min-of-repeat ratio was below 1.0
+(`geomean_fit_ratio=0.9875`), but seed 0 became a larger row-level failure
+(`fit_ratio=1.1966`) and every seed's median-repeat ratio still favored
+upstream. The extra precompute also adds an `(n_features, n_samples)` float64
+matrix to binary fits, so the risk/reward is poor.
+
+Decision: product code was reverted. Linear-leaf speed is still a plausible
+area, but this broad precompute is not the right cut.
+
 ### Selected Row/Feature Kernels
 
 The selected-row and selected-feature histogram kernels are inactive in the
