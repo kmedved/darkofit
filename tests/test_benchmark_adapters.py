@@ -18,6 +18,7 @@ from benchmark_adapters import (  # noqa: E402
     build_dataset,
     default_revision_specs,
     estimator_kwargs,
+    make_groups,
     make_sample_weight,
     split_case,
 )
@@ -220,6 +221,7 @@ def test_default_variant_row_does_not_claim_quantile_loss():
         spec,
         "tiny",
         seed=0,
+        split_mode="row",
         weight_mode="none",
         split=split,
     )
@@ -228,6 +230,7 @@ def test_default_variant_row_does_not_claim_quantile_loss():
         spec,
         "tiny",
         seed=0,
+        split_mode="row",
         weight_mode="none",
         split=split,
     )
@@ -236,6 +239,38 @@ def test_default_variant_row_does_not_claim_quantile_loss():
     assert default_row["alpha"] == ""
     assert matched_row["loss"] == "Quantile"
     assert matched_row["alpha"] == 0.9
+
+
+def test_group_split_keeps_groups_disjoint():
+    rng = np.random.default_rng(1)
+    X = rng.normal(size=(300, 5))
+    y = rng.integers(0, 2, size=300)
+    groups = make_groups(len(y), seed=1)
+    split = split_case(X, y, "binary", seed=1, groups=groups)
+
+    train_groups = set(split["groups_fit"])
+    val_groups = set(split["groups_val"])
+    test_groups = set(split["groups_test"])
+
+    assert train_groups.isdisjoint(val_groups)
+    assert train_groups.isdisjoint(test_groups)
+    assert val_groups.isdisjoint(test_groups)
+    assert split["n_groups_train"] == len(train_groups)
+    assert split["n_groups_val"] == len(val_groups)
+    assert split["n_groups_test"] == len(test_groups)
+
+    weighted = split_case(
+        X,
+        y,
+        "binary",
+        seed=1,
+        sample_weight=[1.0] * len(y),
+        groups=groups,
+    )
+    assert weighted["w_fit"].shape[0] == weighted["X_fit"].shape[0]
+
+    with pytest.raises(ValueError, match="groups"):
+        split_case(X, y, "binary", seed=1, groups=groups[:-1])
 
 
 def test_uniform_weight_metrics_equal_unweighted_metrics():

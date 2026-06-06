@@ -41,6 +41,7 @@ try:
         build_dataset,
         default_revision_specs,
         estimator_kwargs,
+        make_groups,
         make_sample_weight,
         split_case,
     )
@@ -54,6 +55,7 @@ except ImportError:  # pragma: no cover - supports `python -m benchmarks...`
         build_dataset,
         default_revision_specs,
         estimator_kwargs,
+        make_groups,
         make_sample_weight,
         split_case,
     )
@@ -73,11 +75,15 @@ CSV_FIELDS = [
     "alpha",
     "size",
     "seed",
+    "split_mode",
     "weight_mode",
     "n_train",
     "n_val",
     "n_test",
     "n_features",
+    "n_groups_train",
+    "n_groups_val",
+    "n_groups_test",
     "fit_seconds",
     "predict_seconds",
     "boost_seconds",
@@ -327,7 +333,7 @@ def _run_worker(payload_path):
         }
 
 
-def _base_row(variant, spec, size, seed, weight_mode, split):
+def _base_row(variant, spec, size, seed, split_mode, weight_mode, split):
     return {
         "variant": variant.label,
         "revision_path": str(Path(variant.path).resolve()),
@@ -342,11 +348,15 @@ def _base_row(variant, spec, size, seed, weight_mode, split):
         ),
         "size": size,
         "seed": seed,
+        "split_mode": split_mode,
         "weight_mode": weight_mode,
         "n_train": split["n_train"],
         "n_val": split["n_val"],
         "n_test": split["n_test"],
         "n_features": split["n_features"],
+        "n_groups_train": split.get("n_groups_train", ""),
+        "n_groups_val": split.get("n_groups_val", ""),
+        "n_groups_test": split.get("n_groups_test", ""),
     }
 
 
@@ -391,6 +401,13 @@ def parse_args(argv):
         nargs="+",
         choices=["none", "uniform", "stress"],
         default=["none", "uniform"],
+    )
+    parser.add_argument(
+        "--split-modes",
+        nargs="+",
+        choices=["row", "group"],
+        default=["row"],
+        help="row = ordinary random splits; group = hold out whole synthetic groups",
     )
     parser.add_argument(
         "--models",
@@ -451,35 +468,44 @@ def main(argv=None):
                 for dataset in datasets:
                     for seed in range(args.seeds):
                         spec, X, y, cat_features = build_dataset(dataset, size, seed)
-                        for weight_mode in args.weight_modes:
-                            weights = make_sample_weight(y, spec.task, weight_mode)
-                            split = split_case(X, y, spec.task, seed, weights)
-                            data_path = tmpdir / f"{dataset}-{size}-{seed}-{weight_mode}.npz"
-                            _save_case(data_path, split)
-                            for variant in variants:
-                                payload = {
-                                    "variant": asdict(variant),
-                                    "fit_config": asdict(config),
-                                    "data_path": str(data_path),
-                                    "task": spec.task,
-                                    "loss": spec.loss,
-                                    "alpha": spec.alpha,
-                                    "cat_features": cat_features,
-                                    "seed": seed,
-                                    "repeat": args.repeat,
-                                }
-                                payload_path = tmpdir / f"payload-{variant.label}-{dataset}-{size}-{seed}-{weight_mode}.json"
-                                payload_path.write_text(json.dumps(payload, default=_json_default))
-                                row = _base_row(variant, spec, size, seed, weight_mode, split)
-                                row.update(_run_worker(payload_path))
-                                writer.writerow(_complete_row(row))
-                                fh.flush()
-                                print(
-                                    f"{row['status']:5s} {variant.label:24s} "
-                                    f"{dataset:23s} {size:6s} seed={seed} "
-                                    f"weights={weight_mode}",
-                                    flush=True,
-                                )
+                        for split_mode in args.split_modes:
+                            groups = (
+                                make_groups(len(y), seed)
+                                if split_mode == "group"
+                                else None
+                            )
+                            for weight_mode in args.weight_modes:
+                                weights = make_sample_weight(y, spec.task, weight_mode)
+                                split = split_case(
+                                    X, y, spec.task, seed, weights, groups=groups)
+                                data_path = tmpdir / f"{dataset}-{size}-{seed}-{split_mode}-{weight_mode}.npz"
+                                _save_case(data_path, split)
+                                for variant in variants:
+                                    payload = {
+                                        "variant": asdict(variant),
+                                        "fit_config": asdict(config),
+                                        "data_path": str(data_path),
+                                        "task": spec.task,
+                                        "loss": spec.loss,
+                                        "alpha": spec.alpha,
+                                        "cat_features": cat_features,
+                                        "seed": seed,
+                                        "repeat": args.repeat,
+                                    }
+                                    payload_path = tmpdir / f"payload-{variant.label}-{dataset}-{size}-{seed}-{split_mode}-{weight_mode}.json"
+                                    payload_path.write_text(json.dumps(payload, default=_json_default))
+                                    row = _base_row(
+                                        variant, spec, size, seed, split_mode,
+                                        weight_mode, split)
+                                    row.update(_run_worker(payload_path))
+                                    writer.writerow(_complete_row(row))
+                                    fh.flush()
+                                    print(
+                                        f"{row['status']:5s} {variant.label:24s} "
+                                        f"{dataset:23s} {size:6s} seed={seed} "
+                                        f"split={split_mode} weights={weight_mode}",
+                                        flush=True,
+                                    )
     finally:
         if args.keep_case_files:
             print(f"kept case files in {tmpdir}")

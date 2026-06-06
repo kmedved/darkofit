@@ -25,6 +25,7 @@ try:
         DATASETS,
         SIZE_SAMPLES,
         build_dataset,
+        make_groups,
         make_sample_weight,
         split_case,
     )
@@ -34,6 +35,7 @@ except ImportError:  # pragma: no cover - supports `python -m benchmarks...`
         DATASETS,
         SIZE_SAMPLES,
         build_dataset,
+        make_groups,
         make_sample_weight,
         split_case,
     )
@@ -52,11 +54,15 @@ CSV_FIELDS = [
     "alpha",
     "size",
     "seed",
+    "split_mode",
     "weight_mode",
     "n_train",
     "n_val",
     "n_test",
     "n_features",
+    "n_groups_train",
+    "n_groups_val",
+    "n_groups_test",
     "n_estimators",
     "depth",
     "learning_rate",
@@ -214,7 +220,7 @@ def _fit_one(mode, spec, split, cat_features, params, repeat):
 
 
 def _run_case(writer, fh, mode, spec, size, seed, weight_mode, split, cat_features,
-              params, repeat):
+              params, repeat, split_mode):
     row = {
         "mode": mode,
         "dataset": spec.name,
@@ -223,11 +229,15 @@ def _run_case(writer, fh, mode, spec, size, seed, weight_mode, split, cat_featur
         "alpha": "" if spec.alpha is None else spec.alpha,
         "size": size,
         "seed": seed,
+        "split_mode": split_mode,
         "weight_mode": weight_mode,
         "n_train": split["n_train"],
         "n_val": split["n_val"],
         "n_test": split["n_test"],
         "n_features": split["n_features"],
+        "n_groups_train": split.get("n_groups_train", ""),
+        "n_groups_val": split.get("n_groups_val", ""),
+        "n_groups_test": split.get("n_groups_test", ""),
         "n_estimators": params["n_estimators"],
         "depth": params["depth"],
         "learning_rate": "" if params["learning_rate"] is None else params["learning_rate"],
@@ -274,6 +284,8 @@ def parse_args(argv=None):
     parser.add_argument("--weight-modes", nargs="+",
                         choices=["none", "uniform", "stress"],
                         default=["none"])
+    parser.add_argument("--split-modes", nargs="+", choices=["row", "group"],
+                        default=["row"])
     parser.add_argument("--csv", type=Path,
                         default=Path("benchmarks/levelwise_tuning.csv"))
     return parser.parse_args(argv)
@@ -295,32 +307,39 @@ def main(argv=None):
             for dataset in datasets:
                 for seed in range(args.seeds):
                     spec, X, y, cat_features = build_dataset(dataset, size, seed)
-                    for weight_mode in args.weight_modes:
-                        weights = make_sample_weight(y, spec.task, weight_mode)
-                        split = split_case(X, y, spec.task, seed, weights)
-                        for mode in args.modes:
-                            for depth in args.depths:
-                                for lr in args.learning_rates:
-                                    for l2 in args.l2_values:
-                                        for mcw in args.min_child_weights:
-                                            for leaf_iters in args.leaf_estimation_iterations:
-                                                params = {
-                                                    "n_estimators": args.n_estimators,
-                                                    "patience": args.patience,
-                                                    "threads": args.threads,
-                                                    "seed": seed,
-                                                    "depth": depth,
-                                                    "learning_rate": lr,
-                                                    "l2_leaf_reg": l2,
-                                                    "min_child_weight": mcw,
-                                                    "leaf_estimation_iterations": leaf_iters,
-                                                }
-                                                _run_case(
-                                                    writer, fh, mode, spec, size,
-                                                    seed, weight_mode, split,
-                                                    cat_features, params,
-                                                    args.repeat,
-                                                )
+                    for split_mode in args.split_modes:
+                        groups = (
+                            make_groups(len(y), seed)
+                            if split_mode == "group"
+                            else None
+                        )
+                        for weight_mode in args.weight_modes:
+                            weights = make_sample_weight(y, spec.task, weight_mode)
+                            split = split_case(
+                                X, y, spec.task, seed, weights, groups=groups)
+                            for mode in args.modes:
+                                for depth in args.depths:
+                                    for lr in args.learning_rates:
+                                        for l2 in args.l2_values:
+                                            for mcw in args.min_child_weights:
+                                                for leaf_iters in args.leaf_estimation_iterations:
+                                                    params = {
+                                                        "n_estimators": args.n_estimators,
+                                                        "patience": args.patience,
+                                                        "threads": args.threads,
+                                                        "seed": seed,
+                                                        "depth": depth,
+                                                        "learning_rate": lr,
+                                                        "l2_leaf_reg": l2,
+                                                        "min_child_weight": mcw,
+                                                        "leaf_estimation_iterations": leaf_iters,
+                                                    }
+                                                    _run_case(
+                                                        writer, fh, mode, spec, size,
+                                                        seed, weight_mode, split,
+                                                        cat_features, params,
+                                                        args.repeat, split_mode,
+                                                    )
     print(f"wrote rows to {args.csv}")
 
 

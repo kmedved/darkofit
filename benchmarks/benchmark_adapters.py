@@ -22,7 +22,7 @@ from sklearn.datasets import (
     make_friedman1,
     make_regression,
 )
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GroupShuffleSplit, train_test_split
 
 
 SIZE_SAMPLES = {
@@ -285,14 +285,68 @@ def make_sample_weight(y, task: str, mode: str):
     return w * (len(w) / w.sum())
 
 
-def split_case(X, y, task: str, seed: int, sample_weight=None):
-    """Return deterministic train/validation/test arrays for one case."""
-    strat = y if task not in ("regression", "quantile") else None
+def make_groups(n_samples: int, seed: int):
+    """Deterministic synthetic groups for grouped benchmark split modes."""
+    n_samples = int(n_samples)
+    n_groups = max(10, min(500, max(1, n_samples // 20)))
+    groups = np.arange(n_samples, dtype=np.int64) % n_groups
+    rng = np.random.default_rng(30_311 + int(seed))
+    rng.shuffle(groups)
+    return groups
+
+
+def _group_train_test_split(X, y, groups, sample_weight, test_size, seed):
+    splitter = GroupShuffleSplit(
+        n_splits=1,
+        test_size=test_size,
+        random_state=seed,
+    )
+    train_idx, test_idx = next(splitter.split(X, y, groups=groups))
     if sample_weight is None:
+        return (
+            X[train_idx],
+            X[test_idx],
+            y[train_idx],
+            y[test_idx],
+            None,
+            None,
+            groups[train_idx],
+            groups[test_idx],
+        )
+    return (
+        X[train_idx],
+        X[test_idx],
+        y[train_idx],
+        y[test_idx],
+        sample_weight[train_idx],
+        sample_weight[test_idx],
+        groups[train_idx],
+        groups[test_idx],
+    )
+
+
+def split_case(X, y, task: str, seed: int, sample_weight=None, groups=None):
+    """Return deterministic train/validation/test arrays for one case."""
+    sample_weight = (
+        None if sample_weight is None
+        else np.asarray(sample_weight, dtype=np.float64)
+    )
+    groups = None if groups is None else np.asarray(groups)
+    if groups is not None and groups.shape[0] != len(y):
+        raise ValueError(
+            f"groups must have length {len(y)}; got {groups.shape[0]}.")
+    strat = y if task not in ("regression", "quantile") else None
+    if groups is not None:
+        X_train, X_test, y_train, y_test, w_train, w_test, g_train, g_test = (
+            _group_train_test_split(
+                X, y, groups, sample_weight, 0.25, seed)
+        )
+    elif sample_weight is None:
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.25, random_state=seed, stratify=strat
         )
         w_train = w_test = None
+        g_train = g_test = None
     else:
         X_train, X_test, y_train, y_test, w_train, w_test = train_test_split(
             X,
@@ -302,9 +356,15 @@ def split_case(X, y, task: str, seed: int, sample_weight=None):
             random_state=seed,
             stratify=strat,
         )
+        g_train = g_test = None
 
     strat_fit = y_train if task not in ("regression", "quantile") else None
-    if w_train is None:
+    if groups is not None:
+        X_fit, X_val, y_fit, y_val, w_fit, w_val, g_fit, g_val = (
+            _group_train_test_split(
+                X_train, y_train, g_train, w_train, 0.20, 10_000 + seed)
+        )
+    elif w_train is None:
         X_fit, X_val, y_fit, y_val = train_test_split(
             X_train,
             y_train,
@@ -313,6 +373,7 @@ def split_case(X, y, task: str, seed: int, sample_weight=None):
             stratify=strat_fit,
         )
         w_fit = w_val = None
+        g_fit = g_val = None
     else:
         X_fit, X_val, y_fit, y_val, w_fit, w_val = train_test_split(
             X_train,
@@ -322,6 +383,7 @@ def split_case(X, y, task: str, seed: int, sample_weight=None):
             random_state=10_000 + seed,
             stratify=strat_fit,
         )
+        g_fit = g_val = None
 
     return {
         "X_fit": X_fit,
@@ -333,10 +395,16 @@ def split_case(X, y, task: str, seed: int, sample_weight=None):
         "w_fit": w_fit,
         "w_val": w_val,
         "w_test": w_test,
+        "groups_fit": g_fit,
+        "groups_val": g_val,
+        "groups_test": g_test,
         "n_train": len(y_fit),
         "n_val": len(y_val),
         "n_test": len(y_test),
         "n_features": np.asarray(X).shape[1],
+        "n_groups_train": "" if g_fit is None else len(np.unique(g_fit)),
+        "n_groups_val": "" if g_val is None else len(np.unique(g_val)),
+        "n_groups_test": "" if g_test is None else len(np.unique(g_test)),
     }
 
 

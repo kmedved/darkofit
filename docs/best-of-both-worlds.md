@@ -46,6 +46,8 @@ loss otherwise; speed breaks ties.
 6. Extended the revision harness with Quantile-loss datasets and
    pinball/coverage metrics so the benchmark matrix covers RMSE-style and
    quantile regression separately.
+7. Added grouped split modes to the revision and levelwise-tuning harnesses so
+   train/validation/test can hold out whole groups instead of random rows.
 
 ## Current Upstream/Fork/Candidate Benchmark
 
@@ -125,6 +127,46 @@ All 48 rows completed successfully. Ratios below are against
 Decision: quantile regression reinforces the existing default. Keep
 `tree_mode="catboost"` as the product path and leave `tree_mode="lightgbm"` as
 an opt-in mode until it wins primary holdout loss.
+
+## Grouped Split Coverage
+
+Raw medium grouped rows are tracked in:
+
+`benchmarks/tri_compare_grouped_medium_20260605.csv`
+
+Command:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_compare_revisions.py \
+  --upstream /private/tmp/chimeraboost-upstream-ddaf272-bobw \
+  --fork /private/tmp/chimeraboost-fork-origin-main-bobw \
+  --candidate . \
+  --models upstream_matched fork_matched candidate_catboost candidate_lightgbm \
+  --datasets friedman_numeric numeric_binary categorical_binary \
+  --sizes medium \
+  --seeds 2 \
+  --repeat 2 \
+  --iterations 300 \
+  --patience 25 \
+  --threads 4 \
+  --weight-modes none stress \
+  --split-modes group \
+  --csv benchmarks/tri_compare_grouped_medium_20260605.csv
+```
+
+All 48 rows completed successfully. Every row used `split_mode=group`, with
+whole groups held out across fit/validation/test (`300/75/125` groups in the
+medium cases). Ratios below are against `upstream_matched`; lower is better.
+
+| Variant | Mean primary-metric ratio | Mean fit-time ratio | Interpretation |
+| --- | ---: | ---: | --- |
+| `candidate_catboost` | 1.000 | 2.086 | Preserves upstream grouped-holdout quality, but is slower in this harness. |
+| `fork_matched` | 1.117 | 1.434 | Usually gives up quality on grouped holdouts. |
+| `candidate_lightgbm` | 1.136 | 1.079 | Faster on some classification rows, but still misses the primary-metric gate. |
+
+Decision: grouped holdout evidence also supports keeping `tree_mode="catboost"`
+as the default/product path. Levelwise remains an opt-in speed experiment until
+it can win primary out-of-sample loss.
 
 ## Current Mode-Gate Benchmark
 
