@@ -43,6 +43,9 @@ loss otherwise; speed breaks ties.
    selected-row histogram fills, and class-major multiclass buffers.
 5. Added opt-in `tree_mode="lightgbm"` with a level-wise tree representation
    for regression, binary classification, and multiclass classification.
+6. Extended the revision harness with Quantile-loss datasets and
+   pinball/coverage metrics so the benchmark matrix covers RMSE-style and
+   quantile regression separately.
 
 ## Current Upstream/Fork/Candidate Benchmark
 
@@ -84,6 +87,44 @@ Decision: keep upstream-shaped `tree_mode="catboost"` as the product/default
 path. The legacy fork is useful as a source of implementation ideas, not as the
 integration base. `tree_mode="lightgbm"` remains opt-in until it wins weighted
 or ordinary holdout loss, not just speed.
+
+## Quantile Benchmark Coverage
+
+Raw medium quantile rows are tracked in:
+
+`benchmarks/tri_compare_quantile_medium_20260605.csv`
+
+Command:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_compare_revisions.py \
+  --upstream /private/tmp/chimeraboost-upstream-ddaf272-bobw \
+  --fork /private/tmp/chimeraboost-fork-origin-main-bobw \
+  --candidate . \
+  --models upstream_matched fork_matched candidate_catboost candidate_lightgbm \
+  --datasets quantile_reg_10 quantile_reg_50 quantile_reg_90 \
+  --sizes medium \
+  --seeds 2 \
+  --repeat 2 \
+  --iterations 300 \
+  --patience 25 \
+  --threads 4 \
+  --weight-modes none stress \
+  --csv benchmarks/tri_compare_quantile_medium_20260605.csv
+```
+
+All 48 rows completed successfully. Ratios below are against
+`upstream_matched`; lower is better.
+
+| Variant | Mean pinball metric ratio | Mean fit-time ratio | Interpretation |
+| --- | ---: | ---: | --- |
+| `candidate_catboost` | 0.996 | 1.377 | Preserves upstream quantile quality; slightly better on weighted pinball, slower in this harness. |
+| `fork_matched` | 1.042 | 0.952 | Faster, but gives up pinball quality. |
+| `candidate_lightgbm` | 1.158 | 1.269 | Still fails the quantile quality gate. |
+
+Decision: quantile regression reinforces the existing default. Keep
+`tree_mode="catboost"` as the product path and leave `tree_mode="lightgbm"` as
+an opt-in mode until it wins primary holdout loss.
 
 ## Current Mode-Gate Benchmark
 

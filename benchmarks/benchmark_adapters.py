@@ -39,6 +39,8 @@ class DatasetSpec:
     name: str
     task: str
     builder: Callable[[int, np.random.Generator], tuple]
+    loss: Optional[str] = None
+    alpha: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -112,6 +114,19 @@ def _wide_regression(n, rng):
         noise=25.0,
         random_state=int(rng.integers(1_000_000_000)),
     )
+    return X, y, None
+
+
+def _quantile_regression(n, rng):
+    X = rng.normal(size=(n, 20))
+    signal = (
+        3.0 * np.sin(X[:, 0])
+        + 2.0 * X[:, 1]
+        - 1.5 * X[:, 2] * X[:, 3]
+        + 0.7 * X[:, 4] ** 2
+    )
+    scale = 0.4 + 1.8 / (1.0 + np.exp(-X[:, 5]))
+    y = signal + rng.normal(0.0, scale, size=n)
     return X, y, None
 
 
@@ -215,6 +230,18 @@ DATASETS = {
         DatasetSpec("diabetes_resampled", "regression", _diabetes),
         DatasetSpec("friedman_numeric", "regression", _friedman),
         DatasetSpec("wide_numeric_reg", "regression", _wide_regression),
+        DatasetSpec(
+            "quantile_reg_10", "quantile", _quantile_regression,
+            loss="Quantile", alpha=0.1,
+        ),
+        DatasetSpec(
+            "quantile_reg_50", "quantile", _quantile_regression,
+            loss="Quantile", alpha=0.5,
+        ),
+        DatasetSpec(
+            "quantile_reg_90", "quantile", _quantile_regression,
+            loss="Quantile", alpha=0.9,
+        ),
         DatasetSpec("categorical_reg", "regression", _categorical_regression),
         DatasetSpec("breast_cancer_resampled", "binary", _breast_cancer),
         DatasetSpec("numeric_binary", "binary", _binary_classification),
@@ -247,7 +274,7 @@ def make_sample_weight(y, task: str, mode: str):
     if mode != "stress":
         raise ValueError(f"unknown weight mode {mode!r}")
 
-    if task == "regression":
+    if task in ("regression", "quantile"):
         order = np.argsort(np.argsort(y))
         pct = order / max(len(y) - 1, 1)
         w = 0.5 + 3.0 * pct
@@ -260,7 +287,7 @@ def make_sample_weight(y, task: str, mode: str):
 
 def split_case(X, y, task: str, seed: int, sample_weight=None):
     """Return deterministic train/validation/test arrays for one case."""
-    strat = y if task != "regression" else None
+    strat = y if task not in ("regression", "quantile") else None
     if sample_weight is None:
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.25, random_state=seed, stratify=strat
@@ -276,7 +303,7 @@ def split_case(X, y, task: str, seed: int, sample_weight=None):
             stratify=strat,
         )
 
-    strat_fit = y_train if task != "regression" else None
+    strat_fit = y_train if task not in ("regression", "quantile") else None
     if w_train is None:
         X_fit, X_val, y_fit, y_val = train_test_split(
             X_train,

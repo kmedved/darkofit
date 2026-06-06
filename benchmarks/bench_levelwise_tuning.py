@@ -48,6 +48,8 @@ CSV_FIELDS = [
     "mode",
     "dataset",
     "task",
+    "loss",
+    "alpha",
     "size",
     "seed",
     "weight_mode",
@@ -69,6 +71,8 @@ CSV_FIELDS = [
     "rmse",
     "mae",
     "r2",
+    "pinball",
+    "coverage",
     "accuracy",
     "f1_macro",
     "log_loss",
@@ -76,6 +80,8 @@ CSV_FIELDS = [
     "weighted_rmse",
     "weighted_mae",
     "weighted_r2",
+    "weighted_pinball",
+    "weighted_coverage",
     "weighted_accuracy",
     "weighted_f1_macro",
     "weighted_log_loss",
@@ -132,8 +138,13 @@ def _timing_fields(model):
     return out
 
 
-def _fit_one(mode, task, split, cat_features, params, repeat):
-    estimator_cls = ChimeraBoostRegressor if task == "regression" else ChimeraBoostClassifier
+def _fit_one(mode, spec, split, cat_features, params, repeat):
+    task = spec.task
+    estimator_cls = (
+        ChimeraBoostRegressor
+        if task in ("regression", "quantile")
+        else ChimeraBoostClassifier
+    )
     kwargs = {
         "n_estimators": params["n_estimators"],
         "depth": params["depth"],
@@ -148,6 +159,10 @@ def _fit_one(mode, task, split, cat_features, params, repeat):
         "tree_mode": mode,
         "verbose_timing": True,
     }
+    if spec.loss is not None:
+        kwargs["loss"] = spec.loss
+    if spec.alpha is not None:
+        kwargs["alpha"] = spec.alpha
     fit_kwargs = {
         "cat_features": cat_features,
         "eval_set": (split["X_val"], split["y_val"], split["w_val"]),
@@ -172,7 +187,7 @@ def _fit_one(mode, task, split, cat_features, params, repeat):
         start = time.perf_counter()
         cand_pred = best_model.predict(split["X_test"])
         cand_proba = None
-        if task != "regression":
+        if task not in ("regression", "quantile"):
             cand_proba = best_model.predict_proba(split["X_test"])
         elapsed = time.perf_counter() - start
         if elapsed < predict_seconds:
@@ -187,6 +202,7 @@ def _fit_one(mode, task, split, cat_features, params, repeat):
         proba=proba,
         labels=getattr(best_model, "classes_", None),
         sample_weight=split["w_test"],
+        alpha=spec.alpha,
     )
     return {
         "fit_seconds": fit_seconds,
@@ -203,6 +219,8 @@ def _run_case(writer, fh, mode, spec, size, seed, weight_mode, split, cat_featur
         "mode": mode,
         "dataset": spec.name,
         "task": spec.task,
+        "loss": spec.loss or "",
+        "alpha": "" if spec.alpha is None else spec.alpha,
         "size": size,
         "seed": seed,
         "weight_mode": weight_mode,
@@ -218,7 +236,7 @@ def _run_case(writer, fh, mode, spec, size, seed, weight_mode, split, cat_featur
         "leaf_estimation_iterations": params["leaf_estimation_iterations"],
     }
     try:
-        row.update(_fit_one(mode, spec.task, split, cat_features, params, repeat))
+        row.update(_fit_one(mode, spec, split, cat_features, params, repeat))
         row["status"] = "ok"
         row["error"] = ""
     except Exception as exc:  # pragma: no cover - benchmark diagnostics

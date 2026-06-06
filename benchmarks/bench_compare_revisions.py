@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import inspect
 import json
 import subprocess
 import sys
@@ -68,6 +69,8 @@ CSV_FIELDS = [
     "use_defaults",
     "dataset",
     "task",
+    "loss",
+    "alpha",
     "size",
     "seed",
     "weight_mode",
@@ -84,6 +87,8 @@ CSV_FIELDS = [
     "rmse",
     "mae",
     "r2",
+    "pinball",
+    "coverage",
     "accuracy",
     "f1_macro",
     "log_loss",
@@ -91,6 +96,8 @@ CSV_FIELDS = [
     "weighted_rmse",
     "weighted_mae",
     "weighted_r2",
+    "weighted_pinball",
+    "weighted_coverage",
     "weighted_accuracy",
     "weighted_f1_macro",
     "weighted_log_loss",
@@ -195,8 +202,26 @@ def _fit_worker(payload):
     from chimeraboost import ChimeraBoostClassifier, ChimeraBoostRegressor
 
     task = payload["task"]
-    estimator_cls = ChimeraBoostRegressor if task == "regression" else ChimeraBoostClassifier
+    estimator_cls = (
+        ChimeraBoostRegressor
+        if task in ("regression", "quantile")
+        else ChimeraBoostClassifier
+    )
     kwargs = estimator_kwargs(estimator_cls, config, variant, payload["seed"])
+    if not variant.use_defaults:
+        accepted = set(inspect.signature(estimator_cls.__init__).parameters)
+        loss = payload.get("loss")
+        alpha = payload.get("alpha")
+        if loss is not None:
+            if "loss" not in accepted:
+                raise TypeError(
+                    f"{estimator_cls.__name__} does not support loss={loss!r}")
+            kwargs["loss"] = loss
+        if alpha is not None:
+            if "alpha" not in accepted:
+                raise TypeError(
+                    f"{estimator_cls.__name__} does not support alpha={alpha!r}")
+            kwargs["alpha"] = alpha
     cat_features = payload["cat_features"]
     repeat = max(1, int(payload["repeat"]))
 
@@ -237,7 +262,7 @@ def _fit_worker(payload):
     def predict_once():
         start = time.perf_counter()
         pred = best_model.predict(data["X_test"])
-        if task == "regression":
+        if task in ("regression", "quantile"):
             proba = None
         else:
             proba = best_model.predict_proba(data["X_test"])
@@ -257,6 +282,7 @@ def _fit_worker(payload):
         proba=proba,
         labels=labels,
         sample_weight=data["w_test"],
+        alpha=payload.get("alpha"),
     )
     boost_seconds = getattr(getattr(best_model, "model_", None), "fit_time_", None)
     row = {
@@ -309,6 +335,11 @@ def _base_row(variant, spec, size, seed, weight_mode, split):
         "use_defaults": variant.use_defaults,
         "dataset": spec.name,
         "task": spec.task,
+        "loss": "default" if variant.use_defaults else (spec.loss or ""),
+        "alpha": (
+            "" if variant.use_defaults or spec.alpha is None
+            else spec.alpha
+        ),
         "size": size,
         "seed": seed,
         "weight_mode": weight_mode,
@@ -431,6 +462,8 @@ def main(argv=None):
                                     "fit_config": asdict(config),
                                     "data_path": str(data_path),
                                     "task": spec.task,
+                                    "loss": spec.loss,
+                                    "alpha": spec.alpha,
                                     "cat_features": cat_features,
                                     "seed": seed,
                                     "repeat": args.repeat,

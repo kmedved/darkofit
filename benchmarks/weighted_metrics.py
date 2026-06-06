@@ -62,6 +62,20 @@ def regression_metrics(y_true, pred, sample_weight=None) -> dict[str, float]:
     }
 
 
+def quantile_metrics(y_true, pred, alpha, sample_weight=None) -> dict[str, float]:
+    """Return pinball loss and empirical coverage for one quantile level."""
+    w = _as_weight(sample_weight)
+    y_true = np.asarray(y_true, dtype=np.float64)
+    pred = np.asarray(pred, dtype=np.float64)
+    err = y_true - pred
+    pinball = np.maximum(alpha * err, (alpha - 1.0) * err)
+    covered = (y_true <= pred).astype(np.float64)
+    return {
+        "pinball": float(np.average(pinball, weights=w)),
+        "coverage": float(np.average(covered, weights=w)),
+    }
+
+
 def classification_metrics(
     y_true,
     pred,
@@ -87,13 +101,36 @@ def classification_metrics(
     }
 
 
-def metric_bundle(task, y_true, pred, proba=None, labels=None, sample_weight=None):
+def metric_bundle(
+    task,
+    y_true,
+    pred,
+    proba=None,
+    labels=None,
+    sample_weight=None,
+    alpha=None,
+):
     """Return unweighted and weighted metrics in flat CSV-friendly keys."""
     if task == "regression":
         unweighted = regression_metrics(y_true, pred)
         weighted = regression_metrics(y_true, pred, sample_weight=sample_weight)
         primary = "weighted_rmse" if _as_weight(sample_weight) is not None else "rmse"
         primary_value = weighted["rmse"] if primary == "weighted_rmse" else unweighted["rmse"]
+    elif task == "quantile":
+        if alpha is None:
+            raise ValueError("quantile metrics require alpha")
+        unweighted = quantile_metrics(y_true, pred, float(alpha))
+        weighted = quantile_metrics(
+            y_true, pred, float(alpha), sample_weight=sample_weight)
+        primary = (
+            "weighted_pinball"
+            if _as_weight(sample_weight) is not None
+            else "pinball"
+        )
+        primary_value = (
+            weighted["pinball"] if primary == "weighted_pinball"
+            else unweighted["pinball"]
+        )
     else:
         unweighted = classification_metrics(y_true, pred, proba, labels=labels)
         weighted = classification_metrics(

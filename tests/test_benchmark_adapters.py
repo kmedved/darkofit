@@ -11,13 +11,17 @@ if str(BENCH_DIR) not in sys.path:
     sys.path.insert(0, str(BENCH_DIR))
 
 from benchmark_adapters import (  # noqa: E402
+    DATASETS,
+    DatasetSpec,
     FitConfig,
     RevisionSpec,
+    build_dataset,
     default_revision_specs,
     estimator_kwargs,
     make_sample_weight,
     split_case,
 )
+from bench_compare_revisions import _base_row  # noqa: E402
 from weighted_metrics import metric_bundle  # noqa: E402
 
 
@@ -188,6 +192,52 @@ def test_stress_weights_are_mean_normalized():
     assert w_cls[y_cls == 1].mean() > w_cls[y_cls == 0].mean()
 
 
+def test_quantile_dataset_specs_carry_loss_and_use_regression_splits():
+    spec, X, y, cat_features = build_dataset("quantile_reg_90", "tiny", seed=0)
+    weights = make_sample_weight(y, spec.task, "stress")
+    split = split_case(X, y, spec.task, seed=0, sample_weight=weights)
+
+    assert DATASETS["quantile_reg_90"].task == "quantile"
+    assert spec.loss == "Quantile"
+    assert spec.alpha == 0.9
+    assert cat_features is None
+    assert np.isclose(weights.mean(), 1.0)
+    assert split["X_fit"].shape[0] + split["X_val"].shape[0] + split["X_test"].shape[0] == len(y)
+
+
+def test_default_variant_row_does_not_claim_quantile_loss():
+    spec = DatasetSpec(
+        "quantile_reg_test",
+        "quantile",
+        builder=lambda n, rng: None,
+        loss="Quantile",
+        alpha=0.9,
+    )
+    split = {"n_train": 10, "n_val": 3, "n_test": 4, "n_features": 2}
+
+    default_row = _base_row(
+        RevisionSpec("upstream_default", "/repo", use_defaults=True),
+        spec,
+        "tiny",
+        seed=0,
+        weight_mode="none",
+        split=split,
+    )
+    matched_row = _base_row(
+        RevisionSpec("upstream_matched", "/repo"),
+        spec,
+        "tiny",
+        seed=0,
+        weight_mode="none",
+        split=split,
+    )
+
+    assert default_row["loss"] == "default"
+    assert default_row["alpha"] == ""
+    assert matched_row["loss"] == "Quantile"
+    assert matched_row["alpha"] == 0.9
+
+
 def test_uniform_weight_metrics_equal_unweighted_metrics():
     y = np.array([0, 1, 1, 0])
     pred = np.array([0, 1, 0, 0])
@@ -212,3 +262,23 @@ def test_uniform_weight_metrics_equal_unweighted_metrics():
     assert metrics["weighted_f1_macro"] == metrics["f1_macro"]
     assert metrics["weighted_log_loss"] == metrics["log_loss"]
     assert metrics["weighted_brier"] == metrics["brier"]
+
+
+def test_quantile_metrics_report_pinball_and_coverage():
+    y = np.array([0.0, 1.0, 2.0, 3.0])
+    pred = np.array([0.5, 0.5, 2.5, 2.5])
+    weights = np.array([3.0, 1.0, 3.0, 1.0])
+
+    metrics = metric_bundle(
+        "quantile",
+        y,
+        pred,
+        sample_weight=weights,
+        alpha=0.9,
+    )
+
+    assert metrics["primary_metric"] == "weighted_pinball"
+    assert metrics["pinball"] == pytest.approx(0.25)
+    assert metrics["coverage"] == pytest.approx(0.5)
+    assert metrics["weighted_pinball"] != metrics["pinball"]
+    assert metrics["weighted_coverage"] == pytest.approx(0.75)
