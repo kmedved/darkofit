@@ -2,11 +2,20 @@
 
 import numpy as np
 import pytest
+import tomllib
+from pathlib import Path
 from sklearn.datasets import load_diabetes, load_breast_cancer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score, mean_squared_error
 
 from chimeraboost import ChimeraBoostRegressor, ChimeraBoostClassifier
+import chimeraboost
+
+
+def test_runtime_version_matches_project_metadata():
+    pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    metadata = tomllib.loads(pyproject.read_text())
+    assert chimeraboost.__version__ == metadata["project"]["version"]
 
 
 def test_regressor_beats_mean_baseline():
