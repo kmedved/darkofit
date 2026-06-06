@@ -50,6 +50,9 @@ loss otherwise; speed breaks ties.
    train/validation/test can hold out whole groups instead of random rows.
 8. Added feasible memory reporting (`peak_rss_mb`) to newly generated raw
    benchmark rows using each benchmark worker process's peak resident set size.
+9. Added explicit `ensemble_size` coverage to the revision and levelwise-tuning
+   harnesses so single-model and bagged configurations are benchmarked as
+   separate rows.
 
 ## Current Upstream/Fork/Candidate Benchmark
 
@@ -169,6 +172,51 @@ medium cases). Ratios below are against `upstream_matched`; lower is better.
 Decision: grouped holdout evidence also supports keeping `tree_mode="catboost"`
 as the default/product path. Levelwise remains an opt-in speed experiment until
 it can win primary out-of-sample loss.
+
+## Bagging Coverage
+
+Raw small bagging rows are tracked in:
+
+`benchmarks/tri_compare_bagging_small_20260605.csv`
+
+Command:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_compare_revisions.py \
+  --upstream /private/tmp/chimeraboost-upstream-ddaf272-bobw \
+  --fork /private/tmp/chimeraboost-fork-origin-main-bobw \
+  --candidate . \
+  --models upstream_matched fork_matched candidate_catboost candidate_lightgbm \
+  --datasets friedman_numeric numeric_binary \
+  --sizes small \
+  --seeds 1 \
+  --repeat 2 \
+  --iterations 120 \
+  --patience 15 \
+  --threads 4 \
+  --weight-modes none \
+  --ensemble-sizes 1 3 \
+  --ensemble-n-jobs 1 \
+  --csv benchmarks/tri_compare_bagging_small_20260605.csv
+```
+
+The run produced 16 rows: 14 successful rows and 2 explicit error rows for the
+legacy fork's unsupported `n_ensembles=3` request. The harness now treats that
+as a visible capability failure instead of silently benchmarking a single model
+under a bagged label.
+
+On this small two-dataset gate, `n_ensembles=3` did not rescue the levelwise
+quality gap. Against single-model `upstream_matched`, candidate catboost tied
+the upstream primary metric at `ensemble_size=1`; at `ensemble_size=3`, both
+candidate catboost and upstream had the same small primary-metric regressions
+(`1.023x` RMSE on `friedman_numeric`, `1.091x` log loss on `numeric_binary`).
+Candidate levelwise remained worse than candidate catboost at both ensemble
+sizes (`1.254x`/`1.317x` RMSE on `friedman_numeric`, `1.301x`/`1.326x` log loss
+on `numeric_binary`).
+
+Decision: bagging is now an explicit benchmark dimension. Do not use bagged rows
+to justify a tree-mode default unless they are compared against equally bagged
+catboost/upstream rows on the same splits.
 
 ## Current Mode-Gate Benchmark
 

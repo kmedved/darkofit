@@ -23,6 +23,8 @@ from benchmark_adapters import (  # noqa: E402
     split_case,
 )
 from bench_compare_revisions import _base_row, _peak_rss_mb  # noqa: E402
+from bench_compare_revisions import main as compare_revisions_main  # noqa: E402
+from bench_levelwise_tuning import main as levelwise_tuning_main  # noqa: E402
 from weighted_metrics import metric_bundle  # noqa: E402
 
 
@@ -38,6 +40,8 @@ class IterationsEstimator:
         thread_count=None,
         random_state=None,
         ordered_boosting=True,
+        n_ensembles=None,
+        ensemble_n_jobs=1,
         tree_mode="catboost",
         verbose_timing=False,
     ):
@@ -57,8 +61,15 @@ class NEstimatorsEstimator:
         thread_count=None,
         random_state=None,
         ordered_boosting=False,
+        n_ensembles=None,
+        ensemble_n_jobs=1,
         verbose_timing=False,
     ):
+        pass
+
+
+class NoEnsembleEstimator:
+    def __init__(self, n_estimators=1, early_stopping=True):
         pass
 
 
@@ -68,6 +79,8 @@ def test_estimator_kwargs_maps_iterations_api():
         patience=4,
         depth=3,
         learning_rate=0.2,
+        n_ensembles=3,
+        ensemble_n_jobs=2,
         max_bins_ts=32,
         weighted_target_stats=True,
         threads=2,
@@ -86,12 +99,20 @@ def test_estimator_kwargs_maps_iterations_api():
     assert kwargs["thread_count"] == 2
     assert kwargs["random_state"] == 11
     assert kwargs["ordered_boosting"] is True
+    assert kwargs["n_ensembles"] == 3
+    assert kwargs["ensemble_n_jobs"] == 2
     assert kwargs["tree_mode"] == "lightgbm"
     assert kwargs["verbose_timing"] is True
 
 
 def test_estimator_kwargs_maps_n_estimators_api_and_rejects_tree_mode():
-    cfg = FitConfig(iterations=23, patience=5, threads=1)
+    cfg = FitConfig(
+        iterations=23,
+        patience=5,
+        threads=1,
+        n_ensembles=4,
+        ensemble_n_jobs=2,
+    )
     variant = RevisionSpec("upstream_matched", "/repo")
 
     kwargs = estimator_kwargs(NEstimatorsEstimator, cfg, variant, seed=7)
@@ -101,6 +122,8 @@ def test_estimator_kwargs_maps_n_estimators_api_and_rejects_tree_mode():
     assert kwargs["early_stopping_rounds"] == 5
     assert kwargs["thread_count"] == 1
     assert kwargs["random_state"] == 7
+    assert kwargs["n_ensembles"] == 4
+    assert kwargs["ensemble_n_jobs"] == 2
 
     with pytest.raises(TypeError, match="tree_mode"):
         estimator_kwargs(
@@ -111,8 +134,36 @@ def test_estimator_kwargs_maps_n_estimators_api_and_rejects_tree_mode():
         )
 
 
+def test_estimator_kwargs_rejects_unsupported_bagging_request():
+    cfg = FitConfig(iterations=23, n_ensembles=3, ensemble_n_jobs=1)
+
+    with pytest.raises(TypeError, match="n_ensembles"):
+        estimator_kwargs(
+            NoEnsembleEstimator,
+            cfg,
+            RevisionSpec("legacy", "/repo"),
+            seed=7,
+        )
+
+    single_kwargs = estimator_kwargs(
+        NoEnsembleEstimator,
+        FitConfig(iterations=23, n_ensembles=1, ensemble_n_jobs=2),
+        RevisionSpec("legacy", "/repo"),
+        seed=7,
+    )
+    assert single_kwargs["n_estimators"] == 23
+    assert "n_ensembles" not in single_kwargs
+    assert "ensemble_n_jobs" not in single_kwargs
+
+
 def test_estimator_kwargs_default_variant_keeps_defaults():
-    cfg = FitConfig(iterations=999, patience=99, threads=3)
+    cfg = FitConfig(
+        iterations=999,
+        patience=99,
+        threads=3,
+        n_ensembles=5,
+        ensemble_n_jobs=2,
+    )
     variant = RevisionSpec("upstream_default", "/repo", use_defaults=True)
 
     kwargs = estimator_kwargs(NEstimatorsEstimator, cfg, variant, seed=12)
@@ -223,6 +274,7 @@ def test_default_variant_row_does_not_claim_quantile_loss():
         seed=0,
         split_mode="row",
         weight_mode="none",
+        ensemble_size=3,
         split=split,
     )
     matched_row = _base_row(
@@ -232,13 +284,36 @@ def test_default_variant_row_does_not_claim_quantile_loss():
         seed=0,
         split_mode="row",
         weight_mode="none",
+        ensemble_size=3,
         split=split,
     )
 
     assert default_row["loss"] == "default"
     assert default_row["alpha"] == ""
+    assert default_row["ensemble_size"] == "default"
     assert matched_row["loss"] == "Quantile"
     assert matched_row["alpha"] == 0.9
+    assert matched_row["ensemble_size"] == 3
+
+
+def test_benchmark_clis_reject_zero_ensemble_jobs(tmp_path):
+    with pytest.raises(SystemExit, match="ensemble-n-jobs"):
+        compare_revisions_main([
+            "--candidate",
+            ".",
+            "--ensemble-n-jobs",
+            "0",
+            "--csv",
+            str(tmp_path / "compare.csv"),
+        ])
+
+    with pytest.raises(SystemExit, match="ensemble-n-jobs"):
+        levelwise_tuning_main([
+            "--ensemble-n-jobs",
+            "0",
+            "--csv",
+            str(tmp_path / "tuning.csv"),
+        ])
 
 
 def test_peak_rss_helper_reports_positive_memory():

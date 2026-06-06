@@ -57,6 +57,8 @@ class FitConfig:
     patience: int = 50
     depth: int = 6
     learning_rate: Optional[float] = None
+    n_ensembles: Optional[int] = None
+    ensemble_n_jobs: int = 1
     max_bins_ts: Optional[int] = None
     weighted_target_stats: bool = False
     threads: Optional[int] = None
@@ -443,6 +445,21 @@ def estimator_kwargs(estimator_cls, config: FitConfig, variant: RevisionSpec, se
     set_if("random_state", seed)
     set_if("ordered_boosting", config.ordered_boosting)
     set_if("verbose_timing", config.verbose_timing)
+
+    if config.n_ensembles is not None and config.n_ensembles > 1:
+        if "n_ensembles" not in accepted:
+            raise TypeError(
+                f"{estimator_cls.__name__} does not support n_ensembles="
+                f"{config.n_ensembles!r}"
+            )
+        kwargs["n_ensembles"] = config.n_ensembles
+        if "ensemble_n_jobs" in accepted:
+            kwargs["ensemble_n_jobs"] = config.ensemble_n_jobs
+        elif config.ensemble_n_jobs != 1:
+            raise TypeError(
+                f"{estimator_cls.__name__} does not support ensemble_n_jobs="
+                f"{config.ensemble_n_jobs!r}"
+            )
 
     if variant.tree_mode is not None:
         if "tree_mode" not in accepted:

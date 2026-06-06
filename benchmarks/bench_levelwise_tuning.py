@@ -57,6 +57,7 @@ CSV_FIELDS = [
     "seed",
     "split_mode",
     "weight_mode",
+    "ensemble_size",
     "n_train",
     "n_val",
     "n_test",
@@ -174,6 +175,9 @@ def _fit_one(mode, spec, split, cat_features, params, repeat):
         "tree_mode": mode,
         "verbose_timing": True,
     }
+    if params["n_ensembles"] > 1:
+        kwargs["n_ensembles"] = params["n_ensembles"]
+        kwargs["ensemble_n_jobs"] = params["ensemble_n_jobs"]
     if spec.loss is not None:
         kwargs["loss"] = spec.loss
     if spec.alpha is not None:
@@ -241,6 +245,7 @@ def _run_case(writer, fh, mode, spec, size, seed, weight_mode, split, cat_featur
         "seed": seed,
         "split_mode": split_mode,
         "weight_mode": weight_mode,
+        "ensemble_size": params["n_ensembles"],
         "n_train": split["n_train"],
         "n_val": split["n_val"],
         "n_test": split["n_test"],
@@ -269,7 +274,8 @@ def _run_case(writer, fh, mode, spec, size, seed, weight_mode, split, cat_featur
         f"seed={seed} weights={weight_mode} depth={params['depth']} "
         f"lr={params['learning_rate']} l2={params['l2_leaf_reg']} "
         f"mcw={params['min_child_weight']} "
-        f"leaf_iters={params['leaf_estimation_iterations']}"
+        f"leaf_iters={params['leaf_estimation_iterations']} "
+        f"ensemble={params['n_ensembles']}"
     )
 
 
@@ -282,6 +288,8 @@ def parse_args(argv=None):
     parser.add_argument("--threads", type=int, default=4)
     parser.add_argument("--n-estimators", type=int, default=300)
     parser.add_argument("--patience", type=int, default=25)
+    parser.add_argument("--ensemble-sizes", nargs="+", type=int, default=[1])
+    parser.add_argument("--ensemble-n-jobs", type=int, default=1)
     parser.add_argument("--modes", nargs="+", choices=["catboost", "lightgbm"],
                         default=["lightgbm"])
     parser.add_argument("--depths", type=_parse_int_list, default=[6])
@@ -307,6 +315,10 @@ def main(argv=None):
     unknown = sorted(set(datasets) - set(DATASETS))
     if unknown:
         raise SystemExit(f"unknown dataset(s): {unknown}; known: {sorted(DATASETS)}")
+    if any(size < 1 for size in args.ensemble_sizes):
+        raise SystemExit("--ensemble-sizes values must be positive integers")
+    if args.ensemble_n_jobs == 0:
+        raise SystemExit("--ensemble-n-jobs must be nonzero")
 
     args.csv.parent.mkdir(parents=True, exist_ok=True)
     with args.csv.open("w", newline="") as fh:
@@ -328,28 +340,31 @@ def main(argv=None):
                             split = split_case(
                                 X, y, spec.task, seed, weights, groups=groups)
                             for mode in args.modes:
-                                for depth in args.depths:
-                                    for lr in args.learning_rates:
-                                        for l2 in args.l2_values:
-                                            for mcw in args.min_child_weights:
-                                                for leaf_iters in args.leaf_estimation_iterations:
-                                                    params = {
-                                                        "n_estimators": args.n_estimators,
-                                                        "patience": args.patience,
-                                                        "threads": args.threads,
-                                                        "seed": seed,
-                                                        "depth": depth,
-                                                        "learning_rate": lr,
-                                                        "l2_leaf_reg": l2,
-                                                        "min_child_weight": mcw,
-                                                        "leaf_estimation_iterations": leaf_iters,
-                                                    }
-                                                    _run_case(
-                                                        writer, fh, mode, spec, size,
-                                                        seed, weight_mode, split,
-                                                        cat_features, params,
-                                                        args.repeat, split_mode,
-                                                    )
+                                for ensemble_size in args.ensemble_sizes:
+                                    for depth in args.depths:
+                                        for lr in args.learning_rates:
+                                            for l2 in args.l2_values:
+                                                for mcw in args.min_child_weights:
+                                                    for leaf_iters in args.leaf_estimation_iterations:
+                                                        params = {
+                                                            "n_estimators": args.n_estimators,
+                                                            "patience": args.patience,
+                                                            "threads": args.threads,
+                                                            "seed": seed,
+                                                            "n_ensembles": ensemble_size,
+                                                            "ensemble_n_jobs": args.ensemble_n_jobs,
+                                                            "depth": depth,
+                                                            "learning_rate": lr,
+                                                            "l2_leaf_reg": l2,
+                                                            "min_child_weight": mcw,
+                                                            "leaf_estimation_iterations": leaf_iters,
+                                                        }
+                                                        _run_case(
+                                                            writer, fh, mode, spec, size,
+                                                            seed, weight_mode, split,
+                                                            cat_features, params,
+                                                            args.repeat, split_mode,
+                                                        )
     print(f"wrote rows to {args.csv}")
 
 

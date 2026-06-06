@@ -78,6 +78,7 @@ CSV_FIELDS = [
     "seed",
     "split_mode",
     "weight_mode",
+    "ensemble_size",
     "n_train",
     "n_val",
     "n_test",
@@ -343,7 +344,16 @@ def _run_worker(payload_path):
         }
 
 
-def _base_row(variant, spec, size, seed, split_mode, weight_mode, split):
+def _base_row(
+    variant,
+    spec,
+    size,
+    seed,
+    split_mode,
+    weight_mode,
+    ensemble_size,
+    split,
+):
     return {
         "variant": variant.label,
         "revision_path": str(Path(variant.path).resolve()),
@@ -360,6 +370,7 @@ def _base_row(variant, spec, size, seed, split_mode, weight_mode, split):
         "seed": seed,
         "split_mode": split_mode,
         "weight_mode": weight_mode,
+        "ensemble_size": "default" if variant.use_defaults else ensemble_size,
         "n_train": split["n_train"],
         "n_val": split["n_val"],
         "n_test": split["n_test"],
@@ -393,6 +404,19 @@ def parse_args(argv):
     parser.add_argument("--patience", type=int, default=50)
     parser.add_argument("--depth", type=int, default=6)
     parser.add_argument("--learning-rate", type=float, default=None)
+    parser.add_argument(
+        "--ensemble-sizes",
+        nargs="+",
+        type=int,
+        default=[1],
+        help="single-model size 1 plus optional bag sizes to pass as n_ensembles",
+    )
+    parser.add_argument(
+        "--ensemble-n-jobs",
+        type=int,
+        default=1,
+        help="parallel jobs for bagged ensemble members when supported",
+    )
     parser.add_argument(
         "--max-bins-ts",
         type=int,
@@ -454,12 +478,17 @@ def main(argv=None):
     unknown = sorted(set(datasets) - set(DATASETS))
     if unknown:
         raise SystemExit(f"unknown dataset(s): {unknown}; known: {sorted(DATASETS)}")
+    if any(size < 1 for size in args.ensemble_sizes):
+        raise SystemExit("--ensemble-sizes values must be positive integers")
+    if args.ensemble_n_jobs == 0:
+        raise SystemExit("--ensemble-n-jobs must be nonzero")
 
-    config = FitConfig(
+    base_config = FitConfig(
         iterations=args.iterations,
         patience=args.patience,
         depth=args.depth,
         learning_rate=args.learning_rate,
+        ensemble_n_jobs=args.ensemble_n_jobs,
         max_bins_ts=args.max_bins_ts,
         weighted_target_stats=args.weighted_target_stats,
         threads=args.threads,
@@ -491,31 +520,59 @@ def main(argv=None):
                                 data_path = tmpdir / f"{dataset}-{size}-{seed}-{split_mode}-{weight_mode}.npz"
                                 _save_case(data_path, split)
                                 for variant in variants:
-                                    payload = {
-                                        "variant": asdict(variant),
-                                        "fit_config": asdict(config),
-                                        "data_path": str(data_path),
-                                        "task": spec.task,
-                                        "loss": spec.loss,
-                                        "alpha": spec.alpha,
-                                        "cat_features": cat_features,
-                                        "seed": seed,
-                                        "repeat": args.repeat,
-                                    }
-                                    payload_path = tmpdir / f"payload-{variant.label}-{dataset}-{size}-{seed}-{split_mode}-{weight_mode}.json"
-                                    payload_path.write_text(json.dumps(payload, default=_json_default))
-                                    row = _base_row(
-                                        variant, spec, size, seed, split_mode,
-                                        weight_mode, split)
-                                    row.update(_run_worker(payload_path))
-                                    writer.writerow(_complete_row(row))
-                                    fh.flush()
-                                    print(
-                                        f"{row['status']:5s} {variant.label:24s} "
-                                        f"{dataset:23s} {size:6s} seed={seed} "
-                                        f"split={split_mode} weights={weight_mode}",
-                                        flush=True,
+                                    ensemble_sizes = (
+                                        ["default"]
+                                        if variant.use_defaults
+                                        else args.ensemble_sizes
                                     )
+                                    for ensemble_size in ensemble_sizes:
+                                        n_ensembles = (
+                                            None
+                                            if ensemble_size in ("default", 1)
+                                            else int(ensemble_size)
+                                        )
+                                        config = FitConfig(
+                                            **{
+                                                **asdict(base_config),
+                                                "n_ensembles": n_ensembles,
+                                            }
+                                        )
+                                        payload = {
+                                            "variant": asdict(variant),
+                                            "fit_config": asdict(config),
+                                            "data_path": str(data_path),
+                                            "task": spec.task,
+                                            "loss": spec.loss,
+                                            "alpha": spec.alpha,
+                                            "cat_features": cat_features,
+                                            "seed": seed,
+                                            "repeat": args.repeat,
+                                        }
+                                        ensemble_token = str(ensemble_size)
+                                        payload_path = tmpdir / (
+                                            f"payload-{variant.label}-{dataset}-"
+                                            f"{size}-{seed}-{split_mode}-"
+                                            f"{weight_mode}-ens{ensemble_token}.json"
+                                        )
+                                        payload_path.write_text(
+                                            json.dumps(payload, default=_json_default)
+                                        )
+                                        row = _base_row(
+                                            variant, spec, size, seed,
+                                            split_mode, weight_mode,
+                                            ensemble_size, split)
+                                        row.update(_run_worker(payload_path))
+                                        writer.writerow(_complete_row(row))
+                                        fh.flush()
+                                        print(
+                                            f"{row['status']:5s} "
+                                            f"{variant.label:24s} "
+                                            f"{dataset:23s} {size:6s} "
+                                            f"seed={seed} split={split_mode} "
+                                            f"weights={weight_mode} "
+                                            f"ensemble={row['ensemble_size']}",
+                                            flush=True,
+                                        )
     finally:
         if args.keep_case_files:
             print(f"kept case files in {tmpdir}")
