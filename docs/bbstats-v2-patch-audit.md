@@ -226,13 +226,28 @@ tracked CSVs and the strict-domination checker.
 
 ## Remaining Work Queue
 
-1. Run the strict upstream-compatible catboost gate with enough repeats and
-   seeds to distinguish stable timing failures from noise.
-2. For any stable blocker, run exactly one ablation at a time:
-   compact bins, constant-Hessian path, categorical encoding path, class-major
-   multiclass, selected row/feature kernels, or validation semantics lane.
-3. Promote only ablations that improve the blocker without introducing a new
+Completed:
+
+- Strict upstream-compatible medium gate:
+  `benchmarks/catboost_strict_medium_20260606.csv`.
+  Outcome: quality and iterations are identical for all paired rows; no
+  semantic failures; aggregate fit is faster (`geomean_fit_ratio=0.9866`), but
+  32 seed-level timing rows still fail the strict checker.
+- Compact-bin ablation:
+  `benchmarks/catboost_ablate_uint16_focus_20260606.csv`.
+  Outcome: forced `uint16` helps numeric-binary stress and quantile-50 stress,
+  but hurts categorical-binary unweighted, Friedman stress, quantile-90 stress,
+  and wide-regression stress. Keep compact bins by default; treat upstream-style
+  `uint16` as a possible adaptive toggle only.
+
+Next:
+
+1. For stable blockers, run exactly one ablation at a time:
+   constant-Hessian path, categorical encoding path, class-major multiclass,
+   selected row/feature kernels, validation semantics lane, or an adaptive bin
+   dtype policy if the row pattern remains stable.
+2. Promote only ablations that improve the blocker without introducing a new
    quality, semantic, or timing regression.
-4. Keep `tree_mode="lightgbm"` work paused until catboost mode is either
+3. Keep `tree_mode="lightgbm"` work paused until catboost mode is either
    strictly dominating bbstats v2 or the remaining non-domination cases are
    documented as irreducible timing noise under the accepted gate.

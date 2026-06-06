@@ -238,6 +238,84 @@ regression. This gate should be added before any further catboost model-code
 change. A strict candidate run should use `--repeat 7`, at least five seeds for
 the core/quantile rows, and the upstream-compatible validation policy.
 
+### Strict Medium Gate Result
+
+The first full strict medium run is tracked in:
+
+- `benchmarks/catboost_strict_medium_20260606.csv`
+- `benchmarks/catboost_strict_medium_summary_20260606.csv`
+- `benchmarks/catboost_strict_medium_report_20260606.json`
+
+Command:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_compare_revisions.py \
+  --upstream /private/tmp/chimeraboost-upstream-ddaf272-bobw \
+  --candidate . \
+  --models upstream_matched candidate_catboost \
+  --datasets friedman_numeric wide_numeric_reg categorical_reg numeric_binary \
+    numeric_multiclass categorical_binary categorical_multiclass \
+    quantile_reg_10 quantile_reg_50 quantile_reg_90 \
+  --sizes medium \
+  --seeds 5 \
+  --repeat 7 \
+  --iterations 300 \
+  --patience 25 \
+  --threads 4 \
+  --weight-modes none stress \
+  --validation-weight-policy upstream-compatible \
+  --csv benchmarks/catboost_strict_medium_20260606.csv
+```
+
+Result: the checker failed, but only on row-level timing. There were 100 paired
+comparisons, no row errors, no semantic-policy failures, and no quality
+regressions. Primary metrics and best iterations were identical in every
+dataset/weight aggregate. The candidate aggregate fit ratio was faster than
+upstream (`geomean_fit_ratio=0.9866`), but 32 individual seed rows exceeded the
+strict per-row timing threshold.
+
+Stable-looking timing blockers by dataset/weight geomean:
+
+| Dataset / weight | Candidate fit ratio | Interpretation |
+| --- | ---: | --- |
+| `quantile_reg_50` / stress | 1.093 | Strongest stable blocker. |
+| `numeric_binary` / stress | 1.070 | Stable blocker. |
+| `categorical_binary` / stress | 1.053 | Stable but small. |
+| `friedman_numeric` / stress | 1.049 | Near-threshold blocker. |
+| `quantile_reg_90` / none | 1.034 | Near-threshold blocker. |
+
+Rows such as categorical multiclass and wide numeric regression had individual
+seed failures but better aggregate behavior, so treat those as timing-noise
+suspects until a focused rerun says otherwise.
+
+### Compact-Bin Ablation
+
+The first one-change ablation forced the candidate to use upstream-style
+`uint16` binned matrices instead of compact `_bin_dtype_for_n_bins` output. The
+temporary worktree changed only `chimeraboost/binning.py`; results are tracked
+in:
+
+- `benchmarks/catboost_ablate_uint16_focus_20260606.csv`
+- `benchmarks/catboost_ablate_uint16_focus_summary_20260606.csv`
+- `benchmarks/catboost_ablate_uint16_focus_report_20260606.json`
+
+Result: forcing `uint16` did not clear the strict gate
+(`geomean_fit_ratio=0.9905`, 22 timing failures). It fixed two important
+blockers but created or worsened others:
+
+| Dataset / weight | Compact ratio | Forced `uint16` ratio | Decision |
+| --- | ---: | ---: | --- |
+| `numeric_binary` / stress | 1.070 | 0.940 | `uint16` helps. |
+| `quantile_reg_50` / stress | 1.093 | 0.960 | `uint16` helps. |
+| `categorical_binary` / none | 0.890 | 1.060 | compact helps. |
+| `friedman_numeric` / stress | 1.049 | 1.079 | compact helps. |
+| `quantile_reg_90` / stress | 0.992 | 1.065 | compact helps. |
+| `wide_numeric_reg` / stress | 1.008 | 1.062 | compact helps. |
+
+Decision: keep compact bins as the catboost default. Upstream-style `uint16`
+is a possible benchmark-gated adaptive toggle for numeric binary and median
+quantile stress rows, not a broad revert.
+
 ## Quantile Benchmark Coverage
 
 Raw medium quantile rows are tracked in:
