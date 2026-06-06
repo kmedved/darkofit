@@ -28,6 +28,7 @@ try:
         build_dataset,
         make_groups,
         make_sample_weight,
+        register_external_datasets,
         split_case,
     )
     from weighted_metrics import metric_bundle
@@ -38,6 +39,7 @@ except ImportError:  # pragma: no cover - supports `python -m benchmarks...`
         build_dataset,
         make_groups,
         make_sample_weight,
+        register_external_datasets,
         split_case,
     )
     from benchmarks.weighted_metrics import metric_bundle
@@ -282,6 +284,16 @@ def _run_case(writer, fh, mode, spec, size, seed, weight_mode, split, cat_featur
 def parse_args(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--datasets", nargs="+", default=["numeric_binary"])
+    parser.add_argument(
+        "--openml",
+        action="store_true",
+        help="register the opt-in OpenML real-tabular dataset suite",
+    )
+    parser.add_argument(
+        "--grinsztajn",
+        action="store_true",
+        help="register the opt-in Grinsztajn real-tabular dataset suite",
+    )
     parser.add_argument("--sizes", nargs="+", choices=SIZE_SAMPLES, default=["medium"])
     parser.add_argument("--seeds", type=int, default=1)
     parser.add_argument("--repeat", type=int, default=2)
@@ -311,6 +323,11 @@ def parse_args(argv=None):
 
 def main(argv=None):
     args = parse_args(argv)
+    register_external_datasets(
+        args.datasets,
+        include_openml=args.openml,
+        include_grinsztajn=args.grinsztajn,
+    )
     datasets = list(DATASETS) if args.datasets == ["all"] else list(args.datasets)
     unknown = sorted(set(datasets) - set(DATASETS))
     if unknown:

@@ -34,6 +34,79 @@ SIZE_SAMPLES = {
 }
 
 
+OPENML_SUITE = {
+    "credit-g": dict(data_id=31, task="binary", cats="auto"),
+    "adult": dict(data_id=1590, task="binary", cats="auto"),
+    "bank-marketing": dict(data_id=1461, task="binary", cats="auto"),
+    "kc1": dict(data_id=1067, task="binary", cats=None),
+    "phoneme": dict(data_id=1489, task="binary", cats=None),
+    "electricity": dict(data_id=151, task="binary", cats=None),
+    "magic": dict(data_id=1120, task="binary", cats=None),
+    "spambase": dict(data_id=44, task="binary", cats=None),
+    "kc2": dict(data_id=1063, task="binary", cats=None),
+    "sick": dict(data_id=38, task="binary", cats="auto"),
+    "mushroom": dict(data_id=24, task="binary", cats="auto"),
+    "kr-vs-kp": dict(data_id=3, task="binary", cats="auto"),
+    "vehicle": dict(data_id=54, task="multiclass", cats=None),
+    "segment": dict(data_id=40984, task="multiclass", cats=None),
+    "optdigits": dict(data_id=28, task="multiclass", cats=None),
+    "car": dict(data_id=40975, task="multiclass", cats="auto"),
+    "splice": dict(data_id=46, task="multiclass", cats="auto"),
+    "satimage": dict(data_id=182, task="multiclass", cats=None),
+    "pendigits": dict(data_id=32, task="multiclass", cats=None),
+    "letter": dict(data_id=6, task="multiclass", cats=None),
+    "cpu_act": dict(data_id=197, task="regression", cats=None),
+    "wine_quality": dict(data_id=287, task="regression", cats=None),
+    "boston": dict(data_id=531, task="regression", cats=None),
+    "elevators": dict(data_id=216, task="regression", cats=None),
+    "ailerons": dict(data_id=296, task="regression", cats=None),
+    "abalone": dict(data_id=183, task="regression", cats="auto"),
+    "house_16H": dict(data_id=574, task="regression", cats=None),
+}
+
+
+GRINSZTAJN_HF = (
+    "https://huggingface.co/datasets/inria-soda/tabular-benchmark/resolve/main"
+)
+GRINSZTAJN_FOLDERS = {
+    "clf_num": ("binary", False),
+    "clf_cat": ("binary", True),
+    "reg_num": ("regression", False),
+    "reg_cat": ("regression", True),
+}
+GRINSZTAJN_DATASETS = {
+    "clf_num": [
+        "Bioresponse", "Diabetes130US", "Higgs", "MagicTelescope",
+        "MiniBooNE", "bank-marketing", "california", "covertype",
+        "credit", "default-of-credit-card-clients", "electricity",
+        "eye_movements", "heloc", "house_16H", "jannis", "pol",
+    ],
+    "clf_cat": [
+        "albert", "compas-two-years", "covertype",
+        "default-of-credit-card-clients", "electricity", "eye_movements",
+        "road-safety",
+    ],
+    "reg_num": [
+        "Ailerons", "Bike_Sharing_Demand", "Brazilian_houses",
+        "MiamiHousing2016", "abalone", "cpu_act",
+        "delays_zurich_transport", "diamonds", "elevators", "house_16H",
+        "house_sales", "houses", "medical_charges",
+        "nyc-taxi-green-dec-2016", "pol", "sulfur", "superconduct",
+        "wine_quality", "yprop_4_1",
+    ],
+    "reg_cat": [
+        "Airlines_DepDelay_1M", "Allstate_Claims_Severity",
+        "Bike_Sharing_Demand", "Brazilian_houses",
+        "Mercedes_Benz_Greener_Manufacturing",
+        "SGEMM_GPU_kernel_performance", "abalone", "analcatdata_supreme",
+        "delays_zurich_transport", "diamonds", "house_sales",
+        "medical_charges", "nyc-taxi-green-dec-2016",
+        "particulate-matter-ukair-2017", "seattlecrime6", "topo_2_1",
+        "visualizing_soil",
+    ],
+}
+
+
 @dataclass(frozen=True)
 class DatasetSpec:
     name: str
@@ -253,6 +326,131 @@ DATASETS = {
         DatasetSpec("categorical_multiclass", "multiclass", _categorical_multiclass),
     )
 }
+
+
+def _frame_to_dataset(X_df, y, cats, task):
+    """Convert a pandas-like tabular frame to benchmark arrays.
+
+    ``cats`` is either ``"auto"`` for object/category/string columns, an
+    explicit integer-index list, or ``None``. Categorical missing values become
+    a stable string token so all compared revisions see the same category.
+    """
+    if cats == "auto":
+        def is_cat(dtype):
+            text = str(dtype).lower()
+            return text in ("category", "object") or text.startswith("string")
+        cat_idx = [i for i, col in enumerate(X_df.columns) if is_cat(X_df[col].dtype)]
+    else:
+        cat_idx = cats
+
+    if task in ("regression", "quantile"):
+        y_arr = y.astype(float).to_numpy()
+    else:
+        y_arr = y.astype("category").cat.codes.to_numpy()
+
+    if cat_idx:
+        import pandas as pd
+        cat_cols = set(cat_idx)
+        cols = []
+        for i, col in enumerate(X_df.columns):
+            series = X_df[col]
+            if i in cat_cols:
+                cols.append(series.astype(object).where(series.notna(), "__nan__"))
+            else:
+                cols.append(pd.to_numeric(series, errors="coerce").astype(float))
+        X_arr = pd.concat(cols, axis=1).to_numpy(dtype=object)
+    else:
+        X_arr = X_df.astype(float).to_numpy()
+    return X_arr, y_arr, (cat_idx or None)
+
+
+def _make_openml_builder(spec):
+    def builder(n, rng):
+        from sklearn.datasets import fetch_openml
+        dataset = fetch_openml(data_id=spec["data_id"], as_frame=True)
+        X, y, cat_features = _frame_to_dataset(
+            dataset.data, dataset.target, spec["cats"], spec["task"])
+        stratify = spec["task"] not in ("regression", "quantile")
+        X, y = _resample_rows(X, y, n, rng, stratify=stratify)
+        return X, y, cat_features
+    return builder
+
+
+def _make_grinsztajn_builder(folder, name, task, has_cats):
+    def builder(n, rng):
+        import pandas as pd
+        url = f"{GRINSZTAJN_HF}/{folder}/{name}.csv"
+        frame = pd.read_csv(url)
+        X, y, cat_features = _frame_to_dataset(
+            frame.iloc[:, :-1],
+            frame.iloc[:, -1],
+            "auto" if has_cats else None,
+            task,
+        )
+        stratify = task not in ("regression", "quantile")
+        X, y = _resample_rows(X, y, n, rng, stratify=stratify)
+        return X, y, cat_features
+    return builder
+
+
+def register_openml_datasets(names=None):
+    """Register opt-in OpenML datasets without fetching them yet."""
+    wanted = list(OPENML_SUITE) if names is None else list(names)
+    unknown = sorted(set(wanted) - set(OPENML_SUITE))
+    if unknown:
+        raise KeyError(f"unknown OpenML dataset(s): {unknown}")
+    for name in wanted:
+        spec = OPENML_SUITE[name]
+        key = f"oml:{name}"
+        DATASETS[key] = DatasetSpec(
+            key,
+            spec["task"],
+            _make_openml_builder(spec),
+        )
+
+
+def register_grinsztajn_datasets(names=None):
+    """Register opt-in Grinsztajn datasets without fetching them yet."""
+    all_names = [
+        f"{folder}/{name}"
+        for folder, dataset_names in GRINSZTAJN_DATASETS.items()
+        for name in dataset_names
+    ]
+    wanted = all_names if names is None else list(names)
+    unknown = sorted(set(wanted) - set(all_names))
+    if unknown:
+        raise KeyError(f"unknown Grinsztajn dataset(s): {unknown}")
+    folder_meta = dict(GRINSZTAJN_FOLDERS)
+    for item in wanted:
+        folder, name = item.split("/", 1)
+        task, has_cats = folder_meta[folder]
+        key = f"gr:{folder}/{name}"
+        DATASETS[key] = DatasetSpec(
+            key,
+            task,
+            _make_grinsztajn_builder(folder, name, task, has_cats),
+        )
+
+
+def register_external_datasets(dataset_names=(), *, include_openml=False,
+                               include_grinsztajn=False):
+    """Register requested external dataset namespaces without fetching rows."""
+    names = list(dataset_names or ())
+    if include_openml:
+        register_openml_datasets()
+    else:
+        requested_openml = [name[4:] for name in names if name.startswith("oml:")]
+        if requested_openml:
+            register_openml_datasets(requested_openml)
+
+    if include_grinsztajn:
+        register_grinsztajn_datasets()
+    else:
+        requested_grinsztajn = [
+            name[3:] for name in names if name.startswith("gr:")
+        ]
+        if requested_grinsztajn:
+            register_grinsztajn_datasets(requested_grinsztajn)
 
 
 def build_dataset(name: str, size: str, seed: int):

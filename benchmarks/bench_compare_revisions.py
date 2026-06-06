@@ -44,6 +44,7 @@ try:
         estimator_kwargs,
         make_groups,
         make_sample_weight,
+        register_external_datasets,
         split_case,
     )
     from weighted_metrics import metric_bundle
@@ -58,6 +59,7 @@ except ImportError:  # pragma: no cover - supports `python -m benchmarks...`
         estimator_kwargs,
         make_groups,
         make_sample_weight,
+        register_external_datasets,
         split_case,
     )
     from benchmarks.weighted_metrics import metric_bundle
@@ -124,6 +126,14 @@ def _json_default(value):
     if isinstance(value, Path):
         return str(value)
     raise TypeError(f"cannot serialize {type(value)!r}")
+
+
+def _path_token(*parts):
+    text = "-".join(str(part) for part in parts)
+    return "".join(
+        char if char.isalnum() or char in "._-" else "_"
+        for char in text
+    )
 
 
 def _save_case(path, split):
@@ -397,6 +407,16 @@ def parse_args(argv):
         default=["friedman_numeric", "numeric_binary", "categorical_binary"],
         help="dataset names, or 'all'",
     )
+    parser.add_argument(
+        "--openml",
+        action="store_true",
+        help="register the opt-in OpenML real-tabular dataset suite",
+    )
+    parser.add_argument(
+        "--grinsztajn",
+        action="store_true",
+        help="register the opt-in Grinsztajn real-tabular dataset suite",
+    )
     parser.add_argument("--seeds", type=int, default=3)
     parser.add_argument("--repeat", type=int, default=2)
     parser.add_argument("--threads", type=int, default=None)
@@ -474,6 +494,11 @@ def main(argv=None):
     if not variants:
         raise SystemExit("no revisions to run; pass --upstream/--fork/--candidate")
 
+    register_external_datasets(
+        args.datasets,
+        include_openml=args.openml,
+        include_grinsztajn=args.grinsztajn,
+    )
     datasets = list(DATASETS) if args.datasets == ["all"] else list(args.datasets)
     unknown = sorted(set(datasets) - set(DATASETS))
     if unknown:
@@ -517,7 +542,12 @@ def main(argv=None):
                                 weights = make_sample_weight(y, spec.task, weight_mode)
                                 split = split_case(
                                     X, y, spec.task, seed, weights, groups=groups)
-                                data_path = tmpdir / f"{dataset}-{size}-{seed}-{split_mode}-{weight_mode}.npz"
+                                data_path = tmpdir / (
+                                    _path_token(
+                                        dataset, size, seed, split_mode,
+                                        weight_mode,
+                                    ) + ".npz"
+                                )
                                 _save_case(data_path, split)
                                 for variant in variants:
                                     ensemble_sizes = (
@@ -550,9 +580,12 @@ def main(argv=None):
                                         }
                                         ensemble_token = str(ensemble_size)
                                         payload_path = tmpdir / (
-                                            f"payload-{variant.label}-{dataset}-"
-                                            f"{size}-{seed}-{split_mode}-"
-                                            f"{weight_mode}-ens{ensemble_token}.json"
+                                            _path_token(
+                                                "payload", variant.label,
+                                                dataset, size, seed, split_mode,
+                                                weight_mode,
+                                                f"ens{ensemble_token}",
+                                            ) + ".json"
                                         )
                                         payload_path.write_text(
                                             json.dumps(payload, default=_json_default)

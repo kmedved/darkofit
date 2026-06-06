@@ -53,6 +53,9 @@ loss otherwise; speed breaks ties.
 9. Added explicit `ensemble_size` coverage to the revision and levelwise-tuning
    harnesses so single-model and bagged configurations are benchmarked as
    separate rows.
+10. Added opt-in OpenML and Grinsztajn dataset registration to the revision and
+    levelwise-tuning harnesses so real-tabular gates can use the same
+    upstream/fork/candidate adapter path as the synthetic matrix.
 
 ## Current Upstream/Fork/Candidate Benchmark
 
@@ -217,6 +220,42 @@ on `numeric_binary`).
 Decision: bagging is now an explicit benchmark dimension. Do not use bagged rows
 to justify a tree-mode default unless they are compared against equally bagged
 catboost/upstream rows on the same splits.
+
+## Real-Tabular Harness Coverage
+
+The revision and levelwise-tuning harnesses now accept opt-in real-tabular
+dataset namespaces:
+
+- `--openml` registers the OpenML suite as `oml:<name>`.
+- `--grinsztajn` registers the Grinsztajn/HuggingFace suite as
+  `gr:<folder>/<name>`.
+- Explicit dataset names such as `oml:credit-g` or `gr:clf_num/credit` are
+  registered automatically even without the broad suite flag.
+
+Registration is lazy: dataset names become available before any network or cache
+read happens, and rows are fetched only when a benchmark case is built.
+
+Smoke command, using the local cached OpenML `credit-g` dataset:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_compare_revisions.py \
+  --candidate . \
+  --models candidate_catboost \
+  --datasets oml:credit-g \
+  --sizes tiny \
+  --seeds 1 \
+  --repeat 1 \
+  --iterations 3 \
+  --patience 2 \
+  --threads 1 \
+  --weight-modes none \
+  --openml \
+  --csv /tmp/cb_openml_revision_smoke.csv
+```
+
+Result: the single `candidate_catboost` row completed successfully. No tracked
+real-tabular decision benchmark has been run yet; this patch only opens the gate
+so future upstream/fork/candidate comparisons can use real datasets directly.
 
 ## Current Mode-Gate Benchmark
 

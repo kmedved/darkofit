@@ -14,15 +14,18 @@ from benchmark_adapters import (  # noqa: E402
     DATASETS,
     DatasetSpec,
     FitConfig,
+    OPENML_SUITE,
     RevisionSpec,
+    _frame_to_dataset,
     build_dataset,
     default_revision_specs,
     estimator_kwargs,
     make_groups,
     make_sample_weight,
+    register_external_datasets,
     split_case,
 )
-from bench_compare_revisions import _base_row, _peak_rss_mb  # noqa: E402
+from bench_compare_revisions import _base_row, _path_token, _peak_rss_mb  # noqa: E402
 from bench_compare_revisions import main as compare_revisions_main  # noqa: E402
 from bench_levelwise_tuning import main as levelwise_tuning_main  # noqa: E402
 from weighted_metrics import metric_bundle  # noqa: E402
@@ -257,6 +260,39 @@ def test_quantile_dataset_specs_carry_loss_and_use_regression_splits():
     assert split["X_fit"].shape[0] + split["X_val"].shape[0] + split["X_test"].shape[0] == len(y)
 
 
+def test_external_dataset_registration_is_lazy():
+    register_external_datasets([
+        "oml:credit-g",
+        "gr:clf_num/credit",
+    ])
+
+    assert "credit-g" in OPENML_SUITE
+    assert DATASETS["oml:credit-g"].task == "binary"
+    assert DATASETS["gr:clf_num/credit"].task == "binary"
+
+    with pytest.raises(KeyError, match="OpenML"):
+        register_external_datasets(["oml:not-a-real-dataset"])
+    with pytest.raises(KeyError, match="Grinsztajn"):
+        register_external_datasets(["gr:clf_num/not-a-real-dataset"])
+
+
+def test_frame_to_dataset_auto_detects_categoricals_and_missing_values():
+    pd = pytest.importorskip("pandas")
+    X_df = pd.DataFrame({
+        "city": pd.Series(["a", None, "b"], dtype="object"),
+        "score": [1.0, 2.5, 3.0],
+    })
+    y = pd.Series(["yes", "no", "yes"])
+
+    X, y_codes, cat_features = _frame_to_dataset(X_df, y, "auto", "binary")
+
+    assert cat_features == [0]
+    assert X.dtype == object
+    assert X[1, 0] == "__nan__"
+    assert X[0, 1] == 1.0
+    assert set(y_codes) == {0, 1}
+
+
 def test_default_variant_row_does_not_claim_quantile_loss():
     spec = DatasetSpec(
         "quantile_reg_test",
@@ -314,6 +350,23 @@ def test_benchmark_clis_reject_zero_ensemble_jobs(tmp_path):
             "--csv",
             str(tmp_path / "tuning.csv"),
         ])
+
+
+def test_revision_payload_path_token_handles_external_dataset_names():
+    token = _path_token(
+        "payload",
+        "candidate_catboost",
+        "gr:clf_num/credit",
+        "tiny",
+        0,
+        "row",
+        "none",
+        "ens1",
+    )
+
+    assert "/" not in token
+    assert ":" not in token
+    assert "gr_clf_num_credit" in token
 
 
 def test_peak_rss_helper_reports_positive_memory():
