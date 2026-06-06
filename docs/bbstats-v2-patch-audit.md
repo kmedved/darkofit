@@ -239,13 +239,19 @@ Completed:
   but hurts categorical-binary unweighted, Friedman stress, quantile-90 stress,
   and wide-regression stress. Keep compact bins by default; treat upstream-style
   `uint16` as a possible adaptive toggle only.
+- Constant-Hessian ablation:
+  `benchmarks/catboost_ablate_no_constant_hessian_focus_20260606.csv`.
+  Outcome: disabling the constant-Hessian shortcut helps categorical regression
+  and median quantile unweighted rows, but hurts Friedman, quantile-10,
+  quantile-90, and wide regression. Keep the shortcut by default; treat the
+  general-Hessian path as a possible narrow adaptive toggle only.
 
 Next:
 
 1. For stable blockers, run exactly one ablation at a time:
-   constant-Hessian path, categorical encoding path, class-major multiclass,
-   selected row/feature kernels, validation semantics lane, or an adaptive bin
-   dtype policy if the row pattern remains stable.
+   categorical encoding path, class-major multiclass, selected row/feature
+   kernels, validation semantics lane, or an adaptive bin dtype / hessian-path
+   policy if the row pattern remains stable.
 2. Promote only ablations that improve the blocker without introducing a new
    quality, semantic, or timing regression.
 3. Keep `tree_mode="lightgbm"` work paused until catboost mode is either

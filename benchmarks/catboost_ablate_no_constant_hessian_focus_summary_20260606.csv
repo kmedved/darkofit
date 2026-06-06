@@ -1,0 +1,13 @@
+dataset,size,split_mode,weight_mode,ensemble_size,variant,n,primary_metric,primary_value,metric_vs_base,fit_seconds,fit_vs_base,best_iteration,iter_vs_base
+categorical_reg,medium,row,none,1,candidate_catboost,5,rmse,2.5628,1.000,0.080,0.963,157.6,1.000
+categorical_reg,medium,row,none,1,upstream_matched,5,rmse,2.5628,1.000,0.083,1.000,157.6,1.000
+friedman_numeric,medium,row,none,1,candidate_catboost,5,rmse,1.0661,1.000,0.119,1.014,153.6,1.000
+friedman_numeric,medium,row,none,1,upstream_matched,5,rmse,1.0661,1.000,0.117,1.000,153.6,1.000
+quantile_reg_10,medium,row,none,1,candidate_catboost,5,pinball,0.2684,1.000,0.413,1.064,126.4,1.000
+quantile_reg_10,medium,row,none,1,upstream_matched,5,pinball,0.2684,1.000,0.388,1.000,126.4,1.000
+quantile_reg_50,medium,row,none,1,candidate_catboost,5,pinball,0.5634,1.000,0.642,0.996,234.2,1.000
+quantile_reg_50,medium,row,none,1,upstream_matched,5,pinball,0.5634,1.000,0.644,1.000,234.2,1.000
+quantile_reg_90,medium,row,none,1,candidate_catboost,5,pinball,0.2729,1.000,0.342,1.039,118.8,1.000
+quantile_reg_90,medium,row,none,1,upstream_matched,5,pinball,0.2729,1.000,0.330,1.000,118.8,1.000
+wide_numeric_reg,medium,row,none,1,candidate_catboost,5,rmse,40.3667,1.000,0.700,0.948,300.0,1.000
+wide_numeric_reg,medium,row,none,1,upstream_matched,5,rmse,40.3667,1.000,0.739,1.000,300.0,1.000

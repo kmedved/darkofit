@@ -316,6 +316,37 @@ Decision: keep compact bins as the catboost default. Upstream-style `uint16`
 is a possible benchmark-gated adaptive toggle for numeric binary and median
 quantile stress rows, not a broad revert.
 
+### Constant-Hessian Ablation
+
+The second one-change ablation disabled the candidate's constant-Hessian
+histogram shortcut for unweighted RMSE/Quantile-style fits, forcing the
+upstream-style general histogram path. It can only affect unweighted
+constant-Hessian losses; classification and weighted rows are out of scope.
+Results are tracked in:
+
+- `benchmarks/catboost_ablate_no_constant_hessian_focus_20260606.csv`
+- `benchmarks/catboost_ablate_no_constant_hessian_focus_summary_20260606.csv`
+- `benchmarks/catboost_ablate_no_constant_hessian_focus_report_20260606.json`
+
+Result: disabling the shortcut did not clear the strict gate
+(`geomean_fit_ratio=1.0039`, 14 row-level timing failures plus aggregate timing
+failure). Metrics and iterations stayed identical, but aggregate speed worsened.
+
+| Dataset / weight | Constant-Hessian ratio | General-Hessian ratio | Decision |
+| --- | ---: | ---: | --- |
+| `categorical_reg` / none | 1.012 | 0.964 | general helps here. |
+| `quantile_reg_50` / none | 1.028 | 0.995 | general helps here. |
+| `friedman_numeric` / none | 0.938 | 1.018 | constant helps. |
+| `quantile_reg_10` / none | 0.974 | 1.065 | constant helps. |
+| `quantile_reg_90` / none | 1.034 | 1.039 | no useful improvement. |
+| `wide_numeric_reg` / none | 0.900 | 0.947 | constant helps. |
+
+Decision: keep the constant-Hessian shortcut as the catboost default. The
+general-Hessian path is not a broad revert candidate and does not touch the
+largest remaining blockers (`numeric_binary` stress and `quantile_reg_50`
+stress). At most it is a future narrow adaptive toggle for categorical
+regression or median quantile unweighted rows.
+
 ## Quantile Benchmark Coverage
 
 Raw medium quantile rows are tracked in:
