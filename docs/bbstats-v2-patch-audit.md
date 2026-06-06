@@ -252,13 +252,25 @@ Completed:
   categorical multiclass, but it hurts categorical-binary unweighted and still
   leaves row-level strict failures. Keep upstream's pandas-vectorized path by
   default; treat manual mapping as a possible narrow adaptive toggle only.
+- High-repeat blocker rerun:
+  `benchmarks/catboost_strict_blockers_stress_r15_20260606.csv` and
+  `benchmarks/catboost_strict_blockers_quantile90_r15_20260606.csv`.
+  Outcome: categorical-binary stress and Friedman stress are no longer
+  aggregate blockers at repeat 15. Numeric-binary stress, median-quantile
+  stress, and quantile-90 unweighted remain the stable aggregate blockers.
+- Selected row/feature kernels:
+  code inspection plus `tests/test_chimeraboost.py` show these kernels are
+  inactive under the strict default matrix (`subsample=1.0`,
+  `colsample=1.0`) and behavior-equivalent when non-default sampling activates
+  them. Keep them as a behavior-proved darko optimization for sampling modes.
 
 Next:
 
 1. For stable blockers, run exactly one ablation at a time:
-   class-major multiclass, selected row/feature kernels, validation semantics
-   lane, or an adaptive bin dtype / hessian / categorical-mapping policy if the
-   row pattern remains stable.
+   class-major multiclass if multiclass reappears as a blocker, validation
+   semantics lane if weighted quality diverges, or an adaptive bin dtype /
+   hessian / categorical-mapping policy for numeric-binary stress,
+   median-quantile stress, and quantile-90 unweighted.
 2. Promote only ablations that improve the blocker without introducing a new
    quality, semantic, or timing regression.
 3. Keep `tree_mode="lightgbm"` work paused until catboost mode is either

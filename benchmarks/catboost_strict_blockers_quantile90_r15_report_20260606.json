@@ -1,0 +1,57 @@
+{
+  "baseline": "upstream_matched",
+  "candidate": "candidate_catboost",
+  "failures": [
+    {
+      "candidate_fit_seconds": 0.3746350829896983,
+      "fit_ratio": 1.0714787311552345,
+      "key": {
+        "dataset": "quantile_reg_90",
+        "ensemble_size": "1",
+        "seed": "0",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "none"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 0.3496430419909302
+    },
+    {
+      "candidate_fit_seconds": 0.27276295798947103,
+      "fit_ratio": 1.140990713475714,
+      "key": {
+        "dataset": "quantile_reg_90",
+        "ensemble_size": "1",
+        "seed": "3",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "none"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 0.23905800000648014
+    },
+    {
+      "geomean_fit_ratio": 1.0298928175105793,
+      "key": {},
+      "kind": "aggregate_timing_regression",
+      "limit": 1.0,
+      "message": "geometric mean fit ratio exceeds the strict gate"
+    }
+  ],
+  "geomean_fit_ratio": 1.0298928175105793,
+  "key_fields": [
+    "dataset",
+    "size",
+    "split_mode",
+    "weight_mode",
+    "ensemble_size",
+    "seed"
+  ],
+  "mode": "upstream-compatible",
+  "n_compared": 5,
+  "passed": false
+}

@@ -379,6 +379,49 @@ catboost default. The older manual/lazy mapping is not a broad revert, but it
 is a possible benchmark-gated adaptive path for categorical regression or
 weighted categorical multiclass after the larger blockers are resolved.
 
+### High-Repeat Blocker Rerun
+
+The repeat-7 strict gate mixed stable timing failures with noisy per-seed
+failures. A focused repeat-15 rerun isolates the remaining blockers:
+
+- `benchmarks/catboost_strict_blockers_stress_r15_20260606.csv`
+- `benchmarks/catboost_strict_blockers_stress_r15_summary_20260606.csv`
+- `benchmarks/catboost_strict_blockers_stress_r15_report_20260606.json`
+- `benchmarks/catboost_strict_blockers_quantile90_r15_20260606.csv`
+- `benchmarks/catboost_strict_blockers_quantile90_r15_summary_20260606.csv`
+- `benchmarks/catboost_strict_blockers_quantile90_r15_report_20260606.json`
+
+Result: quality and iterations were still identical. The stable aggregate
+timing blockers are now narrower:
+
+| Dataset / weight | Repeat-7 ratio | Repeat-15 ratio | Status |
+| --- | ---: | ---: | --- |
+| `numeric_binary` / stress | 1.070 | 1.021 | Still aggregate-slower and has row failures. |
+| `quantile_reg_50` / stress | 1.093 | 1.040 | Still aggregate-slower and has row failures. |
+| `quantile_reg_90` / none | 1.034 | 1.030 | Still aggregate-slower and has row failures. |
+| `categorical_binary` / stress | 1.053 | 0.996 | No longer an aggregate blocker. |
+| `friedman_numeric` / stress | 1.049 | 0.994 | No longer an aggregate blocker. |
+
+Decision: treat categorical-binary stress and Friedman stress as timing-noise
+suspects, not immediate model-code targets. The next catboost cleanup work
+should focus on numeric-binary stress, median-quantile stress, and quantile-90
+unweighted. Of the ablations so far, forced `uint16` is the only one that fixed
+the first two aggregate blockers, but it hurt other rows, so any use of it must
+be adaptive and gate-proven.
+
+### Selected Row/Feature Kernels
+
+The selected-row and selected-feature histogram kernels are inactive in the
+strict default matrix: `subsample=1.0` returns `row_indices=None`, and
+`colsample=1.0` returns `feature_indices=None`. Therefore they cannot explain
+the current strict blockers. Tests already prove they match the masked/full
+histogram behavior when non-default subsample or colsample settings activate
+them.
+
+Decision: keep the selected row/feature kernels as a behavior-proved darko
+optimization for non-default sampling settings. They do not need another
+default catboost ablation before the remaining strict blockers are addressed.
+
 ## Quantile Benchmark Coverage
 
 Raw medium quantile rows are tracked in:

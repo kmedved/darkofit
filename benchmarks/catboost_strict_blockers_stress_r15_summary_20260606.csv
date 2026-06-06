@@ -1,0 +1,9 @@
+dataset,size,split_mode,weight_mode,ensemble_size,variant,n,primary_metric,primary_value,metric_vs_base,fit_seconds,fit_vs_base,best_iteration,iter_vs_base
+categorical_binary,medium,row,stress,1,candidate_catboost,5,weighted_log_loss,0.2765,1.000,0.078,0.994,97.2,1.000
+categorical_binary,medium,row,stress,1,upstream_matched,5,weighted_log_loss,0.2765,1.000,0.078,1.000,97.2,1.000
+friedman_numeric,medium,row,stress,1,candidate_catboost,5,weighted_rmse,1.0615,1.000,0.134,0.997,191.4,1.000
+friedman_numeric,medium,row,stress,1,upstream_matched,5,weighted_rmse,1.0615,1.000,0.134,1.000,191.4,1.000
+numeric_binary,medium,row,stress,1,candidate_catboost,5,weighted_log_loss,0.1923,1.000,0.414,1.018,230.2,1.000
+numeric_binary,medium,row,stress,1,upstream_matched,5,weighted_log_loss,0.1923,1.000,0.406,1.000,230.2,1.000
+quantile_reg_50,medium,row,stress,1,candidate_catboost,5,weighted_pinball,0.5496,1.000,0.456,1.039,283.0,1.000
+quantile_reg_50,medium,row,stress,1,upstream_matched,5,weighted_pinball,0.5496,1.000,0.439,1.000,283.0,1.000
