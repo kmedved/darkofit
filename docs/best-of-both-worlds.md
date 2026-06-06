@@ -460,6 +460,62 @@ code was reverted.
 Decision: do not promote adaptive upstream-style `uint16` bins. Keep compact
 bins as the catboost default until a cleaner one-change gate proves otherwise.
 
+### Higher-Repeat Residual Blockers
+
+After the weighted leaf-correction port, the remaining timing-only blockers
+were rerun with higher repeats to separate stable overhead from min-of-repeat
+noise. Results are tracked in:
+
+- `benchmarks/catboost_q90_none_r30_20260606.csv`
+- `benchmarks/catboost_q90_none_r30_summary_20260606.csv`
+- `benchmarks/catboost_q90_none_r30_report_20260606.json`
+- `benchmarks/catboost_q90_none_seed0_r80_20260606.csv`
+- `benchmarks/catboost_q90_none_seed0_r80_summary_20260606.csv`
+- `benchmarks/catboost_q90_none_seed0_r80_report_20260606.json`
+- `benchmarks/catboost_numeric_binary_stress_r30_20260606.csv`
+- `benchmarks/catboost_numeric_binary_stress_r30_summary_20260606.csv`
+- `benchmarks/catboost_numeric_binary_stress_r30_report_20260606.json`
+
+Result: q90 unweighted is no longer an aggregate blocker at repeat 30
+(`geomean_fit_ratio=0.9961`), but seed 0 remains a stable row-level timing
+failure even at repeat 80 (`fit_ratio=1.0576`). Numeric-binary stress remains
+an aggregate blocker at repeat 30 (`geomean_fit_ratio=1.0271`) with identical
+metrics and iterations.
+
+| Dataset / weight | Repeat | Geomean | Strict result | Interpretation |
+| --- | ---: | ---: | --- | --- |
+| `quantile_reg_90` / none | 30 | 0.996 | Fail | Aggregate passes; seed 0 row-level fail remains. |
+| `quantile_reg_90` / none seed 0 | 80 | 1.058 | Fail | Single-row timing failure is stable. |
+| `numeric_binary` / stress | 30 | 1.027 | Fail | Aggregate timing blocker remains. |
+
+Decision: q90 should be treated as a narrow row-level timing blocker, not a
+broad aggregate regression. Numeric-binary stress is still the primary
+aggregate blocker.
+
+### Fast Full-Hist Branch Probe
+
+A small one-change probe split the default full-row/full-feature/general-Hessian
+tree path out ahead of the selected-row/selected-feature/constant-Hessian
+cascade. That path matches numeric-binary stress and calls the same histogram
+and split kernels as before. Results are tracked in:
+
+- `benchmarks/catboost_fast_full_hist_numeric_binary_stress_r15_20260606.csv`
+- `benchmarks/catboost_fast_full_hist_numeric_binary_stress_r15_summary_20260606.csv`
+- `benchmarks/catboost_fast_full_hist_numeric_binary_stress_r15_report_20260606.json`
+- `benchmarks/catboost_fast_full_hist_numeric_binary_stress_r30_20260606.csv`
+- `benchmarks/catboost_fast_full_hist_numeric_binary_stress_r30_summary_20260606.csv`
+- `benchmarks/catboost_fast_full_hist_numeric_binary_stress_r30_report_20260606.json`
+
+Result: the probe did not clear the gate. Repeat 15 improved the aggregate
+relative to the blocker baseline but still failed (`geomean_fit_ratio=1.0074`);
+repeat 30 regressed (`geomean_fit_ratio=1.0874`). The product code was
+reverted.
+
+Decision: do not promote the branch-only full-hist fast path. The
+numeric-binary blocker likely needs either a true upstream-default tree-builder
+lane or a deeper phase-level explanation, not another branch shuffle around the
+same kernels.
+
 ### Selected Row/Feature Kernels
 
 The selected-row and selected-feature histogram kernels are inactive in the

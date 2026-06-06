@@ -1,0 +1,3 @@
+dataset,size,split_mode,weight_mode,ensemble_size,variant,n,primary_metric,primary_value,metric_vs_base,fit_seconds,fit_vs_base,best_iteration,iter_vs_base
+quantile_reg_90,medium,row,none,1,candidate_catboost,5,pinball,0.2729,1.000,0.282,0.999,118.8,1.000
+quantile_reg_90,medium,row,none,1,upstream_matched,5,pinball,0.2729,1.000,0.282,1.000,118.8,1.000

@@ -272,6 +272,20 @@ Completed:
   Outcome: a narrow numeric-binary upstream-dtype policy failed the repeat-15
   gate (`geomean_fit_ratio=1.1014`). Do not promote it; keep compact bins as
   the default until a cleaner one-change gate proves otherwise.
+- Higher-repeat residual blockers:
+  `benchmarks/catboost_q90_none_r30_20260606.csv`,
+  `benchmarks/catboost_q90_none_seed0_r80_20260606.csv`, and
+  `benchmarks/catboost_numeric_binary_stress_r30_20260606.csv`.
+  Outcome: q90 unweighted is no longer an aggregate blocker at repeat 30
+  (`geomean_fit_ratio=0.9961`), but seed 0 remains a stable row-level timing
+  failure at repeat 80 (`fit_ratio=1.0576`). Numeric-binary stress remains an
+  aggregate blocker at repeat 30 (`geomean_fit_ratio=1.0271`).
+- Fast full-hist branch probe:
+  `benchmarks/catboost_fast_full_hist_numeric_binary_stress_r30_20260606.csv`.
+  Outcome: splitting the default full-row/full-feature/general-Hessian path
+  ahead of the selected-row/feature cascade failed the repeat-30 gate
+  (`geomean_fit_ratio=1.0874`). The product code was reverted; do not promote
+  this branch shuffle.
 - Selected row/feature kernels:
   code inspection plus `tests/test_chimeraboost.py` show these kernels are
   inactive under the strict default matrix (`subsample=1.0`,
@@ -282,9 +296,9 @@ Next:
 
 1. For stable blockers, run exactly one ablation at a time:
    class-major multiclass if multiclass reappears as a blocker, validation
-   semantics lane if weighted quality diverges, or a better-isolated bin dtype /
-   hessian / categorical-mapping policy for numeric-binary stress and
-   quantile-90 unweighted.
+   semantics lane if weighted quality diverges, a true upstream-default
+   tree-builder lane for numeric-binary stress, or a better-isolated
+   phase-level explanation for the q90 seed-0 timing row.
 2. Promote only ablations that improve the blocker without introducing a new
    quality, semantic, or timing regression.
 3. Keep `tree_mode="lightgbm"` work paused until catboost mode is either
