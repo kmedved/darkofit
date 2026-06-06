@@ -286,6 +286,25 @@ Completed:
   ahead of the selected-row/feature cascade failed the repeat-30 gate
   (`geomean_fit_ratio=1.0874`). The product code was reverted; do not promote
   this branch shuffle.
+- Upstream-default tree lane:
+  `benchmarks/catboost_upstream_tree_q90_none_r15_20260606.csv` and
+  `benchmarks/catboost_upstream_tree_numeric_binary_stress_seed0_r80_20260606.csv`.
+  Outcome: a copied bbstats v2 full-row/full-feature tree lane regressed q90
+  (`geomean_fit_ratio=1.1335`) and still left numeric-binary seed 0 as a stable
+  row-level failure (`fit_ratio=1.0693`). The product code was reverted; do not
+  promote this lane.
+- Scalar-loop timing cleanup:
+  `benchmarks/catboost_timing_guard_q90_none_r15_20260606.csv`,
+  `benchmarks/catboost_timing_guard_feature_skip_numeric_binary_stress_r15_20260606.csv`,
+  and `benchmarks/catboost_scalar_loop_cleanup_numeric_binary_stress_r30_20260606.csv`.
+  Outcome: guarding inactive `verbose_timing` timers and skipping default
+  no-sampling/no-colsampling helper calls clears q90 at repeat 15
+  (`geomean_fit_ratio=0.9132`) and clears numeric-binary stress at repeat 15
+  (`geomean_fit_ratio=0.9237`). Numeric-binary remains unstable at higher
+  repeats: repeat 30 passes aggregate but has one row failure
+  (`geomean_fit_ratio=0.9402`), and repeat 50 failed after upstream found lower
+  timing minima (`geomean_fit_ratio=1.1260`). Keep the behavior-preserving
+  cleanup, but do not call strict domination complete yet.
 - Selected row/feature kernels:
   code inspection plus `tests/test_chimeraboost.py` show these kernels are
   inactive under the strict default matrix (`subsample=1.0`,
@@ -296,9 +315,8 @@ Next:
 
 1. For stable blockers, run exactly one ablation at a time:
    class-major multiclass if multiclass reappears as a blocker, validation
-   semantics lane if weighted quality diverges, a true upstream-default
-   tree-builder lane for numeric-binary stress, or a better-isolated
-   phase-level explanation for the q90 seed-0 timing row.
+   semantics lane if weighted quality diverges, or a better-isolated
+   phase-level explanation for the remaining numeric-binary stress timing row.
 2. Promote only ablations that improve the blocker without introducing a new
    quality, semantic, or timing regression.
 3. Keep `tree_mode="lightgbm"` work paused until catboost mode is either

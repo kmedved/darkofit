@@ -384,7 +384,8 @@ class GradientBoosting(_BaseBooster):
             raise NotImplementedError(
                 "linear_leaves is not supported for tree_mode='lightgbm'.")
 
-        t_phase = time.perf_counter()
+        if timing_enabled:
+            t_phase = time.perf_counter()
         self.prep_ = self._new_preprocessor()
         # Tree kernels consume a feature-major matrix; transpose once here.
         ts_weight = w if self.weighted_target_stats else None
@@ -442,16 +443,23 @@ class GradientBoosting(_BaseBooster):
         t0 = time.time()
 
         for m in range(self.n_estimators):
-            t_phase = time.perf_counter()
+            if timing_enabled:
+                t_phase = time.perf_counter()
             grad, hess = self.loss_.grad_hess(y, F)
             if w is not None:
                 grad, hess = grad * w, hess * w
-            g, h, row_indices = self._maybe_subsample(grad, hess, rng)
-            fmask = self._feature_mask(Xb.shape[0], rng)
-            findices = self._feature_indices(fmask)
+            if self.subsample >= 1.0:
+                g, h, row_indices = grad, hess, None
+            else:
+                g, h, row_indices = self._maybe_subsample(grad, hess, rng)
+            if self.colsample >= 1.0:
+                fmask = findices = None
+            else:
+                fmask = self._feature_mask(Xb.shape[0], rng)
+                findices = self._feature_indices(fmask)
             if timing_enabled:
                 self.timing_["grad_hess"] += time.perf_counter() - t_phase
-            t_phase = time.perf_counter()
+                t_phase = time.perf_counter()
             tree, leaf = tree_builder(
                 Xb, g, h, n_bins, self.depth, self.l2_leaf_reg, self.lr_,
                 feature_mask=fmask, min_child_weight=self.min_child_weight,
@@ -467,7 +475,8 @@ class GradientBoosting(_BaseBooster):
             # gradients would too, so stop rather than bank empty trees.
             if tree.depth == 0:
                 break
-            t_phase = time.perf_counter()
+            if timing_enabled:
+                t_phase = time.perf_counter()
             if adjusts_leaves:
                 self._correct_leaves(tree, leaf, y - F, w)
             self.trees_.append(tree)
@@ -503,17 +512,19 @@ class GradientBoosting(_BaseBooster):
             if timing_enabled:
                 self.timing_["train_update"] += time.perf_counter() - t_phase
             if self.verbose:
-                t_phase = time.perf_counter()
+                if timing_enabled:
+                    t_phase = time.perf_counter()
                 self.train_history_.append(self.loss_.eval(y, F, w))
                 if timing_enabled:
                     self.timing_["loss_eval"] += time.perf_counter() - t_phase
 
             if Fv is not None:
-                t_phase = time.perf_counter()
+                if timing_enabled:
+                    t_phase = time.perf_counter()
                 Fv += tree.predict(Xvb)
                 if timing_enabled:
                     self.timing_["validation_predict"] += time.perf_counter() - t_phase
-                t_phase = time.perf_counter()
+                    t_phase = time.perf_counter()
                 val = self.loss_.eval(yv, Fv, wv)
                 self.valid_history_.append(val)
                 if timing_enabled:
@@ -671,7 +682,8 @@ class MulticlassBoosting(_BaseBooster):
         tree_builder = self._tree_builder()
 
         # One ordered-TS target per class (CatBoost-style per-class statistics).
-        t_phase = time.perf_counter()
+        if timing_enabled:
+            t_phase = time.perf_counter()
         self.prep_ = self._new_preprocessor()
         Xb = np.ascontiguousarray(
             self.prep_.fit_transform(X, [Y_class[k] for k in range(K)],
@@ -721,16 +733,21 @@ class MulticlassBoosting(_BaseBooster):
         t0 = time.time()
 
         for m in range(self.n_estimators):
-            t_phase = time.perf_counter()
+            if timing_enabled:
+                t_phase = time.perf_counter()
             grad, hess = self.loss_.grad_hess_class_major(Y_class, F)
             if w is not None:
                 grad, hess = grad * w[None, :], hess * w[None, :]
-            fmask = self._feature_mask(Xb.shape[0], rng)
-            findices = self._feature_indices(fmask)
+            if self.colsample >= 1.0:
+                fmask = findices = None
+            else:
+                fmask = self._feature_mask(Xb.shape[0], rng)
+                findices = self._feature_indices(fmask)
             if timing_enabled:
                 self.timing_["grad_hess"] += time.perf_counter() - t_phase
             if use_shared_levelwise:
-                t_phase = time.perf_counter()
+                if timing_enabled:
+                    t_phase = time.perf_counter()
                 tree, leaf = build_levelwise_multiclass_tree(
                     Xb, grad, hess * coupling, n_bins, self.depth,
                     self.l2_leaf_reg, self.lr_,
@@ -741,7 +758,8 @@ class MulticlassBoosting(_BaseBooster):
                     self.timing_["tree_build"] += time.perf_counter() - t_phase
                 if tree.depth == 0:
                     break
-                t_phase = time.perf_counter()
+                if timing_enabled:
+                    t_phase = time.perf_counter()
                 self.trees_.append(tree)
                 self._accumulate_importance(tree)
                 F += tree.values[leaf].T
@@ -749,18 +767,20 @@ class MulticlassBoosting(_BaseBooster):
                     self.timing_["train_update"] += time.perf_counter() - t_phase
 
                 if self.verbose:
-                    t_phase = time.perf_counter()
+                    if timing_enabled:
+                        t_phase = time.perf_counter()
                     self.train_history_.append(
                         self.loss_.eval_class_major(Y_class, F, w))
                     if timing_enabled:
                         self.timing_["loss_eval"] += time.perf_counter() - t_phase
 
                 if Fv is not None:
-                    t_phase = time.perf_counter()
+                    if timing_enabled:
+                        t_phase = time.perf_counter()
                     Fv += tree.predict(Xvb).T
                     if timing_enabled:
                         self.timing_["validation_predict"] += time.perf_counter() - t_phase
-                    t_phase = time.perf_counter()
+                        t_phase = time.perf_counter()
                     val = self.loss_.eval_class_major(Yv_class, Fv, wv)
                     self.valid_history_.append(val)
                     if timing_enabled:
@@ -780,10 +800,14 @@ class MulticlassBoosting(_BaseBooster):
 
             round_trees = []
             for k in range(K):
-                t_phase = time.perf_counter()
-                g, h, row_indices = self._maybe_subsample(
-                    grad[k],
-                    hess[k] * coupling, rng)
+                if timing_enabled:
+                    t_phase = time.perf_counter()
+                hk = hess[k] * coupling
+                if self.subsample >= 1.0:
+                    g, h, row_indices = grad[k], hk, None
+                else:
+                    g, h, row_indices = self._maybe_subsample(
+                        grad[k], hk, rng)
                 tree, leaf = tree_builder(
                     Xb, g, h, n_bins, self.depth, self.l2_leaf_reg, self.lr_,
                     feature_mask=fmask,
@@ -794,7 +818,7 @@ class MulticlassBoosting(_BaseBooster):
                     row_indices=row_indices)
                 if timing_enabled:
                     self.timing_["tree_build"] += time.perf_counter() - t_phase
-                t_phase = time.perf_counter()
+                    t_phase = time.perf_counter()
                 round_trees.append(tree)
                 self._accumulate_importance(tree)
                 if self.ordered_boosting and tree.depth > 0:
@@ -810,19 +834,21 @@ class MulticlassBoosting(_BaseBooster):
                 break
             self.trees_.append(round_trees)
             if self.verbose:
-                t_phase = time.perf_counter()
+                if timing_enabled:
+                    t_phase = time.perf_counter()
                 self.train_history_.append(
                     self.loss_.eval_class_major(Y_class, F, w))
                 if timing_enabled:
                     self.timing_["loss_eval"] += time.perf_counter() - t_phase
 
             if Fv is not None:
-                t_phase = time.perf_counter()
+                if timing_enabled:
+                    t_phase = time.perf_counter()
                 for k in range(K):
                     Fv[k] += round_trees[k].predict(Xvb)
                 if timing_enabled:
                     self.timing_["validation_predict"] += time.perf_counter() - t_phase
-                t_phase = time.perf_counter()
+                    t_phase = time.perf_counter()
                 val = self.loss_.eval_class_major(Yv_class, Fv, wv)
                 self.valid_history_.append(val)
                 if timing_enabled:

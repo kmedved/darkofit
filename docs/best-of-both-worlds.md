@@ -516,6 +516,81 @@ numeric-binary blocker likely needs either a true upstream-default tree-builder
 lane or a deeper phase-level explanation, not another branch shuffle around the
 same kernels.
 
+### Upstream-Default Tree Lane Probe
+
+A broader probe copied the bbstats v2 full-row/full-feature oblivious tree
+builder into a separate candidate lane, then routed only the suspect default
+catboost rows through it. Results are tracked in:
+
+- `benchmarks/catboost_upstream_tree_q90_none_r15_20260606.csv`
+- `benchmarks/catboost_upstream_tree_q90_none_r15_summary_20260606.csv`
+- `benchmarks/catboost_upstream_tree_q90_none_r15_report_20260606.json`
+- `benchmarks/catboost_upstream_tree_numeric_binary_stress_r15_20260606.csv`
+- `benchmarks/catboost_upstream_tree_numeric_binary_stress_r15_summary_20260606.csv`
+- `benchmarks/catboost_upstream_tree_numeric_binary_stress_r15_report_20260606.json`
+- `benchmarks/catboost_upstream_tree_numeric_binary_stress_seed0_r80_20260606.csv`
+- `benchmarks/catboost_upstream_tree_numeric_binary_stress_seed0_r80_summary_20260606.csv`
+- `benchmarks/catboost_upstream_tree_numeric_binary_stress_seed0_r80_report_20260606.json`
+
+Result: the upstream tree lane was rejected. It regressed q90 unweighted
+strongly (`geomean_fit_ratio=1.1335`). Narrowing it to weighted
+non-leaf-adjusted fits improved numeric-binary aggregate at repeat 15
+(`geomean_fit_ratio=0.9952`), but seed 0 remained a stable row-level failure at
+repeat 80 (`fit_ratio=1.0693`). The product code was reverted.
+
+Decision: do not promote a copied upstream-default tree lane. It does not fix
+the strict row-level timing failures and hurts q90.
+
+### Scalar-Loop Timing Cleanup
+
+The scalar and multiclass fit loops were paying candidate-only timing overhead
+even with `verbose_timing=False`: each phase assigned `time.perf_counter()` and
+the default strict path still called selected-feature/subsample helpers even
+when `colsample=1.0` and `subsample=1.0`. The promoted cleanup makes those
+branches lazy:
+
+- only call `time.perf_counter()` when `verbose_timing=True`;
+- skip `_feature_indices(...)` when there is no feature mask;
+- skip `_maybe_subsample(...)` and `_feature_mask(...)` on default full-row /
+  full-feature fits.
+
+Results are tracked in:
+
+- `benchmarks/catboost_timing_guard_q90_none_r15_20260606.csv`
+- `benchmarks/catboost_timing_guard_q90_none_r15_summary_20260606.csv`
+- `benchmarks/catboost_timing_guard_q90_none_r15_report_20260606.json`
+- `benchmarks/catboost_timing_guard_numeric_binary_stress_r15_20260606.csv`
+- `benchmarks/catboost_timing_guard_numeric_binary_stress_r15_summary_20260606.csv`
+- `benchmarks/catboost_timing_guard_numeric_binary_stress_r15_report_20260606.json`
+- `benchmarks/catboost_timing_guard_numeric_binary_stress_r30_20260606.csv`
+- `benchmarks/catboost_timing_guard_numeric_binary_stress_r30_summary_20260606.csv`
+- `benchmarks/catboost_timing_guard_numeric_binary_stress_r30_report_20260606.json`
+- `benchmarks/catboost_timing_guard_feature_skip_numeric_binary_stress_r15_20260606.csv`
+- `benchmarks/catboost_timing_guard_feature_skip_numeric_binary_stress_r15_summary_20260606.csv`
+- `benchmarks/catboost_timing_guard_feature_skip_numeric_binary_stress_r15_report_20260606.json`
+- `benchmarks/catboost_timing_guard_feature_skip_numeric_binary_stress_r30_20260606.csv`
+- `benchmarks/catboost_timing_guard_feature_skip_numeric_binary_stress_r30_summary_20260606.csv`
+- `benchmarks/catboost_timing_guard_feature_skip_numeric_binary_stress_r30_report_20260606.json`
+- `benchmarks/catboost_scalar_loop_cleanup_numeric_binary_stress_r30_20260606.csv`
+- `benchmarks/catboost_scalar_loop_cleanup_numeric_binary_stress_r30_summary_20260606.csv`
+- `benchmarks/catboost_scalar_loop_cleanup_numeric_binary_stress_r30_report_20260606.json`
+- `benchmarks/catboost_scalar_loop_cleanup_numeric_binary_stress_r50_20260606.csv`
+- `benchmarks/catboost_scalar_loop_cleanup_numeric_binary_stress_r50_summary_20260606.csv`
+- `benchmarks/catboost_scalar_loop_cleanup_numeric_binary_stress_r50_report_20260606.json`
+
+Result: q90 unweighted now passes the strict gate at repeat 15
+(`geomean_fit_ratio=0.9132`, no failures). Numeric-binary stress improved
+substantially and passed at repeat 15 after the feature-index skip
+(`geomean_fit_ratio=0.9237`, no failures), but remains unstable at higher
+repeats: repeat 30 passes aggregate but has one row-level failure
+(`geomean_fit_ratio=0.9402`), and repeat 50 failed after upstream found much
+lower timing minima (`geomean_fit_ratio=1.1260`).
+
+Decision: keep the scalar-loop cleanup because it is behavior-preserving, test
+covered, and clears q90. Treat numeric-binary stress as the last unresolved
+strict timing case; it now looks dominated by row-level timing stability rather
+than metrics, iterations, or a known semantic difference.
+
 ### Selected Row/Feature Kernels
 
 The selected-row and selected-feature histogram kernels are inactive in the
