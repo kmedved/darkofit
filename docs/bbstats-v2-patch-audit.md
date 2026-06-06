@@ -339,6 +339,18 @@ Completed:
   `1.0564`, and every seed's median and mean repeat ratios still favored
   upstream. Do not treat the remaining numeric-binary stress issue as a simple
   benchmark-order artifact.
+- Bin-index cast probe:
+  `benchmarks/catboost_numeric_binary_stress_profile_upstream_seed1_20260606.txt`,
+  `benchmarks/catboost_numeric_binary_stress_profile_candidate_seed1_20260606.txt`,
+  `benchmarks/catboost_hist_bin_int_numeric_binary_stress_trace_r20_20260606.csv`,
+  and
+  `benchmarks/catboost_hist_bin_int_numeric_binary_stress_trace_r20_repeat_summary_20260606.csv`.
+  Outcome: cProfile on the failing seed pointed at tree-kernel time
+  (`_build_histograms_into` and `_best_split`) rather than fit-loop keyword
+  plumbing. A one-change ablation that cast default histogram bin ids to native
+  `int` before indexing did not clear the gate (`geomean_fit_ratio=0.9759`) and
+  worsened row failures on seeds 1 and 2 (`1.2292`, `1.1161`). The product code
+  was reverted; do not promote this kernel-indexing tweak.
 - Selected row/feature kernels:
   code inspection plus `tests/test_chimeraboost.py` show these kernels are
   inactive under the strict default matrix (`subsample=1.0`,
@@ -352,7 +364,7 @@ Next:
    semantics lane if weighted quality diverges, or a deeper default catboost
    scalar/tree-builder overhead ablation for the remaining numeric-binary
    stress timing row. Call-shape-only routing and benchmark-order bias are
-   already rejected.
+   already rejected, and native-int bin indexing is rejected.
 2. Promote only ablations that improve the blocker without introducing a new
    quality, semantic, or timing regression.
 3. Keep `tree_mode="lightgbm"` work paused until catboost mode is either

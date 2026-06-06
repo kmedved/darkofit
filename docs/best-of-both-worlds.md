@@ -673,6 +673,35 @@ Decision: keep the harness order fix because it makes future probes explicit.
 Do not spend more catboost cleanup time on row-order measurement artifacts;
 the next useful probe needs to reduce default scalar/tree-builder overhead.
 
+### Bin-Index Cast Probe
+
+A cProfile diagnostic on the failing numeric-binary stress seed is tracked in:
+
+- `benchmarks/catboost_numeric_binary_stress_profile_upstream_seed1_20260606.txt`
+- `benchmarks/catboost_numeric_binary_stress_profile_candidate_seed1_20260606.txt`
+
+The profile is diagnostic only because cProfile and Numba dispatch/cache work
+distort absolute times, but it localized the candidate difference to tree
+kernel calls: `_build_histograms_into` and `_best_split`, not preprocessing,
+fit-loop keyword plumbing, prediction, or validation scoring.
+
+The first kernel-level probe kept compact binned storage but cast each default
+histogram bin id to native `int` before using it as a histogram index. The run
+is tracked in:
+
+- `benchmarks/catboost_hist_bin_int_numeric_binary_stress_trace_r20_20260606.csv`
+- `benchmarks/catboost_hist_bin_int_numeric_binary_stress_trace_r20_summary_20260606.csv`
+- `benchmarks/catboost_hist_bin_int_numeric_binary_stress_trace_r20_report_20260606.json`
+- `benchmarks/catboost_hist_bin_int_numeric_binary_stress_trace_r20_repeat_summary_20260606.csv`
+
+Result: reject. The aggregate min-of-repeat ratio stayed below 1.0
+(`geomean_fit_ratio=0.9759`), but the row-level gate still failed and failures
+worsened on seeds 1 and 2 (`fit_ratio=1.2292`, `1.1161`). The repeat medians
+still favored upstream on four of five seeds.
+
+Decision: product code was reverted. The remaining overhead is still in the
+default tree-kernel path, but native-int bin indexing is not the fix.
+
 ### Selected Row/Feature Kernels
 
 The selected-row and selected-feature histogram kernels are inactive in the
