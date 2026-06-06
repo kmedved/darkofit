@@ -627,6 +627,26 @@ the final catboost strict-domination blocker, and it now looks like a true
 default scalar/tree-builder overhead issue rather than a quality, iteration, or
 validation-semantics issue.
 
+### Plain-Builder Fast-Lane Probe
+
+A narrow product-code probe tried to route full-row/full-feature,
+non-constant-Hessian catboost fits through an upstream-shaped direct
+`build_oblivious_tree(...)` call, avoiding the generic tree-builder variable and
+extra selected-row/feature keyword plumbing. The probe is tracked in:
+
+- `benchmarks/catboost_plain_builder_numeric_binary_stress_trace_r20_20260606.csv`
+- `benchmarks/catboost_plain_builder_numeric_binary_stress_trace_r20_summary_20260606.csv`
+- `benchmarks/catboost_plain_builder_numeric_binary_stress_trace_r20_report_20260606.json`
+- `benchmarks/catboost_plain_builder_numeric_binary_stress_trace_r20_repeat_summary_20260606.csv`
+
+Result: reject. The numeric-binary stress repeat-20 gate failed
+(`geomean_fit_ratio=1.0214`), with row failures on seeds 0 and 4. The
+median-repeat distribution still favored upstream (`geomean_median_ratio=1.1525`).
+
+Decision: product code was reverted. Do not promote a call-shape-only plain
+builder lane; the remaining overhead is deeper than the fit-loop keyword
+dispatch.
+
 ### Selected Row/Feature Kernels
 
 The selected-row and selected-feature histogram kernels are inactive in the

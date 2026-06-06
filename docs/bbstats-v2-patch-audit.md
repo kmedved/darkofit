@@ -318,6 +318,15 @@ Completed:
   in favor of upstream. The phase run is candidate-only because upstream v2
   does not expose `verbose_timing`; use it only to locate candidate work, not
   to compare phases across revisions.
+- Plain-builder fast lane:
+  `benchmarks/catboost_plain_builder_numeric_binary_stress_trace_r20_20260606.csv`
+  and
+  `benchmarks/catboost_plain_builder_numeric_binary_stress_trace_r20_repeat_summary_20260606.csv`.
+  Outcome: routing full-row/full-feature non-constant-Hessian catboost fits
+  through an upstream-shaped direct builder call failed the numeric-binary
+  stress repeat-20 gate (`geomean_fit_ratio=1.0214`) and still had a worse
+  median-repeat geomean (`1.1525`). The product code was reverted; do not
+  promote this call-shape-only fast lane.
 - Selected row/feature kernels:
   code inspection plus `tests/test_chimeraboost.py` show these kernels are
   inactive under the strict default matrix (`subsample=1.0`,
@@ -328,9 +337,9 @@ Next:
 
 1. For stable blockers, run exactly one ablation at a time:
    class-major multiclass if multiclass reappears as a blocker, validation
-   semantics lane if weighted quality diverges, or a default catboost scalar
-   loop/tree-builder overhead ablation for the remaining numeric-binary stress
-   timing row.
+   semantics lane if weighted quality diverges, or a deeper default catboost
+   scalar/tree-builder overhead ablation for the remaining numeric-binary
+   stress timing row. Call-shape-only routing is already rejected.
 2. Promote only ablations that improve the blocker without introducing a new
    quality, semantic, or timing regression.
 3. Keep `tree_mode="lightgbm"` work paused until catboost mode is either
