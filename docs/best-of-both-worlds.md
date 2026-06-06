@@ -34,8 +34,9 @@ loss otherwise; speed breaks ties.
 1. Added a three-way revision benchmark harness that compares upstream,
    legacy fork, and the current integration candidate in isolated
    subprocesses.
-2. Added a no-op `tree_mode` seam on the upstream trunk, preserving catboost
-   behavior and blocking unimplemented levelwise aliases.
+2. Added the `tree_mode` seam on the upstream trunk, preserving catboost
+   behavior while routing LightGBM/levelwise aliases to the opt-in
+   non-oblivious builder.
 3. Fixed validation/sample-weight semantics before speed work.
 4. Ported safe catboost-path performance work: timing diagnostics, compact
    binned dtypes, guarded constant-Hessian histograms, selected-feature and
@@ -130,8 +131,9 @@ does not yet clear the out-of-sample metric bar for `auto` or default selection.
    learning rate, and early stopping) against the revision harness.
 2. Add row-parallel/thread-local histogram kernels if 500k-scale runs still show
    per-iteration scaling inversion after levelwise tuning.
-3. Add vector-valued multiclass trees only after the scalar levelwise mode has a
-   stable quality/speed profile.
+3. Improve the shared vector-valued multiclass levelwise path only if it can
+   close the remaining quality gap without hurting the categorical multiclass
+   speed win.
 4. Consider `tree_mode="auto"` only after broader multi-seed and large-data
    benchmarks show levelwise wins primary weighted holdout metrics often enough
    to justify the added default complexity.
