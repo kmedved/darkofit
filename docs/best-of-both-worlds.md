@@ -647,6 +647,32 @@ Decision: product code was reverted. Do not promote a call-shape-only plain
 builder lane; the remaining overhead is deeper than the fit-loop keyword
 dispatch.
 
+### Benchmark-Order Probe
+
+The strict harness previously filtered `--models` through the default variant
+order, so `candidate_catboost` could not be run before `upstream_matched`.
+The harness now preserves the CLI order and has a regression test for that
+behavior.
+
+The reversed-order numeric-binary stress run is tracked in:
+
+- `benchmarks/catboost_numeric_binary_stress_reversed_order_r20_20260606.csv`
+- `benchmarks/catboost_numeric_binary_stress_reversed_order_r20_summary_20260606.csv`
+- `benchmarks/catboost_numeric_binary_stress_reversed_order_r20_report_20260606.json`
+- `benchmarks/catboost_numeric_binary_stress_reversed_order_r20_repeat_summary_20260606.csv`
+
+Result: reject benchmark-order bias as the explanation. Running
+`candidate_catboost` first improved the aggregate min-of-repeat ratio
+(`geomean_fit_ratio=0.9585`) but still left seed 1 as a row-level failure
+(`fit_ratio=1.0564`). More importantly, every seed's median-repeat and
+mean-repeat ratios still favored upstream, so the remaining numeric-binary
+stress issue is distribution-level overhead, not just an unlucky second-run
+position.
+
+Decision: keep the harness order fix because it makes future probes explicit.
+Do not spend more catboost cleanup time on row-order measurement artifacts;
+the next useful probe needs to reduce default scalar/tree-builder overhead.
+
 ### Selected Row/Feature Kernels
 
 The selected-row and selected-feature histogram kernels are inactive in the

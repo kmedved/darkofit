@@ -29,6 +29,7 @@ from bench_compare_revisions import (  # noqa: E402
     _base_row,
     _path_token,
     _peak_rss_mb,
+    _select_variants,
     _validation_eval_set,
 )
 from bench_compare_revisions import main as compare_revisions_main  # noqa: E402
@@ -270,6 +271,31 @@ def test_default_revision_specs_handles_legacy_fork_without_tree_mode(tmp_path):
         "candidate_lightgbm",
     ]
     assert specs[2].tree_mode is None
+
+
+def test_model_selection_preserves_requested_order():
+    variants = [
+        RevisionSpec("upstream_matched", "/upstream"),
+        RevisionSpec("candidate_catboost", "/candidate", tree_mode="catboost"),
+        RevisionSpec("candidate_lightgbm", "/candidate", tree_mode="lightgbm"),
+    ]
+
+    selected = _select_variants(
+        variants,
+        ["candidate_catboost", "upstream_matched"],
+    )
+
+    assert [variant.label for variant in selected] == [
+        "candidate_catboost",
+        "upstream_matched",
+    ]
+
+
+def test_model_selection_rejects_unknown_label():
+    variants = [RevisionSpec("upstream_matched", "/upstream")]
+
+    with pytest.raises(SystemExit, match="unknown or unavailable variants"):
+        _select_variants(variants, ["candidate_catboost"])
 
 
 def test_revision_summary_separates_split_and_ensemble_dimensions():

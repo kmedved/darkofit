@@ -526,6 +526,16 @@ def parse_args(argv):
     return parser.parse_args(argv)
 
 
+def _select_variants(variants, requested_labels):
+    if not requested_labels:
+        return list(variants)
+    by_label = {variant.label: variant for variant in variants}
+    missing = [label for label in requested_labels if label not in by_label]
+    if missing:
+        raise SystemExit(f"unknown or unavailable variants: {sorted(set(missing))}")
+    return [by_label[label] for label in requested_labels]
+
+
 def main(argv=None):
     args = parse_args(argv or sys.argv[1:])
     variants = default_revision_specs(
@@ -533,12 +543,7 @@ def main(argv=None):
         fork=str(args.fork) if args.fork else None,
         candidate=str(args.candidate) if args.candidate else None,
     )
-    if args.models:
-        wanted = set(args.models)
-        variants = [v for v in variants if v.label in wanted]
-        missing = wanted - {v.label for v in variants}
-        if missing:
-            raise SystemExit(f"unknown or unavailable variants: {sorted(missing)}")
+    variants = _select_variants(variants, args.models)
     if not variants:
         raise SystemExit("no revisions to run; pass --upstream/--fork/--candidate")
 

@@ -327,6 +327,18 @@ Completed:
   stress repeat-20 gate (`geomean_fit_ratio=1.0214`) and still had a worse
   median-repeat geomean (`1.1525`). The product code was reverted; do not
   promote this call-shape-only fast lane.
+- Benchmark-order probe:
+  `benchmarks/catboost_numeric_binary_stress_reversed_order_r20_20260606.csv`,
+  `benchmarks/catboost_numeric_binary_stress_reversed_order_r20_report_20260606.json`,
+  and
+  `benchmarks/catboost_numeric_binary_stress_reversed_order_r20_repeat_summary_20260606.csv`.
+  Outcome: the revision harness now honors the order supplied to `--models`,
+  and reversing the prior run order (`candidate_catboost` before
+  `upstream_matched`) did not clear the blocker. The aggregate min-of-repeat
+  gate improved (`geomean_fit_ratio=0.9585`) but seed 1 still failed at
+  `1.0564`, and every seed's median and mean repeat ratios still favored
+  upstream. Do not treat the remaining numeric-binary stress issue as a simple
+  benchmark-order artifact.
 - Selected row/feature kernels:
   code inspection plus `tests/test_chimeraboost.py` show these kernels are
   inactive under the strict default matrix (`subsample=1.0`,
@@ -339,7 +351,8 @@ Next:
    class-major multiclass if multiclass reappears as a blocker, validation
    semantics lane if weighted quality diverges, or a deeper default catboost
    scalar/tree-builder overhead ablation for the remaining numeric-binary
-   stress timing row. Call-shape-only routing is already rejected.
+   stress timing row. Call-shape-only routing and benchmark-order bias are
+   already rejected.
 2. Promote only ablations that improve the blocker without introducing a new
    quality, semantic, or timing regression.
 3. Keep `tree_mode="lightgbm"` work paused until catboost mode is either
