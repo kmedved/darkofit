@@ -136,7 +136,7 @@ class FitConfig:
     weighted_target_stats: bool = False
     threads: Optional[int] = None
     ordered_boosting: bool = False
-    verbose_timing: bool = True
+    verbose_timing: bool = False
 
 
 def _resample_rows(X, y, n, rng, stratify=False):

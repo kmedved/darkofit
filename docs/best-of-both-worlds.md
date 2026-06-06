@@ -98,6 +98,52 @@ path. The legacy fork is useful as a source of implementation ideas, not as the
 integration base. `tree_mode="lightgbm"` remains opt-in until it wins weighted
 or ordinary holdout loss, not just speed.
 
+## Catboost-Path Speed Recovery Audit
+
+The first medium tri-compare above enabled `verbose_timing` whenever a revision
+accepted that constructor argument. That is useful for candidate phase
+diagnostics, but unfair for cross-revision fit timing because `upstream_matched`
+does not accept the option and therefore did not pay the same instrumentation
+overhead. The revision harness now keeps `verbose_timing=False` by default and
+requires `--verbose-timing` for profiling runs.
+
+Corrected catboost-only raw rows are tracked in:
+
+- `benchmarks/catboost_speed_recovery_medium_20260606.csv`
+- `benchmarks/catboost_speed_recovery_focus_20260606.csv`
+
+Full medium command:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_compare_revisions.py \
+  --upstream /private/tmp/chimeraboost-upstream-ddaf272-bobw \
+  --candidate . \
+  --models upstream_matched candidate_catboost \
+  --datasets friedman_numeric wide_numeric_reg categorical_reg numeric_binary \
+    numeric_multiclass categorical_binary categorical_multiclass \
+  --sizes medium \
+  --seeds 3 \
+  --repeat 2 \
+  --iterations 300 \
+  --patience 25 \
+  --threads 4 \
+  --weight-modes none stress \
+  --csv benchmarks/catboost_speed_recovery_medium_20260606.csv
+```
+
+Result: `candidate_catboost` still preserves upstream quality exactly for the
+ordinary rows and within metric noise for weighted rows. The apparent speed gap
+shrinks but does not become a broad win: the corrected full medium run has mean
+fit ratio `1.108`, median fit ratio `1.053`, and speed wins on 4/14 summary
+rows. A focused repeat-3 rerun of the suspect rows has mean fit ratio `1.064`,
+median `1.036`, and speed wins on 3/8 summary rows.
+
+Decision: no catboost-mode model-code optimization cleared the bar in this
+audit. The safe conclusion is that catboost mode is quality-preserving and near
+parity with bbstats v2, with a few row-specific speed wins, not that it has a
+general speed advantage. Use `--verbose-timing` only for phase diagnostics, not
+for headline cross-revision speed ratios.
+
 ## Quantile Benchmark Coverage
 
 Raw medium quantile rows are tracked in:

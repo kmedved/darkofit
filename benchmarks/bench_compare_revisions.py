@@ -451,6 +451,16 @@ def parse_args(argv):
     )
     parser.add_argument("--ordered-boosting", action="store_true", default=False)
     parser.add_argument(
+        "--verbose-timing",
+        action="store_true",
+        default=False,
+        help=(
+            "ask revisions that support it to record per-phase timings; off by "
+            "default because older revisions may not support the option, making "
+            "cross-revision fit timing unfair"
+        ),
+    )
+    parser.add_argument(
         "--weight-modes",
         nargs="+",
         choices=["none", "uniform", "stress"],
@@ -518,6 +528,7 @@ def main(argv=None):
         weighted_target_stats=args.weighted_target_stats,
         threads=args.threads,
         ordered_boosting=args.ordered_boosting,
+        verbose_timing=args.verbose_timing,
     )
     args.csv.parent.mkdir(parents=True, exist_ok=True)
 

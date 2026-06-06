@@ -105,6 +105,15 @@ def test_estimator_kwargs_maps_iterations_api():
     assert kwargs["n_ensembles"] == 3
     assert kwargs["ensemble_n_jobs"] == 2
     assert kwargs["tree_mode"] == "lightgbm"
+    assert kwargs["verbose_timing"] is False
+
+
+def test_estimator_kwargs_can_enable_verbose_timing():
+    cfg = FitConfig(iterations=17, verbose_timing=True)
+    variant = RevisionSpec("fork_lightgbm", "/repo", tree_mode="lightgbm")
+
+    kwargs = estimator_kwargs(IterationsEstimator, cfg, variant, seed=11)
+
     assert kwargs["verbose_timing"] is True
 
 
