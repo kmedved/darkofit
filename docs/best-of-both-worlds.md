@@ -254,8 +254,56 @@ Smoke command, using the local cached OpenML `credit-g` dataset:
 ```
 
 Result: the single `candidate_catboost` row completed successfully. No tracked
-real-tabular decision benchmark has been run yet; this patch only opens the gate
-so future upstream/fork/candidate comparisons can use real datasets directly.
+real-tabular decision benchmark had been run at that point; the patch opened the
+gate so upstream/fork/candidate comparisons can use real datasets directly.
+
+First tracked real-tabular gate:
+
+`benchmarks/tri_compare_openml_tiny_20260606.csv`
+
+Command:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_compare_revisions.py \
+  --upstream /private/tmp/chimeraboost-upstream-ddaf272-bobw \
+  --fork /private/tmp/chimeraboost-fork-origin-main-bobw \
+  --candidate . \
+  --models upstream_matched fork_matched candidate_catboost candidate_lightgbm \
+  --datasets oml:credit-g oml:phoneme oml:vehicle oml:cpu_act \
+  --sizes tiny \
+  --seeds 2 \
+  --repeat 2 \
+  --iterations 120 \
+  --patience 15 \
+  --threads 4 \
+  --weight-modes none \
+  --openml \
+  --csv benchmarks/tri_compare_openml_tiny_20260606.csv
+```
+
+All 32 rows completed successfully. Ratios below are against
+`upstream_matched`; lower is better because every primary metric here is a loss.
+
+| Dataset | Task | Variant | Metric ratio | Fit-time ratio | Interpretation |
+| --- | --- | --- | ---: | ---: | --- |
+| `oml:credit-g` | binary, categorical | `candidate_catboost` | 1.000 | 1.273 | Preserves upstream log loss exactly. |
+| `oml:credit-g` | binary, categorical | `candidate_lightgbm` | 1.063 | 1.059 | Worse log loss; no speed win here. |
+| `oml:credit-g` | binary, categorical | `fork_matched` | 0.996 | 1.069 | Slightly better log loss, but runs many more rounds. |
+| `oml:phoneme` | binary, numeric | `candidate_catboost` | 1.000 | 1.006 | Preserves upstream log loss exactly. |
+| `oml:phoneme` | binary, numeric | `candidate_lightgbm` | 1.038 | 0.844 | Faster, but worse log loss. |
+| `oml:phoneme` | binary, numeric | `fork_matched` | 1.046 | 1.320 | Worse and slower. |
+| `oml:vehicle` | multiclass, numeric | `candidate_catboost` | 1.000 | 1.770 | Preserves upstream log loss exactly. |
+| `oml:vehicle` | multiclass, numeric | `candidate_lightgbm` | 1.009 | 0.474 | Much faster, but still worse log loss. |
+| `oml:vehicle` | multiclass, numeric | `fork_matched` | 1.003 | 0.783 | Slightly worse log loss, faster. |
+| `oml:cpu_act` | regression, numeric | `candidate_catboost` | 1.000 | 0.703 | Preserves upstream RMSE exactly and is faster in this tiny gate. |
+| `oml:cpu_act` | regression, numeric | `candidate_lightgbm` | 0.607 | 0.813 | Better RMSE and faster on this one tiny regression case. |
+| `oml:cpu_act` | regression, numeric | `fork_matched` | 0.545 | 0.236 | Best RMSE/time on this one tiny regression case. |
+
+Decision: this tiny OpenML gate supports the same conservative integration
+stance for classification: `candidate_catboost` preserves upstream quality,
+while `candidate_lightgbm` buys speed by giving up log loss. The regression row
+is an interesting signal for a broader real-regression follow-up, not enough by
+itself to change defaults.
 
 ## Current Mode-Gate Benchmark
 
