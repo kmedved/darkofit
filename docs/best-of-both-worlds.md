@@ -48,8 +48,8 @@ loss otherwise; speed breaks ties.
    quantile regression separately.
 7. Added grouped split modes to the revision and levelwise-tuning harnesses so
    train/validation/test can hold out whole groups instead of random rows.
-8. Added feasible memory reporting (`peak_rss_mb`) to raw benchmark rows using
-   each benchmark worker process's peak resident set size.
+8. Added feasible memory reporting (`peak_rss_mb`) to newly generated raw
+   benchmark rows using each benchmark worker process's peak resident set size.
 
 ## Current Upstream/Fork/Candidate Benchmark
 
