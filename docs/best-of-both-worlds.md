@@ -61,8 +61,8 @@ loss otherwise; speed breaks ties.
 
 Raw rows and summary rows are tracked in:
 
-- `benchmarks/tri_compare_medium_20260605.csv`
-- `benchmarks/tri_compare_medium_summary_20260605.csv`
+- `benchmarks/tri_compare_medium_20260606.csv`
+- `benchmarks/tri_compare_medium_summary_20260606.csv`
 
 Command:
 
@@ -81,7 +81,7 @@ Command:
   --patience 25 \
   --threads 4 \
   --weight-modes none stress \
-  --csv benchmarks/tri_compare_medium_20260605.csv
+  --csv benchmarks/tri_compare_medium_20260606.csv
 ```
 
 All 168 rows completed successfully. Ratios below are against
@@ -89,9 +89,9 @@ All 168 rows completed successfully. Ratios below are against
 
 | Variant | Primary-metric wins/ties | Mean metric ratio | Mean fit ratio | Interpretation |
 | --- | ---: | ---: | ---: | --- |
-| `candidate_catboost` | 14 / 14 | 1.000 | 1.196 | Preserves upstream quality exactly; speed is mixed and not yet a broad win. |
-| `fork_matched` | 2 / 14 | 1.093 | 1.275 | Legacy fork can be faster, but usually gives up holdout quality and often runs to the iteration cap. |
-| `candidate_lightgbm` | 0 / 14 | 1.222 | 0.941 | Often uses fewer rounds and can be faster, but still fails the primary-metric gate. |
+| `candidate_catboost` | 13 / 14 | 1.000 | 1.020 | Preserves upstream quality up to weighted-metric noise; near speed parity, with row-specific wins. |
+| `fork_matched` | 2 / 14 | 1.093 | 1.191 | Legacy fork can be faster, but usually gives up holdout quality and often runs to the iteration cap. |
+| `candidate_lightgbm` | 0 / 14 | 1.222 | 0.692 | Much faster on most rows, but still fails the primary-metric gate. |
 
 Decision: keep upstream-shaped `tree_mode="catboost"` as the product/default
 path. The legacy fork is useful as a source of implementation ideas, not as the
@@ -133,10 +133,11 @@ Full medium command:
 
 Result: `candidate_catboost` still preserves upstream quality exactly for the
 ordinary rows and within metric noise for weighted rows. The apparent speed gap
-shrinks but does not become a broad win: the corrected full medium run has mean
-fit ratio `1.108`, median fit ratio `1.053`, and speed wins on 4/14 summary
-rows. A focused repeat-3 rerun of the suspect rows has mean fit ratio `1.064`,
-median `1.036`, and speed wins on 3/8 summary rows.
+shrinks but does not become a broad win. The initial catboost-only audit had
+mean fit ratio `1.108`, median `1.053`, and speed wins on 4/14 summary rows; a
+focused repeat-3 rerun of suspect rows had mean fit ratio `1.064`, median
+`1.036`, and speed wins on 3/8 summary rows. The fully refreshed tri-compare
+above is the headline number: mean fit ratio `1.020`.
 
 Decision: no catboost-mode model-code optimization cleared the bar in this
 audit. The safe conclusion is that catboost mode is quality-preserving and near
@@ -148,7 +149,8 @@ for headline cross-revision speed ratios.
 
 Raw medium quantile rows are tracked in:
 
-`benchmarks/tri_compare_quantile_medium_20260605.csv`
+- `benchmarks/tri_compare_quantile_medium_20260606.csv`
+- `benchmarks/tri_compare_quantile_medium_summary_20260606.csv`
 
 Command:
 
@@ -166,7 +168,7 @@ Command:
   --patience 25 \
   --threads 4 \
   --weight-modes none stress \
-  --csv benchmarks/tri_compare_quantile_medium_20260605.csv
+  --csv benchmarks/tri_compare_quantile_medium_20260606.csv
 ```
 
 All 48 rows completed successfully. Ratios below are against
@@ -174,9 +176,9 @@ All 48 rows completed successfully. Ratios below are against
 
 | Variant | Mean pinball metric ratio | Mean fit-time ratio | Interpretation |
 | --- | ---: | ---: | --- |
-| `candidate_catboost` | 0.996 | 1.377 | Preserves upstream quantile quality; slightly better on weighted pinball, slower in this harness. |
+| `candidate_catboost` | 0.996 | 1.129 | Preserves upstream quantile quality; slightly better on weighted pinball, modestly slower. |
 | `fork_matched` | 1.042 | 0.952 | Faster, but gives up pinball quality. |
-| `candidate_lightgbm` | 1.158 | 1.269 | Still fails the quantile quality gate. |
+| `candidate_lightgbm` | 1.158 | 1.083 | Still fails the quantile quality gate. |
 
 Decision: quantile regression reinforces the existing default. Keep
 `tree_mode="catboost"` as the product path and leave `tree_mode="lightgbm"` as
@@ -186,7 +188,8 @@ an opt-in mode until it wins primary holdout loss.
 
 Raw medium grouped rows are tracked in:
 
-`benchmarks/tri_compare_grouped_medium_20260605.csv`
+- `benchmarks/tri_compare_grouped_medium_20260606.csv`
+- `benchmarks/tri_compare_grouped_medium_summary_20260606.csv`
 
 Command:
 
@@ -205,7 +208,7 @@ Command:
   --threads 4 \
   --weight-modes none stress \
   --split-modes group \
-  --csv benchmarks/tri_compare_grouped_medium_20260605.csv
+  --csv benchmarks/tri_compare_grouped_medium_20260606.csv
 ```
 
 All 48 rows completed successfully. Every row used `split_mode=group`, with
@@ -214,9 +217,9 @@ medium cases). Ratios below are against `upstream_matched`; lower is better.
 
 | Variant | Mean primary-metric ratio | Mean fit-time ratio | Interpretation |
 | --- | ---: | ---: | --- |
-| `candidate_catboost` | 1.000 | 2.086 | Preserves upstream grouped-holdout quality, but is slower in this harness. |
-| `fork_matched` | 1.117 | 1.434 | Usually gives up quality on grouped holdouts. |
-| `candidate_lightgbm` | 1.136 | 1.079 | Faster on some classification rows, but still misses the primary-metric gate. |
+| `candidate_catboost` | 1.000 | 1.149 | Preserves upstream grouped-holdout quality, but is not a broad speed win. |
+| `fork_matched` | 1.116 | 1.672 | Usually gives up quality on grouped holdouts. |
+| `candidate_lightgbm` | 1.137 | 0.903 | Faster on most rows, but still misses the primary-metric gate. |
 
 Decision: grouped holdout evidence also supports keeping `tree_mode="catboost"`
 as the default/product path. Levelwise remains an opt-in speed experiment until
@@ -226,7 +229,8 @@ it can win primary out-of-sample loss.
 
 Raw small bagging rows are tracked in:
 
-`benchmarks/tri_compare_bagging_small_20260605.csv`
+- `benchmarks/tri_compare_bagging_small_20260606.csv`
+- `benchmarks/tri_compare_bagging_small_summary_20260606.csv`
 
 Command:
 
@@ -241,12 +245,12 @@ Command:
   --seeds 1 \
   --repeat 2 \
   --iterations 120 \
-  --patience 15 \
+  --patience 20 \
   --threads 4 \
   --weight-modes none \
   --ensemble-sizes 1 3 \
   --ensemble-n-jobs 1 \
-  --csv benchmarks/tri_compare_bagging_small_20260605.csv
+  --csv benchmarks/tri_compare_bagging_small_20260606.csv
 ```
 
 The run produced 16 rows: 14 successful rows and 2 explicit error rows for the
@@ -254,14 +258,14 @@ legacy fork's unsupported `n_ensembles=3` request. The harness now treats that
 as a visible capability failure instead of silently benchmarking a single model
 under a bagged label.
 
-On this small two-dataset gate, `n_ensembles=3` did not rescue the levelwise
-quality gap. Against single-model `upstream_matched`, candidate catboost tied
-the upstream primary metric at `ensemble_size=1`; at `ensemble_size=3`, both
-candidate catboost and upstream had the same small primary-metric regressions
-(`1.023x` RMSE on `friedman_numeric`, `1.091x` log loss on `numeric_binary`).
-Candidate levelwise remained worse than candidate catboost at both ensemble
-sizes (`1.254x`/`1.317x` RMSE on `friedman_numeric`, `1.301x`/`1.326x` log loss
-on `numeric_binary`).
+On this small two-dataset gate, `n_ensembles=3` still did not rescue the
+levelwise quality gap. The corrected summary now keeps `ensemble_size` in the
+grouping key. Against equally bagged `upstream_matched`, candidate catboost tied
+the upstream primary metric on all four dataset/ensemble rows and had mean fit
+ratio `1.057`. Candidate levelwise was faster (`0.588` mean fit ratio) but
+worse on the primary metric (`1.266` mean ratio). The legacy fork was fastest
+on its two successful single-model rows, but worse on quality and still errors
+explicitly for `n_ensembles=3`.
 
 Decision: bagging is now an explicit benchmark dimension. Do not use bagged rows
 to justify a tree-mode default unless they are compared against equally bagged

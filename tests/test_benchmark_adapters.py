@@ -28,6 +28,7 @@ from benchmark_adapters import (  # noqa: E402
 from bench_compare_revisions import _base_row, _path_token, _peak_rss_mb  # noqa: E402
 from bench_compare_revisions import main as compare_revisions_main  # noqa: E402
 from bench_levelwise_tuning import main as levelwise_tuning_main  # noqa: E402
+from summarize_revision_compare import aggregate  # noqa: E402
 from weighted_metrics import metric_bundle  # noqa: E402
 
 
@@ -226,6 +227,42 @@ def test_default_revision_specs_handles_legacy_fork_without_tree_mode(tmp_path):
         "candidate_lightgbm",
     ]
     assert specs[2].tree_mode is None
+
+
+def test_revision_summary_separates_split_and_ensemble_dimensions():
+    base = {
+        "status": "ok",
+        "dataset": "d",
+        "size": "small",
+        "split_mode": "row",
+        "weight_mode": "none",
+        "ensemble_size": "1",
+        "variant": "candidate",
+        "primary_metric": "rmse",
+        "primary_value": "1.0",
+        "fit_seconds": "1.0",
+        "predict_seconds": "0.1",
+        "best_iteration": "3",
+    }
+    rows = []
+    for split_mode in ("row", "group"):
+        for ensemble_size, metric in (("1", "1.0"), ("3", "2.0")):
+            rows.append({
+                **base,
+                "split_mode": split_mode,
+                "ensemble_size": ensemble_size,
+                "primary_value": metric,
+            })
+
+    summary = aggregate(rows)
+
+    assert len(summary) == 4
+    assert summary[("d", "small", "row", "none", "1", "candidate")][
+        "primary_value"] == 1.0
+    assert summary[("d", "small", "row", "none", "3", "candidate")][
+        "primary_value"] == 2.0
+    assert summary[("d", "small", "group", "none", "1", "candidate")][
+        "primary_value"] == 1.0
 
 
 def test_split_case_preserves_weight_modes():

@@ -49,7 +49,9 @@ def aggregate(rows):
         key = (
             row["dataset"],
             row["size"],
+            row.get("split_mode", ""),
             row["weight_mode"],
+            row.get("ensemble_size", ""),
             row["variant"],
         )
         grouped[key].append(row)
@@ -70,25 +72,31 @@ def aggregate(rows):
 
 
 def print_summary(summary, baseline):
-    groups = sorted({key[:3] for key in summary})
+    groups = sorted({key[:5] for key in summary})
     print(
-        "dataset,size,weight_mode,variant,n,primary_metric,primary_value,"
-        "metric_vs_base,fit_seconds,fit_vs_base,best_iteration,iter_vs_base"
+        "dataset,size,split_mode,weight_mode,ensemble_size,variant,n,"
+        "primary_metric,primary_value,metric_vs_base,fit_seconds,fit_vs_base,"
+        "best_iteration,iter_vs_base"
     )
-    for dataset, size, weight_mode in groups:
-        base = summary.get((dataset, size, weight_mode, baseline))
+    for dataset, size, split_mode, weight_mode, ensemble_size in groups:
+        base_key = (dataset, size, split_mode, weight_mode,
+                    ensemble_size, baseline)
+        base = summary.get(base_key)
         base_metric = None if base is None else base["primary_value"]
         base_fit = None if base is None else base["fit_seconds"]
         base_iter = None if base is None else base["best_iteration"]
-        variants = sorted(key[3] for key in summary if key[:3] == (dataset, size, weight_mode))
+        prefix = (dataset, size, split_mode, weight_mode, ensemble_size)
+        variants = sorted(key[5] for key in summary if key[:5] == prefix)
         for variant in variants:
-            row = summary[(dataset, size, weight_mode, variant)]
+            row = summary[(*prefix, variant)]
             print(
                 ",".join(
                     [
                         dataset,
                         size,
+                        split_mode,
                         weight_mode,
+                        ensemble_size,
                         variant,
                         str(row["n"]),
                         row["primary_metric"],

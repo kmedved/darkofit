@@ -1,0 +1,15 @@
+dataset,size,split_mode,weight_mode,ensemble_size,variant,n,primary_metric,primary_value,metric_vs_base,fit_seconds,fit_vs_base,best_iteration,iter_vs_base
+friedman_numeric,small,row,none,1,candidate_catboost,1,rmse,1.1796,1.000,0.066,0.847,120.0,1.000
+friedman_numeric,small,row,none,1,candidate_lightgbm,1,rmse,1.4790,1.254,0.075,0.955,85.0,0.708
+friedman_numeric,small,row,none,1,fork_matched,1,rmse,1.2694,1.076,0.060,0.765,120.0,1.000
+friedman_numeric,small,row,none,1,upstream_matched,1,rmse,1.1796,1.000,0.078,1.000,120.0,1.000
+friedman_numeric,small,row,none,3,candidate_catboost,1,rmse,1.2065,1.000,0.192,0.827,120.0,1.000
+friedman_numeric,small,row,none,3,candidate_lightgbm,1,rmse,1.5533,1.287,0.156,0.671,110.0,0.917
+friedman_numeric,small,row,none,3,upstream_matched,1,rmse,1.2065,1.000,0.232,1.000,120.0,1.000
+numeric_binary,small,row,none,1,candidate_catboost,1,log_loss,0.2515,1.000,0.157,1.501,120.0,1.000
+numeric_binary,small,row,none,1,candidate_lightgbm,1,log_loss,0.3271,1.301,0.053,0.510,35.0,0.292
+numeric_binary,small,row,none,1,fork_matched,1,log_loss,0.3570,1.420,0.052,0.495,120.0,1.000
+numeric_binary,small,row,none,1,upstream_matched,1,log_loss,0.2515,1.000,0.105,1.000,120.0,1.000
+numeric_binary,small,row,none,3,candidate_catboost,1,log_loss,0.2727,1.000,0.516,1.053,120.0,1.000
+numeric_binary,small,row,none,3,candidate_lightgbm,1,log_loss,0.3335,1.223,0.105,0.214,26.0,0.217
+numeric_binary,small,row,none,3,upstream_matched,1,log_loss,0.2727,1.000,0.490,1.000,120.0,1.000
