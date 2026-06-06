@@ -22,7 +22,7 @@ from benchmark_adapters import (  # noqa: E402
     make_sample_weight,
     split_case,
 )
-from bench_compare_revisions import _base_row  # noqa: E402
+from bench_compare_revisions import _base_row, _peak_rss_mb  # noqa: E402
 from weighted_metrics import metric_bundle  # noqa: E402
 
 
@@ -239,6 +239,10 @@ def test_default_variant_row_does_not_claim_quantile_loss():
     assert default_row["alpha"] == ""
     assert matched_row["loss"] == "Quantile"
     assert matched_row["alpha"] == 0.9
+
+
+def test_peak_rss_helper_reports_positive_memory():
+    assert _peak_rss_mb() > 0.0
 
 
 def test_group_split_keeps_groups_disjoint():

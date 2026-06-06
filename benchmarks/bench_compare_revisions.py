@@ -22,6 +22,7 @@ import argparse
 import csv
 import inspect
 import json
+import resource
 import subprocess
 import sys
 import tempfile
@@ -86,6 +87,7 @@ CSV_FIELDS = [
     "n_groups_test",
     "fit_seconds",
     "predict_seconds",
+    "peak_rss_mb",
     "boost_seconds",
     "best_iteration",
     "primary_metric",
@@ -199,6 +201,13 @@ def _timing_fields(model):
     return out
 
 
+def _peak_rss_mb():
+    rss = float(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+    if sys.platform == "darwin":
+        return rss / (1024.0 * 1024.0)
+    return rss / 1024.0
+
+
 def _fit_worker(payload):
     variant = RevisionSpec(**payload["variant"])
     config = FitConfig(**payload["fit_config"])
@@ -296,6 +305,7 @@ def _fit_worker(payload):
         "error": "",
         "fit_seconds": float(fit_seconds),
         "predict_seconds": float(predict_seconds),
+        "peak_rss_mb": _peak_rss_mb(),
         "boost_seconds": "" if boost_seconds is None else float(boost_seconds),
         "best_iteration": _best_iteration(best_model) or "",
     }

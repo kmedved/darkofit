@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import csv
 import math
+import resource
 import sys
 import time
 from pathlib import Path
@@ -71,6 +72,7 @@ CSV_FIELDS = [
     "leaf_estimation_iterations",
     "fit_seconds",
     "predict_seconds",
+    "peak_rss_mb",
     "best_iteration",
     "primary_metric",
     "primary_value",
@@ -144,6 +146,13 @@ def _timing_fields(model):
     return out
 
 
+def _peak_rss_mb():
+    rss = float(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+    if sys.platform == "darwin":
+        return rss / (1024.0 * 1024.0)
+    return rss / 1024.0
+
+
 def _fit_one(mode, spec, split, cat_features, params, repeat):
     task = spec.task
     estimator_cls = (
@@ -213,6 +222,7 @@ def _fit_one(mode, spec, split, cat_features, params, repeat):
     return {
         "fit_seconds": fit_seconds,
         "predict_seconds": predict_seconds,
+        "peak_rss_mb": _peak_rss_mb(),
         "best_iteration": getattr(best_model, "best_iteration_", ""),
         **metrics,
         **_timing_fields(best_model),
