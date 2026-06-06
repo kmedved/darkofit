@@ -192,6 +192,36 @@ def test_quantile_calibration_on_large_data():
     assert cov > 0.77                 # ~0.80 target; tight only with early stopping
 
 
+@pytest.mark.parametrize("use_weights", [False, True])
+def test_leaf_correction_matches_mask_loop(use_weights):
+    from types import SimpleNamespace
+    from chimeraboost.booster import GradientBoosting
+    from chimeraboost.losses import Quantile
+
+    leaf = np.array([3, 0, 3, 1, 0, 1, 3, 0], dtype=np.int64)
+    residuals = np.array([2.0, -1.0, 5.0, 0.5, 4.0, -3.0, 1.5, 2.5])
+    weights = (
+        np.array([1.0, 0.4, 2.0, 1.5, 0.7, 3.0, 0.2, 1.1])
+        if use_weights else None
+    )
+    n_leaves = 5  # includes empty leaves 2 and 4
+    lr = 0.13
+    loss = Quantile(alpha=0.9)
+
+    tree = SimpleNamespace(values=np.full(n_leaves, np.nan))
+    booster = GradientBoosting(loss="Quantile", loss_kwargs={"alpha": 0.9})
+    booster.loss_ = loss
+    booster.lr_ = lr
+    booster._correct_leaves(tree, leaf, residuals, weights)
+
+    expected = np.empty(n_leaves)
+    for l in range(n_leaves):
+        mask = leaf == l
+        w = weights[mask] if weights is not None else None
+        expected[l] = lr * loss.leaf_value(residuals[mask], w)
+    assert np.allclose(tree.values, expected)
+
+
 
 def test_staged_predict_matches_final():
     X, y = load_diabetes(return_X_y=True)

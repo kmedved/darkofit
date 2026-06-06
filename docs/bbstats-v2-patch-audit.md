@@ -258,6 +258,20 @@ Completed:
   Outcome: categorical-binary stress and Friedman stress are no longer
   aggregate blockers at repeat 15. Numeric-binary stress, median-quantile
   stress, and quantile-90 unweighted remain the stable aggregate blockers.
+- Weighted leaf-correction port:
+  `benchmarks/catboost_grouped_leaf_q50_stress_r15_20260606.csv`.
+  Outcome: restoring the darko v1 grouped correction only for weighted
+  MAE/Quantile leaves clears the median-quantile stress blocker
+  (`geomean_fit_ratio=0.8896`) with identical metrics and iterations. The same
+  grouped correction is rejected for unweighted leaves:
+  `benchmarks/catboost_grouped_leaf_q90_none_r15_20260606.csv` regressed q90
+  (`geomean_fit_ratio=1.0491`). Keep upstream's mask loop for unweighted leaf
+  correction and use the grouped path only when `sample_weight` is present.
+- Adaptive upstream-style `uint16` probe:
+  `benchmarks/catboost_adaptive_uint16_numeric_binary_stress_r15_20260606.csv`.
+  Outcome: a narrow numeric-binary upstream-dtype policy failed the repeat-15
+  gate (`geomean_fit_ratio=1.1014`). Do not promote it; keep compact bins as
+  the default until a cleaner one-change gate proves otherwise.
 - Selected row/feature kernels:
   code inspection plus `tests/test_chimeraboost.py` show these kernels are
   inactive under the strict default matrix (`subsample=1.0`,
@@ -268,9 +282,9 @@ Next:
 
 1. For stable blockers, run exactly one ablation at a time:
    class-major multiclass if multiclass reappears as a blocker, validation
-   semantics lane if weighted quality diverges, or an adaptive bin dtype /
-   hessian / categorical-mapping policy for numeric-binary stress,
-   median-quantile stress, and quantile-90 unweighted.
+   semantics lane if weighted quality diverges, or a better-isolated bin dtype /
+   hessian / categorical-mapping policy for numeric-binary stress and
+   quantile-90 unweighted.
 2. Promote only ablations that improve the blocker without introducing a new
    quality, semantic, or timing regression.
 3. Keep `tree_mode="lightgbm"` work paused until catboost mode is either

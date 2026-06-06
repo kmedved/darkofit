@@ -540,11 +540,25 @@ class GradientBoosting(_BaseBooster):
         structure was chosen by the gradient; this fixes the step size.
         `leaf` is the training assignment from build_oblivious_tree."""
         n_leaves = tree.values.shape[0]
+        if sample_weight is None:
+            for l in range(n_leaves):
+                mask = leaf == l
+                r = residuals[mask]
+                tree.values[l] = self.lr_ * self.loss_.leaf_value(r, None)
+            return
+
+        order = np.argsort(leaf)
+        leaf_sorted = leaf[order]
+        residuals_sorted = residuals[order]
+        weights_sorted = sample_weight[order]
+        counts = np.bincount(leaf_sorted, minlength=n_leaves)
+        start = 0
         for l in range(n_leaves):
-            mask = leaf == l
-            r = residuals[mask]
-            w = sample_weight[mask] if sample_weight is not None else None
+            end = start + counts[l]
+            r = residuals_sorted[start:end]
+            w = weights_sorted[start:end]
             tree.values[l] = self.lr_ * self.loss_.leaf_value(r, w)
+            start = end
 
     def predict_raw(self, X):
         """Return raw additive scores (pre-link): the regression prediction, or

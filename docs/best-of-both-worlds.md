@@ -409,6 +409,57 @@ unweighted. Of the ablations so far, forced `uint16` is the only one that fixed
 the first two aggregate blockers, but it hurt other rows, so any use of it must
 be adaptive and gate-proven.
 
+### Weighted Leaf-Correction Port
+
+The median-quantile stress blocker maps to the MAE/Quantile leaf-correction
+path. A one-change port restored darko v1's grouped correction only when
+`sample_weight` is present, while preserving upstream's per-leaf mask loop for
+unweighted corrections. Results are tracked in:
+
+- `benchmarks/catboost_grouped_leaf_q50_stress_r15_20260606.csv`
+- `benchmarks/catboost_grouped_leaf_q50_stress_r15_summary_20260606.csv`
+- `benchmarks/catboost_grouped_leaf_q50_stress_r15_report_20260606.json`
+- `benchmarks/catboost_grouped_leaf_q90_none_r15_20260606.csv`
+- `benchmarks/catboost_grouped_leaf_q90_none_r15_summary_20260606.csv`
+- `benchmarks/catboost_grouped_leaf_q90_none_r15_report_20260606.json`
+- `benchmarks/catboost_weighted_leaf_q90_none_r15_20260606.csv`
+- `benchmarks/catboost_weighted_leaf_q90_none_r15_summary_20260606.csv`
+- `benchmarks/catboost_weighted_leaf_q90_none_r15_report_20260606.json`
+
+Result: weighted grouped correction clears the median-quantile stress blocker
+(`geomean_fit_ratio=0.8896`) with identical metrics and iterations. A broader
+grouped correction was rejected for unweighted q90
+(`geomean_fit_ratio=1.0491`), and the final weighted-only code still leaves the
+q90 unweighted blocker in place (`geomean_fit_ratio=1.0406`).
+
+| Dataset / weight | Candidate path | Result | Decision |
+| --- | --- | ---: | --- |
+| `quantile_reg_50` / stress | grouped weighted leaves | 0.890 | Promote. |
+| `quantile_reg_90` / none | grouped all leaves | 1.049 | Reject broad grouping. |
+| `quantile_reg_90` / none | grouped weighted only | 1.041 | Still blocked. |
+
+Decision: use darko v1's grouped leaf correction only for weighted
+MAE/Quantile fits. Keep upstream's unweighted mask loop because it is better on
+q90 under the current strict gate.
+
+### Adaptive `uint16` Probe
+
+The forced-`uint16` ablation was the only earlier probe that helped
+numeric-binary stress in aggregate, but it hurt other rows. A narrower adaptive
+probe used upstream-style `uint16` bins only for numeric-only binary catboost
+fits. Results are tracked in:
+
+- `benchmarks/catboost_adaptive_uint16_numeric_binary_stress_r15_20260606.csv`
+- `benchmarks/catboost_adaptive_uint16_numeric_binary_stress_r15_summary_20260606.csv`
+- `benchmarks/catboost_adaptive_uint16_numeric_binary_stress_r15_report_20260606.json`
+
+Result: the adaptive policy failed the repeat-15 numeric-binary stress gate
+(`geomean_fit_ratio=1.1014`) with identical metrics and iterations. The product
+code was reverted.
+
+Decision: do not promote adaptive upstream-style `uint16` bins. Keep compact
+bins as the catboost default until a cleaner one-change gate proves otherwise.
+
 ### Selected Row/Feature Kernels
 
 The selected-row and selected-feature histogram kernels are inactive in the
