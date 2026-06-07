@@ -421,6 +421,13 @@ Completed:
   medians (`1.34x` to `1.91x`), and wide numeric regression is slower on all
   six medians (`1.21x` to `1.68x`). The shared target is scalar catboost
   overhead, not q50 leaf correction or multiclass.
+- Numeric-binary no-linear probe:
+  `benchmarks/catboost_numeric_binary_no_linear_probe_r7_20260606.csv`.
+  Outcome: forcing current candidate `linear_leaves=False` roughly halves fit
+  time versus upstream on numeric-binary medium rows (`geomean_fit_ratio=0.458`)
+  but materially worsens primary log loss on all six seed/weight rows
+  (`+0.0175` to `+0.0265`). Reject this as a default or automatic fallback;
+  bbstats v2's binary linear-leaf quality improvement must be preserved.
 - Selected row/feature kernels:
   code inspection plus `tests/test_chimeraboost.py` show these kernels are
   inactive under the strict default matrix (`subsample=1.0`,
@@ -439,7 +446,8 @@ Next:
 2. Run exactly one ablation at a time. Call-shape-only routing and
    benchmark-order bias are already rejected, native-int bin indexing is
    rejected, dtype alone is not explanatory, linear-leaf precompute is
-   rejected, and full upstream-tree-lane restoration is rejected.
+   rejected, dropping binary linear leaves is rejected, and full
+   upstream-tree-lane restoration is rejected.
 3. Promote only ablations that improve a blocker without introducing a new
    quality, semantic, or timing regression.
 4. Keep `tree_mode="lightgbm"` work paused until catboost mode is either

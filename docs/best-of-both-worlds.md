@@ -536,6 +536,24 @@ patch unless the acceptance gate changes. The next useful product-code probe
 should target shared scalar catboost overhead that affects both binary Logloss
 with linear leaves and wide RMSE, not quantile leaf correction or multiclass.
 
+### Numeric-Binary No-Linear Probe
+
+Binary classification is the only strict blocker that exercises catboost
+linear leaves by default. A focused diagnostic forced
+`linear_leaves=False` for current candidate numeric-binary medium rows and
+compared those rows to the saved upstream focus rows:
+
+- `benchmarks/catboost_numeric_binary_no_linear_probe_r7_20260606.csv`
+
+Result: reject. Disabling linear leaves is very fast
+(`geomean_fit_ratio=0.458` versus upstream), but it materially worsens the
+primary log-loss metric on every seed and weight mode. The log-loss deltas
+range from `+0.0175` to `+0.0265`, far outside the strict quality tolerance.
+
+Decision: keep bbstats v2's binary linear-leaf default. The numeric-binary
+speed blocker must be solved inside the linear-leaf/scalar loop, not by
+dropping linear leaves.
+
 ### Adaptive `uint16` Probe
 
 The forced-`uint16` ablation was the only earlier probe that helped
