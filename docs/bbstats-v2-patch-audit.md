@@ -306,20 +306,22 @@ Completed:
   Outcome: forced `uint16` helps numeric-binary stress and quantile-50 stress,
   but hurts categorical-binary unweighted, Friedman stress, quantile-90 stress,
   and wide-regression stress. Keep compact bins by default; treat upstream-style
-  `uint16` as a possible adaptive toggle only.
+  `uint16` as rejected for now. The later adaptive numeric-binary probe also
+  failed the strict gate.
 - Constant-Hessian ablation:
   `benchmarks/catboost_ablate_no_constant_hessian_focus_20260606.csv`.
   Outcome: disabling the constant-Hessian shortcut helps categorical regression
   and median quantile unweighted rows, but hurts Friedman, quantile-10,
-  quantile-90, and wide regression. Keep the shortcut by default; treat the
-  general-Hessian path as a possible narrow adaptive toggle only.
+  quantile-90, and wide regression. Keep the shortcut by default; do not add a
+  general-Hessian adaptive toggle without a new full-gate win.
 - Categorical-encoding ablation:
   `benchmarks/catboost_ablate_manual_cats_focus_20260606.csv`.
   Outcome: restoring the older manual/lazy categorical mapping improves
   aggregate categorical timing and helps categorical regression plus weighted
   categorical multiclass, but it hurts categorical-binary unweighted and still
   leaves row-level strict failures. Keep upstream's pandas-vectorized path by
-  default; treat manual mapping as a possible narrow adaptive toggle only.
+  default; do not add a manual-mapping adaptive toggle without a new full-gate
+  win.
 - High-repeat blocker rerun:
   `benchmarks/catboost_strict_blockers_stress_r15_20260606.csv` and
   `benchmarks/catboost_strict_blockers_quantile90_r15_20260606.csv`.

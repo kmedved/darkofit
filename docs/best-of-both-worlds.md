@@ -369,8 +369,9 @@ blockers but created or worsened others:
 | `wide_numeric_reg` / stress | 1.008 | 1.062 | compact helps. |
 
 Decision: keep compact bins as the catboost default. Upstream-style `uint16`
-is a possible benchmark-gated adaptive toggle for numeric binary and median
-quantile stress rows, not a broad revert.
+is not a broad revert, and the later adaptive numeric-binary probe failed the
+strict gate, so do not add a `uint16` adaptive toggle without new full-gate
+evidence.
 
 ### Constant-Hessian Ablation
 
@@ -400,8 +401,8 @@ failure). Metrics and iterations stayed identical, but aggregate speed worsened.
 Decision: keep the constant-Hessian shortcut as the catboost default. The
 general-Hessian path is not a broad revert candidate and does not touch the
 largest remaining blockers (`numeric_binary` stress and `quantile_reg_50`
-stress). At most it is a future narrow adaptive toggle for categorical
-regression or median quantile unweighted rows.
+stress). Do not add a general-Hessian adaptive toggle without a new full-gate
+win.
 
 ### Categorical-Encoding Ablation
 
@@ -431,9 +432,9 @@ categorical-multiclass behavior.
 | `categorical_reg` / stress | 0.982 | 1.016 | pandas helps. |
 
 Decision: keep upstream's pandas-vectorized categorical encoding as the
-catboost default. The older manual/lazy mapping is not a broad revert, but it
-is a possible benchmark-gated adaptive path for categorical regression or
-weighted categorical multiclass after the larger blockers are resolved.
+catboost default. The older manual/lazy mapping is not a broad revert and did
+not clear the categorical strict gate, so do not add a manual-mapping adaptive
+path without a new full-gate win.
 
 ### High-Repeat Blocker Rerun
 
