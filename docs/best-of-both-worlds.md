@@ -972,6 +972,27 @@ was improving was not a stable raw Numba dtype advantage.
 Decision: keep compact bins by default. Do not spend another pass on dtype
 specialization unless a broader, row-level product ablation justifies it.
 
+2026-06-07 robust-timing follow-up: the old forced-`uint16` focus run looked
+aggregate-faster under the new median lens, so the probe was rerun on the
+current branch across the current blocker families. Results are tracked in:
+
+- `benchmarks/catboost_forced_uint16_blockers_r5_20260607.csv`
+- `benchmarks/catboost_forced_uint16_blockers_r5_min_report_20260607.json`
+- `benchmarks/catboost_forced_uint16_blockers_r5_median_report_20260607.json`
+- `benchmarks/catboost_forced_uint16_blockers_r5_mean_report_20260607.json`
+
+The fresh run preserves primary metrics (`max_abs_delta=4.3e-15`) and best
+iterations exactly, but fails timing under every statistic:
+
+| Fit-time statistic | Geomean fit ratio | Failures |
+| --- | ---: | ---: |
+| `min` | 1.0865 | 31 / 48 |
+| `median` | 1.1855 | 34 / 48 |
+| `mean` | 1.2042 | 33 / 48 |
+
+Decision reaffirmed: keep compact bins. Forced `uint16` is not the broad
+catboost speed recovery path.
+
 ### Linear-Leaf Precompute Probe
 
 Binary catboost defaults use linear leaves, and each tree currently remaps the
