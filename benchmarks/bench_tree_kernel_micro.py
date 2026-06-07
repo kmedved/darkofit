@@ -58,6 +58,14 @@ CSV_FIELDS = [
     "build_value_checksum",
     "build_split_signature",
     "linear_leaves",
+    "boost_iterations",
+    "boost_seconds",
+    "boost_repeat_seconds",
+    "boost_grad_seconds",
+    "boost_tree_seconds",
+    "boost_update_seconds",
+    "boost_depth_sum",
+    "boost_raw_checksum",
 ]
 
 
@@ -93,6 +101,12 @@ def _make_case(path, case: KernelCase, seed: int):
     )
     grad = rng.normal(0.0, 1.0, size=case.n_samples).astype(np.float64)
     hess = rng.lognormal(0.0, 0.15, size=case.n_samples).astype(np.float64)
+    logits = (
+        0.045 * Xb[: min(6, case.n_features)].astype(np.float64).sum(axis=0)
+        - 0.045 * min(6, case.n_features) * (case.max_bins - 1) / 2.0
+    )
+    prob = 1.0 / (1.0 + np.exp(-logits))
+    y = rng.binomial(1, prob).astype(np.float64)
     leaf = rng.integers(
         0,
         case.n_leaves,
@@ -110,6 +124,7 @@ def _make_case(path, case: KernelCase, seed: int):
     np.savez_compressed(
         path,
         Xb=Xb,
+        y=y,
         grad=grad,
         hess=hess,
         leaf=leaf,
@@ -141,6 +156,7 @@ def _worker(payload):
     numba.set_num_threads(int(payload["threads"]))
     data = np.load(payload["data_path"])
     Xb = data["Xb"]
+    y = data["y"]
     grad = data["grad"]
     hess = data["hess"]
     leaf = data["leaf"]
@@ -186,6 +202,14 @@ def _worker(payload):
     # Keep the warm result alive in case an over-eager optimizer ever gets cute.
     if split_warm[0] < -1:  # pragma: no cover - impossible guard
         split_result = split_warm
+
+    def sigmoid(raw):
+        return 1.0 / (1.0 + np.exp(-np.clip(raw, -35.0, 35.0)))
+
+    def grad_hess(raw):
+        p = sigmoid(raw)
+        return p - y, np.maximum(p * (1.0 - p), 1e-6)
+
     build_hist = np.zeros((Xb.shape[0], 1 << max_depth, max_bins, 2))
     linear_leaves = bool(payload["linear_leaves"])
     build_kwargs = {
@@ -225,6 +249,56 @@ def _worker(payload):
         f"{int(f)}:{int(t)}"
         for f, t in zip(built_tree.splits_feat, built_tree.splits_thr)
     )
+
+    boost_iterations = int(payload["boost_iterations"])
+    boost_hist = np.zeros((Xb.shape[0], 1 << max_depth, max_bins, 2))
+    boost_kwargs = dict(build_kwargs)
+    boost_kwargs["hist_buffers"] = boost_hist
+
+    def boost_loop():
+        p0 = np.clip(y.mean(), 1e-6, 1.0 - 1e-6)
+        raw = np.full(y.shape[0], np.log(p0 / (1.0 - p0)), dtype=np.float64)
+        depth_sum = 0
+        grad_seconds = 0.0
+        tree_seconds = 0.0
+        update_seconds = 0.0
+        for _ in range(boost_iterations):
+            start = time.perf_counter()
+            g_loop, h_loop = grad_hess(raw)
+            grad_seconds += time.perf_counter() - start
+            start = time.perf_counter()
+            tree_obj, train_leaf = tree.build_oblivious_tree(
+                Xb,
+                g_loop,
+                h_loop,
+                n_bins_per_feature,
+                max_depth,
+                float(payload["l2"]),
+                float(payload["learning_rate"]),
+                **boost_kwargs,
+            )
+            tree_seconds += time.perf_counter() - start
+            depth_sum += int(getattr(tree_obj, "depth", len(tree_obj.splits_feat)))
+            if tree_obj.depth == 0:
+                break
+            start = time.perf_counter()
+            if linear_leaves and getattr(tree_obj, "lin_coef", None) is not None:
+                raw += tree._linear_predict(
+                    train_leaf,
+                    tree_obj.lin_feats,
+                    tree_obj.lin_coef,
+                    centers_std,
+                    Xb,
+                )
+            else:
+                raw += tree_obj.values[train_leaf]
+            update_seconds += time.perf_counter() - start
+        return depth_sum, float(raw.sum()), grad_seconds, tree_seconds, update_seconds
+
+    # Warm the repeated loop separately; this catches the realistic repeated
+    # tree-build call pattern without including its compilation in timings.
+    boost_loop()
+    boost_seconds, boost_result, boost_repeats = _time_min(boost_loop, repeat)
     return {
         "status": "ok",
         "error": "",
@@ -243,6 +317,14 @@ def _worker(payload):
         "build_value_checksum": float(np.asarray(built_tree.values).sum()),
         "build_split_signature": split_sig,
         "linear_leaves": linear_leaves,
+        "boost_iterations": boost_iterations,
+        "boost_seconds": float(boost_seconds),
+        "boost_repeat_seconds": ";".join(f"{v:.12g}" for v in boost_repeats),
+        "boost_grad_seconds": float(boost_result[2]),
+        "boost_tree_seconds": float(boost_result[3]),
+        "boost_update_seconds": float(boost_result[4]),
+        "boost_depth_sum": int(boost_result[0]),
+        "boost_raw_checksum": float(boost_result[1]),
     }
 
 
@@ -289,6 +371,13 @@ def _case_specs(names):
             n_leaves=32,
             max_bins=128,
         ),
+        "numeric_medium_depth6": KernelCase(
+            "numeric_medium_depth6",
+            n_samples=6000,
+            n_features=40,
+            n_leaves=64,
+            max_bins=128,
+        ),
         "numeric_large_depth5": KernelCase(
             "numeric_large_depth5",
             n_samples=30000,
@@ -296,11 +385,25 @@ def _case_specs(names):
             n_leaves=32,
             max_bins=128,
         ),
+        "numeric_large_depth6": KernelCase(
+            "numeric_large_depth6",
+            n_samples=30000,
+            n_features=40,
+            n_leaves=64,
+            max_bins=128,
+        ),
         "wide_medium_depth5": KernelCase(
             "wide_medium_depth5",
             n_samples=6000,
             n_features=120,
             n_leaves=32,
+            max_bins=128,
+        ),
+        "wide_medium_depth6": KernelCase(
+            "wide_medium_depth6",
+            n_samples=6000,
+            n_features=120,
+            n_leaves=64,
             max_bins=128,
         ),
         "shallow_medium": KernelCase(
@@ -331,6 +434,7 @@ def main(argv=None):
     parser.add_argument("--learning-rate", type=float, default=0.1)
     parser.add_argument("--min-child-weight", type=float, default=1.0)
     parser.add_argument("--linear-leaves", action="store_true")
+    parser.add_argument("--boost-iterations", type=int, default=50)
     parser.add_argument("--csv")
     args = parser.parse_args(argv)
     if args.worker:
@@ -369,6 +473,7 @@ def main(argv=None):
                         "learning_rate": args.learning_rate,
                         "min_child_weight": args.min_child_weight,
                         "linear_leaves": args.linear_leaves,
+                        "boost_iterations": args.boost_iterations,
                     }
                     payload_path = Path(td) / f"{case.name}-seed{seed}-{label}.json"
                     payload_path.write_text(json.dumps(payload, default=_json_default))

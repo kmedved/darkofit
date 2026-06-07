@@ -616,7 +616,19 @@ Completed:
   default kernels or the standalone builder based only on the phase-wrapper
   result; the next diagnostic should move one level up to booster fit context,
   timing instrumentation, repeated boosting state, allocation outside
-  `build_oblivious_tree`, or numba specialization effects.
+  `build_oblivious_tree`, or numba specialization effects. The reduced
+  repeated-boosting loop now added to the same script reproduces the depth-6
+  slowdown with exact output parity:
+  `benchmarks/catboost_boost_loop_linear_depth6_phases_r5_20260607.csv` shows
+  candidate/upstream boost-loop ratios of `1.11x` on numeric medium and `1.20x`
+  on wide medium. Component timings localize that reduced slowdown mostly to
+  repeated tree-building (`1.11x` and `1.20x`), not gradient/Hessian fill
+  (`1.08x` / `1.10x`) or the raw-score update (`1.01x` / `1.22x`, small
+  absolute time). For numeric medium the single post-loop builder call is also
+  slower (`1.28x`, with histogram `1.47x` and split `1.15x`); for wide the
+  one-off builder remains faster, so repeated gradient/data states matter.
+  Next product probes should use the depth-6 repeated-loop reproducer before
+  spending full strict-gate runs.
 
 Next:
 
@@ -644,8 +656,12 @@ Next:
    to reproduce the numeric-binary slowdown, with exact output parity. Do not
    spend the next pass on `_linear_leaf_fit`, blind rewrites of
    `_build_histograms_into` / `_best_split`, or a standalone tree-builder
-   replacement; inspect the booster-level fit context that makes identical
-   tree work look slower inside the estimator benchmark.
+   replacement. The depth-6 repeated-loop reproducer
+   `benchmarks/catboost_boost_loop_linear_depth6_phases_r5_20260607.csv` is the
+   next reduced target: it preserves exact raw-score parity but shows `1.11x`
+   numeric and `1.20x` wide slowdowns, mostly inside repeated tree-building.
+   Use that smaller loop to evaluate one-change probes before returning to the
+   full calibrated gate.
 2. Run exactly one ablation at a time. Call-shape-only routing and
    benchmark-order bias are already rejected, native-int bin indexing is
    rejected, dtype alone is not explanatory, linear-leaf precompute is
