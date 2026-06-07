@@ -481,6 +481,10 @@ unweighted corrections. Results are tracked in:
 - `benchmarks/catboost_weighted_leaf_q90_none_r15_20260606.csv`
 - `benchmarks/catboost_weighted_leaf_q90_none_r15_summary_20260606.csv`
 - `benchmarks/catboost_weighted_leaf_q90_none_r15_report_20260606.json`
+- `benchmarks/catboost_weighted_quantile_mask_nonmedian_r7_20260607.csv`
+- `benchmarks/catboost_weighted_quantile_mask_nonmedian_r7_report_20260607.json`
+- `benchmarks/catboost_weighted_quantile_lower_tail_mask_r7_20260607.csv`
+- `benchmarks/catboost_weighted_quantile_lower_tail_mask_r7_report_20260607.json`
 
 Result: weighted grouped correction clears the median-quantile stress blocker
 (`geomean_fit_ratio=0.8896`) with identical metrics and iterations. A broader
@@ -494,9 +498,18 @@ q90 unweighted blocker in place (`geomean_fit_ratio=1.0406`).
 | `quantile_reg_90` / none | grouped all leaves | 1.049 | Reject broad grouping. |
 | `quantile_reg_90` / none | grouped weighted only | 1.041 | Still blocked. |
 
-Decision: use darko v1's grouped leaf correction only for weighted
-MAE/Quantile fits. Keep upstream's unweighted mask loop because it is better on
-q90 under the current strict gate.
+Two later weighted Quantile fallback probes tried to split the difference by
+restoring upstream's per-leaf mask loop for non-median Quantile corrections.
+Both failed the strict gate with identical metrics and iterations: the
+non-median fallback failed with `geomean_fit_ratio=1.0843` and 9 failures, and
+the lower-tail-only fallback was worse with `geomean_fit_ratio=1.1303` and 12
+failures.
+
+Decision: keep the current grouped weighted MAE/Quantile correction and
+median-only unweighted grouping. Do not add alpha-specific weighted Quantile
+fallbacks unless a broader tree-builder change changes the timing landscape.
+Keep upstream's unweighted mask loop for non-median Quantile leaves because it
+is better on q90 under the current strict gate.
 
 ### Median-Quantile Unweighted Leaf Correction
 
@@ -1074,9 +1087,10 @@ Average candidate phase fractions:
 | `quantile_reg_10` / none | 49.6% | 45.9% | 3.1% | Tree builder plus leaf correction. |
 
 Decision: the next product-code probe should target the current generalized
-tree-builder path or quantile leaf correction. Do not spend another pass on
-wrapper, validation, prediction, or benchmark-order explanations unless a new
-full-gate artifact contradicts this phase split.
+tree-builder path. Quantile leaf-correction fallbacks have now been tried and
+rejected as local fixes. Do not spend another pass on wrapper, validation,
+prediction, or benchmark-order explanations unless a new full-gate artifact
+contradicts this phase split.
 
 ### Selected Row/Feature Kernels
 

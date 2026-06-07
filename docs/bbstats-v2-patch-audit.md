@@ -335,6 +335,17 @@ Completed:
   `benchmarks/catboost_grouped_leaf_q90_none_r15_20260606.csv` regressed q90
   (`geomean_fit_ratio=1.0491`). Keep upstream's mask loop for unweighted leaf
   correction and use the grouped path only when `sample_weight` is present.
+- Weighted Quantile mask-fallback probes:
+  `benchmarks/catboost_weighted_quantile_mask_nonmedian_r7_20260607.csv`,
+  `benchmarks/catboost_weighted_quantile_mask_nonmedian_r7_report_20260607.json`,
+  `benchmarks/catboost_weighted_quantile_lower_tail_mask_r7_20260607.csv`, and
+  `benchmarks/catboost_weighted_quantile_lower_tail_mask_r7_report_20260607.json`.
+  Outcome: restoring upstream's per-leaf mask loop for weighted non-median
+  Quantile corrections failed the strict gate (`geomean_fit_ratio=1.0843`, 9
+  failures), and the lower-tail-only variant was worse
+  (`geomean_fit_ratio=1.1303`, 12 failures). Metrics and iterations were
+  unchanged, so this was pure timing noise/regression. Reject both variants and
+  keep the current grouped weighted correction.
 - Adaptive upstream-style `uint16` probe:
   `benchmarks/catboost_adaptive_uint16_numeric_binary_stress_r15_20260606.csv`.
   Outcome: a narrow numeric-binary upstream-dtype policy failed the repeat-15
@@ -484,9 +495,10 @@ Completed:
   `numeric_binary`) shows the broad regression is mostly tree-build dominated:
   tree build is roughly `69%` to `85%` of candidate phase time for
   categorical/numeric blockers. Quantile q10 also has a large leaf-correction
-  component (`29%` stress, `46%` unweighted). Next code probes should target
-  the generalized tree-builder path or quantile leaf correction, not wrapper,
-  validation, prediction, or benchmark-order explanations.
+  component (`29%` stress, `46%` unweighted). Follow-up weighted Quantile
+  mask-fallback probes failed, so next code probes should target the
+  generalized tree-builder path, not wrapper, validation, prediction,
+  benchmark-order, or alpha-specific Quantile leaf-correction explanations.
 - Median-quantile unweighted grouped leaf correction:
   `benchmarks/catboost_current_aggregate_slow_focus_20260606.csv`,
   `benchmarks/catboost_current_phase_focus_20260606.csv`, and
