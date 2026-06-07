@@ -624,13 +624,25 @@ changes and rules out another wrapper/calibration pass as the next useful work.
 Darko v1 also had an in-place `ObliviousTree.add_predict(...)` update path for
 training and validation predictions. Current catboost mode mostly updates from
 the already-returned training leaf ids (`tree.values[leaf]`) or calls
-`tree.predict(...)` for validation, so this is a real but low-ceiling restoration
-surface. Using the same phase summary, `train_update + validation_predict` is
-only `3.3%` to `3.4%` of numeric-binary fit time and `1.2%` to `3.8%` of
-wide-regression fit time. A standalone Numba microbench showed an in-place leaf
-add can beat NumPy indexed addition for that substep, but even a perfect fix
-would not explain the remaining fit-time gap. Record it as a possible small
-cleanup, not the next scalar-blocker lever.
+`tree.predict(...)` for validation, so this was a real but low-ceiling
+restoration surface. Using the same phase summary, `train_update +
+validation_predict` is only `3.3%` to `3.4%` of numeric-binary fit time and
+`1.2%` to `3.8%` of wide-regression fit time.
+
+A product-code probe added a constant-leaf `add_predict` method and used it for
+scalar validation and staged prediction. Results are tracked in:
+
+- `benchmarks/catboost_add_predict_scalar_blockers_r7_20260607.csv`
+- `benchmarks/catboost_add_predict_scalar_blockers_r7_report_20260607.json`
+
+Result: reject. Metrics and iterations stayed identical, but the scalar-blocker
+gate failed (`geomean_fit_ratio=1.0111`, 10 failures). It helped some rows
+(`numeric_binary` / none mean ratio `0.8113`) but badly regressed others
+(`categorical_reg` / stress mean ratio `1.4751`).
+
+Decision: product code was reverted. Do not restore darko v1 `add_predict` as a
+catboost-mode default; its ceiling is too small and the measured tradeoff is not
+strictly dominating.
 
 ### In-Place Leaf-Routing Probe
 

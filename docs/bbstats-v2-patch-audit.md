@@ -552,14 +552,13 @@ Completed:
   calibration, validation-prediction, or train-update work.
 - Darko v1 in-place prediction surface:
   code comparison shows darko v1 had an `ObliviousTree.add_predict(...)` path
-  for training and validation updates. A read-only ceiling check against the
-  same scalar-blocker phase summary shows this surface can only affect
-  `train_update` plus `validation_predict`: `3.3%` to `3.4%` of numeric-binary
-  fit time and `1.2%` to `3.8%` of wide-regression fit time. A local standalone
-  microbench showed a Numba in-place leaf add can be faster than NumPy indexed
-  addition for that substep, so this remains a possible small cleanup, but it
-  cannot solve the remaining strict-domination blocker. Do not prioritize it
-  ahead of tree-builder work.
+  for training and validation updates. The focused product-code probe is tracked
+  in `benchmarks/catboost_add_predict_scalar_blockers_r7_20260607.csv` and
+  `benchmarks/catboost_add_predict_scalar_blockers_r7_report_20260607.json`.
+  Outcome: metrics and iterations stayed identical, but the gate failed
+  (`geomean_fit_ratio=1.0111`, 10 failures). It helped some rows but badly
+  regressed categorical regression stress (`mean fit ratio=1.4751`). Reject this
+  restoration; product code was reverted.
 - Darko v1 in-place leaf-routing surface:
   `benchmarks/catboost_inplace_leaf_update_scalar_blockers_r7_20260606.csv` and
   `benchmarks/catboost_inplace_leaf_update_scalar_blockers_r7_report_20260606.json`.
