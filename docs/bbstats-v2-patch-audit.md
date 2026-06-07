@@ -642,9 +642,20 @@ Completed:
   `benchmarks/catboost_fast_default_full_rows_scalar_blockers_r7_report_20260607.json`
   failed with `geomean_fit_ratio=1.0827`, 10 timing failures, exact primary
   metric parity, and zero iteration drift. Numeric binary worsened most
-  (`1.09x` unweighted, `1.21x` stress). Product code was reverted. Keep the
-  reduced loop as a screening tool, but do not promote a probe unless it also
-  clears at least the focused scalar-blocker estimator gate.
+  (`1.09x` unweighted, `1.21x` stress). Same-revision focused controls show the
+  raw scalar-blocker gate has a large order/noise floor:
+  `benchmarks/catboost_same_revision_scalar_blockers_r7_20260607.csv` failed
+  with `geomean_fit_ratio=1.0423`, while the reversed-order control
+  `benchmarks/catboost_same_revision_scalar_blockers_reversed_r7_20260607.csv`
+  flipped aggregate direction to `0.9313` and still had row failures. After
+  calibrating against both controls, the fast default full-row probe still
+  failed:
+  `benchmarks/catboost_fast_default_full_rows_scalar_blockers_r7_calibrated_report_20260607.json`
+  left 3 failures, including aggregate timing (`1.0827` versus same-code
+  aggregate envelope `1.0738`). Product code was reverted. Keep the reduced
+  loop as a screening tool, but do not promote a probe unless it also clears at
+  least the focused scalar-blocker estimator gate after same-revision timing
+  calibration.
 
 Next:
 
