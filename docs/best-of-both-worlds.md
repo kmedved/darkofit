@@ -1537,6 +1537,49 @@ all blocker-like shapes:
 
 Decision reaffirmed: reject this shape without wiring it into estimator fits.
 
+## Candidate-First Blocker-Family Timing Check
+
+The latest calibrated full medium gate had exact primary-metric parity and zero
+iteration drift, but still failed on row-level timing only. To test whether the
+normal upstream-first variant order was biasing timings against the candidate, a
+focused blocker-family run reversed the order and ran `candidate_catboost`
+before `upstream_matched`:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_compare_revisions.py \
+  --upstream /private/tmp/chimeraboost-upstream-ddaf272-bobw \
+  --candidate . \
+  --models candidate_catboost upstream_matched \
+  --sizes medium \
+  --datasets friedman_numeric categorical_reg numeric_binary categorical_binary \
+    categorical_multiclass quantile_reg_10 quantile_reg_50 quantile_reg_90 \
+  --seeds 5 \
+  --repeat 7 \
+  --iterations 300 \
+  --patience 25 \
+  --threads 4 \
+  --weight-modes none stress \
+  --validation-weight-policy upstream-compatible \
+  --csv benchmarks/catboost_candidate_first_blockers_r7_20260607.csv
+```
+
+The strict checker output is tracked in
+`benchmarks/catboost_candidate_first_blockers_r7_report_20260607.json`.
+
+Result: order bias is not the explanation. Metrics matched up to floating
+precision (`max_abs_primary_delta=4.3e-15`) and best iterations matched exactly,
+but candidate-first timing still failed (`geomean_fit_ratio=1.0659`, 35 timing
+failures across 80 paired rows). The largest aggregate slowdowns remained
+`numeric_binary` (`1.17x` none, `1.22x` stress), `quantile_reg_10` none
+(`1.16x`), `friedman_numeric` none (`1.10x`), categorical multiclass none
+(`1.11x`), and categorical-reg stress (`1.13x`).
+
+Decision: do not treat the remaining blocker as a simple harness ordering
+artifact. The issue is either genuine full-fit shared overhead or timing
+instability that survives same-code controls and variant reversal; further
+catboost-path cleanup should target broad full-fit overhead, not one dataset or
+benchmark order.
+
 ## Histogram Subtraction Probe
 
 Implemented an experimental full-row oblivious-tree builder,
