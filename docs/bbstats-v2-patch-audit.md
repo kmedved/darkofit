@@ -676,39 +676,41 @@ Completed:
   also show substantial min/median/mean drift. Treat this as a remaining
   min-based timing-gate artifact rather than a product-code regression, but do
   not claim full strict domination while the accepted checker still fails it.
+- Fresh full medium gate:
+  `benchmarks/catboost_current_medium_full_r7_20260607.csv` reruns the full
+  10-dataset medium matrix (`5` seeds, none/stress weights, repeat `7`) against
+  upstream v2. It has exact primary-metric parity up to floating precision and
+  zero iteration drift. Unlike the older post-audit snapshot, the current
+  branch is now aggregate-faster (`geomean_fit_ratio=0.9883`), but the row-level
+  strict gate still fails: raw
+  `benchmarks/catboost_current_medium_full_r7_report_20260607.json` has 34
+  timing failures; calibrated
+  `benchmarks/catboost_current_medium_full_r7_calibrated_report_20260607.json`
+  uses the forward/reversed same-revision medium controls and still leaves 26
+  timing failures. The biggest mean-ratio families in the fresh run are
+  Friedman stress (`1.14x`), q10 unweighted (`1.13x`), categorical multiclass
+  unweighted (`1.09x`), numeric-binary stress (`1.07x`), and numeric-binary
+  unweighted (`1.04x`), while wide regression and several weighted quantile
+  rows are faster. The aggregate problem is largely gone; the remaining blocker
+  is strict row-level timing domination across heterogeneous families. Some
+  failures are min-of-repeat artifacts, but several have median-repeat
+  slowdowns too, so do not dismiss the full-gate failures as pure noise.
 
 Next:
 
-1. Treat the post-audit full gate as authoritative current status:
-   `catboost_strict_medium_current_postaudit_calibrated_both_report_20260606.json`
-   still fails with 57 timing-only failures despite exact metric and iteration
-   parity. The remaining blocker is now full-matrix timing overhead, not a
-   single numeric-binary or q50 issue.
-   `catboost_postaudit_phase_focus_20260607.csv` localizes the representative
-   current blockers to tree build, with q10 leaf correction as a secondary
-   target. The follow-up upstream-vs-candidate tree-phase harness
-   `benchmarks/catboost_tree_phase_compare_r5_20260607.csv` narrows this again:
-   candidate tree building is faster on the categorical rows, but slower on
-   numeric binary and q10. The next pass should target numeric/quantile
-   tree-kernel overhead, not a universal tree-builder revert. The subphase run
-   `benchmarks/catboost_tree_subphase_numeric_quantile_r5_20260607.csv` narrows
-   numeric binary further: histogram fill is `1.40x` to `1.42x` slower and
-   split search is `1.53x` to `1.54x` slower, while linear-leaf fitting is near
-   parity. The direct microbench
-   `benchmarks/catboost_tree_kernel_micro_r20_20260607.csv` then shows those
-   two kernel bodies are identical and near-parity when called directly on the
-   same arrays. The direct full-builder microbenches
-   `benchmarks/catboost_tree_builder_plain_micro_r20_20260607.csv` and
-   `benchmarks/catboost_tree_builder_linear_micro_r20_20260607.csv` also fail
-   to reproduce the numeric-binary slowdown, with exact output parity. Do not
-   spend the next pass on `_linear_leaf_fit`, blind rewrites of
-   `_build_histograms_into` / `_best_split`, or a standalone tree-builder
-   replacement. The depth-6 repeated-loop reproducer
-   `benchmarks/catboost_boost_loop_linear_depth6_phases_r5_20260607.csv` is the
-   next reduced target: it preserves exact raw-score parity but shows `1.11x`
-   numeric and `1.20x` wide slowdowns, mostly inside repeated tree-building.
-   Use that smaller loop to evaluate one-change probes before returning to the
-   full calibrated gate.
+1. Treat the fresh full medium gate as authoritative current status:
+   `catboost_current_medium_full_r7_calibrated_report_20260607.json` still
+   fails with 26 timing-only row failures despite exact quality and iteration
+   parity, but aggregate speed is now favorable (`0.9883x`). The next work
+   should not chase a single scalar blocker; it should either improve the
+   repeated tree-build context across several families or tighten the accepted
+   timing gate around repeat-distribution evidence. Existing reduced diagnostics
+   still matter: `catboost_tree_kernel_micro_r20_20260607.csv` and the direct
+   builder microbenches show identical kernels/builders are near parity in
+   isolation, while `catboost_boost_loop_linear_depth6_phases_r5_20260607.csv`
+   shows repeated depth-6 boosting can reproduce slowdown. Use reduced loops as
+   screening only; promote nothing that fails the calibrated full/focused
+   estimator gate.
 2. Run exactly one ablation at a time. Call-shape-only routing and
    benchmark-order bias are already rejected, native-int bin indexing is
    rejected, dtype alone is not explanatory, linear-leaf precompute is
