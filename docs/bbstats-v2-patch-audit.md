@@ -656,6 +656,26 @@ Completed:
   loop as a screening tool, but do not promote a probe unless it also clears at
   least the focused scalar-blocker estimator gate after same-revision timing
   calibration.
+- Current scalar-blocker status:
+  `benchmarks/catboost_current_scalar_blockers_r7_20260607.csv` compares the
+  actual current catboost mode against upstream on the two focused scalar
+  blockers (`numeric_binary`, `wide_numeric_reg`) with exact metric parity and
+  zero iteration drift. The raw focused gate is aggregate-faster
+  (`geomean_fit_ratio=0.9732`) but has 2 row timing failures; calibration
+  against the forward/reversed same-revision controls leaves 1 row failure:
+  `numeric_binary`, seed 0, stress weights. A repeat-30 rerun of that row,
+  `benchmarks/catboost_current_numeric_binary_stress_seed0_r30_20260607.csv`,
+  still fails the strict min-of-repeat check (`1.0694x`) and calibrated report
+  `benchmarks/catboost_current_numeric_binary_stress_seed0_r30_calibrated_report_20260607.json`,
+  but the repeat distribution is favorable to the candidate on median and mean
+  (`0.9867x` median, `0.9043x` mean). Same-code repeat-30 controls for the same
+  row,
+  `benchmarks/catboost_same_revision_numeric_binary_stress_seed0_r30_20260607.csv`
+  and
+  `benchmarks/catboost_same_revision_numeric_binary_stress_seed0_reversed_r30_20260607.csv`,
+  also show substantial min/median/mean drift. Treat this as a remaining
+  min-based timing-gate artifact rather than a product-code regression, but do
+  not claim full strict domination while the accepted checker still fails it.
 
 Next:
 

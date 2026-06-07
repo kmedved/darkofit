@@ -1,0 +1,37 @@
+{
+  "aggregate_fit_ratio_limit": 1.0,
+  "aggregate_timing_control_limit": 1.0737846572789789,
+  "baseline": "upstream_matched",
+  "candidate": "candidate_catboost",
+  "failures": [
+    {
+      "candidate_fit_seconds": 1.787095457984833,
+      "fit_ratio": 1.1646110786702804,
+      "key": {
+        "dataset": "numeric_binary",
+        "ensemble_size": "1",
+        "seed": "0",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "stress"
+      },
+      "kind": "timing_regression",
+      "limit": 1.042093671591455,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 1.5344997920037713
+    }
+  ],
+  "geomean_fit_ratio": 0.9731726154819743,
+  "key_fields": [
+    "dataset",
+    "size",
+    "split_mode",
+    "weight_mode",
+    "ensemble_size",
+    "seed"
+  ],
+  "mode": "upstream-compatible",
+  "n_compared": 12,
+  "passed": false,
+  "timing_control_rows": 12
+}
