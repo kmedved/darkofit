@@ -428,6 +428,15 @@ Completed:
   but materially worsens primary log loss on all six seed/weight rows
   (`+0.0175` to `+0.0265`). Reject this as a default or automatic fallback;
   bbstats v2's binary linear-leaf quality improvement must be preserved.
+- Linear-leaf no-design-matrix probe:
+  `benchmarks/catboost_linear_leaf_no_design_matrix_numeric_binary_r7_20260606.csv`
+  and
+  `benchmarks/catboost_linear_leaf_no_design_matrix_numeric_binary_r7_report_20260606.json`.
+  Outcome: accumulating `_linear_leaf_fit`'s ridge equations directly from a
+  per-row scratch vector preserved metrics and iterations, but made the
+  numeric-binary focused gate worse (`geomean_fit_ratio=1.236`, all six timing
+  rows failed). Reject this kernel rewrite; the current design-matrix temporary
+  is faster under Numba for this workload.
 - Selected row/feature kernels:
   code inspection plus `tests/test_chimeraboost.py` show these kernels are
   inactive under the strict default matrix (`subsample=1.0`,
@@ -446,8 +455,9 @@ Next:
 2. Run exactly one ablation at a time. Call-shape-only routing and
    benchmark-order bias are already rejected, native-int bin indexing is
    rejected, dtype alone is not explanatory, linear-leaf precompute is
-   rejected, dropping binary linear leaves is rejected, and full
-   upstream-tree-lane restoration is rejected.
+   rejected, dropping binary linear leaves is rejected, linear-leaf
+   design-matrix removal is rejected, and full upstream-tree-lane restoration
+   is rejected.
 3. Promote only ablations that improve a blocker without introducing a new
    quality, semantic, or timing regression.
 4. Keep `tree_mode="lightgbm"` work paused until catboost mode is either

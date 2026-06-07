@@ -554,6 +554,27 @@ Decision: keep bbstats v2's binary linear-leaf default. The numeric-binary
 speed blocker must be solved inside the linear-leaf/scalar loop, not by
 dropping linear leaves.
 
+### Linear-Leaf No-Design-Matrix Probe
+
+A narrower kernel rewrite tried to keep linear leaves but avoid allocating and
+filling the per-tree `(k, n)` standardized design matrix inside
+`_linear_leaf_fit`. The replacement accumulated the same ridge normal equations
+directly from a small per-row scratch vector. Results are tracked in:
+
+- `benchmarks/catboost_linear_leaf_no_design_matrix_numeric_binary_r7_20260606.csv`
+- `benchmarks/catboost_linear_leaf_no_design_matrix_numeric_binary_r7_report_20260606.json`
+
+Result: reject. Metrics and iterations remained identical, but timing got
+worse: the numeric-binary focused gate failed all six timing rows with
+`geomean_fit_ratio=1.236`. The current two-pass design-matrix implementation is
+therefore faster under Numba on this workload, likely because it trades a
+contiguous temporary for less repeated indexed lookup inside the nested normal
+equation loops.
+
+Decision: keep the existing `_linear_leaf_fit` layout. Do not reattempt local
+linear-leaf allocation removal unless paired with a fundamentally different
+solver or a benchmark that shows the temporary is actually dominant.
+
 ### Adaptive `uint16` Probe
 
 The forced-`uint16` ablation was the only earlier probe that helped
