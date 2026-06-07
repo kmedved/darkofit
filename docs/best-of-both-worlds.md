@@ -1523,6 +1523,20 @@ per-iteration gap likely needs a different attack, such as histogram
 subtraction/leaf-partitioned row order, lower histogram width for encoded
 target-stat columns, or a more substantial grower rewrite.
 
+2026-06-07 repeat: a narrow standalone Numba row-parallel/thread-local kernel
+was re-tested before any production dispatch was added. It matched the
+feature-parallel histogram numerically (`max_abs_diff <= 8.6e-14`) but lost on
+all blocker-like shapes:
+
+- 12 features, 20k rows, 64 leaves, 129 bins, 4 threads:
+  feature-parallel `0.00030s` best vs row-parallel `0.00146s` best (`4.95x`).
+- 40 features, 20k rows, 64 leaves, 129 bins, 4 threads:
+  feature-parallel `0.00166s` best vs row-parallel `0.01125s` best (`6.77x`).
+- 12 features, 500k rows, 64 leaves, 129 bins, 4 threads:
+  feature-parallel `0.00566s` best vs row-parallel `0.02839s` best (`5.01x`).
+
+Decision reaffirmed: reject this shape without wiring it into estimator fits.
+
 ## Histogram Subtraction Probe
 
 Implemented an experimental full-row oblivious-tree builder,
