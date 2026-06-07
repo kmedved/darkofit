@@ -1,0 +1,93 @@
+{
+  "aggregate_fit_ratio_limit": 1.0,
+  "aggregate_timing_control_limit": 1.0406126282988435,
+  "baseline": "upstream_matched",
+  "candidate": "candidate_catboost",
+  "failures": [
+    {
+      "candidate_fit_seconds": 0.122522332997,
+      "fit_ratio": 1.59111818909923,
+      "key": {
+        "dataset": "categorical_reg",
+        "ensemble_size": "1",
+        "seed": "2",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "none"
+      },
+      "kind": "timing_regression",
+      "limit": 1.073299368289221,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 0.0770039170166
+    },
+    {
+      "candidate_fit_seconds": 0.164146666008,
+      "fit_ratio": 1.639340304443159,
+      "key": {
+        "dataset": "friedman_numeric",
+        "ensemble_size": "1",
+        "seed": "0",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "stress"
+      },
+      "kind": "timing_regression",
+      "limit": 1.0790434420759576,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 0.100129708007
+    },
+    {
+      "candidate_fit_seconds": 0.199570208992,
+      "fit_ratio": 1.327507355806259,
+      "key": {
+        "dataset": "friedman_numeric",
+        "ensemble_size": "1",
+        "seed": "3",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "stress"
+      },
+      "kind": "timing_regression",
+      "limit": 1.0730278806224742,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 0.150334540987
+    },
+    {
+      "candidate_fit_seconds": 0.497124332993,
+      "fit_ratio": 1.2059240019182387,
+      "key": {
+        "dataset": "numeric_binary",
+        "ensemble_size": "1",
+        "seed": "0",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "stress"
+      },
+      "kind": "timing_regression",
+      "limit": 1.032681735052131,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 0.41223520902
+    },
+    {
+      "geomean_fit_ratio": 1.2572888814413032,
+      "key": {},
+      "kind": "aggregate_timing_regression",
+      "limit": 1.0406126282988435,
+      "message": "geometric mean fit ratio exceeds the strict gate"
+    }
+  ],
+  "fit_time_stat": "median",
+  "geomean_fit_ratio": 1.2572888814413032,
+  "key_fields": [
+    "dataset",
+    "size",
+    "split_mode",
+    "weight_mode",
+    "ensemble_size",
+    "seed"
+  ],
+  "mode": "upstream-compatible",
+  "n_compared": 7,
+  "passed": false,
+  "timing_control_rows": 7
+}

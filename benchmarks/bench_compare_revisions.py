@@ -426,6 +426,78 @@ def _complete_row(row):
     return {field: row.get(field, "") for field in CSV_FIELDS}
 
 
+_CASE_MANIFEST_FIELDS = {
+    "dataset",
+    "size",
+    "seed",
+    "split_mode",
+    "weight_mode",
+    "ensemble_size",
+}
+
+
+def _load_case_manifest(path):
+    if path is None:
+        return None
+    items = json.loads(Path(path).read_text())
+    if not isinstance(items, list):
+        raise SystemExit("--case-manifest must contain a JSON list of objects")
+    manifest = []
+    for i, item in enumerate(items):
+        if not isinstance(item, dict):
+            raise SystemExit(f"--case-manifest row {i} is not an object")
+        unknown = sorted(set(item) - _CASE_MANIFEST_FIELDS)
+        if unknown:
+            raise SystemExit(
+                f"--case-manifest row {i} has unknown field(s): {unknown}"
+            )
+        row = dict(item)
+        if "seed" in row:
+            row["seed"] = int(row["seed"])
+        if "ensemble_size" in row:
+            row["ensemble_size"] = str(row["ensemble_size"])
+        manifest.append(row)
+    if not manifest:
+        raise SystemExit("--case-manifest must contain at least one row")
+    return manifest
+
+
+def _manifest_axis(manifest, field, default_values):
+    if not manifest:
+        return list(default_values)
+    values = [row[field] for row in manifest if field in row]
+    if not values:
+        return list(default_values)
+    return sorted(set(values))
+
+
+def _case_selected(
+    manifest,
+    *,
+    dataset,
+    size,
+    seed,
+    split_mode,
+    weight_mode,
+    ensemble_size=None,
+):
+    if not manifest:
+        return True
+    case = {
+        "dataset": dataset,
+        "size": size,
+        "seed": int(seed),
+        "split_mode": split_mode,
+        "weight_mode": weight_mode,
+    }
+    if ensemble_size is not None:
+        case["ensemble_size"] = str(ensemble_size)
+    for row in manifest:
+        if all(key not in case or case[key] == value for key, value in row.items()):
+            return True
+    return False
+
+
 def parse_args(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--upstream", type=Path, default=None)
@@ -534,6 +606,16 @@ def parse_args(argv):
         type=Path,
         default=Path("benchmarks/tri_compare_raw.csv"),
     )
+    parser.add_argument(
+        "--case-manifest",
+        type=Path,
+        default=None,
+        help=(
+            "JSON list of benchmark case filters with optional dataset, size, "
+            "seed, split_mode, weight_mode, and ensemble_size fields. When "
+            "provided, manifest fields also narrow the corresponding loop axes."
+        ),
+    )
     parser.add_argument("--keep-case-files", action="store_true")
     return parser.parse_args(argv)
 
@@ -550,6 +632,7 @@ def _select_variants(variants, requested_labels):
 
 def main(argv=None):
     args = parse_args(argv or sys.argv[1:])
+    case_manifest = _load_case_manifest(args.case_manifest)
     variants = default_revision_specs(
         upstream=str(args.upstream) if args.upstream else None,
         fork=str(args.fork) if args.fork else None,
@@ -565,9 +648,14 @@ def main(argv=None):
         include_grinsztajn=args.grinsztajn,
     )
     datasets = list(DATASETS) if args.datasets == ["all"] else list(args.datasets)
+    datasets = _manifest_axis(case_manifest, "dataset", datasets)
     unknown = sorted(set(datasets) - set(DATASETS))
     if unknown:
         raise SystemExit(f"unknown dataset(s): {unknown}; known: {sorted(DATASETS)}")
+    sizes = _manifest_axis(case_manifest, "size", args.sizes)
+    seeds = _manifest_axis(case_manifest, "seed", range(args.seeds))
+    split_modes = _manifest_axis(case_manifest, "split_mode", args.split_modes)
+    weight_modes = _manifest_axis(case_manifest, "weight_mode", args.weight_modes)
     if any(size < 1 for size in args.ensemble_sizes):
         raise SystemExit("--ensemble-sizes values must be positive integers")
     if args.ensemble_n_jobs == 0:
@@ -595,17 +683,26 @@ def main(argv=None):
             writer = csv.DictWriter(fh, fieldnames=CSV_FIELDS)
             writer.writeheader()
             fh.flush()
-            for size in args.sizes:
+            for size in sizes:
                 for dataset in datasets:
-                    for seed in range(args.seeds):
+                    for seed in seeds:
                         spec, X, y, cat_features = build_dataset(dataset, size, seed)
-                        for split_mode in args.split_modes:
+                        for split_mode in split_modes:
                             groups = (
                                 make_groups(len(y), seed)
                                 if split_mode == "group"
                                 else None
                             )
-                            for weight_mode in args.weight_modes:
+                            for weight_mode in weight_modes:
+                                if not _case_selected(
+                                    case_manifest,
+                                    dataset=dataset,
+                                    size=size,
+                                    seed=seed,
+                                    split_mode=split_mode,
+                                    weight_mode=weight_mode,
+                                ):
+                                    continue
                                 weights = make_sample_weight(y, spec.task, weight_mode)
                                 split = split_case(
                                     X, y, spec.task, seed, weights, groups=groups)
@@ -623,6 +720,16 @@ def main(argv=None):
                                         else args.ensemble_sizes
                                     )
                                     for ensemble_size in ensemble_sizes:
+                                        if not _case_selected(
+                                            case_manifest,
+                                            dataset=dataset,
+                                            size=size,
+                                            seed=seed,
+                                            split_mode=split_mode,
+                                            weight_mode=weight_mode,
+                                            ensemble_size=ensemble_size,
+                                        ):
+                                            continue
                                         n_ensembles = (
                                             None
                                             if ensemble_size in ("default", 1)

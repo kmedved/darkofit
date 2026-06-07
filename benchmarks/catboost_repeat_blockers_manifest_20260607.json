@@ -1,0 +1,37 @@
+[
+  {
+    "dataset": "categorical_reg",
+    "weight_mode": "none",
+    "seed": 2
+  },
+  {
+    "dataset": "categorical_binary",
+    "weight_mode": "stress",
+    "seed": 3
+  },
+  {
+    "dataset": "categorical_multiclass",
+    "weight_mode": "stress",
+    "seed": 4
+  },
+  {
+    "dataset": "numeric_binary",
+    "weight_mode": "stress",
+    "seed": 0
+  },
+  {
+    "dataset": "numeric_binary",
+    "weight_mode": "stress",
+    "seed": 4
+  },
+  {
+    "dataset": "friedman_numeric",
+    "weight_mode": "stress",
+    "seed": 0
+  },
+  {
+    "dataset": "friedman_numeric",
+    "weight_mode": "stress",
+    "seed": 3
+  }
+]

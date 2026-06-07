@@ -1,10 +1,9 @@
-"""Compare tree-build phase time across ChimeraBoost revisions.
+"""Compare full estimator fit phases across ChimeraBoost revisions.
 
-This is a narrow diagnostic harness for the best-of-both-worlds audit. The
-main revision benchmark can record phase timings only for revisions that expose
-``verbose_timing``. Upstream bbstats v2 does not, so this script instruments the
-imported revision directly in an isolated subprocess by wrapping
-``chimeraboost.booster.build_oblivious_tree`` before fitting.
+This is the estimator-level companion to ``bench_tree_phase_compare.py``. It
+wraps upstream/candidate internals in isolated subprocesses so older upstream
+revisions do not need to expose ``verbose_timing``. The goal is to explain
+blocker-manifest timing gaps after direct tree/context replays have tied.
 """
 
 from __future__ import annotations
@@ -20,8 +19,6 @@ import time
 import traceback
 from dataclasses import asdict
 from pathlib import Path
-
-import numpy as np
 
 try:
     from benchmark_adapters import (
@@ -73,6 +70,23 @@ except ImportError:  # pragma: no cover - supports module execution
     from benchmarks.weighted_metrics import metric_bundle
 
 
+TIMER_KEYS = (
+    "preprocess_fit_transform",
+    "preprocess_transform",
+    "grad_hess",
+    "tree_build",
+    "hist",
+    "split",
+    "leaf",
+    "linear_leaf",
+    "tree_predict",
+    "forest_pack",
+    "forest_predict",
+    "loss_eval",
+    "temperature",
+)
+
+
 CSV_FIELDS = [
     "status",
     "error",
@@ -85,35 +99,18 @@ CSV_FIELDS = [
     "alpha",
     "size",
     "seed",
+    "split_mode",
     "weight_mode",
     "validation_weight_policy",
+    "ensemble_size",
     "n_train",
     "n_val",
     "n_test",
     "n_features",
     "fit_seconds",
     "fit_repeat_seconds",
-    "tree_build_seconds",
-    "tree_build_repeat_seconds",
-    "tree_build_calls",
-    "tree_build_repeat_calls",
-    "tree_build_share",
-    "tree_build_ms_per_call",
-    "hist_seconds",
-    "hist_repeat_seconds",
-    "hist_calls",
-    "split_seconds",
-    "split_repeat_seconds",
-    "split_calls",
-    "leaf_seconds",
-    "leaf_repeat_seconds",
-    "leaf_calls",
-    "linear_leaf_seconds",
-    "linear_leaf_repeat_seconds",
-    "linear_leaf_calls",
-    "tree_other_seconds",
-    "tree_other_repeat_seconds",
-    "boost_seconds",
+    "predict_seconds",
+    "predict_repeat_seconds",
     "best_iteration",
     "primary_metric",
     "primary_value",
@@ -125,51 +122,114 @@ CSV_FIELDS = [
     "weighted_pinball",
     "weighted_f1_macro",
     "weighted_log_loss",
+    "preprocess_fit_transform_seconds",
+    "preprocess_transform_seconds",
+    "grad_hess_seconds",
+    "tree_build_seconds",
+    "hist_seconds",
+    "split_seconds",
+    "leaf_seconds",
+    "linear_leaf_seconds",
+    "tree_predict_seconds",
+    "forest_pack_seconds",
+    "forest_predict_seconds",
+    "loss_eval_seconds",
+    "temperature_seconds",
+    "fit_residual_seconds",
+    "preprocess_fit_transform_calls",
+    "preprocess_transform_calls",
+    "grad_hess_calls",
+    "tree_build_calls",
+    "hist_calls",
+    "split_calls",
+    "leaf_calls",
+    "linear_leaf_calls",
+    "tree_predict_calls",
+    "forest_pack_calls",
+    "forest_predict_calls",
+    "loss_eval_calls",
+    "temperature_calls",
 ]
 
 
-def _install_tree_timer():
+def _blank_timer():
+    state = {}
+    for key in TIMER_KEYS:
+        state[f"{key}_seconds"] = 0.0
+        state[f"{key}_calls"] = 0
+    return state
+
+
+def _reset_timer(timer):
+    for key in list(timer):
+        timer[key] = 0.0 if key.endswith("_seconds") else 0
+
+
+def _timed(timer, key, fn):
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        try:
+            return fn(*args, **kwargs)
+        finally:
+            timer[f"{key}_seconds"] += time.perf_counter() - start
+            timer[f"{key}_calls"] += 1
+
+    return wrapper
+
+
+def _wrap_attr(obj, name, timer, key):
+    if hasattr(obj, name):
+        setattr(obj, name, _timed(timer, key, getattr(obj, name)))
+
+
+def _install_phase_timer():
     import chimeraboost.booster as bm
+    import chimeraboost.losses as lm
+    import chimeraboost.preprocessing as pm
+    import chimeraboost.sklearn_api as sm
     import chimeraboost.tree as tm
 
-    state = {
-        "seconds": 0.0,
-        "calls": 0,
-        "hist_seconds": 0.0,
-        "hist_calls": 0,
-        "split_seconds": 0.0,
-        "split_calls": 0,
-        "leaf_seconds": 0.0,
-        "leaf_calls": 0,
-        "linear_leaf_seconds": 0.0,
-        "linear_leaf_calls": 0,
-    }
-    original = bm.build_oblivious_tree
+    timer = _blank_timer()
+
+    _wrap_attr(pm.FeaturePreprocessor, "fit_transform", timer, "preprocess_fit_transform")
+    _wrap_attr(pm.FeaturePreprocessor, "transform", timer, "preprocess_transform")
+
+    for cls_name in ("RMSE", "Logloss", "MAE", "Quantile", "MultiSoftmax"):
+        cls = getattr(lm, cls_name, None)
+        if cls is None:
+            continue
+        for name in ("grad_hess", "grad_hess_class_major"):
+            _wrap_attr(cls, name, timer, "grad_hess")
+        for name in ("eval", "eval_class_major"):
+            _wrap_attr(cls, name, timer, "loss_eval")
+
+    for cls_name in ("ObliviousTree", "LevelwiseTree", "MultiLevelwiseTree"):
+        cls = getattr(tm, cls_name, None)
+        if cls is not None:
+            _wrap_attr(cls, "predict", timer, "tree_predict")
+
+    _wrap_attr(sm, "_fit_temperature", timer, "temperature")
+
+    _wrap_attr(bm, "pack_forest", timer, "forest_pack")
+    _wrap_attr(bm, "pack_forest_linear", timer, "forest_pack")
+    _wrap_attr(bm, "_predict_forest", timer, "forest_predict")
+    _wrap_attr(bm, "_predict_forest_linear", timer, "forest_predict")
+
+    original_build = bm.build_oblivious_tree
 
     def timed_build(*args, **kwargs):
         start = time.perf_counter()
         try:
-            return original(*args, **kwargs)
+            return original_build(*args, **kwargs)
         finally:
-            state["seconds"] += time.perf_counter() - start
-            state["calls"] += 1
+            timer["tree_build_seconds"] += time.perf_counter() - start
+            timer["tree_build_calls"] += 1
 
     bm.build_oblivious_tree = timed_build
 
-    def wrap(name, seconds_key, calls_key):
-        if not hasattr(tm, name):
-            return
-        original_fn = getattr(tm, name)
-
-        def timed_fn(*args, **kwargs):
-            start = time.perf_counter()
-            try:
-                return original_fn(*args, **kwargs)
-            finally:
-                state[seconds_key] += time.perf_counter() - start
-                state[calls_key] += 1
-
-        setattr(tm, name, timed_fn)
+    def wrap_tree_fn(name, key):
+        if hasattr(tm, name):
+            setattr(tm, name, _timed(timer, key, getattr(tm, name)))
 
     for name in (
         "_build_histograms_into",
@@ -181,32 +241,17 @@ def _install_tree_timer():
         "_build_histograms_selected_rows_into",
         "_build_histograms_selected_rows_unit_hess_into",
     ):
-        wrap(name, "hist_seconds", "hist_calls")
-    wrap("_best_split", "split_seconds", "split_calls")
+        wrap_tree_fn(name, "hist")
+    wrap_tree_fn("_best_split", "split")
     for name in (
         "_leaf_values",
         "_leaf_values_rows",
         "_leaf_values_hs",
         "_leaf_values_hs_rows",
     ):
-        wrap(name, "leaf_seconds", "leaf_calls")
-    wrap("_linear_leaf_fit", "linear_leaf_seconds", "linear_leaf_calls")
-    return state
-
-
-def _reset_timer(timer):
-    for key in list(timer):
-        timer[key] = 0.0 if key.endswith("seconds") else 0
-
-
-def _tree_other_seconds(timer):
-    sub = (
-        timer["hist_seconds"]
-        + timer["split_seconds"]
-        + timer["leaf_seconds"]
-        + timer["linear_leaf_seconds"]
-    )
-    return timer["seconds"] - sub
+        wrap_tree_fn(name, "leaf")
+    wrap_tree_fn("_linear_leaf_fit", "linear_leaf")
+    return timer
 
 
 def _fit_worker(payload):
@@ -217,7 +262,7 @@ def _fit_worker(payload):
 
     from chimeraboost import ChimeraBoostClassifier, ChimeraBoostRegressor
 
-    timer = _install_tree_timer()
+    timer = _install_phase_timer()
     task = payload["task"]
     estimator_cls = (
         ChimeraBoostRegressor
@@ -249,45 +294,38 @@ def _fit_worker(payload):
 
     best_model = None
     best_fit = None
-    best_tree = None
-    best_calls = None
+    best_timer = None
     fit_repeats = []
-    tree_repeats = []
-    call_repeats = []
-    hist_repeats = []
-    split_repeats = []
-    leaf_repeats = []
-    linear_leaf_repeats = []
-    other_repeats = []
     repeat = max(1, int(payload["repeat"]))
     for _ in range(repeat):
         model = estimator_cls(**kwargs)
         _reset_timer(timer)
         start = time.perf_counter()
         model.fit(*fit_args, **fit_kwargs)
-        fit_seconds = time.perf_counter() - start
-        tree_seconds = timer["seconds"]
-        tree_calls = timer["calls"]
-        fit_repeats.append(fit_seconds)
-        tree_repeats.append(tree_seconds)
-        call_repeats.append(tree_calls)
-        hist_repeats.append(timer["hist_seconds"])
-        split_repeats.append(timer["split_seconds"])
-        leaf_repeats.append(timer["leaf_seconds"])
-        linear_leaf_repeats.append(timer["linear_leaf_seconds"])
-        other_repeats.append(_tree_other_seconds(timer))
-        if best_fit is None or fit_seconds < best_fit:
+        elapsed = time.perf_counter() - start
+        fit_repeats.append(elapsed)
+        if best_fit is None or elapsed < best_fit:
             best_model = model
-            best_fit = fit_seconds
-            best_tree = tree_seconds
-            best_calls = tree_calls
+            best_fit = elapsed
             best_timer = dict(timer)
 
-    pred = best_model.predict(data["X_test"])
-    if task in ("regression", "quantile"):
-        proba = None
-    else:
-        proba = best_model.predict_proba(data["X_test"])
+    def predict_once():
+        start = time.perf_counter()
+        pred = best_model.predict(data["X_test"])
+        if task in ("regression", "quantile"):
+            proba = None
+        else:
+            proba = best_model.predict_proba(data["X_test"])
+        return pred, proba, time.perf_counter() - start
+
+    pred, proba, predict_seconds = predict_once()
+    predict_repeats = [predict_seconds]
+    for _ in range(repeat - 1):
+        cand_pred, cand_proba, elapsed = predict_once()
+        predict_repeats.append(elapsed)
+        if elapsed < predict_seconds:
+            pred, proba, predict_seconds = cand_pred, cand_proba, elapsed
+
     labels = getattr(best_model, "classes_", None)
     metrics = metric_bundle(
         task,
@@ -298,39 +336,20 @@ def _fit_worker(payload):
         sample_weight=data["w_test"],
         alpha=payload.get("alpha"),
     )
-    boost_seconds = getattr(getattr(best_model, "model_", None), "fit_time_", None)
+    measured = sum(best_timer[f"{key}_seconds"] for key in TIMER_KEYS)
     row = {
         "status": "ok",
         "error": "",
         "fit_seconds": float(best_fit),
         "fit_repeat_seconds": ";".join(f"{v:.12g}" for v in fit_repeats),
-        "tree_build_seconds": float(best_tree),
-        "tree_build_repeat_seconds": ";".join(f"{v:.12g}" for v in tree_repeats),
-        "tree_build_calls": int(best_calls),
-        "tree_build_repeat_calls": ";".join(str(int(v)) for v in call_repeats),
-        "tree_build_share": float(best_tree / best_fit) if best_fit else "",
-        "tree_build_ms_per_call": (
-            float(1000.0 * best_tree / best_calls) if best_calls else ""
-        ),
-        "hist_seconds": float(best_timer["hist_seconds"]),
-        "hist_repeat_seconds": ";".join(f"{v:.12g}" for v in hist_repeats),
-        "hist_calls": int(best_timer["hist_calls"]),
-        "split_seconds": float(best_timer["split_seconds"]),
-        "split_repeat_seconds": ";".join(f"{v:.12g}" for v in split_repeats),
-        "split_calls": int(best_timer["split_calls"]),
-        "leaf_seconds": float(best_timer["leaf_seconds"]),
-        "leaf_repeat_seconds": ";".join(f"{v:.12g}" for v in leaf_repeats),
-        "leaf_calls": int(best_timer["leaf_calls"]),
-        "linear_leaf_seconds": float(best_timer["linear_leaf_seconds"]),
-        "linear_leaf_repeat_seconds": ";".join(
-            f"{v:.12g}" for v in linear_leaf_repeats
-        ),
-        "linear_leaf_calls": int(best_timer["linear_leaf_calls"]),
-        "tree_other_seconds": float(_tree_other_seconds(best_timer)),
-        "tree_other_repeat_seconds": ";".join(f"{v:.12g}" for v in other_repeats),
-        "boost_seconds": "" if boost_seconds is None else float(boost_seconds),
+        "predict_seconds": float(predict_seconds),
+        "predict_repeat_seconds": ";".join(f"{v:.12g}" for v in predict_repeats),
         "best_iteration": _best_iteration(best_model) or "",
+        "fit_residual_seconds": float(best_fit - measured),
     }
+    for key in TIMER_KEYS:
+        row[f"{key}_seconds"] = float(best_timer[f"{key}_seconds"])
+        row[f"{key}_calls"] = int(best_timer[f"{key}_calls"])
     row.update(metrics)
     return row
 
@@ -383,7 +402,6 @@ def main(argv=None):
         "categorical_reg",
         "categorical_binary",
         "numeric_binary",
-        "quantile_reg_10",
     ])
     parser.add_argument("--sizes", nargs="+", default=["medium"])
     parser.add_argument("--seeds", type=int, default=3)
@@ -397,16 +415,7 @@ def main(argv=None):
         choices=["product", "upstream-compatible"],
         default="upstream-compatible",
     )
-    parser.add_argument(
-        "--case-manifest",
-        type=Path,
-        default=None,
-        help=(
-            "JSON list of benchmark case filters with optional dataset, size, "
-            "seed, split_mode, and weight_mode fields. Manifest fields narrow "
-            "the corresponding loop axes."
-        ),
-    )
+    parser.add_argument("--case-manifest", type=Path, default=None)
     parser.add_argument("--csv")
     args = parser.parse_args(argv)
     if args.worker:
@@ -419,6 +428,7 @@ def main(argv=None):
 
     specs = {
         "upstream_matched": RevisionSpec("upstream_matched", args.upstream),
+        "candidate_matched": RevisionSpec("candidate_matched", args.candidate),
         "candidate_catboost": RevisionSpec(
             "candidate_catboost", args.candidate, tree_mode="catboost"
         ),
@@ -427,11 +437,11 @@ def main(argv=None):
     if unknown:
         raise SystemExit(f"unknown model(s): {unknown}")
     variants = [specs[name] for name in args.models]
-    case_manifest = _load_case_manifest(args.case_manifest)
-    datasets = _manifest_axis(case_manifest, "dataset", args.datasets)
-    sizes = _manifest_axis(case_manifest, "size", args.sizes)
-    seeds = _manifest_axis(case_manifest, "seed", range(args.seeds))
-    weight_modes = _manifest_axis(case_manifest, "weight_mode", args.weight_modes)
+    manifest = _load_case_manifest(args.case_manifest)
+    datasets = _manifest_axis(manifest, "dataset", args.datasets)
+    sizes = _manifest_axis(manifest, "size", args.sizes)
+    seeds = _manifest_axis(manifest, "seed", range(args.seeds))
+    weight_modes = _manifest_axis(manifest, "weight_mode", args.weight_modes)
 
     fit_config = FitConfig(
         iterations=args.iterations,
@@ -441,7 +451,7 @@ def main(argv=None):
     )
     out_path = Path(args.csv)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="cb-tree-phase-") as td, out_path.open(
+    with tempfile.TemporaryDirectory(prefix="cb-estimator-phase-") as td, out_path.open(
         "w", newline=""
     ) as fh:
         writer = csv.DictWriter(fh, fieldnames=CSV_FIELDS)
@@ -452,7 +462,7 @@ def main(argv=None):
                     spec, X, y, cat_features = build_dataset(dataset, size, seed)
                     for weight_mode in weight_modes:
                         if not _case_selected(
-                            case_manifest,
+                            manifest,
                             dataset=dataset,
                             size=size,
                             seed=seed,
@@ -462,9 +472,10 @@ def main(argv=None):
                             continue
                         sample_weight = make_sample_weight(y, spec.task, weight_mode)
                         split = split_case(
-                            X, y, spec.task, seed, sample_weight=sample_weight
+                            X, y, spec.task, seed, sample_weight=sample_weight)
+                        data_path = Path(td) / (
+                            _path_token(dataset, size, seed, weight_mode) + ".npz"
                         )
-                        data_path = Path(td) / f"{_path_token(dataset, size, seed, weight_mode)}.npz"
                         _save_case(data_path, split)
                         for variant in variants:
                             payload = {
@@ -478,8 +489,12 @@ def main(argv=None):
                                 "seed": seed,
                                 "repeat": args.repeat,
                             }
-                            payload_path = Path(td) / f"{_path_token(dataset, size, seed, weight_mode, variant.label)}.json"
-                            payload_path.write_text(json.dumps(payload, default=_json_default))
+                            payload_path = Path(td) / (
+                                _path_token(dataset, size, seed, weight_mode, variant.label)
+                                + ".json"
+                            )
+                            payload_path.write_text(
+                                json.dumps(payload, default=_json_default))
                             row = _run_worker(payload_path)
                             full = {
                                 "variant": variant.label,
@@ -491,8 +506,10 @@ def main(argv=None):
                                 "alpha": "" if spec.alpha is None else spec.alpha,
                                 "size": size,
                                 "seed": seed,
+                                "split_mode": "row",
                                 "weight_mode": weight_mode,
                                 "validation_weight_policy": args.validation_weight_policy,
+                                "ensemble_size": 1,
                                 "n_train": split["n_train"],
                                 "n_val": split["n_val"],
                                 "n_test": split["n_test"],
@@ -506,7 +523,7 @@ def main(argv=None):
                                 f"{dataset:22s} seed={seed} weights={weight_mode}",
                                 flush=True,
                             )
-    print(f"wrote tree phase rows to {out_path}")
+    print(f"wrote estimator phase rows to {out_path}")
 
 
 if __name__ == "__main__":

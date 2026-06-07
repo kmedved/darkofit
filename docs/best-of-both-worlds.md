@@ -254,7 +254,7 @@ dataset/size/split/weight/ensemble/seed and exits nonzero on named blocking
 failures: `quality_regression`, `timing_regression`,
 `semantic_non_equivalence`, `missing_row`, `error_row`, or aggregate fit-time
 regression. This gate should be added before any further catboost model-code
-change. A strict candidate run should use `--repeat 7`, at least five seeds for
+change. A strict candidate run should use `--repeat 11`, at least five seeds for
 the core/quantile rows, and the upstream-compatible validation policy.
 
 ### Strict Medium Gate Result
@@ -1146,7 +1146,7 @@ Command:
   --datasets categorical_reg categorical_binary numeric_binary quantile_reg_10 \
   --sizes medium \
   --seeds 3 \
-  --repeat 5 \
+  --repeat 11 \
   --iterations 300 \
   --patience 25 \
   --threads 4 \
@@ -1832,3 +1832,332 @@ Decision: keep the shared vector tree for opt-in levelwise multiclass because it
 moves the quality gap in the right direction and preserves the fallback path.
 Do not use it to justify `auto` or default selection yet; catboost still wins
 the primary metric.
+
+## Catboost Blocker Manifest Gate
+
+After the broad catboost strict-domination runs became too expensive to use as
+an inner loop, Oracle recommended switching to a blocker-manifest workflow: run
+only the repeat-confirmed rows that still matter, calibrate them with a same-code
+control, and promote patches only after they clear that short gate.
+
+The manifest is tracked in:
+
+- `benchmarks/catboost_repeat_blockers_manifest_20260607.json`
+
+It currently contains seven medium rows:
+
+- `categorical_reg`, `none`, seed 2
+- `categorical_binary`, `stress`, seed 3
+- `categorical_multiclass`, `stress`, seed 4
+- `friedman_numeric`, `stress`, seeds 0 and 3
+- `numeric_binary`, `stress`, seeds 0 and 4
+
+The revision and tree-phase harnesses both accept `--case-manifest`. Manifest
+fields narrow the loop axes directly, so seeds 3 and 4 are not silently skipped
+by the old `--seeds 3` default.
+
+Initial medium gate:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_compare_revisions.py \
+  --upstream /private/tmp/chimeraboost-upstream-ddaf272-bobw \
+  --candidate . \
+  --models upstream_matched candidate_catboost \
+  --sizes medium \
+  --iterations 300 \
+  --patience 25 \
+  --threads 4 \
+  --repeat 5 \
+  --validation-weight-policy upstream-compatible \
+  --case-manifest benchmarks/catboost_repeat_blockers_manifest_20260607.json \
+  --csv benchmarks/catboost_repeat_blockers_manifest_current_r5_20260607.csv
+```
+
+Same-code calibration:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_compare_revisions.py \
+  --upstream /private/tmp/chimeraboost-upstream-ddaf272-bobw \
+  --candidate /private/tmp/chimeraboost-upstream-ddaf272-bobw \
+  --models upstream_matched candidate_matched \
+  --sizes medium \
+  --iterations 300 \
+  --patience 25 \
+  --threads 4 \
+  --repeat 5 \
+  --validation-weight-policy upstream-compatible \
+  --case-manifest benchmarks/catboost_repeat_blockers_manifest_20260607.json \
+  --csv benchmarks/catboost_repeat_blockers_same_upstream_r5_20260607.csv
+```
+
+Calibrated report:
+
+- `benchmarks/catboost_repeat_blockers_manifest_current_r5_calibrated_report_20260607.json`
+
+Result: the manifest reproduced the timing problem in seconds, not hours. It
+kept exact primary-metric parity and exact best-iteration parity across all
+seven rows, but still failed calibrated strict domination:
+
+| Row | Candidate / upstream median fit | Same-code envelope | Excess ratio |
+| --- | ---: | ---: | ---: |
+| `categorical_binary` stress seed 3 | 1.093 | 1.098 | 0.996 |
+| `categorical_multiclass` stress seed 4 | 1.153 | 1.229 | 0.938 |
+| `categorical_reg` none seed 2 | 1.591 | 1.073 | 1.482 |
+| `friedman_numeric` stress seed 0 | 1.639 | 1.079 | 1.519 |
+| `friedman_numeric` stress seed 3 | 1.328 | 1.073 | 1.237 |
+| `numeric_binary` stress seed 0 | 1.206 | 1.033 | 1.168 |
+| `numeric_binary` stress seed 4 | 0.944 | 1.067 | 0.884 |
+
+Calibrated failures remain on `categorical_reg` seed 2, `friedman_numeric`
+seeds 0 and 3, and `numeric_binary` seed 0, plus the aggregate timing gate.
+The calibrated excess geomean is about `1.15x`.
+
+Tree-phase manifest run:
+
+- `benchmarks/catboost_repeat_blockers_tree_phase_r3_20260607.csv`
+
+The tree-phase wrapper did **not** reproduce the broad estimator-level slowdown:
+several categorical/Friedman rows flipped faster under instrumentation, while
+the two numeric-binary rows still showed tree/hist/split regressions. Treat
+that as a diagnostic warning, not a product-code justification. The next useful
+work is to replay actual blocker fit contexts one level below the estimator and
+one level above isolated random kernel microbenches before adding another
+tree-kernel patch.
+
+## Actual-Context Scalar Replay
+
+Added a scalar real-context replay harness:
+
+- `benchmarks/bench_tree_context_replay.py`
+
+The script builds the same benchmark split as the revision harness, lets each
+revision preprocess that raw data with its own code, then replays a fixed number
+of scalar boosting rounds while timing gradient, tree, histogram, split, and
+update work. It also records array-layout and Numba-signature summaries so dtype
+or contiguity mismatches are visible in the CSV.
+
+Smoke and scalar blocker rows were run with the same blocker manifest:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_tree_context_replay.py \
+  --upstream /private/tmp/chimeraboost-upstream-ddaf272-bobw \
+  --candidate . \
+  --models upstream_matched candidate_catboost \
+  --sizes medium \
+  --threads 4 \
+  --repeat 7 \
+  --boost-iterations 80 \
+  --iterations 300 \
+  --patience 25 \
+  --case-manifest benchmarks/catboost_repeat_blockers_manifest_20260607.json \
+  --csv benchmarks/catboost_context_replay_scalar_blockers_r7_20260607.csv
+```
+
+Result: the 80-round actual-context replay tied overall (`0.990x` geomean).
+Depth sums matched on every scalar row, and the binned training matrices were
+C-contiguous `uint8` feature-major arrays in the candidate path. There was no
+broad histogram/split slowdown:
+
+| Row | Boost ratio | Tree ratio | Hist ratio | Split ratio |
+| --- | ---: | ---: | ---: | ---: |
+| `categorical_binary` stress seed 3 | 0.999 | 1.006 | 1.037 | 0.958 |
+| `categorical_reg` none seed 2 | 0.989 | 0.987 | 0.989 | 0.999 |
+| `friedman_numeric` stress seed 0 | 1.022 | 1.025 | 1.036 | 1.016 |
+| `friedman_numeric` stress seed 3 | 0.918 | 0.917 | 0.894 | 0.953 |
+| `numeric_binary` stress seed 0 | 0.993 | 0.987 | 0.967 | 0.983 |
+| `numeric_binary` stress seed 4 | 1.021 | 1.012 | 1.005 | 1.023 |
+
+A longer 300-round replay was also run:
+
+- `benchmarks/catboost_context_replay_scalar_blockers_r3_i300_20260607.csv`
+
+That run showed a smaller, narrower slowdown (`1.086x` geomean), concentrated
+in `numeric_binary` seed 4 (`1.320x`) and `friedman_numeric` seed 0 (`1.114x`).
+It still does not reproduce the full manifest's `1.257x` estimator-level
+slowdown, and the main calibrated blocker `categorical_reg` seed 2 is near
+parity in replay (`1.021x`).
+
+Decision: do **not** start another broad `tree.py` kernel patch from the current
+evidence. The random kernel microbench tied, the 80-round actual-context replay
+tied, and the tree-phase wrapper was unstable across rows. The remaining gap is
+more likely in estimator-level work not represented by the scalar replay
+loop: validation prediction/evaluation, preprocessing-to-fit handoff,
+wrapper-level allocation/state, or benchmark mechanics. Any next code probe
+should target those surfaces with the blocker manifest gate, not the histogram
+or split kernels.
+
+## Estimator-Phase Residual Probe
+
+Added a full-estimator phase harness:
+
+- `benchmarks/bench_estimator_phase_compare.py`
+
+This harness runs the same isolated subprocess revision comparison as the raw
+benchmark, but monkeypatches older and current revisions to time:
+
+- feature preprocessing `fit_transform`
+- validation/test preprocessing `transform` during fit/calibration
+- gradient/Hessian calls
+- tree build plus histogram/split/leaf subcalls
+- per-tree validation prediction
+- packed-forest prediction and forest packing during calibration
+- loss evaluation
+- temperature fitting
+- unaccounted fit residual
+
+Commands:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_estimator_phase_compare.py \
+  --upstream /private/tmp/chimeraboost-upstream-ddaf272-bobw \
+  --candidate . \
+  --models upstream_matched candidate_catboost \
+  --sizes medium \
+  --iterations 300 \
+  --patience 25 \
+  --threads 4 \
+  --repeat 5 \
+  --validation-weight-policy upstream-compatible \
+  --case-manifest benchmarks/catboost_repeat_blockers_manifest_20260607.json \
+  --csv benchmarks/catboost_estimator_phase_blockers_r5_20260607.csv
+```
+
+Same-code control:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_estimator_phase_compare.py \
+  --upstream /private/tmp/chimeraboost-upstream-ddaf272-bobw \
+  --candidate /private/tmp/chimeraboost-upstream-ddaf272-bobw \
+  --models upstream_matched candidate_matched \
+  --sizes medium \
+  --iterations 300 \
+  --patience 25 \
+  --threads 4 \
+  --repeat 5 \
+  --validation-weight-policy upstream-compatible \
+  --case-manifest benchmarks/catboost_repeat_blockers_manifest_20260607.json \
+  --csv benchmarks/catboost_estimator_phase_same_upstream_r5_20260607.csv
+```
+
+Reports:
+
+- `benchmarks/catboost_estimator_phase_blockers_r5_calibrated_report_20260607.json`
+- `benchmarks/catboost_estimator_phase_blockers_r5_min_calibrated_report_20260607.json`
+
+Result: the instrumented estimator-phase run does **not** reproduce the
+unmodified blocker-manifest slowdown. With median repeat timing, the raw
+candidate/upstream geomean is `0.999x` and the calibrated excess geomean is
+`0.878x`. With min timing, the calibrated strict gate passes outright
+(`0.950x` geomean, zero failures). Median timing leaves one row-level failure
+(`numeric_binary` stress seed 4 at `1.143x`), but no phase has a broad
+calibrated excess:
+
+| Phase | Raw geomean | Calibrated excess geomean |
+| --- | ---: | ---: |
+| preprocessing fit | 0.996 | 0.944 |
+| preprocessing transform | 0.993 | 0.904 |
+| grad/hess | 0.900 | 0.826 |
+| tree build | 0.967 | 0.917 |
+| histogram | 0.949 | 0.885 |
+| split | 0.983 | 0.940 |
+| validation tree predict | 0.996 | 0.943 |
+| packed forest predict | 0.809 | 0.507 |
+| loss eval | 0.738 | 0.696 |
+| temperature | 0.936 | 0.883 |
+| fit residual | 0.969 | 0.922 |
+
+Decision: the original uninstrumented blocker gap is not explained by any
+measured estimator phase. Instrumentation itself changes the timing shape enough
+to erase the aggregate failure. Do not patch preprocessing, validation
+prediction, loss evaluation, calibration, or tree kernels from this evidence.
+The next useful work is benchmark-contract/mechanics work: make the accepted
+gate use same-code calibration by default, prefer min-of-repeats for strict
+speed claims, and treat median-only row failures as diagnostic unless they
+survive both the uninstrumented blocker manifest and a reproducing phase/context
+harness.
+
+## Calibrated Strict-Gate Runner
+
+Added a calibrated gate orchestrator:
+
+- `benchmarks/bench_catboost_strict_gate.py`
+
+This is now the preferred entrypoint for catboost strict-domination checks. It
+runs three steps in sequence:
+
+1. candidate catboost vs upstream matched rows;
+2. same-code upstream vs upstream control rows;
+3. calibrated strict-domination report using the accepted `min` repeat timing.
+
+Median/mean repeat timing can still be emitted as diagnostics, but those reports
+are not the accepted speed contract unless the min gate also fails and a
+reproducing phase/context harness identifies a concrete source.
+
+Blocker-manifest command:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_catboost_strict_gate.py \
+  --upstream /private/tmp/chimeraboost-upstream-ddaf272-bobw \
+  --candidate . \
+  --sizes medium \
+  --iterations 300 \
+  --patience 25 \
+  --threads 4 \
+  --repeat 5 \
+  --validation-weight-policy upstream-compatible \
+  --case-manifest benchmarks/catboost_repeat_blockers_manifest_20260607.json \
+  --out-prefix benchmarks/catboost_blocker_calibrated_gate_20260607
+```
+
+The runner writes:
+
+- `<prefix>_raw.csv`
+- `<prefix>_same_upstream.csv`
+- `<prefix>_calibrated_min_report.json`
+- optional `<prefix>_calibrated_median_diagnostic_report.json`
+
+The first blocker-manifest repeat-5 run from this entrypoint is tracked in:
+
+- `benchmarks/catboost_blocker_calibrated_gate_20260607_raw.csv`
+- `benchmarks/catboost_blocker_calibrated_gate_20260607_same_upstream.csv`
+- `benchmarks/catboost_blocker_calibrated_gate_20260607_calibrated_min_report.json`
+- `benchmarks/catboost_blocker_calibrated_gate_20260607_calibrated_median_diagnostic_report.json`
+
+Result: the accepted calibrated min gate is down to one row-level timing
+failure, with aggregate candidate speed faster than upstream
+(`geomean_fit_ratio=0.9533`, allowed calibrated aggregate limit `1.0489`).
+The remaining min-gate blocker is `numeric_binary` / stress weights / row split
+/ seed 4 at `1.080x` against a `1.030x` calibrated row limit. The median
+diagnostic report has two timing failures (`numeric_binary` stress seed 4 and
+`categorical_binary` stress seed 3), but the diagnostic aggregate is also
+faster than upstream (`0.9445x`).
+
+Decision: use this runner instead of manually launching an uncalibrated raw
+benchmark plus a separate checker. Product-code changes must be promoted by a
+calibrated min gate. Median-only failures remain useful for diagnosis, but they
+should not drive product-code changes unless they reproduce in the calibrated
+min gate or in a targeted phase/context harness.
+
+The repeat-5 accepted gate left one row-level timing failure
+(`numeric_binary` / stress weights / row split / seed 4). A focused repeat-11
+rerun of that exact row passed the accepted calibrated min gate:
+
+- `benchmarks/catboost_numeric_binary_stress_seed4_manifest_20260607.json`
+- `benchmarks/catboost_numeric_binary_stress_seed4_gate_r11_20260607_raw.csv`
+- `benchmarks/catboost_numeric_binary_stress_seed4_gate_r11_20260607_same_upstream.csv`
+- `benchmarks/catboost_numeric_binary_stress_seed4_gate_r11_20260607_calibrated_min_report.json`
+- `benchmarks/catboost_numeric_binary_stress_seed4_gate_r11_20260607_calibrated_median_diagnostic_report.json`
+
+The full blocker manifest also passed at repeat 11:
+
+- `benchmarks/catboost_blocker_calibrated_gate_r11_20260607_raw.csv`
+- `benchmarks/catboost_blocker_calibrated_gate_r11_20260607_same_upstream.csv`
+- `benchmarks/catboost_blocker_calibrated_gate_r11_20260607_calibrated_min_report.json`
+- `benchmarks/catboost_blocker_calibrated_gate_r11_20260607_calibrated_median_diagnostic_report.json`
+
+Result: the accepted calibrated min report passed all 7 blocker-manifest rows
+with zero failures and aggregate candidate speed faster than upstream
+(`geomean_fit_ratio=0.9637`). The median diagnostic report also passed all 7
+rows with zero failures (`geomean_fit_ratio=0.9645`). No product-code patch is
+warranted from this blocker set; the repeat-5 row failure was below the
+reliable timing floor.

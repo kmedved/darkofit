@@ -1,0 +1,21 @@
+{
+  "aggregate_fit_ratio_limit": 1.0,
+  "aggregate_timing_control_limit": 1.0386643898549002,
+  "baseline": "upstream_matched",
+  "candidate": "candidate_catboost",
+  "failures": [],
+  "fit_time_stat": "min",
+  "geomean_fit_ratio": 0.9500518638563501,
+  "key_fields": [
+    "dataset",
+    "size",
+    "split_mode",
+    "weight_mode",
+    "ensemble_size",
+    "seed"
+  ],
+  "mode": "upstream-compatible",
+  "n_compared": 7,
+  "passed": true,
+  "timing_control_rows": 7
+}

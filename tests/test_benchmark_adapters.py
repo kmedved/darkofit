@@ -27,6 +27,9 @@ from benchmark_adapters import (  # noqa: E402
 )
 from bench_compare_revisions import (  # noqa: E402
     _base_row,
+    _case_selected,
+    _load_case_manifest,
+    _manifest_axis,
     _path_token,
     _peak_rss_mb,
     parse_args as compare_parse_args,
@@ -36,6 +39,9 @@ from bench_compare_revisions import (  # noqa: E402
 from bench_compare_revisions import main as compare_revisions_main  # noqa: E402
 from check_strict_domination import evaluate_rows  # noqa: E402
 from check_strict_domination import _timing_control_limits  # noqa: E402
+from bench_catboost_strict_gate import _checker_command  # noqa: E402
+from bench_catboost_strict_gate import _compare_command  # noqa: E402
+from bench_catboost_strict_gate import parse_args as strict_gate_parse_args  # noqa: E402
 from bench_levelwise_tuning import main as levelwise_tuning_main  # noqa: E402
 from summarize_revision_compare import aggregate  # noqa: E402
 from weighted_metrics import metric_bundle  # noqa: E402
@@ -632,6 +638,102 @@ def test_revision_benchmark_parses_gc_between_repeats_flag():
     args = compare_parse_args(["--gc-between-repeats"])
 
     assert args.gc_between_repeats is True
+
+
+def test_revision_benchmark_parses_case_manifest_flag(tmp_path):
+    manifest = tmp_path / "cases.json"
+    manifest.write_text('[{"dataset": "numeric_binary", "seed": 4}]')
+
+    args = compare_parse_args(["--case-manifest", str(manifest)])
+
+    assert args.case_manifest == manifest
+
+
+def test_case_manifest_narrows_axes_and_matches_cases(tmp_path):
+    manifest = tmp_path / "cases.json"
+    manifest.write_text(
+        """
+        [
+          {"dataset": "numeric_binary", "weight_mode": "stress", "seed": 4},
+          {"dataset": "categorical_reg", "weight_mode": "none", "seed": 2}
+        ]
+        """
+    )
+    rows = _load_case_manifest(manifest)
+
+    assert _manifest_axis(rows, "dataset", ["friedman_numeric"]) == [
+        "categorical_reg",
+        "numeric_binary",
+    ]
+    assert _manifest_axis(rows, "seed", range(3)) == [2, 4]
+    assert _case_selected(
+        rows,
+        dataset="numeric_binary",
+        size="medium",
+        seed=4,
+        split_mode="row",
+        weight_mode="stress",
+    )
+    assert not _case_selected(
+        rows,
+        dataset="numeric_binary",
+        size="medium",
+        seed=3,
+        split_mode="row",
+        weight_mode="stress",
+    )
+
+
+def test_strict_gate_runner_builds_calibrated_min_commands(tmp_path):
+    manifest = tmp_path / "cases.json"
+    raw_csv = tmp_path / "raw.csv"
+    control_csv = tmp_path / "control.csv"
+    report = tmp_path / "report.json"
+    manifest.write_text('[{"dataset": "numeric_binary", "seed": 4}]')
+    default_args = strict_gate_parse_args(["--upstream", "/upstream"])
+    args = strict_gate_parse_args([
+        "--upstream",
+        "/upstream",
+        "--candidate",
+        ".",
+        "--case-manifest",
+        str(manifest),
+        "--repeat",
+        "7",
+        "--seeds",
+        "5",
+    ])
+
+    assert default_args.repeat == 11
+
+    compare = _compare_command(
+        args,
+        candidate_path=args.candidate,
+        models=["upstream_matched", "candidate_catboost"],
+        csv_path=raw_csv,
+    )
+    control = _compare_command(
+        args,
+        candidate_path=args.upstream,
+        models=["upstream_matched", "candidate_matched"],
+        csv_path=control_csv,
+    )
+    checker = _checker_command(
+        args,
+        raw_csv=raw_csv,
+        control_csv=control_csv,
+        report_path=report,
+        fit_time_stat="min",
+    )
+
+    assert "--case-manifest" in compare
+    assert str(manifest) in compare
+    assert compare[compare.index("--repeat") + 1] == "7"
+    assert compare[compare.index("--seeds") + 1] == "5"
+    assert control[control.index("--candidate") + 1] == "/upstream"
+    assert "--timing-control" in checker
+    assert str(control_csv) in checker
+    assert checker[checker.index("--fit-time-stat") + 1] == "min"
 
 
 def test_revision_payload_path_token_handles_external_dataset_names():

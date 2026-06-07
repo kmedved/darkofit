@@ -1,0 +1,10 @@
+[
+  {
+    "dataset": "numeric_binary",
+    "size": "medium",
+    "split_mode": "row",
+    "weight_mode": "stress",
+    "ensemble_size": 1,
+    "seed": 4
+  }
+]
