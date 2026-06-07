@@ -1580,6 +1580,34 @@ instability that survives same-code controls and variant reversal; further
 catboost-path cleanup should target broad full-fit overhead, not one dataset or
 benchmark order.
 
+## Robust Timing-Statistic Check
+
+The strict checker now accepts diagnostic `--fit-time-stat median|mean` modes
+while keeping the accepted default as `min`. This does not change the strict
+contract; it makes the timing evidence easier to audit when min-of-repeat rows
+look suspicious.
+
+Applied to the current full medium catboost gate with the same forward/reversed
+same-revision controls:
+
+| Fit-time statistic | Passed? | Geomean fit ratio | Failures | Interpretation |
+| --- | --- | ---: | ---: | --- |
+| `min` | no | 0.9883 | 23 | Aggregate faster, row timing failures remain. |
+| `median` | no | 1.1513 | 62 | Robust timing also favors upstream. |
+| `mean` | no | 1.1523 | 65 | Robust timing also favors upstream. |
+
+The largest median-ratio families were broad rather than one narrow kernel:
+`categorical_reg` none (`2.02x` over two failing rows), `friedman_numeric` none
+(`1.76x`), `categorical_multiclass` stress (`1.53x`), categorical binary
+none/stress (`1.39x`/`1.38x`), and numeric binary none/stress
+(`1.31x`/`1.34x`). Metrics and best iterations still match exactly in the
+underlying CSV.
+
+Decision: the remaining catboost speed problem is not merely a min-of-repeat
+artifact. Any claim of strict domination needs a real broad timing improvement
+or a deliberately revised acceptance contract; do not explain the blocker away
+with min-only noise.
+
 ## Histogram Subtraction Probe
 
 Implemented an experimental full-row oblivious-tree builder,

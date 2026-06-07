@@ -516,6 +516,7 @@ def _strict_row(
         ),
         "primary_value": str(primary),
         "fit_seconds": str(fit),
+        "fit_repeat_seconds": str(fit),
     }
 
 
@@ -544,6 +545,29 @@ def test_strict_domination_checker_fails_timing_regression():
         "timing_regression",
         "aggregate_timing_regression",
     }
+
+
+def test_strict_domination_checker_can_use_repeat_median():
+    rows = [
+        {
+            **_strict_row("upstream_matched", primary=1.0, fit=1.0),
+            "fit_repeat_seconds": "1.0;2.0;2.0",
+        },
+        {
+            **_strict_row("candidate_catboost", primary=1.0, fit=0.9),
+            "fit_repeat_seconds": "0.9;3.0;3.0",
+        },
+    ]
+
+    min_report = evaluate_rows(rows)
+    median_report = evaluate_rows(rows, fit_time_stat="median")
+
+    assert min_report["passed"] is True
+    assert median_report["passed"] is False
+    assert any(
+        f["kind"] == "timing_regression"
+        for f in median_report["failures"]
+    )
 
 
 def test_strict_domination_checker_fails_quality_regression():

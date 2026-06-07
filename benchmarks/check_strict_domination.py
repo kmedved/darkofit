@@ -35,6 +35,35 @@ def _as_float(value):
         return None
 
 
+def _repeat_values(row, field):
+    value = row.get(field)
+    if not value:
+        return []
+    out = []
+    for part in value.split(";"):
+        parsed = _as_float(part)
+        if parsed is not None:
+            out.append(parsed)
+    return out
+
+
+def _fit_seconds(row, stat):
+    if stat == "min":
+        return _as_float(row.get("fit_seconds"))
+    values = _repeat_values(row, "fit_repeat_seconds")
+    if not values:
+        return _as_float(row.get("fit_seconds"))
+    values = sorted(values)
+    if stat == "median":
+        mid = len(values) // 2
+        if len(values) % 2:
+            return values[mid]
+        return 0.5 * (values[mid - 1] + values[mid])
+    if stat == "mean":
+        return sum(values) / len(values)
+    raise ValueError(f"unknown fit-time statistic {stat!r}")
+
+
 def _row_key(row):
     return tuple(row.get(field, "") for field in KEY_FIELDS)
 
@@ -61,6 +90,13 @@ def _fit_ratio_limit(upstream_fit):
 
 def _timing_control_limits(rows, *, baseline, candidate):
     """Return row/aggregate timing-noise envelopes from same-code controls."""
+    return _timing_control_limits_for_stat(
+        rows, baseline=baseline, candidate=candidate, fit_time_stat="min")
+
+
+def _timing_control_limits_for_stat(
+    rows, *, baseline, candidate, fit_time_stat):
+    """Return row/aggregate timing-noise envelopes from same-code controls."""
     grouped = defaultdict(dict)
     ratios = []
     limits = {}
@@ -77,8 +113,8 @@ def _timing_control_limits(rows, *, baseline, candidate):
             continue
         if base.get("status") != "ok" or cand.get("status") != "ok":
             continue
-        base_fit = _as_float(base.get("fit_seconds"))
-        cand_fit = _as_float(cand.get("fit_seconds"))
+        base_fit = _fit_seconds(base, fit_time_stat)
+        cand_fit = _fit_seconds(cand, fit_time_stat)
         if base_fit in (None, 0) or cand_fit in (None, 0):
             continue
         ratio = cand_fit / base_fit
@@ -114,6 +150,7 @@ def evaluate_rows(
     aggregate_fit_ratio_limit=1.0,
     timing_control_limits=None,
     aggregate_timing_control_limit=None,
+    fit_time_stat="min",
 ):
     """Return a strict-domination report dictionary for raw benchmark rows."""
     if mode not in {"upstream-compatible", "product"}:
@@ -178,8 +215,8 @@ def evaluate_rows(
 
         base_metric = _as_float(base.get("primary_value"))
         cand_metric = _as_float(cand.get("primary_value"))
-        base_fit = _as_float(base.get("fit_seconds"))
-        cand_fit = _as_float(cand.get("fit_seconds"))
+        base_fit = _fit_seconds(base, fit_time_stat)
+        cand_fit = _fit_seconds(cand, fit_time_stat)
         if None in (base_metric, cand_metric, base_fit, cand_fit):
             failures.append(_failure(
                 "missing_row",
@@ -242,6 +279,7 @@ def evaluate_rows(
         "baseline": baseline,
         "candidate": candidate,
         "mode": mode,
+        "fit_time_stat": fit_time_stat,
         "key_fields": KEY_FIELDS,
         "n_compared": compared,
         "geomean_fit_ratio": geomean,
@@ -269,6 +307,16 @@ def main(argv=None):
         default=1.0,
     )
     parser.add_argument(
+        "--fit-time-stat",
+        choices=["min", "median", "mean"],
+        default="min",
+        help=(
+            "which statistic from fit_repeat_seconds to compare. The default "
+            "keeps the accepted min-of-repeat strict gate; median/mean are "
+            "diagnostic robustness checks."
+        ),
+    )
+    parser.add_argument(
         "--timing-control",
         type=Path,
         action="append",
@@ -293,10 +341,11 @@ def main(argv=None):
         control_rows = []
         for path in args.timing_control:
             control_rows.extend(load_rows(path))
-        timing_limits, aggregate_timing_limit = _timing_control_limits(
+        timing_limits, aggregate_timing_limit = _timing_control_limits_for_stat(
             control_rows,
             baseline=args.timing_control_baseline,
             candidate=args.timing_control_candidate,
+            fit_time_stat=args.fit_time_stat,
         )
 
     report = evaluate_rows(
@@ -307,6 +356,7 @@ def main(argv=None):
         aggregate_fit_ratio_limit=args.aggregate_fit_ratio_limit,
         timing_control_limits=timing_limits,
         aggregate_timing_control_limit=aggregate_timing_limit,
+        fit_time_stat=args.fit_time_stat,
     )
     args.out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     print(
