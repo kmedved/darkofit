@@ -519,12 +519,22 @@ A post-promotion focus rerun is tracked in:
 - `benchmarks/catboost_post_q50_aggregate_focus_20260606.csv`
 - `benchmarks/catboost_post_q50_aggregate_focus_summary_20260606.csv`
 - `benchmarks/catboost_post_q50_aggregate_focus_calibrated_report_20260606.json`
+- `benchmarks/catboost_post_q50_aggregate_focus_repeat_summary_20260606.csv`
 
 Result: q50 is no longer an aggregate blocker (`0.993` unweighted, `0.972`
 stress). Numeric multiclass also moved to parity (`0.987` unweighted, `1.001`
 stress). The remaining aggregate blockers in that focus set are numeric binary
 (`1.252` unweighted, `1.145` stress) and wide numeric regression stress
 (`1.158`; wide unweighted is a smaller `1.074`).
+
+The repeat-summary diagnostic shows those two blockers are not just unlucky
+minimum timings. Numeric binary is slower than upstream on all six median
+repeat ratios (`1.34x` to `1.91x`), and wide numeric regression is slower on
+all six medians (`1.21x` to `1.68x`). q50 still has slower medians despite
+passing the min-based calibrated gate, so do not spend another q50-specific
+patch unless the acceptance gate changes. The next useful product-code probe
+should target shared scalar catboost overhead that affects both binary Logloss
+with linear leaves and wide RMSE, not quantile leaf correction or multiclass.
 
 ### Adaptive `uint16` Probe
 

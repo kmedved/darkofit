@@ -408,12 +408,19 @@ Completed:
   a separate gate proves otherwise.
 - Post-q50 aggregate-slower focus:
   `benchmarks/catboost_post_q50_aggregate_focus_20260606.csv` and
-  `benchmarks/catboost_post_q50_aggregate_focus_calibrated_report_20260606.json`.
+  `benchmarks/catboost_post_q50_aggregate_focus_calibrated_report_20260606.json`
+  plus
+  `benchmarks/catboost_post_q50_aggregate_focus_repeat_summary_20260606.csv`.
   Outcome: q50 is no longer an aggregate blocker (`0.993` unweighted, `0.972`
   stress), and numeric multiclass moved to parity (`0.987` unweighted, `1.001`
   stress). The focus gate still fails on timing, with numeric binary as the
   main aggregate blocker (`1.252` unweighted, `1.145` stress) and wide numeric
   regression stress as the next blocker (`1.158`; wide unweighted `1.074`).
+  Repeat-distribution analysis confirms these are stable median-repeat
+  slowdowns, not merely bad row minima: numeric binary is slower on all six
+  medians (`1.34x` to `1.91x`), and wide numeric regression is slower on all
+  six medians (`1.21x` to `1.68x`). The shared target is scalar catboost
+  overhead, not q50 leaf correction or multiclass.
 - Selected row/feature kernels:
   code inspection plus `tests/test_chimeraboost.py` show these kernels are
   inactive under the strict default matrix (`subsample=1.0`,
@@ -427,7 +434,8 @@ Next:
    the pre-q50 baseline. After the median-only grouped correction, the latest
    fair focus leaves numeric binary as the primary blocker and wide numeric
    regression stress as the secondary blocker. q50 and numeric multiclass are
-   no longer aggregate blockers in that focus rerun.
+   no longer aggregate blockers in that focus rerun; the repeat distributions
+   point to shared scalar catboost overhead as the next investigation target.
 2. Run exactly one ablation at a time. Call-shape-only routing and
    benchmark-order bias are already rejected, native-int bin indexing is
    rejected, dtype alone is not explanatory, linear-leaf precompute is
