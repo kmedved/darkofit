@@ -102,28 +102,42 @@ has behavior proof:
 - compact binned dtypes through `_bin_dtype_for_n_bins`;
 - constant-Hessian histogram paths for RMSE-style fits;
 - selected-feature and selected-row histogram fills;
-- reusable split scratch in the tree builder;
 - class-major multiclass buffers;
+- grouped weighted MAE/Quantile leaf correction plus the median-Quantile
+  unweighted correction;
 - weighted target stats as an opt-in product improvement;
+- scalar-loop cleanup for inactive timing, feature-sampling, and row-sampling
+  branches;
 - timing diagnostics, strict benchmark adapters, and strict-domination checker;
 - opt-in `tree_mode="lightgbm"` / `tree_mode="levelwise"` research path.
 
-These stay in catboost mode only while the strict gate continues to pass.
+These stay in catboost mode only where the evidence below shows they preserve
+upstream quality and public behavior. Rejected darko restorations, including
+the reusable split-scratch probe, remain documented in the completed queue and
+should not be reintroduced without a new one-change gate.
 
-### Workload-Dependent Or Unproven Areas
+### Workload-Dependent Areas And Current Defaults
 
 Decision: `BENCHMARK-TOGGLE`
 
-Do not change the catboost default yet for these areas:
+The initial audit left these as suspect surfaces. Current evidence resolves the
+default choice for each one, but keeps the "one-change gate before promotion"
+rule for future revisits:
 
-- plain upstream-style tree helper versus specialized kernels;
-- compact bins versus upstream-style `uint16` bins on suspect rows;
+- plain upstream-style tree helper versus specialized kernels: rejected by the
+  fast full-hist, upstream-tree-lane, and plain-builder probes;
+- compact bins versus upstream-style `uint16` bins: keep compact bins by
+  default; forced/adaptive `uint16` was not broadly safe;
 - categorical factorization versus upstream's pandas-vectorized categorical
-  encoding;
-- selected-row/selected-feature kernels outside subsample/colsample settings;
-- learning-rate or ordered-boosting default changes.
+  encoding: keep upstream's pandas-vectorized path by default;
+- selected-row/selected-feature kernels outside strict default settings: keep
+  the darko kernels for sampling modes, but do not claim default-gate wins from
+  them because they are inactive at `subsample=1.0` / `colsample=1.0`;
+- learning-rate or ordered-boosting default changes: keep upstream defaults;
+  use these as explicit user knobs rather than automatic catboost-mode changes.
 
-These need one-change ablations against stable strict-gate failures.
+Future changes in these areas need a new one-change ablation against a stable
+strict-gate failure.
 
 ### Docs, Charts, CI, And Release Metadata
 
@@ -135,6 +149,11 @@ are treated as upstream historical context; current branch claims must point to
 tracked CSVs and the strict-domination checker.
 
 ## Complete Upstream v2 Commit Inventory
+
+Inventory check: `git log --no-merges 78397b27..upstream/main` returns 81
+upstream code/doc/release commits, and all 81 short hashes are represented
+below. The additional documented short hashes are merge commits marked
+`MERGE/NOOP`.
 
 | Commit | Date | Subject | Decision |
 | --- | --- | --- | --- |
