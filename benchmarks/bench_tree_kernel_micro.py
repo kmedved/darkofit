@@ -4,13 +4,15 @@ This is a narrow follow-up to ``bench_tree_phase_compare.py``. The phase
 benchmark showed catboost-mode numeric overhead inside histogram fill and
 ``_best_split``. This script removes estimator fitting from the loop: it builds
 one deterministic set of binned arrays, imports each revision in an isolated
-subprocess, warms the numba kernels, and then times the same direct kernel calls.
+subprocess, warms the numba kernels, and then times the same direct kernel and
+``build_oblivious_tree`` calls.
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import inspect
 import json
 import subprocess
 import sys
@@ -49,6 +51,13 @@ CSV_FIELDS = [
     "split_feature",
     "split_threshold",
     "split_gain",
+    "build_seconds",
+    "build_repeat_seconds",
+    "build_depth",
+    "build_leaf_checksum",
+    "build_value_checksum",
+    "build_split_signature",
+    "linear_leaves",
 ]
 
 
@@ -92,6 +101,12 @@ def _make_case(path, case: KernelCase, seed: int):
     )
     n_bins_per_feature = np.full(case.n_features, case.max_bins, dtype=np.int64)
     feat_mask = np.ones(case.n_features, dtype=np.uint8)
+    centers_std = rng.normal(
+        0.0,
+        1.0,
+        size=(case.n_features, case.max_bins),
+    ).astype(np.float64)
+    is_numeric = np.ones(case.n_features, dtype=np.bool_)
     np.savez_compressed(
         path,
         Xb=Xb,
@@ -100,6 +115,8 @@ def _make_case(path, case: KernelCase, seed: int):
         leaf=leaf,
         n_bins_per_feature=n_bins_per_feature,
         feat_mask=feat_mask,
+        centers_std=centers_std,
+        is_numeric=is_numeric,
     )
 
 
@@ -129,8 +146,11 @@ def _worker(payload):
     leaf = data["leaf"]
     n_bins_per_feature = data["n_bins_per_feature"]
     feat_mask = data["feat_mask"]
+    centers_std = data["centers_std"]
+    is_numeric = data["is_numeric"]
     n_leaves = int(payload["n_leaves"])
     max_bins = int(payload["max_bins"])
+    max_depth = int(payload["max_depth"])
     repeat = max(1, int(payload["repeat"]))
     hist = np.empty((Xb.shape[0], n_leaves, max_bins, 2), dtype=np.float64)
 
@@ -166,6 +186,45 @@ def _worker(payload):
     # Keep the warm result alive in case an over-eager optimizer ever gets cute.
     if split_warm[0] < -1:  # pragma: no cover - impossible guard
         split_result = split_warm
+    build_hist = np.zeros((Xb.shape[0], 1 << max_depth, max_bins, 2))
+    linear_leaves = bool(payload["linear_leaves"])
+    build_kwargs = {
+        "feature_mask": None,
+        "min_child_weight": float(payload["min_child_weight"]),
+        "hist_buffers": build_hist,
+        "hs_lambda": 0.0,
+        "linear_leaves": linear_leaves,
+        "centers_std": centers_std if linear_leaves else None,
+        "is_numeric": is_numeric,
+        "linear_lambda": 1.0,
+        "constant_hessian": False,
+        "feature_indices": None,
+        "row_indices": None,
+    }
+    accepted = set(inspect.signature(tree.build_oblivious_tree).parameters)
+    build_kwargs = {k: v for k, v in build_kwargs.items() if k in accepted}
+
+    def build_call():
+        return tree.build_oblivious_tree(
+            Xb,
+            grad,
+            hess,
+            n_bins_per_feature,
+            max_depth,
+            float(payload["l2"]),
+            float(payload["learning_rate"]),
+            **build_kwargs,
+        )
+
+    # Warm the enclosing builder after direct-kernel timing so build-specific
+    # numba specializations do not leak into the measured repeats.
+    build_call()
+    build_seconds, build_result, build_repeats = _time_min(build_call, repeat)
+    built_tree, built_leaf = build_result
+    split_sig = ",".join(
+        f"{int(f)}:{int(t)}"
+        for f, t in zip(built_tree.splits_feat, built_tree.splits_thr)
+    )
     return {
         "status": "ok",
         "error": "",
@@ -177,6 +236,13 @@ def _worker(payload):
         "split_feature": int(split_result[0]),
         "split_threshold": int(split_result[1]),
         "split_gain": float(split_result[2]),
+        "build_seconds": float(build_seconds),
+        "build_repeat_seconds": ";".join(f"{v:.12g}" for v in build_repeats),
+        "build_depth": int(getattr(built_tree, "depth", len(built_tree.splits_feat))),
+        "build_leaf_checksum": int(np.asarray(built_leaf, dtype=np.int64).sum()),
+        "build_value_checksum": float(np.asarray(built_tree.values).sum()),
+        "build_split_signature": split_sig,
+        "linear_leaves": linear_leaves,
     }
 
 
@@ -262,7 +328,9 @@ def main(argv=None):
     parser.add_argument("--repeat", type=int, default=20)
     parser.add_argument("--threads", type=int, default=4)
     parser.add_argument("--l2", type=float, default=1.0)
+    parser.add_argument("--learning-rate", type=float, default=0.1)
     parser.add_argument("--min-child-weight", type=float, default=1.0)
+    parser.add_argument("--linear-leaves", action="store_true")
     parser.add_argument("--csv")
     args = parser.parse_args(argv)
     if args.worker:
@@ -296,8 +364,11 @@ def main(argv=None):
                         "repeat": args.repeat,
                         "n_leaves": case.n_leaves,
                         "max_bins": case.max_bins,
+                        "max_depth": int(np.log2(case.n_leaves)),
                         "l2": args.l2,
+                        "learning_rate": args.learning_rate,
                         "min_child_weight": args.min_child_weight,
+                        "linear_leaves": args.linear_leaves,
                     }
                     payload_path = Path(td) / f"{case.name}-seed{seed}-{label}.json"
                     payload_path.write_text(json.dumps(payload, default=_json_default))

@@ -598,18 +598,25 @@ Completed:
 - Direct numeric tree-kernel microbench:
   `benchmarks/bench_tree_kernel_micro.py` compares upstream v2 and the current
   candidate in isolated subprocesses on the exact same binned arrays, calling
-  `_build_histograms_into` and `_best_split` directly after numba warmup. The
-  focused run
+  `_build_histograms_into`, `_best_split`, and `build_oblivious_tree` directly
+  after numba warmup. The focused direct-kernel run
   `benchmarks/catboost_tree_kernel_micro_r20_20260607.csv` had identical
   histogram checksums, split features, split thresholds, and split gains across
   all 24 rows. The two suspect kernel bodies are also textually identical to
   upstream. Mean candidate/upstream ratios were near parity rather than the
   earlier fit-phase `1.3x` to `1.5x` signal: medium numeric `0.90x` histogram /
   `0.92x` split, large numeric `1.13x` / `1.07x`, wide numeric `1.05x` /
-  `1.04x`, and shallow numeric `1.04x` / `1.10x`. Do not rewrite these direct
-  default kernels based only on the phase-wrapper result; the next diagnostic
-  should move one level up to tree-builder call context, allocation, selected
-  path dispatch, or instrumentation/Numba specialization effects.
+  `1.04x`, and shallow numeric `1.04x` / `1.10x`. Follow-up full-builder runs
+  `benchmarks/catboost_tree_builder_plain_micro_r20_20260607.csv` and
+  `benchmarks/catboost_tree_builder_linear_micro_r20_20260607.csv` also had
+  zero parity mismatches. The linear-leaf builder, which is closest to the
+  numeric-binary classifier path, was not slower on the numeric shapes:
+  candidate/upstream build ratios were `0.91x` medium numeric, `0.97x` large
+  numeric, `0.93x` shallow, and `1.01x` wide. Do not rewrite these direct
+  default kernels or the standalone builder based only on the phase-wrapper
+  result; the next diagnostic should move one level up to booster fit context,
+  timing instrumentation, repeated boosting state, allocation outside
+  `build_oblivious_tree`, or numba specialization effects.
 
 Next:
 
@@ -631,10 +638,14 @@ Next:
    parity. The direct microbench
    `benchmarks/catboost_tree_kernel_micro_r20_20260607.csv` then shows those
    two kernel bodies are identical and near-parity when called directly on the
-   same arrays. Do not spend the next pass on `_linear_leaf_fit` or on blind
-   rewrites of `_build_histograms_into` / `_best_split`; inspect the enclosing
-   tree-builder context that makes identical kernels look slower inside the
-   fit-phase harness.
+   same arrays. The direct full-builder microbenches
+   `benchmarks/catboost_tree_builder_plain_micro_r20_20260607.csv` and
+   `benchmarks/catboost_tree_builder_linear_micro_r20_20260607.csv` also fail
+   to reproduce the numeric-binary slowdown, with exact output parity. Do not
+   spend the next pass on `_linear_leaf_fit`, blind rewrites of
+   `_build_histograms_into` / `_best_split`, or a standalone tree-builder
+   replacement; inspect the booster-level fit context that makes identical
+   tree work look slower inside the estimator benchmark.
 2. Run exactly one ablation at a time. Call-shape-only routing and
    benchmark-order bias are already rejected, native-int bin indexing is
    rejected, dtype alone is not explanatory, linear-leaf precompute is
