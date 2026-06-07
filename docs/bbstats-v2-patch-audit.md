@@ -148,6 +148,32 @@ the branch's benchmark claims. Benchmark images and README performance claims
 are treated as upstream historical context; current branch claims must point to
 tracked CSVs and the strict-domination checker.
 
+## Source-File Patch Coverage
+
+The table below is generated from `git diff --numstat` over the three important
+comparisons:
+
+- `78397b27..upstream/main` for bbstats v2;
+- `78397b27..origin/main` for darko v1;
+- `upstream/main..HEAD` for the current best-of-both-worlds branch.
+
+Counts are insertion/deletion totals. They are not quality judgments by
+themselves; the decision column ties each file-level patch surface back to the
+measured decisions in this document.
+
+| File | bbstats v2 | darko v1 | current vs v2 | Decision |
+| --- | ---: | ---: | ---: | --- |
+| `chimeraboost/__init__.py` | +1/-1 | +0/-0 | +1/-1 | Keep upstream package surface; current branch only reflects branch-local metadata. |
+| `chimeraboost/binning.py` | +38/-0 | +13/-2 | +39/-4 | Keep compact-bin default and validation; forced/adaptive upstream-style `uint16` was rejected except as a future gated experiment. |
+| `chimeraboost/booster.py` | +364/-149 | +196/-66 | +355/-59 | Keep upstream catboost semantics, defaults, linear leaves, and OOB behavior; preserve measured darko/current loop cleanup and diagnostics; scalar tree-build timing remains the open blocker. |
+| `chimeraboost/losses.py` | +20/-40 | +26/-1 | +26/-1 | Keep upstream loss behavior; preserve weighted metric/eval support where gates cover it. |
+| `chimeraboost/preprocessing.py` | +77/-22 | +10/-6 | +13/-4 | Keep upstream pandas-vectorized categorical encoding; manual/lazy categorical mapping was rejected as a default; preserve only gated bin/target-stat extensions. |
+| `chimeraboost/sklearn_api.py` | +1026/-98 | +15/-3 | +154/-55 | Keep upstream public API, validation, `n_estimators`, constructor `cat_features`, and cat-feature names; current additions are compatibility toggles, timing diagnostics, and weighted-validation policy lanes. |
+| `chimeraboost/target_encoding.py` | +31/-22 | +38/-1 | +28/-5 | Keep upstream ordered target-encoding behavior; preserve weighted target stats as an opt-in product improvement. |
+| `chimeraboost/tree.py` | +563/-94 | +692/-41 | +876/-5 | Keep upstream oblivious-tree semantics; preserve only proven darko/current kernels and research modes; split scratch, upstream-default lane, plain-builder lane, dtype-only, and branch-only probes are rejected. |
+| `tests/test_chimeraboost.py` | +799/-54 | +871/-0 | +496/-0 | Preserve upstream compliance/validation tests and darko/current behavior coverage. |
+| `tests/test_benchmark_adapters.py` | +0/-0 | +0/-0 | +702/-0 | Preserve current strict-domination adapter coverage; this is the evidence harness for bbstats-v2 comparisons. |
+
 ## Complete Upstream v2 Commit Inventory
 
 Inventory check: `git log --no-merges 78397b27..upstream/main` returns 81
