@@ -174,6 +174,28 @@ measured decisions in this document.
 | `tests/test_chimeraboost.py` | +799/-54 | +871/-0 | +496/-0 | Preserve upstream compliance/validation tests and darko/current behavior coverage. |
 | `tests/test_benchmark_adapters.py` | +0/-0 | +0/-0 | +702/-0 | Preserve current strict-domination adapter coverage; this is the evidence harness for bbstats-v2 comparisons. |
 
+### Benchmark Harness Patch Family
+
+Decision: `PRESERVE-DARKO + KEEP-UPSTREAM`
+
+Darko v1 changed several legacy benchmark scripts
+(`bias_variance.py`, `capacity_sweep.py`, `diagnose_openml.py`,
+`plot_frontier.py`, `profile_tree_kernels.py`, and `run_benchmarks.py`). Current
+best-of-both-worlds keeps upstream v2's user-facing benchmark suite and adds a
+new isolated revision harness instead:
+
+- `benchmarks/bench_compare_revisions.py`
+- `benchmarks/benchmark_adapters.py`
+- `benchmarks/check_strict_domination.py`
+- focused CSV/JSON artifacts for one-change gates.
+
+Do not restore the removed darko v1 one-off scripts as maintained entrypoints.
+Their useful lessons are now represented by the revision-isolated harness,
+repeat traces, same-revision timing controls, phase summaries, and direct
+microbench notes recorded in this audit. Keep upstream's `run_benchmarks.py`
+for package-facing benchmark charts; use `bench_compare_revisions.py` for
+fork/upstream/candidate decisions.
+
 ## Complete Upstream v2 Commit Inventory
 
 Inventory check: `git log --no-merges 78397b27..upstream/main` returns 81

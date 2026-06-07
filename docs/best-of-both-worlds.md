@@ -63,6 +63,25 @@ loss otherwise; speed breaks ties.
     levelwise-tuning harnesses so real-tabular gates can use the same
     upstream/fork/candidate adapter path as the synthetic matrix.
 
+### Benchmark Harness Decision
+
+Darko v1 carried several one-off benchmark/profiling scripts
+(`bias_variance.py`, `capacity_sweep.py`, `diagnose_openml.py`,
+`plot_frontier.py`, and `profile_tree_kernels.py`) plus edits to
+`run_benchmarks.py`. The best-of-both-worlds branch does not restore those files
+as maintained entrypoints. Upstream v2's `run_benchmarks.py` remains the
+package-facing benchmark/chart harness, while fork/upstream integration work
+uses the newer isolated revision harness:
+
+- `benchmarks/bench_compare_revisions.py`
+- `benchmarks/benchmark_adapters.py`
+- `benchmarks/check_strict_domination.py`
+
+That harness is the source of the tracked CSV/JSON gate artifacts below. This
+keeps the useful darko benchmarking discipline while avoiding stale one-off
+scripts that do not compare bbstats v2, darko v1, and the candidate in isolated
+subprocesses.
+
 ## Current Upstream/Fork/Candidate Benchmark
 
 Raw rows and summary rows are tracked in:
