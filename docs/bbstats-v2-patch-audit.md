@@ -477,6 +477,16 @@ Completed:
   categorical, quantile, and scalar rows all contribute. Do not claim strict
   domination yet; the next pass should profile shared full-matrix overhead
   against bbstats v2.
+- Post-audit phase focus:
+  `benchmarks/catboost_postaudit_phase_focus_20260607.csv`.
+  Outcome: a candidate-only verbose-timing probe on representative blockers
+  (`categorical_reg`, `categorical_binary`, `quantile_reg_10`, and
+  `numeric_binary`) shows the broad regression is mostly tree-build dominated:
+  tree build is roughly `69%` to `85%` of candidate phase time for
+  categorical/numeric blockers. Quantile q10 also has a large leaf-correction
+  component (`29%` stress, `46%` unweighted). Next code probes should target
+  the generalized tree-builder path or quantile leaf correction, not wrapper,
+  validation, prediction, or benchmark-order explanations.
 - Median-quantile unweighted grouped leaf correction:
   `benchmarks/catboost_current_aggregate_slow_focus_20260606.csv`,
   `benchmarks/catboost_current_phase_focus_20260606.csv`, and
@@ -577,6 +587,9 @@ Next:
    still fails with 57 timing-only failures despite exact metric and iteration
    parity. The remaining blocker is now full-matrix timing overhead, not a
    single numeric-binary or q50 issue.
+   `catboost_postaudit_phase_focus_20260607.csv` localizes the representative
+   current blockers to tree build, with q10 leaf correction as a secondary
+   target.
 2. Run exactly one ablation at a time. Call-shape-only routing and
    benchmark-order bias are already rejected, native-int bin indexing is
    rejected, dtype alone is not explanatory, linear-leaf precompute is

@@ -1052,6 +1052,32 @@ regression rows while preserving bbstats v2 metrics. The next useful work is a
 full-matrix timing diff against bbstats v2 to find the shared overhead, not
 another single-row numeric-binary microprobe.
 
+### Post-Audit Phase Focus
+
+A candidate-only verbose-timing probe localized the current broad blockers:
+
+- `benchmarks/catboost_postaudit_phase_focus_20260607.csv`
+
+The probe covered `categorical_reg`, `categorical_binary`, `quantile_reg_10`,
+and `numeric_binary` at medium size, both unweighted and stress-weighted, three
+seeds, repeat 3. It is not a strict comparison because upstream v2 does not
+expose phase timings, but it identifies where the candidate spends time.
+
+Average candidate phase fractions:
+
+| Dataset / weight | Tree build | Train update | Preprocess | Main interpretation |
+| --- | ---: | ---: | ---: | --- |
+| `categorical_reg` / none | 84.5% | 1.6% | 9.7% | Tree-builder dominated. |
+| `categorical_binary` / stress | 68.9% | 3.1% | 10.5% | Tree-builder dominated. |
+| `numeric_binary` / stress | 83.5% | 2.4% | 4.9% | Tree-builder dominated. |
+| `quantile_reg_10` / stress | 63.7% | 28.6% | 3.7% | Tree builder plus leaf correction. |
+| `quantile_reg_10` / none | 49.6% | 45.9% | 3.1% | Tree builder plus leaf correction. |
+
+Decision: the next product-code probe should target the current generalized
+tree-builder path or quantile leaf correction. Do not spend another pass on
+wrapper, validation, prediction, or benchmark-order explanations unless a new
+full-gate artifact contradicts this phase split.
+
 ### Selected Row/Feature Kernels
 
 The selected-row and selected-feature histogram kernels are inactive in the
