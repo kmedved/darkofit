@@ -605,7 +605,11 @@ Next:
    single numeric-binary or q50 issue.
    `catboost_postaudit_phase_focus_20260607.csv` localizes the representative
    current blockers to tree build, with q10 leaf correction as a secondary
-   target.
+   target. The follow-up upstream-vs-candidate tree-phase harness
+   `benchmarks/catboost_tree_phase_compare_r5_20260607.csv` narrows this again:
+   candidate tree building is faster on the categorical rows, but slower on
+   numeric binary and q10. The next pass should target numeric/quantile
+   tree-kernel overhead, not a universal tree-builder revert.
 2. Run exactly one ablation at a time. Call-shape-only routing and
    benchmark-order bias are already rejected, native-int bin indexing is
    rejected, dtype alone is not explanatory, linear-leaf precompute is

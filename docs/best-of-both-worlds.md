@@ -1105,6 +1105,56 @@ rejected as local fixes. Do not spend another pass on wrapper, validation,
 prediction, or benchmark-order explanations unless a new full-gate artifact
 contradicts this phase split.
 
+### Upstream Tree-Phase Comparison
+
+Because upstream v2 does not expose `verbose_timing`, a diagnostic harness now
+wraps each revision's imported `chimeraboost.booster.build_oblivious_tree` in an
+isolated subprocess and records tree-build wall time on identical splits:
+
+- `benchmarks/bench_tree_phase_compare.py`
+- `benchmarks/catboost_tree_phase_compare_r5_20260607.csv`
+- `benchmarks/catboost_tree_phase_compare_r5_report_20260607.json`
+
+Command:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_tree_phase_compare.py \
+  --upstream /tmp/chimeraboost-upstream \
+  --candidate . \
+  --models upstream_matched candidate_catboost \
+  --datasets categorical_reg categorical_binary numeric_binary quantile_reg_10 \
+  --sizes medium \
+  --seeds 3 \
+  --repeat 5 \
+  --iterations 300 \
+  --patience 25 \
+  --threads 4 \
+  --weight-modes none stress \
+  --validation-weight-policy upstream-compatible \
+  --csv benchmarks/catboost_tree_phase_compare_r5_20260607.csv
+```
+
+Result: the focused strict check still fails (`geomean_fit_ratio=1.0390`, 12
+failures), with identical metrics and iterations. The phase split narrows the
+diagnosis: candidate tree building is not universally slower. It is faster on
+the categorical rows in this probe, but slower on numeric binary and q10,
+especially unweighted q10.
+
+| Dataset / weight | Fit ratio | Tree-build ratio | Candidate tree share | Upstream tree share |
+| --- | ---: | ---: | ---: | ---: |
+| `categorical_binary` / none | 0.919 | 0.942 | 67.2% | 65.6% |
+| `categorical_binary` / stress | 0.965 | 0.983 | 68.0% | 67.0% |
+| `categorical_reg` / none | 0.758 | 0.707 | 76.8% | 82.5% |
+| `categorical_reg` / stress | 1.018 | 1.011 | 79.8% | 80.3% |
+| `numeric_binary` / none | 1.452 | 1.413 | 80.8% | 82.4% |
+| `numeric_binary` / stress | 1.310 | 1.352 | 82.1% | 78.5% |
+| `quantile_reg_10` / none | 1.263 | 1.612 | 44.3% | 35.1% |
+| `quantile_reg_10` / stress | 0.949 | 1.089 | 60.5% | 52.9% |
+
+Decision: keep the phase-comparison harness. The next catboost-mode speed pass
+should target numeric/quantile tree-kernel overhead, not categorical encoding,
+prediction, validation scoring, or a universal tree-builder revert.
+
 ### Selected Row/Feature Kernels
 
 The selected-row and selected-feature histogram kernels are inactive in the
