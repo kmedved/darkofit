@@ -629,6 +629,22 @@ Completed:
   one-off builder remains faster, so repeated gradient/data states matter.
   Next product probes should use the depth-6 repeated-loop reproducer before
   spending full strict-gate runs.
+- Fast default full-row builder probe:
+  a narrow product-code probe split the default full-row/non-constant-Hessian
+  `build_oblivious_tree` path into an upstream-shaped helper while leaving
+  constant-Hessian, selected-row, selected-feature, and row-subsample paths on
+  the generalized implementation. The reduced loop improved from `1.11x` /
+  `1.20x` slower to `0.99x` / `1.07x` in
+  `benchmarks/catboost_fast_default_full_rows_depth6_loop_r5_20260607.csv`,
+  but the real scalar-blocker gate rejected it:
+  `benchmarks/catboost_fast_default_full_rows_scalar_blockers_r7_20260607.csv`
+  and
+  `benchmarks/catboost_fast_default_full_rows_scalar_blockers_r7_report_20260607.json`
+  failed with `geomean_fit_ratio=1.0827`, 10 timing failures, exact primary
+  metric parity, and zero iteration drift. Numeric binary worsened most
+  (`1.09x` unweighted, `1.21x` stress). Product code was reverted. Keep the
+  reduced loop as a screening tool, but do not promote a probe unless it also
+  clears at least the focused scalar-blocker estimator gate.
 
 Next:
 
