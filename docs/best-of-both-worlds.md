@@ -600,6 +600,16 @@ add can beat NumPy indexed addition for that substep, but even a perfect fix
 would not explain the remaining fit-time gap. Record it as a possible small
 cleanup, not the next scalar-blocker lever.
 
+Darko v1 also carried explicit single-thread row-major histogram kernels,
+selected when Numba's thread count was one. A standalone current-tree microbench
+compared that shape with the current feature-major histogram kernels under
+`numba.set_num_threads(1)`. The current feature-major path was still faster:
+darko-style serial was `1.43x` slower on a numeric-binary medium shape, `2.04x`
+slower on wide-regression medium, `1.62x` slower on numeric-binary large, and
+`1.12x` slower on a low-feature categorical shape. Decision: do not restore the
+darko serial histogram lane; keep looking inside the current feature-major
+tree-builder path.
+
 ### Split-Scratch Probe
 
 Darko v1 had reusable split-search scratch arrays. A current-branch probe

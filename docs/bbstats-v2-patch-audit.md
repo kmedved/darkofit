@@ -170,7 +170,7 @@ measured decisions in this document.
 | `chimeraboost/preprocessing.py` | +77/-22 | +10/-6 | +13/-4 | Keep upstream pandas-vectorized categorical encoding; manual/lazy categorical mapping was rejected as a default; preserve only gated bin/target-stat extensions. |
 | `chimeraboost/sklearn_api.py` | +1026/-98 | +15/-3 | +154/-55 | Keep upstream public API, validation, `n_estimators`, constructor `cat_features`, and cat-feature names; current additions are compatibility toggles, timing diagnostics, and weighted-validation policy lanes. |
 | `chimeraboost/target_encoding.py` | +31/-22 | +38/-1 | +28/-5 | Keep upstream ordered target-encoding behavior; preserve weighted target stats as an opt-in product improvement. |
-| `chimeraboost/tree.py` | +563/-94 | +692/-41 | +876/-5 | Keep upstream oblivious-tree semantics; preserve only proven darko/current kernels and research modes; split scratch, upstream-default lane, plain-builder lane, dtype-only, and branch-only probes are rejected. |
+| `chimeraboost/tree.py` | +563/-94 | +692/-41 | +876/-5 | Keep upstream oblivious-tree semantics; preserve only proven darko/current kernels and research modes; split scratch, darko serial histogram kernels, upstream-default lane, plain-builder lane, dtype-only, and branch-only probes are rejected. |
 | `tests/test_chimeraboost.py` | +799/-54 | +871/-0 | +496/-0 | Preserve upstream compliance/validation tests and darko/current behavior coverage. |
 | `tests/test_benchmark_adapters.py` | +0/-0 | +0/-0 | +702/-0 | Preserve current strict-domination adapter coverage; this is the evidence harness for bbstats-v2 comparisons. |
 
@@ -500,6 +500,16 @@ Completed:
   addition for that substep, so this remains a possible small cleanup, but it
   cannot solve the remaining strict-domination blocker. Do not prioritize it
   ahead of tree-builder work.
+- Darko v1 serial histogram surface:
+  code comparison shows darko v1 had explicit single-thread row-major histogram
+  kernels selected when Numba's thread count was one. A standalone current-tree
+  microbench compared that row-major serial shape against the current
+  feature-major histogram kernels with `numba.set_num_threads(1)`. Current
+  feature-major stayed faster on the scalar-blocker-like shapes: darko-style
+  serial was `1.43x` slower on `numeric_binary_medium`, `2.04x` slower on
+  `wide_reg_medium`, `1.62x` slower on `numeric_binary_large`, and `1.12x`
+  slower even on a low-feature categorical shape. Reject restoring the serial
+  histogram lane; it is not the missing catboost-mode speed path.
 - Split-scratch probe:
   `benchmarks/catboost_split_scratch_scalar_blockers_r7_20260606.csv` and
   `benchmarks/catboost_split_scratch_scalar_blockers_r7_report_20260606.json`.
