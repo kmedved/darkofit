@@ -575,6 +575,38 @@ Decision: keep the existing `_linear_leaf_fit` layout. Do not reattempt local
 linear-leaf allocation removal unless paired with a fundamentally different
 solver or a benchmark that shows the temporary is actually dominant.
 
+### Scalar-Blocker Phase Diagnostic
+
+A candidate-only phase pass on the current post-q50 branch measured the two
+remaining scalar blockers:
+
+- `benchmarks/catboost_scalar_blockers_phase_current_20260606.csv`
+- `benchmarks/catboost_scalar_blockers_phase_current_summary_20260606.csv`
+
+Result: both blockers are still dominated by tree building, not wrapper work,
+calibration, validation prediction, or leaf updates. Numeric binary spends
+about `84%` to `90%` of booster time in `tree_build`; wide numeric regression
+spends about `95%` to `97%` there. This supports continuing to test tree-builder
+changes and rules out another wrapper/calibration pass as the next useful work.
+
+### Split-Scratch Probe
+
+Darko v1 had reusable split-search scratch arrays. A current-branch probe
+restored that idea inside the bbstats-v2-compatible interleaved histogram
+builder, preserving the current sparse-child legality rules. Results are
+tracked in:
+
+- `benchmarks/catboost_split_scratch_scalar_blockers_r7_20260606.csv`
+- `benchmarks/catboost_split_scratch_scalar_blockers_r7_report_20260606.json`
+
+Result: reject. Metrics and iterations stayed identical, but the scalar-blocker
+gate got worse (`geomean_fit_ratio=1.142`, `geomean_boost_ratio=1.133`, eleven
+timing failures). Median repeat ratios were also worse across the board.
+
+Decision: do not restore darko v1 split scratch in the current catboost builder.
+The current local-array split kernel is faster under Numba than the scratch
+variant in this interleaved feature-major layout.
+
 ### Adaptive `uint16` Probe
 
 The forced-`uint16` ablation was the only earlier probe that helped

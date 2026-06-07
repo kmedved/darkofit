@@ -437,6 +437,22 @@ Completed:
   numeric-binary focused gate worse (`geomean_fit_ratio=1.236`, all six timing
   rows failed). Reject this kernel rewrite; the current design-matrix temporary
   is faster under Numba for this workload.
+- Scalar-blocker phase diagnostic:
+  `benchmarks/catboost_scalar_blockers_phase_current_20260606.csv` and
+  `benchmarks/catboost_scalar_blockers_phase_current_summary_20260606.csv`.
+  Outcome: current numeric-binary and wide-regression blockers are still
+  tree-build dominated. Numeric binary spends about `84%` to `90%` of booster
+  time in `tree_build`; wide numeric regression spends about `95%` to `97%`.
+  Continue testing tree-builder changes; do not prioritize wrapper,
+  calibration, validation-prediction, or train-update work.
+- Split-scratch probe:
+  `benchmarks/catboost_split_scratch_scalar_blockers_r7_20260606.csv` and
+  `benchmarks/catboost_split_scratch_scalar_blockers_r7_report_20260606.json`.
+  Outcome: restoring a darko-v1-style reusable split scratch inside the current
+  bbstats-v2-compatible interleaved tree builder preserved metrics and
+  iterations but worsened scalar-blocker timing (`geomean_fit_ratio=1.142`,
+  `geomean_boost_ratio=1.133`, eleven timing failures). Reject this restoration;
+  the current local-array split kernel is faster in this layout.
 - Selected row/feature kernels:
   code inspection plus `tests/test_chimeraboost.py` show these kernels are
   inactive under the strict default matrix (`subsample=1.0`,
@@ -456,8 +472,8 @@ Next:
    benchmark-order bias are already rejected, native-int bin indexing is
    rejected, dtype alone is not explanatory, linear-leaf precompute is
    rejected, dropping binary linear leaves is rejected, linear-leaf
-   design-matrix removal is rejected, and full upstream-tree-lane restoration
-   is rejected.
+   design-matrix removal is rejected, split-scratch restoration is rejected,
+   and full upstream-tree-lane restoration is rejected.
 3. Promote only ablations that improve a blocker without introducing a new
    quality, semantic, or timing regression.
 4. Keep `tree_mode="lightgbm"` work paused until catboost mode is either
