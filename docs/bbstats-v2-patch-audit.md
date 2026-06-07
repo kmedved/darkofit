@@ -695,6 +695,19 @@ Completed:
   is strict row-level timing domination across heterogeneous families. Some
   failures are min-of-repeat artifacts, but several have median-repeat
   slowdowns too, so do not dismiss the full-gate failures as pure noise.
+  `benchmarks/summarize_repeat_failures.py` now summarizes min/median/mean
+  repeat ratios for checker failures, optionally against same-revision timing
+  envelopes. Applied to the fresh full gate in
+  `benchmarks/catboost_current_medium_full_r7_repeat_failure_summary_20260607.csv`,
+  it shows 19 of the 26 calibrated timing failures still exceed the matching
+  same-code median envelope. The largest real median blockers are
+  `categorical_reg` unweighted seed 2 (`2.41x` over control median envelope),
+  `categorical_multiclass` stress seed 4 (`2.39x`), `categorical_binary`
+  stress seed 3 (`1.51x`), `numeric_binary` stress seeds 4 and 0 (`1.46x` /
+  `1.28x`), and `friedman_numeric` stress seeds 0 and 3 (`1.43x` / `1.30x`).
+  Conversely, some calibrated failures are mostly min artifacts, such as q10
+  unweighted in aggregate and categorical multiclass unweighted in median
+  terms. Use this repeat-distribution summary to prioritize future probes.
 
 Next:
 
@@ -702,13 +715,13 @@ Next:
    `catboost_current_medium_full_r7_calibrated_report_20260607.json` still
    fails with 26 timing-only row failures despite exact quality and iteration
    parity, but aggregate speed is now favorable (`0.9883x`). The next work
-   should not chase a single scalar blocker; it should either improve the
-   repeated tree-build context across several families or tighten the accepted
-   timing gate around repeat-distribution evidence. Existing reduced diagnostics
-   still matter: `catboost_tree_kernel_micro_r20_20260607.csv` and the direct
-   builder microbenches show identical kernels/builders are near parity in
-   isolation, while `catboost_boost_loop_linear_depth6_phases_r5_20260607.csv`
-   shows repeated depth-6 boosting can reproduce slowdown. Use reduced loops as
+   should target the repeat-confirmed median blockers rather than the old scalar
+   focus alone: categorical regression/classification, numeric-binary stress,
+   and Friedman stress. Existing reduced diagnostics still matter:
+   `catboost_tree_kernel_micro_r20_20260607.csv` and the direct builder
+   microbenches show identical kernels/builders are near parity in isolation,
+   while `catboost_boost_loop_linear_depth6_phases_r5_20260607.csv` shows
+   repeated depth-6 boosting can reproduce slowdown. Use reduced loops as
    screening only; promote nothing that fails the calibrated full/focused
    estimator gate.
 2. Run exactly one ablation at a time. Call-shape-only routing and
