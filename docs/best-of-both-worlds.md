@@ -619,6 +619,26 @@ add can beat NumPy indexed addition for that substep, but even a perfect fix
 would not explain the remaining fit-time gap. Record it as a possible small
 cleanup, not the next scalar-blocker lever.
 
+### In-Place Leaf-Routing Probe
+
+Darko v1's tree builder updated leaf ids in place while descending an oblivious
+tree. A current-branch product-code probe restored that idea in both the plain
+and histogram-subtraction builders, replacing the NumPy allocation expression
+with a cached Numba `_update_leaves_with_split(...)` helper. Results are tracked
+in:
+
+- `benchmarks/catboost_inplace_leaf_update_scalar_blockers_r7_20260606.csv`
+- `benchmarks/catboost_inplace_leaf_update_scalar_blockers_r7_report_20260606.json`
+
+Result: reject. Metrics and iterations stayed identical, but the strict
+scalar-blocker gate failed (`geomean_fit_ratio=1.014`, seven failures). The
+candidate improved wide numeric regression, but regressed every numeric-binary
+row, including stress weights.
+
+Decision: product code was reverted. Do not restore darko v1 in-place
+leaf-routing in the current catboost builder; the mixed timing tradeoff does not
+meet strict domination.
+
 Darko v1 also carried explicit single-thread row-major histogram kernels,
 selected when Numba's thread count was one. A standalone current-tree microbench
 compared that shape with the current feature-major histogram kernels under

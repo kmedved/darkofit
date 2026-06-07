@@ -522,6 +522,14 @@ Completed:
   addition for that substep, so this remains a possible small cleanup, but it
   cannot solve the remaining strict-domination blocker. Do not prioritize it
   ahead of tree-builder work.
+- Darko v1 in-place leaf-routing surface:
+  `benchmarks/catboost_inplace_leaf_update_scalar_blockers_r7_20260606.csv` and
+  `benchmarks/catboost_inplace_leaf_update_scalar_blockers_r7_report_20260606.json`.
+  Outcome: restoring in-place leaf-id updates inside the current tree builder
+  preserved metrics and iterations, but failed the strict scalar-blocker gate
+  (`geomean_fit_ratio=1.014`, seven failures). It helped wide numeric regression
+  but regressed every numeric-binary row, including stress weights. Reject this
+  restoration; keep the current NumPy leaf-routing expression.
 - Darko v1 serial histogram surface:
   code comparison shows darko v1 had explicit single-thread row-major histogram
   kernels selected when Numba's thread count was one. A standalone current-tree
