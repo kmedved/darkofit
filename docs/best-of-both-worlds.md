@@ -288,6 +288,43 @@ Rows such as categorical multiclass and wide numeric regression had individual
 seed failures but better aggregate behavior, so treat those as timing-noise
 suspects until a focused rerun says otherwise.
 
+### Current Calibrated Strict Gate
+
+After the scalar-loop cleanup and rejected catboost-path probes, a fresh full
+strict medium run was made against the same upstream `ddaf272` baseline:
+
+- `benchmarks/catboost_strict_medium_current_20260606.csv`
+- `benchmarks/catboost_strict_medium_current_summary_20260606.csv`
+- `benchmarks/catboost_strict_medium_current_report_20260606.json`
+
+The raw gate still fails only on timing: 100 paired comparisons, no row errors,
+no semantic failures, no quality regressions, identical aggregate metrics and
+iterations, and aggregate candidate speed faster than upstream
+(`geomean_fit_ratio=0.9779`), but 36 row-level timing failures.
+
+Because the raw row-min timing gate can fail when comparing bbstats v2 against
+itself, the current run was calibrated with two same-revision controls:
+
+- `benchmarks/catboost_same_revision_medium_current_20260606.csv`
+- `benchmarks/catboost_same_revision_medium_current_reversed_20260606.csv`
+- `benchmarks/catboost_strict_medium_current_calibrated_both_report_20260606.json`
+
+The default-order same-revision control failed with 34 timing failures and
+`geomean_fit_ratio=0.9966`; the reversed-order same-revision control failed
+with 43 timing failures and `geomean_fit_ratio=1.0288`. With both controls as
+the timing-noise envelope, the current candidate still fails the calibrated
+gate with 28 row-level timing regressions, but no quality or semantic
+regressions and the same aggregate faster fit ratio (`0.9779`).
+
+Aggregate summary rows are now the more useful readout than raw per-seed
+failures. Current catboost mode is faster on categorical classification,
+Friedman stress, quantile stress rows, and q90; slower on categorical
+regression, numeric classification, q50 unweighted, and wide regression. The
+remaining work is therefore not to restore a known darko v1 win wholesale. It
+is to explain the remaining row-level timing failures and either reduce them
+with one-change, behavior-preserving patches or document them as below the
+accepted timing floor.
+
 ### Compact-Bin Ablation
 
 The first one-change ablation forced the candidate to use upstream-style

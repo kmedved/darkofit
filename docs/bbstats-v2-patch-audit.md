@@ -380,6 +380,20 @@ Completed:
   same-revision noise envelope (`passed=true`, zero failures). Treat the
   remaining raw row failures as below the current harness timing floor, not as
   proved product regressions.
+- Full current calibrated strict medium gate:
+  `benchmarks/catboost_strict_medium_current_20260606.csv`,
+  `benchmarks/catboost_same_revision_medium_current_20260606.csv`,
+  `benchmarks/catboost_same_revision_medium_current_reversed_20260606.csv`,
+  and
+  `benchmarks/catboost_strict_medium_current_calibrated_both_report_20260606.json`.
+  Outcome: current catboost mode is quality- and iteration-equivalent to
+  bbstats v2 across all 100 medium comparisons and is faster in aggregate
+  (`geomean_fit_ratio=0.9779`). The uncalibrated gate fails with 36 row-level
+  timing failures. Same-revision controls also fail the raw row-min timing
+  gate, confirming that raw per-row timing is too strict by itself; however,
+  calibrating against both same-code controls still leaves 28 row-level timing
+  failures. These survivors are timing-only and do not justify reverting any
+  accepted product behavior, but they do block a strict-domination claim.
 - Selected row/feature kernels:
   code inspection plus `tests/test_chimeraboost.py` show these kernels are
   inactive under the strict default matrix (`subsample=1.0`,
@@ -388,14 +402,16 @@ Completed:
 
 Next:
 
-1. Rerun the full catboost strict medium gate with same-revision timing controls
-   before declaring catboost mode clean. The uncalibrated row-level timing gate
-   is invalidated by same-code failures on the numeric-binary stress blocker.
-2. For any blocker that survives the calibrated gate, run exactly one ablation
-   at a time. Call-shape-only routing and benchmark-order bias are already
-   rejected, native-int bin indexing is rejected, dtype alone is not
-   explanatory, and linear-leaf precompute is rejected.
-3. Promote only ablations that improve the blocker without introducing a new
+1. Treat the 28 calibrated row-level timing failures in
+   `catboost_strict_medium_current_calibrated_both_report_20260606.json` as
+   the remaining catboost-path blockers. Start with aggregate-slower summary
+   rows (`wide_numeric_reg`, `numeric_multiclass`, `numeric_binary`,
+   `categorical_reg`, and q50 unweighted) rather than one-off row failures.
+2. Run exactly one ablation at a time. Call-shape-only routing and
+   benchmark-order bias are already rejected, native-int bin indexing is
+   rejected, dtype alone is not explanatory, linear-leaf precompute is
+   rejected, and full upstream-tree-lane restoration is rejected.
+3. Promote only ablations that improve a blocker without introducing a new
    quality, semantic, or timing regression.
 4. Keep `tree_mode="lightgbm"` work paused until catboost mode is either
    strictly dominating bbstats v2 or the remaining non-domination cases are
