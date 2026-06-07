@@ -708,6 +708,20 @@ Completed:
   Conversely, some calibrated failures are mostly min artifacts, such as q10
   unweighted in aggregate and categorical multiclass unweighted in median
   terms. Use this repeat-distribution summary to prioritize future probes.
+- Repeat-blocker tree-phase diagnostic:
+  `benchmarks/catboost_repeat_blockers_tree_phase_r5_20260607.csv` compares
+  upstream and current on the repeat-confirmed blocker families. The run again
+  has exact metric parity and zero iteration drift. Slow rows are dominated by
+  tree-build time, especially histogram and split phases: categorical binary
+  stress has fit/tree/hist/split ratios `1.37x` / `1.16x` / `1.20x` / `1.14x`,
+  categorical multiclass stress `1.29x` / `1.52x` / `1.54x` / `1.63x`,
+  numeric-binary stress `1.24x` / `1.23x` / `1.25x` / `1.31x`, and Friedman
+  stress `1.12x` / `1.12x` / `1.14x` / `1.13x`. Categorical regression is not
+  an aggregate phase blocker in this run (`0.92x` none, `0.98x` stress), so its
+  earlier single-row median failure should not drive the next product-code
+  probe by itself. The strongest shared target is still default repeated
+  histogram/split work under the full estimator loop, not prediction,
+  validation, or linear leaves.
 
 Next:
 
