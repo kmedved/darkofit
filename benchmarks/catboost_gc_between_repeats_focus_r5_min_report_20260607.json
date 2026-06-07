@@ -1,0 +1,285 @@
+{
+  "aggregate_fit_ratio_limit": 1.0,
+  "aggregate_timing_control_limit": null,
+  "baseline": "upstream_matched",
+  "candidate": "candidate_catboost",
+  "failures": [
+    {
+      "candidate_fit_seconds": 0.5989280000212602,
+      "fit_ratio": 1.2474673628508466,
+      "key": {
+        "dataset": "categorical_multiclass",
+        "ensemble_size": "1",
+        "seed": "1",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "none"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 0.48011516602127813
+    },
+    {
+      "candidate_fit_seconds": 0.7194283330172766,
+      "fit_ratio": 1.175874330947925,
+      "key": {
+        "dataset": "categorical_multiclass",
+        "ensemble_size": "1",
+        "seed": "2",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "stress"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 0.6118241669901181
+    },
+    {
+      "candidate_fit_seconds": 0.28592058300273493,
+      "fit_ratio": 1.2492399878576723,
+      "key": {
+        "dataset": "categorical_reg",
+        "ensemble_size": "1",
+        "seed": "2",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "none"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 0.22887562500545755
+    },
+    {
+      "candidate_fit_seconds": 0.3700673339772038,
+      "fit_ratio": 1.2172810403938845,
+      "key": {
+        "dataset": "friedman_numeric",
+        "ensemble_size": "1",
+        "seed": "1",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "none"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 0.304011416999856
+    },
+    {
+      "candidate_fit_seconds": 0.37102762499125674,
+      "fit_ratio": 1.1760337569787196,
+      "key": {
+        "dataset": "friedman_numeric",
+        "ensemble_size": "1",
+        "seed": "2",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "none"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 0.315490624983795
+    },
+    {
+      "candidate_fit_seconds": 0.4835824170149863,
+      "fit_ratio": 1.3606371814441236,
+      "key": {
+        "dataset": "friedman_numeric",
+        "ensemble_size": "1",
+        "seed": "0",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "stress"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 0.35540879200561903
+    },
+    {
+      "candidate_fit_seconds": 0.6789869160274975,
+      "fit_ratio": 1.0548373201186811,
+      "key": {
+        "dataset": "friedman_numeric",
+        "ensemble_size": "1",
+        "seed": "2",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "stress"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 0.643688749987632
+    },
+    {
+      "candidate_fit_seconds": 1.5779681669955608,
+      "fit_ratio": 1.16783977256798,
+      "key": {
+        "dataset": "numeric_binary",
+        "ensemble_size": "1",
+        "seed": "0",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "none"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 1.3511854999815114
+    },
+    {
+      "candidate_fit_seconds": 1.9524640410090797,
+      "fit_ratio": 1.4645528843709839,
+      "key": {
+        "dataset": "numeric_binary",
+        "ensemble_size": "1",
+        "seed": "1",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "none"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 1.3331468339893036
+    },
+    {
+      "candidate_fit_seconds": 1.4644233750004787,
+      "fit_ratio": 1.1936684381467926,
+      "key": {
+        "dataset": "numeric_binary",
+        "ensemble_size": "1",
+        "seed": "2",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "none"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 1.2268259159754962
+    },
+    {
+      "candidate_fit_seconds": 1.5356269170006271,
+      "fit_ratio": 1.3329761139851553,
+      "key": {
+        "dataset": "numeric_binary",
+        "ensemble_size": "1",
+        "seed": "0",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "stress"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 1.1520288329920731
+    },
+    {
+      "candidate_fit_seconds": 1.4405577910074499,
+      "fit_ratio": 1.1668076514303853,
+      "key": {
+        "dataset": "numeric_binary",
+        "ensemble_size": "1",
+        "seed": "1",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "stress"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 1.2346146249910817
+    },
+    {
+      "candidate_fit_seconds": 1.9980382920184638,
+      "fit_ratio": 1.6351654428761644,
+      "key": {
+        "dataset": "numeric_binary",
+        "ensemble_size": "1",
+        "seed": "2",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "stress"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 1.2219181249965914
+    },
+    {
+      "candidate_fit_seconds": 0.9161699170072097,
+      "fit_ratio": 1.0756880451669528,
+      "key": {
+        "dataset": "quantile_reg_10",
+        "ensemble_size": "1",
+        "seed": "1",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "none"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 0.8517059579899069
+    },
+    {
+      "candidate_fit_seconds": 1.055268750002142,
+      "fit_ratio": 1.1510176394577711,
+      "key": {
+        "dataset": "quantile_reg_10",
+        "ensemble_size": "1",
+        "seed": "2",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "none"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 0.9168137079977896
+    },
+    {
+      "candidate_fit_seconds": 1.2805935840005986,
+      "fit_ratio": 1.1573775758570304,
+      "key": {
+        "dataset": "quantile_reg_10",
+        "ensemble_size": "1",
+        "seed": "1",
+        "size": "medium",
+        "split_mode": "row",
+        "weight_mode": "stress"
+      },
+      "kind": "timing_regression",
+      "limit": 1.03,
+      "message": "candidate fit time is materially slower",
+      "upstream_fit_seconds": 1.1064613750204444
+    },
+    {
+      "geomean_fit_ratio": 1.042180076537592,
+      "key": {},
+      "kind": "aggregate_timing_regression",
+      "limit": 1.0,
+      "message": "geometric mean fit ratio exceeds the strict gate"
+    }
+  ],
+  "fit_time_stat": "min",
+  "geomean_fit_ratio": 1.042180076537592,
+  "key_fields": [
+    "dataset",
+    "size",
+    "split_mode",
+    "weight_mode",
+    "ensemble_size",
+    "seed"
+  ],
+  "mode": "upstream-compatible",
+  "n_compared": 30,
+  "passed": false,
+  "timing_control_rows": 0
+}

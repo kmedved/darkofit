@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gc
 import inspect
 import json
 import resource
@@ -296,6 +297,8 @@ def _fit_worker(payload):
     fit_seconds = None
     fit_repeat_seconds = []
     for _ in range(repeat):
+        if payload.get("gc_between_repeats", False):
+            gc.collect()
         model = estimator_cls(**kwargs)
         start = time.perf_counter()
         model.fit(*fit_args, **fit_kwargs)
@@ -447,6 +450,15 @@ def parse_args(argv):
     )
     parser.add_argument("--seeds", type=int, default=3)
     parser.add_argument("--repeat", type=int, default=2)
+    parser.add_argument(
+        "--gc-between-repeats",
+        action="store_true",
+        default=False,
+        help=(
+            "diagnostic timing mode: run gc.collect() immediately before each "
+            "timed fit repeat inside the worker subprocess"
+        ),
+    )
     parser.add_argument("--threads", type=int, default=None)
     parser.add_argument("--iterations", type=int, default=1_500)
     parser.add_argument("--patience", type=int, default=50)
@@ -632,6 +644,7 @@ def main(argv=None):
                                             "cat_features": cat_features,
                                             "seed": seed,
                                             "repeat": args.repeat,
+                                            "gc_between_repeats": args.gc_between_repeats,
                                         }
                                         ensemble_token = str(ensemble_size)
                                         payload_path = tmpdir / (

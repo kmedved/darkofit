@@ -1629,6 +1629,41 @@ artifact. Any claim of strict domination needs a real broad timing improvement
 or a deliberately revised acceptance contract; do not explain the blocker away
 with min-only noise.
 
+## GC-Between-Repeats Timing Diagnostic
+
+Because robust median/mean timing was much worse than min timing, the revision
+benchmark gained an optional diagnostic flag:
+
+```bash
+--gc-between-repeats
+```
+
+It runs `gc.collect()` immediately before each timed fit repeat inside the
+worker subprocess. This is not enabled by default; it is a harness diagnostic
+for checking whether repeat drift comes from Python garbage accumulation.
+
+Focused blocker-family rows are tracked in:
+
+- `benchmarks/catboost_gc_between_repeats_focus_r5_20260607.csv`
+- `benchmarks/catboost_gc_between_repeats_focus_r5_min_report_20260607.json`
+- `benchmarks/catboost_gc_between_repeats_focus_r5_median_report_20260607.json`
+- `benchmarks/catboost_gc_between_repeats_focus_r5_mean_report_20260607.json`
+
+The run covered `friedman_numeric`, `categorical_reg`, `numeric_binary`,
+`categorical_multiclass`, and `quantile_reg_10` at medium size, three seeds,
+none/stress weights, repeat 5. Metrics matched up to floating precision
+(`max_abs_primary_delta=4.3e-15`) and best iterations matched exactly.
+
+| Fit-time statistic | Geomean fit ratio | Failures | Interpretation |
+| --- | ---: | ---: | --- |
+| `min` | 1.0422 | 17 / 30 | Still fails. |
+| `median` | 1.2218 | 22 / 30 | Worse than no-GC robust timing. |
+| `mean` | 1.2682 | 22 / 30 | Worse than no-GC robust timing. |
+
+Decision: repeat drift is not solved by forcing Python GC between repeats. Keep
+the diagnostic flag for future timing audits, but do not treat GC as an
+acceptance or product-code fix.
+
 ## Histogram Subtraction Probe
 
 Implemented an experimental full-row oblivious-tree builder,

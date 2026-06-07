@@ -29,6 +29,7 @@ from bench_compare_revisions import (  # noqa: E402
     _base_row,
     _path_token,
     _peak_rss_mb,
+    parse_args as compare_parse_args,
     _select_variants,
     _validation_eval_set,
 )
@@ -625,6 +626,12 @@ def test_benchmark_clis_reject_zero_ensemble_jobs(tmp_path):
             "--csv",
             str(tmp_path / "tuning.csv"),
         ])
+
+
+def test_revision_benchmark_parses_gc_between_repeats_flag():
+    args = compare_parse_args(["--gc-between-repeats"])
+
+    assert args.gc_between_repeats is True
 
 
 def test_revision_payload_path_token_handles_external_dataset_names():
