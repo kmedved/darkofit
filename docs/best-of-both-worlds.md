@@ -1012,6 +1012,46 @@ row-min gate. The next acceptance step is a full catboost gate rerun with
 same-revision timing controls; only calibrated failures should drive more
 catboost-mode product changes.
 
+### Post-Audit Full Catboost Gate
+
+After the median-q50 correction, scalar-loop cleanup, and rejected tree-builder
+restorations, the full upstream-compatible medium catboost gate was rerun from
+the current branch. Results are tracked in:
+
+- `benchmarks/catboost_strict_medium_current_postaudit_20260606.csv`
+- `benchmarks/catboost_strict_medium_current_postaudit_summary_20260606.csv`
+- `benchmarks/catboost_strict_medium_current_postaudit_report_20260606.json`
+- `benchmarks/catboost_same_revision_medium_postaudit_20260606.csv`
+- `benchmarks/catboost_same_revision_medium_postaudit_reversed_20260606.csv`
+- `benchmarks/catboost_strict_medium_current_postaudit_calibrated_both_report_20260606.json`
+
+Result: current catboost mode still preserves upstream quality and iteration
+counts exactly across all 100 paired comparisons, but it does not strictly
+dominate bbstats v2 on speed. The raw checker fails with 63 failures
+(`geomean_fit_ratio=1.1160`); calibrating against both same-revision upstream
+controls still fails with 57 failures. The same-code controls are far smaller
+than the candidate gap (`geomean_fit_ratio=1.0127` in default order), so this is
+not just row-min timing noise.
+
+Largest aggregate timing regressions in the current full gate:
+
+| Dataset / weight | Mean fit ratio | Median fit ratio | Notes |
+| --- | ---: | ---: | --- |
+| `categorical_reg` / none | 1.394 | 1.472 | Timing only. |
+| `categorical_binary` / none | 1.340 | 1.232 | Timing only. |
+| `quantile_reg_10` / stress | 1.292 | 1.289 | Timing only. |
+| `categorical_binary` / stress | 1.244 | 1.324 | Timing only. |
+| `quantile_reg_90` / stress | 1.209 | 1.215 | Timing only. |
+| `categorical_multiclass` / stress | 1.192 | 1.147 | Timing only. |
+| `numeric_binary` / stress | 1.176 | 1.106 | Timing only. |
+
+Decision: do not claim catboost strict domination yet. The remaining blocker is
+now broader than numeric-binary stress: the current integration has full-matrix
+timing regressions across categorical, quantile, and scalar classification /
+regression rows while preserving bbstats v2 metrics. The next useful work is a
+full-matrix timing diff against bbstats v2 to find the shared overhead, not
+another single-row numeric-binary microprobe.
+
 ### Selected Row/Feature Kernels
 
 The selected-row and selected-feature histogram kernels are inactive in the

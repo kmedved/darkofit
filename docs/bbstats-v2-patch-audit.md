@@ -461,6 +461,22 @@ Completed:
   calibrating against both same-code controls still leaves 28 row-level timing
   failures. These survivors are timing-only and do not justify reverting any
   accepted product behavior, but they do block a strict-domination claim.
+- Post-audit full current gate:
+  `benchmarks/catboost_strict_medium_current_postaudit_20260606.csv`,
+  `benchmarks/catboost_strict_medium_current_postaudit_summary_20260606.csv`,
+  `benchmarks/catboost_same_revision_medium_postaudit_20260606.csv`,
+  `benchmarks/catboost_same_revision_medium_postaudit_reversed_20260606.csv`,
+  and
+  `benchmarks/catboost_strict_medium_current_postaudit_calibrated_both_report_20260606.json`.
+  Outcome: after q50 cleanup and the rejected tree-builder restorations,
+  current catboost mode still preserves upstream quality and iterations exactly
+  across all 100 paired medium comparisons, but the full speed gate regressed.
+  Raw strict checking fails with 63 failures (`geomean_fit_ratio=1.1160`);
+  calibration against both fresh same-revision controls still leaves 57 timing
+  failures. This is broader than the earlier numeric-binary-only focus:
+  categorical, quantile, and scalar rows all contribute. Do not claim strict
+  domination yet; the next pass should profile shared full-matrix overhead
+  against bbstats v2.
 - Median-quantile unweighted grouped leaf correction:
   `benchmarks/catboost_current_aggregate_slow_focus_20260606.csv`,
   `benchmarks/catboost_current_phase_focus_20260606.csv`, and
@@ -556,21 +572,20 @@ Completed:
 
 Next:
 
-1. Treat the 28 calibrated row-level timing failures in
-   `catboost_strict_medium_current_calibrated_both_report_20260606.json` as
-   the pre-q50 baseline. After the median-only grouped correction, the latest
-   fair focus leaves numeric binary as the primary blocker and wide numeric
-   regression stress as the secondary blocker. q50 and numeric multiclass are
-   no longer aggregate blockers in that focus rerun; the repeat distributions
-   point to shared scalar catboost overhead as the next investigation target.
+1. Treat the post-audit full gate as authoritative current status:
+   `catboost_strict_medium_current_postaudit_calibrated_both_report_20260606.json`
+   still fails with 57 timing-only failures despite exact metric and iteration
+   parity. The remaining blocker is now full-matrix timing overhead, not a
+   single numeric-binary or q50 issue.
 2. Run exactly one ablation at a time. Call-shape-only routing and
    benchmark-order bias are already rejected, native-int bin indexing is
    rejected, dtype alone is not explanatory, linear-leaf precompute is
    rejected, dropping binary linear leaves is rejected, linear-leaf
    design-matrix removal is rejected, split-scratch restoration is rejected,
    and full upstream-tree-lane restoration is rejected.
-3. Promote only ablations that improve a blocker without introducing a new
-   quality, semantic, or timing regression.
+3. Promote only ablations that improve the full calibrated gate or a clearly
+   named full-gate aggregate blocker without introducing a new quality,
+   semantic, or timing regression.
 4. Keep `tree_mode="lightgbm"` work paused until catboost mode is either
    strictly dominating bbstats v2 or the remaining non-domination cases are
    documented as irreducible timing noise under the accepted gate.
