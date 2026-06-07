@@ -200,8 +200,11 @@ fork/upstream/candidate decisions.
 
 Inventory check: `git log --no-merges 78397b27..upstream/main` returns 81
 upstream code/doc/release commits, and all 81 short hashes are represented
-below. The additional documented short hashes are merge commits marked
-`MERGE/NOOP`.
+below. A stricter all-commit check on 2026-06-07 returned
+`upstream commits 86 missing 0` for:
+`git rev-list --reverse --abbrev-commit --abbrev=7 --oneline 78397b27d7d27fc055490bb21ab8dd1b68893e13..upstream/main`
+against this file. The additional documented short hashes are merge commits
+marked `MERGE/NOOP`.
 
 | Commit | Date | Subject | Decision |
 | --- | --- | --- | --- |
