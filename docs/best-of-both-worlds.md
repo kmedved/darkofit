@@ -2093,7 +2093,7 @@ Median/mean repeat timing can still be emitted as diagnostics, but those reports
 are not the accepted speed contract unless the min gate also fails and a
 reproducing phase/context harness identifies a concrete source.
 
-Blocker-manifest command:
+Blocker-manifest repeat-11 command:
 
 ```bash
 /Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_catboost_strict_gate.py \
@@ -2103,10 +2103,10 @@ Blocker-manifest command:
   --iterations 300 \
   --patience 25 \
   --threads 4 \
-  --repeat 5 \
+  --repeat 11 \
   --validation-weight-policy upstream-compatible \
   --case-manifest benchmarks/catboost_repeat_blockers_manifest_20260607.json \
-  --out-prefix benchmarks/catboost_blocker_calibrated_gate_20260607
+  --out-prefix benchmarks/catboost_blocker_calibrated_gate_r11_20260607
 ```
 
 The runner writes:
@@ -2116,7 +2116,8 @@ The runner writes:
 - `<prefix>_calibrated_min_report.json`
 - optional `<prefix>_calibrated_median_diagnostic_report.json`
 
-The first blocker-manifest repeat-5 run from this entrypoint is tracked in:
+The earlier blocker-manifest repeat-5 diagnostic run from this entrypoint is
+tracked in:
 
 - `benchmarks/catboost_blocker_calibrated_gate_20260607_raw.csv`
 - `benchmarks/catboost_blocker_calibrated_gate_20260607_same_upstream.csv`
