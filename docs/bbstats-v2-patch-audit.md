@@ -609,7 +609,11 @@ Next:
    `benchmarks/catboost_tree_phase_compare_r5_20260607.csv` narrows this again:
    candidate tree building is faster on the categorical rows, but slower on
    numeric binary and q10. The next pass should target numeric/quantile
-   tree-kernel overhead, not a universal tree-builder revert.
+   tree-kernel overhead, not a universal tree-builder revert. The subphase run
+   `benchmarks/catboost_tree_subphase_numeric_quantile_r5_20260607.csv` narrows
+   numeric binary further: histogram fill is `1.40x` to `1.42x` slower and
+   split search is `1.53x` to `1.54x` slower, while linear-leaf fitting is near
+   parity. Do not spend the next pass on `_linear_leaf_fit`.
 2. Run exactly one ablation at a time. Call-shape-only routing and
    benchmark-order bias are already rejected, native-int bin indexing is
    rejected, dtype alone is not explanatory, linear-leaf precompute is

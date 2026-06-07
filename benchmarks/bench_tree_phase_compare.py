@@ -93,6 +93,20 @@ CSV_FIELDS = [
     "tree_build_repeat_calls",
     "tree_build_share",
     "tree_build_ms_per_call",
+    "hist_seconds",
+    "hist_repeat_seconds",
+    "hist_calls",
+    "split_seconds",
+    "split_repeat_seconds",
+    "split_calls",
+    "leaf_seconds",
+    "leaf_repeat_seconds",
+    "leaf_calls",
+    "linear_leaf_seconds",
+    "linear_leaf_repeat_seconds",
+    "linear_leaf_calls",
+    "tree_other_seconds",
+    "tree_other_repeat_seconds",
     "boost_seconds",
     "best_iteration",
     "primary_metric",
@@ -110,8 +124,20 @@ CSV_FIELDS = [
 
 def _install_tree_timer():
     import chimeraboost.booster as bm
+    import chimeraboost.tree as tm
 
-    state = {"seconds": 0.0, "calls": 0}
+    state = {
+        "seconds": 0.0,
+        "calls": 0,
+        "hist_seconds": 0.0,
+        "hist_calls": 0,
+        "split_seconds": 0.0,
+        "split_calls": 0,
+        "leaf_seconds": 0.0,
+        "leaf_calls": 0,
+        "linear_leaf_seconds": 0.0,
+        "linear_leaf_calls": 0,
+    }
     original = bm.build_oblivious_tree
 
     def timed_build(*args, **kwargs):
@@ -123,7 +149,58 @@ def _install_tree_timer():
             state["calls"] += 1
 
     bm.build_oblivious_tree = timed_build
+
+    def wrap(name, seconds_key, calls_key):
+        if not hasattr(tm, name):
+            return
+        original_fn = getattr(tm, name)
+
+        def timed_fn(*args, **kwargs):
+            start = time.perf_counter()
+            try:
+                return original_fn(*args, **kwargs)
+            finally:
+                state[seconds_key] += time.perf_counter() - start
+                state[calls_key] += 1
+
+        setattr(tm, name, timed_fn)
+
+    for name in (
+        "_build_histograms_into",
+        "_build_histograms_unit_hess_into",
+        "_build_histograms_selected_into",
+        "_build_histograms_selected_unit_hess_into",
+        "_build_histograms_rows_into",
+        "_build_histograms_rows_unit_hess_into",
+        "_build_histograms_selected_rows_into",
+        "_build_histograms_selected_rows_unit_hess_into",
+    ):
+        wrap(name, "hist_seconds", "hist_calls")
+    wrap("_best_split", "split_seconds", "split_calls")
+    for name in (
+        "_leaf_values",
+        "_leaf_values_rows",
+        "_leaf_values_hs",
+        "_leaf_values_hs_rows",
+    ):
+        wrap(name, "leaf_seconds", "leaf_calls")
+    wrap("_linear_leaf_fit", "linear_leaf_seconds", "linear_leaf_calls")
     return state
+
+
+def _reset_timer(timer):
+    for key in list(timer):
+        timer[key] = 0.0 if key.endswith("seconds") else 0
+
+
+def _tree_other_seconds(timer):
+    sub = (
+        timer["hist_seconds"]
+        + timer["split_seconds"]
+        + timer["leaf_seconds"]
+        + timer["linear_leaf_seconds"]
+    )
+    return timer["seconds"] - sub
 
 
 def _fit_worker(payload):
@@ -171,11 +248,15 @@ def _fit_worker(payload):
     fit_repeats = []
     tree_repeats = []
     call_repeats = []
+    hist_repeats = []
+    split_repeats = []
+    leaf_repeats = []
+    linear_leaf_repeats = []
+    other_repeats = []
     repeat = max(1, int(payload["repeat"]))
     for _ in range(repeat):
         model = estimator_cls(**kwargs)
-        timer["seconds"] = 0.0
-        timer["calls"] = 0
+        _reset_timer(timer)
         start = time.perf_counter()
         model.fit(*fit_args, **fit_kwargs)
         fit_seconds = time.perf_counter() - start
@@ -184,11 +265,17 @@ def _fit_worker(payload):
         fit_repeats.append(fit_seconds)
         tree_repeats.append(tree_seconds)
         call_repeats.append(tree_calls)
+        hist_repeats.append(timer["hist_seconds"])
+        split_repeats.append(timer["split_seconds"])
+        leaf_repeats.append(timer["leaf_seconds"])
+        linear_leaf_repeats.append(timer["linear_leaf_seconds"])
+        other_repeats.append(_tree_other_seconds(timer))
         if best_fit is None or fit_seconds < best_fit:
             best_model = model
             best_fit = fit_seconds
             best_tree = tree_seconds
             best_calls = tree_calls
+            best_timer = dict(timer)
 
     pred = best_model.predict(data["X_test"])
     if task in ("regression", "quantile"):
@@ -219,6 +306,22 @@ def _fit_worker(payload):
         "tree_build_ms_per_call": (
             float(1000.0 * best_tree / best_calls) if best_calls else ""
         ),
+        "hist_seconds": float(best_timer["hist_seconds"]),
+        "hist_repeat_seconds": ";".join(f"{v:.12g}" for v in hist_repeats),
+        "hist_calls": int(best_timer["hist_calls"]),
+        "split_seconds": float(best_timer["split_seconds"]),
+        "split_repeat_seconds": ";".join(f"{v:.12g}" for v in split_repeats),
+        "split_calls": int(best_timer["split_calls"]),
+        "leaf_seconds": float(best_timer["leaf_seconds"]),
+        "leaf_repeat_seconds": ";".join(f"{v:.12g}" for v in leaf_repeats),
+        "leaf_calls": int(best_timer["leaf_calls"]),
+        "linear_leaf_seconds": float(best_timer["linear_leaf_seconds"]),
+        "linear_leaf_repeat_seconds": ";".join(
+            f"{v:.12g}" for v in linear_leaf_repeats
+        ),
+        "linear_leaf_calls": int(best_timer["linear_leaf_calls"]),
+        "tree_other_seconds": float(_tree_other_seconds(best_timer)),
+        "tree_other_repeat_seconds": ";".join(f"{v:.12g}" for v in other_repeats),
         "boost_seconds": "" if boost_seconds is None else float(boost_seconds),
         "best_iteration": _best_iteration(best_model) or "",
     }

@@ -1155,6 +1155,52 @@ Decision: keep the phase-comparison harness. The next catboost-mode speed pass
 should target numeric/quantile tree-kernel overhead, not categorical encoding,
 prediction, validation scoring, or a universal tree-builder revert.
 
+### Numeric / Quantile Tree Subphase Comparison
+
+The tree-phase harness now also wraps the tree module's histogram, split-search,
+leaf-value, and linear-leaf helpers. A focused numeric/quantile run is tracked
+in:
+
+- `benchmarks/catboost_tree_subphase_numeric_quantile_r5_20260607.csv`
+- `benchmarks/catboost_tree_subphase_numeric_quantile_r5_report_20260607.json`
+
+Command:
+
+```bash
+/Users/kmedved/miniconda3/envs/darko311/bin/python benchmarks/bench_tree_phase_compare.py \
+  --upstream /tmp/chimeraboost-upstream \
+  --candidate . \
+  --models upstream_matched candidate_catboost \
+  --datasets numeric_binary quantile_reg_10 \
+  --sizes medium \
+  --seeds 3 \
+  --repeat 5 \
+  --iterations 300 \
+  --patience 25 \
+  --threads 4 \
+  --weight-modes none stress \
+  --validation-weight-policy upstream-compatible \
+  --csv benchmarks/catboost_tree_subphase_numeric_quantile_r5_20260607.csv
+```
+
+Result: the focused strict check fails (`geomean_fit_ratio=1.1422`, 8
+failures), again with identical metrics and iterations. The numeric-binary
+slowdown is now localized inside the default histogram and split-search kernels,
+not in linear-leaf fitting.
+
+| Dataset / weight | Fit ratio | Tree ratio | Hist ratio | Split ratio | Linear-leaf ratio |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `numeric_binary` / none | 1.315 | 1.373 | 1.417 | 1.538 | 1.023 |
+| `numeric_binary` / stress | 1.378 | 1.375 | 1.397 | 1.532 | 1.100 |
+| `quantile_reg_10` / none | 0.986 | 0.940 | 0.916 | 0.935 | n/a |
+| `quantile_reg_10` / stress | 0.965 | 1.144 | 1.146 | 1.189 | n/a |
+
+Decision: do not spend the next pass on `_linear_leaf_fit`; the implementation
+is effectively tied with upstream in this diagnostic and prior linear-leaf
+rewrites were rejected. The next product-code probe should target the default
+numeric full-matrix histogram/split-search path, with q10 treated as a weaker
+secondary signal.
+
 ### Selected Row/Feature Kernels
 
 The selected-row and selected-feature histogram kernels are inactive in the
