@@ -514,6 +514,18 @@ Decision: promote grouped unweighted correction only for median Quantile. Keep
 the upstream mask loop for q10/q90 and other unweighted leaf-correction losses
 until a separate gate proves those rows.
 
+A post-promotion focus rerun is tracked in:
+
+- `benchmarks/catboost_post_q50_aggregate_focus_20260606.csv`
+- `benchmarks/catboost_post_q50_aggregate_focus_summary_20260606.csv`
+- `benchmarks/catboost_post_q50_aggregate_focus_calibrated_report_20260606.json`
+
+Result: q50 is no longer an aggregate blocker (`0.993` unweighted, `0.972`
+stress). Numeric multiclass also moved to parity (`0.987` unweighted, `1.001`
+stress). The remaining aggregate blockers in that focus set are numeric binary
+(`1.252` unweighted, `1.145` stress) and wide numeric regression stress
+(`1.158`; wide unweighted is a smaller `1.074`).
+
 ### Adaptive `uint16` Probe
 
 The forced-`uint16` ablation was the only earlier probe that helped

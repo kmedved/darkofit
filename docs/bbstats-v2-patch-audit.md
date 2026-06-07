@@ -406,6 +406,14 @@ Completed:
   `geomean_fit_ratio=1.0007`) with identical metrics and iterations. Promote
   this median-only path; keep q10/q90 and MAE on the upstream mask loop unless
   a separate gate proves otherwise.
+- Post-q50 aggregate-slower focus:
+  `benchmarks/catboost_post_q50_aggregate_focus_20260606.csv` and
+  `benchmarks/catboost_post_q50_aggregate_focus_calibrated_report_20260606.json`.
+  Outcome: q50 is no longer an aggregate blocker (`0.993` unweighted, `0.972`
+  stress), and numeric multiclass moved to parity (`0.987` unweighted, `1.001`
+  stress). The focus gate still fails on timing, with numeric binary as the
+  main aggregate blocker (`1.252` unweighted, `1.145` stress) and wide numeric
+  regression stress as the next blocker (`1.158`; wide unweighted `1.074`).
 - Selected row/feature kernels:
   code inspection plus `tests/test_chimeraboost.py` show these kernels are
   inactive under the strict default matrix (`subsample=1.0`,
@@ -416,11 +424,10 @@ Next:
 
 1. Treat the 28 calibrated row-level timing failures in
    `catboost_strict_medium_current_calibrated_both_report_20260606.json` as
-   the pre-q50 baseline, then rerun the aggregate-slower focus or full
-   calibrated gate after the median-only grouped correction. The latest fair
-   focus leaves numeric binary, numeric multiclass unweighted, and wide
-   regression stress as the most useful aggregate-slower rows to explain next;
-   categorical regression and q50 stress were faster in that rerun.
+   the pre-q50 baseline. After the median-only grouped correction, the latest
+   fair focus leaves numeric binary as the primary blocker and wide numeric
+   regression stress as the secondary blocker. q50 and numeric multiclass are
+   no longer aggregate blockers in that focus rerun.
 2. Run exactly one ablation at a time. Call-shape-only routing and
    benchmark-order bias are already rejected, native-int bin indexing is
    rejected, dtype alone is not explanatory, linear-leaf precompute is
