@@ -373,6 +373,72 @@ def test_shared_histogram_buffers_match_standalone():
     assert np.allclose(again.values, fresh.values)
 
 
+def test_best_split_v2_matches_legacy_kernel():
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import (
+        _best_split,
+        _best_split_v2,
+        _build_histograms_into,
+    )
+
+    rng = np.random.default_rng(11)
+    X = rng.normal(size=(900, 13))
+    y = (
+        1.2 * X[:, 0]
+        - 0.9 * X[:, 4]
+        + 0.6 * np.sin(X[:, 7])
+        + rng.normal(0, 0.5, 900)
+    )
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = np.ascontiguousarray(prep.fit_transform(X, [y], None).T)
+    grad = y - y.mean()
+    hess = rng.uniform(0.1, 2.5, len(y))
+    leaf = rng.integers(0, 8, size=len(y), dtype=np.int64)
+    feature_mask = np.ones(Xb.shape[0], dtype=np.int64)
+    feature_mask[[2, 5]] = 0
+    hist = np.zeros((Xb.shape[0], 8, int(prep.n_bins_.max()), 2))
+
+    _build_histograms_into(Xb, grad, hess, leaf, 8, hist)
+    legacy = _best_split(hist, prep.n_bins_, 1.7, feature_mask, 0.25, 8)
+    v2 = _best_split_v2(hist, prep.n_bins_, 1.7, feature_mask, 0.25, 8)
+
+    assert legacy[0] == v2[0]
+    assert legacy[1] == v2[1]
+    assert legacy[2] == v2[2]
+
+
+def test_best_split_v2_default_tree_matches_legacy_tree():
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_oblivious_tree
+
+    rng = np.random.default_rng(12)
+    X = rng.normal(size=(1100, 14))
+    y = (
+        1.5 * X[:, 1]
+        - 0.8 * X[:, 3]
+        + 0.7 * X[:, 8] * X[:, 9]
+        + rng.normal(0, 0.4, 1100)
+    )
+    prep = FeaturePreprocessor(96, 1.0, 0)
+    Xb = np.ascontiguousarray(prep.fit_transform(X, [y], None).T)
+    grad = y - y.mean()
+    hess = rng.uniform(0.2, 1.8, len(y))
+
+    legacy, leaf_legacy = build_oblivious_tree(
+        Xb, grad, hess, prep.n_bins_, 6, 2.0, 0.1,
+        min_child_weight=0.5, split_search="legacy")
+    default, leaf_default = build_oblivious_tree(
+        Xb, grad, hess, prep.n_bins_, 6, 2.0, 0.1,
+        min_child_weight=0.5)
+
+    assert np.array_equal(default.splits_feat, legacy.splits_feat)
+    assert np.array_equal(default.splits_thr, legacy.splits_thr)
+    assert np.array_equal(leaf_default, leaf_legacy)
+    assert np.array_equal(default.gains, legacy.gains)
+    assert np.allclose(default.values, legacy.values)
+    assert np.allclose(default.predict(Xb), legacy.predict(Xb))
+
+
 def test_constant_hessian_tree_matches_general_histogram_path():
     from chimeraboost.preprocessing import FeaturePreprocessor
     from chimeraboost.tree import build_oblivious_tree

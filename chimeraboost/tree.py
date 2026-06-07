@@ -355,6 +355,76 @@ def _best_split(hist, n_bins_per_feature, l2, feat_mask, min_child_weight,
     return best_f, feat_thr[best_f], best_gain
 
 
+@njit(cache=True, parallel=True)
+def _best_split_v2(hist, n_bins_per_feature, l2, feat_mask, min_child_weight,
+                   n_leaves):
+    """Leaf-streaming split search for the default full-data catboost lane.
+
+    This scores the same candidates as ``_best_split`` on the same histogram
+    layout, but streams one leaf's bins at a time and accumulates per-threshold
+    gains. For every legal threshold, contributions are still added in
+    ascending leaf order, and final threshold/feature tie-breaking remains the
+    same strict ``>`` scan.
+    """
+    n_features = hist.shape[0]
+    feat_gain = np.full(n_features, -np.inf)
+    feat_thr = np.zeros(n_features, dtype=np.int64)
+
+    for f in prange(n_features):
+        if feat_mask[f] == 0:
+            continue
+        nb = n_bins_per_feature[f]
+        gain_t = np.zeros(nb - 1)
+        bad_t = np.zeros(nb - 1, dtype=np.uint8)
+
+        for l in range(n_leaves):
+            gt = 0.0
+            ht = 0.0
+            for b in range(nb):
+                gt += hist[f, l, b, 0]
+                ht += hist[f, l, b, 1]
+            if ht <= 0.0:
+                continue
+
+            parent = gt * gt / (ht + l2)
+            gl = 0.0
+            hl = 0.0
+            for t in range(nb - 1):
+                gl += hist[f, l, t, 0]
+                hl += hist[f, l, t, 1]
+                if bad_t[t] != 0:
+                    continue
+                hr = ht - hl
+                if (hl > 0.0 and hl < min_child_weight) or \
+                   (hr > 0.0 and hr < min_child_weight):
+                    bad_t[t] = 1
+                else:
+                    gr = gt - gl
+                    gain_t[t] += (
+                        gl * gl / (hl + l2)
+                        + gr * gr / (hr + l2)
+                        - parent
+                    )
+
+        best_g = -np.inf
+        best_t = -1
+        for t in range(nb - 1):
+            if bad_t[t] == 0 and gain_t[t] > best_g:
+                best_g = gain_t[t]
+                best_t = t
+
+        feat_gain[f] = best_g
+        feat_thr[f] = best_t
+
+    best_f = 0
+    best_gain = -np.inf
+    for f in range(n_features):
+        if feat_gain[f] > best_gain:
+            best_gain = feat_gain[f]
+            best_f = f
+    return best_f, feat_thr[best_f], best_gain
+
+
 @njit(cache=True)
 def _assign_leaves(Xb, splits_feat, splits_thr):
     """Leaf index of every sample given the splits. `Xb` is feature-major, so
@@ -1174,7 +1244,8 @@ def build_oblivious_tree(Xb, grad, hess, n_bins_per_feature,
                          min_child_weight=1.0, hist_buffers=None, hs_lambda=0.0,
                          linear_leaves=False, centers_std=None, is_numeric=None,
                          linear_lambda=1.0, constant_hessian=False,
-                         feature_indices=None, row_indices=None):
+                         feature_indices=None, row_indices=None,
+                         split_search="auto"):
     """Grow one oblivious tree level by level. Returns (tree, train_leaf), where
     train_leaf is the tree's leaf index for every training sample.
 
@@ -1203,7 +1274,12 @@ def build_oblivious_tree(Xb, grad, hess, n_bins_per_feature,
     row_indices: optional selected training rows; lets subsampled fits skip
     histogram work for zero-weighted rows while keeping full-length grad/hess
     arrays for the training update.
+    split_search: internal benchmark/test selector. "auto" uses the default
+    fast full-data catboost lane where applicable, "legacy" forces the original
+    split kernel, and "v2" forces the leaf-streaming split kernel.
     """
+    if split_search not in ("auto", "legacy", "v2"):
+        raise ValueError("split_search must be 'auto', 'legacy', or 'v2'")
     n_features, n_samples = Xb.shape
     max_bins = n_features and int(n_bins_per_feature.max())
     if row_indices is not None:
@@ -1269,8 +1345,23 @@ def build_oblivious_tree(Xb, grad, hess, n_bins_per_feature,
                 Xb, grad, hess, leaf, n_leaves, hist, feature_indices)
         else:
             _build_histograms_into(Xb, grad, hess, leaf, n_leaves, hist)
-        f, t, gain = _best_split(hist, n_bins_per_feature, l2, feature_mask,
-                                 min_child_weight, n_leaves)
+        use_v2_split = (
+            split_search == "v2"
+            or (
+                split_search == "auto"
+                and not constant_hessian
+                and feature_indices is None
+                and row_indices is None
+            )
+        )
+        if use_v2_split:
+            f, t, gain = _best_split_v2(
+                hist, n_bins_per_feature, l2, feature_mask, min_child_weight,
+                n_leaves)
+        else:
+            f, t, gain = _best_split(
+                hist, n_bins_per_feature, l2, feature_mask, min_child_weight,
+                n_leaves)
         if gain <= min_gain or t < 0:
             break
         splits_feat.append(f)

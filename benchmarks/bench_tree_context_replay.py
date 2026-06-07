@@ -166,6 +166,7 @@ def _install_tree_timer():
     ):
         wrap(name, "hist_seconds", "hist_calls")
     wrap("_best_split", "split_seconds", "split_calls")
+    wrap("_best_split_v2", "split_seconds", "split_calls")
     for name in (
         "_leaf_values",
         "_leaf_values_rows",

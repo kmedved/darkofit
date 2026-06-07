@@ -243,6 +243,7 @@ def _install_phase_timer():
     ):
         wrap_tree_fn(name, "hist")
     wrap_tree_fn("_best_split", "split")
+    wrap_tree_fn("_best_split_v2", "split")
     for name in (
         "_leaf_values",
         "_leaf_values_rows",

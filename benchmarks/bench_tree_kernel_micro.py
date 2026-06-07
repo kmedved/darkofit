@@ -51,6 +51,12 @@ CSV_FIELDS = [
     "split_feature",
     "split_threshold",
     "split_gain",
+    "split_v2_seconds",
+    "split_v2_repeat_seconds",
+    "split_v2_feature",
+    "split_v2_threshold",
+    "split_v2_gain",
+    "split_v2_matches_legacy",
     "build_seconds",
     "build_repeat_seconds",
     "build_depth",
@@ -202,6 +208,40 @@ def _worker(payload):
     # Keep the warm result alive in case an over-eager optimizer ever gets cute.
     if split_warm[0] < -1:  # pragma: no cover - impossible guard
         split_result = split_warm
+    if hasattr(tree, "_best_split_v2"):
+        split_v2_warm = tree._best_split_v2(
+            hist,
+            n_bins_per_feature,
+            float(payload["l2"]),
+            feat_mask,
+            float(payload["min_child_weight"]),
+            n_leaves,
+        )
+
+        def split_v2_call():
+            return tree._best_split_v2(
+                hist,
+                n_bins_per_feature,
+                float(payload["l2"]),
+                feat_mask,
+                float(payload["min_child_weight"]),
+                n_leaves,
+            )
+
+        split_v2_seconds, split_v2_result, split_v2_repeats = _time_min(
+            split_v2_call, repeat)
+        if split_v2_warm[0] < -1:  # pragma: no cover - impossible guard
+            split_v2_result = split_v2_warm
+        split_v2_matches = (
+            int(split_result[0]) == int(split_v2_result[0])
+            and int(split_result[1]) == int(split_v2_result[1])
+            and float(split_result[2]) == float(split_v2_result[2])
+        )
+    else:
+        split_v2_seconds = ""
+        split_v2_result = ("", "", "")
+        split_v2_repeats = []
+        split_v2_matches = ""
 
     def sigmoid(raw):
         return 1.0 / (1.0 + np.exp(-np.clip(raw, -35.0, 35.0)))
@@ -310,6 +350,21 @@ def _worker(payload):
         "split_feature": int(split_result[0]),
         "split_threshold": int(split_result[1]),
         "split_gain": float(split_result[2]),
+        "split_v2_seconds": (
+            "" if split_v2_seconds == "" else float(split_v2_seconds)
+        ),
+        "split_v2_repeat_seconds": ";".join(
+            f"{v:.12g}" for v in split_v2_repeats),
+        "split_v2_feature": (
+            "" if split_v2_result[0] == "" else int(split_v2_result[0])
+        ),
+        "split_v2_threshold": (
+            "" if split_v2_result[1] == "" else int(split_v2_result[1])
+        ),
+        "split_v2_gain": (
+            "" if split_v2_result[2] == "" else float(split_v2_result[2])
+        ),
+        "split_v2_matches_legacy": split_v2_matches,
         "build_seconds": float(build_seconds),
         "build_repeat_seconds": ";".join(f"{v:.12g}" for v in build_repeats),
         "build_depth": int(getattr(built_tree, "depth", len(built_tree.splits_feat))),
