@@ -165,7 +165,7 @@ measured decisions in this document.
 | --- | ---: | ---: | ---: | --- |
 | `chimeraboost/__init__.py` | +1/-1 | +0/-0 | +1/-1 | Keep upstream package surface; current branch only reflects branch-local metadata. |
 | `chimeraboost/binning.py` | +38/-0 | +13/-2 | +39/-4 | Keep compact-bin default and validation; forced/adaptive upstream-style `uint16` was rejected except as a future gated experiment. |
-| `chimeraboost/booster.py` | +364/-149 | +196/-66 | +355/-59 | Keep upstream catboost semantics, defaults, linear leaves, and OOB behavior; preserve measured darko/current loop cleanup and diagnostics; scalar tree-build timing remains the open blocker. |
+| `chimeraboost/booster.py` | +364/-149 | +196/-66 | +355/-59 | Keep upstream catboost semantics, defaults, linear leaves, and OOB behavior; preserve measured darko/current loop cleanup and diagnostics; darko-style in-place prediction is low-ceiling; scalar tree-build timing remains the open blocker. |
 | `chimeraboost/losses.py` | +20/-40 | +26/-1 | +26/-1 | Keep upstream loss behavior; preserve weighted metric/eval support where gates cover it. |
 | `chimeraboost/preprocessing.py` | +77/-22 | +10/-6 | +13/-4 | Keep upstream pandas-vectorized categorical encoding; manual/lazy categorical mapping was rejected as a default; preserve only gated bin/target-stat extensions. |
 | `chimeraboost/sklearn_api.py` | +1026/-98 | +15/-3 | +154/-55 | Keep upstream public API, validation, `n_estimators`, constructor `cat_features`, and cat-feature names; current additions are compatibility toggles, timing diagnostics, and weighted-validation policy lanes. |
@@ -490,6 +490,16 @@ Completed:
   time in `tree_build`; wide numeric regression spends about `95%` to `97%`.
   Continue testing tree-builder changes; do not prioritize wrapper,
   calibration, validation-prediction, or train-update work.
+- Darko v1 in-place prediction surface:
+  code comparison shows darko v1 had an `ObliviousTree.add_predict(...)` path
+  for training and validation updates. A read-only ceiling check against the
+  same scalar-blocker phase summary shows this surface can only affect
+  `train_update` plus `validation_predict`: `3.3%` to `3.4%` of numeric-binary
+  fit time and `1.2%` to `3.8%` of wide-regression fit time. A local standalone
+  microbench showed a Numba in-place leaf add can be faster than NumPy indexed
+  addition for that substep, so this remains a possible small cleanup, but it
+  cannot solve the remaining strict-domination blocker. Do not prioritize it
+  ahead of tree-builder work.
 - Split-scratch probe:
   `benchmarks/catboost_split_scratch_scalar_blockers_r7_20260606.csv` and
   `benchmarks/catboost_split_scratch_scalar_blockers_r7_report_20260606.json`.

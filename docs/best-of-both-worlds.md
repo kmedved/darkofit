@@ -589,6 +589,17 @@ about `84%` to `90%` of booster time in `tree_build`; wide numeric regression
 spends about `95%` to `97%` there. This supports continuing to test tree-builder
 changes and rules out another wrapper/calibration pass as the next useful work.
 
+Darko v1 also had an in-place `ObliviousTree.add_predict(...)` update path for
+training and validation predictions. Current catboost mode mostly updates from
+the already-returned training leaf ids (`tree.values[leaf]`) or calls
+`tree.predict(...)` for validation, so this is a real but low-ceiling restoration
+surface. Using the same phase summary, `train_update + validation_predict` is
+only `3.3%` to `3.4%` of numeric-binary fit time and `1.2%` to `3.8%` of
+wide-regression fit time. A standalone Numba microbench showed an in-place leaf
+add can beat NumPy indexed addition for that substep, but even a perfect fix
+would not explain the remaining fit-time gap. Record it as a possible small
+cleanup, not the next scalar-blocker lever.
+
 ### Split-Scratch Probe
 
 Darko v1 had reusable split-search scratch arrays. A current-branch probe
