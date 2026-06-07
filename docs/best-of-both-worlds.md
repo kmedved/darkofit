@@ -479,6 +479,41 @@ Decision: use darko v1's grouped leaf correction only for weighted
 MAE/Quantile fits. Keep upstream's unweighted mask loop because it is better on
 q90 under the current strict gate.
 
+### Median-Quantile Unweighted Leaf Correction
+
+The refreshed aggregate-slower focus gate showed that `quantile_reg_50` /
+unweighted had become one of the remaining calibrated blockers:
+
+- `benchmarks/catboost_current_aggregate_slow_focus_20260606.csv`
+- `benchmarks/catboost_current_aggregate_slow_focus_summary_20260606.csv`
+- `benchmarks/catboost_current_aggregate_slow_focus_calibrated_report_20260606.json`
+
+In that focus run, q50 unweighted had identical metrics and iterations but a
+candidate fit ratio of `1.167`, with all three q50 seed rows failing the
+calibrated timing gate. A candidate-only phase run showed q50 time split
+roughly between tree build and the unweighted leaf-correction update:
+
+- `benchmarks/catboost_current_phase_focus_20260606.csv`
+- `benchmarks/catboost_current_phase_focus_summary_20260606.csv`
+
+A narrow one-change probe now uses grouped unweighted leaf correction only for
+`loss="Quantile", alpha=0.5`. It does not change q10, q90, MAE, or weighted
+Quantile paths. Results are tracked in:
+
+- `benchmarks/catboost_q50_unweighted_grouped_probe_r7_20260606.csv`
+- `benchmarks/catboost_q50_unweighted_grouped_probe_r7_summary_20260606.csv`
+- `benchmarks/catboost_q50_unweighted_grouped_probe_r7_calibrated_report_20260606.json`
+
+Result: the q50 unweighted calibrated gate now passes (`passed=true`, zero
+failures), with identical metrics and iterations and aggregate fit near parity
+(`geomean_fit_ratio=1.0007`). This is enough to promote the q50-only grouped
+path, but not enough to revisit the earlier rejection of broad unweighted
+grouping for q90.
+
+Decision: promote grouped unweighted correction only for median Quantile. Keep
+the upstream mask loop for q10/q90 and other unweighted leaf-correction losses
+until a separate gate proves those rows.
+
 ### Adaptive `uint16` Probe
 
 The forced-`uint16` ablation was the only earlier probe that helped

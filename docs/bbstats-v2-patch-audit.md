@@ -394,6 +394,18 @@ Completed:
   calibrating against both same-code controls still leaves 28 row-level timing
   failures. These survivors are timing-only and do not justify reverting any
   accepted product behavior, but they do block a strict-domination claim.
+- Median-quantile unweighted grouped leaf correction:
+  `benchmarks/catboost_current_aggregate_slow_focus_20260606.csv`,
+  `benchmarks/catboost_current_phase_focus_20260606.csv`, and
+  `benchmarks/catboost_q50_unweighted_grouped_probe_r7_20260606.csv`.
+  Outcome: the focused aggregate-slower rerun isolated `quantile_reg_50` /
+  unweighted as a stable timing-only blocker (`fit_vs_base=1.167`, three q50
+  row failures) while q50 stress was already faster. A narrow one-change probe
+  using grouped unweighted correction only for `loss="Quantile", alpha=0.5`
+  cleared the q50 calibrated gate (`passed=true`, zero failures,
+  `geomean_fit_ratio=1.0007`) with identical metrics and iterations. Promote
+  this median-only path; keep q10/q90 and MAE on the upstream mask loop unless
+  a separate gate proves otherwise.
 - Selected row/feature kernels:
   code inspection plus `tests/test_chimeraboost.py` show these kernels are
   inactive under the strict default matrix (`subsample=1.0`,
@@ -404,9 +416,11 @@ Next:
 
 1. Treat the 28 calibrated row-level timing failures in
    `catboost_strict_medium_current_calibrated_both_report_20260606.json` as
-   the remaining catboost-path blockers. Start with aggregate-slower summary
-   rows (`wide_numeric_reg`, `numeric_multiclass`, `numeric_binary`,
-   `categorical_reg`, and q50 unweighted) rather than one-off row failures.
+   the pre-q50 baseline, then rerun the aggregate-slower focus or full
+   calibrated gate after the median-only grouped correction. The latest fair
+   focus leaves numeric binary, numeric multiclass unweighted, and wide
+   regression stress as the most useful aggregate-slower rows to explain next;
+   categorical regression and q50 stress were faster in that rerun.
 2. Run exactly one ablation at a time. Call-shape-only routing and
    benchmark-order bias are already rejected, native-int bin indexing is
    rejected, dtype alone is not explanatory, linear-leaf precompute is

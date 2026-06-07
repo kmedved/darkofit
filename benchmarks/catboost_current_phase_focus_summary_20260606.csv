@@ -1,0 +1,11 @@
+dataset,size,split_mode,weight_mode,ensemble_size,variant,n,primary_metric,primary_value,metric_vs_base,fit_seconds,fit_vs_base,best_iteration,iter_vs_base
+categorical_reg,medium,row,none,1,candidate_catboost,3,rmse,2.5675,1.000,0.121,1.000,160.7,1.000
+categorical_reg,medium,row,stress,1,candidate_catboost,3,weighted_rmse,2.5341,1.000,0.242,1.000,199.3,1.000
+numeric_binary,medium,row,none,1,candidate_catboost,3,log_loss,0.1960,1.000,0.649,1.000,248.7,1.000
+numeric_binary,medium,row,stress,1,candidate_catboost,3,weighted_log_loss,0.1974,1.000,0.794,1.000,250.7,1.000
+numeric_multiclass,medium,row,none,1,candidate_catboost,3,log_loss,0.4383,1.000,1.580,1.000,278.0,1.000
+numeric_multiclass,medium,row,stress,1,candidate_catboost,3,weighted_log_loss,0.4382,1.000,1.858,1.000,280.7,1.000
+quantile_reg_50,medium,row,none,1,candidate_catboost,3,pinball,0.5621,1.000,1.708,1.000,254.3,1.000
+quantile_reg_50,medium,row,stress,1,candidate_catboost,3,weighted_pinball,0.5493,1.000,0.948,1.000,283.0,1.000
+wide_numeric_reg,medium,row,none,1,candidate_catboost,3,rmse,41.0208,1.000,0.579,1.000,300.0,1.000
+wide_numeric_reg,medium,row,stress,1,candidate_catboost,3,weighted_rmse,41.8082,1.000,0.598,1.000,300.0,1.000

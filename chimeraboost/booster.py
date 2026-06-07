@@ -552,6 +552,25 @@ class GradientBoosting(_BaseBooster):
         `leaf` is the training assignment from build_oblivious_tree."""
         n_leaves = tree.values.shape[0]
         if sample_weight is None:
+            # Gate-proven only for median Quantile; q90 kept the mask loop.
+            alpha = getattr(self.loss_, "alpha", None)
+            grouped_unweighted = (
+                getattr(self.loss_, "name", None) == "Quantile"
+                and alpha is not None
+                and abs(float(alpha) - 0.5) <= 1e-12
+            )
+            if grouped_unweighted:
+                order = np.argsort(leaf)
+                leaf_sorted = leaf[order]
+                residuals_sorted = residuals[order]
+                counts = np.bincount(leaf_sorted, minlength=n_leaves)
+                start = 0
+                for l in range(n_leaves):
+                    end = start + counts[l]
+                    r = residuals_sorted[start:end]
+                    tree.values[l] = self.lr_ * self.loss_.leaf_value(r, None)
+                    start = end
+                return
             for l in range(n_leaves):
                 mask = leaf == l
                 r = residuals[mask]

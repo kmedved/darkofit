@@ -192,8 +192,9 @@ def test_quantile_calibration_on_large_data():
     assert cov > 0.77                 # ~0.80 target; tight only with early stopping
 
 
+@pytest.mark.parametrize("alpha", [0.5, 0.9])
 @pytest.mark.parametrize("use_weights", [False, True])
-def test_leaf_correction_matches_mask_loop(use_weights):
+def test_leaf_correction_matches_mask_loop(use_weights, alpha):
     from types import SimpleNamespace
     from chimeraboost.booster import GradientBoosting
     from chimeraboost.losses import Quantile
@@ -206,10 +207,10 @@ def test_leaf_correction_matches_mask_loop(use_weights):
     )
     n_leaves = 5  # includes empty leaves 2 and 4
     lr = 0.13
-    loss = Quantile(alpha=0.9)
+    loss = Quantile(alpha=alpha)
 
     tree = SimpleNamespace(values=np.full(n_leaves, np.nan))
-    booster = GradientBoosting(loss="Quantile", loss_kwargs={"alpha": 0.9})
+    booster = GradientBoosting(loss="Quantile", loss_kwargs={"alpha": alpha})
     booster.loss_ = loss
     booster.lr_ = lr
     booster._correct_leaves(tree, leaf, residuals, weights)
