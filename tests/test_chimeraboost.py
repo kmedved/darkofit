@@ -526,6 +526,77 @@ def test_constant_hessian_default_tree_matches_legacy_split_search():
     assert np.allclose(default.predict(Xb), legacy.predict(Xb))
 
 
+def test_numeric_unweighted_logloss_routes_to_legacy_split_search(monkeypatch):
+    import chimeraboost.booster as booster
+
+    original = booster.build_oblivious_tree
+    seen = []
+
+    def recording_builder(*args, **kwargs):
+        seen.append(kwargs.get("split_search", "missing"))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(booster, "build_oblivious_tree", recording_builder)
+
+    rng = np.random.default_rng(15)
+    X = rng.normal(size=(120, 5))
+    y = (X[:, 0] - 0.4 * X[:, 2] > 0).astype(float)
+    model = booster.GradientBoosting(
+        loss="Logloss",
+        n_estimators=2,
+        depth=2,
+        leaf_estimation_iterations=1,
+        thread_count=1,
+        random_state=0,
+    )
+    model.fit(X, y)
+
+    assert seen
+    assert set(seen) == {"legacy"}
+
+
+def test_logloss_split_router_leaves_weighted_and_categorical_on_auto(monkeypatch):
+    import chimeraboost.booster as booster
+
+    original = booster.build_oblivious_tree
+    seen = []
+
+    def recording_builder(*args, **kwargs):
+        seen.append(kwargs.get("split_search", "missing"))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(booster, "build_oblivious_tree", recording_builder)
+
+    rng = np.random.default_rng(16)
+    X = rng.normal(size=(120, 5))
+    y = (X[:, 0] + 0.2 * X[:, 1] > 0).astype(float)
+    weights = 1.0 + rng.random(len(y))
+    weighted = booster.GradientBoosting(
+        loss="Logloss",
+        n_estimators=2,
+        depth=2,
+        leaf_estimation_iterations=1,
+        thread_count=1,
+        random_state=0,
+    )
+    weighted.fit(X, y, sample_weight=weights)
+
+    X_cat = X.astype(object)
+    X_cat[:, 1] = np.where(X[:, 1] > 0, "hi", "lo")
+    categorical = booster.GradientBoosting(
+        loss="Logloss",
+        n_estimators=2,
+        depth=2,
+        leaf_estimation_iterations=1,
+        thread_count=1,
+        random_state=0,
+    )
+    categorical.fit(X_cat, y, cat_features=[1])
+
+    assert seen
+    assert set(seen) == {"auto"}
+
+
 def test_selected_feature_histograms_match_masked_full_histograms():
     from chimeraboost.preprocessing import FeaturePreprocessor
     from chimeraboost.tree import build_oblivious_tree

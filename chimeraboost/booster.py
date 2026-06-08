@@ -435,6 +435,16 @@ class GradientBoosting(_BaseBooster):
                      and n_samples >= LINEAR_LEAVES_MIN_SAMPLES)
         self._centers_std_ = (self._build_centers_std(Xb, n_bins)
                               if ll_active else None)
+        catboost_split_search = "auto"
+        if (
+            self.tree_mode_ == "catboost"
+            and self.loss_name == "Logloss"
+            and w is None
+            and not self.prep_.cat_features_
+            and self.subsample >= 1.0
+            and self.colsample >= 1.0
+        ):
+            catboost_split_search = "legacy"
         rng = np.random.default_rng(self.random_state)
         self.trees_ = []
         self._forest_ = None   # packed-forest cache; built lazily on predict
@@ -468,7 +478,8 @@ class GradientBoosting(_BaseBooster):
                 is_numeric=self.prep_.is_numeric_binned_,
                 linear_lambda=self.linear_lambda,
                 constant_hessian=use_constant_hessian,
-                feature_indices=findices, row_indices=row_indices)
+                feature_indices=findices, row_indices=row_indices,
+                split_search=catboost_split_search)
             if timing_enabled:
                 self.timing_["tree_build"] += time.perf_counter() - t_phase
             # A depth-0 tree found no legal split; the next round on the same
