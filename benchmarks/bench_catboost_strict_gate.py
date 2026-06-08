@@ -71,6 +71,8 @@ def _compare_command(args, *, candidate_path, models, csv_path):
     _add_if_present(cmd, "--max-bins-ts", args.max_bins_ts)
     if args.gc_between_repeats:
         cmd.append("--gc-between-repeats")
+    if args.verbose_timing:
+        cmd.append("--verbose-timing")
     if args.weighted_target_stats:
         cmd.append("--weighted-target-stats")
     if args.ordered_boosting:
@@ -151,6 +153,14 @@ def parse_args(argv):
         default="upstream-compatible",
     )
     parser.add_argument("--gc-between-repeats", action="store_true")
+    parser.add_argument(
+        "--verbose-timing",
+        action="store_true",
+        help=(
+            "pass through per-phase timing collection to the raw benchmark; "
+            "intended for diagnosis, not as the accepted timing gate itself"
+        ),
+    )
     parser.add_argument("--weighted-target-stats", action="store_true")
     parser.add_argument("--ordered-boosting", action="store_true")
     parser.add_argument(
