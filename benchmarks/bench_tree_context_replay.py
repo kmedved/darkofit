@@ -166,6 +166,7 @@ def _install_tree_timer():
     ):
         wrap(name, "hist_seconds", "hist_calls")
     wrap("_best_split", "split_seconds", "split_calls")
+    wrap("_best_split_no_sparse_veto", "split_seconds", "split_calls")
     wrap("_best_split_v2", "split_seconds", "split_calls")
     for name in (
         "_leaf_values",
@@ -215,6 +216,7 @@ def _signature_summary(tree_module):
         "_build_histograms_into",
         "_build_histograms_unit_hess_into",
         "_best_split",
+        "_best_split_no_sparse_veto",
         "_leaf_values",
         "_linear_leaf_fit",
     )

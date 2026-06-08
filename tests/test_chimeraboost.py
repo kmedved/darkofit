@@ -407,6 +407,40 @@ def test_best_split_v2_matches_legacy_kernel():
     assert legacy[2] == v2[2]
 
 
+def test_best_split_no_sparse_veto_matches_legacy_for_unit_hessian():
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import (
+        _best_split,
+        _best_split_no_sparse_veto,
+        _build_histograms_unit_hess_into,
+    )
+
+    rng = np.random.default_rng(13)
+    X = rng.normal(size=(850, 12))
+    y = (
+        1.1 * X[:, 0]
+        - 0.6 * X[:, 2]
+        + 0.4 * X[:, 6] * X[:, 7]
+        + rng.normal(0, 0.35, 850)
+    )
+    prep = FeaturePreprocessor(80, 1.0, 0)
+    Xb = np.ascontiguousarray(prep.fit_transform(X, [y], None).T)
+    grad = y - y.mean()
+    leaf = rng.integers(0, 8, size=len(y), dtype=np.int64)
+    feature_mask = np.ones(Xb.shape[0], dtype=np.int64)
+    feature_mask[[1, 9]] = 0
+    hist = np.zeros((Xb.shape[0], 8, int(prep.n_bins_.max()), 2))
+
+    _build_histograms_unit_hess_into(Xb, grad, leaf, 8, hist)
+    legacy = _best_split(hist, prep.n_bins_, 1.3, feature_mask, 1.0, 8)
+    no_sparse = _best_split_no_sparse_veto(
+        hist, prep.n_bins_, 1.3, feature_mask, 8)
+
+    assert legacy[0] == no_sparse[0]
+    assert legacy[1] == no_sparse[1]
+    assert legacy[2] == no_sparse[2]
+
+
 def test_best_split_v2_default_tree_matches_legacy_tree():
     from chimeraboost.preprocessing import FeaturePreprocessor
     from chimeraboost.tree import build_oblivious_tree
@@ -458,6 +492,38 @@ def test_constant_hessian_tree_matches_general_histogram_path():
     assert np.array_equal(unit.splits_thr, general.splits_thr)
     assert np.array_equal(leaf_unit, leaf_general)
     assert np.allclose(unit.values, general.values)
+
+
+def test_constant_hessian_default_tree_matches_legacy_split_search():
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_oblivious_tree
+
+    rng = np.random.default_rng(14)
+    X = rng.normal(size=(900, 11))
+    y = (
+        0.9 * X[:, 0]
+        - 0.8 * X[:, 3]
+        + 0.5 * np.sin(X[:, 5])
+        + rng.normal(0, 0.45, 900)
+    )
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = np.ascontiguousarray(prep.fit_transform(X, [y], None).T)
+    grad = y - y.mean()
+    hess = np.ones(len(y))
+
+    legacy, leaf_legacy = build_oblivious_tree(
+        Xb, grad, hess, prep.n_bins_, 6, 1.5, 0.1,
+        constant_hessian=True, split_search="legacy")
+    default, leaf_default = build_oblivious_tree(
+        Xb, grad, hess, prep.n_bins_, 6, 1.5, 0.1,
+        constant_hessian=True)
+
+    assert np.array_equal(default.splits_feat, legacy.splits_feat)
+    assert np.array_equal(default.splits_thr, legacy.splits_thr)
+    assert np.array_equal(default.gains, legacy.gains)
+    assert np.array_equal(leaf_default, leaf_legacy)
+    assert np.allclose(default.values, legacy.values)
+    assert np.allclose(default.predict(Xb), legacy.predict(Xb))
 
 
 def test_selected_feature_histograms_match_masked_full_histograms():

@@ -356,6 +356,69 @@ def _best_split(hist, n_bins_per_feature, l2, feat_mask, min_child_weight,
 
 
 @njit(cache=True, parallel=True)
+def _best_split_no_sparse_veto(hist, n_bins_per_feature, l2, feat_mask,
+                               n_leaves):
+    """Split search for unit-Hessian trees where sparse-child veto is inert.
+
+    Under the guarded caller path every scanned row has Hessian exactly 1 and
+    ``min_child_weight <= 1``. Any non-empty child therefore has Hessian mass at
+    least 1, while empty children are exempt in ``_best_split``. The legality
+    branch can be skipped without changing the candidate set.
+    """
+    n_features = hist.shape[0]
+    feat_gain = np.full(n_features, -np.inf)
+    feat_thr = np.zeros(n_features, dtype=np.int64)
+
+    for f in prange(n_features):
+        if feat_mask[f] == 0:
+            continue
+        nb = n_bins_per_feature[f]
+        Gt = np.zeros(n_leaves)
+        Ht = np.zeros(n_leaves)
+        for l in range(n_leaves):
+            for b in range(nb):
+                Gt[l] += hist[f, l, b, 0]
+                Ht[l] += hist[f, l, b, 1]
+
+        GL = np.zeros(n_leaves)
+        HL = np.zeros(n_leaves)
+        best_g = -np.inf
+        best_t = -1
+        for t in range(nb - 1):
+            for l in range(n_leaves):
+                GL[l] += hist[f, l, t, 0]
+                HL[l] += hist[f, l, t, 1]
+
+            gain = 0.0
+            for l in range(n_leaves):
+                if Ht[l] > 0.0:
+                    hl = HL[l]
+                    hr = Ht[l] - hl
+                    gl = GL[l]
+                    gr = Gt[l] - gl
+                    gain += (
+                        gl * gl / (hl + l2)
+                        + gr * gr / (hr + l2)
+                        - Gt[l] * Gt[l] / (Ht[l] + l2)
+                    )
+
+            if gain > best_g:
+                best_g = gain
+                best_t = t
+
+        feat_gain[f] = best_g
+        feat_thr[f] = best_t
+
+    best_f = 0
+    best_gain = -np.inf
+    for f in range(n_features):
+        if feat_gain[f] > best_gain:
+            best_gain = feat_gain[f]
+            best_f = f
+    return best_f, feat_thr[best_f], best_gain
+
+
+@njit(cache=True, parallel=True)
 def _best_split_v2(hist, n_bins_per_feature, l2, feat_mask, min_child_weight,
                    n_leaves):
     """Leaf-streaming split search for the default full-data catboost lane.
@@ -1345,6 +1408,13 @@ def build_oblivious_tree(Xb, grad, hess, n_bins_per_feature,
                 Xb, grad, hess, leaf, n_leaves, hist, feature_indices)
         else:
             _build_histograms_into(Xb, grad, hess, leaf, n_leaves, hist)
+        use_no_sparse_split = (
+            split_search == "auto"
+            and constant_hessian
+            and feature_indices is None
+            and row_indices is None
+            and min_child_weight <= 1.0
+        )
         use_v2_split = (
             split_search == "v2"
             or (
@@ -1354,7 +1424,10 @@ def build_oblivious_tree(Xb, grad, hess, n_bins_per_feature,
                 and row_indices is None
             )
         )
-        if use_v2_split:
+        if use_no_sparse_split:
+            f, t, gain = _best_split_no_sparse_veto(
+                hist, n_bins_per_feature, l2, feature_mask, n_leaves)
+        elif use_v2_split:
             f, t, gain = _best_split_v2(
                 hist, n_bins_per_feature, l2, feature_mask, min_child_weight,
                 n_leaves)
