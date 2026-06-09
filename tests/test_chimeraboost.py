@@ -1338,7 +1338,7 @@ def test_tree_mode_default_depth_resolution():
     assert explicit.model_.depth == 3
 
 
-def test_lightgbm_mode_adds_category_code_features_for_classification():
+def test_lightgbm_mode_adds_category_code_features_for_scalar_tasks():
     X = np.array([
         ["red", "north", 1.0],
         ["blue", "south", 2.0],
@@ -1361,14 +1361,41 @@ def test_lightgbm_mode_adds_category_code_features_for_classification():
     ).fit(X, y_bin, cat_features=[0, 1])
 
     assert catboost.model_.prep_.n_bins_.shape[0] == 3
-    assert lightgbm_reg.model_.prep_.n_bins_.shape[0] == 3
+    assert lightgbm_reg.model_.prep_.n_bins_.shape[0] == 5
     assert lightgbm_binary.model_.prep_.n_bins_.shape[0] == 5
     assert catboost.model_.prep_.target_encoding_mode == "ordered"
     assert lightgbm_reg.model_.prep_.target_encoding_mode == "kfold"
     assert lightgbm_binary.model_.prep_.target_encoding_mode == "kfold"
+    assert lightgbm_reg.model_.prep_.cat_smoothing == 3.0
+    assert lightgbm_binary.model_.prep_.cat_smoothing == 1.0
+    assert np.array_equal(
+        lightgbm_reg.model_.prep_.feature_map_, np.array([2, 0, 1, 0, 1])
+    )
     assert np.array_equal(
         lightgbm_binary.model_.prep_.feature_map_, np.array([2, 0, 1, 0, 1])
     )
+
+
+def test_explicit_cat_smoothing_preserved_for_lightgbm_regression():
+    X = np.array([
+        ["red", 1.0],
+        ["blue", 2.0],
+        ["red", 3.0],
+        ["green", 4.0],
+        ["blue", 5.0],
+        ["green", 6.0],
+    ], dtype=object)
+    y = np.array([0.0, 1.0, 0.5, 1.5, 1.2, 1.8])
+
+    model = ChimeraBoostRegressor(
+        iterations=1,
+        tree_mode="lightgbm",
+        num_leaves=3,
+        cat_smoothing=2.0,
+        random_state=0,
+    ).fit(X, y, cat_features=[0])
+
+    assert model.model_.prep_.cat_smoothing == 2.0
 
 
 def test_public_api_rejects_unsupported_lightgbm_options():

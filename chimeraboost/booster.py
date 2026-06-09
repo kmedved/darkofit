@@ -298,7 +298,19 @@ class _BaseBooster:
 
     def _new_preprocessor(self):
         """Build a FeaturePreprocessor configured from this booster's params."""
-        return FeaturePreprocessor(self.max_bins, self.cat_smoothing,
+        cat_smoothing = self.cat_smoothing
+        if (
+            self.tree_mode_ == "lightgbm"
+            and getattr(self, "loss_name", None) == "RMSE"
+            and cat_smoothing == 1.0
+            and self._include_cat_codes()
+        ):
+            # LightGBM-mode regression uses both K-fold target statistics and
+            # raw category-code features. A little extra smoothing keeps the
+            # target-stat columns from over-specializing before the code columns
+            # have a chance to split.
+            cat_smoothing = 3.0
+        return FeaturePreprocessor(self.max_bins, cat_smoothing,
                                    self.random_state,
                                    include_cat_codes=self._include_cat_codes(),
                                    target_encoding_mode=(
@@ -420,7 +432,7 @@ class GradientBoosting(_BaseBooster):
         self.loss_kwargs = loss_kwargs or {}
 
     def _include_cat_codes(self):
-        return self.tree_mode_ == "lightgbm" and self.loss_name == "Logloss"
+        return self.tree_mode_ == "lightgbm" and self.loss_name in {"Logloss", "RMSE"}
 
     def fit(self, X, y, cat_features=None, eval_set=None, sample_weight=None,
             eval_sample_weight=None):
