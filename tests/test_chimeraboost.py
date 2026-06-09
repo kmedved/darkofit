@@ -794,6 +794,192 @@ def test_leafwise_no_split_tree_predicts_root_value():
     assert leaf_H[0] == hess.sum()
 
 
+def test_leafwise_constant_hessian_reuses_hessian_counts(monkeypatch):
+    import numba
+    import chimeraboost.tree as tree_mod
+    from chimeraboost.preprocessing import FeaturePreprocessor
+
+    rng = np.random.default_rng(21)
+    X = rng.normal(size=(700, 9))
+    y = 1.3 * X[:, 0] - 0.8 * X[:, 4] + rng.normal(0, 0.3, 700)
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = prep.fit_transform(X, [y], None)
+    grad = y.mean() - y
+    hess = np.ones(len(y))
+    row_indices = np.flatnonzero(rng.random(len(y)) < 0.6).astype(np.int64)
+
+    old_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(1)
+        generic = tree_mod.build_leafwise_tree(
+            Xb, grad, hess, prep.n_bins_, 4, 3.0, 0.1,
+            max_leaves=8, min_child_samples=5, return_training_state=True,
+        )
+        generic_rows = tree_mod.build_leafwise_tree(
+            Xb, grad, hess, prep.n_bins_, 4, 3.0, 0.1,
+            max_leaves=8, min_child_samples=5, row_indices=row_indices,
+            return_training_state=True,
+        )
+
+        def fail_count_build(*args, **kwargs):
+            raise AssertionError("constant-Hessian leafwise path should reuse hh as counts")
+
+        monkeypatch.setattr(tree_mod, "_build_counts_into_serial", fail_count_build)
+        monkeypatch.setattr(tree_mod, "_build_counts_rows_into_serial", fail_count_build)
+
+        fast = tree_mod.build_leafwise_tree(
+            Xb, grad, hess, prep.n_bins_, 4, 3.0, 0.1,
+            max_leaves=8, min_child_samples=5, constant_hessian=True,
+            return_training_state=True,
+        )
+        fast_rows = tree_mod.build_leafwise_tree(
+            Xb, grad, hess, prep.n_bins_, 4, 3.0, 0.1,
+            max_leaves=8, min_child_samples=5, row_indices=row_indices,
+            constant_hessian=True, return_training_state=True,
+        )
+    finally:
+        numba.set_num_threads(old_threads)
+
+    for expected, actual in ((generic, fast), (generic_rows, fast_rows)):
+        tree_a, leaf_a, G_a, H_a = expected
+        tree_b, leaf_b, G_b, H_b = actual
+        assert np.array_equal(tree_a.splits_feat, tree_b.splits_feat)
+        assert np.array_equal(tree_a.splits_thr, tree_b.splits_thr)
+        assert np.array_equal(tree_a.gains, tree_b.gains)
+        assert np.array_equal(tree_a.values, tree_b.values)
+        assert np.array_equal(leaf_a, leaf_b)
+        assert np.array_equal(G_a, G_b)
+        assert np.array_equal(H_a, H_b)
+
+
+def test_leafwise_selected_rows_features_match_zeroed_nonconstant_histograms():
+    import numba
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_leafwise_tree
+
+    rng = np.random.default_rng(22)
+    X = rng.normal(size=(700, 11))
+    y = 1.2 * X[:, 2] - 0.7 * X[:, 6] + rng.normal(0, 0.3, 700)
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = prep.fit_transform(X, [y], None)
+    grad = y.mean() - y
+    hess = rng.uniform(0.1, 2.0, size=len(y))
+    row_mask = rng.random(len(y)) < 0.55
+    row_indices = np.flatnonzero(row_mask).astype(np.int64)
+    g = np.where(row_mask, grad, 0.0)
+    h = np.where(row_mask, hess, 0.0)
+    selected = np.array([2, 4, 6, 9], dtype=np.int64)
+    feature_mask = np.zeros(Xb.shape[1], dtype=np.int64)
+    feature_mask[selected] = 1
+
+    old_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(1)
+        zeroed = build_leafwise_tree(
+            Xb, g, h, prep.n_bins_, 4, 3.0, 0.1,
+            max_leaves=8, min_child_samples=5, feature_mask=feature_mask,
+            feature_indices=selected, return_training_state=True,
+        )
+        indexed = build_leafwise_tree(
+            Xb, g, h, prep.n_bins_, 4, 3.0, 0.1,
+            max_leaves=8, min_child_samples=5, feature_mask=feature_mask,
+            feature_indices=selected, row_indices=row_indices,
+            return_training_state=True,
+        )
+    finally:
+        numba.set_num_threads(old_threads)
+
+    zeroed_tree, zeroed_leaf, zeroed_G, zeroed_H = zeroed
+    indexed_tree, indexed_leaf, indexed_G, indexed_H = indexed
+    assert np.array_equal(zeroed_tree.splits_feat, indexed_tree.splits_feat)
+    assert np.array_equal(zeroed_tree.splits_thr, indexed_tree.splits_thr)
+    assert np.array_equal(zeroed_tree.gains, indexed_tree.gains)
+    assert np.array_equal(zeroed_tree.values, indexed_tree.values)
+    assert np.array_equal(zeroed_leaf, indexed_leaf)
+    assert np.array_equal(zeroed_G, indexed_G)
+    assert np.array_equal(zeroed_H, indexed_H)
+
+
+def test_leafwise_cached_splits_match_full_rescore():
+    import numba
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import build_leafwise_tree
+
+    rng = np.random.default_rng(23)
+    X = rng.normal(size=(850, 12))
+    y = (
+        1.7 * X[:, 1]
+        - 1.1 * X[:, 5]
+        + 0.9 * (X[:, 7] > 0.0)
+        + rng.normal(0, 0.35, X.shape[0])
+    )
+    prep = FeaturePreprocessor(64, 1.0, 0)
+    Xb = prep.fit_transform(X, [y], None)
+    grad = y.mean() - y
+    hess_nonconstant = rng.uniform(0.15, 2.5, size=len(y))
+    hess_constant = np.ones(len(y))
+    row_indices = np.flatnonzero(rng.random(len(y)) < 0.65).astype(np.int64)
+    selected = np.array([1, 3, 5, 7, 10], dtype=np.int64)
+    feature_mask = np.zeros(Xb.shape[1], dtype=np.int64)
+    feature_mask[selected] = 1
+
+    cases = [
+        dict(hess=hess_nonconstant, extra={}),
+        dict(hess=hess_constant, extra={"constant_hessian": True}),
+        dict(
+            hess=hess_nonconstant,
+            extra={
+                "row_indices": row_indices,
+                "feature_indices": selected,
+                "feature_mask": feature_mask,
+            },
+        ),
+    ]
+
+    old_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(1)
+        results = []
+        for case in cases:
+            common = dict(
+                max_leaves=10,
+                min_child_samples=6,
+                min_child_weight=1.0,
+                min_gain_to_split=0.0,
+                return_training_state=True,
+                **case["extra"],
+            )
+            cached = build_leafwise_tree(
+                Xb, grad, case["hess"], prep.n_bins_, 5, 3.0, 0.1,
+                **common,
+            )
+            full = build_leafwise_tree(
+                Xb, grad, case["hess"], prep.n_bins_, 5, 3.0, 0.1,
+                recompute_all_leaf_splits=True,
+                **common,
+            )
+            results.append((cached, full))
+    finally:
+        numba.set_num_threads(old_threads)
+
+    for cached, full in results:
+        cached_tree, cached_leaf, cached_G, cached_H = cached
+        full_tree, full_leaf, full_G, full_H = full
+        assert np.array_equal(cached_tree.features, full_tree.features)
+        assert np.array_equal(cached_tree.thresholds, full_tree.thresholds)
+        assert np.array_equal(cached_tree.left_child, full_tree.left_child)
+        assert np.array_equal(cached_tree.right_child, full_tree.right_child)
+        assert np.array_equal(cached_tree.leaf_index, full_tree.leaf_index)
+        assert np.array_equal(cached_tree.splits_feat, full_tree.splits_feat)
+        assert np.array_equal(cached_tree.splits_thr, full_tree.splits_thr)
+        assert np.array_equal(cached_tree.gains, full_tree.gains)
+        assert np.array_equal(cached_tree.values, full_tree.values)
+        assert np.array_equal(cached_leaf, full_leaf)
+        assert np.array_equal(cached_G, full_G)
+        assert np.array_equal(cached_H, full_H)
+        assert np.array_equal(cached_tree.predict(Xb), full_tree.predict(Xb))
+
+
 def test_tree_mode_aliases_and_lightgbm_plumbing():
     X, y = load_breast_cancer(return_X_y=True)
     Xtr, Xte, ytr, _ = train_test_split(

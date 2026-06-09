@@ -397,6 +397,98 @@ def _build_counts_rows_into(X_binned, hess, leaf, n_leaves, hc, row_indices):
                 hc[f, l, b] += 1.0
 
 
+@njit(cache=True, parallel=True)
+def _build_histograms_counts_into(X_binned, grad, hess, leaf, n_leaves, hg, hh, hc):
+    """Fill gradient, hessian, and positive-row-count histograms in one pass."""
+    n_samples, n_features = X_binned.shape
+    max_bins = hg.shape[2]
+    for f in prange(n_features):
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+                hc[f, l, b] = 0.0
+        for i in range(n_samples):
+            l = leaf[i]
+            b = X_binned[i, f]
+            hg[f, l, b] += grad[i]
+            hi = hess[i]
+            hh[f, l, b] += hi
+            if hi > 0.0:
+                hc[f, l, b] += 1.0
+
+
+@njit(cache=True, parallel=True)
+def _build_histograms_counts_selected_into(X_binned, grad, hess, leaf,
+                                           n_leaves, hg, hh, hc,
+                                           feature_indices):
+    """Fill selected-feature gradient/hessian/count histograms in one pass."""
+    n_samples = X_binned.shape[0]
+    max_bins = hg.shape[2]
+    for jj in prange(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+                hc[f, l, b] = 0.0
+        for i in range(n_samples):
+            l = leaf[i]
+            b = X_binned[i, f]
+            hg[f, l, b] += grad[i]
+            hi = hess[i]
+            hh[f, l, b] += hi
+            if hi > 0.0:
+                hc[f, l, b] += 1.0
+
+
+@njit(cache=True, parallel=True)
+def _build_histograms_counts_rows_into(X_binned, grad, hess, leaf,
+                                       n_leaves, hg, hh, hc, row_indices):
+    """Fill selected-row gradient/hessian/count histograms in one pass."""
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[2]
+    for f in prange(n_features):
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+                hc[f, l, b] = 0.0
+        for p in range(row_indices.shape[0]):
+            i = row_indices[p]
+            l = leaf[i]
+            b = X_binned[i, f]
+            hg[f, l, b] += grad[i]
+            hi = hess[i]
+            hh[f, l, b] += hi
+            if hi > 0.0:
+                hc[f, l, b] += 1.0
+
+
+@njit(cache=True, parallel=True)
+def _build_histograms_counts_selected_rows_into(X_binned, grad, hess, leaf,
+                                                n_leaves, hg, hh, hc,
+                                                feature_indices, row_indices):
+    """Fill selected-row/feature grad/hess/count histograms in one pass."""
+    max_bins = hg.shape[2]
+    for jj in prange(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+                hc[f, l, b] = 0.0
+        for p in range(row_indices.shape[0]):
+            i = row_indices[p]
+            l = leaf[i]
+            b = X_binned[i, f]
+            hg[f, l, b] += grad[i]
+            hi = hess[i]
+            hh[f, l, b] += hi
+            if hi > 0.0:
+                hc[f, l, b] += 1.0
+
+
 @njit(cache=True)
 def _build_counts_into_serial(X_binned, hess, leaf, n_leaves, hc):
     """Single-thread positive-weight row-count histograms."""
@@ -412,6 +504,119 @@ def _build_counts_into_serial(X_binned, hess, leaf, n_leaves, hc):
             l = leaf[i]
             for f in range(n_features):
                 b = X_binned[i, f]
+                hc[f, l, b] += 1.0
+
+
+@njit(cache=True)
+def _build_histograms_counts_into_serial(X_binned, grad, hess, leaf,
+                                         n_leaves, hg, hh, hc):
+    """Single-thread gradient/hessian/count histogram fill."""
+    n_samples, n_features = X_binned.shape
+    max_bins = hg.shape[2]
+    for f in range(n_features):
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+                hc[f, l, b] = 0.0
+
+    for i in range(n_samples):
+        l = leaf[i]
+        gi = grad[i]
+        hi = hess[i]
+        positive = hi > 0.0
+        for f in range(n_features):
+            b = X_binned[i, f]
+            hg[f, l, b] += gi
+            hh[f, l, b] += hi
+            if positive:
+                hc[f, l, b] += 1.0
+
+
+@njit(cache=True)
+def _build_histograms_counts_rows_into_serial(X_binned, grad, hess, leaf,
+                                              n_leaves, hg, hh, hc,
+                                              row_indices):
+    """Single-thread selected-row gradient/hessian/count histogram fill."""
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[2]
+    for f in range(n_features):
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+                hc[f, l, b] = 0.0
+
+    for p in range(row_indices.shape[0]):
+        i = row_indices[p]
+        l = leaf[i]
+        gi = grad[i]
+        hi = hess[i]
+        positive = hi > 0.0
+        for f in range(n_features):
+            b = X_binned[i, f]
+            hg[f, l, b] += gi
+            hh[f, l, b] += hi
+            if positive:
+                hc[f, l, b] += 1.0
+
+
+@njit(cache=True)
+def _build_histograms_counts_selected_into_serial(X_binned, grad, hess, leaf,
+                                                  n_leaves, hg, hh, hc,
+                                                  feature_indices):
+    """Single-thread selected-feature gradient/hessian/count histogram fill."""
+    n_samples = X_binned.shape[0]
+    max_bins = hg.shape[2]
+    for jj in range(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+                hc[f, l, b] = 0.0
+
+    for i in range(n_samples):
+        l = leaf[i]
+        gi = grad[i]
+        hi = hess[i]
+        positive = hi > 0.0
+        for jj in range(feature_indices.shape[0]):
+            f = feature_indices[jj]
+            b = X_binned[i, f]
+            hg[f, l, b] += gi
+            hh[f, l, b] += hi
+            if positive:
+                hc[f, l, b] += 1.0
+
+
+@njit(cache=True)
+def _build_histograms_counts_selected_rows_into_serial(
+    X_binned, grad, hess, leaf, n_leaves, hg, hh, hc,
+    feature_indices, row_indices
+):
+    """Single-thread selected-row/feature grad/hess/count histogram fill."""
+    max_bins = hg.shape[2]
+    for jj in range(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+                hc[f, l, b] = 0.0
+
+    for p in range(row_indices.shape[0]):
+        i = row_indices[p]
+        l = leaf[i]
+        gi = grad[i]
+        hi = hess[i]
+        positive = hi > 0.0
+        for jj in range(feature_indices.shape[0]):
+            f = feature_indices[jj]
+            b = X_binned[i, f]
+            hg[f, l, b] += gi
+            hh[f, l, b] += hi
+            if positive:
                 hc[f, l, b] += 1.0
 
 
@@ -881,6 +1086,71 @@ def _best_splits_by_leaf_counts(hg, hh, hc, n_bins_per_feature, l2, feat_mask,
     """Best split per active leaf with Hessian and positive-weight row limits."""
     n_features = hg.shape[0]
     for l in prange(n_leaves):
+        best_f = -1
+        best_t = -1
+        best_gain = -np.inf
+
+        for f in range(n_features):
+            if feat_mask[f] == 0:
+                continue
+            nb = n_bins_per_feature[f]
+            Gt = 0.0
+            Ht = 0.0
+            Ct = 0.0
+            for b in range(nb):
+                Gt += hg[f, l, b]
+                Ht += hh[f, l, b]
+                Ct += hc[f, l, b]
+            parent_denom = Ht + l2
+            if Ht <= 0.0 or Ct <= 0.0 or parent_denom <= 0.0:
+                continue
+            parent_gain = Gt * Gt / parent_denom
+
+            GL = 0.0
+            HL = 0.0
+            CL = 0.0
+            for t in range(nb - 1):
+                GL += hg[f, l, t]
+                HL += hh[f, l, t]
+                CL += hc[f, l, t]
+                HR = Ht - HL
+                CR = Ct - CL
+                if (
+                    HL < min_child_weight
+                    or HR < min_child_weight
+                    or CL < min_child_samples
+                    or CR < min_child_samples
+                ):
+                    continue
+                left_denom = HL + l2
+                right_denom = HR + l2
+                if left_denom <= 0.0 or right_denom <= 0.0:
+                    continue
+                GR = Gt - GL
+                gain = (
+                    GL * GL / left_denom
+                    + GR * GR / right_denom
+                    - parent_gain
+                )
+                if gain > best_gain:
+                    best_gain = gain
+                    best_f = f
+                    best_t = t
+
+        out_feat[l] = best_f
+        out_thr[l] = best_t
+        out_gain[l] = best_gain
+
+
+@njit(cache=True, parallel=True)
+def _best_splits_for_leaf_ids_counts(hg, hh, hc, n_bins_per_feature, l2,
+                                     feat_mask, min_child_weight,
+                                     min_child_samples, leaf_ids, n_leaf_ids,
+                                     out_feat, out_thr, out_gain):
+    """Best split for a small set of changed leaves."""
+    n_features = hg.shape[0]
+    for idx in prange(n_leaf_ids):
+        l = leaf_ids[idx]
         best_f = -1
         best_t = -1
         best_gain = -np.inf
@@ -1496,7 +1766,8 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                         X_hist_binned=None, feature_indices=None,
                         row_indices=None, constant_hessian=False,
                         max_leaves=None, min_gain_to_split=None,
-                        min_child_samples=20):
+                        min_child_samples=20,
+                        recompute_all_leaf_splits=False):
     """Grow a LightGBM-like leaf-wise, best-first non-oblivious tree.
 
     This builder chooses the best legal split for each current leaf, then splits
@@ -1602,6 +1873,9 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
     best_feat = np.empty(max_leaves, dtype=np.int64)
     best_thr = np.empty(max_leaves, dtype=np.int64)
     best_gain = np.empty(max_leaves, dtype=np.float64)
+    changed_leaves = np.empty(2, dtype=np.int64)
+    changed_leaves[0] = 0
+    n_changed_leaves = 1
     split_features = []
     split_thresholds = []
     split_gains = []
@@ -1634,29 +1908,23 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                     feature_indices, row_indices
                 )
             elif row_indices is None and feature_indices is None:
-                _build_histograms_into_serial(
-                    X_binned, grad, hess, leaf, n_leaves, hg, hh
+                _build_histograms_counts_into_serial(
+                    X_binned, grad, hess, leaf, n_leaves, hg, hh, hc
                 )
             elif row_indices is None:
-                _build_histograms_selected_into_serial(
-                    X_binned, grad, hess, leaf, n_leaves, hg, hh,
+                _build_histograms_counts_selected_into_serial(
+                    X_binned, grad, hess, leaf, n_leaves, hg, hh, hc,
                     feature_indices
                 )
             elif feature_indices is None:
-                _build_histograms_rows_into_serial(
-                    X_binned, grad, hess, leaf, n_leaves, hg, hh,
+                _build_histograms_counts_rows_into_serial(
+                    X_binned, grad, hess, leaf, n_leaves, hg, hh, hc,
                     row_indices
                 )
             else:
-                _build_histograms_selected_rows_into_serial(
-                    X_binned, grad, hess, leaf, n_leaves, hg, hh,
+                _build_histograms_counts_selected_rows_into_serial(
+                    X_binned, grad, hess, leaf, n_leaves, hg, hh, hc,
                     feature_indices, row_indices
-                )
-            if row_indices is None:
-                _build_counts_into_serial(X_binned, hess, leaf, n_leaves, hc)
-            else:
-                _build_counts_rows_into_serial(
-                    X_binned, hess, leaf, n_leaves, hc, row_indices
                 )
         else:
             if constant_hessian and row_indices is None and feature_indices is None:
@@ -1679,36 +1947,38 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                     feature_indices, row_indices
                 )
             elif row_indices is None and feature_indices is None:
-                _build_histograms_into(
-                    X_hist_binned, grad, hess, leaf, n_leaves, hg, hh
+                _build_histograms_counts_into(
+                    X_hist_binned, grad, hess, leaf, n_leaves, hg, hh, hc
                 )
             elif row_indices is None:
-                _build_histograms_selected_into(
-                    X_hist_binned, grad, hess, leaf, n_leaves, hg, hh,
+                _build_histograms_counts_selected_into(
+                    X_hist_binned, grad, hess, leaf, n_leaves, hg, hh, hc,
                     feature_indices
                 )
             elif feature_indices is None:
-                _build_histograms_rows_into(
-                    X_hist_binned, grad, hess, leaf, n_leaves, hg, hh,
+                _build_histograms_counts_rows_into(
+                    X_hist_binned, grad, hess, leaf, n_leaves, hg, hh, hc,
                     row_indices
                 )
             else:
-                _build_histograms_selected_rows_into(
-                    X_hist_binned, grad, hess, leaf, n_leaves, hg, hh,
+                _build_histograms_counts_selected_rows_into(
+                    X_hist_binned, grad, hess, leaf, n_leaves, hg, hh, hc,
                     feature_indices, row_indices
                 )
-            if row_indices is None:
-                _build_counts_into(X_hist_binned, hess, leaf, n_leaves, hc)
-            else:
-                _build_counts_rows_into(
-                    X_hist_binned, hess, leaf, n_leaves, hc, row_indices
-                )
 
-        _best_splits_by_leaf_counts(
-            hg, hh, hc, n_bins_per_feature, l2, feature_mask,
-            min_child_weight, min_child_samples, n_leaves,
-            best_feat, best_thr, best_gain
-        )
+        count_hist = hh if constant_hessian else hc
+        if recompute_all_leaf_splits or n_changed_leaves >= n_leaves:
+            _best_splits_by_leaf_counts(
+                hg, hh, count_hist, n_bins_per_feature, l2, feature_mask,
+                min_child_weight, min_child_samples, n_leaves,
+                best_feat, best_thr, best_gain
+            )
+        else:
+            _best_splits_for_leaf_ids_counts(
+                hg, hh, count_hist, n_bins_per_feature, l2, feature_mask,
+                min_child_weight, min_child_samples, changed_leaves,
+                n_changed_leaves, best_feat, best_thr, best_gain
+            )
 
         split_leaf = -1
         split_gain = -np.inf
@@ -1751,6 +2021,9 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
             X_binned, leaf, split_leaf, new_leaf, f, t
         )
         n_leaves += 1
+        changed_leaves[0] = split_leaf
+        changed_leaves[1] = new_leaf
+        n_changed_leaves = 2
 
     if row_indices is None:
         values, leaf_G, leaf_H = _leaf_values_and_sums(
