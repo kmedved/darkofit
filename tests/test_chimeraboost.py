@@ -2127,6 +2127,125 @@ def test_leafwise_changed_leaf_feature_parallel_split_matches_reference():
     assert np.allclose(new_gain[leaf_ids], ref_gain[leaf_ids])
 
 
+def test_leafwise_full_feature_positive_split_matches_reference():
+    from chimeraboost.tree import (
+        _best_splits_by_leaf_counts,
+        _best_splits_by_leaf_counts_full_features,
+        _best_splits_for_leaf_ids_counts,
+        _best_splits_for_leaf_ids_counts_full_features,
+        _build_histograms_counts_positive_into,
+    )
+
+    rng = np.random.default_rng(47)
+    n_samples = 900
+    n_features = 14
+    n_leaves = 7
+    max_bins = 13
+    n_bins = rng.integers(5, max_bins + 1, size=n_features, dtype=np.int64)
+    Xb = np.empty((n_samples, n_features), dtype=np.uint8)
+    for f in range(n_features):
+        Xb[:, f] = rng.integers(0, n_bins[f], size=n_samples)
+    grad = rng.normal(size=n_samples)
+    hess = rng.uniform(0.05, 1.0, size=n_samples)
+    leaf = rng.integers(0, n_leaves, size=n_samples, dtype=np.int64)
+    feature_mask = np.ones(n_features, dtype=np.int64)
+    hg = np.zeros((n_features, n_leaves, max_bins), dtype=np.float64)
+    hh = np.zeros_like(hg)
+    hc = np.zeros_like(hg)
+    _build_histograms_counts_positive_into(
+        Xb, grad, hess, leaf, n_leaves, hg, hh, hc
+    )
+    counts = np.bincount(leaf, minlength=n_leaves).astype(np.int64)
+    leaf_start = np.zeros(n_leaves + 1, dtype=np.int64)
+    leaf_start[1:] = np.cumsum(counts)
+
+    ref_feat = np.full(n_leaves, -99, dtype=np.int64)
+    ref_thr = np.full(n_leaves, -99, dtype=np.int64)
+    ref_gain = np.full(n_leaves, np.nan)
+    new_feat = ref_feat.copy()
+    new_thr = ref_thr.copy()
+    new_gain = ref_gain.copy()
+    _best_splits_by_leaf_counts(
+        hg, hh, hc, n_bins, 1.7, feature_mask, 0.2, 3, n_leaves,
+        ref_feat, ref_thr, ref_gain
+    )
+    _best_splits_by_leaf_counts_full_features(
+        hg, hh, hc, n_bins, 1.7, 0.2, 3, n_leaves, leaf_start,
+        new_feat, new_thr, new_gain
+    )
+
+    assert np.array_equal(new_feat, ref_feat)
+    assert np.array_equal(new_thr, ref_thr)
+    assert np.allclose(new_gain, ref_gain)
+
+    leaf_ids = np.array([1, 4], dtype=np.int64)
+    ref_feat[:] = -99
+    ref_thr[:] = -99
+    ref_gain[:] = np.nan
+    new_feat[:] = -99
+    new_thr[:] = -99
+    new_gain[:] = np.nan
+    _best_splits_for_leaf_ids_counts(
+        hg, hh, hc, n_bins, 1.7, feature_mask, 0.2, 3,
+        leaf_ids, leaf_ids.shape[0], ref_feat, ref_thr, ref_gain
+    )
+    _best_splits_for_leaf_ids_counts_full_features(
+        hg, hh, hc, n_bins, 1.7, 0.2, 3,
+        leaf_ids, leaf_ids.shape[0], leaf_start, new_feat, new_thr, new_gain
+    )
+
+    assert np.array_equal(new_feat[leaf_ids], ref_feat[leaf_ids])
+    assert np.array_equal(new_thr[leaf_ids], ref_thr[leaf_ids])
+    assert np.allclose(new_gain[leaf_ids], ref_gain[leaf_ids])
+
+
+def test_leafwise_positive_split_fast_path_matches_generic_tree():
+    import numba
+    from chimeraboost.tree import build_leafwise_tree
+
+    if numba.config.NUMBA_NUM_THREADS < 2:
+        pytest.skip("requires at least two numba threads")
+
+    rng = np.random.default_rng(48)
+    Xb = rng.integers(0, 32, size=(1000, 18), dtype=np.uint8)
+    n_bins = np.full(Xb.shape[1], 32, dtype=np.int64)
+    grad = rng.normal(size=Xb.shape[0])
+    hess = rng.uniform(0.05, 1.0, size=Xb.shape[0])
+
+    old_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(min(2, numba.config.NUMBA_NUM_THREADS))
+        fast = build_leafwise_tree(
+            Xb, grad, hess, n_bins, -1, 1.0, 0.1,
+            max_leaves=12, min_child_samples=5, min_child_weight=0.1,
+            min_gain_to_split=0.0, return_training_state=True,
+            hessian_always_positive=True,
+        )
+        generic = build_leafwise_tree(
+            Xb, grad, hess, n_bins, -1, 1.0, 0.1,
+            max_leaves=12, min_child_samples=5, min_child_weight=0.1,
+            min_gain_to_split=0.0, return_training_state=True,
+            hessian_always_positive=False,
+        )
+    finally:
+        numba.set_num_threads(old_threads)
+
+    fast_tree, fast_leaf, fast_G, fast_H = fast
+    generic_tree, generic_leaf, generic_G, generic_H = generic
+    assert np.array_equal(fast_tree.features, generic_tree.features)
+    assert np.array_equal(fast_tree.thresholds, generic_tree.thresholds)
+    assert np.array_equal(fast_tree.left_child, generic_tree.left_child)
+    assert np.array_equal(fast_tree.right_child, generic_tree.right_child)
+    assert np.array_equal(fast_tree.leaf_index, generic_tree.leaf_index)
+    assert np.array_equal(fast_tree.splits_feat, generic_tree.splits_feat)
+    assert np.array_equal(fast_tree.splits_thr, generic_tree.splits_thr)
+    assert np.allclose(fast_tree.gains, generic_tree.gains)
+    assert np.allclose(fast_tree.values, generic_tree.values)
+    assert np.array_equal(fast_leaf, generic_leaf)
+    assert np.allclose(fast_G, generic_G)
+    assert np.allclose(fast_H, generic_H)
+
+
 def test_leafwise_threaded_changed_leaf_split_matches_full_rescore():
     import numba
     from chimeraboost.tree import build_leafwise_tree

@@ -2055,6 +2055,149 @@ def _best_splits_for_leaf_ids_counts_feature_parallel(
 
 
 @njit(cache=True, parallel=True)
+def _best_splits_by_leaf_counts_full_features(
+    hg, hh, hc, n_bins_per_feature, l2, min_child_weight,
+    min_child_samples, n_leaves, leaf_start, out_feat, out_thr, out_gain
+):
+    """Best split per leaf when every row and every feature is active.
+
+    In this lane each non-missing row contributes exactly once to every
+    feature's count histogram, so the total count for a leaf is already known
+    from the row partition. Split legality still uses per-threshold histogram
+    counts, but the parent count does not need to be recomputed for each
+    feature.
+    """
+    n_features = hg.shape[0]
+    for l in prange(n_leaves):
+        best_f = -1
+        best_t = -1
+        best_gain = -np.inf
+        Ct = float(leaf_start[l + 1] - leaf_start[l])
+
+        if Ct <= 0.0:
+            out_feat[l] = best_f
+            out_thr[l] = best_t
+            out_gain[l] = best_gain
+            continue
+
+        for f in range(n_features):
+            nb = n_bins_per_feature[f]
+            Gt = 0.0
+            Ht = 0.0
+            for b in range(nb):
+                Gt += hg[f, l, b]
+                Ht += hh[f, l, b]
+            parent_denom = Ht + l2
+            if Ht <= 0.0 or parent_denom <= 0.0:
+                continue
+            parent_gain = Gt * Gt / parent_denom
+
+            GL = 0.0
+            HL = 0.0
+            CL = 0.0
+            for t in range(nb - 1):
+                GL += hg[f, l, t]
+                HL += hh[f, l, t]
+                CL += hc[f, l, t]
+                HR = Ht - HL
+                CR = Ct - CL
+                if (
+                    HL < min_child_weight
+                    or HR < min_child_weight
+                    or CL < min_child_samples
+                    or CR < min_child_samples
+                ):
+                    continue
+                left_denom = HL + l2
+                right_denom = HR + l2
+                if left_denom <= 0.0 or right_denom <= 0.0:
+                    continue
+                GR = Gt - GL
+                gain = (
+                    GL * GL / left_denom
+                    + GR * GR / right_denom
+                    - parent_gain
+                )
+                if gain > best_gain:
+                    best_gain = gain
+                    best_f = f
+                    best_t = t
+
+        out_feat[l] = best_f
+        out_thr[l] = best_t
+        out_gain[l] = best_gain
+
+
+@njit(cache=True, parallel=True)
+def _best_splits_for_leaf_ids_counts_full_features(
+    hg, hh, hc, n_bins_per_feature, l2, min_child_weight,
+    min_child_samples, leaf_ids, n_leaf_ids, leaf_start,
+    out_feat, out_thr, out_gain
+):
+    """Best split for changed leaves when every row/feature is active."""
+    n_features = hg.shape[0]
+    for idx in prange(n_leaf_ids):
+        l = leaf_ids[idx]
+        best_f = -1
+        best_t = -1
+        best_gain = -np.inf
+        Ct = float(leaf_start[l + 1] - leaf_start[l])
+
+        if Ct <= 0.0:
+            out_feat[l] = best_f
+            out_thr[l] = best_t
+            out_gain[l] = best_gain
+            continue
+
+        for f in range(n_features):
+            nb = n_bins_per_feature[f]
+            Gt = 0.0
+            Ht = 0.0
+            for b in range(nb):
+                Gt += hg[f, l, b]
+                Ht += hh[f, l, b]
+            parent_denom = Ht + l2
+            if Ht <= 0.0 or parent_denom <= 0.0:
+                continue
+            parent_gain = Gt * Gt / parent_denom
+
+            GL = 0.0
+            HL = 0.0
+            CL = 0.0
+            for t in range(nb - 1):
+                GL += hg[f, l, t]
+                HL += hh[f, l, t]
+                CL += hc[f, l, t]
+                HR = Ht - HL
+                CR = Ct - CL
+                if (
+                    HL < min_child_weight
+                    or HR < min_child_weight
+                    or CL < min_child_samples
+                    or CR < min_child_samples
+                ):
+                    continue
+                left_denom = HL + l2
+                right_denom = HR + l2
+                if left_denom <= 0.0 or right_denom <= 0.0:
+                    continue
+                GR = Gt - GL
+                gain = (
+                    GL * GL / left_denom
+                    + GR * GR / right_denom
+                    - parent_gain
+                )
+                if gain > best_gain:
+                    best_gain = gain
+                    best_f = f
+                    best_t = t
+
+        out_feat[l] = best_f
+        out_thr[l] = best_t
+        out_gain[l] = best_gain
+
+
+@njit(cache=True, parallel=True)
 def _build_multiclass_histograms_counts_into(
     X_binned, grad, hess, leaf, n_leaves, hg, hh, hc
 ):
@@ -3013,6 +3156,13 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
     row_scratch = np.empty(row_order.shape[0], dtype=np.int64)
     leaf_start = np.zeros(max_leaves + 1, dtype=np.int64)
     leaf_start[1] = row_order.shape[0]
+    full_feature_positive_split = (
+        hessian_always_positive
+        and row_indices is None
+        and feature_indices is None
+        and bool(np.all(feature_mask != 0))
+        and get_num_threads() <= 2
+    )
     split_features = []
     split_thresholds = []
     split_gains = []
@@ -3248,17 +3398,30 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
         histograms_initialized = True
         count_hist = hh if constant_hessian else hc
         if recompute_all_leaf_splits or n_changed_leaves >= n_leaves:
-            _best_splits_by_leaf_counts(
-                hg, hh, count_hist, n_bins_per_feature, l2, feature_mask,
-                min_child_weight, min_child_samples, n_leaves,
-                best_feat, best_thr, best_gain
-            )
+            if full_feature_positive_split:
+                _best_splits_by_leaf_counts_full_features(
+                    hg, hh, count_hist, n_bins_per_feature, l2,
+                    min_child_weight, min_child_samples, n_leaves,
+                    leaf_start, best_feat, best_thr, best_gain
+                )
+            else:
+                _best_splits_by_leaf_counts(
+                    hg, hh, count_hist, n_bins_per_feature, l2, feature_mask,
+                    min_child_weight, min_child_samples, n_leaves,
+                    best_feat, best_thr, best_gain
+                )
         elif split_scratch is not None and get_num_threads() > 2:
             _best_splits_for_leaf_ids_counts_feature_parallel(
                 hg, hh, count_hist, n_bins_per_feature, l2, feature_mask,
                 min_child_weight, min_child_samples, changed_leaves,
                 n_changed_leaves, split_scratch[0], split_scratch[1],
                 best_feat, best_thr, best_gain
+            )
+        elif full_feature_positive_split:
+            _best_splits_for_leaf_ids_counts_full_features(
+                hg, hh, count_hist, n_bins_per_feature, l2,
+                min_child_weight, min_child_samples, changed_leaves,
+                n_changed_leaves, leaf_start, best_feat, best_thr, best_gain
             )
         else:
             _best_splits_for_leaf_ids_counts(

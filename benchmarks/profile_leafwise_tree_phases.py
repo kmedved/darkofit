@@ -83,7 +83,9 @@ GROUPS = {
     ),
     "split_score": (
         "_best_splits_by_leaf_counts",
+        "_best_splits_by_leaf_counts_full_features",
         "_best_splits_for_leaf_ids_counts",
+        "_best_splits_for_leaf_ids_counts_full_features",
         "_best_splits_for_leaf_ids_counts_feature_parallel",
         "_best_multiclass_splits_for_leaf_ids_counts",
     ),
