@@ -240,6 +240,33 @@ def test_categorical_transform_preserves_missing_and_unseen_codes():
     assert np.array_equal(prep_num._codes_for_transform(Xt_num)[:, 0], expected_num)
 
 
+def test_preprocessor_can_include_raw_category_code_features():
+    from chimeraboost.preprocessing import FeaturePreprocessor
+
+    X = np.array([
+        ["red", "north", 1.0],
+        ["blue", "south", 2.0],
+        ["red", "south", 3.0],
+        ["green", "north", 4.0],
+    ], dtype=object)
+    y = np.array([0.0, 1.0, 0.5, 1.5])
+
+    default = FeaturePreprocessor(16, 1.0, 0)
+    Xb_default = default.fit_transform(X, [y], cat_features=[0, 1])
+    with_codes = FeaturePreprocessor(16, 1.0, 0, include_cat_codes=True)
+    Xb_codes = with_codes.fit_transform(X, [y], cat_features=[0, 1])
+
+    assert Xb_default.shape[1] == 3
+    assert Xb_codes.shape[1] == 5
+    assert np.array_equal(with_codes.feature_map_, np.array([2, 0, 1, 0, 1]))
+
+    Xt = np.array([
+        ["red", "south", 10.0],
+        ["purple", "north", 11.0],
+    ], dtype=object)
+    assert with_codes.transform(Xt).shape[1] == 5
+
+
 def test_loaded_pandas_factorize_fast_path_preserves_missing_codes():
     pytest.importorskip("pandas")
     from chimeraboost.target_encoding import factorize
@@ -1181,6 +1208,36 @@ def test_tree_mode_default_depth_resolution():
     assert depthwise.model_.depth == 6
     assert lightgbm.model_.depth == -1
     assert explicit.model_.depth == 3
+
+
+def test_lightgbm_mode_adds_category_code_features_for_classification():
+    X = np.array([
+        ["red", "north", 1.0],
+        ["blue", "south", 2.0],
+        ["red", "south", 3.0],
+        ["green", "north", 4.0],
+        ["blue", "north", 5.0],
+        ["green", "south", 6.0],
+    ], dtype=object)
+    y_reg = np.array([0.0, 1.0, 0.5, 1.5, 1.2, 1.8])
+    y_bin = np.array([0, 1, 0, 1, 1, 0])
+
+    catboost = ChimeraBoostRegressor(
+        iterations=1, tree_mode="catboost", random_state=0
+    ).fit(X, y_reg, cat_features=[0, 1])
+    lightgbm_reg = ChimeraBoostRegressor(
+        iterations=1, tree_mode="lightgbm", num_leaves=3, random_state=0
+    ).fit(X, y_reg, cat_features=[0, 1])
+    lightgbm_binary = ChimeraBoostClassifier(
+        iterations=1, tree_mode="lightgbm", num_leaves=3, random_state=0
+    ).fit(X, y_bin, cat_features=[0, 1])
+
+    assert catboost.model_.prep_.n_bins_.shape[0] == 3
+    assert lightgbm_reg.model_.prep_.n_bins_.shape[0] == 3
+    assert lightgbm_binary.model_.prep_.n_bins_.shape[0] == 5
+    assert np.array_equal(
+        lightgbm_binary.model_.prep_.feature_map_, np.array([2, 0, 1, 0, 1])
+    )
 
 
 def test_public_api_rejects_unsupported_lightgbm_options():

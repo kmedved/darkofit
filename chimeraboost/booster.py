@@ -284,7 +284,11 @@ class _BaseBooster:
     def _new_preprocessor(self):
         """Build a FeaturePreprocessor configured from this booster's params."""
         return FeaturePreprocessor(self.max_bins, self.cat_smoothing,
-                                   self.random_state)
+                                   self.random_state,
+                                   include_cat_codes=self._include_cat_codes())
+
+    def _include_cat_codes(self):
+        return self.tree_mode_ == "lightgbm"
 
     def _tree_builder(self):
         if self.tree_mode_ == "lightgbm":
@@ -393,6 +397,9 @@ class GradientBoosting(_BaseBooster):
         super().__init__(**kw)
         self.loss_name = loss
         self.loss_kwargs = loss_kwargs or {}
+
+    def _include_cat_codes(self):
+        return self.tree_mode_ == "lightgbm" and self.loss_name == "Logloss"
 
     def fit(self, X, y, cat_features=None, eval_set=None, sample_weight=None,
             eval_sample_weight=None):

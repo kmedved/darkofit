@@ -31,10 +31,12 @@ class FeaturePreprocessor:
     output column back to its original input column for importances.
     """
 
-    def __init__(self, max_bins=128, cat_smoothing=1.0, random_state=None):
+    def __init__(self, max_bins=128, cat_smoothing=1.0, random_state=None,
+                 include_cat_codes=False):
         self.max_bins = int(max_bins)
         self.cat_smoothing = float(cat_smoothing)
         self.random_state = random_state
+        self.include_cat_codes = bool(include_cat_codes)
 
     # ---- helpers -------------------------------------------------------------
     def _split_columns_fit(self, X, cat_features):
@@ -86,8 +88,11 @@ class FeaturePreprocessor:
         num, codes = self._split_columns_fit(X, cat_features)
 
         encoded_blocks = []
+        code_blocks = []
         self.encoders_ = []
         if codes.shape[1]:
+            if self.include_cat_codes:
+                code_blocks.append(codes.astype(np.float64))
             for t, target in enumerate(encode_targets):
                 enc = OrderedTargetEncoder(
                     self.cat_smoothing,
@@ -98,7 +103,7 @@ class FeaturePreprocessor:
                 )
                 self.encoders_.append(enc)
 
-        feat = self._stack(num, encoded_blocks)
+        feat = self._stack(num, code_blocks, encoded_blocks)
         self._build_feature_map(num.shape[1], codes.shape[1], len(encode_targets))
 
         self.binner_ = Binner(self.max_bins)
@@ -111,17 +116,20 @@ class FeaturePreprocessor:
         num = (np.asarray(X[:, self.num_features_], dtype=np.float64)
                if self.num_features_ else np.empty((X.shape[0], 0)))
         encoded_blocks = []
+        code_blocks = []
         if self.cat_features_:
             codes = self._codes_for_transform(X)
+            if self.include_cat_codes:
+                code_blocks.append(codes.astype(np.float64))
             for enc in self.encoders_:
                 encoded_blocks.append(enc.transform(codes))
-        feat = self._stack(num, encoded_blocks)
+        feat = self._stack(num, code_blocks, encoded_blocks)
         return self.binner_.transform(feat)
 
     # ---- internals -----------------------------------------------------------
     @staticmethod
-    def _stack(num, encoded_blocks):
-        mats = [m for m in ([num] + encoded_blocks) if m.shape[1]]
+    def _stack(num, code_blocks, encoded_blocks):
+        mats = [m for m in ([num] + code_blocks + encoded_blocks) if m.shape[1]]
         if not mats:
             return num
         return np.hstack(mats) if len(mats) > 1 else mats[0]
@@ -129,6 +137,8 @@ class FeaturePreprocessor:
     def _build_feature_map(self, n_num, n_cat, n_targets):
         """Combined column index -> original input column index."""
         fmap = list(self.num_features_)            # numeric block
+        if self.include_cat_codes:
+            fmap.extend(self.cat_features_)        # raw category-code block
         for _ in range(n_targets):                 # each TS target adds a block
             fmap.extend(self.cat_features_)        # one col per cat feature
         self.feature_map_ = np.array(fmap, dtype=np.int64)
