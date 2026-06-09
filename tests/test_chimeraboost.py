@@ -1013,7 +1013,7 @@ def test_leafwise_selected_rows_features_match_zeroed_nonconstant_histograms():
     indexed_tree, indexed_leaf, indexed_G, indexed_H = indexed
     assert np.array_equal(zeroed_tree.splits_feat, indexed_tree.splits_feat)
     assert np.array_equal(zeroed_tree.splits_thr, indexed_tree.splits_thr)
-    assert np.array_equal(zeroed_tree.gains, indexed_tree.gains)
+    assert np.allclose(zeroed_tree.gains, indexed_tree.gains)
     assert np.array_equal(zeroed_tree.values, indexed_tree.values)
     assert np.array_equal(zeroed_leaf, indexed_leaf)
     assert np.array_equal(zeroed_G, indexed_G)
@@ -1046,6 +1046,18 @@ def test_leafwise_cached_splits_match_full_rescore():
     cases = [
         dict(hess=hess_nonconstant, extra={}),
         dict(hess=hess_constant, extra={"constant_hessian": True}),
+        dict(
+            hess=hess_nonconstant,
+            extra={"feature_indices": selected, "feature_mask": feature_mask},
+        ),
+        dict(
+            hess=hess_constant,
+            extra={
+                "constant_hessian": True,
+                "feature_indices": selected,
+                "feature_mask": feature_mask,
+            },
+        ),
         dict(
             hess=hess_nonconstant,
             extra={
@@ -1338,6 +1350,58 @@ def test_leafwise_histogram_subtraction_matches_full_refill():
         assert np.allclose(reused_tree.values, full_tree.values)
         assert np.allclose(reused_G, full_G)
         assert np.allclose(reused_H, full_H)
+
+
+def test_leafwise_selected_feature_histogram_reuse_threaded():
+    import numba
+    from chimeraboost.tree import build_leafwise_tree
+
+    if numba.config.NUMBA_NUM_THREADS < 2:
+        pytest.skip("requires at least two numba threads")
+
+    rng = np.random.default_rng(43)
+    Xb = rng.integers(0, 32, size=(900, 14), dtype=np.uint8)
+    n_bins = np.full(Xb.shape[1], 32, dtype=np.int64)
+    grad = rng.normal(size=Xb.shape[0])
+    hess = rng.uniform(0.2, 1.8, size=Xb.shape[0])
+    selected = np.array([1, 2, 5, 8, 13], dtype=np.int64)
+    feature_mask = np.zeros(Xb.shape[1], dtype=np.int64)
+    feature_mask[selected] = 1
+
+    old_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(min(2, numba.config.NUMBA_NUM_THREADS))
+        reused = build_leafwise_tree(
+            Xb, grad, hess, n_bins, 5, 1.0, 0.1,
+            feature_mask=feature_mask, feature_indices=selected,
+            max_leaves=10, min_child_samples=4, min_child_weight=0.0,
+            min_gain_to_split=0.0, return_training_state=True,
+            reuse_leaf_histograms=True,
+        )
+        full = build_leafwise_tree(
+            Xb, grad, hess, n_bins, 5, 1.0, 0.1,
+            feature_mask=feature_mask, feature_indices=selected,
+            max_leaves=10, min_child_samples=4, min_child_weight=0.0,
+            min_gain_to_split=0.0, return_training_state=True,
+            reuse_leaf_histograms=False,
+        )
+    finally:
+        numba.set_num_threads(old_threads)
+
+    reused_tree, reused_leaf, reused_G, reused_H = reused
+    full_tree, full_leaf, full_G, full_H = full
+    assert np.array_equal(reused_tree.features, full_tree.features)
+    assert np.array_equal(reused_tree.thresholds, full_tree.thresholds)
+    assert np.array_equal(reused_tree.left_child, full_tree.left_child)
+    assert np.array_equal(reused_tree.right_child, full_tree.right_child)
+    assert np.array_equal(reused_tree.leaf_index, full_tree.leaf_index)
+    assert np.array_equal(reused_tree.splits_feat, full_tree.splits_feat)
+    assert np.array_equal(reused_tree.splits_thr, full_tree.splits_thr)
+    assert np.allclose(reused_tree.gains, full_tree.gains)
+    assert np.allclose(reused_tree.values, full_tree.values)
+    assert np.array_equal(reused_leaf, full_leaf)
+    assert np.allclose(reused_G, full_G)
+    assert np.allclose(reused_H, full_H)
 
 
 def test_lightgbm_thread_determinism():

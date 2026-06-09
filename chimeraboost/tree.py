@@ -579,6 +579,52 @@ def _refill_leaf_segment_histograms_unit_hess_into(
                 hh[f, l, b] += 1.0
 
 
+@njit(cache=True, parallel=True)
+def _refill_leaf_segment_histograms_counts_selected_into(
+    X_binned, grad, hess, row_order, leaf_start, leaf_ids, n_leaf_ids,
+    hg, hh, hc, feature_indices
+):
+    """Refill changed-leaf histograms for selected feature columns."""
+    max_bins = hg.shape[2]
+    for jj in prange(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for idx in range(n_leaf_ids):
+            l = leaf_ids[idx]
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+                hc[f, l, b] = 0.0
+            for p in range(leaf_start[l], leaf_start[l + 1]):
+                i = row_order[p]
+                b = X_binned[i, f]
+                hg[f, l, b] += grad[i]
+                hi = hess[i]
+                hh[f, l, b] += hi
+                if hi > 0.0:
+                    hc[f, l, b] += 1.0
+
+
+@njit(cache=True, parallel=True)
+def _refill_leaf_segment_histograms_unit_hess_selected_into(
+    X_binned, grad, row_order, leaf_start, leaf_ids, n_leaf_ids,
+    hg, hh, feature_indices
+):
+    """Refill changed unit-Hessian histograms for selected feature columns."""
+    max_bins = hg.shape[2]
+    for jj in prange(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for idx in range(n_leaf_ids):
+            l = leaf_ids[idx]
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+            for p in range(leaf_start[l], leaf_start[l + 1]):
+                i = row_order[p]
+                b = X_binned[i, f]
+                hg[f, l, b] += grad[i]
+                hh[f, l, b] += 1.0
+
+
 @njit(cache=True)
 def _subtract_right_child_histograms_into_left_serial(
     left_leaf, right_leaf, hg, hh, hc
@@ -593,12 +639,40 @@ def _subtract_right_child_histograms_into_left_serial(
             hc[f, left_leaf, b] -= hc[f, right_leaf, b]
 
 
+@njit(cache=True)
+def _subtract_right_child_histograms_selected_into_left_serial(
+    left_leaf, right_leaf, feature_indices, hg, hh, hc
+):
+    """Subtract right-child histograms from parent for selected features."""
+    max_bins = hg.shape[2]
+    for jj in range(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for b in range(max_bins):
+            hg[f, left_leaf, b] -= hg[f, right_leaf, b]
+            hh[f, left_leaf, b] -= hh[f, right_leaf, b]
+            hc[f, left_leaf, b] -= hc[f, right_leaf, b]
+
+
 @njit(cache=True, parallel=True)
 def _subtract_right_child_histograms_into_left(left_leaf, right_leaf, hg, hh, hc):
     """Replace parent histograms in left_leaf with parent - right child."""
     n_features = hg.shape[0]
     max_bins = hg.shape[2]
     for f in prange(n_features):
+        for b in range(max_bins):
+            hg[f, left_leaf, b] -= hg[f, right_leaf, b]
+            hh[f, left_leaf, b] -= hh[f, right_leaf, b]
+            hc[f, left_leaf, b] -= hc[f, right_leaf, b]
+
+
+@njit(cache=True, parallel=True)
+def _subtract_right_child_histograms_selected_into_left(
+    left_leaf, right_leaf, feature_indices, hg, hh, hc
+):
+    """Subtract right-child histograms from parent for selected features."""
+    max_bins = hg.shape[2]
+    for jj in prange(feature_indices.shape[0]):
+        f = feature_indices[jj]
         for b in range(max_bins):
             hg[f, left_leaf, b] -= hg[f, right_leaf, b]
             hh[f, left_leaf, b] -= hh[f, right_leaf, b]
@@ -787,6 +861,65 @@ def _refill_leaf_segment_histograms_unit_hess_into_serial(
             i = row_order[p]
             gi = grad[i]
             for f in range(n_features):
+                b = X_binned[i, f]
+                hg[f, l, b] += gi
+                hh[f, l, b] += 1.0
+
+
+@njit(cache=True)
+def _refill_leaf_segment_histograms_counts_selected_into_serial(
+    X_binned, grad, hess, row_order, leaf_start, leaf_ids, n_leaf_ids,
+    hg, hh, hc, feature_indices
+):
+    """Single-thread changed-leaf histogram refill for selected columns."""
+    max_bins = hg.shape[2]
+    for jj in range(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for idx in range(n_leaf_ids):
+            l = leaf_ids[idx]
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+                hc[f, l, b] = 0.0
+
+    for idx in range(n_leaf_ids):
+        l = leaf_ids[idx]
+        for p in range(leaf_start[l], leaf_start[l + 1]):
+            i = row_order[p]
+            gi = grad[i]
+            hi = hess[i]
+            positive = hi > 0.0
+            for jj in range(feature_indices.shape[0]):
+                f = feature_indices[jj]
+                b = X_binned[i, f]
+                hg[f, l, b] += gi
+                hh[f, l, b] += hi
+                if positive:
+                    hc[f, l, b] += 1.0
+
+
+@njit(cache=True)
+def _refill_leaf_segment_histograms_unit_hess_selected_into_serial(
+    X_binned, grad, row_order, leaf_start, leaf_ids, n_leaf_ids,
+    hg, hh, feature_indices
+):
+    """Single-thread unit-Hessian refill for selected feature columns."""
+    max_bins = hg.shape[2]
+    for jj in range(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for idx in range(n_leaf_ids):
+            l = leaf_ids[idx]
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+
+    for idx in range(n_leaf_ids):
+        l = leaf_ids[idx]
+        for p in range(leaf_start[l], leaf_start[l + 1]):
+            i = row_order[p]
+            gi = grad[i]
+            for jj in range(feature_indices.shape[0]):
+                f = feature_indices[jj]
                 b = X_binned[i, f]
                 hg[f, l, b] += gi
                 hh[f, l, b] += 1.0
@@ -2309,7 +2442,6 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
     can_reuse_leaf_histograms = (
         reuse_leaf_histograms
         and row_indices is None
-        and feature_indices is None
     )
     histograms_initialized = False
 
@@ -2330,20 +2462,37 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
             right_count = leaf_start[right_child_leaf + 1] - leaf_start[right_child_leaf]
             if right_count <= left_count:
                 if use_serial_kernels:
-                    if constant_hessian:
+                    if constant_hessian and feature_indices is None:
                         _refill_leaf_segment_histograms_unit_hess_into_serial(
                             X_binned, grad, row_order, leaf_start,
                             changed_leaves[1:], 1, hg, hh
                         )
-                    else:
+                    elif constant_hessian:
+                        _refill_leaf_segment_histograms_unit_hess_selected_into_serial(
+                            X_binned, grad, row_order, leaf_start,
+                            changed_leaves[1:], 1, hg, hh, feature_indices
+                        )
+                    elif feature_indices is None:
                         _refill_leaf_segment_histograms_counts_into_serial(
                             X_binned, grad, hess, row_order, leaf_start,
                             changed_leaves[1:], 1, hg, hh, hc
                         )
-                    _subtract_right_child_histograms_into_left_serial(
-                        left_child_leaf, right_child_leaf, hg, hh, hc
-                    )
-                elif constant_hessian:
+                    else:
+                        _refill_leaf_segment_histograms_counts_selected_into_serial(
+                            X_binned, grad, hess, row_order, leaf_start,
+                            changed_leaves[1:], 1, hg, hh, hc,
+                            feature_indices
+                        )
+                    if feature_indices is None:
+                        _subtract_right_child_histograms_into_left_serial(
+                            left_child_leaf, right_child_leaf, hg, hh, hc
+                        )
+                    else:
+                        _subtract_right_child_histograms_selected_into_left_serial(
+                            left_child_leaf, right_child_leaf, feature_indices,
+                            hg, hh, hc
+                        )
+                elif constant_hessian and feature_indices is None:
                     _refill_leaf_segment_histograms_unit_hess_into(
                         X_hist_binned, grad, row_order, leaf_start,
                         changed_leaves[1:], 1, hg, hh
@@ -2351,7 +2500,16 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                     _subtract_right_child_histograms_into_left(
                         left_child_leaf, right_child_leaf, hg, hh, hc
                     )
-                else:
+                elif constant_hessian:
+                    _refill_leaf_segment_histograms_unit_hess_selected_into(
+                        X_hist_binned, grad, row_order, leaf_start,
+                        changed_leaves[1:], 1, hg, hh, feature_indices
+                    )
+                    _subtract_right_child_histograms_selected_into_left(
+                        left_child_leaf, right_child_leaf, feature_indices,
+                        hg, hh, hc
+                    )
+                elif feature_indices is None:
                     _refill_leaf_segment_histograms_counts_into(
                         X_hist_binned, grad, hess, row_order, leaf_start,
                         changed_leaves[1:], 1, hg, hh, hc
@@ -2359,27 +2517,60 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                     _subtract_right_child_histograms_into_left(
                         left_child_leaf, right_child_leaf, hg, hh, hc
                     )
+                else:
+                    _refill_leaf_segment_histograms_counts_selected_into(
+                        X_hist_binned, grad, hess, row_order, leaf_start,
+                        changed_leaves[1:], 1, hg, hh, hc, feature_indices
+                    )
+                    _subtract_right_child_histograms_selected_into_left(
+                        left_child_leaf, right_child_leaf, feature_indices,
+                        hg, hh, hc
+                    )
             else:
                 if use_serial_kernels:
-                    if constant_hessian:
+                    if constant_hessian and feature_indices is None:
                         _refill_leaf_segment_histograms_unit_hess_into_serial(
                             X_binned, grad, row_order, leaf_start,
                             changed_leaves, n_changed_leaves, hg, hh
                         )
-                    else:
+                    elif constant_hessian:
+                        _refill_leaf_segment_histograms_unit_hess_selected_into_serial(
+                            X_binned, grad, row_order, leaf_start,
+                            changed_leaves, n_changed_leaves, hg, hh,
+                            feature_indices
+                        )
+                    elif feature_indices is None:
                         _refill_leaf_segment_histograms_counts_into_serial(
                             X_binned, grad, hess, row_order, leaf_start,
                             changed_leaves, n_changed_leaves, hg, hh, hc
                         )
-                elif constant_hessian:
+                    else:
+                        _refill_leaf_segment_histograms_counts_selected_into_serial(
+                            X_binned, grad, hess, row_order, leaf_start,
+                            changed_leaves, n_changed_leaves, hg, hh, hc,
+                            feature_indices
+                        )
+                elif constant_hessian and feature_indices is None:
                     _refill_leaf_segment_histograms_unit_hess_into(
                         X_hist_binned, grad, row_order, leaf_start,
                         changed_leaves, n_changed_leaves, hg, hh
                     )
-                else:
+                elif constant_hessian:
+                    _refill_leaf_segment_histograms_unit_hess_selected_into(
+                        X_hist_binned, grad, row_order, leaf_start,
+                        changed_leaves, n_changed_leaves, hg, hh,
+                        feature_indices
+                    )
+                elif feature_indices is None:
                     _refill_leaf_segment_histograms_counts_into(
                         X_hist_binned, grad, hess, row_order, leaf_start,
                         changed_leaves, n_changed_leaves, hg, hh, hc
+                    )
+                else:
+                    _refill_leaf_segment_histograms_counts_selected_into(
+                        X_hist_binned, grad, hess, row_order, leaf_start,
+                        changed_leaves, n_changed_leaves, hg, hh, hc,
+                        feature_indices
                     )
         elif use_serial_kernels:
             if constant_hessian and row_indices is None and feature_indices is None:
