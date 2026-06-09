@@ -63,6 +63,8 @@ GROUPS = {
         "_refill_leaf_segment_histograms_unit_hess_selected_into",
         "_refill_leaf_segment_histograms_unit_hess_selected_into_serial",
         "_refill_multiclass_leaf_segment_histograms_counts_into",
+        "_refill_right_subtract_left_unit_hess_into",
+        "_refill_right_subtract_left_unit_hess_selected_into",
     ),
     "hist_subtract": (
         "_subtract_right_child_histograms_into_left",
