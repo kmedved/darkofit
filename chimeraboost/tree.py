@@ -569,6 +569,39 @@ def _partition_leaf_rows(X_binned, row_order, row_scratch, leaf, leaf_start,
     leaf_start[new_leaf + 1] = old_total
 
 
+@njit(cache=True)
+def _partition_leaf_segment_rows(X_binned, row_order, row_scratch, leaf,
+                                 leaf_start, leaf_count, split_leaf,
+                                 new_leaf, feature, threshold):
+    """Stable-partition one leaf's row segment without shifting other leaves."""
+    old_start = leaf_start[split_leaf]
+    old_count = leaf_count[split_leaf]
+    old_end = old_start + old_count
+
+    write = old_start
+    left_count = 0
+    right_count = 0
+    for p in range(old_start, old_end):
+        i = row_order[p]
+        if X_binned[i, feature] <= threshold:
+            row_order[write] = i
+            leaf[i] = split_leaf
+            write += 1
+            left_count += 1
+        else:
+            row_scratch[right_count] = i
+            leaf[i] = new_leaf
+            right_count += 1
+
+    for q in range(right_count):
+        row_order[write + q] = row_scratch[q]
+
+    leaf_start[split_leaf] = old_start
+    leaf_count[split_leaf] = left_count
+    leaf_start[new_leaf] = old_start + left_count
+    leaf_count[new_leaf] = right_count
+
+
 @njit(cache=True, parallel=True)
 def _refill_leaf_segment_histograms_counts_into(
     X_binned, grad, hess, row_order, leaf_start, leaf_ids, n_leaf_ids,
@@ -938,6 +971,174 @@ def _refill_right_subtract_left_counts_selected_into(
             hg[f, left_leaf, b] -= hg[f, right_leaf, b]
             hh[f, left_leaf, b] -= hh[f, right_leaf, b]
             hc[f, left_leaf, b] -= hc[f, right_leaf, b]
+
+
+@njit(cache=True, parallel=True)
+def _refill_right_subtract_left_unit_hess_by_count_into(
+    X_binned, grad, row_order, leaf_start, leaf_count,
+    left_leaf, right_leaf, hg, hh
+):
+    """Refill right child from a segmented row layout and subtract from parent."""
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[2]
+    right_start = leaf_start[right_leaf]
+    right_end = right_start + leaf_count[right_leaf]
+    for f in prange(n_features):
+        for b in range(max_bins):
+            hg[f, right_leaf, b] = 0.0
+            hh[f, right_leaf, b] = 0.0
+        for p in range(right_start, right_end):
+            i = row_order[p]
+            b = X_binned[i, f]
+            hg[f, right_leaf, b] += grad[i]
+            hh[f, right_leaf, b] += 1.0
+        for b in range(max_bins):
+            hg[f, left_leaf, b] -= hg[f, right_leaf, b]
+            hh[f, left_leaf, b] -= hh[f, right_leaf, b]
+
+
+@njit(cache=True, parallel=True)
+def _refill_left_subtract_right_unit_hess_by_count_into(
+    X_binned, grad, row_order, leaf_start, leaf_count,
+    left_leaf, right_leaf, hg, hh
+):
+    """Refill left child from segmented rows and derive right child."""
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[2]
+    left_start = leaf_start[left_leaf]
+    left_end = left_start + leaf_count[left_leaf]
+    for f in prange(n_features):
+        for b in range(max_bins):
+            hg[f, right_leaf, b] = hg[f, left_leaf, b]
+            hh[f, right_leaf, b] = hh[f, left_leaf, b]
+            hg[f, left_leaf, b] = 0.0
+            hh[f, left_leaf, b] = 0.0
+        for p in range(left_start, left_end):
+            i = row_order[p]
+            b = X_binned[i, f]
+            hg[f, left_leaf, b] += grad[i]
+            hh[f, left_leaf, b] += 1.0
+        for b in range(max_bins):
+            hg[f, right_leaf, b] -= hg[f, left_leaf, b]
+            hh[f, right_leaf, b] -= hh[f, left_leaf, b]
+
+
+@njit(cache=True, parallel=True)
+def _refill_right_subtract_left_counts_by_count_into(
+    X_binned, grad, hess, row_order, leaf_start, leaf_count,
+    left_leaf, right_leaf, hg, hh, hc
+):
+    """Refill right child from segmented rows and subtract from parent."""
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[2]
+    right_start = leaf_start[right_leaf]
+    right_end = right_start + leaf_count[right_leaf]
+    for f in prange(n_features):
+        for b in range(max_bins):
+            hg[f, right_leaf, b] = 0.0
+            hh[f, right_leaf, b] = 0.0
+            hc[f, right_leaf, b] = 0.0
+        for p in range(right_start, right_end):
+            i = row_order[p]
+            b = X_binned[i, f]
+            hg[f, right_leaf, b] += grad[i]
+            hi = hess[i]
+            hh[f, right_leaf, b] += hi
+            if hi > 0.0:
+                hc[f, right_leaf, b] += 1.0
+        for b in range(max_bins):
+            hg[f, left_leaf, b] -= hg[f, right_leaf, b]
+            hh[f, left_leaf, b] -= hh[f, right_leaf, b]
+            hc[f, left_leaf, b] -= hc[f, right_leaf, b]
+
+
+@njit(cache=True, parallel=True)
+def _refill_right_subtract_left_counts_positive_by_count_into(
+    X_binned, grad, hess, row_order, leaf_start, leaf_count,
+    left_leaf, right_leaf, hg, hh, hc
+):
+    """Refill right child from segmented rows when Hessians are positive."""
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[2]
+    right_start = leaf_start[right_leaf]
+    right_end = right_start + leaf_count[right_leaf]
+    for f in prange(n_features):
+        for b in range(max_bins):
+            hg[f, right_leaf, b] = 0.0
+            hh[f, right_leaf, b] = 0.0
+            hc[f, right_leaf, b] = 0.0
+        for p in range(right_start, right_end):
+            i = row_order[p]
+            b = X_binned[i, f]
+            hg[f, right_leaf, b] += grad[i]
+            hh[f, right_leaf, b] += hess[i]
+            hc[f, right_leaf, b] += 1.0
+        for b in range(max_bins):
+            hg[f, left_leaf, b] -= hg[f, right_leaf, b]
+            hh[f, left_leaf, b] -= hh[f, right_leaf, b]
+            hc[f, left_leaf, b] -= hc[f, right_leaf, b]
+
+
+@njit(cache=True, parallel=True)
+def _refill_left_subtract_right_counts_by_count_into(
+    X_binned, grad, hess, row_order, leaf_start, leaf_count,
+    left_leaf, right_leaf, hg, hh, hc
+):
+    """Refill left child from segmented rows and derive right child."""
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[2]
+    left_start = leaf_start[left_leaf]
+    left_end = left_start + leaf_count[left_leaf]
+    for f in prange(n_features):
+        for b in range(max_bins):
+            hg[f, right_leaf, b] = hg[f, left_leaf, b]
+            hh[f, right_leaf, b] = hh[f, left_leaf, b]
+            hc[f, right_leaf, b] = hc[f, left_leaf, b]
+            hg[f, left_leaf, b] = 0.0
+            hh[f, left_leaf, b] = 0.0
+            hc[f, left_leaf, b] = 0.0
+        for p in range(left_start, left_end):
+            i = row_order[p]
+            b = X_binned[i, f]
+            hg[f, left_leaf, b] += grad[i]
+            hi = hess[i]
+            hh[f, left_leaf, b] += hi
+            if hi > 0.0:
+                hc[f, left_leaf, b] += 1.0
+        for b in range(max_bins):
+            hg[f, right_leaf, b] -= hg[f, left_leaf, b]
+            hh[f, right_leaf, b] -= hh[f, left_leaf, b]
+            hc[f, right_leaf, b] -= hc[f, left_leaf, b]
+
+
+@njit(cache=True, parallel=True)
+def _refill_left_subtract_right_counts_positive_by_count_into(
+    X_binned, grad, hess, row_order, leaf_start, leaf_count,
+    left_leaf, right_leaf, hg, hh, hc
+):
+    """Refill left child from segmented rows when Hessians are positive."""
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[2]
+    left_start = leaf_start[left_leaf]
+    left_end = left_start + leaf_count[left_leaf]
+    for f in prange(n_features):
+        for b in range(max_bins):
+            hg[f, right_leaf, b] = hg[f, left_leaf, b]
+            hh[f, right_leaf, b] = hh[f, left_leaf, b]
+            hc[f, right_leaf, b] = hc[f, left_leaf, b]
+            hg[f, left_leaf, b] = 0.0
+            hh[f, left_leaf, b] = 0.0
+            hc[f, left_leaf, b] = 0.0
+        for p in range(left_start, left_end):
+            i = row_order[p]
+            b = X_binned[i, f]
+            hg[f, left_leaf, b] += grad[i]
+            hh[f, left_leaf, b] += hess[i]
+            hc[f, left_leaf, b] += 1.0
+        for b in range(max_bins):
+            hg[f, right_leaf, b] -= hg[f, left_leaf, b]
+            hh[f, right_leaf, b] -= hh[f, left_leaf, b]
+            hc[f, right_leaf, b] -= hc[f, left_leaf, b]
 
 
 @njit(cache=True)
@@ -3026,7 +3227,8 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                         min_child_samples=20,
                         recompute_all_leaf_splits=False,
                         reuse_leaf_histograms=True,
-                        hessian_always_positive=False):
+                        hessian_always_positive=False,
+                        leafwise_row_layout="auto"):
     """Grow a LightGBM-like leaf-wise, best-first non-oblivious tree.
 
     This builder chooses the best legal split for each current leaf, then splits
@@ -3058,6 +3260,8 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
     min_child_samples = int(min_child_samples)
     if min_child_samples < 1:
         raise ValueError("min_child_samples must be at least 1")
+    if leafwise_row_layout not in {"auto", "prefix", "segmented"}:
+        raise ValueError("leafwise_row_layout must be 'auto', 'prefix', or 'segmented'")
 
     if row_indices is not None:
         row_indices = np.asarray(row_indices, dtype=np.int64)
@@ -3156,6 +3360,23 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
     row_scratch = np.empty(row_order.shape[0], dtype=np.int64)
     leaf_start = np.zeros(max_leaves + 1, dtype=np.int64)
     leaf_start[1] = row_order.shape[0]
+    leaf_count = np.zeros(max_leaves, dtype=np.int64)
+    leaf_count[0] = row_order.shape[0]
+    can_use_segmented_rows = (
+        reuse_leaf_histograms
+        and row_indices is None
+        and feature_indices is None
+        and bool(np.all(feature_mask != 0))
+    )
+    if leafwise_row_layout == "segmented" and not can_use_segmented_rows:
+        raise ValueError(
+            "leafwise_row_layout='segmented' requires full rows, full features, "
+            "and reuse_leaf_histograms=True"
+        )
+    use_segmented_rows = (
+        leafwise_row_layout == "segmented"
+        or (leafwise_row_layout == "auto" and can_use_segmented_rows)
+    )
     full_feature_positive_split = (
         hessian_always_positive
         and reuse_leaf_histograms
@@ -3163,6 +3384,7 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
         and feature_indices is None
         and bool(np.all(feature_mask != 0))
         and get_num_threads() <= 2
+        and not use_segmented_rows
     )
     split_features = []
     split_thresholds = []
@@ -3186,10 +3408,33 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
             # cheaper child and derive its sibling by subtraction.
             left_child_leaf = changed_leaves[0]
             right_child_leaf = changed_leaves[1]
-            left_count = leaf_start[left_child_leaf + 1] - leaf_start[left_child_leaf]
-            right_count = leaf_start[right_child_leaf + 1] - leaf_start[right_child_leaf]
+            if use_segmented_rows:
+                left_count = leaf_count[left_child_leaf]
+                right_count = leaf_count[right_child_leaf]
+            else:
+                left_count = leaf_start[left_child_leaf + 1] - leaf_start[left_child_leaf]
+                right_count = leaf_start[right_child_leaf + 1] - leaf_start[right_child_leaf]
             if right_count <= left_count:
-                if use_serial_kernels:
+                if use_segmented_rows:
+                    if constant_hessian:
+                        _refill_right_subtract_left_unit_hess_by_count_into(
+                            X_hist_binned, grad, row_order, leaf_start,
+                            leaf_count, left_child_leaf, right_child_leaf,
+                            hg, hh
+                        )
+                    elif hessian_always_positive:
+                        _refill_right_subtract_left_counts_positive_by_count_into(
+                            X_hist_binned, grad, hess, row_order, leaf_start,
+                            leaf_count, left_child_leaf, right_child_leaf,
+                            hg, hh, hc
+                        )
+                    else:
+                        _refill_right_subtract_left_counts_by_count_into(
+                            X_hist_binned, grad, hess, row_order, leaf_start,
+                            leaf_count, left_child_leaf, right_child_leaf,
+                            hg, hh, hc
+                        )
+                elif use_serial_kernels:
                     if constant_hessian and feature_indices is None:
                         _refill_leaf_segment_histograms_unit_hess_into_serial(
                             X_binned, grad, row_order, leaf_start,
@@ -3259,7 +3504,26 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                         hg, hh, hc
                     )
             else:
-                if use_serial_kernels:
+                if use_segmented_rows:
+                    if constant_hessian:
+                        _refill_left_subtract_right_unit_hess_by_count_into(
+                            X_hist_binned, grad, row_order, leaf_start,
+                            leaf_count, left_child_leaf, right_child_leaf,
+                            hg, hh
+                        )
+                    elif hessian_always_positive:
+                        _refill_left_subtract_right_counts_positive_by_count_into(
+                            X_hist_binned, grad, hess, row_order, leaf_start,
+                            leaf_count, left_child_leaf, right_child_leaf,
+                            hg, hh, hc
+                        )
+                    else:
+                        _refill_left_subtract_right_counts_by_count_into(
+                            X_hist_binned, grad, hess, row_order, leaf_start,
+                            leaf_count, left_child_leaf, right_child_leaf,
+                            hg, hh, hc
+                        )
+                elif use_serial_kernels:
                     if constant_hessian and feature_indices is None:
                         _refill_leaf_segment_histograms_unit_hess_into_serial(
                             X_binned, grad, row_order, leaf_start,
@@ -3469,10 +3733,16 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
         split_thresholds.append(t)
         split_gains.append(split_gain)
         if can_reuse_leaf_histograms:
-            _partition_leaf_rows(
-                X_binned, row_order, row_scratch, leaf, leaf_start,
-                n_leaves, split_leaf, new_leaf, f, t
-            )
+            if use_segmented_rows:
+                _partition_leaf_segment_rows(
+                    X_binned, row_order, row_scratch, leaf, leaf_start,
+                    leaf_count, split_leaf, new_leaf, f, t
+                )
+            else:
+                _partition_leaf_rows(
+                    X_binned, row_order, row_scratch, leaf, leaf_start,
+                    n_leaves, split_leaf, new_leaf, f, t
+                )
             if row_indices is not None:
                 _update_leafwise_leaves_with_split(
                     X_binned, leaf, split_leaf, new_leaf, f, t

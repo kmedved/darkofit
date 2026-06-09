@@ -2034,6 +2034,92 @@ def test_leafwise_histogram_subtraction_matches_full_refill():
         assert np.allclose(reused_H, full_H)
 
 
+def test_leafwise_segmented_row_layout_matches_prefix_layout():
+    from chimeraboost.tree import build_leafwise_tree
+
+    rng = np.random.default_rng(63)
+    Xb = rng.integers(0, 48, size=(900, 13), dtype=np.uint8)
+    n_bins = np.full(Xb.shape[1], 48, dtype=np.int64)
+    grad = rng.normal(size=Xb.shape[0])
+    hess = rng.uniform(0.1, 1.7, size=Xb.shape[0])
+
+    cases = [
+        (True, np.ones_like(hess), False),
+        (False, hess, False),
+        (False, hess, True),
+    ]
+    for constant_hessian, h, hessian_always_positive in cases:
+        prefix = build_leafwise_tree(
+            Xb, grad, h, n_bins, 6, 1.0, 0.1,
+            max_leaves=16, min_child_samples=5, min_child_weight=0.1,
+            min_gain_to_split=0.0, return_training_state=True,
+            constant_hessian=constant_hessian,
+            hessian_always_positive=hessian_always_positive,
+            leafwise_row_layout="prefix",
+        )
+        segmented = build_leafwise_tree(
+            Xb, grad, h, n_bins, 6, 1.0, 0.1,
+            max_leaves=16, min_child_samples=5, min_child_weight=0.1,
+            min_gain_to_split=0.0, return_training_state=True,
+            constant_hessian=constant_hessian,
+            hessian_always_positive=hessian_always_positive,
+            leafwise_row_layout="segmented",
+        )
+
+        prefix_tree, prefix_leaf, prefix_G, prefix_H = prefix
+        segmented_tree, segmented_leaf, segmented_G, segmented_H = segmented
+        assert np.array_equal(segmented_tree.features, prefix_tree.features)
+        assert np.array_equal(segmented_tree.thresholds, prefix_tree.thresholds)
+        assert np.array_equal(segmented_tree.left_child, prefix_tree.left_child)
+        assert np.array_equal(segmented_tree.right_child, prefix_tree.right_child)
+        assert np.array_equal(segmented_tree.leaf_index, prefix_tree.leaf_index)
+        assert np.array_equal(segmented_tree.splits_feat, prefix_tree.splits_feat)
+        assert np.array_equal(segmented_tree.splits_thr, prefix_tree.splits_thr)
+        assert np.allclose(segmented_tree.gains, prefix_tree.gains)
+        assert np.array_equal(segmented_leaf, prefix_leaf)
+        assert np.allclose(segmented_tree.values, prefix_tree.values)
+        assert np.allclose(segmented_G, prefix_G)
+        assert np.allclose(segmented_H, prefix_H)
+        assert np.array_equal(segmented_tree.predict(Xb), prefix_tree.predict(Xb))
+
+
+def test_leafwise_segmented_row_layout_guard_and_auto_fallback():
+    from chimeraboost.tree import build_leafwise_tree
+
+    rng = np.random.default_rng(64)
+    Xb = rng.integers(0, 16, size=(256, 7), dtype=np.uint8)
+    n_bins = np.full(Xb.shape[1], 16, dtype=np.int64)
+    grad = rng.normal(size=Xb.shape[0])
+    hess = np.ones(Xb.shape[0])
+    selected = np.array([0, 2, 4], dtype=np.int64)
+    feature_mask = np.zeros(Xb.shape[1], dtype=np.int64)
+    feature_mask[selected] = 1
+
+    with pytest.raises(ValueError, match="leafwise_row_layout='segmented'"):
+        build_leafwise_tree(
+            Xb, grad, hess, n_bins, 5, 1.0, 0.1,
+            max_leaves=8, feature_mask=feature_mask,
+            feature_indices=selected, constant_hessian=True,
+            leafwise_row_layout="segmented",
+        )
+
+    prefix = build_leafwise_tree(
+        Xb, grad, hess, n_bins, 5, 1.0, 0.1,
+        max_leaves=8, feature_mask=feature_mask,
+        feature_indices=selected, constant_hessian=True,
+        leafwise_row_layout="prefix", return_training_state=True,
+    )
+    auto = build_leafwise_tree(
+        Xb, grad, hess, n_bins, 5, 1.0, 0.1,
+        max_leaves=8, feature_mask=feature_mask,
+        feature_indices=selected, constant_hessian=True,
+        leafwise_row_layout="auto", return_training_state=True,
+    )
+    assert np.array_equal(auto[0].splits_feat, prefix[0].splits_feat)
+    assert np.array_equal(auto[0].splits_thr, prefix[0].splits_thr)
+    assert np.array_equal(auto[1], prefix[1])
+
+
 def test_leafwise_positive_hessian_route_matches_generic_tree():
     from chimeraboost.tree import build_leafwise_tree
 
