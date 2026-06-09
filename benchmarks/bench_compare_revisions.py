@@ -66,6 +66,7 @@ CSV_FIELDS = [
     "variant",
     "revision_path",
     "tree_mode",
+    "max_bins",
     "sampling",
     "top_rate",
     "other_rate",
@@ -268,6 +269,7 @@ def _fit_worker(payload):
     row = {
         "status": "ok",
         "error": "",
+        "max_bins": kwargs.get("max_bins", ""),
         "sampling": kwargs.get("sampling", "uniform"),
         "top_rate": kwargs.get("top_rate", ""),
         "other_rate": kwargs.get("other_rate", ""),
@@ -321,6 +323,7 @@ def _base_row(variant, spec, size, seed, weight_mode, split, config):
         "variant": variant.label,
         "revision_path": str(Path(variant.path).resolve()),
         "tree_mode": variant.tree_mode or "",
+        "max_bins": config.max_bins,
         "sampling": _effective_sampling(spec.task, config),
         "top_rate": config.top_rate,
         "other_rate": config.other_rate,
@@ -359,6 +362,7 @@ def parse_args(argv):
     parser.add_argument("--iterations", type=int, default=1_500)
     parser.add_argument("--patience", type=int, default=50)
     parser.add_argument("--depth", type=int, default=6)
+    parser.add_argument("--max-bins", type=int, default=128)
     parser.add_argument("--num-leaves", type=int, default=None)
     parser.add_argument("--min-child-samples", type=int, default=20)
     parser.add_argument("--min-gain-to-split", type=float, default=0.0)
@@ -421,6 +425,7 @@ def main(argv=None):
         iterations=args.iterations,
         patience=args.patience,
         depth=args.depth,
+        max_bins=args.max_bins,
         num_leaves=args.num_leaves,
         learning_rate=args.learning_rate,
         threads=args.threads,

@@ -53,6 +53,7 @@ class FitConfig:
     iterations: int = 1_500
     patience: int = 50
     depth: int = 6
+    max_bins: int = 128
     num_leaves: Optional[int] = None
     learning_rate: Optional[float] = None
     threads: Optional[int] = None
@@ -344,6 +345,7 @@ def estimator_kwargs(estimator_cls, config: FitConfig, variant: RevisionSpec, se
     set_if("early_stopping", True)
     set_if("early_stopping_rounds", config.patience)
     set_if("depth", config.depth)
+    set_if("max_bins", config.max_bins)
     if variant.tree_mode == "lightgbm":
         set_if("num_leaves", config.num_leaves)
     set_if("learning_rate", config.learning_rate)

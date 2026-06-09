@@ -24,3 +24,9 @@ def test_explicit_depth_is_preserved_for_lightgbm_mode():
     )
 
     assert args.depth == 6
+
+
+def test_chimera_max_bins_arg_is_preserved():
+    args = _resolve_default_depth(parse_args(["--chimera-max-bins", "64"]))
+
+    assert args.chimera_max_bins == 64

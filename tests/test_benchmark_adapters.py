@@ -28,6 +28,7 @@ class IterationsEstimator:
         iterations=1,
         early_stopping_rounds=None,
         depth=6,
+        max_bins=128,
         num_leaves=None,
         learning_rate=None,
         thread_count=None,
@@ -65,6 +66,7 @@ def test_estimator_kwargs_maps_iterations_api():
         iterations=17,
         patience=4,
         depth=3,
+        max_bins=64,
         num_leaves=15,
         learning_rate=0.2,
         threads=2,
@@ -82,6 +84,7 @@ def test_estimator_kwargs_maps_iterations_api():
     assert kwargs["iterations"] == 17
     assert kwargs["early_stopping_rounds"] == 4
     assert kwargs["depth"] == 3
+    assert kwargs["max_bins"] == 64
     assert kwargs["num_leaves"] == 15
     assert kwargs["learning_rate"] == 0.2
     assert kwargs["thread_count"] == 2
@@ -96,12 +99,13 @@ def test_estimator_kwargs_maps_iterations_api():
     assert kwargs["other_rate"] == 0.2
 
 
-def test_estimator_kwargs_omits_sampling_for_old_estimators():
-    cfg = FitConfig(sampling="goss", top_rate=0.3, other_rate=0.2)
+def test_estimator_kwargs_omits_newer_params_for_old_estimators():
+    cfg = FitConfig(max_bins=64, sampling="goss", top_rate=0.3, other_rate=0.2)
     variant = RevisionSpec("upstream_matched", "/repo")
 
     kwargs = estimator_kwargs(NEstimatorsEstimator, cfg, variant, seed=0)
 
+    assert "max_bins" not in kwargs
     assert "sampling" not in kwargs
     assert "top_rate" not in kwargs
     assert "other_rate" not in kwargs
