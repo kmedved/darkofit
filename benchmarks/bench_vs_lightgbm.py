@@ -94,6 +94,9 @@ class Result:
     best_iteration: int | None
     primary_metric: str
     primary_value: float
+    sampling: str = ""
+    top_rate: float | None = None
+    other_rate: float | None = None
     rmse: float | None = None
     mae: float | None = None
     r2: float | None = None
@@ -343,6 +346,9 @@ def _run_chimera(spec, X_train, y_train, X_test, y_test, cat_features, args, see
     )
 
     def fit_once():
+        sampling = args.chimera_sampling
+        if spec.task == "multiclass" and sampling == "goss":
+            sampling = "uniform"
         model = estimator_cls(
             iterations=args.iterations,
             early_stopping_rounds=args.patience,
@@ -356,6 +362,9 @@ def _run_chimera(spec, X_train, y_train, X_test, y_test, cat_features, args, see
             random_state=seed,
             ordered_boosting=False if args.no_ordered_boosting else "auto",
             tree_mode=args.tree_mode,
+            sampling=sampling,
+            top_rate=args.chimera_top_rate,
+            other_rate=args.chimera_other_rate,
         )
         start = time.perf_counter()
         model.fit(X_fit, y_fit, cat_features=cat_features, eval_set=(X_val, y_val))
@@ -473,6 +482,7 @@ def _result_from_prediction(
         best_iter = best_iter()
     if best_iter is not None:
         best_iter = int(best_iter)
+    fitted_core = getattr(model, "model_", model)
 
     common = dict(
         dataset=spec.name,
@@ -480,6 +490,9 @@ def _result_from_prediction(
         size=size_name,
         seed=seed,
         model=model_name,
+        sampling=getattr(fitted_core, "sampling_", ""),
+        top_rate=getattr(fitted_core, "top_rate", None),
+        other_rate=getattr(fitted_core, "other_rate", None),
         n_train=n_train,
         n_test=n_test,
         n_features=n_features,
@@ -534,6 +547,9 @@ def _warm_up(args):
     )
     for estimator_cls, X, y, cat_features, task in families:
         X_fit, X_val, y_fit, y_val = _validation_split(X, y, task, 0)
+        sampling = getattr(args, "chimera_sampling", "uniform")
+        if task == "multiclass" and sampling == "goss":
+            sampling = "uniform"
         model = estimator_cls(
             iterations=5,
             early_stopping_rounds=3,
@@ -545,6 +561,9 @@ def _warm_up(args):
             thread_count=args.threads,
             random_state=123,
             tree_mode=tree_mode,
+            sampling=sampling,
+            top_rate=getattr(args, "chimera_top_rate", 0.2),
+            other_rate=getattr(args, "chimera_other_rate", 0.1),
         )
         model.fit(X_fit, y_fit, cat_features=cat_features, eval_set=(X_val, y_val))
         model.predict(X_val[:16])
@@ -657,6 +676,17 @@ def parse_args(argv):
     parser.add_argument("--chimera-min-child-samples", type=int, default=20)
     parser.add_argument("--chimera-min-child-weight", type=float, default=1.0)
     parser.add_argument("--chimera-min-gain-to-split", type=float, default=0.0)
+    parser.add_argument(
+        "--chimera-sampling",
+        choices=["uniform", "goss"],
+        default="uniform",
+        help=(
+            "ChimeraBoost row sampling policy. Experimental 'goss' applies "
+            "to scalar regression/binary rows; multiclass rows stay uniform."
+        ),
+    )
+    parser.add_argument("--chimera-top-rate", type=float, default=0.2)
+    parser.add_argument("--chimera-other-rate", type=float, default=0.1)
     parser.add_argument(
         "--tree-mode",
         choices=["catboost", "oblivious", "lightgbm", "depthwise", "levelwise"],

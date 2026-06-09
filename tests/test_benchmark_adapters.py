@@ -18,6 +18,7 @@ from benchmark_adapters import (  # noqa: E402
     make_sample_weight,
     split_case,
 )
+from bench_compare_revisions import _effective_sampling  # noqa: E402
 from weighted_metrics import metric_bundle  # noqa: E402
 
 
@@ -36,6 +37,9 @@ class IterationsEstimator:
         verbose_timing=False,
         min_child_samples=20,
         min_gain_to_split=0.0,
+        sampling="uniform",
+        top_rate=0.2,
+        other_rate=0.1,
     ):
         pass
 
@@ -67,6 +71,9 @@ def test_estimator_kwargs_maps_iterations_api():
         ordered_boosting=True,
         min_child_samples=7,
         min_gain_to_split=0.01,
+        sampling="goss",
+        top_rate=0.3,
+        other_rate=0.2,
     )
     variant = RevisionSpec("fork_lightgbm", "/repo", tree_mode="lightgbm")
 
@@ -84,6 +91,28 @@ def test_estimator_kwargs_maps_iterations_api():
     assert kwargs["verbose_timing"] is True
     assert kwargs["min_child_samples"] == 7
     assert kwargs["min_gain_to_split"] == 0.01
+    assert kwargs["sampling"] == "goss"
+    assert kwargs["top_rate"] == 0.3
+    assert kwargs["other_rate"] == 0.2
+
+
+def test_estimator_kwargs_omits_sampling_for_old_estimators():
+    cfg = FitConfig(sampling="goss", top_rate=0.3, other_rate=0.2)
+    variant = RevisionSpec("upstream_matched", "/repo")
+
+    kwargs = estimator_kwargs(NEstimatorsEstimator, cfg, variant, seed=0)
+
+    assert "sampling" not in kwargs
+    assert "top_rate" not in kwargs
+    assert "other_rate" not in kwargs
+
+
+def test_effective_sampling_keeps_multiclass_uniform_for_goss_config():
+    cfg = FitConfig(sampling="goss", top_rate=0.3, other_rate=0.2)
+
+    assert _effective_sampling("binary", cfg) == "goss"
+    assert _effective_sampling("regression", cfg) == "goss"
+    assert _effective_sampling("multiclass", cfg) == "uniform"
 
 
 def test_estimator_kwargs_num_leaves_only_for_lightgbm():

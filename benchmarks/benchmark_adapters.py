@@ -60,6 +60,9 @@ class FitConfig:
     verbose_timing: bool = True
     min_child_samples: int = 20
     min_gain_to_split: float = 0.0
+    sampling: str = "uniform"
+    top_rate: float = 0.2
+    other_rate: float = 0.1
 
 
 def _resample_rows(X, y, n, rng, stratify=False):
@@ -353,6 +356,9 @@ def estimator_kwargs(estimator_cls, config: FitConfig, variant: RevisionSpec, se
     set_if("verbose_timing", config.verbose_timing)
     set_if("min_child_samples", config.min_child_samples)
     set_if("min_gain_to_split", config.min_gain_to_split)
+    set_if("sampling", config.sampling)
+    set_if("top_rate", config.top_rate)
+    set_if("other_rate", config.other_rate)
 
     if variant.tree_mode is not None:
         if "tree_mode" not in accepted:

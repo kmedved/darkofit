@@ -66,6 +66,9 @@ CSV_FIELDS = [
     "variant",
     "revision_path",
     "tree_mode",
+    "sampling",
+    "top_rate",
+    "other_rate",
     "use_defaults",
     "dataset",
     "task",
@@ -198,6 +201,8 @@ def _fit_worker(payload):
     task = payload["task"]
     estimator_cls = ChimeraBoostRegressor if task == "regression" else ChimeraBoostClassifier
     kwargs = estimator_kwargs(estimator_cls, config, variant, payload["seed"])
+    if "sampling" in kwargs:
+        kwargs["sampling"] = _effective_sampling(task, config)
     fit_params = set(inspect.signature(estimator_cls.fit).parameters)
     cat_features = payload["cat_features"]
     repeat = max(1, int(payload["repeat"]))
@@ -263,6 +268,9 @@ def _fit_worker(payload):
     row = {
         "status": "ok",
         "error": "",
+        "sampling": kwargs.get("sampling", "uniform"),
+        "top_rate": kwargs.get("top_rate", ""),
+        "other_rate": kwargs.get("other_rate", ""),
         "fit_seconds": float(fit_seconds),
         "predict_seconds": float(predict_seconds),
         "boost_seconds": "" if boost_seconds is None else float(boost_seconds),
@@ -302,11 +310,20 @@ def _run_worker(payload_path):
         }
 
 
-def _base_row(variant, spec, size, seed, weight_mode, split):
+def _effective_sampling(task, config):
+    if task == "multiclass" and config.sampling == "goss":
+        return "uniform"
+    return config.sampling
+
+
+def _base_row(variant, spec, size, seed, weight_mode, split, config):
     return {
         "variant": variant.label,
         "revision_path": str(Path(variant.path).resolve()),
         "tree_mode": variant.tree_mode or "",
+        "sampling": _effective_sampling(spec.task, config),
+        "top_rate": config.top_rate,
+        "other_rate": config.other_rate,
         "use_defaults": variant.use_defaults,
         "dataset": spec.name,
         "task": spec.task,
@@ -346,6 +363,17 @@ def parse_args(argv):
     parser.add_argument("--min-child-samples", type=int, default=20)
     parser.add_argument("--min-gain-to-split", type=float, default=0.0)
     parser.add_argument("--learning-rate", type=float, default=None)
+    parser.add_argument(
+        "--sampling",
+        choices=["uniform", "goss"],
+        default="uniform",
+        help=(
+            "ChimeraBoost row sampling policy. Experimental 'goss' applies "
+            "to scalar regression/binary rows; multiclass rows stay uniform."
+        ),
+    )
+    parser.add_argument("--top-rate", type=float, default=0.2)
+    parser.add_argument("--other-rate", type=float, default=0.1)
     parser.add_argument("--ordered-boosting", action="store_true", default=False)
     parser.add_argument(
         "--weight-modes",
@@ -399,6 +427,9 @@ def main(argv=None):
         ordered_boosting=args.ordered_boosting,
         min_child_samples=args.min_child_samples,
         min_gain_to_split=args.min_gain_to_split,
+        sampling=args.sampling,
+        top_rate=args.top_rate,
+        other_rate=args.other_rate,
     )
     args.csv.parent.mkdir(parents=True, exist_ok=True)
 
@@ -434,7 +465,10 @@ def main(argv=None):
                                 }
                                 payload_path = tmpdir / f"payload-{variant.label}-{dataset}-{size}-{seed}-{weight_mode}.json"
                                 payload_path.write_text(json.dumps(payload, default=_json_default))
-                                row = _base_row(variant, spec, size, seed, weight_mode, split)
+                                row = _base_row(
+                                    variant, spec, size, seed, weight_mode,
+                                    split, config,
+                                )
                                 row.update(_run_worker(payload_path))
                                 writer.writerow(_complete_row(row))
                                 fh.flush()
