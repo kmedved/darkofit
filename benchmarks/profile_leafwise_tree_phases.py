@@ -69,6 +69,10 @@ GROUPS = {
         "_subtract_right_child_histograms_into_left_serial",
         "_subtract_right_child_histograms_selected_into_left",
         "_subtract_right_child_histograms_selected_into_left_serial",
+        "_subtract_right_child_unit_hess_histograms_into_left",
+        "_subtract_right_child_unit_hess_histograms_into_left_serial",
+        "_subtract_right_child_unit_hess_histograms_selected_into_left",
+        "_subtract_right_child_unit_hess_histograms_selected_into_left_serial",
     ),
     "split_score": (
         "_best_splits_by_leaf_counts",

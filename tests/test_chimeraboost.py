@@ -1477,6 +1477,34 @@ def test_partition_middle_leaf_keeps_stable_segments():
     assert np.array_equal(leaf_start[:6], np.array([0, 2, 4, 7, 9, 10]))
 
 
+def test_unit_hess_histogram_subtraction_matches_generic_hg_hh():
+    from chimeraboost.tree import (
+        _subtract_right_child_histograms_into_left_serial,
+        _subtract_right_child_unit_hess_histograms_into_left_serial,
+    )
+
+    rng = np.random.default_rng(46)
+    hg = rng.normal(size=(6, 5, 11))
+    hh = rng.uniform(0.0, 5.0, size=(6, 5, 11))
+    hc = rng.uniform(0.0, 5.0, size=(6, 5, 11))
+    unit_hg = hg.copy()
+    unit_hh = hh.copy()
+    generic_hg = hg.copy()
+    generic_hh = hh.copy()
+    generic_hc = hc.copy()
+
+    _subtract_right_child_unit_hess_histograms_into_left_serial(
+        2, 4, unit_hg, unit_hh
+    )
+    _subtract_right_child_histograms_into_left_serial(
+        2, 4, generic_hg, generic_hh, generic_hc
+    )
+
+    assert np.array_equal(unit_hg, generic_hg)
+    assert np.array_equal(unit_hh, generic_hh)
+    assert np.array_equal(generic_hc[:, 2], hc[:, 2] - hc[:, 4])
+
+
 def test_leafwise_histogram_subtraction_matches_full_refill():
     from chimeraboost.tree import build_leafwise_tree
 
