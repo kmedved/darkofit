@@ -92,6 +92,8 @@ class Result:
     fit_seconds: float
     predict_seconds: float
     best_iteration: int | None
+    chimera_effective_num_leaves: int | None
+    lightgbm_num_leaves: int | None
     primary_metric: str
     primary_value: float
     sampling: str = ""
@@ -478,6 +480,8 @@ def _result_from_prediction(
     n_train,
     n_test,
     n_features,
+    chimera_effective_num_leaves,
+    lightgbm_num_leaves,
 ):
     best_iter = getattr(model, "best_iteration_", None)
     if best_iter is None:
@@ -503,6 +507,8 @@ def _result_from_prediction(
         fit_seconds=fit_seconds,
         predict_seconds=predict_seconds,
         best_iteration=best_iter,
+        chimera_effective_num_leaves=chimera_effective_num_leaves,
+        lightgbm_num_leaves=lightgbm_num_leaves,
     )
     if spec.task == "regression":
         metrics = _regression_metrics(y_test, pred)
@@ -691,6 +697,26 @@ def parse_args(argv):
     parser.add_argument("--chimera-l2-leaf-reg", type=float, default=3.0)
     parser.add_argument("--chimera-max-bins", type=int, default=128)
     parser.add_argument("--chimera-num-leaves", type=int, default=None)
+    parser.add_argument(
+        "--match-lightgbm-leaves",
+        dest="match_lightgbm_leaves",
+        action="store_true",
+        default=True,
+        help=(
+            "For tree_mode=lightgbm, default an unspecified ChimeraBoost "
+            "num_leaves to --lightgbm-num-leaves so benchmark comparisons use "
+            "matched leaf capacity."
+        ),
+    )
+    parser.add_argument(
+        "--no-match-lightgbm-leaves",
+        dest="match_lightgbm_leaves",
+        action="store_false",
+        help=(
+            "Leave ChimeraBoost num_leaves unset when --chimera-num-leaves is "
+            "omitted, preserving the estimator's native LightGBM-mode default."
+        ),
+    )
     parser.add_argument("--chimera-subsample", type=float, default=1.0)
     parser.add_argument("--chimera-colsample", type=float, default=1.0)
     parser.add_argument("--chimera-min-child-samples", type=int, default=20)
@@ -745,8 +771,36 @@ def _resolve_default_depth(args):
     return args
 
 
+def _chimera_effective_num_leaves(args):
+    if args.tree_mode != "lightgbm":
+        if args.depth is None or args.depth < 1:
+            return None
+        return 1 << int(args.depth)
+    if args.chimera_num_leaves is None:
+        if args.depth is None or args.depth < 0:
+            return 31
+        return min(31, 1 << int(args.depth))
+    max_leaves = int(args.chimera_num_leaves)
+    if args.depth is not None and args.depth > 0:
+        max_leaves = min(max_leaves, 1 << int(args.depth))
+    return max_leaves
+
+
+def _resolve_benchmark_capacity(args):
+    if (
+        args.tree_mode == "lightgbm"
+        and args.match_lightgbm_leaves
+        and args.chimera_num_leaves is None
+    ):
+        args.chimera_num_leaves = args.lightgbm_num_leaves
+    args.chimera_effective_num_leaves = _chimera_effective_num_leaves(args)
+    return args
+
+
 def main(argv=None):
-    args = _resolve_default_depth(parse_args(argv or sys.argv[1:]))
+    args = _resolve_benchmark_capacity(
+        _resolve_default_depth(parse_args(argv or sys.argv[1:]))
+    )
     selected = list(DATASETS)
     if args.datasets:
         requested = set(args.datasets)
@@ -828,6 +882,8 @@ def main(argv=None):
                     n_train,
                     n_test,
                     n_features,
+                    args.chimera_effective_num_leaves,
+                    args.lightgbm_num_leaves,
                 )
                 results.append(result)
                 writer.writerow({field: getattr(result, field) for field in fields})

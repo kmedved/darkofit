@@ -7,7 +7,11 @@ BENCH_DIR = Path(__file__).resolve().parents[1] / "benchmarks"
 if str(BENCH_DIR) not in sys.path:
     sys.path.insert(0, str(BENCH_DIR))
 
-from bench_vs_lightgbm import _resolve_default_depth, parse_args  # noqa: E402
+from bench_vs_lightgbm import (  # noqa: E402
+    _resolve_benchmark_capacity,
+    _resolve_default_depth,
+    parse_args,
+)
 
 
 def test_default_depth_matches_tree_mode():
@@ -45,3 +49,44 @@ def test_chimera_row_and_column_sampling_args_are_preserved():
 
     assert args.chimera_subsample == 0.8
     assert args.chimera_colsample == 0.7
+
+
+def test_lightgbm_mode_matches_leaf_capacity_by_default():
+    args = _resolve_benchmark_capacity(
+        _resolve_default_depth(parse_args(["--tree-mode", "lightgbm"]))
+    )
+
+    assert args.lightgbm_num_leaves == 64
+    assert args.chimera_num_leaves == 64
+    assert args.chimera_effective_num_leaves == 64
+
+
+def test_explicit_chimera_num_leaves_is_preserved():
+    args = _resolve_benchmark_capacity(
+        _resolve_default_depth(
+            parse_args(
+                [
+                    "--tree-mode",
+                    "lightgbm",
+                    "--lightgbm-num-leaves",
+                    "64",
+                    "--chimera-num-leaves",
+                    "127",
+                ]
+            )
+        )
+    )
+
+    assert args.chimera_num_leaves == 127
+    assert args.chimera_effective_num_leaves == 127
+
+
+def test_leaf_matching_can_be_disabled_for_native_default_probe():
+    args = _resolve_benchmark_capacity(
+        _resolve_default_depth(
+            parse_args(["--tree-mode", "lightgbm", "--no-match-lightgbm-leaves"])
+        )
+    )
+
+    assert args.chimera_num_leaves is None
+    assert args.chimera_effective_num_leaves == 31
