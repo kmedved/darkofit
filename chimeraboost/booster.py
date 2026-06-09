@@ -360,7 +360,7 @@ class _BaseBooster:
 
     def _builder_kwargs(self, fmask, findices, row_indices,
                         hist_buffers, split_buffers, X_hist_binned,
-                        use_constant_hessian):
+                        use_constant_hessian, hessian_always_positive=False):
         kwargs = {
             "feature_mask": fmask,
             "min_child_weight": self.min_child_weight,
@@ -377,6 +377,7 @@ class _BaseBooster:
                 max_leaves=self._max_tree_leaves(),
                 min_child_samples=self.min_child_samples,
                 min_gain_to_split=self.min_gain_to_split,
+                hessian_always_positive=hessian_always_positive,
             )
         return kwargs
 
@@ -436,6 +437,11 @@ class GradientBoosting(_BaseBooster):
             getattr(self.loss_, "constant_hessian", False)
             and w is None
             and self.sampling_ != "goss"
+        )
+        hessian_always_positive = (
+            self.tree_mode_ == "lightgbm"
+            and self.loss_name == "Logloss"
+            and w is None
         )
         _es = self.early_stopping_rounds is not None and eval_set is not None
         self.lr_ = (self.learning_rate if self.learning_rate is not None
@@ -504,7 +510,8 @@ class GradientBoosting(_BaseBooster):
                 self.l2_leaf_reg, self.lr_,
                 **self._builder_kwargs(
                     fmask, findices, row_indices, hist_buffers, split_buffers,
-                    X_hist_binned, use_constant_hessian
+                    X_hist_binned, use_constant_hessian,
+                    hessian_always_positive=hessian_always_positive
                 ),
             )
             _add_timing(timing, "tree_build", phase)

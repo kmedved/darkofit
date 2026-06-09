@@ -419,6 +419,27 @@ def _build_histograms_counts_into(X_binned, grad, hess, leaf, n_leaves, hg, hh, 
 
 
 @njit(cache=True, parallel=True)
+def _build_histograms_counts_positive_into(
+    X_binned, grad, hess, leaf, n_leaves, hg, hh, hc
+):
+    """Fill histograms when every scanned row has positive Hessian."""
+    n_samples, n_features = X_binned.shape
+    max_bins = hg.shape[2]
+    for f in prange(n_features):
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+                hc[f, l, b] = 0.0
+        for i in range(n_samples):
+            l = leaf[i]
+            b = X_binned[i, f]
+            hg[f, l, b] += grad[i]
+            hh[f, l, b] += hess[i]
+            hc[f, l, b] += 1.0
+
+
+@njit(cache=True, parallel=True)
 def _build_histograms_counts_selected_into(X_binned, grad, hess, leaf,
                                            n_leaves, hg, hh, hc,
                                            feature_indices):
@@ -575,6 +596,29 @@ def _refill_leaf_segment_histograms_counts_into(
 
 
 @njit(cache=True, parallel=True)
+def _refill_leaf_segment_histograms_counts_positive_into(
+    X_binned, grad, hess, row_order, leaf_start, leaf_ids, n_leaf_ids,
+    hg, hh, hc
+):
+    """Refill changed-leaf histograms when scanned Hessians are positive."""
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[2]
+    for f in prange(n_features):
+        for idx in range(n_leaf_ids):
+            l = leaf_ids[idx]
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+                hc[f, l, b] = 0.0
+            for p in range(leaf_start[l], leaf_start[l + 1]):
+                i = row_order[p]
+                b = X_binned[i, f]
+                hg[f, l, b] += grad[i]
+                hh[f, l, b] += hess[i]
+                hc[f, l, b] += 1.0
+
+
+@njit(cache=True, parallel=True)
 def _refill_leaf_segment_histograms_unit_hess_into(
     X_binned, grad, row_order, leaf_start, leaf_ids, n_leaf_ids, hg, hh
 ):
@@ -704,6 +748,31 @@ def _refill_right_subtract_left_counts_into(
             hh[f, right_leaf, b] += hi
             if hi > 0.0:
                 hc[f, right_leaf, b] += 1.0
+        for b in range(max_bins):
+            hg[f, left_leaf, b] -= hg[f, right_leaf, b]
+            hh[f, left_leaf, b] -= hh[f, right_leaf, b]
+            hc[f, left_leaf, b] -= hc[f, right_leaf, b]
+
+
+@njit(cache=True, parallel=True)
+def _refill_right_subtract_left_counts_positive_into(
+    X_binned, grad, hess, row_order, leaf_start, left_leaf, right_leaf,
+    hg, hh, hc
+):
+    """Refill right child and subtract it when Hessians are positive."""
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[2]
+    for f in prange(n_features):
+        for b in range(max_bins):
+            hg[f, right_leaf, b] = 0.0
+            hh[f, right_leaf, b] = 0.0
+            hc[f, right_leaf, b] = 0.0
+        for p in range(leaf_start[right_leaf], leaf_start[right_leaf + 1]):
+            i = row_order[p]
+            b = X_binned[i, f]
+            hg[f, right_leaf, b] += grad[i]
+            hh[f, right_leaf, b] += hess[i]
+            hc[f, right_leaf, b] += 1.0
         for b in range(max_bins):
             hg[f, left_leaf, b] -= hg[f, right_leaf, b]
             hh[f, left_leaf, b] -= hh[f, right_leaf, b]
@@ -2608,7 +2677,8 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                         max_leaves=None, min_gain_to_split=None,
                         min_child_samples=20,
                         recompute_all_leaf_splits=False,
-                        reuse_leaf_histograms=True):
+                        reuse_leaf_histograms=True,
+                        hessian_always_positive=False):
     """Grow a LightGBM-like leaf-wise, best-first non-oblivious tree.
 
     This builder chooses the best legal split for each current leaf, then splits
@@ -2818,6 +2888,11 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                         left_child_leaf, right_child_leaf, feature_indices,
                         hg, hh
                     )
+                elif hessian_always_positive and feature_indices is None:
+                    _refill_right_subtract_left_counts_positive_into(
+                        X_hist_binned, grad, hess, row_order, leaf_start,
+                        left_child_leaf, right_child_leaf, hg, hh, hc
+                    )
                 elif feature_indices is None:
                     _refill_right_subtract_left_counts_into(
                         X_hist_binned, grad, hess, row_order, leaf_start,
@@ -2863,6 +2938,11 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                         X_hist_binned, grad, row_order, leaf_start,
                         changed_leaves, n_changed_leaves, hg, hh,
                         feature_indices
+                    )
+                elif hessian_always_positive and feature_indices is None:
+                    _refill_leaf_segment_histograms_counts_positive_into(
+                        X_hist_binned, grad, hess, row_order, leaf_start,
+                        changed_leaves, n_changed_leaves, hg, hh, hc
                     )
                 elif feature_indices is None:
                     _refill_leaf_segment_histograms_counts_into(
@@ -2933,6 +3013,14 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                 _build_histograms_selected_rows_unit_hess_into(
                     X_hist_binned, grad, leaf, n_leaves, hg, hh,
                     feature_indices, row_indices
+                )
+            elif (
+                hessian_always_positive
+                and row_indices is None
+                and feature_indices is None
+            ):
+                _build_histograms_counts_positive_into(
+                    X_hist_binned, grad, hess, leaf, n_leaves, hg, hh, hc
                 )
             elif row_indices is None and feature_indices is None:
                 _build_histograms_counts_into(

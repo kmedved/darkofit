@@ -1566,9 +1566,13 @@ def test_fused_unit_hess_refill_subtract_matches_two_step():
 
 def test_fused_counts_refill_subtract_matches_two_step():
     from chimeraboost.tree import (
+        _build_histograms_counts_into,
+        _build_histograms_counts_positive_into,
         _refill_leaf_segment_histograms_counts_into,
+        _refill_leaf_segment_histograms_counts_positive_into,
         _refill_leaf_segment_histograms_counts_selected_into,
         _refill_right_subtract_left_counts_into,
+        _refill_right_subtract_left_counts_positive_into,
         _refill_right_subtract_left_counts_selected_into,
         _subtract_right_child_histograms_into_left,
         _subtract_right_child_histograms_selected_into_left,
@@ -1631,6 +1635,55 @@ def test_fused_counts_refill_subtract_matches_two_step():
         assert np.array_equal(fused_hc, ref_hc)
 
 
+def test_positive_hessian_count_histograms_match_generic():
+    from chimeraboost.tree import (
+        _build_histograms_counts_into,
+        _build_histograms_counts_positive_into,
+        _refill_leaf_segment_histograms_counts_into,
+        _refill_leaf_segment_histograms_counts_positive_into,
+        _refill_right_subtract_left_counts_into,
+        _refill_right_subtract_left_counts_positive_into,
+    )
+
+    rng = np.random.default_rng(53)
+    Xb = rng.integers(0, 21, size=(140, 11), dtype=np.uint8)
+    grad = rng.normal(size=Xb.shape[0])
+    hess = rng.uniform(0.05, 1.6, size=Xb.shape[0])
+    leaf = rng.integers(0, 4, size=Xb.shape[0], dtype=np.int64)
+    row_order = np.arange(Xb.shape[0], dtype=np.int64)
+    leaf_start = np.array([0, 31, 66, 101, 140], dtype=np.int64)
+    leaf_ids = np.array([1, 3], dtype=np.int64)
+
+    generic = tuple(np.empty((Xb.shape[1], 4, 21)) for _ in range(3))
+    positive = tuple(np.empty((Xb.shape[1], 4, 21)) for _ in range(3))
+    _build_histograms_counts_into(Xb, grad, hess, leaf, 4, *generic)
+    _build_histograms_counts_positive_into(Xb, grad, hess, leaf, 4, *positive)
+    for a, b in zip(generic, positive):
+        assert np.array_equal(a, b)
+
+    generic = tuple(rng.normal(size=(Xb.shape[1], 4, 21)) for _ in range(3))
+    positive = tuple(arr.copy() for arr in generic)
+    _refill_leaf_segment_histograms_counts_into(
+        Xb, grad, hess, row_order, leaf_start, leaf_ids, 2, *generic
+    )
+    _refill_leaf_segment_histograms_counts_positive_into(
+        Xb, grad, hess, row_order, leaf_start, leaf_ids, 2, *positive
+    )
+    for a, b in zip(generic, positive):
+        assert np.array_equal(a, b)
+
+    generic = tuple(rng.normal(size=(Xb.shape[1], 4, 21)) for _ in range(3))
+    positive = tuple(arr.copy() for arr in generic)
+    _refill_right_subtract_left_counts_into(
+        Xb, grad, hess, row_order, leaf_start, 1, 3, *generic
+    )
+    _refill_right_subtract_left_counts_positive_into(
+        Xb, grad, hess, row_order, leaf_start, 1, 3, *positive
+    )
+    for a, b in zip(generic, positive):
+        assert np.array_equal(a, b)
+
+
 def test_leafwise_histogram_subtraction_matches_full_refill():
     from chimeraboost.tree import build_leafwise_tree
 
@@ -1664,6 +1717,45 @@ def test_leafwise_histogram_subtraction_matches_full_refill():
         assert np.allclose(reused_tree.values, full_tree.values)
         assert np.allclose(reused_G, full_G)
         assert np.allclose(reused_H, full_H)
+
+
+def test_leafwise_positive_hessian_route_matches_generic_tree():
+    from chimeraboost.tree import build_leafwise_tree
+
+    rng = np.random.default_rng(54)
+    Xb = rng.integers(0, 64, size=(900, 16), dtype=np.uint8)
+    n_bins = np.full(Xb.shape[1], 64, dtype=np.int64)
+    grad = rng.normal(size=Xb.shape[0])
+    hess = rng.uniform(0.05, 1.5, size=Xb.shape[0])
+
+    generic = build_leafwise_tree(
+        Xb, grad, hess, n_bins, 6, 1.2, 0.1,
+        max_leaves=14, min_child_samples=5, min_child_weight=0.1,
+        min_gain_to_split=0.0, return_training_state=True,
+        hessian_always_positive=False,
+    )
+    positive = build_leafwise_tree(
+        Xb, grad, hess, n_bins, 6, 1.2, 0.1,
+        max_leaves=14, min_child_samples=5, min_child_weight=0.1,
+        min_gain_to_split=0.0, return_training_state=True,
+        hessian_always_positive=True,
+    )
+
+    generic_tree, generic_leaf, generic_G, generic_H = generic
+    positive_tree, positive_leaf, positive_G, positive_H = positive
+    assert np.array_equal(positive_tree.features, generic_tree.features)
+    assert np.array_equal(positive_tree.thresholds, generic_tree.thresholds)
+    assert np.array_equal(positive_tree.left_child, generic_tree.left_child)
+    assert np.array_equal(positive_tree.right_child, generic_tree.right_child)
+    assert np.array_equal(positive_tree.leaf_index, generic_tree.leaf_index)
+    assert np.array_equal(positive_tree.splits_feat, generic_tree.splits_feat)
+    assert np.array_equal(positive_tree.splits_thr, generic_tree.splits_thr)
+    assert np.allclose(positive_tree.gains, generic_tree.gains)
+    assert np.allclose(positive_tree.values, generic_tree.values)
+    assert np.array_equal(positive_leaf, generic_leaf)
+    assert np.allclose(positive_G, generic_G)
+    assert np.allclose(positive_H, generic_H)
+    assert np.array_equal(positive_tree.predict(Xb), generic_tree.predict(Xb))
 
 
 def test_leafwise_selected_feature_histogram_reuse_threaded():

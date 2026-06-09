@@ -36,6 +36,7 @@ import bench_vs_lightgbm as bench
 GROUPS = {
     "hist_build": (
         "_build_histograms_counts_into",
+        "_build_histograms_counts_positive_into",
         "_build_histograms_counts_into_serial",
         "_build_histograms_counts_selected_into",
         "_build_histograms_counts_selected_into_serial",
@@ -55,6 +56,7 @@ GROUPS = {
     ),
     "hist_refill": (
         "_refill_leaf_segment_histograms_counts_into",
+        "_refill_leaf_segment_histograms_counts_positive_into",
         "_refill_leaf_segment_histograms_counts_into_serial",
         "_refill_leaf_segment_histograms_counts_selected_into",
         "_refill_leaf_segment_histograms_counts_selected_into_serial",
@@ -64,6 +66,7 @@ GROUPS = {
         "_refill_leaf_segment_histograms_unit_hess_selected_into_serial",
         "_refill_multiclass_leaf_segment_histograms_counts_into",
         "_refill_right_subtract_left_counts_into",
+        "_refill_right_subtract_left_counts_positive_into",
         "_refill_right_subtract_left_counts_selected_into",
         "_refill_right_subtract_left_unit_hess_into",
         "_refill_right_subtract_left_unit_hess_selected_into",
