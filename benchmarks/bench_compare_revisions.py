@@ -392,8 +392,12 @@ def main(argv=None):
     )
     args.csv.parent.mkdir(parents=True, exist_ok=True)
 
-    tmp_ctx = tempfile.TemporaryDirectory(prefix="cb-revision-bench-", dir=None)
-    tmpdir = Path(tmp_ctx.name)
+    if args.keep_case_files:
+        tmp_ctx = None
+        tmpdir = Path(tempfile.mkdtemp(prefix="cb-revision-bench-", dir=None))
+    else:
+        tmp_ctx = tempfile.TemporaryDirectory(prefix="cb-revision-bench-", dir=None)
+        tmpdir = Path(tmp_ctx.name)
     try:
         with args.csv.open("w", newline="") as fh:
             writer = csv.DictWriter(fh, fieldnames=CSV_FIELDS)
