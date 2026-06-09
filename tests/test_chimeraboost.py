@@ -1507,6 +1507,8 @@ def test_unit_hess_histogram_subtraction_matches_generic_hg_hh():
 
 def test_fused_unit_hess_refill_subtract_matches_two_step():
     from chimeraboost.tree import (
+        _refill_left_subtract_right_unit_hess_into,
+        _refill_left_subtract_right_unit_hess_selected_into,
         _refill_leaf_segment_histograms_unit_hess_into,
         _refill_leaf_segment_histograms_unit_hess_selected_into,
         _refill_right_subtract_left_unit_hess_into,
@@ -1563,11 +1565,56 @@ def test_fused_unit_hess_refill_subtract_matches_two_step():
         assert np.array_equal(fused_hg, ref_hg)
         assert np.array_equal(fused_hh, ref_hh)
 
+        fused_hg = base_hg.copy()
+        fused_hh = base_hh.copy()
+        ref_hg = base_hg.copy()
+        ref_hh = base_hh.copy()
+        if use_selected:
+            _refill_left_subtract_right_unit_hess_selected_into(
+                Xb, grad, row_order, leaf_start, left_leaf, right_leaf,
+                selected, fused_hg, fused_hh
+            )
+            parent_hg = ref_hg[:, left_leaf].copy()
+            parent_hh = ref_hh[:, left_leaf].copy()
+            _refill_leaf_segment_histograms_unit_hess_selected_into(
+                Xb, grad, row_order, leaf_start,
+                np.array([left_leaf], dtype=np.int64), 1,
+                ref_hg, ref_hh, selected
+            )
+            ref_hg[selected, right_leaf] = (
+                parent_hg[selected] - ref_hg[selected, left_leaf]
+            )
+            ref_hh[selected, right_leaf] = (
+                parent_hh[selected] - ref_hh[selected, left_leaf]
+            )
+            untouched = np.setdiff1d(np.arange(Xb.shape[1]), selected)
+            assert np.array_equal(fused_hg[untouched], base_hg[untouched])
+            assert np.array_equal(fused_hh[untouched], base_hh[untouched])
+        else:
+            _refill_left_subtract_right_unit_hess_into(
+                Xb, grad, row_order, leaf_start, left_leaf, right_leaf,
+                fused_hg, fused_hh
+            )
+            parent_hg = ref_hg[:, left_leaf].copy()
+            parent_hh = ref_hh[:, left_leaf].copy()
+            _refill_leaf_segment_histograms_unit_hess_into(
+                Xb, grad, row_order, leaf_start,
+                np.array([left_leaf], dtype=np.int64), 1, ref_hg, ref_hh
+            )
+            ref_hg[:, right_leaf] = parent_hg - ref_hg[:, left_leaf]
+            ref_hh[:, right_leaf] = parent_hh - ref_hh[:, left_leaf]
+
+        assert np.array_equal(fused_hg, ref_hg)
+        assert np.array_equal(fused_hh, ref_hh)
+
 
 def test_fused_counts_refill_subtract_matches_two_step():
     from chimeraboost.tree import (
         _build_histograms_counts_into,
         _build_histograms_counts_positive_into,
+        _refill_left_subtract_right_counts_into,
+        _refill_left_subtract_right_counts_positive_into,
+        _refill_left_subtract_right_counts_selected_into,
         _refill_leaf_segment_histograms_counts_into,
         _refill_leaf_segment_histograms_counts_positive_into,
         _refill_leaf_segment_histograms_counts_selected_into,
@@ -1633,6 +1680,85 @@ def test_fused_counts_refill_subtract_matches_two_step():
         assert np.array_equal(fused_hg, ref_hg)
         assert np.array_equal(fused_hh, ref_hh)
         assert np.array_equal(fused_hc, ref_hc)
+
+        fused_hg = base_hg.copy()
+        fused_hh = base_hh.copy()
+        fused_hc = base_hc.copy()
+        ref_hg = base_hg.copy()
+        ref_hh = base_hh.copy()
+        ref_hc = base_hc.copy()
+        if use_selected:
+            _refill_left_subtract_right_counts_selected_into(
+                Xb, grad, hess, row_order, leaf_start, left_leaf,
+                right_leaf, selected, fused_hg, fused_hh, fused_hc
+            )
+            parent_hg = ref_hg[:, left_leaf].copy()
+            parent_hh = ref_hh[:, left_leaf].copy()
+            parent_hc = ref_hc[:, left_leaf].copy()
+            _refill_leaf_segment_histograms_counts_selected_into(
+                Xb, grad, hess, row_order, leaf_start,
+                np.array([left_leaf], dtype=np.int64), 1,
+                ref_hg, ref_hh, ref_hc, selected
+            )
+            ref_hg[selected, right_leaf] = (
+                parent_hg[selected] - ref_hg[selected, left_leaf]
+            )
+            ref_hh[selected, right_leaf] = (
+                parent_hh[selected] - ref_hh[selected, left_leaf]
+            )
+            ref_hc[selected, right_leaf] = (
+                parent_hc[selected] - ref_hc[selected, left_leaf]
+            )
+            untouched = np.setdiff1d(np.arange(Xb.shape[1]), selected)
+            assert np.array_equal(fused_hg[untouched], base_hg[untouched])
+            assert np.array_equal(fused_hh[untouched], base_hh[untouched])
+            assert np.array_equal(fused_hc[untouched], base_hc[untouched])
+        else:
+            _refill_left_subtract_right_counts_into(
+                Xb, grad, hess, row_order, leaf_start, left_leaf,
+                right_leaf, fused_hg, fused_hh, fused_hc
+            )
+            parent_hg = ref_hg[:, left_leaf].copy()
+            parent_hh = ref_hh[:, left_leaf].copy()
+            parent_hc = ref_hc[:, left_leaf].copy()
+            _refill_leaf_segment_histograms_counts_into(
+                Xb, grad, hess, row_order, leaf_start,
+                np.array([left_leaf], dtype=np.int64), 1,
+                ref_hg, ref_hh, ref_hc
+            )
+            ref_hg[:, right_leaf] = parent_hg - ref_hg[:, left_leaf]
+            ref_hh[:, right_leaf] = parent_hh - ref_hh[:, left_leaf]
+            ref_hc[:, right_leaf] = parent_hc - ref_hc[:, left_leaf]
+
+        assert np.array_equal(fused_hg, ref_hg)
+        assert np.array_equal(fused_hh, ref_hh)
+        assert np.array_equal(fused_hc, ref_hc)
+
+        if not use_selected:
+            fused_hg = base_hg.copy()
+            fused_hh = base_hh.copy()
+            fused_hc = base_hc.copy()
+            ref_hg = base_hg.copy()
+            ref_hh = base_hh.copy()
+            ref_hc = base_hc.copy()
+            _refill_left_subtract_right_counts_positive_into(
+                Xb, grad, hess, row_order, leaf_start, left_leaf,
+                right_leaf, fused_hg, fused_hh, fused_hc
+            )
+            parent_hg = ref_hg[:, left_leaf].copy()
+            parent_hh = ref_hh[:, left_leaf].copy()
+            parent_hc = ref_hc[:, left_leaf].copy()
+            _refill_leaf_segment_histograms_counts_positive_into(
+                Xb, grad, hess, row_order, leaf_start,
+                np.array([left_leaf], dtype=np.int64), 1,
+                ref_hg, ref_hh, ref_hc
+            )
+            ref_hg[:, right_leaf] = parent_hg - ref_hg[:, left_leaf]
+            ref_hh[:, right_leaf] = parent_hh - ref_hh[:, left_leaf]
+            ref_hc[:, right_leaf] = parent_hc - ref_hc[:, left_leaf]
+            assert np.array_equal(fused_hg, ref_hg)
+            assert np.array_equal(fused_hh, ref_hh)
+            assert np.array_equal(fused_hc, ref_hc)
 
 
 def test_positive_hessian_count_histograms_match_generic():

@@ -41,6 +41,17 @@ from chimeraboost.tree import (  # noqa: E402
     _build_histograms_unit_hess_into_serial,
     _leaf_values_and_sums,
     _predict_tree_add,
+    _refill_left_subtract_right_counts_into,
+    _refill_left_subtract_right_counts_positive_into,
+    _refill_left_subtract_right_unit_hess_into,
+    _refill_leaf_segment_histograms_counts_into,
+    _refill_leaf_segment_histograms_counts_into_serial,
+    _refill_leaf_segment_histograms_counts_positive_into,
+    _refill_leaf_segment_histograms_unit_hess_into,
+    _refill_leaf_segment_histograms_unit_hess_into_serial,
+    _refill_right_subtract_left_counts_into,
+    _refill_right_subtract_left_counts_positive_into,
+    _refill_right_subtract_left_unit_hess_into,
     _update_leaves_with_split,
 )
 
@@ -56,7 +67,8 @@ def _bin_dtype(max_bins):
     return np.uint8 if max_bins <= np.iinfo(np.uint8).max + 1 else np.uint16
 
 
-def _make_case(n_samples, n_features, max_bins, depth, layout, rng):
+def _make_case(n_samples, n_features, max_bins, depth, layout, rng,
+               changed_fraction=0.0):
     if max_bins < 2:
         raise ValueError("max_bins must be at least 2")
     dtype = _bin_dtype(max_bins)
@@ -69,8 +81,18 @@ def _make_case(n_samples, n_features, max_bins, depth, layout, rng):
     hess = rng.uniform(0.5, 2.0, size=n_samples)
     n_leaves = 1 << depth
     leaf = rng.integers(0, n_leaves, size=n_samples, dtype=np.int64)
+    if changed_fraction > 0.0:
+        changed_count = min(
+            n_samples,
+            max(2, int(round(float(changed_fraction) * n_samples))),
+        )
+        left_count = changed_count // 2
+        order = rng.permutation(n_samples)
+        leaf[order[:left_count]] = 0
+        leaf[order[left_count:changed_count]] = 1
     hg = np.zeros((n_features, n_leaves, max_bins), dtype=np.float64)
     hh = np.zeros_like(hg)
+    hc = np.zeros_like(hg)
     n_bins = np.full(n_features, max_bins, dtype=np.int64)
     split_scratch = tuple(np.empty((n_features, n_leaves)) for _ in range(5))
     row_count = max(1, n_samples // 2)
@@ -87,6 +109,11 @@ def _make_case(n_samples, n_features, max_bins, depth, layout, rng):
     splits_thr = rng.integers(0, max_bins - 1, size=depth, dtype=np.int64)
     values = rng.normal(size=n_leaves)
     out = np.zeros(n_samples, dtype=np.float64)
+    order = np.argsort(leaf, kind="stable").astype(np.int64)
+    counts = np.bincount(leaf, minlength=n_leaves).astype(np.int64)
+    leaf_start = np.zeros(n_leaves + 1, dtype=np.int64)
+    leaf_start[1:] = np.cumsum(counts)
+    changed_leaves = np.array([0, 1], dtype=np.int64)
     return {
         "X": X,
         "grad": grad,
@@ -94,11 +121,15 @@ def _make_case(n_samples, n_features, max_bins, depth, layout, rng):
         "leaf": leaf,
         "hg": hg,
         "hh": hh,
+        "hc": hc,
         "n_bins": n_bins,
         "split_scratch": split_scratch,
         "row_indices": row_indices,
         "feature_indices": feature_indices,
         "feature_mask": feature_mask,
+        "row_order": order,
+        "leaf_start": leaf_start,
+        "changed_leaves": changed_leaves,
         "splits_feat": splits_feat,
         "splits_thr": splits_thr,
         "values": values,
@@ -128,7 +159,11 @@ def _kernel_calls(case, threaded):
     leaf = case["leaf"]
     hg = case["hg"]
     hh = case["hh"]
+    hc = case["hc"]
     n_leaves = case["n_leaves"]
+    row_order = case["row_order"]
+    leaf_start = case["leaf_start"]
+    changed_leaves = case["changed_leaves"]
     row_indices = case["row_indices"]
     feature_indices = case["feature_indices"]
     feature_mask = case["feature_mask"]
@@ -157,6 +192,33 @@ def _kernel_calls(case, threaded):
         )
         hist_rows_cols_unit = lambda: _build_histograms_selected_rows_unit_hess_into(
             X, grad, leaf, n_leaves, hg, hh, feature_indices, row_indices
+        )
+        refill_counts = lambda: _refill_leaf_segment_histograms_counts_into(
+            X, grad, hess, row_order, leaf_start, changed_leaves, 2, hg, hh, hc
+        )
+        refill_counts_positive = lambda: _refill_leaf_segment_histograms_counts_positive_into(
+            X, grad, hess, row_order, leaf_start, changed_leaves, 2, hg, hh, hc
+        )
+        refill_unit = lambda: _refill_leaf_segment_histograms_unit_hess_into(
+            X, grad, row_order, leaf_start, changed_leaves, 2, hg, hh
+        )
+        refill_left_sub_counts = lambda: _refill_left_subtract_right_counts_into(
+            X, grad, hess, row_order, leaf_start, 0, 1, hg, hh, hc
+        )
+        refill_left_sub_counts_positive = lambda: _refill_left_subtract_right_counts_positive_into(
+            X, grad, hess, row_order, leaf_start, 0, 1, hg, hh, hc
+        )
+        refill_left_sub_unit = lambda: _refill_left_subtract_right_unit_hess_into(
+            X, grad, row_order, leaf_start, 0, 1, hg, hh
+        )
+        refill_right_sub_counts = lambda: _refill_right_subtract_left_counts_into(
+            X, grad, hess, row_order, leaf_start, 0, 1, hg, hh, hc
+        )
+        refill_right_sub_counts_positive = lambda: _refill_right_subtract_left_counts_positive_into(
+            X, grad, hess, row_order, leaf_start, 0, 1, hg, hh, hc
+        )
+        refill_right_sub_unit = lambda: _refill_right_subtract_left_unit_hess_into(
+            X, grad, row_order, leaf_start, 0, 1, hg, hh
         )
         split = lambda: _best_split(
             hg, hh, n_bins, 3.0, feature_mask, 1.0, n_leaves,
@@ -187,6 +249,19 @@ def _kernel_calls(case, threaded):
         hist_rows_cols_unit = lambda: _build_histograms_selected_rows_unit_hess_into_serial(
             X, grad, leaf, n_leaves, hg, hh, feature_indices, row_indices
         )
+        refill_counts = lambda: _refill_leaf_segment_histograms_counts_into_serial(
+            X, grad, hess, row_order, leaf_start, changed_leaves, 2, hg, hh, hc
+        )
+        refill_counts_positive = refill_counts
+        refill_unit = lambda: _refill_leaf_segment_histograms_unit_hess_into_serial(
+            X, grad, row_order, leaf_start, changed_leaves, 2, hg, hh
+        )
+        refill_left_sub_counts = None
+        refill_left_sub_counts_positive = None
+        refill_left_sub_unit = None
+        refill_right_sub_counts = None
+        refill_right_sub_counts_positive = None
+        refill_right_sub_unit = None
         split = lambda: _best_split_serial(
             hg, hh, n_bins, 3.0, feature_mask, 1.0, n_leaves
         )
@@ -202,6 +277,9 @@ def _kernel_calls(case, threaded):
         "hist_cols_50pct_unit": (hist_cols_unit, None),
         "hist_rows_cols_50pct": (hist_rows_cols, None),
         "hist_rows_cols_50pct_unit": (hist_rows_cols_unit, None),
+        "refill_counts_2leaves": (refill_counts, None),
+        "refill_counts_positive_2leaves": (refill_counts_positive, None),
+        "refill_unit_2leaves": (refill_unit, None),
         "best_split": (split, hist),
         "leaf_values": (
             lambda: _leaf_values_and_sums(
@@ -223,10 +301,24 @@ def _kernel_calls(case, threaded):
             lambda: out.fill(0.0),
         ),
     }
+    if refill_right_sub_counts is not None:
+        calls.update({
+            "refill_left_sub_counts": (refill_left_sub_counts, hist),
+            "refill_left_sub_counts_positive": (
+                refill_left_sub_counts_positive, hist
+            ),
+            "refill_left_sub_unit": (refill_left_sub_unit, hist_unit),
+            "refill_right_sub_counts": (refill_right_sub_counts, hist),
+            "refill_right_sub_counts_positive": (
+                refill_right_sub_counts_positive, hist
+            ),
+            "refill_right_sub_unit": (refill_right_sub_unit, hist_unit),
+        })
     return calls
 
 
-def _run_case(n_samples, n_features, max_bins, depth, threads, layout, repeats):
+def _run_case(n_samples, n_features, max_bins, depth, threads, layout, repeats,
+              changed_fraction):
     import numba
 
     old_threads = numba.get_num_threads()
@@ -234,7 +326,10 @@ def _run_case(n_samples, n_features, max_bins, depth, threads, layout, repeats):
     try:
         threads = max(1, min(int(threads), numba.config.NUMBA_NUM_THREADS))
         numba.set_num_threads(threads)
-        case = _make_case(n_samples, n_features, max_bins, depth, layout, rng)
+        case = _make_case(
+            n_samples, n_features, max_bins, depth, layout, rng,
+            changed_fraction=changed_fraction,
+        )
         threaded = threads > 1
         calls = _kernel_calls(case, threaded)
 
@@ -262,6 +357,15 @@ def main():
     parser.add_argument("--threads", nargs="+", default=["1"])
     parser.add_argument("--layouts", nargs="+", choices=["C", "F"], default=["C"])
     parser.add_argument("--repeats", type=int, default=5)
+    parser.add_argument(
+        "--changed-fraction",
+        type=float,
+        default=0.0,
+        help=(
+            "fraction of rows assigned to the two changed leaves used by "
+            "leafwise refill microbenchmarks"
+        ),
+    )
     parser.add_argument("--quick", action="store_true",
                         help="run one small case; useful for smoke tests")
     args = parser.parse_args()
@@ -286,6 +390,7 @@ def main():
                             rows, dtype, effective_threads = _run_case(
                                 n_samples, n_features, max_bins, depth,
                                 threads, layout, args.repeats,
+                                args.changed_fraction,
                             )
                             for kernel, median_ms, iqr_ms in rows:
                                 print(
