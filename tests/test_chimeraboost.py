@@ -1480,6 +1480,79 @@ def test_multiclass_subsampling_shared_per_round(monkeypatch):
         assert np.array_equal(feature_indices, first_features)
 
 
+def test_goss_subsample_keeps_large_gradients_and_scales_sampled_rows():
+    from chimeraboost.booster import GradientBoosting
+
+    grad = np.array([0.2, -0.3, 0.4, -0.5, 0.6, -0.7, 8.0, -9.0])
+    hess = np.ones_like(grad)
+    booster = GradientBoosting(
+        iterations=1, sampling="goss", top_rate=0.25, other_rate=0.25,
+        random_state=0
+    )
+    g, h, row_indices = booster._maybe_subsample(
+        grad, hess, np.random.default_rng(0)
+    )
+
+    assert row_indices is not None
+    assert set([6, 7]).issubset(set(row_indices.tolist()))
+    assert np.count_nonzero(h) == 4
+    assert g[6] == grad[6]
+    assert g[7] == grad[7]
+    assert h[6] == 1.0
+    assert h[7] == 1.0
+    sampled_small = [i for i in row_indices if i not in {6, 7}]
+    assert len(sampled_small) == 2
+    assert np.all(h[sampled_small] == 3.0)
+    assert np.all(g[sampled_small] == grad[sampled_small] * 3.0)
+    unsampled = [i for i in range(grad.shape[0]) if i not in row_indices]
+    assert np.all(g[unsampled] == 0.0)
+    assert np.all(h[unsampled] == 0.0)
+
+
+def test_goss_lightgbm_scalar_fit_uses_sampled_nonconstant_hessians(monkeypatch):
+    import chimeraboost.booster as booster
+
+    calls = []
+    original = booster.build_leafwise_tree
+
+    def wrapped_build_tree(*args, **kwargs):
+        calls.append((
+            kwargs.get("row_indices"),
+            kwargs.get("constant_hessian"),
+        ))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(booster, "build_leafwise_tree", wrapped_build_tree)
+    X, y = load_diabetes(return_X_y=True)
+    model = ChimeraBoostRegressor(
+        iterations=1, tree_mode="lightgbm", num_leaves=7, depth=3,
+        sampling="goss", top_rate=0.2, other_rate=0.2, random_state=0
+    ).fit(X[:120], y[:120])
+
+    assert np.all(np.isfinite(model.predict(X[:5])))
+    assert calls
+    row_indices, constant_hessian = calls[0]
+    assert row_indices is not None
+    assert constant_hessian is False
+
+
+def test_goss_rejects_uniform_subsample_and_multiclass():
+    X, y = load_diabetes(return_X_y=True)
+    with pytest.raises(ValueError, match="use subsample=1.0"):
+        ChimeraBoostRegressor(
+            iterations=1, tree_mode="lightgbm", sampling="goss",
+            subsample=0.8, random_state=0
+        ).fit(X[:80], y[:80])
+
+    Xc = np.vstack([X[:30], X[30:60], X[60:90]])
+    yc = np.repeat([0, 1, 2], 30)
+    with pytest.raises(ValueError, match="binary classification and regression"):
+        ChimeraBoostClassifier(
+            iterations=1, tree_mode="lightgbm", sampling="goss",
+            random_state=0
+        ).fit(Xc, yc)
+
+
 def test_multiclass_no_split_class_tree_is_boosting_noop(monkeypatch):
     import chimeraboost.booster as booster
 

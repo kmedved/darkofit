@@ -106,6 +106,17 @@ def _normalize_tree_mode(tree_mode):
     )
 
 
+def _normalize_sampling(sampling):
+    if sampling is None:
+        sampling = "uniform"
+    mode = str(sampling).lower().replace("-", "_")
+    if mode in {"uniform", "random"}:
+        return "uniform"
+    if mode == "goss":
+        return "goss"
+    raise ValueError("sampling must be one of 'uniform' or experimental 'goss'")
+
+
 def _validate_sample_weight(sample_weight, n_samples, name="sample_weight"):
     """Return a mean-one validated weight vector, or None."""
     if sample_weight is None:
@@ -138,7 +149,8 @@ class _BaseBooster:
                  min_child_weight=1.0, min_child_samples=20,
                  min_gain_to_split=0.0, num_leaves=None, thread_count=None,
                  random_state=None, verbose=False, ordered_boosting="auto",
-                 verbose_timing=False, tree_mode="catboost"):
+                 verbose_timing=False, tree_mode="catboost",
+                 sampling="uniform", top_rate=0.2, other_rate=0.1):
         self.iterations = int(iterations)
         self.learning_rate = learning_rate
         self.depth = None if depth is None else int(depth)
@@ -159,6 +171,24 @@ class _BaseBooster:
         self.verbose_timing = bool(verbose_timing)
         self.tree_mode = tree_mode
         self.tree_mode_ = _normalize_tree_mode(tree_mode)
+        self.sampling = sampling
+        self.top_rate = float(top_rate)
+        self.other_rate = float(other_rate)
+        self._validate_sampling_config()
+
+    def _validate_sampling_config(self):
+        self.sampling_ = _normalize_sampling(self.sampling)
+        self.top_rate = float(self.top_rate)
+        self.other_rate = float(self.other_rate)
+        if self.sampling_ == "goss":
+            if not (0.0 < self.top_rate < 1.0):
+                raise ValueError("top_rate must be in (0, 1) for sampling='goss'")
+            if not (0.0 < self.other_rate < 1.0):
+                raise ValueError("other_rate must be in (0, 1) for sampling='goss'")
+            if self.top_rate + self.other_rate > 1.0:
+                raise ValueError(
+                    "top_rate + other_rate must be <= 1 for sampling='goss'"
+                )
 
     def _catboost_depth(self):
         if self.depth is None or self.depth < 1:
@@ -259,11 +289,55 @@ class _BaseBooster:
         Unsampled rows keep zero grad/hess so ordered boosting updates preserve
         the old fallback behavior, while histogram builders can skip them.
         """
+        if self.sampling_ == "goss":
+            return self._goss_subsample(grad, hess, rng)
         if self.subsample >= 1.0:
             return grad, hess, None
         mask = rng.random(grad.shape[0]) < self.subsample
         row_indices = np.flatnonzero(mask).astype(np.int64)
         return np.where(mask, grad, 0.0), np.where(mask, hess, 0.0), row_indices
+
+    def _goss_subsample(self, grad, hess, rng):
+        """Gradient-based one-side sampling for scalar boosters.
+
+        Keeps all large-gradient rows and samples a fraction of the remaining
+        rows, scaling the sampled small-gradient rows to preserve total mass.
+        """
+        n_samples = grad.shape[0]
+        if n_samples <= 1:
+            return grad, hess, None
+        top_count = min(n_samples, max(1, int(round(self.top_rate * n_samples))))
+        remaining_count = n_samples - top_count
+        if remaining_count <= 0:
+            return grad, hess, None
+        other_count = min(
+            remaining_count, max(1, int(round(self.other_rate * n_samples)))
+        )
+
+        abs_grad = np.abs(grad)
+        top_idx = np.argpartition(abs_grad, n_samples - top_count)[-top_count:]
+        remaining_mask = np.ones(n_samples, dtype=bool)
+        remaining_mask[top_idx] = False
+        remaining_idx = np.flatnonzero(remaining_mask)
+        if other_count >= remaining_idx.shape[0]:
+            other_idx = remaining_idx
+        else:
+            other_idx = rng.choice(remaining_idx, size=other_count, replace=False)
+
+        if top_idx.shape[0] + other_idx.shape[0] == n_samples:
+            return grad, hess, None
+
+        g = np.zeros_like(grad)
+        h = np.zeros_like(hess)
+        g[top_idx] = grad[top_idx]
+        h[top_idx] = hess[top_idx]
+        scale = remaining_count / max(other_idx.shape[0], 1)
+        g[other_idx] = grad[other_idx] * scale
+        h[other_idx] = hess[other_idx] * scale
+        row_indices = np.sort(
+            np.concatenate((top_idx.astype(np.int64), other_idx.astype(np.int64)))
+        )
+        return g, h, row_indices
 
     def _builder_kwargs(self, fmask, findices, row_indices,
                         hist_buffers, split_buffers, X_hist_binned,
@@ -328,11 +402,18 @@ class GradientBoosting(_BaseBooster):
         # algorithm when weights are present).
         self.n_threads_ = _apply_thread_count(self.thread_count)
         self.tree_mode_ = _normalize_tree_mode(self.tree_mode)
+        self._validate_sampling_config()
+        if self.sampling_ == "goss" and self.subsample < 1.0:
+            raise ValueError(
+                "sampling='goss' controls row sampling; use subsample=1.0"
+            )
         self.ordered_boosting_ = self._resolve_ordered_boosting()
         w = _validate_sample_weight(sample_weight, n_samples)
         self.loss_ = LOSSES[self.loss_name](**self.loss_kwargs)
         use_constant_hessian = (
-            getattr(self.loss_, "constant_hessian", False) and w is None
+            getattr(self.loss_, "constant_hessian", False)
+            and w is None
+            and self.sampling_ != "goss"
         )
         _es = self.early_stopping_rounds is not None and eval_set is not None
         self.lr_ = (self.learning_rate if self.learning_rate is not None
@@ -542,6 +623,12 @@ class MulticlassBoosting(_BaseBooster):
 
         self.n_threads_ = _apply_thread_count(self.thread_count)
         self.tree_mode_ = _normalize_tree_mode(self.tree_mode)
+        self._validate_sampling_config()
+        if self.sampling_ != "uniform":
+            raise ValueError(
+                "sampling='goss' is currently supported only for "
+                "binary classification and regression"
+            )
         self.ordered_boosting_ = self._resolve_ordered_boosting()
         w = _validate_sample_weight(sample_weight, n_samples)
         self.loss_ = MultiSoftmax(K)

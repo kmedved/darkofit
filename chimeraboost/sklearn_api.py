@@ -106,7 +106,8 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
                  thread_count=None, random_state=None, verbose=False,
                  ordered_boosting="auto",
                  early_stopping=False, validation_fraction=0.1,
-                 verbose_timing=False, tree_mode="catboost"):
+                 verbose_timing=False, tree_mode="catboost",
+                 sampling="uniform", top_rate=0.2, other_rate=0.1):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -130,6 +131,9 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
         self.validation_fraction = validation_fraction
         self.verbose_timing = verbose_timing
         self.tree_mode = tree_mode
+        self.sampling = sampling
+        self.top_rate = top_rate
+        self.other_rate = other_rate
 
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
             sample_weight=None, eval_sample_weight=None):
@@ -239,7 +243,8 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
                  min_gain_to_split=0.0, num_leaves=None, thread_count=None,
                  random_state=None, verbose=False, ordered_boosting="auto",
                  early_stopping=False, validation_fraction=0.1,
-                 verbose_timing=False, tree_mode="catboost"):
+                 verbose_timing=False, tree_mode="catboost",
+                 sampling="uniform", top_rate=0.2, other_rate=0.1):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -261,6 +266,9 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
         self.validation_fraction = validation_fraction
         self.verbose_timing = verbose_timing
         self.tree_mode = tree_mode
+        self.sampling = sampling
+        self.top_rate = top_rate
+        self.other_rate = other_rate
 
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
             sample_weight=None, eval_sample_weight=None):
