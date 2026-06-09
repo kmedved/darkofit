@@ -68,8 +68,14 @@ GROUPS = {
         "_refill_right_subtract_left_counts_into",
         "_refill_right_subtract_left_counts_positive_into",
         "_refill_right_subtract_left_counts_selected_into",
+        "_refill_right_subtract_left_counts_by_count_into",
+        "_refill_right_subtract_left_counts_positive_by_count_into",
         "_refill_right_subtract_left_unit_hess_into",
+        "_refill_right_subtract_left_unit_hess_by_count_into",
         "_refill_right_subtract_left_unit_hess_selected_into",
+        "_refill_left_subtract_right_counts_by_count_into",
+        "_refill_left_subtract_right_counts_positive_by_count_into",
+        "_refill_left_subtract_right_unit_hess_by_count_into",
     ),
     "hist_subtract": (
         "_subtract_right_child_histograms_into_left",
@@ -91,6 +97,7 @@ GROUPS = {
     ),
     "partition": (
         "_partition_leaf_rows",
+        "_partition_leaf_segment_rows",
         "_update_leafwise_leaves_with_split",
     ),
     "leaf_values": (

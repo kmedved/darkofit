@@ -3373,10 +3373,10 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
             "leafwise_row_layout='segmented' requires full rows, full features, "
             "and reuse_leaf_histograms=True"
         )
-    use_segmented_rows = (
-        leafwise_row_layout == "segmented"
-        or (leafwise_row_layout == "auto" and can_use_segmented_rows)
-    )
+    # Keep the segmented representation opt-in until full-fit benchmarks show
+    # it wins. It avoids global row-order tail shifts, but the extra segmented
+    # refill kernels can cost more than they save on current large benchmarks.
+    use_segmented_rows = leafwise_row_layout == "segmented"
     full_feature_positive_split = (
         hessian_always_positive
         and reuse_leaf_histograms

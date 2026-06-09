@@ -2119,6 +2119,20 @@ def test_leafwise_segmented_row_layout_guard_and_auto_fallback():
     assert np.array_equal(auto[0].splits_thr, prefix[0].splits_thr)
     assert np.array_equal(auto[1], prefix[1])
 
+    full_prefix = build_leafwise_tree(
+        Xb, grad, hess, n_bins, 5, 1.0, 0.1,
+        max_leaves=8, constant_hessian=True,
+        leafwise_row_layout="prefix", return_training_state=True,
+    )
+    full_auto = build_leafwise_tree(
+        Xb, grad, hess, n_bins, 5, 1.0, 0.1,
+        max_leaves=8, constant_hessian=True,
+        leafwise_row_layout="auto", return_training_state=True,
+    )
+    assert np.array_equal(full_auto[0].splits_feat, full_prefix[0].splits_feat)
+    assert np.array_equal(full_auto[0].splits_thr, full_prefix[0].splits_thr)
+    assert np.array_equal(full_auto[1], full_prefix[1])
+
 
 def test_leafwise_positive_hessian_route_matches_generic_tree():
     from chimeraboost.tree import build_leafwise_tree
