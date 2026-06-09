@@ -3253,7 +3253,7 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                 min_child_weight, min_child_samples, n_leaves,
                 best_feat, best_thr, best_gain
             )
-        elif split_scratch is not None:
+        elif split_scratch is not None and get_num_threads() > 2:
             _best_splits_for_leaf_ids_counts_feature_parallel(
                 hg, hh, count_hist, n_bins_per_feature, l2, feature_mask,
                 min_child_weight, min_child_samples, changed_leaves,
