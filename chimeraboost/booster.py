@@ -37,6 +37,21 @@ def _apply_thread_count(thread_count):
     return n
 
 
+def _fit_thread_count(thread_count, tree_mode_, n_samples):
+    """Choose the effective Numba thread count for one fit.
+
+    The leaf-wise builder's medium/large tree kernels are memory-traffic heavy;
+    on these row counts, extra threads routinely add scheduling/cache overhead.
+    Treat the public thread_count as a maximum and cap smaller LightGBM-mode
+    fits at two threads. Larger fits can still use the caller's requested count.
+    """
+    if tree_mode_ == "lightgbm" and n_samples <= 50_000:
+        if thread_count is None or thread_count < 0:
+            return _apply_thread_count(2)
+        return _apply_thread_count(min(int(thread_count), 2))
+    return _apply_thread_count(thread_count)
+
+
 def _auto_learning_rate(n_samples, iterations, early_stopping):
     """Pick a default learning rate when the user did not specify one.
 
@@ -423,8 +438,10 @@ class GradientBoosting(_BaseBooster):
         # sample_weight=np.ones(n) is bitwise-equivalent to sample_weight=None
         # for all losses except MAE/Quantile (which use a different quantile
         # algorithm when weights are present).
-        self.n_threads_ = _apply_thread_count(self.thread_count)
         self.tree_mode_ = _normalize_tree_mode(self.tree_mode)
+        self.n_threads_ = _fit_thread_count(
+            self.thread_count, self.tree_mode_, n_samples
+        )
         self._validate_sampling_config()
         if self.sampling_ == "goss" and self.subsample < 1.0:
             raise ValueError(
@@ -650,8 +667,10 @@ class MulticlassBoosting(_BaseBooster):
         Y_class = _one_hot_class_major(y_idx, K)  # class-major (K, n)
         n_samples = X.shape[0]
 
-        self.n_threads_ = _apply_thread_count(self.thread_count)
         self.tree_mode_ = _normalize_tree_mode(self.tree_mode)
+        self.n_threads_ = _fit_thread_count(
+            self.thread_count, self.tree_mode_, n_samples
+        )
         self._validate_sampling_config()
         if self.sampling_ != "uniform":
             raise ValueError(

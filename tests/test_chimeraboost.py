@@ -553,6 +553,15 @@ def test_thread_count_records_effective_threads():
     assert m3.model_.n_threads_ <= numba.config.NUMBA_NUM_THREADS
 
 
+def test_lightgbm_small_fit_caps_thread_count_as_maximum():
+    X, y = load_breast_cancer(return_X_y=True)
+    m = ChimeraBoostClassifier(
+        iterations=3, tree_mode="lightgbm", num_leaves=7,
+        thread_count=8, random_state=0
+    ).fit(X, y)
+    assert m.model_.n_threads_ <= 2
+
+
 def test_thread_count_does_not_change_predictions():
     X, y = load_diabetes(return_X_y=True)
     Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.2, random_state=0)
