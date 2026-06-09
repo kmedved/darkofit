@@ -830,6 +830,8 @@ class MulticlassBoosting(_BaseBooster):
                     F[k] += _ordered_leaf_update(
                         self.lr_, leaf, leaf_G, leaf_H, g, h, self.l2_leaf_reg
                     )
+                elif self.tree_mode_ == "lightgbm" and tree.depth > 0:
+                    add_leaf_values_inplace(leaf, tree.values, F[k])
                 elif tree.depth > 0:
                     tree.add_predict(X_binned, F[k])
                 _add_timing(timing, "train_update", phase)

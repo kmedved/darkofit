@@ -2159,6 +2159,25 @@ def test_multiclass_subsampling_shared_per_round(monkeypatch):
         assert np.array_equal(feature_indices, first_features)
 
 
+def test_lightgbm_numeric_multiclass_training_update_uses_leaf_ids(monkeypatch):
+    from chimeraboost import ChimeraBoostClassifier
+    from chimeraboost.tree import NonObliviousTree
+
+    rng = np.random.default_rng(58)
+    X = rng.normal(size=(120, 6))
+    y = np.repeat(np.arange(3), 40)
+    order = rng.permutation(len(y))
+
+    def fail_add_predict(self, X_binned, out):
+        raise AssertionError("training update should reuse returned leaf ids")
+
+    monkeypatch.setattr(NonObliviousTree, "add_predict", fail_add_predict)
+    ChimeraBoostClassifier(
+        iterations=2, tree_mode="lightgbm", num_leaves=5, depth=3,
+        random_state=0
+    ).fit(X[order], y[order])
+
+
 def test_goss_subsample_keeps_large_gradients_and_scales_sampled_rows():
     from chimeraboost.booster import GradientBoosting
 
