@@ -1834,6 +1834,58 @@ def test_lightgbm_thread_determinism():
     assert np.allclose(one.predict_proba(Xte), two.predict_proba(Xte))
 
 
+def test_non_oblivious_parallel_add_predict_matches_serial():
+    import numba
+    from chimeraboost.tree import (
+        _predict_non_oblivious_multiclass_tree_add,
+        _predict_non_oblivious_multiclass_tree_add_parallel,
+        _predict_non_oblivious_tree_add,
+        _predict_non_oblivious_tree_add_parallel,
+    )
+
+    if numba.config.NUMBA_NUM_THREADS < 2:
+        pytest.skip("requires at least two numba threads")
+
+    rng = np.random.default_rng(51)
+    Xb = rng.integers(0, 64, size=(1500, 6), dtype=np.uint8)
+    features = np.array([0, 2, -1, -1, 5, -1, -1], dtype=np.int64)
+    thresholds = np.array([31, 20, -1, -1, 44, -1, -1], dtype=np.int64)
+    left_child = np.array([1, 2, -1, -1, 5, -1, -1], dtype=np.int64)
+    right_child = np.array([4, 3, -1, -1, 6, -1, -1], dtype=np.int64)
+    leaf_index = np.array([-1, -1, 0, 1, -1, 2, 3], dtype=np.int64)
+    values = rng.normal(size=4)
+    multi_values = rng.normal(size=(4, 3))
+    serial = rng.normal(size=Xb.shape[0])
+    parallel = serial.copy()
+    serial_multi = rng.normal(size=(3, Xb.shape[0]))
+    parallel_multi = serial_multi.copy()
+
+    old_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(min(2, numba.config.NUMBA_NUM_THREADS))
+        _predict_non_oblivious_tree_add(
+            Xb, features, thresholds, left_child, right_child, leaf_index,
+            values, serial
+        )
+        _predict_non_oblivious_tree_add_parallel(
+            Xb, features, thresholds, left_child, right_child, leaf_index,
+            values, parallel
+        )
+        _predict_non_oblivious_multiclass_tree_add(
+            Xb, features, thresholds, left_child, right_child, leaf_index,
+            multi_values, serial_multi
+        )
+        _predict_non_oblivious_multiclass_tree_add_parallel(
+            Xb, features, thresholds, left_child, right_child, leaf_index,
+            multi_values, parallel_multi
+        )
+    finally:
+        numba.set_num_threads(old_threads)
+
+    assert np.array_equal(parallel, serial)
+    assert np.array_equal(parallel_multi, serial_multi)
+
+
 def test_classifier_staged_predictions_match_final():
     X, y = load_breast_cancer(return_X_y=True)
     Xtr, Xte, ytr, _ = train_test_split(
