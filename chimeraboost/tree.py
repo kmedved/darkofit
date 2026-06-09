@@ -1593,6 +1593,84 @@ def _best_splits_for_leaf_ids_counts(hg, hh, hc, n_bins_per_feature, l2,
 
 
 @njit(cache=True, parallel=True)
+def _best_splits_for_leaf_ids_counts_feature_parallel(
+    hg, hh, hc, n_bins_per_feature, l2, feat_mask, min_child_weight,
+    min_child_samples, leaf_ids, n_leaf_ids, feature_gain, feature_thr,
+    out_feat, out_thr, out_gain
+):
+    """Best split for changed leaves, parallelized over leaf-feature pairs."""
+    n_features = hg.shape[0]
+    for flat in prange(n_leaf_ids * n_features):
+        idx = flat // n_features
+        f = flat - idx * n_features
+        l = leaf_ids[idx]
+        best_t = -1
+        best_gain = -np.inf
+
+        if feat_mask[f] != 0:
+            nb = n_bins_per_feature[f]
+            Gt = 0.0
+            Ht = 0.0
+            Ct = 0.0
+            for b in range(nb):
+                Gt += hg[f, l, b]
+                Ht += hh[f, l, b]
+                Ct += hc[f, l, b]
+            parent_denom = Ht + l2
+            if Ht > 0.0 and Ct > 0.0 and parent_denom > 0.0:
+                parent_gain = Gt * Gt / parent_denom
+
+                GL = 0.0
+                HL = 0.0
+                CL = 0.0
+                for t in range(nb - 1):
+                    GL += hg[f, l, t]
+                    HL += hh[f, l, t]
+                    CL += hc[f, l, t]
+                    HR = Ht - HL
+                    CR = Ct - CL
+                    if (
+                        HL < min_child_weight
+                        or HR < min_child_weight
+                        or CL < min_child_samples
+                        or CR < min_child_samples
+                    ):
+                        continue
+                    left_denom = HL + l2
+                    right_denom = HR + l2
+                    if left_denom <= 0.0 or right_denom <= 0.0:
+                        continue
+                    GR = Gt - GL
+                    gain = (
+                        GL * GL / left_denom
+                        + GR * GR / right_denom
+                        - parent_gain
+                    )
+                    if gain > best_gain:
+                        best_gain = gain
+                        best_t = t
+
+        feature_gain[f, l] = best_gain
+        feature_thr[f, l] = best_t
+
+    for idx in range(n_leaf_ids):
+        l = leaf_ids[idx]
+        best_f = -1
+        best_t = -1
+        best_gain = -np.inf
+        for f in range(n_features):
+            gain = feature_gain[f, l]
+            if gain > best_gain:
+                best_gain = gain
+                best_f = f
+                best_t = int(feature_thr[f, l])
+
+        out_feat[l] = best_f
+        out_thr[l] = best_t
+        out_gain[l] = best_gain
+
+
+@njit(cache=True, parallel=True)
 def _build_multiclass_histograms_counts_into(
     X_binned, grad, hess, leaf, n_leaves, hg, hh, hc
 ):
@@ -2347,7 +2425,6 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
     a clean tree contract over histogram reuse; speed optimizations belong after
     the public semantics are settled.
     """
-    del split_buffers
     if min_gain_to_split is None:
         min_gain_to_split = min_gain
     if X_hist_binned is None:
@@ -2448,6 +2525,21 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
     changed_leaves = np.empty(2, dtype=np.int64)
     changed_leaves[0] = 0
     n_changed_leaves = 1
+    use_serial_kernels = get_num_threads() == 1
+    if use_serial_kernels:
+        split_scratch = None
+    elif split_buffers is None:
+        split_scratch = (
+            np.empty((n_features, max_leaves)),
+            np.empty((n_features, max_leaves)),
+        )
+    else:
+        if len(split_buffers) < 2:
+            raise ValueError("split_buffers must contain at least two scratch arrays")
+        for buf in split_buffers[:2]:
+            if buf.shape[0] < n_features or buf.shape[1] < max_leaves:
+                raise ValueError("split_buffers are too small")
+        split_scratch = split_buffers[:2]
     if row_indices is None:
         row_order = np.arange(n_samples, dtype=np.int64)
     else:
@@ -2463,7 +2555,6 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
     n_nodes = 1
     n_leaves = 1
     actual_depth = 0
-    use_serial_kernels = get_num_threads() == 1
     can_reuse_leaf_histograms = reuse_leaf_histograms
     histograms_initialized = False
 
@@ -2679,6 +2770,13 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
             _best_splits_by_leaf_counts(
                 hg, hh, count_hist, n_bins_per_feature, l2, feature_mask,
                 min_child_weight, min_child_samples, n_leaves,
+                best_feat, best_thr, best_gain
+            )
+        elif split_scratch is not None:
+            _best_splits_for_leaf_ids_counts_feature_parallel(
+                hg, hh, count_hist, n_bins_per_feature, l2, feature_mask,
+                min_child_weight, min_child_samples, changed_leaves,
+                n_changed_leaves, split_scratch[0], split_scratch[1],
                 best_feat, best_thr, best_gain
             )
         else:

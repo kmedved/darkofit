@@ -1544,6 +1544,106 @@ def test_leafwise_selected_feature_histogram_reuse_threaded():
     assert np.allclose(reused_H, full_H)
 
 
+def test_leafwise_changed_leaf_feature_parallel_split_matches_reference():
+    import numba
+    from chimeraboost.tree import (
+        _best_splits_for_leaf_ids_counts,
+        _best_splits_for_leaf_ids_counts_feature_parallel,
+    )
+
+    if numba.config.NUMBA_NUM_THREADS < 2:
+        pytest.skip("requires at least two numba threads")
+
+    rng = np.random.default_rng(44)
+    n_features = 17
+    n_leaves = 7
+    max_bins = 13
+    n_bins = rng.integers(5, max_bins + 1, size=n_features, dtype=np.int64)
+    hg = rng.normal(size=(n_features, n_leaves, max_bins))
+    hh = rng.uniform(0.05, 2.0, size=(n_features, n_leaves, max_bins))
+    hc = rng.integers(0, 4, size=(n_features, n_leaves, max_bins)).astype(float)
+    feature_mask = np.ones(n_features, dtype=np.int64)
+    feature_mask[[3, 9]] = 0
+    leaf_ids = np.array([1, 4], dtype=np.int64)
+
+    ref_feat = np.full(n_leaves, -99, dtype=np.int64)
+    ref_thr = np.full(n_leaves, -99, dtype=np.int64)
+    ref_gain = np.full(n_leaves, np.nan)
+    new_feat = ref_feat.copy()
+    new_thr = ref_thr.copy()
+    new_gain = ref_gain.copy()
+    feature_gain = np.empty((n_features, n_leaves), dtype=np.float64)
+    feature_thr = np.empty((n_features, n_leaves), dtype=np.float64)
+
+    old_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(min(2, numba.config.NUMBA_NUM_THREADS))
+        _best_splits_for_leaf_ids_counts(
+            hg, hh, hc, n_bins, 1.7, feature_mask, 0.2, 3,
+            leaf_ids, leaf_ids.shape[0], ref_feat, ref_thr, ref_gain
+        )
+        _best_splits_for_leaf_ids_counts_feature_parallel(
+            hg, hh, hc, n_bins, 1.7, feature_mask, 0.2, 3,
+            leaf_ids, leaf_ids.shape[0], feature_gain, feature_thr,
+            new_feat, new_thr, new_gain
+        )
+    finally:
+        numba.set_num_threads(old_threads)
+
+    assert np.array_equal(new_feat[leaf_ids], ref_feat[leaf_ids])
+    assert np.array_equal(new_thr[leaf_ids], ref_thr[leaf_ids])
+    assert np.allclose(new_gain[leaf_ids], ref_gain[leaf_ids])
+
+
+def test_leafwise_threaded_changed_leaf_split_matches_full_rescore():
+    import numba
+    from chimeraboost.tree import build_leafwise_tree
+
+    if numba.config.NUMBA_NUM_THREADS < 2:
+        pytest.skip("requires at least two numba threads")
+
+    rng = np.random.default_rng(45)
+    Xb = rng.integers(0, 48, size=(1100, 19), dtype=np.uint8)
+    n_bins = np.full(Xb.shape[1], 48, dtype=np.int64)
+    grad = rng.normal(size=Xb.shape[0])
+    hess = rng.uniform(0.15, 1.6, size=Xb.shape[0])
+
+    old_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(min(2, numba.config.NUMBA_NUM_THREADS))
+        changed_only = build_leafwise_tree(
+            Xb, grad, hess, n_bins, 6, 1.5, 0.1,
+            max_leaves=14, min_child_samples=5, min_child_weight=0.1,
+            min_gain_to_split=0.0, return_training_state=True,
+            reuse_leaf_histograms=True,
+        )
+        full_rescore = build_leafwise_tree(
+            Xb, grad, hess, n_bins, 6, 1.5, 0.1,
+            max_leaves=14, min_child_samples=5, min_child_weight=0.1,
+            min_gain_to_split=0.0, return_training_state=True,
+            recompute_all_leaf_splits=True,
+            reuse_leaf_histograms=False,
+        )
+    finally:
+        numba.set_num_threads(old_threads)
+
+    changed_tree, changed_leaf, changed_G, changed_H = changed_only
+    full_tree, full_leaf, full_G, full_H = full_rescore
+    assert np.array_equal(changed_tree.features, full_tree.features)
+    assert np.array_equal(changed_tree.thresholds, full_tree.thresholds)
+    assert np.array_equal(changed_tree.left_child, full_tree.left_child)
+    assert np.array_equal(changed_tree.right_child, full_tree.right_child)
+    assert np.array_equal(changed_tree.leaf_index, full_tree.leaf_index)
+    assert np.array_equal(changed_tree.splits_feat, full_tree.splits_feat)
+    assert np.array_equal(changed_tree.splits_thr, full_tree.splits_thr)
+    assert np.allclose(changed_tree.gains, full_tree.gains)
+    assert np.allclose(changed_tree.values, full_tree.values)
+    assert np.array_equal(changed_leaf, full_leaf)
+    assert np.allclose(changed_G, full_G)
+    assert np.allclose(changed_H, full_H)
+    assert np.array_equal(changed_tree.predict(Xb), full_tree.predict(Xb))
+
+
 def test_lightgbm_thread_determinism():
     X, y = load_breast_cancer(return_X_y=True)
     Xtr, Xte, ytr, _ = train_test_split(
