@@ -10,7 +10,7 @@ import numpy as np
 
 from .losses import LOSSES, MultiSoftmax
 from .preprocessing import FeaturePreprocessor
-from .tree import build_levelwise_tree, build_oblivious_tree
+from .tree import build_leafwise_tree, build_levelwise_tree, build_oblivious_tree
 
 _LEAF_CORRECTION_SORT_MIN_LEAVES = 16
 
@@ -33,10 +33,8 @@ def _apply_thread_count(thread_count):
 def _auto_learning_rate(n_samples, iterations, early_stopping):
     """Pick a default learning rate when the user did not specify one.
 
-    With early stopping, we default to 0.05 (down from 0.1). This forces the 
-    model to take smaller steps and build a larger, smoother ensemble. We trade 
-    a bit of our massive speed advantage for better test generalization.
-    Without early stopping, the rate scales inversely with the iteration budget.
+    With early stopping, we default to 0.1. Without early stopping, the rate
+    scales inversely with the iteration budget.
     """
     if early_stopping:
         return 0.1
@@ -90,12 +88,32 @@ def _normalize_tree_mode(tree_mode):
     mode = str(tree_mode).lower().replace("-", "_")
     if mode in {"catboost", "oblivious", "symmetric"}:
         return "catboost"
-    if mode in {"lightgbm", "levelwise", "level_wise", "non_oblivious"}:
+    if mode in {"lightgbm", "leafwise", "leaf_wise"}:
         return "lightgbm"
+    if mode in {"levelwise", "level_wise", "depthwise", "depth_wise",
+                "non_oblivious"}:
+        return "depthwise"
     raise ValueError(
         "tree_mode must be one of 'catboost', 'oblivious', "
-        "'lightgbm', or 'levelwise'"
+        "'lightgbm', or experimental 'depthwise'"
     )
+
+
+def _validate_sample_weight(sample_weight, n_samples, name="sample_weight"):
+    """Return a mean-one validated weight vector, or None."""
+    if sample_weight is None:
+        return None
+    w = np.asarray(sample_weight, dtype=np.float64)
+    if w.shape != (n_samples,):
+        raise ValueError(f"{name} must have shape ({n_samples},)")
+    if not np.all(np.isfinite(w)):
+        raise ValueError(f"{name} must contain only finite values")
+    if np.any(w < 0.0):
+        raise ValueError(f"{name} must be nonnegative")
+    total = w.sum()
+    if total <= 0.0:
+        raise ValueError(f"{name} must have positive total weight")
+    return w * (n_samples / total)
 
 
 class _BaseBooster:
@@ -110,12 +128,13 @@ class _BaseBooster:
     def __init__(self, iterations=500, learning_rate=None, depth=6,
                  l2_leaf_reg=3.0, max_bins=128, subsample=1.0,
                  colsample=1.0, cat_smoothing=1.0, early_stopping_rounds=None,
-                 min_child_weight=1.0, thread_count=None, random_state=None,
-                 verbose=False, ordered_boosting=True, verbose_timing=False,
-                 tree_mode="catboost"):
+                 min_child_weight=1.0, min_child_samples=20,
+                 min_gain_to_split=0.0, num_leaves=None, thread_count=None,
+                 random_state=None, verbose=False, ordered_boosting="auto",
+                 verbose_timing=False, tree_mode="catboost"):
         self.iterations = int(iterations)
         self.learning_rate = learning_rate
-        self.depth = int(depth)
+        self.depth = None if depth is None else int(depth)
         self.l2_leaf_reg = float(l2_leaf_reg)
         self.max_bins = int(max_bins)
         self.subsample = float(subsample)
@@ -123,31 +142,77 @@ class _BaseBooster:
         self.cat_smoothing = float(cat_smoothing)
         self.early_stopping_rounds = early_stopping_rounds
         self.min_child_weight = float(min_child_weight)
+        self.min_child_samples = int(min_child_samples)
+        self.min_gain_to_split = float(min_gain_to_split)
+        self.num_leaves = num_leaves
         self.thread_count = thread_count
         self.random_state = random_state
         self.verbose = verbose
-        self.ordered_boosting = bool(ordered_boosting)
+        self.ordered_boosting = ordered_boosting
         self.verbose_timing = bool(verbose_timing)
         self.tree_mode = tree_mode
         self.tree_mode_ = _normalize_tree_mode(tree_mode)
 
+    def _catboost_depth(self):
+        if self.depth is None or self.depth < 1:
+            raise ValueError("depth must be positive for tree_mode='catboost'")
+        return int(self.depth)
+
+    def _max_tree_leaves(self):
+        if self.tree_mode_ in {"catboost", "depthwise"}:
+            if self.num_leaves is not None:
+                raise ValueError("num_leaves is only supported with tree_mode='lightgbm'")
+            return 1 << self._catboost_depth()
+        if self.depth == 0 or (self.depth is not None and self.depth < -1):
+            raise ValueError("depth must be positive, None, or -1 for tree_mode='lightgbm'")
+        if self.num_leaves is None:
+            if self.depth is None or self.depth < 0:
+                return 31
+            return min(31, 1 << int(self.depth))
+        max_leaves = int(self.num_leaves)
+        if max_leaves < 1:
+            raise ValueError("num_leaves must be at least 1")
+        if self.depth is not None and self.depth > 0:
+            max_leaves = min(max_leaves, 1 << int(self.depth))
+        return max_leaves
+
+    def _max_tree_depth(self):
+        if self.tree_mode_ in {"catboost", "depthwise"}:
+            return self._catboost_depth()
+        if self.depth is None:
+            return -1
+        return int(self.depth)
+
+    def _resolve_ordered_boosting(self):
+        if self.ordered_boosting == "auto":
+            return self.tree_mode_ in {"catboost", "depthwise"}
+        resolved = bool(self.ordered_boosting)
+        if self.tree_mode_ == "lightgbm" and resolved:
+            raise ValueError(
+                "ordered_boosting=True is only supported with tree_mode='catboost'"
+            )
+        return resolved
+
     def _alloc_hist_buffers(self, n_features, n_bins):
         """Allocate reusable histogram buffers once per fit.
 
-        Shape (n_features, 2**depth, max_bins). Reused for every tree and level
+        Shape (n_features, max_tree_leaves, max_bins). Reused for every tree and level
         via _build_histograms_into, which zeroes the active slice each call.
         This avoids reallocating these (potentially large) arrays thousands of
         times over a long boosting run.
         """
-        max_leaves = 1 << self.depth
+        max_leaves = self._max_tree_leaves()
         max_bins = int(n_bins.max()) if len(n_bins) else 1
         hg = np.zeros((n_features, max_leaves, max_bins))
         hh = np.zeros((n_features, max_leaves, max_bins))
+        if self.tree_mode_ == "lightgbm":
+            hc = np.zeros((n_features, max_leaves, max_bins))
+            return (hg, hh, hc)
         return (hg, hh)
 
     def _alloc_split_buffers(self, n_features):
         """Allocate reusable per-feature split-search scratch buffers."""
-        max_leaves = 1 << self.depth
+        max_leaves = self._max_tree_leaves()
         return tuple(np.empty((n_features, max_leaves)) for _ in range(5))
 
     def _feature_selection(self, n_cols, rng):
@@ -167,6 +232,8 @@ class _BaseBooster:
 
     def _tree_builder(self):
         if self.tree_mode_ == "lightgbm":
+            return build_leafwise_tree
+        if self.tree_mode_ == "depthwise":
             return build_levelwise_tree
         return build_oblivious_tree
 
@@ -181,6 +248,28 @@ class _BaseBooster:
         mask = rng.random(grad.shape[0]) < self.subsample
         row_indices = np.flatnonzero(mask).astype(np.int64)
         return np.where(mask, grad, 0.0), np.where(mask, hess, 0.0), row_indices
+
+    def _builder_kwargs(self, fmask, findices, row_indices,
+                        hist_buffers, split_buffers, X_hist_binned,
+                        use_constant_hessian):
+        kwargs = {
+            "feature_mask": fmask,
+            "min_child_weight": self.min_child_weight,
+            "hist_buffers": hist_buffers,
+            "split_buffers": split_buffers,
+            "return_training_state": True,
+            "X_hist_binned": X_hist_binned,
+            "feature_indices": findices,
+            "row_indices": row_indices,
+            "constant_hessian": use_constant_hessian,
+        }
+        if self.tree_mode_ == "lightgbm":
+            kwargs.update(
+                max_leaves=self._max_tree_leaves(),
+                min_child_samples=self.min_child_samples,
+                min_gain_to_split=self.min_gain_to_split,
+            )
+        return kwargs
 
     def _accumulate_importance(self, tree):
         """Add this tree's per-split gains to the running importance totals,
@@ -205,7 +294,8 @@ class GradientBoosting(_BaseBooster):
         self.loss_name = loss
         self.loss_kwargs = loss_kwargs or {}
 
-    def fit(self, X, y, cat_features=None, eval_set=None, sample_weight=None):
+    def fit(self, X, y, cat_features=None, eval_set=None, sample_weight=None,
+            eval_sample_weight=None):
         """Fit the additive model. Optionally pass `cat_features` (column indices
         to target-encode) and `eval_set=(X_val, y_val)` for early stopping.
         `sample_weight` is a 1-D array of per-sample weights; None means uniform.
@@ -220,13 +310,10 @@ class GradientBoosting(_BaseBooster):
         # sample_weight=np.ones(n) is bitwise-equivalent to sample_weight=None
         # for all losses except MAE/Quantile (which use a different quantile
         # algorithm when weights are present).
-        w = None
-        if sample_weight is not None:
-            w = np.asarray(sample_weight, dtype=np.float64)
-            w = w * (n_samples / w.sum())
-
         self.n_threads_ = _apply_thread_count(self.thread_count)
         self.tree_mode_ = _normalize_tree_mode(self.tree_mode)
+        self.ordered_boosting_ = self._resolve_ordered_boosting()
+        w = _validate_sample_weight(sample_weight, n_samples)
         self.loss_ = LOSSES[self.loss_name](**self.loss_kwargs)
         use_constant_hessian = (
             getattr(self.loss_, "constant_hessian", False) and w is None
@@ -239,7 +326,9 @@ class GradientBoosting(_BaseBooster):
         self.timing_ = timing
         phase = _start_timing(timing)
         self.prep_ = self._new_preprocessor()
-        X_binned = self.prep_.fit_transform(X, [y], cat_features)
+        X_binned = self.prep_.fit_transform(
+            X, [y], cat_features, sample_weight=w
+        )
         X_hist_binned = (
             np.asfortranarray(X_binned) if self.n_threads_ > 1 else X_binned
         )
@@ -251,12 +340,15 @@ class GradientBoosting(_BaseBooster):
         )
         self._importance = np.zeros(self.prep_.n_input_features_)
 
-        Xv_binned = yv = Fv = None
+        Xv_binned = yv = Fv = wv = None
         if eval_set is not None:
             Xv, yv = eval_set
             Xv = (np.asarray(Xv, dtype=object) if cat_features
                   else np.asarray(Xv, dtype=np.float64))
             yv = np.asarray(yv, dtype=np.float64)
+            wv = _validate_sample_weight(
+                eval_sample_weight, len(yv), name="eval_sample_weight"
+            )
             Xv_binned = self.prep_.transform(Xv)
         _add_timing(timing, "preprocess", phase)
 
@@ -283,17 +375,12 @@ class GradientBoosting(_BaseBooster):
 
             phase = _start_timing(timing)
             tree, leaf, leaf_G, leaf_H = self._tree_builder()(
-                X_binned, g, h, n_bins, self.depth,
+                X_binned, g, h, n_bins, self._max_tree_depth(),
                 self.l2_leaf_reg, self.lr_,
-                feature_mask=fmask,
-                min_child_weight=self.min_child_weight,
-                hist_buffers=hist_buffers,
-                split_buffers=split_buffers,
-                return_training_state=True,
-                X_hist_binned=X_hist_binned,
-                feature_indices=findices,
-                row_indices=row_indices,
-                constant_hessian=use_constant_hessian,
+                **self._builder_kwargs(
+                    fmask, findices, row_indices, hist_buffers, split_buffers,
+                    X_hist_binned, use_constant_hessian
+                ),
             )
             _add_timing(timing, "tree_build", phase)
             # A depth-0 tree found no legal split; subsequent rounds on the same
@@ -307,7 +394,7 @@ class GradientBoosting(_BaseBooster):
                 self._correct_leaves(tree, X_binned, y - F, w, leaf=leaf)
             self.trees_.append(tree)
             self._accumulate_importance(tree)
-            if self.ordered_boosting and not getattr(self.loss_, "adjusts_leaves", False):
+            if self.ordered_boosting_ and not getattr(self.loss_, "adjusts_leaves", False):
                 # Leave-one-out leaf step: each row's update uses its leaf's
                 # gradient/hessian totals with that row's own contribution
                 # removed, reducing the self-reinforcement of plain boosting.
@@ -330,7 +417,7 @@ class GradientBoosting(_BaseBooster):
                 tree.add_predict(Xv_binned, Fv)
                 _add_timing(timing, "validation_predict", phase)
                 phase = _start_timing(timing)
-                val = self.loss_.eval(yv, Fv)   # validation is always unweighted
+                val = self.loss_.eval(yv, Fv, wv)
                 _add_timing(timing, "loss_eval", phase)
                 self.valid_history_.append(val)
                 if val < best_score - 1e-9:
@@ -351,6 +438,14 @@ class GradientBoosting(_BaseBooster):
 
         self.fit_time_ = time.time() - t0
         self.best_iteration_ = len(self.trees_)
+        if self.valid_history_:
+            self.best_score_ = best_score
+        elif Fv is not None:
+            self.best_score_ = self.loss_.eval(yv, Fv, wv)
+        elif self.train_history_:
+            self.best_score_ = self.train_history_[-1]
+        else:
+            self.best_score_ = self.loss_.eval(y, F, w)
         return self
 
     def _correct_leaves(self, tree, X_binned, residuals, sample_weight=None, leaf=None):
@@ -406,7 +501,8 @@ class GradientBoosting(_BaseBooster):
 class MulticlassBoosting(_BaseBooster):
     """Softmax multiclass booster: fits K trees per round (one per class)."""
 
-    def fit(self, X, y, cat_features=None, eval_set=None, sample_weight=None):
+    def fit(self, X, y, cat_features=None, eval_set=None, sample_weight=None,
+            eval_sample_weight=None):
         """Fit K trees per boosting round (one per class) under softmax loss.
         Same `cat_features` / `eval_set` / `sample_weight` semantics as the
         scalar booster."""
@@ -420,13 +516,10 @@ class MulticlassBoosting(_BaseBooster):
         Y_class = _one_hot_class_major(y_idx, K)  # class-major (K, n)
         n_samples = X.shape[0]
 
-        w = None
-        if sample_weight is not None:
-            w = np.asarray(sample_weight, dtype=np.float64)
-            w = w * (n_samples / w.sum())
-
         self.n_threads_ = _apply_thread_count(self.thread_count)
         self.tree_mode_ = _normalize_tree_mode(self.tree_mode)
+        self.ordered_boosting_ = self._resolve_ordered_boosting()
+        w = _validate_sample_weight(sample_weight, n_samples)
         self.loss_ = MultiSoftmax(K)
         _es = self.early_stopping_rounds is not None and eval_set is not None
         self.lr_ = (self.learning_rate if self.learning_rate is not None
@@ -438,7 +531,7 @@ class MulticlassBoosting(_BaseBooster):
         # One ordered-TS target per class (CatBoost-style per-class statistics).
         self.prep_ = self._new_preprocessor()
         X_binned = self.prep_.fit_transform(X, [Y_class[k] for k in range(K)],
-                                            cat_features)
+                                            cat_features, sample_weight=w)
         X_hist_binned = (
             np.asfortranarray(X_binned) if self.n_threads_ > 1 else X_binned
         )
@@ -450,13 +543,19 @@ class MulticlassBoosting(_BaseBooster):
         )
         self._importance = np.zeros(self.prep_.n_input_features_)
 
-        Xv_binned = Yv_class = Fv = yv_idx = None
+        Xv_binned = Yv_class = Fv = yv_idx = wv = None
         if eval_set is not None:
             Xv, yv = eval_set
             Xv = (np.asarray(Xv, dtype=object) if cat_features
                   else np.asarray(Xv, dtype=np.float64))
-            yv_idx = np.searchsorted(self.classes_, np.asarray(yv))
+            yv_arr = np.asarray(yv)
+            if np.any(~np.isin(yv_arr, self.classes_)):
+                raise ValueError("eval_set contains labels not present in training data")
+            yv_idx = np.searchsorted(self.classes_, yv_arr)
             Yv_class = _one_hot_class_major(yv_idx, K)
+            wv = _validate_sample_weight(
+                eval_sample_weight, len(yv_idx), name="eval_sample_weight"
+            )
             Xv_binned = self.prep_.transform(Xv)
         _add_timing(timing, "preprocess", phase)
 
@@ -478,36 +577,47 @@ class MulticlassBoosting(_BaseBooster):
                 grad = grad * w[None, :]
                 hess = hess * w[None, :]
             fmask, findices = self._feature_selection(X_binned.shape[1], rng)
+            if self.subsample >= 1.0:
+                row_indices_round = None
+            else:
+                mask = rng.random(n_samples) < self.subsample
+                row_indices_round = np.flatnonzero(mask).astype(np.int64)
             _add_timing(timing, "grad_hess", phase)
             round_trees = []
             for k in range(K):
                 phase = _start_timing(timing)
-                g, h, row_indices = self._maybe_subsample(
-                    grad[k], hess[k], rng
-                )
+                if row_indices_round is None:
+                    g, h = grad[k], hess[k]
+                else:
+                    row_mask = np.zeros(n_samples, dtype=bool)
+                    row_mask[row_indices_round] = True
+                    g = np.where(row_mask, grad[k], 0.0)
+                    h = np.where(row_mask, hess[k], 0.0)
                 _add_timing(timing, "grad_hess", phase)
                 phase = _start_timing(timing)
                 tree, leaf, leaf_G, leaf_H = self._tree_builder()(
-                    X_binned, g, h, n_bins, self.depth,
+                    X_binned, g, h, n_bins, self._max_tree_depth(),
                     self.l2_leaf_reg, self.lr_,
-                    feature_mask=fmask,
-                    min_child_weight=self.min_child_weight,
-                    hist_buffers=hist_buffers,
-                    split_buffers=split_buffers,
-                    return_training_state=True,
-                    X_hist_binned=X_hist_binned,
-                    feature_indices=findices,
-                    row_indices=row_indices,
+                    **self._builder_kwargs(
+                        fmask, findices, row_indices_round, hist_buffers,
+                        split_buffers, X_hist_binned, False
+                    ),
                 )
                 _add_timing(timing, "tree_build", phase)
                 phase = _start_timing(timing)
+                if tree.depth == 0:
+                    # A no-split class tree is not a productive weak learner in
+                    # the boosting loop. Keep the round shape K-wide, but make
+                    # this tree a prediction no-op if another class did split.
+                    tree.values[0] = 0.0
                 round_trees.append(tree)
-                self._accumulate_importance(tree)
-                if self.ordered_boosting and tree.depth > 0:
+                if tree.depth > 0:
+                    self._accumulate_importance(tree)
+                if self.ordered_boosting_ and tree.depth > 0:
                     F[k] += _ordered_leaf_update(
                         self.lr_, leaf, leaf_G, leaf_H, g, h, self.l2_leaf_reg
                     )
-                else:
+                elif tree.depth > 0:
                     tree.add_predict(X_binned, F[k])
                 _add_timing(timing, "train_update", phase)
             # Stop only if EVERY class exhausted its splits this round; if even
@@ -528,7 +638,7 @@ class MulticlassBoosting(_BaseBooster):
                     round_trees[k].add_predict(Xv_binned, Fv[k])
                 _add_timing(timing, "validation_predict", phase)
                 phase = _start_timing(timing)
-                val = self.loss_.eval_class_major(Yv_class, Fv)
+                val = self.loss_.eval_class_major(Yv_class, Fv, wv)
                 _add_timing(timing, "loss_eval", phase)
                 self.valid_history_.append(val)
                 if val < best_score - 1e-9:
@@ -548,6 +658,14 @@ class MulticlassBoosting(_BaseBooster):
 
         self.fit_time_ = time.time() - t0
         self.best_iteration_ = len(self.trees_)
+        if self.valid_history_:
+            self.best_score_ = best_score
+        elif Fv is not None:
+            self.best_score_ = self.loss_.eval_class_major(Yv_class, Fv, wv)
+        elif self.train_history_:
+            self.best_score_ = self.train_history_[-1]
+        else:
+            self.best_score_ = self.loss_.eval_class_major(Y_class, F, w)
         return self
 
     def predict_raw(self, X):
@@ -561,3 +679,14 @@ class MulticlassBoosting(_BaseBooster):
             for k in range(self.n_classes_):
                 round_trees[k].add_predict(X_binned, F[k])
         return F.T
+
+    def staged_predict_raw(self, X):
+        """Yield raw scores after each complete multiclass boosting round."""
+        X = (np.asarray(X, dtype=object) if self.prep_.cat_features_
+             else np.asarray(X, dtype=np.float64))
+        X_binned = self.prep_.transform(X)
+        F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
+        for round_trees in self.trees_:
+            for k in range(self.n_classes_):
+                round_trees[k].add_predict(X_binned, F[k])
+            yield F.T.copy()

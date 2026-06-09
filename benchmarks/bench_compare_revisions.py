@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import inspect
 import json
 import subprocess
 import sys
@@ -197,6 +198,7 @@ def _fit_worker(payload):
     task = payload["task"]
     estimator_cls = ChimeraBoostRegressor if task == "regression" else ChimeraBoostClassifier
     kwargs = estimator_kwargs(estimator_cls, config, variant, payload["seed"])
+    fit_params = set(inspect.signature(estimator_cls.fit).parameters)
     cat_features = payload["cat_features"]
     repeat = max(1, int(payload["repeat"]))
 
@@ -219,6 +221,8 @@ def _fit_worker(payload):
         }
         if data["w_fit"] is not None:
             fit_kwargs["sample_weight"] = data["w_fit"]
+            if "eval_sample_weight" in fit_params:
+                fit_kwargs["eval_sample_weight"] = data["w_val"]
 
     best_model = None
     fit_seconds = None
@@ -338,6 +342,9 @@ def parse_args(argv):
     parser.add_argument("--iterations", type=int, default=1_500)
     parser.add_argument("--patience", type=int, default=50)
     parser.add_argument("--depth", type=int, default=6)
+    parser.add_argument("--num-leaves", type=int, default=None)
+    parser.add_argument("--min-child-samples", type=int, default=20)
+    parser.add_argument("--min-gain-to-split", type=float, default=0.0)
     parser.add_argument("--learning-rate", type=float, default=None)
     parser.add_argument("--ordered-boosting", action="store_true", default=False)
     parser.add_argument(
@@ -386,9 +393,12 @@ def main(argv=None):
         iterations=args.iterations,
         patience=args.patience,
         depth=args.depth,
+        num_leaves=args.num_leaves,
         learning_rate=args.learning_rate,
         threads=args.threads,
         ordered_boosting=args.ordered_boosting,
+        min_child_samples=args.min_child_samples,
+        min_gain_to_split=args.min_gain_to_split,
     )
     args.csv.parent.mkdir(parents=True, exist_ok=True)
 

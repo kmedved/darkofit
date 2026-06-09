@@ -26,8 +26,26 @@ Tree builders are selectable:
 
 ```
 ChimeraBoostClassifier(tree_mode="catboost")  # symmetric/oblivious default
-ChimeraBoostClassifier(tree_mode="lightgbm")  # level-wise, non-oblivious
+ChimeraBoostClassifier(tree_mode="lightgbm")  # leaf-wise, non-oblivious
 ```
+
+Tree modes:
+
+* `tree_mode="catboost"` builds symmetric / oblivious trees and supports
+  ordered boosting.
+* `tree_mode="lightgbm"` builds ChimeraBoost's LightGBM-like histogram trees:
+  non-oblivious, leaf-wise, best-first CART-style trees. This is not model or
+  prediction compatibility with Microsoft LightGBM.
+
+In LightGBM mode, `num_leaves` is the main tree-size control and `depth` is a
+maximum path-depth cap. `ordered_boosting` defaults to off for this mode; setting
+`ordered_boosting=True` with `tree_mode="lightgbm"` raises a `ValueError`.
+Categorical features still use ChimeraBoost's ordered target-stat preprocessing,
+not native LightGBM category-partition splits.
+
+Not implemented in `tree_mode="lightgbm"`: native LightGBM categorical splits,
+GOSS, DART, GPU training, sparse optimization, monotone constraints, ranking,
+custom objectives, custom eval metrics, or LightGBM model import/export.
 
 
 

@@ -27,12 +27,15 @@ class IterationsEstimator:
         iterations=1,
         early_stopping_rounds=None,
         depth=6,
+        num_leaves=None,
         learning_rate=None,
         thread_count=None,
         random_state=None,
         ordered_boosting=True,
         tree_mode="catboost",
         verbose_timing=False,
+        min_child_samples=20,
+        min_gain_to_split=0.0,
     ):
         pass
 
@@ -58,9 +61,12 @@ def test_estimator_kwargs_maps_iterations_api():
         iterations=17,
         patience=4,
         depth=3,
+        num_leaves=15,
         learning_rate=0.2,
         threads=2,
         ordered_boosting=True,
+        min_child_samples=7,
+        min_gain_to_split=0.01,
     )
     variant = RevisionSpec("fork_lightgbm", "/repo", tree_mode="lightgbm")
 
@@ -69,12 +75,55 @@ def test_estimator_kwargs_maps_iterations_api():
     assert kwargs["iterations"] == 17
     assert kwargs["early_stopping_rounds"] == 4
     assert kwargs["depth"] == 3
+    assert kwargs["num_leaves"] == 15
     assert kwargs["learning_rate"] == 0.2
     assert kwargs["thread_count"] == 2
     assert kwargs["random_state"] == 11
-    assert kwargs["ordered_boosting"] is True
+    assert kwargs["ordered_boosting"] is False
     assert kwargs["tree_mode"] == "lightgbm"
     assert kwargs["verbose_timing"] is True
+    assert kwargs["min_child_samples"] == 7
+    assert kwargs["min_gain_to_split"] == 0.01
+
+
+def test_estimator_kwargs_num_leaves_only_for_lightgbm():
+    cfg = FitConfig(num_leaves=15)
+
+    catboost = estimator_kwargs(
+        IterationsEstimator,
+        cfg,
+        RevisionSpec("candidate_catboost", "/repo", tree_mode="catboost"),
+        seed=0,
+    )
+    lightgbm = estimator_kwargs(
+        IterationsEstimator,
+        cfg,
+        RevisionSpec("candidate_lightgbm_leafwise", "/repo", tree_mode="lightgbm"),
+        seed=0,
+    )
+
+    assert "num_leaves" not in catboost
+    assert lightgbm["num_leaves"] == 15
+
+
+def test_estimator_kwargs_ordered_boosting_scoped_by_tree_mode():
+    cfg = FitConfig(ordered_boosting=True)
+
+    catboost = estimator_kwargs(
+        IterationsEstimator,
+        cfg,
+        RevisionSpec("candidate_catboost", "/repo", tree_mode="catboost"),
+        seed=0,
+    )
+    lightgbm = estimator_kwargs(
+        IterationsEstimator,
+        cfg,
+        RevisionSpec("candidate_lightgbm_leafwise", "/repo", tree_mode="lightgbm"),
+        seed=0,
+    )
+
+    assert catboost["ordered_boosting"] is True
+    assert lightgbm["ordered_boosting"] is False
 
 
 def test_estimator_kwargs_maps_n_estimators_api_and_rejects_tree_mode():
@@ -114,9 +163,9 @@ def test_default_revision_specs_expand_expected_labels():
         "upstream_default",
         "upstream_matched",
         "fork_catboost_matched",
-        "fork_lightgbm_matched",
+        "fork_lightgbm_leafwise_matched",
         "candidate_catboost",
-        "candidate_lightgbm",
+        "candidate_lightgbm_leafwise",
     ]
     assert specs[3].tree_mode == "lightgbm"
     assert specs[0].use_defaults is True

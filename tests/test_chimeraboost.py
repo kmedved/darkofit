@@ -271,12 +271,16 @@ def test_multiclass_preprocessor_receives_class_major_target_views(monkeypatch):
     seen = []
     original = booster.FeaturePreprocessor.fit_transform
 
-    def wrapped_fit_transform(self, X, encode_targets, cat_features):
+    def wrapped_fit_transform(self, X, encode_targets, cat_features,
+                              sample_weight=None):
         seen.append([
             (target.flags.c_contiguous, target.flags.owndata)
             for target in encode_targets
         ])
-        return original(self, X, encode_targets, cat_features)
+        return original(
+            self, X, encode_targets, cat_features,
+            sample_weight=sample_weight
+        )
 
     monkeypatch.setattr(
         booster.FeaturePreprocessor, "fit_transform", wrapped_fit_transform
@@ -641,7 +645,7 @@ def test_add_predict_matches_predict():
 
 
 def test_levelwise_tree_add_predict_matches_predict():
-    """The LightGBM-like tree representation must route predict paths alike."""
+    """The experimental depth-wise tree representation must route predict paths alike."""
     from chimeraboost.preprocessing import FeaturePreprocessor
     from chimeraboost.tree import build_levelwise_tree
 
@@ -673,6 +677,123 @@ def test_levelwise_tree_add_predict_matches_predict():
                                              minlength=len(leaf_H)))
 
 
+def _reference_leafwise_splits(Xb, grad, hess, n_bins, max_leaves, max_depth,
+                               l2, min_child_weight, min_child_samples,
+                               min_gain):
+    leaf = np.zeros(Xb.shape[0], dtype=np.int64)
+    leaf_depth = [0]
+    splits = []
+    for _ in range(max_leaves - 1):
+        best = None
+        for l in range(len(leaf_depth)):
+            if max_depth >= 0 and leaf_depth[l] >= max_depth:
+                continue
+            rows = np.flatnonzero(leaf == l)
+            if not len(rows):
+                continue
+            Gt = grad[rows].sum()
+            Ht = hess[rows].sum()
+            Ct = np.count_nonzero(hess[rows] > 0)
+            if Ht <= 0 or Ct <= 0:
+                continue
+            parent = Gt * Gt / (Ht + l2)
+            for f in range(Xb.shape[1]):
+                for t in range(n_bins[f] - 1):
+                    left_mask = Xb[rows, f] <= t
+                    right_mask = ~left_mask
+                    left_rows = rows[left_mask]
+                    right_rows = rows[right_mask]
+                    HL = hess[left_rows].sum()
+                    HR = hess[right_rows].sum()
+                    CL = np.count_nonzero(hess[left_rows] > 0)
+                    CR = np.count_nonzero(hess[right_rows] > 0)
+                    if (
+                        HL < min_child_weight
+                        or HR < min_child_weight
+                        or CL < min_child_samples
+                        or CR < min_child_samples
+                    ):
+                        continue
+                    GL = grad[left_rows].sum()
+                    GR = grad[right_rows].sum()
+                    gain = (
+                        GL * GL / (HL + l2)
+                        + GR * GR / (HR + l2)
+                        - parent
+                    )
+                    if best is None or gain > best[0]:
+                        best = (gain, l, f, t)
+        if best is None or best[0] <= min_gain:
+            break
+        gain, l, f, t = best
+        new_leaf = len(leaf_depth)
+        leaf[(leaf == l) & (Xb[:, f] > t)] = new_leaf
+        leaf_depth[l] += 1
+        leaf_depth.append(leaf_depth[l])
+        splits.append((f, t, gain))
+    return splits, leaf
+
+
+def test_leafwise_tree_matches_bruteforce_reference():
+    """LightGBM mode must grow best-first leaf-wise, not depth-wise."""
+    from chimeraboost.tree import build_leafwise_tree
+
+    Xb = np.array([
+        [0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2],
+        [2, 0], [2, 1], [2, 2], [2, 2],
+    ], dtype=np.uint8)
+    y = np.array([-1.5, -1.2, -1.0, -0.1, 0.1, 0.2, 1.0, 1.2, 2.5, 2.7])
+    grad = y.mean() - y
+    hess = np.ones_like(grad)
+    n_bins = np.array([3, 3], dtype=np.int64)
+
+    tree, leaf, leaf_G, leaf_H = build_leafwise_tree(
+        Xb, grad, hess, n_bins, 3, 1.0, 0.1,
+        max_leaves=4, min_child_samples=2, min_child_weight=1.0,
+        min_gain_to_split=0.0, return_training_state=True,
+    )
+    ref_splits, ref_leaf = _reference_leafwise_splits(
+        Xb, grad, hess, n_bins, 4, 3, 1.0, 1.0, 2, 0.0
+    )
+
+    assert tree.n_leaves == 1 + len(ref_splits)
+    assert tree.depth <= 3
+    assert np.array_equal(tree.splits_feat, [s[0] for s in ref_splits])
+    assert np.array_equal(tree.splits_thr, [s[1] for s in ref_splits])
+    assert np.allclose(tree.gains, [s[2] for s in ref_splits])
+    assert np.array_equal(leaf, ref_leaf)
+    assert np.array_equal(tree.apply(Xb), ref_leaf)
+    assert np.array_equal(leaf_G, np.bincount(leaf, weights=grad,
+                                             minlength=tree.n_leaves))
+    assert np.array_equal(leaf_H, np.bincount(leaf, weights=hess,
+                                             minlength=tree.n_leaves))
+    out = np.zeros(Xb.shape[0])
+    tree.add_predict(Xb, out)
+    assert np.array_equal(out, tree.predict(Xb))
+
+
+def test_leafwise_no_split_tree_predicts_root_value():
+    from chimeraboost.tree import build_leafwise_tree
+
+    Xb = np.array([[0], [1], [2]], dtype=np.uint8)
+    grad = np.array([1.0, 2.0, 3.0])
+    hess = np.ones_like(grad)
+    tree, leaf, leaf_G, leaf_H = build_leafwise_tree(
+        Xb, grad, hess, np.array([3], dtype=np.int64), 3, 1.0, 0.1,
+        max_leaves=1, return_training_state=True,
+    )
+
+    expected = np.full(Xb.shape[0], tree.values[0])
+    out = np.zeros(Xb.shape[0])
+    tree.add_predict(Xb, out)
+    assert tree.n_splits == 0
+    assert np.array_equal(tree.apply(Xb), leaf)
+    assert np.array_equal(tree.predict(Xb), expected)
+    assert np.array_equal(out, expected)
+    assert leaf_G[0] == grad.sum()
+    assert leaf_H[0] == hess.sum()
+
+
 def test_tree_mode_aliases_and_lightgbm_plumbing():
     X, y = load_breast_cancer(return_X_y=True)
     Xtr, Xte, ytr, _ = train_test_split(
@@ -688,13 +809,378 @@ def test_tree_mode_aliases_and_lightgbm_plumbing():
     lightgbm = ChimeraBoostClassifier(
         iterations=12, depth=3, tree_mode="lightgbm", random_state=0
     ).fit(Xtr, ytr)
+    non_oblivious = ChimeraBoostClassifier(
+        iterations=12, depth=3, tree_mode="non_oblivious", random_state=0
+    ).fit(Xtr, ytr)
 
     assert catboost.model_.tree_mode_ == "catboost"
     assert oblivious.model_.tree_mode_ == "catboost"
     assert lightgbm.model_.tree_mode_ == "lightgbm"
+    assert non_oblivious.model_.tree_mode_ == "depthwise"
+    assert catboost.model_.ordered_boosting_ is True
+    assert non_oblivious.model_.ordered_boosting_ is True
+    assert lightgbm.model_.ordered_boosting_ is False
     assert np.array_equal(catboost.predict_proba(Xte), oblivious.predict_proba(Xte))
     assert lightgbm.predict_proba(Xte).shape == (len(Xte), 2)
     assert abs(lightgbm.feature_importances_.sum() - 1.0) < 1e-6
+
+
+def test_lightgbm_mode_rejects_ordered_boosting_true():
+    X, y = load_breast_cancer(return_X_y=True)
+    with pytest.raises(ValueError, match="ordered_boosting=True"):
+        ChimeraBoostClassifier(
+            iterations=2, tree_mode="lightgbm", ordered_boosting=True
+        ).fit(X[:80], y[:80])
+
+
+def test_public_api_rejects_unsupported_lightgbm_options():
+    X, y = load_breast_cancer(return_X_y=True)
+    with pytest.raises(ValueError, match="num_leaves"):
+        ChimeraBoostClassifier(
+            iterations=2, tree_mode="catboost", num_leaves=7
+        ).fit(X[:80], y[:80])
+    with pytest.raises(ValueError, match="depth"):
+        ChimeraBoostClassifier(
+            iterations=2, tree_mode="lightgbm", depth=0
+        ).fit(X[:80], y[:80])
+
+
+def test_sparse_inputs_raise_clear_error():
+    sparse = pytest.importorskip("scipy.sparse")
+    X, y = load_breast_cancer(return_X_y=True)
+    with pytest.raises(ValueError, match="sparse matrices are not supported"):
+        ChimeraBoostClassifier(iterations=2).fit(sparse.csr_matrix(X), y)
+
+    Xtr, Xv, ytr, yv = train_test_split(
+        X, y, test_size=0.2, random_state=0, stratify=y
+    )
+    with pytest.raises(ValueError, match="sparse matrices are not supported"):
+        ChimeraBoostClassifier(iterations=2).fit(
+            Xtr, ytr, eval_set=(sparse.csr_matrix(Xv), yv)
+        )
+
+    clf = ChimeraBoostClassifier(iterations=2, random_state=0).fit(Xtr, ytr)
+    with pytest.raises(ValueError, match="sparse matrices are not supported"):
+        clf.predict(sparse.csr_matrix(Xv))
+    with pytest.raises(ValueError, match="sparse matrices are not supported"):
+        list(clf.staged_predict_proba(sparse.csr_matrix(Xv)))
+
+    Xr, yr = load_diabetes(return_X_y=True)
+    Xr_tr, Xr_v, yr_tr, _ = train_test_split(
+        Xr, yr, test_size=0.2, random_state=0
+    )
+    reg = ChimeraBoostRegressor(iterations=2, random_state=0).fit(Xr_tr, yr_tr)
+    with pytest.raises(ValueError, match="sparse matrices are not supported"):
+        reg.predict(sparse.csr_matrix(Xr_v))
+    with pytest.raises(ValueError, match="sparse matrices are not supported"):
+        list(reg.staged_predict(sparse.csr_matrix(Xr_v)))
+
+
+def test_lightgbm_mode_enforces_leaf_constraints():
+    X, y = load_diabetes(return_X_y=True)
+    model = ChimeraBoostRegressor(
+        iterations=3, tree_mode="lightgbm", num_leaves=3, depth=2,
+        min_child_samples=30, random_state=0
+    ).fit(X, y)
+    assert model.model_.tree_mode_ == "lightgbm"
+    for tree in model.model_.trees_:
+        assert tree.n_leaves <= 3
+        assert tree.depth <= 2
+
+
+def test_lightgbm_num_leaves_capped_by_positive_depth():
+    X, y = load_diabetes(return_X_y=True)
+    model = ChimeraBoostRegressor(
+        iterations=2, tree_mode="lightgbm", num_leaves=1000, depth=2,
+        min_child_samples=5, random_state=0
+    ).fit(X, y)
+    assert model.model_._max_tree_leaves() == 4
+    for tree in model.model_.trees_:
+        assert tree.n_leaves <= 4
+
+
+def test_lightgbm_scalar_no_split_first_tree_keeps_initial_model():
+    X = np.array([[0.0], [1.0], [2.0], [3.0]])
+    y = np.array([1.0, 2.0, 3.0, 4.0])
+    Xv = np.array([[10.0], [11.0]])
+    yv = np.array([10.0, 12.0])
+    model = ChimeraBoostRegressor(
+        iterations=5, tree_mode="lightgbm", num_leaves=1, random_state=0
+    ).fit(X, y, eval_set=(Xv, yv))
+
+    assert model.best_iteration_ == 0
+    assert model.best_score_ == model.model_.best_score_
+    expected_val = model.model_.loss_.eval(
+        yv, np.full(len(yv), model.model_.init_)
+    )
+    assert model.best_score_ == expected_val
+    assert np.all(np.isfinite(model.predict(X)))
+
+
+def test_lightgbm_multiclass_no_split_first_round_keeps_initial_model():
+    X = np.array([
+        [0.0], [1.0], [2.0], [3.0], [4.0], [5.0],
+        [6.0], [7.0], [8.0],
+    ])
+    y = np.array([0, 1, 2, 0, 1, 2, 0, 1, 2])
+    Xv = np.array([[9.0], [10.0], [11.0]])
+    yv = np.array([0, 1, 2])
+    model = ChimeraBoostClassifier(
+        iterations=5, tree_mode="lightgbm", num_leaves=1, random_state=0
+    ).fit(X, y, eval_set=(Xv, yv))
+
+    assert model.best_iteration_ == 0
+    assert model.best_score_ == model.model_.best_score_
+    Yv = np.zeros((3, len(yv)))
+    Yv[yv, np.arange(len(yv))] = 1.0
+    Fv = np.tile(model.model_.init_[:, None], (1, len(yv)))
+    expected_val = model.model_.loss_.eval_class_major(Yv, Fv)
+    assert model.best_score_ == expected_val
+    proba = model.predict_proba(X)
+    assert np.all(np.isfinite(proba))
+    assert np.allclose(proba.sum(axis=1), 1.0)
+
+
+def test_lightgbm_zero_weight_rows_do_not_affect_tree_structure():
+    from chimeraboost.tree import build_leafwise_tree
+
+    X_active = np.array(
+        [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [2, 1]],
+        dtype=np.uint8,
+    )
+    grad_active = np.array([2.0, 1.5, 0.5, -0.5, -1.5, -2.0])
+    hess_active = np.ones_like(grad_active)
+    X_zero = np.array([[2, 2], [2, 2], [0, 2], [0, 2]], dtype=np.uint8)
+    grad_zero = np.zeros(4)
+    hess_zero = np.zeros(4)
+    n_bins = np.array([3, 3], dtype=np.int64)
+
+    active_tree = build_leafwise_tree(
+        X_active, grad_active, hess_active, n_bins, 3, 1.0, 0.1,
+        max_leaves=3, min_child_samples=2, min_child_weight=1.0,
+    )
+    full_tree = build_leafwise_tree(
+        np.vstack([X_active, X_zero]),
+        np.concatenate([grad_active, grad_zero]),
+        np.concatenate([hess_active, hess_zero]),
+        n_bins, 3, 1.0, 0.1,
+        max_leaves=3, min_child_samples=2, min_child_weight=1.0,
+    )
+
+    assert np.array_equal(full_tree.splits_feat, active_tree.splits_feat)
+    assert np.array_equal(full_tree.splits_thr, active_tree.splits_thr)
+    assert np.array_equal(full_tree.gains, active_tree.gains)
+    assert np.array_equal(full_tree.predict(X_active), active_tree.predict(X_active))
+
+
+def test_lightgbm_thread_determinism():
+    X, y = load_breast_cancer(return_X_y=True)
+    Xtr, Xte, ytr, _ = train_test_split(
+        X, y, test_size=0.25, random_state=2, stratify=y
+    )
+    one = ChimeraBoostClassifier(
+        iterations=8, tree_mode="lightgbm", num_leaves=7, depth=3,
+        thread_count=1, random_state=0
+    ).fit(Xtr, ytr)
+    two = ChimeraBoostClassifier(
+        iterations=8, tree_mode="lightgbm", num_leaves=7, depth=3,
+        thread_count=2, random_state=0
+    ).fit(Xtr, ytr)
+    assert np.allclose(one.predict_proba(Xte), two.predict_proba(Xte))
+
+
+def test_classifier_staged_predictions_match_final():
+    X, y = load_breast_cancer(return_X_y=True)
+    Xtr, Xte, ytr, _ = train_test_split(
+        X, y, test_size=0.25, random_state=1, stratify=y
+    )
+    model = ChimeraBoostClassifier(iterations=12, random_state=0).fit(Xtr, ytr)
+    stages = list(model.staged_predict_proba(Xte))
+    assert len(stages) == model.best_iteration_
+    assert np.allclose(stages[-1], model.predict_proba(Xte))
+
+
+def test_multiclass_staged_predictions_match_final():
+    from sklearn.datasets import load_wine
+    X, y = load_wine(return_X_y=True)
+    Xtr, Xte, ytr, _ = train_test_split(
+        X, y, test_size=0.25, random_state=1, stratify=y
+    )
+    model = ChimeraBoostClassifier(iterations=8, random_state=0).fit(Xtr, ytr)
+    stages = list(model.staged_predict_proba(Xte))
+    assert len(stages) == model.best_iteration_
+    assert np.allclose(stages[-1], model.predict_proba(Xte))
+    assert np.allclose(stages[-1].sum(axis=1), 1.0)
+
+
+def test_multiclass_subsampling_shared_per_round(monkeypatch):
+    import chimeraboost.booster as booster
+    from sklearn.datasets import load_wine
+
+    calls = []
+    original = booster.build_oblivious_tree
+
+    def wrapped_build_tree(*args, **kwargs):
+        row_indices = kwargs.get("row_indices")
+        feature_indices = kwargs.get("feature_indices")
+        calls.append((
+            None if row_indices is None else row_indices.copy(),
+            None if feature_indices is None else feature_indices.copy(),
+        ))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(booster, "build_oblivious_tree", wrapped_build_tree)
+    X, y = load_wine(return_X_y=True)
+    ChimeraBoostClassifier(
+        iterations=1, subsample=0.6, colsample=0.5, random_state=0
+    ).fit(X, y)
+
+    assert len(calls) == len(np.unique(y))
+    first_rows, first_features = calls[0]
+    assert first_rows is not None
+    assert first_features is not None
+    for row_indices, feature_indices in calls[1:]:
+        assert np.array_equal(row_indices, first_rows)
+        assert np.array_equal(feature_indices, first_features)
+
+
+def test_multiclass_no_split_class_tree_is_boosting_noop(monkeypatch):
+    import chimeraboost.booster as booster
+
+    class FakeTree:
+        def __init__(self, depth, value):
+            self.depth = depth
+            self.values = np.array([value], dtype=np.float64)
+            self.splits_feat = np.array([0], dtype=np.int64) if depth else np.array([], dtype=np.int64)
+            self.gains = np.array([1.0], dtype=np.float64) if depth else np.array([], dtype=np.float64)
+
+        def add_predict(self, X_binned, out):
+            out += self.values[0]
+
+    calls = {"n": 0}
+
+    def fake_build_tree(X_binned, grad, hess, *args, **kwargs):
+        k = calls["n"] % 3
+        calls["n"] += 1
+        tree = FakeTree(0, 5.0) if k == 0 else FakeTree(1, 1.0)
+        leaf = np.zeros(X_binned.shape[0], dtype=np.int64)
+        return tree, leaf, np.array([0.0]), np.array([1.0])
+
+    monkeypatch.setattr(booster, "build_oblivious_tree", fake_build_tree)
+    X = np.arange(18, dtype=np.float64).reshape(9, 2)
+    y = np.array([0, 1, 2, 0, 1, 2, 0, 1, 2])
+    model = ChimeraBoostClassifier(iterations=1, random_state=0).fit(X, y)
+
+    raw = model.model_.predict_raw(X)
+    assert calls["n"] == 3
+    assert model.model_.trees_[0][0].depth == 0
+    assert model.model_.trees_[0][0].values[0] == 0.0
+    assert np.allclose(raw[:, 0], model.model_.init_[0])
+    assert np.allclose(raw[:, 1], model.model_.init_[1] + 1.0)
+    assert np.allclose(raw[:, 2], model.model_.init_[2] + 1.0)
+
+
+def test_early_stopped_prediction_matches_best_prefix():
+    X, y = load_breast_cancer(return_X_y=True)
+    Xtr, Xte, ytr, _ = train_test_split(
+        X, y, test_size=0.25, random_state=3, stratify=y
+    )
+    model = ChimeraBoostClassifier(
+        iterations=120, early_stopping=True, early_stopping_rounds=5,
+        validation_fraction=0.2, tree_mode="lightgbm", num_leaves=7,
+        depth=3, random_state=0
+    ).fit(Xtr, ytr)
+    assert model.best_iteration_ < 120
+    stages = list(model.staged_predict_proba(Xte))
+    assert len(stages) == model.best_iteration_
+    assert np.allclose(stages[-1], model.predict_proba(Xte))
+
+
+def test_eval_labels_must_be_training_classes():
+    from sklearn.datasets import load_wine
+    X, y = load_wine(return_X_y=True)
+    Xtr, Xv, ytr, yv = train_test_split(
+        X, y, test_size=0.2, random_state=0, stratify=y
+    )
+    bad_yv = yv.copy()
+    bad_yv[0] = 99
+    with pytest.raises(ValueError, match="eval_set contains labels"):
+        ChimeraBoostClassifier(iterations=2).fit(Xtr, ytr, eval_set=(Xv, bad_yv))
+
+
+def test_invalid_sample_weights_raise():
+    X, y = load_diabetes(return_X_y=True)
+    for bad in [
+        np.ones((len(y), 1)),
+        np.full(len(y), np.nan),
+        -np.ones(len(y)),
+        np.zeros(len(y)),
+    ]:
+        with pytest.raises(ValueError):
+            ChimeraBoostRegressor(iterations=2).fit(X, y, sample_weight=bad)
+
+
+def test_invalid_eval_sample_weights_raise():
+    X, y = load_diabetes(return_X_y=True)
+    Xtr, Xv, ytr, yv = train_test_split(X, y, test_size=0.2, random_state=0)
+    with pytest.raises(ValueError, match="eval_sample_weight"):
+        ChimeraBoostRegressor(iterations=2).fit(
+            Xtr, ytr, eval_set=(Xv, yv), eval_sample_weight=np.ones(len(yv) + 1)
+        )
+
+
+def test_weighted_validation_changes_early_stopping_path():
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(400, 4))
+    y = 3.0 * X[:, 0] + rng.normal(0.0, 0.2, 400)
+    Xtr, ytr = X[:300], y[:300]
+    Xv = np.array([
+        [4.0, 0.0, 0.0, 0.0],
+        [-4.0, 0.0, 0.0, 0.0],
+        [0.0, 4.0, 0.0, 0.0],
+        [0.0, -4.0, 0.0, 0.0],
+    ])
+    yv = np.array([12.0, -12.0, 50.0, -50.0])
+
+    easy_weight = np.array([50.0, 1.0, 1.0, 1.0])
+    hard_weight = np.array([1.0, 1.0, 50.0, 50.0])
+    easy = ChimeraBoostRegressor(
+        iterations=80, early_stopping=True, early_stopping_rounds=5,
+        learning_rate=0.2, depth=2, random_state=0
+    ).fit(Xtr, ytr, eval_set=(Xv, yv), eval_sample_weight=easy_weight)
+    hard = ChimeraBoostRegressor(
+        iterations=80, early_stopping=True, early_stopping_rounds=5,
+        learning_rate=0.2, depth=2, random_state=0
+    ).fit(Xtr, ytr, eval_set=(Xv, yv), eval_sample_weight=hard_weight)
+
+    assert easy.model_.valid_history_[0] != hard.model_.valid_history_[0]
+    assert easy.best_iteration_ != hard.best_iteration_
+
+
+def test_weighted_categorical_target_encoding_changes_stats():
+    from chimeraboost.preprocessing import FeaturePreprocessor
+
+    X = np.array([["a"], ["a"], ["b"], ["b"]], dtype=object)
+    y = np.array([0.0, 1.0, 0.0, 10.0])
+    prep_unweighted = FeaturePreprocessor(max_bins=8, cat_smoothing=1.0,
+                                          random_state=0)
+    prep_weighted = FeaturePreprocessor(max_bins=8, cat_smoothing=1.0,
+                                        random_state=0)
+    prep_unweighted.fit_transform(X, [y], cat_features=[0])
+    prep_weighted.fit_transform(
+        X, [y], cat_features=[0],
+        sample_weight=np.array([1.0, 1.0, 1.0, 10.0])
+    )
+
+    # Category b's prediction-time target statistic should move toward 10 when
+    # its high-target row is up-weighted.
+    unweighted_b = prep_unweighted.encoders_[0].transform(
+        np.array([[1]], dtype=np.int64)
+    )[0, 0]
+    weighted_b = prep_weighted.encoders_[0].transform(
+        np.array([[1]], dtype=np.int64)
+    )[0, 0]
+    assert weighted_b > unweighted_b
 
 
 def test_l2_zero_illegal_splits_do_not_divide_by_zero():
@@ -1242,6 +1728,32 @@ def test_sample_weight_uniform_equals_no_weight_multiclass():
         Xtr, ytr, sample_weight=w
     )
     assert np.array_equal(m_none.predict_proba(Xte), m_ones.predict_proba(Xte))
+
+
+def test_lightgbm_uniform_weights_equal_no_weights():
+    from sklearn.datasets import load_wine
+
+    cases = [
+        (ChimeraBoostRegressor, load_diabetes(return_X_y=True), "predict"),
+        (ChimeraBoostClassifier, load_breast_cancer(return_X_y=True), "predict_proba"),
+        (ChimeraBoostClassifier, load_wine(return_X_y=True), "predict_proba"),
+    ]
+    for estimator_cls, (X, y), predict_name in cases:
+        stratify = None if estimator_cls is ChimeraBoostRegressor else y
+        Xtr, Xte, ytr, _ = train_test_split(
+            X, y, test_size=0.25, random_state=0, stratify=stratify
+        )
+        kwargs = dict(
+            iterations=20, tree_mode="lightgbm", num_leaves=7,
+            depth=3, random_state=0
+        )
+        m_none = estimator_cls(**kwargs).fit(Xtr, ytr)
+        m_ones = estimator_cls(**kwargs).fit(
+            Xtr, ytr, sample_weight=np.ones(len(ytr))
+        )
+        pred_none = getattr(m_none, predict_name)(Xte)
+        pred_ones = getattr(m_ones, predict_name)(Xte)
+        assert np.array_equal(pred_none, pred_ones)
 
 
 def test_sample_weight_shifts_predictions():

@@ -53,10 +53,13 @@ class FitConfig:
     iterations: int = 1_500
     patience: int = 50
     depth: int = 6
+    num_leaves: Optional[int] = None
     learning_rate: Optional[float] = None
     threads: Optional[int] = None
     ordered_boosting: bool = False
     verbose_timing: bool = True
+    min_child_samples: int = 20
+    min_gain_to_split: float = 0.0
 
 
 def _resample_rows(X, y, n, rng, stratify=False):
@@ -338,11 +341,18 @@ def estimator_kwargs(estimator_cls, config: FitConfig, variant: RevisionSpec, se
     set_if("early_stopping", True)
     set_if("early_stopping_rounds", config.patience)
     set_if("depth", config.depth)
+    if variant.tree_mode == "lightgbm":
+        set_if("num_leaves", config.num_leaves)
     set_if("learning_rate", config.learning_rate)
     set_if("thread_count", config.threads)
     set_if("random_state", seed)
-    set_if("ordered_boosting", config.ordered_boosting)
+    ordered_boosting = (
+        False if variant.tree_mode == "lightgbm" else config.ordered_boosting
+    )
+    set_if("ordered_boosting", ordered_boosting)
     set_if("verbose_timing", config.verbose_timing)
+    set_if("min_child_samples", config.min_child_samples)
+    set_if("min_gain_to_split", config.min_gain_to_split)
 
     if variant.tree_mode is not None:
         if "tree_mode" not in accepted:
@@ -361,8 +371,8 @@ def default_revision_specs(upstream=None, fork=None, candidate=None):
         specs.append(RevisionSpec("upstream_matched", upstream))
     if fork:
         specs.append(RevisionSpec("fork_catboost_matched", fork, tree_mode="catboost"))
-        specs.append(RevisionSpec("fork_lightgbm_matched", fork, tree_mode="lightgbm"))
+        specs.append(RevisionSpec("fork_lightgbm_leafwise_matched", fork, tree_mode="lightgbm"))
     if candidate:
         specs.append(RevisionSpec("candidate_catboost", candidate, tree_mode="catboost"))
-        specs.append(RevisionSpec("candidate_lightgbm", candidate, tree_mode="lightgbm"))
+        specs.append(RevisionSpec("candidate_lightgbm_leafwise", candidate, tree_mode="lightgbm"))
     return specs

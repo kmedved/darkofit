@@ -81,7 +81,7 @@ class FeaturePreprocessor:
         return codes
 
     # ---- fit / transform -----------------------------------------------------
-    def fit_transform(self, X, encode_targets, cat_features):
+    def fit_transform(self, X, encode_targets, cat_features, sample_weight=None):
         """encode_targets: list of 1D arrays used for ordered TS (len T)."""
         num, codes = self._split_columns_fit(X, cat_features)
 
@@ -93,7 +93,9 @@ class FeaturePreprocessor:
                     self.cat_smoothing,
                     None if self.random_state is None else self.random_state + t,
                 )
-                encoded_blocks.append(enc.fit_transform(codes, target))
+                encoded_blocks.append(
+                    enc.fit_transform(codes, target, sample_weight=sample_weight)
+                )
                 self.encoders_.append(enc)
 
         feat = self._stack(num, encoded_blocks)

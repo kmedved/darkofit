@@ -59,6 +59,28 @@ def _ordered_ts(codes, y, perm, n_cat, prior, a):
     return out, sums, counts
 
 
+@njit(cache=True)
+def _ordered_ts_weighted(codes, y, weight, perm, n_cat, prior, a):
+    """Weighted ordered target statistic.
+
+    Category totals accumulate weighted targets and weighted sample mass. Rows
+    with zero weight receive an encoding from prior history but do not influence
+    later rows or prediction-time totals.
+    """
+    sums = np.zeros(n_cat)
+    counts = np.zeros(n_cat)
+    out = np.empty(codes.shape[0], dtype=np.float64)
+    for pos in range(perm.shape[0]):
+        i = perm[pos]
+        c = codes[i]
+        out[i] = (sums[c] + prior * a) / (counts[c] + a)
+        wi = weight[i]
+        if wi > 0.0:
+            sums[c] += wi * y[i]
+            counts[c] += wi
+    return out, sums, counts
+
+
 class OrderedTargetEncoder:
     """Encodes one or more categorical columns into numeric ctr columns.
 
@@ -74,7 +96,7 @@ class OrderedTargetEncoder:
         self.counts_ = None     # list per column
         self.n_cat_ = None      # list per column
 
-    def fit_transform(self, codes_matrix, y):
+    def fit_transform(self, codes_matrix, y, sample_weight=None):
         """codes_matrix: (n_samples, n_cat_features) int array of codes."""
         codes_matrix = np.asarray(codes_matrix, dtype=np.int64)
         y = np.asarray(y, dtype=np.float64)
@@ -82,16 +104,26 @@ class OrderedTargetEncoder:
         rng = np.random.default_rng(self.random_state)
         perm = rng.permutation(n_samples)
 
-        self.prior_ = float(np.mean(y))
+        if sample_weight is None:
+            weight = None
+            self.prior_ = float(np.mean(y))
+        else:
+            weight = np.asarray(sample_weight, dtype=np.float64)
+            self.prior_ = float(np.average(y, weights=weight))
         self.sums_, self.counts_, self.n_cat_ = [], [], []
         out = np.empty((n_samples, n_cols), dtype=np.float64)
 
         for j in range(n_cols):
             codes = np.ascontiguousarray(codes_matrix[:, j])
             n_cat = int(codes.max()) + 1 if codes.size else 1
-            enc, sums, counts = _ordered_ts(
-                codes, y, perm, n_cat, self.prior_, self.smoothing
-            )
+            if weight is None:
+                enc, sums, counts = _ordered_ts(
+                    codes, y, perm, n_cat, self.prior_, self.smoothing
+                )
+            else:
+                enc, sums, counts = _ordered_ts_weighted(
+                    codes, y, weight, perm, n_cat, self.prior_, self.smoothing
+                )
             out[:, j] = enc
             self.sums_.append(sums)
             self.counts_.append(counts)

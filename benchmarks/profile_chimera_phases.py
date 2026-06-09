@@ -62,9 +62,12 @@ def _run_fit(spec, size_name, thread_count, args, seed):
             iterations=args.iterations,
             learning_rate=args.learning_rate,
             depth=args.depth,
+            num_leaves=args.num_leaves,
+            min_child_samples=args.min_child_samples,
+            min_gain_to_split=args.min_gain_to_split,
             early_stopping_rounds=None,
             thread_count=thread_count,
-            ordered_boosting=not args.no_ordered_boosting,
+            ordered_boosting=False if args.no_ordered_boosting else "auto",
             random_state=seed,
             verbose_timing=True,
             tree_mode=args.tree_mode,
@@ -150,10 +153,13 @@ def parse_args(argv):
     parser.add_argument("--repeat", type=int, default=2)
     parser.add_argument("--seeds", type=int, default=1)
     parser.add_argument("--depth", type=int, default=6)
+    parser.add_argument("--num-leaves", type=int, default=None)
+    parser.add_argument("--min-child-samples", type=int, default=20)
+    parser.add_argument("--min-gain-to-split", type=float, default=0.0)
     parser.add_argument("--learning-rate", type=float, default=0.1)
     parser.add_argument(
         "--tree-mode",
-        choices=["catboost", "oblivious", "lightgbm", "levelwise"],
+        choices=["catboost", "oblivious", "lightgbm", "depthwise", "levelwise"],
         default="catboost",
     )
     parser.add_argument("--no-ordered-boosting", action="store_true")
@@ -182,6 +188,10 @@ def main(argv=None):
                 depth=args.depth,
                 threads=max(args.threads),
                 tree_mode=args.tree_mode,
+                chimera_num_leaves=args.num_leaves,
+                chimera_min_child_samples=args.min_child_samples,
+                chimera_min_gain_to_split=args.min_gain_to_split,
+                chimera_min_child_weight=1.0,
             )
         )
 

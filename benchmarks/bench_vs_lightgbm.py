@@ -348,9 +348,13 @@ def _run_chimera(spec, X_train, y_train, X_test, y_test, cat_features, args, see
             early_stopping_rounds=args.patience,
             learning_rate=args.learning_rate,
             depth=args.depth,
+            num_leaves=args.chimera_num_leaves,
+            min_child_samples=args.chimera_min_child_samples,
+            min_gain_to_split=args.chimera_min_gain_to_split,
+            min_child_weight=args.chimera_min_child_weight,
             thread_count=args.threads,
             random_state=seed,
-            ordered_boosting=not args.no_ordered_boosting,
+            ordered_boosting=False if args.no_ordered_boosting else "auto",
             tree_mode=args.tree_mode,
         )
         start = time.perf_counter()
@@ -405,6 +409,8 @@ def _run_lightgbm(spec, X_train, y_train, X_test, y_test, cat_features, args, se
             learning_rate=args.lightgbm_learning_rate,
             num_leaves=args.lightgbm_num_leaves,
             min_child_samples=args.lightgbm_min_child_samples,
+            min_sum_hessian_in_leaf=args.lightgbm_min_sum_hessian_in_leaf,
+            min_gain_to_split=args.lightgbm_min_gain_to_split,
             objective=objective,
             n_jobs=args.threads or -1,
             random_state=seed,
@@ -532,6 +538,10 @@ def _warm_up(args):
             iterations=5,
             early_stopping_rounds=3,
             depth=depth,
+            num_leaves=getattr(args, "chimera_num_leaves", None),
+            min_child_samples=getattr(args, "chimera_min_child_samples", 20),
+            min_gain_to_split=getattr(args, "chimera_min_gain_to_split", 0.0),
+            min_child_weight=getattr(args, "chimera_min_child_weight", 1.0),
             thread_count=args.threads,
             random_state=123,
             tree_mode=tree_mode,
@@ -641,11 +651,17 @@ def parse_args(argv):
     parser.add_argument("--lightgbm-learning-rate", type=float, default=0.1)
     parser.add_argument("--lightgbm-num-leaves", type=int, default=64)
     parser.add_argument("--lightgbm-min-child-samples", type=int, default=20)
+    parser.add_argument("--lightgbm-min-sum-hessian-in-leaf", type=float, default=1e-3)
+    parser.add_argument("--lightgbm-min-gain-to-split", type=float, default=0.0)
+    parser.add_argument("--chimera-num-leaves", type=int, default=None)
+    parser.add_argument("--chimera-min-child-samples", type=int, default=20)
+    parser.add_argument("--chimera-min-child-weight", type=float, default=1.0)
+    parser.add_argument("--chimera-min-gain-to-split", type=float, default=0.0)
     parser.add_argument(
         "--tree-mode",
-        choices=["catboost", "oblivious", "lightgbm", "levelwise"],
+        choices=["catboost", "oblivious", "lightgbm", "depthwise", "levelwise"],
         default="catboost",
-        help="ChimeraBoost tree builder: symmetric CatBoost-like or level-wise LightGBM-like.",
+        help="ChimeraBoost tree builder: symmetric CatBoost-like or leaf-wise LightGBM-like.",
     )
     parser.add_argument("--no-ordered-boosting", action="store_true")
     parser.add_argument("--no-warmup", action="store_true")
