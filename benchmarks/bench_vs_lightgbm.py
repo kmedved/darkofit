@@ -357,6 +357,8 @@ def _run_chimera(spec, X_train, y_train, X_test, y_test, cat_features, args, see
             l2_leaf_reg=args.chimera_l2_leaf_reg,
             max_bins=args.chimera_max_bins,
             num_leaves=args.chimera_num_leaves,
+            subsample=args.chimera_subsample,
+            colsample=args.chimera_colsample,
             min_child_samples=args.chimera_min_child_samples,
             min_gain_to_split=args.chimera_min_gain_to_split,
             min_child_weight=args.chimera_min_child_weight,
@@ -558,6 +560,8 @@ def _warm_up(args):
             depth=depth,
             max_bins=getattr(args, "chimera_max_bins", 128),
             num_leaves=getattr(args, "chimera_num_leaves", None),
+            subsample=getattr(args, "chimera_subsample", 1.0),
+            colsample=getattr(args, "chimera_colsample", 1.0),
             min_child_samples=getattr(args, "chimera_min_child_samples", 20),
             min_gain_to_split=getattr(args, "chimera_min_gain_to_split", 0.0),
             min_child_weight=getattr(args, "chimera_min_child_weight", 1.0),
@@ -687,6 +691,8 @@ def parse_args(argv):
     parser.add_argument("--chimera-l2-leaf-reg", type=float, default=3.0)
     parser.add_argument("--chimera-max-bins", type=int, default=128)
     parser.add_argument("--chimera-num-leaves", type=int, default=None)
+    parser.add_argument("--chimera-subsample", type=float, default=1.0)
+    parser.add_argument("--chimera-colsample", type=float, default=1.0)
     parser.add_argument("--chimera-min-child-samples", type=int, default=20)
     parser.add_argument("--chimera-min-child-weight", type=float, default=1.0)
     parser.add_argument("--chimera-min-gain-to-split", type=float, default=0.0)

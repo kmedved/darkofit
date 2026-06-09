@@ -36,3 +36,12 @@ def test_chimera_l2_leaf_reg_arg_is_preserved():
     args = _resolve_default_depth(parse_args(["--chimera-l2-leaf-reg", "0.5"]))
 
     assert args.chimera_l2_leaf_reg == 0.5
+
+
+def test_chimera_row_and_column_sampling_args_are_preserved():
+    args = _resolve_default_depth(
+        parse_args(["--chimera-subsample", "0.8", "--chimera-colsample", "0.7"])
+    )
+
+    assert args.chimera_subsample == 0.8
+    assert args.chimera_colsample == 0.7
