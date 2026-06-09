@@ -77,6 +77,13 @@ class RMSE:
         hess = np.ones_like(raw)
         return grad, hess
 
+    def grad_hess_into(self, y, raw, sample_weight, grad_out, hess_out):
+        np.subtract(raw, y, out=grad_out)
+        hess_out.fill(1.0)
+        if sample_weight is not None:
+            grad_out *= sample_weight
+            hess_out *= sample_weight
+
     def eval(self, y, raw, sample_weight=None):
         return float(np.sqrt(np.average((raw - y) ** 2, weights=sample_weight)))
 
@@ -101,6 +108,15 @@ class Logloss:
         grad = p - y
         hess = np.maximum(p * (1.0 - p), 1e-6)
         return grad, hess
+
+    def grad_hess_into(self, y, raw, sample_weight, grad_out, hess_out):
+        p = _sigmoid(raw)
+        np.subtract(p, y, out=grad_out)
+        np.multiply(p, 1.0 - p, out=hess_out)
+        np.maximum(hess_out, 1e-6, out=hess_out)
+        if sample_weight is not None:
+            grad_out *= sample_weight
+            hess_out *= sample_weight
 
     def eval(self, y, raw, sample_weight=None):
         p = np.clip(_sigmoid(raw), 1e-9, 1 - 1e-9)
@@ -134,6 +150,13 @@ class MAE:
         hess = np.ones_like(raw)
         return grad, hess
 
+    def grad_hess_into(self, y, raw, sample_weight, grad_out, hess_out):
+        np.sign(raw - y, out=grad_out)
+        hess_out.fill(1.0)
+        if sample_weight is not None:
+            grad_out *= sample_weight
+            hess_out *= sample_weight
+
     def eval(self, y, raw, sample_weight=None):
         return float(np.average(np.abs(raw - y), weights=sample_weight))
 
@@ -163,6 +186,14 @@ class Quantile:
         grad = np.where(y >= raw, -a, 1.0 - a)
         hess = np.ones_like(raw)
         return grad, hess
+
+    def grad_hess_into(self, y, raw, sample_weight, grad_out, hess_out):
+        a = self.alpha
+        grad_out[:] = np.where(y >= raw, -a, 1.0 - a)
+        hess_out.fill(1.0)
+        if sample_weight is not None:
+            grad_out *= sample_weight
+            hess_out *= sample_weight
 
     def eval(self, y, raw, sample_weight=None):
         r = y - raw
@@ -214,6 +245,15 @@ class MultiSoftmax:
         grad = P - Y
         hess = np.maximum(P * (1.0 - P), 1e-6)
         return grad, hess
+
+    def grad_hess_class_major_into(self, Y, F, sample_weight, grad_out, hess_out):
+        P = _softmax_class_major(F)
+        np.subtract(P, Y, out=grad_out)
+        np.multiply(P, 1.0 - P, out=hess_out)
+        np.maximum(hess_out, 1e-6, out=hess_out)
+        if sample_weight is not None:
+            grad_out *= sample_weight[None, :]
+            hess_out *= sample_weight[None, :]
 
     def eval(self, Y, F, sample_weight=None):
         P = np.clip(_softmax(F), 1e-12, 1.0)

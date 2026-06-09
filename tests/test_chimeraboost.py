@@ -9,6 +9,50 @@ from sklearn.metrics import roc_auc_score, mean_squared_error
 from chimeraboost import ChimeraBoostRegressor, ChimeraBoostClassifier
 
 
+def test_loss_grad_hess_into_matches_allocating_paths():
+    from chimeraboost.losses import Logloss, MAE, MultiSoftmax, Quantile, RMSE
+
+    rng = np.random.default_rng(30)
+    y_reg = rng.normal(size=40)
+    raw_reg = rng.normal(size=40)
+    weights = rng.uniform(0.2, 2.0, size=40)
+    y_bin = rng.integers(0, 2, size=40).astype(float)
+
+    for loss, y in [
+        (RMSE(), y_reg),
+        (MAE(), y_reg),
+        (Quantile(0.3), y_reg),
+        (Logloss(), y_bin),
+    ]:
+        for w in (None, weights):
+            grad, hess = loss.grad_hess(y, raw_reg)
+            if w is not None:
+                grad = grad * w
+                hess = hess * w
+            grad_out = np.empty_like(raw_reg)
+            hess_out = np.empty_like(raw_reg)
+            loss.grad_hess_into(y, raw_reg, w, grad_out, hess_out)
+            assert np.array_equal(grad_out, grad)
+            assert np.array_equal(hess_out, hess)
+
+    K = 4
+    labels = rng.integers(0, K, size=40)
+    Y = np.zeros((K, len(labels)))
+    Y[labels, np.arange(len(labels))] = 1.0
+    F = rng.normal(size=Y.shape)
+    loss = MultiSoftmax(K)
+    for w in (None, weights):
+        grad, hess = loss.grad_hess_class_major(Y, F)
+        if w is not None:
+            grad = grad * w[None, :]
+            hess = hess * w[None, :]
+        grad_out = np.empty_like(F)
+        hess_out = np.empty_like(F)
+        loss.grad_hess_class_major_into(Y, F, w, grad_out, hess_out)
+        assert np.array_equal(grad_out, grad)
+        assert np.array_equal(hess_out, hess)
+
+
 def test_binner_uses_smallest_safe_unsigned_dtype():
     from chimeraboost.binning import Binner
 

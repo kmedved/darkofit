@@ -354,6 +354,8 @@ class GradientBoosting(_BaseBooster):
 
         self.init_ = self.loss_.init(y, w)
         F = np.full(n_samples, self.init_, dtype=np.float64)
+        grad_buffer = np.empty(n_samples, dtype=np.float64)
+        hess_buffer = np.empty(n_samples, dtype=np.float64)
         if yv is not None:
             Fv = np.full(len(yv), self.init_)
 
@@ -365,10 +367,14 @@ class GradientBoosting(_BaseBooster):
 
         for m in range(self.iterations):
             phase = _start_timing(timing)
-            grad, hess = self.loss_.grad_hess(y, F)
-            if w is not None:
-                grad = grad * w
-                hess = hess * w
+            if hasattr(self.loss_, "grad_hess_into"):
+                self.loss_.grad_hess_into(y, F, w, grad_buffer, hess_buffer)
+                grad, hess = grad_buffer, hess_buffer
+            else:
+                grad, hess = self.loss_.grad_hess(y, F)
+                if w is not None:
+                    grad = grad * w
+                    hess = hess * w
             g, h, row_indices = self._maybe_subsample(grad, hess, rng)
             fmask, findices = self._feature_selection(X_binned.shape[1], rng)
             _add_timing(timing, "grad_hess", phase)
@@ -561,6 +567,8 @@ class MulticlassBoosting(_BaseBooster):
 
         self.init_ = self.loss_.init_class_major(Y_class, w)  # (K,)
         F = np.tile(self.init_[:, None], (1, n_samples))  # class-major (K, n)
+        grad_buffer = np.empty_like(F)
+        hess_buffer = np.empty_like(F)
         if Yv_class is not None:
             Fv = np.tile(self.init_[:, None], (1, len(yv_idx)))
 
@@ -572,10 +580,16 @@ class MulticlassBoosting(_BaseBooster):
 
         for m in range(self.iterations):
             phase = _start_timing(timing)
-            grad, hess = self.loss_.grad_hess_class_major(Y_class, F)
-            if w is not None:
-                grad = grad * w[None, :]
-                hess = hess * w[None, :]
+            if hasattr(self.loss_, "grad_hess_class_major_into"):
+                self.loss_.grad_hess_class_major_into(
+                    Y_class, F, w, grad_buffer, hess_buffer
+                )
+                grad, hess = grad_buffer, hess_buffer
+            else:
+                grad, hess = self.loss_.grad_hess_class_major(Y_class, F)
+                if w is not None:
+                    grad = grad * w[None, :]
+                    hess = hess * w[None, :]
             fmask, findices = self._feature_selection(X_binned.shape[1], rng)
             if self.subsample >= 1.0:
                 row_indices_round = None
