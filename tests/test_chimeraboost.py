@@ -1564,6 +1564,73 @@ def test_fused_unit_hess_refill_subtract_matches_two_step():
         assert np.array_equal(fused_hh, ref_hh)
 
 
+def test_fused_counts_refill_subtract_matches_two_step():
+    from chimeraboost.tree import (
+        _refill_leaf_segment_histograms_counts_into,
+        _refill_leaf_segment_histograms_counts_selected_into,
+        _refill_right_subtract_left_counts_into,
+        _refill_right_subtract_left_counts_selected_into,
+        _subtract_right_child_histograms_into_left,
+        _subtract_right_child_histograms_selected_into_left,
+    )
+
+    rng = np.random.default_rng(48)
+    Xb = rng.integers(0, 19, size=(96, 9), dtype=np.uint8)
+    grad = rng.normal(size=Xb.shape[0])
+    hess = rng.uniform(0.0, 1.5, size=Xb.shape[0])
+    hess[::7] = 0.0
+    row_order = np.arange(Xb.shape[0], dtype=np.int64)
+    leaf_start = np.array([0, 18, 57, 96], dtype=np.int64)
+    left_leaf = 1
+    right_leaf = 2
+    leaf_ids = np.array([right_leaf], dtype=np.int64)
+    selected = np.array([1, 2, 4, 8], dtype=np.int64)
+
+    for use_selected in (False, True):
+        base_hg = rng.normal(size=(Xb.shape[1], 3, 19))
+        base_hh = rng.uniform(0.0, 5.0, size=(Xb.shape[1], 3, 19))
+        base_hc = rng.uniform(0.0, 5.0, size=(Xb.shape[1], 3, 19))
+        fused_hg = base_hg.copy()
+        fused_hh = base_hh.copy()
+        fused_hc = base_hc.copy()
+        ref_hg = base_hg.copy()
+        ref_hh = base_hh.copy()
+        ref_hc = base_hc.copy()
+
+        if use_selected:
+            _refill_right_subtract_left_counts_selected_into(
+                Xb, grad, hess, row_order, leaf_start, left_leaf,
+                right_leaf, selected, fused_hg, fused_hh, fused_hc
+            )
+            _refill_leaf_segment_histograms_counts_selected_into(
+                Xb, grad, hess, row_order, leaf_start, leaf_ids, 1,
+                ref_hg, ref_hh, ref_hc, selected
+            )
+            _subtract_right_child_histograms_selected_into_left(
+                left_leaf, right_leaf, selected, ref_hg, ref_hh, ref_hc
+            )
+            untouched = np.setdiff1d(np.arange(Xb.shape[1]), selected)
+            assert np.array_equal(fused_hg[untouched], base_hg[untouched])
+            assert np.array_equal(fused_hh[untouched], base_hh[untouched])
+            assert np.array_equal(fused_hc[untouched], base_hc[untouched])
+        else:
+            _refill_right_subtract_left_counts_into(
+                Xb, grad, hess, row_order, leaf_start, left_leaf,
+                right_leaf, fused_hg, fused_hh, fused_hc
+            )
+            _refill_leaf_segment_histograms_counts_into(
+                Xb, grad, hess, row_order, leaf_start, leaf_ids, 1,
+                ref_hg, ref_hh, ref_hc
+            )
+            _subtract_right_child_histograms_into_left(
+                left_leaf, right_leaf, ref_hg, ref_hh, ref_hc
+            )
+
+        assert np.array_equal(fused_hg, ref_hg)
+        assert np.array_equal(fused_hh, ref_hh)
+        assert np.array_equal(fused_hc, ref_hc)
+
+
 def test_leafwise_histogram_subtraction_matches_full_refill():
     from chimeraboost.tree import build_leafwise_tree
 
