@@ -310,7 +310,10 @@ def test_preprocessor_can_include_raw_category_code_features():
         ["red", "south", 10.0],
         ["purple", "north", 11.0],
     ], dtype=object)
-    assert with_codes.transform(Xt).shape[1] == 5
+    Xt_binned = with_codes.transform(Xt)
+    assert Xt_binned.shape[1] == 5
+    assert Xt_binned[1, 1] == with_codes.n_bins_[1] - 1
+    assert Xt_binned[1, 2] != with_codes.n_bins_[2] - 1
 
 
 def test_kfold_target_encoding_uses_out_of_fold_totals():

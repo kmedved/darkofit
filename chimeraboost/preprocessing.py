@@ -125,7 +125,9 @@ class FeaturePreprocessor:
         if self.cat_features_:
             codes = self._codes_for_transform(X)
             if self.include_cat_codes:
-                code_blocks.append(codes.astype(np.float64))
+                raw_codes = codes.astype(np.float64)
+                raw_codes[raw_codes < 0] = np.nan
+                code_blocks.append(raw_codes)
             for enc in self.encoders_:
                 encoded_blocks.append(enc.transform(codes))
         feat = self._stack(num, code_blocks, encoded_blocks)
