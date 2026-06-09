@@ -173,7 +173,8 @@ class _BaseBooster:
                  min_gain_to_split=0.0, num_leaves=None, thread_count=None,
                  random_state=None, verbose=False, ordered_boosting="auto",
                  verbose_timing=False, tree_mode="catboost",
-        sampling="uniform", top_rate=0.2, other_rate=0.1):
+                 sampling="uniform", top_rate=0.2, other_rate=0.1,
+                 multiclass_tree_strategy="auto"):
         self.iterations = int(iterations)
         self.learning_rate = learning_rate
         self.l2_leaf_reg = float(l2_leaf_reg)
@@ -199,6 +200,7 @@ class _BaseBooster:
         self.sampling = sampling
         self.top_rate = float(top_rate)
         self.other_rate = float(other_rate)
+        self.multiclass_tree_strategy = multiclass_tree_strategy
         self._validate_sampling_config()
 
     def _validate_sampling_config(self):
@@ -715,12 +717,32 @@ class MulticlassBoosting(_BaseBooster):
             self._alloc_split_buffers(X_binned.shape[1])
             if self.n_threads_ > 1 else None
         )
-        use_shared_lightgbm_multiclass = (
+        strategy = self.multiclass_tree_strategy
+        if strategy not in {"auto", "per_class", "shared_vector"}:
+            raise ValueError(
+                "multiclass_tree_strategy must be 'auto', 'per_class', "
+                "or 'shared_vector'"
+            )
+        can_use_shared_lightgbm_multiclass = (
             self.tree_mode_ == "lightgbm"
             and self.subsample >= 1.0
             and self.colsample >= 1.0
             and not self.ordered_boosting_
-            and bool(cat_features)
+        )
+        if strategy == "shared_vector" and not can_use_shared_lightgbm_multiclass:
+            raise ValueError(
+                "multiclass_tree_strategy='shared_vector' requires "
+                "tree_mode='lightgbm', no ordered boosting, and full row/column sampling"
+            )
+        use_shared_lightgbm_multiclass = (
+            can_use_shared_lightgbm_multiclass
+            and (
+                strategy == "shared_vector"
+                or (strategy == "auto" and bool(cat_features))
+            )
+        )
+        self.multiclass_tree_strategy_ = (
+            "shared_vector" if use_shared_lightgbm_multiclass else "per_class"
         )
         multiclass_hist_buffers = (
             self._alloc_multiclass_hist_buffers(K, X_binned.shape[1], n_bins)

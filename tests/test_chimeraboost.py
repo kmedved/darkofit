@@ -1595,6 +1595,49 @@ def test_lightgbm_shared_multiclass_tree_routes_only_categorical():
     assert hasattr(categorical.model_.trees_[0], "add_predict_class_major")
 
 
+def test_lightgbm_numeric_multiclass_can_force_shared_vector_tree():
+    X = np.array([
+        [0.0, 0.1], [0.2, 0.0], [1.0, 0.8], [1.2, 1.1],
+        [2.0, 2.2], [2.2, 1.9], [0.1, 0.2], [1.1, 1.0],
+        [2.1, 2.0], [0.3, 0.1], [1.3, 1.2], [2.3, 2.1],
+    ])
+    y = np.array([0, 0, 1, 1, 2, 2, 0, 1, 2, 0, 1, 2])
+
+    model = ChimeraBoostClassifier(
+        iterations=2, tree_mode="lightgbm", num_leaves=3,
+        min_child_samples=1, min_child_weight=0.0,
+        multiclass_tree_strategy="shared_vector", random_state=0
+    ).fit(X, y)
+
+    assert model.model_.multiclass_tree_strategy_ == "shared_vector"
+    assert hasattr(model.model_.trees_[0], "add_predict_class_major")
+    proba = model.predict_proba(X)
+    assert proba.shape == (len(y), 3)
+    assert np.all(np.isfinite(proba))
+    assert np.allclose(proba.sum(axis=1), 1.0)
+
+
+def test_lightgbm_shared_vector_strategy_requires_compatible_training_mode():
+    X = np.array([
+        [0.0, 0.1], [0.2, 0.0], [1.0, 0.8], [1.2, 1.1],
+        [2.0, 2.2], [2.2, 1.9], [0.1, 0.2], [1.1, 1.0],
+        [2.1, 2.0],
+    ])
+    y = np.array([0, 0, 1, 1, 2, 2, 0, 1, 2])
+
+    with pytest.raises(ValueError, match="multiclass_tree_strategy"):
+        ChimeraBoostClassifier(
+            iterations=1, tree_mode="catboost",
+            multiclass_tree_strategy="shared_vector", random_state=0
+        ).fit(X, y)
+
+    with pytest.raises(ValueError, match="multiclass_tree_strategy"):
+        ChimeraBoostClassifier(
+            iterations=1, tree_mode="lightgbm",
+            multiclass_tree_strategy="bogus", random_state=0
+        ).fit(X, y)
+
+
 def test_lightgbm_zero_weight_rows_do_not_affect_tree_structure():
     from chimeraboost.tree import build_leafwise_tree
 

@@ -51,6 +51,16 @@ def test_chimera_row_and_column_sampling_args_are_preserved():
     assert args.chimera_colsample == 0.7
 
 
+def test_chimera_multiclass_tree_strategy_arg_is_preserved():
+    args = _resolve_benchmark_capacity(
+        _resolve_default_depth(
+            parse_args(["--chimera-multiclass-tree-strategy", "shared_vector"])
+        )
+    )
+
+    assert args.chimera_multiclass_tree_strategy == "shared_vector"
+
+
 def test_lightgbm_mode_matches_leaf_capacity_by_default():
     args = _resolve_benchmark_capacity(
         _resolve_default_depth(parse_args(["--tree-mode", "lightgbm"]))

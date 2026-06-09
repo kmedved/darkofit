@@ -351,7 +351,7 @@ def _run_chimera(spec, X_train, y_train, X_test, y_test, cat_features, args, see
         sampling = args.chimera_sampling
         if spec.task == "multiclass" and sampling == "goss":
             sampling = "uniform"
-        model = estimator_cls(
+        model_kwargs = dict(
             iterations=args.iterations,
             early_stopping_rounds=args.patience,
             learning_rate=args.learning_rate,
@@ -372,6 +372,11 @@ def _run_chimera(spec, X_train, y_train, X_test, y_test, cat_features, args, see
             top_rate=args.chimera_top_rate,
             other_rate=args.chimera_other_rate,
         )
+        if spec.task != "regression":
+            model_kwargs["multiclass_tree_strategy"] = (
+                args.chimera_multiclass_tree_strategy
+            )
+        model = estimator_cls(**model_kwargs)
         start = time.perf_counter()
         model.fit(X_fit, y_fit, cat_features=cat_features, eval_set=(X_val, y_val))
         return model, time.perf_counter() - start
@@ -733,6 +738,16 @@ def parse_args(argv):
     )
     parser.add_argument("--chimera-top-rate", type=float, default=0.2)
     parser.add_argument("--chimera-other-rate", type=float, default=0.1)
+    parser.add_argument(
+        "--chimera-multiclass-tree-strategy",
+        choices=["auto", "per_class", "shared_vector"],
+        default="auto",
+        help=(
+            "ChimeraBoost multiclass tree strategy. 'auto' preserves estimator "
+            "defaults; 'shared_vector' forces one vector-valued LightGBM-mode "
+            "tree per multiclass boosting round when supported."
+        ),
+    )
     parser.add_argument(
         "--tree-mode",
         choices=["catboost", "oblivious", "lightgbm", "depthwise", "levelwise"],
