@@ -2109,7 +2109,7 @@ class NonObliviousTree:
     def add_predict(self, X_binned, out):
         if self.n_splits == 0:
             out += self.values[0]
-        elif get_num_threads() > 1 and X_binned.shape[0] >= 1024:
+        elif get_num_threads() > 1 and X_binned.shape[0] >= 8192:
             _predict_non_oblivious_tree_add_parallel(
                 X_binned, self.features, self.thresholds, self.left_child,
                 self.right_child, self.leaf_index, self.values, out
@@ -2157,7 +2157,7 @@ class MultiNonObliviousTree:
     def add_predict_class_major(self, X_binned, out):
         if self.n_splits == 0:
             out += self.values[0][:, None]
-        elif get_num_threads() > 1 and X_binned.shape[0] >= 1024:
+        elif get_num_threads() > 1 and X_binned.shape[0] >= 8192:
             _predict_non_oblivious_multiclass_tree_add_parallel(
                 X_binned, self.features, self.thresholds, self.left_child,
                 self.right_child, self.leaf_index, self.values, out
