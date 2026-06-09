@@ -1093,7 +1093,7 @@ def test_leafwise_cached_splits_match_full_rescore():
         assert np.array_equal(cached_tree.leaf_index, full_tree.leaf_index)
         assert np.array_equal(cached_tree.splits_feat, full_tree.splits_feat)
         assert np.array_equal(cached_tree.splits_thr, full_tree.splits_thr)
-        assert np.array_equal(cached_tree.gains, full_tree.gains)
+        assert np.allclose(cached_tree.gains, full_tree.gains)
         assert np.array_equal(cached_tree.values, full_tree.values)
         assert np.array_equal(cached_leaf, full_leaf)
         assert np.array_equal(cached_G, full_G)
@@ -1303,6 +1303,41 @@ def test_lightgbm_zero_weight_rows_do_not_affect_tree_structure():
     assert np.array_equal(full_tree.splits_thr, active_tree.splits_thr)
     assert np.array_equal(full_tree.gains, active_tree.gains)
     assert np.array_equal(full_tree.predict(X_active), active_tree.predict(X_active))
+
+
+def test_leafwise_histogram_subtraction_matches_full_refill():
+    from chimeraboost.tree import build_leafwise_tree
+
+    rng = np.random.default_rng(41)
+    Xb = rng.integers(0, 16, size=(512, 9), dtype=np.uint8)
+    n_bins = np.full(Xb.shape[1], 16, dtype=np.int64)
+    grad = rng.normal(size=Xb.shape[0])
+    hess = rng.uniform(0.2, 1.8, size=Xb.shape[0])
+
+    for constant_hessian, h in [(False, hess), (True, np.ones_like(hess))]:
+        reused = build_leafwise_tree(
+            Xb, grad, h, n_bins, 5, 1.0, 0.1,
+            max_leaves=12, min_child_samples=4, min_child_weight=0.0,
+            min_gain_to_split=0.0, return_training_state=True,
+            constant_hessian=constant_hessian,
+            reuse_leaf_histograms=True,
+        )
+        full = build_leafwise_tree(
+            Xb, grad, h, n_bins, 5, 1.0, 0.1,
+            max_leaves=12, min_child_samples=4, min_child_weight=0.0,
+            min_gain_to_split=0.0, return_training_state=True,
+            constant_hessian=constant_hessian,
+            reuse_leaf_histograms=False,
+        )
+        reused_tree, reused_leaf, reused_G, reused_H = reused
+        full_tree, full_leaf, full_G, full_H = full
+        assert np.array_equal(reused_tree.splits_feat, full_tree.splits_feat)
+        assert np.array_equal(reused_tree.splits_thr, full_tree.splits_thr)
+        assert np.allclose(reused_tree.gains, full_tree.gains)
+        assert np.array_equal(reused_leaf, full_leaf)
+        assert np.allclose(reused_tree.values, full_tree.values)
+        assert np.allclose(reused_G, full_G)
+        assert np.allclose(reused_H, full_H)
 
 
 def test_lightgbm_thread_determinism():
