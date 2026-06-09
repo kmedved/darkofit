@@ -519,34 +519,27 @@ def _partition_leaf_rows(X_binned, row_order, row_scratch, leaf, leaf_start,
         leaf_start[new_leaf + 1] = old_end
         return
 
-    write = 0
-    for p in range(old_start):
-        row_scratch[write] = row_order[p]
-        write += 1
-
+    write = old_start
     left_count = 0
+    right_count = 0
     for p in range(old_start, old_end):
         i = row_order[p]
         if X_binned[i, feature] <= threshold:
-            row_scratch[write] = i
+            row_order[write] = i
             leaf[i] = split_leaf
             write += 1
             left_count += 1
+        else:
+            row_scratch[right_count] = i
+            leaf[i] = new_leaf
+            right_count += 1
 
-    right_count = (old_end - old_start) - left_count
     for p in range(old_end, old_total):
-        row_scratch[write] = row_order[p]
+        row_order[write] = row_order[p]
         write += 1
 
-    for p in range(old_start, old_end):
-        i = row_order[p]
-        if X_binned[i, feature] > threshold:
-            row_scratch[write] = i
-            leaf[i] = new_leaf
-            write += 1
-
-    for p in range(old_total):
-        row_order[p] = row_scratch[p]
+    for q in range(right_count):
+        row_order[write + q] = row_scratch[q]
 
     right_start = old_total - right_count
     for l in range(n_leaves - 1, split_leaf, -1):

@@ -1457,6 +1457,26 @@ def test_partition_last_leaf_keeps_stable_segments():
     assert np.array_equal(leaf_start[:4], np.array([0, 2, 4, 6]))
 
 
+def test_partition_middle_leaf_keeps_stable_segments():
+    from chimeraboost.tree import _partition_leaf_rows
+
+    Xb = np.array([[0], [0], [0], [5], [1], [0], [0], [0], [0], [0]],
+                  dtype=np.uint8)
+    row_order = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=np.int64)
+    row_scratch = np.empty_like(row_order)
+    leaf = np.array([0, 0, 1, 1, 1, 2, 2, 2, 3, 3], dtype=np.int64)
+    leaf_start = np.array([0, 2, 5, 8, 10, 0], dtype=np.int64)
+
+    _partition_leaf_rows(
+        Xb, row_order, row_scratch, leaf, leaf_start,
+        4, 1, 4, 0, 2
+    )
+
+    assert np.array_equal(row_order, np.array([0, 1, 2, 4, 5, 6, 7, 8, 9, 3]))
+    assert np.array_equal(leaf, np.array([0, 0, 1, 4, 1, 2, 2, 2, 3, 3]))
+    assert np.array_equal(leaf_start[:6], np.array([0, 2, 4, 7, 9, 10]))
+
+
 def test_leafwise_histogram_subtraction_matches_full_refill():
     from chimeraboost.tree import build_leafwise_tree
 
