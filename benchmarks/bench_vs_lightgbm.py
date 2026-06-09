@@ -665,7 +665,16 @@ def parse_args(argv):
     )
     parser.add_argument("--iterations", type=int, default=MAX_ITERS)
     parser.add_argument("--patience", type=int, default=PATIENCE)
-    parser.add_argument("--depth", type=int, default=6)
+    parser.add_argument(
+        "--depth",
+        type=int,
+        default=None,
+        help=(
+            "ChimeraBoost max tree depth. Default is 6 for CatBoost/depthwise "
+            "modes and -1 (unlimited) for LightGBM mode to match the LightGBM "
+            "baseline's uncapped leaf-wise growth."
+        ),
+    )
     parser.add_argument("--learning-rate", type=float, default=None)
     parser.add_argument("--lightgbm-learning-rate", type=float, default=0.1)
     parser.add_argument("--lightgbm-num-leaves", type=int, default=64)
@@ -719,8 +728,14 @@ def parse_args(argv):
     return parser.parse_args(argv)
 
 
+def _resolve_default_depth(args):
+    if args.depth is None:
+        args.depth = -1 if args.tree_mode == "lightgbm" else 6
+    return args
+
+
 def main(argv=None):
-    args = parse_args(argv or sys.argv[1:])
+    args = _resolve_default_depth(parse_args(argv or sys.argv[1:]))
     selected = list(DATASETS)
     if args.datasets:
         requested = set(args.datasets)
@@ -733,7 +748,8 @@ def main(argv=None):
     print("ChimeraBoost vs LightGBM one-off benchmark")
     print(
         f"sizes={args.sizes} seeds={args.seeds} threads={args.threads or 'all'} "
-        f"iterations={args.iterations} patience={args.patience}"
+        f"iterations={args.iterations} patience={args.patience} "
+        f"tree_mode={args.tree_mode} depth={args.depth}"
     )
     print(f"writing raw rows to {args.csv}")
     if not args.no_warmup and not args.skip_chimera:
