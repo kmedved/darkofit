@@ -695,6 +695,9 @@ class MulticlassBoosting(_BaseBooster):
         _es = self.early_stopping_rounds is not None and eval_set is not None
         self.lr_ = (self.learning_rate if self.learning_rate is not None
                     else _auto_learning_rate(n_samples, self.iterations, _es))
+        self.l2_leaf_reg_ = self.l2_leaf_reg
+        if self.tree_mode_ == "lightgbm" and self.l2_leaf_reg == 3.0:
+            self.l2_leaf_reg_ = 1.0
 
         timing = _new_timing(self.verbose_timing)
         self.timing_ = timing
@@ -777,7 +780,7 @@ class MulticlassBoosting(_BaseBooster):
                 phase = _start_timing(timing)
                 tree, leaf, leaf_G, leaf_H = build_leafwise_multiclass_tree(
                     X_binned, grad, hess, n_bins, self._max_tree_depth(),
-                    self.l2_leaf_reg, self.lr_,
+                    self.l2_leaf_reg_, self.lr_,
                     feature_mask=fmask,
                     min_child_weight=self.min_child_weight,
                     hist_buffers=multiclass_hist_buffers,
@@ -841,7 +844,7 @@ class MulticlassBoosting(_BaseBooster):
                 phase = _start_timing(timing)
                 tree, leaf, leaf_G, leaf_H = self._tree_builder()(
                     X_binned, g, h, n_bins, self._max_tree_depth(),
-                    self.l2_leaf_reg, self.lr_,
+                    self.l2_leaf_reg_, self.lr_,
                     **self._builder_kwargs(
                         fmask, findices, row_indices_round, hist_buffers,
                         split_buffers, X_hist_binned, False,
@@ -864,7 +867,7 @@ class MulticlassBoosting(_BaseBooster):
                     self._accumulate_importance(tree)
                 if self.ordered_boosting_ and tree.depth > 0:
                     F[k] += _ordered_leaf_update(
-                        self.lr_, leaf, leaf_G, leaf_H, g, h, self.l2_leaf_reg
+                        self.lr_, leaf, leaf_G, leaf_H, g, h, self.l2_leaf_reg_
                     )
                 elif self.tree_mode_ == "lightgbm" and tree.depth > 0:
                     add_leaf_values_inplace(leaf, tree.values, F[k])

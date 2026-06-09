@@ -2505,6 +2505,34 @@ def test_lightgbm_numeric_multiclass_weighted_hessians_use_generic_path(monkeypa
     assert not any(calls)
 
 
+def test_lightgbm_multiclass_uses_task_specific_default_l2():
+    from chimeraboost import ChimeraBoostClassifier
+
+    rng = np.random.default_rng(61)
+    X = rng.normal(size=(90, 5))
+    y = np.repeat(np.arange(3), 30)
+    order = rng.permutation(len(y))
+
+    lightgbm_default = ChimeraBoostClassifier(
+        iterations=1, tree_mode="lightgbm", num_leaves=5, depth=3,
+        random_state=0
+    ).fit(X[order], y[order])
+    catboost_default = ChimeraBoostClassifier(
+        iterations=1, tree_mode="catboost", depth=3, random_state=0
+    ).fit(X[order], y[order])
+    lightgbm_explicit = ChimeraBoostClassifier(
+        iterations=1, tree_mode="lightgbm", num_leaves=5, depth=3,
+        l2_leaf_reg=2.0, random_state=0
+    ).fit(X[order], y[order])
+
+    assert lightgbm_default.model_.l2_leaf_reg == 3.0
+    assert lightgbm_default.model_.l2_leaf_reg_ == 1.0
+    assert catboost_default.model_.l2_leaf_reg == 3.0
+    assert catboost_default.model_.l2_leaf_reg_ == 3.0
+    assert lightgbm_explicit.model_.l2_leaf_reg == 2.0
+    assert lightgbm_explicit.model_.l2_leaf_reg_ == 2.0
+
+
 def test_goss_subsample_keeps_large_gradients_and_scales_sampled_rows():
     from chimeraboost.booster import GradientBoosting
 
