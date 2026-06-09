@@ -2488,6 +2488,56 @@ def test_leafwise_positive_split_fast_path_matches_generic_tree():
     assert np.allclose(fast_H, generic_H)
 
 
+def test_leafwise_fused_changed_leaf_scoring_matches_default_path():
+    import numba
+    from chimeraboost.tree import build_leafwise_tree
+
+    if numba.config.NUMBA_NUM_THREADS < 4:
+        pytest.skip("requires at least four numba threads")
+
+    rng = np.random.default_rng(65)
+    Xb = rng.integers(0, 64, size=(1200, 18), dtype=np.uint8)
+    n_bins = np.full(Xb.shape[1], 64, dtype=np.int64)
+    grad = rng.normal(size=Xb.shape[0])
+    hess = rng.uniform(0.05, 1.5, size=Xb.shape[0])
+
+    old_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(min(4, numba.config.NUMBA_NUM_THREADS))
+        default = build_leafwise_tree(
+            Xb, grad, hess, n_bins, 6, 1.0, 0.1,
+            max_leaves=14, min_child_samples=5, min_child_weight=0.1,
+            min_gain_to_split=0.0, return_training_state=True,
+            hessian_always_positive=True,
+            fused_changed_leaf_scoring=False,
+        )
+        fused = build_leafwise_tree(
+            Xb, grad, hess, n_bins, 6, 1.0, 0.1,
+            max_leaves=14, min_child_samples=5, min_child_weight=0.1,
+            min_gain_to_split=0.0, return_training_state=True,
+            hessian_always_positive=True,
+            fused_changed_leaf_scoring=True,
+        )
+    finally:
+        numba.set_num_threads(old_threads)
+
+    default_tree, default_leaf, default_G, default_H = default
+    fused_tree, fused_leaf, fused_G, fused_H = fused
+    assert np.array_equal(fused_tree.features, default_tree.features)
+    assert np.array_equal(fused_tree.thresholds, default_tree.thresholds)
+    assert np.array_equal(fused_tree.left_child, default_tree.left_child)
+    assert np.array_equal(fused_tree.right_child, default_tree.right_child)
+    assert np.array_equal(fused_tree.leaf_index, default_tree.leaf_index)
+    assert np.array_equal(fused_tree.splits_feat, default_tree.splits_feat)
+    assert np.array_equal(fused_tree.splits_thr, default_tree.splits_thr)
+    assert np.allclose(fused_tree.gains, default_tree.gains)
+    assert np.allclose(fused_tree.values, default_tree.values)
+    assert np.array_equal(fused_leaf, default_leaf)
+    assert np.allclose(fused_G, default_G)
+    assert np.allclose(fused_H, default_H)
+    assert np.array_equal(fused_tree.predict(Xb), default_tree.predict(Xb))
+
+
 def test_leafwise_threaded_changed_leaf_split_matches_full_rescore():
     import numba
     from chimeraboost.tree import build_leafwise_tree

@@ -1141,6 +1141,116 @@ def _refill_left_subtract_right_counts_positive_by_count_into(
             hc[f, right_leaf, b] -= hc[f, left_leaf, b]
 
 
+@njit(cache=True, parallel=True)
+def _refill_right_subtract_left_counts_positive_score_full_features_into(
+    X_binned, grad, hess, row_order, leaf_start, left_leaf, right_leaf,
+    hg, hh, hc, n_bins_per_feature, l2, min_child_weight, min_child_samples,
+    feature_gain, feature_thr
+):
+    """Refill right child, subtract left, and score both changed leaves.
+
+    Narrow full-row/full-feature positive-Hessian lane for scalar leafwise
+    trees. It preserves the existing parent-histogram contract: the parent
+    histogram starts in ``left_leaf`` and the right child is rebuilt from its
+    row segment before the left child is derived by subtraction.
+    """
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[2]
+    right_start = leaf_start[right_leaf]
+    right_end = leaf_start[right_leaf + 1]
+    left_count = float(leaf_start[left_leaf + 1] - leaf_start[left_leaf])
+    right_count = float(right_end - right_start)
+
+    for f in prange(n_features):
+        for b in range(max_bins):
+            hg[f, right_leaf, b] = 0.0
+            hh[f, right_leaf, b] = 0.0
+            hc[f, right_leaf, b] = 0.0
+        for p in range(right_start, right_end):
+            i = row_order[p]
+            b = X_binned[i, f]
+            hg[f, right_leaf, b] += grad[i]
+            hh[f, right_leaf, b] += hess[i]
+            hc[f, right_leaf, b] += 1.0
+        for b in range(max_bins):
+            hg[f, left_leaf, b] -= hg[f, right_leaf, b]
+            hh[f, left_leaf, b] -= hh[f, right_leaf, b]
+            hc[f, left_leaf, b] -= hc[f, right_leaf, b]
+
+        nb = n_bins_per_feature[f]
+        for leaf_pos in range(2):
+            if leaf_pos == 0:
+                l = left_leaf
+                Ct = left_count
+            else:
+                l = right_leaf
+                Ct = right_count
+            best_t = -1
+            best_gain = -np.inf
+            if Ct > 0.0:
+                Gt = 0.0
+                Ht = 0.0
+                for b in range(nb):
+                    Gt += hg[f, l, b]
+                    Ht += hh[f, l, b]
+                parent_denom = Ht + l2
+                if Ht > 0.0 and parent_denom > 0.0:
+                    parent_gain = Gt * Gt / parent_denom
+                    GL = 0.0
+                    HL = 0.0
+                    CL = 0.0
+                    for t in range(nb - 1):
+                        GL += hg[f, l, t]
+                        HL += hh[f, l, t]
+                        CL += hc[f, l, t]
+                        HR = Ht - HL
+                        CR = Ct - CL
+                        if (
+                            HL < min_child_weight
+                            or HR < min_child_weight
+                            or CL < min_child_samples
+                            or CR < min_child_samples
+                        ):
+                            continue
+                        left_denom = HL + l2
+                        right_denom = HR + l2
+                        if left_denom <= 0.0 or right_denom <= 0.0:
+                            continue
+                        GR = Gt - GL
+                        gain = (
+                            GL * GL / left_denom
+                            + GR * GR / right_denom
+                            - parent_gain
+                        )
+                        if gain > best_gain:
+                            best_gain = gain
+                            best_t = t
+            feature_gain[f, l] = best_gain
+            feature_thr[f, l] = best_t
+
+
+@njit(cache=True)
+def _reduce_feature_splits_for_leaf_ids(
+    feature_gain, feature_thr, leaf_ids, n_leaf_ids, out_feat, out_thr, out_gain
+):
+    """Reduce per-feature split candidates into one best split per leaf."""
+    n_features = feature_gain.shape[0]
+    for idx in range(n_leaf_ids):
+        l = leaf_ids[idx]
+        best_f = -1
+        best_t = -1
+        best_gain = -np.inf
+        for f in range(n_features):
+            gain = feature_gain[f, l]
+            if gain > best_gain:
+                best_gain = gain
+                best_f = f
+                best_t = int(feature_thr[f, l])
+        out_feat[l] = best_f
+        out_thr[l] = best_t
+        out_gain[l] = best_gain
+
+
 @njit(cache=True)
 def _subtract_right_child_histograms_into_left_serial(
     left_leaf, right_leaf, hg, hh, hc
@@ -3228,7 +3338,8 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                         recompute_all_leaf_splits=False,
                         reuse_leaf_histograms=True,
                         hessian_always_positive=False,
-                        leafwise_row_layout="auto"):
+                        leafwise_row_layout="auto",
+                        fused_changed_leaf_scoring=False):
     """Grow a LightGBM-like leaf-wise, best-first non-oblivious tree.
 
     This builder chooses the best legal split for each current leaf, then splits
@@ -3401,6 +3512,7 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
         refill_changed_histograms = (
             can_reuse_leaf_histograms and histograms_initialized
         )
+        changed_leaves_scored = False
         if refill_changed_histograms:
             # The previous iteration split changed_leaves[0] into left
             # changed_leaves[0] and right changed_leaves[1]. The parent
@@ -3415,7 +3527,28 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                 left_count = leaf_start[left_child_leaf + 1] - leaf_start[left_child_leaf]
                 right_count = leaf_start[right_child_leaf + 1] - leaf_start[right_child_leaf]
             if right_count <= left_count:
-                if use_segmented_rows:
+                if (
+                    fused_changed_leaf_scoring
+                    and hessian_always_positive
+                    and not constant_hessian
+                    and row_indices is None
+                    and feature_indices is None
+                    and not use_segmented_rows
+                    and split_scratch is not None
+                    and get_num_threads() > 2
+                ):
+                    _refill_right_subtract_left_counts_positive_score_full_features_into(
+                        X_hist_binned, grad, hess, row_order, leaf_start,
+                        left_child_leaf, right_child_leaf, hg, hh, hc,
+                        n_bins_per_feature, l2, min_child_weight,
+                        min_child_samples, split_scratch[0], split_scratch[1]
+                    )
+                    _reduce_feature_splits_for_leaf_ids(
+                        split_scratch[0], split_scratch[1], changed_leaves,
+                        n_changed_leaves, best_feat, best_thr, best_gain
+                    )
+                    changed_leaves_scored = True
+                elif use_segmented_rows:
                     if constant_hessian:
                         _refill_right_subtract_left_unit_hess_by_count_into(
                             X_hist_binned, grad, row_order, leaf_start,
@@ -3662,7 +3795,9 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
 
         histograms_initialized = True
         count_hist = hh if constant_hessian else hc
-        if recompute_all_leaf_splits or n_changed_leaves >= n_leaves:
+        if changed_leaves_scored:
+            pass
+        elif recompute_all_leaf_splits or n_changed_leaves >= n_leaves:
             if full_feature_positive_split:
                 _best_splits_by_leaf_counts_full_features(
                     hg, hh, count_hist, n_bins_per_feature, l2,
