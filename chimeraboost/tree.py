@@ -3158,6 +3158,7 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
     leaf_start[1] = row_order.shape[0]
     full_feature_positive_split = (
         hessian_always_positive
+        and reuse_leaf_histograms
         and row_indices is None
         and feature_indices is None
         and bool(np.all(feature_mask != 0))

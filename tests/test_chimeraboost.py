@@ -2070,6 +2070,56 @@ def test_leafwise_positive_hessian_route_matches_generic_tree():
     assert np.array_equal(positive_tree.predict(Xb), generic_tree.predict(Xb))
 
 
+def test_leafwise_positive_hessian_no_reuse_matches_generic_tree():
+    import numba
+    from chimeraboost.tree import build_leafwise_tree
+
+    if numba.config.NUMBA_NUM_THREADS < 2:
+        pytest.skip("requires at least two numba threads")
+
+    rng = np.random.default_rng(62)
+    Xb = rng.integers(0, 32, size=(800, 14), dtype=np.uint8)
+    n_bins = np.full(Xb.shape[1], 32, dtype=np.int64)
+    grad = rng.normal(size=Xb.shape[0])
+    hess = rng.uniform(0.05, 1.2, size=Xb.shape[0])
+
+    old_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(min(2, numba.config.NUMBA_NUM_THREADS))
+        generic = build_leafwise_tree(
+            Xb, grad, hess, n_bins, 6, 1.0, 0.1,
+            max_leaves=12, min_child_samples=5, min_child_weight=0.1,
+            min_gain_to_split=0.0, return_training_state=True,
+            hessian_always_positive=False,
+            reuse_leaf_histograms=False,
+        )
+        positive = build_leafwise_tree(
+            Xb, grad, hess, n_bins, 6, 1.0, 0.1,
+            max_leaves=12, min_child_samples=5, min_child_weight=0.1,
+            min_gain_to_split=0.0, return_training_state=True,
+            hessian_always_positive=True,
+            reuse_leaf_histograms=False,
+        )
+    finally:
+        numba.set_num_threads(old_threads)
+
+    generic_tree, generic_leaf, generic_G, generic_H = generic
+    positive_tree, positive_leaf, positive_G, positive_H = positive
+    assert np.array_equal(positive_tree.features, generic_tree.features)
+    assert np.array_equal(positive_tree.thresholds, generic_tree.thresholds)
+    assert np.array_equal(positive_tree.left_child, generic_tree.left_child)
+    assert np.array_equal(positive_tree.right_child, generic_tree.right_child)
+    assert np.array_equal(positive_tree.leaf_index, generic_tree.leaf_index)
+    assert np.array_equal(positive_tree.splits_feat, generic_tree.splits_feat)
+    assert np.array_equal(positive_tree.splits_thr, generic_tree.splits_thr)
+    assert np.allclose(positive_tree.gains, generic_tree.gains)
+    assert np.allclose(positive_tree.values, generic_tree.values)
+    assert np.array_equal(positive_leaf, generic_leaf)
+    assert np.allclose(positive_G, generic_G)
+    assert np.allclose(positive_H, generic_H)
+    assert np.array_equal(positive_tree.predict(Xb), generic_tree.predict(Xb))
+
+
 def test_leafwise_selected_feature_histogram_reuse_threaded():
     import numba
     from chimeraboost.tree import build_leafwise_tree

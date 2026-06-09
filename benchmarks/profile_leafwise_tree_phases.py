@@ -253,6 +253,7 @@ def main(argv=None):
     warm_args = argparse.Namespace(
         depth=args.depth,
         tree_mode="lightgbm",
+        learning_rate=args.learning_rate,
         chimera_num_leaves=args.num_leaves,
         chimera_max_bins=args.max_bins,
         chimera_min_child_samples=args.min_child_samples,
