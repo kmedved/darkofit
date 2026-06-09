@@ -285,6 +285,77 @@ def _softmax_class_major_grad_hess_into(Y, F, sample_weight, grad_out, hess_out)
             hess_out[k, i] = hess
 
 
+@njit(cache=True)
+def _softmax_class_major_eval(Y, F, sample_weight):
+    K, n = F.shape
+    total = 0.0
+    weight_total = 0.0
+    for i in range(n):
+        max_f = F[0, i]
+        for k in range(1, K):
+            if F[k, i] > max_f:
+                max_f = F[k, i]
+
+        denom = 0.0
+        true_exp = 0.0
+        for k in range(K):
+            e = np.exp(F[k, i] - max_f)
+            denom += e
+            if Y[k, i] != 0.0:
+                true_exp = e
+
+        p = true_exp / denom
+        if p < 1e-12:
+            p = 1e-12
+        elif p > 1.0:
+            p = 1.0
+        ce = -np.log(p)
+        if sample_weight is None:
+            total += ce
+            weight_total += 1.0
+        else:
+            w = sample_weight[i]
+            total += w * ce
+            weight_total += w
+    return total / weight_total
+
+
+@njit(cache=True)
+def _softmax_class_major_eval_labels(labels, F, sample_weight):
+    K, n = F.shape
+    total = 0.0
+    weight_total = 0.0
+    for i in range(n):
+        max_f = F[0, i]
+        for k in range(1, K):
+            if F[k, i] > max_f:
+                max_f = F[k, i]
+
+        denom = 0.0
+        true_label = labels[i]
+        true_exp = 0.0
+        for k in range(K):
+            e = np.exp(F[k, i] - max_f)
+            denom += e
+            if k == true_label:
+                true_exp = e
+
+        p = true_exp / denom
+        if p < 1e-12:
+            p = 1e-12
+        elif p > 1.0:
+            p = 1.0
+        ce = -np.log(p)
+        if sample_weight is None:
+            total += ce
+            weight_total += 1.0
+        else:
+            w = sample_weight[i]
+            total += w * ce
+            weight_total += w
+    return total / weight_total
+
+
 class MultiSoftmax:
     """Multinomial logistic loss. Operates on raw scores F of shape (n, K)."""
 
@@ -326,9 +397,10 @@ class MultiSoftmax:
         return float(np.average(row_ce, weights=sample_weight))
 
     def eval_class_major(self, Y, F, sample_weight=None):
-        P = np.clip(_softmax_class_major(F), 1e-12, 1.0)
-        row_ce = -np.sum(Y * np.log(P), axis=0)
-        return float(np.average(row_ce, weights=sample_weight))
+        return float(_softmax_class_major_eval(Y, F, sample_weight))
+
+    def eval_class_major_labels(self, labels, F, sample_weight=None):
+        return float(_softmax_class_major_eval_labels(labels, F, sample_weight))
 
     def transform(self, F):
         return _softmax(F)

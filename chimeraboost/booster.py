@@ -803,7 +803,9 @@ class MulticlassBoosting(_BaseBooster):
                 _add_timing(timing, "train_update", phase)
 
                 phase = _start_timing(timing)
-                self.train_history_.append(self.loss_.eval_class_major(Y_class, F, w))
+                self.train_history_.append(
+                    self.loss_.eval_class_major_labels(y_idx, F, w)
+                )
                 _add_timing(timing, "loss_eval", phase)
 
                 if Fv is not None:
@@ -811,7 +813,7 @@ class MulticlassBoosting(_BaseBooster):
                     tree.add_predict_class_major(Xv_binned, Fv)
                     _add_timing(timing, "validation_predict", phase)
                     phase = _start_timing(timing)
-                    val = self.loss_.eval_class_major(Yv_class, Fv, wv)
+                    val = self.loss_.eval_class_major_labels(yv_idx, Fv, wv)
                     _add_timing(timing, "loss_eval", phase)
                     self.valid_history_.append(val)
                     if val < best_score - 1e-9:
@@ -883,7 +885,9 @@ class MulticlassBoosting(_BaseBooster):
                 break
             self.trees_.append(round_trees)
             phase = _start_timing(timing)
-            self.train_history_.append(self.loss_.eval_class_major(Y_class, F, w))
+            self.train_history_.append(
+                self.loss_.eval_class_major_labels(y_idx, F, w)
+            )
             _add_timing(timing, "loss_eval", phase)
 
             if Fv is not None:
@@ -892,7 +896,7 @@ class MulticlassBoosting(_BaseBooster):
                     round_trees[k].add_predict(Xv_binned, Fv[k])
                 _add_timing(timing, "validation_predict", phase)
                 phase = _start_timing(timing)
-                val = self.loss_.eval_class_major(Yv_class, Fv, wv)
+                val = self.loss_.eval_class_major_labels(yv_idx, Fv, wv)
                 _add_timing(timing, "loss_eval", phase)
                 self.valid_history_.append(val)
                 if val < best_score - 1e-9:
@@ -915,11 +919,11 @@ class MulticlassBoosting(_BaseBooster):
         if self.valid_history_:
             self.best_score_ = best_score
         elif Fv is not None:
-            self.best_score_ = self.loss_.eval_class_major(Yv_class, Fv, wv)
+            self.best_score_ = self.loss_.eval_class_major_labels(yv_idx, Fv, wv)
         elif self.train_history_:
             self.best_score_ = self.train_history_[-1]
         else:
-            self.best_score_ = self.loss_.eval_class_major(Y_class, F, w)
+            self.best_score_ = self.loss_.eval_class_major_labels(y_idx, F, w)
         return self
 
     def predict_raw(self, X):

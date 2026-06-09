@@ -110,6 +110,36 @@ def test_logloss_eval_matches_clipped_probability_formula():
     assert np.isclose(loss.eval(y, raw, weights), np.average(ce, weights=weights))
 
 
+def test_multisoftmax_eval_class_major_matches_clipped_probability_formula():
+    from chimeraboost.losses import MultiSoftmax
+
+    rng = np.random.default_rng(79)
+    K = 4
+    n = 17
+    labels = rng.integers(0, K, size=n)
+    Y = np.zeros((K, n))
+    Y[labels, np.arange(n)] = 1.0
+    F = rng.normal(size=(K, n)) * 3.0
+    F[:, 0] = np.array([800.0, 799.0, 798.0, 797.0])
+    F[:, 1] = np.array([-800.0, -799.0, -798.0, -797.0])
+    weights = rng.uniform(0.2, 2.0, size=n)
+
+    z = F - F.max(axis=0, keepdims=True)
+    P = np.exp(z)
+    P /= P.sum(axis=0, keepdims=True)
+    P = np.clip(P, 1e-12, 1.0)
+    ce = -np.sum(Y * np.log(P), axis=0)
+
+    loss = MultiSoftmax(K)
+    assert np.isclose(loss.eval_class_major(Y, F), np.average(ce))
+    assert np.isclose(loss.eval_class_major(Y, F, weights), np.average(ce, weights=weights))
+    assert np.isclose(loss.eval_class_major_labels(labels, F), np.average(ce))
+    assert np.isclose(
+        loss.eval_class_major_labels(labels, F, weights),
+        np.average(ce, weights=weights),
+    )
+
+
 def test_binner_uses_smallest_safe_unsigned_dtype():
     from chimeraboost.binning import Binner
 
@@ -455,8 +485,8 @@ def test_multiclass_class_major_loss_matches_row_major():
     assert np.allclose(loss.init(Y, w), loss.init_class_major(Y_class, w))
     assert np.array_equal(grad, grad_c.T)
     assert np.array_equal(hess, hess_c.T)
-    assert loss.eval(Y, F) == loss.eval_class_major(Y_class, F_class)
-    assert loss.eval(Y, F, w) == loss.eval_class_major(Y_class, F_class, w)
+    assert np.isclose(loss.eval(Y, F), loss.eval_class_major(Y_class, F_class))
+    assert np.isclose(loss.eval(Y, F, w), loss.eval_class_major(Y_class, F_class, w))
 
 
 def test_feature_importances():
