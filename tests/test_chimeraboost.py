@@ -94,6 +94,22 @@ def test_classification_grad_hess_into_extreme_values_match_allocating_paths():
         assert np.array_equal(hess_out, hess)
 
 
+def test_logloss_eval_matches_clipped_probability_formula():
+    from chimeraboost.losses import Logloss
+
+    y = np.array([0.0, 1.0, 0.0, 1.0, 1.0])
+    raw = np.array([-1000.0, -60.0, -1.5, 4.0, 1000.0])
+    weights = np.array([0.5, 2.0, 0.25, 3.0, 1.5])
+    loss = Logloss()
+
+    p = 1.0 / (1.0 + np.exp(-np.clip(raw, -700.0, 700.0)))
+    p = np.clip(p, 1e-9, 1.0 - 1e-9)
+    ce = -(y * np.log(p) + (1.0 - y) * np.log(1.0 - p))
+
+    assert np.isclose(loss.eval(y, raw), np.average(ce))
+    assert np.isclose(loss.eval(y, raw, weights), np.average(ce, weights=weights))
+
+
 def test_binner_uses_smallest_safe_unsigned_dtype():
     from chimeraboost.binning import Binner
 

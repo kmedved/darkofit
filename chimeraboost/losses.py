@@ -83,6 +83,32 @@ def _logloss_grad_hess_into(y, raw, sample_weight, grad_out, hess_out):
         hess_out[i] = hess
 
 
+@njit(cache=True)
+def _logloss_eval(y, raw, sample_weight):
+    total = 0.0
+    weight_total = 0.0
+    for i in range(raw.shape[0]):
+        z = raw[i]
+        if z >= 0.0:
+            p = 1.0 / (1.0 + np.exp(-z))
+        else:
+            ez = np.exp(z)
+            p = ez / (1.0 + ez)
+        if p < 1e-9:
+            p = 1e-9
+        elif p > 1.0 - 1e-9:
+            p = 1.0 - 1e-9
+        ce = -(y[i] * np.log(p) + (1.0 - y[i]) * np.log(1.0 - p))
+        if sample_weight is None:
+            total += ce
+            weight_total += 1.0
+        else:
+            w = sample_weight[i]
+            total += w * ce
+            weight_total += w
+    return total / weight_total
+
+
 class RMSE:
     """Squared-error regression. grad = pred - y, hess = 1."""
 
@@ -135,9 +161,7 @@ class Logloss:
         _logloss_grad_hess_into(y, raw, sample_weight, grad_out, hess_out)
 
     def eval(self, y, raw, sample_weight=None):
-        p = np.clip(_sigmoid(raw), 1e-9, 1 - 1e-9)
-        ce = -(y * np.log(p) + (1 - y) * np.log(1 - p))
-        return float(np.average(ce, weights=sample_weight))
+        return float(_logloss_eval(y, raw, sample_weight))
 
     def transform(self, raw):
         return _sigmoid(raw)
