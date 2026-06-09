@@ -1172,6 +1172,31 @@ def test_lightgbm_multiclass_no_split_first_round_keeps_initial_model():
     assert np.allclose(proba.sum(axis=1), 1.0)
 
 
+def test_lightgbm_shared_multiclass_tree_routes_only_categorical():
+    X_num = np.array([
+        [0.0, 0.1], [0.2, 0.0], [1.0, 0.8], [1.2, 1.1],
+        [2.0, 2.2], [2.2, 1.9], [0.1, 0.2], [1.1, 1.0],
+        [2.1, 2.0],
+    ])
+    y = np.array([0, 0, 1, 1, 2, 2, 0, 1, 2])
+    numeric = ChimeraBoostClassifier(
+        iterations=2, tree_mode="lightgbm", num_leaves=3,
+        min_child_samples=1, min_child_weight=0.0, random_state=0
+    ).fit(X_num, y)
+    assert isinstance(numeric.model_.trees_[0], list)
+
+    X_cat = np.empty((len(y), 2), dtype=object)
+    X_cat[:, 0] = np.array(
+        ["a", "a", "b", "b", "c", "c", "a", "b", "c"], dtype=object
+    )
+    X_cat[:, 1] = X_num[:, 1]
+    categorical = ChimeraBoostClassifier(
+        iterations=2, tree_mode="lightgbm", num_leaves=3,
+        min_child_samples=1, min_child_weight=0.0, random_state=0
+    ).fit(X_cat, y, cat_features=[0])
+    assert hasattr(categorical.model_.trees_[0], "add_predict_class_major")
+
+
 def test_lightgbm_zero_weight_rows_do_not_affect_tree_structure():
     from chimeraboost.tree import build_leafwise_tree
 

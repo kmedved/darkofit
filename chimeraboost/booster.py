@@ -10,7 +10,12 @@ import numpy as np
 
 from .losses import LOSSES, MultiSoftmax
 from .preprocessing import FeaturePreprocessor
-from .tree import build_leafwise_tree, build_levelwise_tree, build_oblivious_tree
+from .tree import (
+    build_leafwise_multiclass_tree,
+    build_leafwise_tree,
+    build_levelwise_tree,
+    build_oblivious_tree,
+)
 
 _LEAF_CORRECTION_SORT_MIN_LEAVES = 16
 
@@ -214,6 +219,15 @@ class _BaseBooster:
         """Allocate reusable per-feature split-search scratch buffers."""
         max_leaves = self._max_tree_leaves()
         return tuple(np.empty((n_features, max_leaves)) for _ in range(5))
+
+    def _alloc_multiclass_hist_buffers(self, n_classes, n_features, n_bins):
+        """Allocate reusable class-major LightGBM-mode histogram buffers."""
+        max_leaves = self._max_tree_leaves()
+        max_bins = int(n_bins.max()) if len(n_bins) else 1
+        hg = np.zeros((n_classes, n_features, max_leaves, max_bins))
+        hh = np.zeros((n_classes, n_features, max_leaves, max_bins))
+        hc = np.zeros((n_features, max_leaves, max_bins))
+        return hg, hh, hc
 
     def _feature_selection(self, n_cols, rng):
         """Return a 0/1 mask and selected column indices for one tree."""
@@ -547,6 +561,17 @@ class MulticlassBoosting(_BaseBooster):
             self._alloc_split_buffers(X_binned.shape[1])
             if self.n_threads_ > 1 else None
         )
+        use_shared_lightgbm_multiclass = (
+            self.tree_mode_ == "lightgbm"
+            and self.subsample >= 1.0
+            and self.colsample >= 1.0
+            and not self.ordered_boosting_
+            and bool(cat_features)
+        )
+        multiclass_hist_buffers = (
+            self._alloc_multiclass_hist_buffers(K, X_binned.shape[1], n_bins)
+            if use_shared_lightgbm_multiclass else None
+        )
         self._importance = np.zeros(self.prep_.n_input_features_)
 
         Xv_binned = Yv_class = Fv = yv_idx = wv = None
@@ -597,6 +622,60 @@ class MulticlassBoosting(_BaseBooster):
                 mask = rng.random(n_samples) < self.subsample
                 row_indices_round = np.flatnonzero(mask).astype(np.int64)
             _add_timing(timing, "grad_hess", phase)
+            if use_shared_lightgbm_multiclass:
+                phase = _start_timing(timing)
+                tree, leaf, leaf_G, leaf_H = build_leafwise_multiclass_tree(
+                    X_binned, grad, hess, n_bins, self._max_tree_depth(),
+                    self.l2_leaf_reg, self.lr_,
+                    feature_mask=fmask,
+                    min_child_weight=self.min_child_weight,
+                    hist_buffers=multiclass_hist_buffers,
+                    return_training_state=True,
+                    X_hist_binned=X_hist_binned,
+                    max_leaves=self._max_tree_leaves(),
+                    min_child_samples=self.min_child_samples,
+                    min_gain_to_split=self.min_gain_to_split,
+                )
+                _add_timing(timing, "tree_build", phase)
+                if tree.depth == 0:
+                    if self.verbose:
+                        print(f"No further splits at iteration {m}; stopping.")
+                    break
+
+                phase = _start_timing(timing)
+                self.trees_.append(tree)
+                self._accumulate_importance(tree)
+                tree.add_predict_class_major(X_binned, F)
+                _add_timing(timing, "train_update", phase)
+
+                phase = _start_timing(timing)
+                self.train_history_.append(self.loss_.eval_class_major(Y_class, F, w))
+                _add_timing(timing, "loss_eval", phase)
+
+                if Fv is not None:
+                    phase = _start_timing(timing)
+                    tree.add_predict_class_major(Xv_binned, Fv)
+                    _add_timing(timing, "validation_predict", phase)
+                    phase = _start_timing(timing)
+                    val = self.loss_.eval_class_major(Yv_class, Fv, wv)
+                    _add_timing(timing, "loss_eval", phase)
+                    self.valid_history_.append(val)
+                    if val < best_score - 1e-9:
+                        best_score, best_iter = val, m
+                    elif (self.early_stopping_rounds and
+                          m - best_iter >= self.early_stopping_rounds):
+                        if self.verbose:
+                            print(f"Early stop at {m} (best {best_iter})")
+                        self.trees_ = self.trees_[: best_iter + 1]
+                        break
+
+                if self.verbose and (m % max(1, self.iterations // 10) == 0):
+                    msg = f"[{m}] train {self.train_history_[-1]:.5f}"
+                    if Fv is not None:
+                        msg += f"  val {self.valid_history_[-1]:.5f}"
+                    print(msg)
+                continue
+
             round_trees = []
             for k in range(K):
                 phase = _start_timing(timing)
@@ -690,8 +769,11 @@ class MulticlassBoosting(_BaseBooster):
         X_binned = self.prep_.transform(X)
         F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
         for round_trees in self.trees_:
-            for k in range(self.n_classes_):
-                round_trees[k].add_predict(X_binned, F[k])
+            if hasattr(round_trees, "add_predict_class_major"):
+                round_trees.add_predict_class_major(X_binned, F)
+            else:
+                for k in range(self.n_classes_):
+                    round_trees[k].add_predict(X_binned, F[k])
         return F.T
 
     def staged_predict_raw(self, X):
@@ -701,6 +783,9 @@ class MulticlassBoosting(_BaseBooster):
         X_binned = self.prep_.transform(X)
         F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
         for round_trees in self.trees_:
-            for k in range(self.n_classes_):
-                round_trees[k].add_predict(X_binned, F[k])
+            if hasattr(round_trees, "add_predict_class_major"):
+                round_trees.add_predict_class_major(X_binned, F)
+            else:
+                for k in range(self.n_classes_):
+                    round_trees[k].add_predict(X_binned, F[k])
             yield F.T.copy()

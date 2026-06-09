@@ -1058,6 +1058,26 @@ def _leaf_values_and_sums_rows(leaf, grad, hess, row_indices, n_leaves, l2, lr):
 
 
 @njit(cache=True)
+def _multiclass_leaf_values_and_sums(leaf, grad, hess, n_leaves, l2, lr):
+    """Return vector leaf values plus class-major G/H totals."""
+    K = grad.shape[0]
+    G = np.zeros((K, n_leaves))
+    H = np.zeros((K, n_leaves))
+    n = leaf.shape[0]
+    for k in range(K):
+        for i in range(n):
+            l = leaf[i]
+            G[k, l] += grad[k, i]
+            H[k, l] += hess[k, i]
+    values = np.zeros((n_leaves, K))
+    for l in range(n_leaves):
+        for k in range(K):
+            if H[k, l] > 0.0:
+                values[l, k] = -lr * G[k, l] / (H[k, l] + l2)
+    return values, G, H
+
+
+@njit(cache=True)
 def _predict_tree(X_binned, splits_feat, splits_thr, values):
     """Route each row to its leaf and return the leaf value for each row."""
     leaf = _assign_leaves(X_binned, splits_feat, splits_thr)
@@ -1170,6 +1190,27 @@ def _predict_non_oblivious_tree_add(X_binned, features, thresholds, left_child,
             else:
                 node = left_child[node]
         out[i] += values[leaf_index[node]]
+
+
+@njit(cache=True)
+def _predict_non_oblivious_multiclass_tree_add(
+    X_binned, features, thresholds, left_child, right_child, leaf_index,
+    values, out
+):
+    n = X_binned.shape[0]
+    K = values.shape[1]
+    for i in range(n):
+        node = 0
+        while left_child[node] >= 0:
+            f = features[node]
+            t = thresholds[node]
+            if X_binned[i, f] > t:
+                node = right_child[node]
+            else:
+                node = left_child[node]
+        l = leaf_index[node]
+        for k in range(K):
+            out[k, i] += values[l, k]
 
 
 @njit(cache=True, parallel=True)
@@ -1353,6 +1394,149 @@ def _best_splits_for_leaf_ids_counts(hg, hh, hc, n_bins_per_feature, l2,
         out_gain[l] = best_gain
 
 
+@njit(cache=True, parallel=True)
+def _build_multiclass_histograms_counts_into(
+    X_binned, grad, hess, leaf, n_leaves, hg, hh, hc
+):
+    """Fill class-major grad/hess histograms plus shared positive-row counts."""
+    K, n_samples = grad.shape
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[3]
+    for f in prange(n_features):
+        for k in range(K):
+            for l in range(n_leaves):
+                for b in range(max_bins):
+                    hg[k, f, l, b] = 0.0
+                    hh[k, f, l, b] = 0.0
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hc[f, l, b] = 0.0
+
+        for i in range(n_samples):
+            l = leaf[i]
+            b = X_binned[i, f]
+            if hess[0, i] > 0.0:
+                hc[f, l, b] += 1.0
+            for k in range(K):
+                hg[k, f, l, b] += grad[k, i]
+                hh[k, f, l, b] += hess[k, i]
+
+
+@njit(cache=True, parallel=True)
+def _refill_multiclass_leaf_segment_histograms_counts_into(
+    X_binned, grad, hess, row_order, leaf_start, leaf_ids, n_leaf_ids,
+    hg, hh, hc
+):
+    """Refill changed-leaf multiclass histograms from row segments."""
+    K = grad.shape[0]
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[3]
+    for f in prange(n_features):
+        for idx in range(n_leaf_ids):
+            l = leaf_ids[idx]
+            for k in range(K):
+                for b in range(max_bins):
+                    hg[k, f, l, b] = 0.0
+                    hh[k, f, l, b] = 0.0
+            for b in range(max_bins):
+                hc[f, l, b] = 0.0
+
+            for p in range(leaf_start[l], leaf_start[l + 1]):
+                i = row_order[p]
+                b = X_binned[i, f]
+                if hess[0, i] > 0.0:
+                    hc[f, l, b] += 1.0
+                for k in range(K):
+                    hg[k, f, l, b] += grad[k, i]
+                    hh[k, f, l, b] += hess[k, i]
+
+
+@njit(cache=True, parallel=True)
+def _best_multiclass_splits_for_leaf_ids_counts(
+    hg, hh, hc, n_bins_per_feature, l2, feat_mask, min_child_weight,
+    min_child_samples, leaf_ids, n_leaf_ids, out_feat, out_thr, out_gain
+):
+    """Best split per changed leaf by summed gain across classes."""
+    K = hg.shape[0]
+    n_features = hg.shape[1]
+    for idx in prange(n_leaf_ids):
+        l = leaf_ids[idx]
+        best_f = -1
+        best_t = -1
+        best_gain = -np.inf
+
+        for f in range(n_features):
+            if feat_mask[f] == 0:
+                continue
+            nb = n_bins_per_feature[f]
+            Ct = 0.0
+            Gt = np.zeros(K)
+            Ht = np.zeros(K)
+            GL = np.zeros(K)
+            HL = np.zeros(K)
+            for b in range(nb):
+                Ct += hc[f, l, b]
+                for k in range(K):
+                    Gt[k] += hg[k, f, l, b]
+                    Ht[k] += hh[k, f, l, b]
+            if Ct <= 0.0:
+                continue
+
+            CL = 0.0
+            for t in range(nb - 1):
+                CL += hc[f, l, t]
+                CR = Ct - CL
+                if CL < min_child_samples or CR < min_child_samples:
+                    for k in range(K):
+                        GL[k] += hg[k, f, l, t]
+                        HL[k] += hh[k, f, l, t]
+                    continue
+
+                split_gain = 0.0
+                legal = True
+                for k in range(K):
+                    GL[k] += hg[k, f, l, t]
+                    HL[k] += hh[k, f, l, t]
+                    HR = Ht[k] - HL[k]
+                    if (
+                        Ht[k] <= 0.0
+                        or HL[k] < min_child_weight
+                        or HR < min_child_weight
+                    ):
+                        legal = False
+                        break
+                    parent_denom = Ht[k] + l2
+                    left_denom = HL[k] + l2
+                    right_denom = HR + l2
+                    if (
+                        parent_denom <= 0.0
+                        or left_denom <= 0.0
+                        or right_denom <= 0.0
+                    ):
+                        legal = False
+                        break
+                    GR = Gt[k] - GL[k]
+                    split_gain += (
+                        GL[k] * GL[k] / left_denom
+                        + GR * GR / right_denom
+                        - Gt[k] * Gt[k] / parent_denom
+                    )
+
+                if legal and split_gain > best_gain:
+                    best_gain = split_gain
+                    best_f = f
+                    best_t = t
+
+                if not legal:
+                    for kk in range(k + 1, K):
+                        GL[kk] += hg[kk, f, l, t]
+                        HL[kk] += hh[kk, f, l, t]
+
+        out_feat[l] = best_f
+        out_thr[l] = best_t
+        out_gain[l] = best_gain
+
+
 class ObliviousTree:
     """A single symmetric tree. Stores its splits and leaf values."""
 
@@ -1470,6 +1654,49 @@ class NonObliviousTree:
             out += self.values[0]
         else:
             _predict_non_oblivious_tree_add(
+                X_binned, self.features, self.thresholds, self.left_child,
+                self.right_child, self.leaf_index, self.values, out
+            )
+
+
+class MultiNonObliviousTree:
+    """A shared-structure tree with one vector leaf value per class."""
+
+    __slots__ = (
+        "features", "thresholds", "left_child", "right_child", "leaf_index",
+        "values", "splits_feat", "splits_thr", "gains", "depth",
+        "n_leaves", "n_splits",
+    )
+
+    def __init__(self, features, thresholds, left_child, right_child,
+                 leaf_index, values, splits_feat, splits_thr, gains, depth,
+                 n_leaves):
+        self.features = features
+        self.thresholds = thresholds
+        self.left_child = left_child
+        self.right_child = right_child
+        self.leaf_index = leaf_index
+        self.values = values
+        self.splits_feat = splits_feat
+        self.splits_thr = splits_thr
+        self.gains = gains
+        self.depth = int(depth)
+        self.n_leaves = int(n_leaves)
+        self.n_splits = int(len(splits_feat))
+
+    def apply(self, X_binned):
+        if self.n_splits == 0:
+            return np.zeros(X_binned.shape[0], dtype=np.int64)
+        return _assign_non_oblivious_leaves(
+            X_binned, self.features, self.thresholds, self.left_child,
+            self.right_child, self.leaf_index
+        )
+
+    def add_predict_class_major(self, X_binned, out):
+        if self.n_splits == 0:
+            out += self.values[0][:, None]
+        else:
+            _predict_non_oblivious_multiclass_tree_add(
                 X_binned, self.features, self.thresholds, self.left_child,
                 self.right_child, self.leaf_index, self.values, out
             )
@@ -2224,6 +2451,203 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
         )
 
     tree = NonObliviousTree(
+        features[:n_nodes].copy(),
+        thresholds[:n_nodes].copy(),
+        left_child[:n_nodes].copy(),
+        right_child[:n_nodes].copy(),
+        leaf_index[:n_nodes].copy(),
+        values,
+        np.array(split_features, dtype=np.int64),
+        np.array(split_thresholds, dtype=np.int64),
+        np.array(split_gains, dtype=np.float64),
+        actual_depth,
+        n_leaves,
+    )
+    if return_training_state:
+        return tree, leaf, leaf_G, leaf_H
+    return tree
+
+
+def build_leafwise_multiclass_tree(
+    X_binned, grad, hess, n_bins_per_feature, max_depth, l2, lr,
+    min_gain=1e-8, feature_mask=None, min_child_weight=1.0,
+    hist_buffers=None, return_training_state=False, X_hist_binned=None,
+    max_leaves=None, min_gain_to_split=None, min_child_samples=20,
+    reuse_leaf_histograms=True,
+):
+    """Grow one shared-structure leaf-wise tree with vector leaf values."""
+    if min_gain_to_split is None:
+        min_gain_to_split = min_gain
+    if X_hist_binned is None:
+        X_hist_binned = X_binned
+    elif X_hist_binned.shape != X_binned.shape:
+        raise ValueError("X_hist_binned must have the same shape as X_binned")
+
+    grad = np.asarray(grad, dtype=np.float64)
+    hess = np.asarray(hess, dtype=np.float64)
+    if grad.ndim != 2 or hess.ndim != 2 or grad.shape != hess.shape:
+        raise ValueError("grad and hess must be matching class-major arrays")
+
+    K, n_samples = grad.shape
+    if X_binned.shape[0] != n_samples:
+        raise ValueError("X_binned row count must match grad/hess")
+    n_features = X_binned.shape[1]
+    max_bins = n_features and int(n_bins_per_feature.max())
+    if max_leaves is None:
+        if max_depth is None or max_depth < 0:
+            max_leaves = 31
+        else:
+            max_leaves = min(31, 1 << int(max_depth))
+    max_leaves = int(max_leaves)
+    if max_leaves < 1:
+        raise ValueError("max_leaves must be at least 1")
+    max_depth_cap = -1 if max_depth is None else int(max_depth)
+    if max_depth_cap == 0 and max_leaves > 1:
+        raise ValueError("max_depth must be positive, None, or -1")
+    min_child_samples = int(min_child_samples)
+    if min_child_samples < 1:
+        raise ValueError("min_child_samples must be at least 1")
+
+    if feature_mask is None:
+        feature_mask = np.ones(n_features, dtype=np.int64)
+    else:
+        feature_mask = np.asarray(feature_mask, dtype=np.int64)
+        if feature_mask.shape != (n_features,):
+            raise ValueError("feature_mask must have one entry per feature")
+
+    if hist_buffers is None:
+        hg = np.zeros((K, n_features, max_leaves, max_bins))
+        hh = np.zeros((K, n_features, max_leaves, max_bins))
+        hc = np.zeros((n_features, max_leaves, max_bins))
+    else:
+        if len(hist_buffers) != 3:
+            raise ValueError("hist_buffers must contain multiclass G/H/count arrays")
+        hg, hh, hc = hist_buffers
+        if (
+            hg.ndim != 4
+            or hh.ndim != 4
+            or hg.shape != hh.shape
+            or hg.shape[0] < K
+            or hg.shape[1] < n_features
+            or hg.shape[2] < max_leaves
+            or hg.shape[3] < max_bins
+        ):
+            raise ValueError("multiclass histogram buffers are too small")
+        if (
+            hc.ndim != 3
+            or hc.shape[0] < n_features
+            or hc.shape[1] < max_leaves
+            or hc.shape[2] < max_bins
+        ):
+            raise ValueError("multiclass count histogram buffer is too small")
+
+    max_nodes = 2 * max_leaves - 1
+    features = np.full(max_nodes, -1, dtype=np.int64)
+    thresholds = np.full(max_nodes, -1, dtype=np.int64)
+    left_child = np.full(max_nodes, -1, dtype=np.int64)
+    right_child = np.full(max_nodes, -1, dtype=np.int64)
+    leaf_index = np.full(max_nodes, -1, dtype=np.int64)
+    leaf_node = np.empty(max_leaves, dtype=np.int64)
+    leaf_depth = np.zeros(max_leaves, dtype=np.int64)
+    leaf_node[0] = 0
+    leaf_index[0] = 0
+
+    best_feat = np.empty(max_leaves, dtype=np.int64)
+    best_thr = np.empty(max_leaves, dtype=np.int64)
+    best_gain = np.empty(max_leaves, dtype=np.float64)
+    changed_leaves = np.empty(2, dtype=np.int64)
+    changed_leaves[0] = 0
+    n_changed_leaves = 1
+    row_order = np.arange(n_samples, dtype=np.int64)
+    row_scratch = np.empty(n_samples, dtype=np.int64)
+    leaf_start = np.zeros(max_leaves + 1, dtype=np.int64)
+    leaf_start[1] = n_samples
+    split_features = []
+    split_thresholds = []
+    split_gains = []
+
+    leaf = np.zeros(n_samples, dtype=np.int64)
+    n_nodes = 1
+    n_leaves = 1
+    actual_depth = 0
+    histograms_initialized = False
+
+    while n_leaves < max_leaves:
+        if reuse_leaf_histograms and histograms_initialized:
+            _refill_multiclass_leaf_segment_histograms_counts_into(
+                X_hist_binned, grad, hess, row_order, leaf_start,
+                changed_leaves, n_changed_leaves, hg, hh, hc
+            )
+        else:
+            _build_multiclass_histograms_counts_into(
+                X_hist_binned, grad, hess, leaf, n_leaves, hg, hh, hc
+            )
+        histograms_initialized = True
+
+        if n_changed_leaves >= n_leaves:
+            changed_leaves[0] = 0
+            n_changed_leaves = n_leaves
+            # The first iteration has a single leaf; later code never requests
+            # a full multiclass rescore, so the fixed two-slot buffer is enough.
+        _best_multiclass_splits_for_leaf_ids_counts(
+            hg, hh, hc, n_bins_per_feature, l2, feature_mask,
+            min_child_weight, min_child_samples, changed_leaves,
+            n_changed_leaves, best_feat, best_thr, best_gain
+        )
+
+        split_leaf = -1
+        split_gain = -np.inf
+        for l in range(n_leaves):
+            if max_depth_cap >= 0 and leaf_depth[l] >= max_depth_cap:
+                continue
+            if best_thr[l] >= 0 and best_gain[l] > split_gain:
+                split_leaf = l
+                split_gain = best_gain[l]
+        if split_leaf < 0 or split_gain <= min_gain_to_split:
+            break
+
+        node = leaf_node[split_leaf]
+        f = int(best_feat[split_leaf])
+        t = int(best_thr[split_leaf])
+        left = n_nodes
+        right = n_nodes + 1
+        n_nodes += 2
+
+        features[node] = f
+        thresholds[node] = t
+        left_child[node] = left
+        right_child[node] = right
+        leaf_index[node] = -1
+
+        old_depth = leaf_depth[split_leaf]
+        new_leaf = n_leaves
+        leaf_node[split_leaf] = left
+        leaf_node[new_leaf] = right
+        leaf_depth[split_leaf] = old_depth + 1
+        leaf_depth[new_leaf] = old_depth + 1
+        leaf_index[left] = split_leaf
+        leaf_index[right] = new_leaf
+        actual_depth = max(actual_depth, int(old_depth + 1))
+
+        split_features.append(f)
+        split_thresholds.append(t)
+        split_gains.append(split_gain)
+        _partition_leaf_rows(
+            X_binned, row_order, row_scratch, leaf, leaf_start,
+            n_leaves, split_leaf, new_leaf, f, t
+        )
+        n_leaves += 1
+        changed_leaves[0] = split_leaf
+        changed_leaves[1] = new_leaf
+        n_changed_leaves = 2
+
+    values, leaf_G, leaf_H = _multiclass_leaf_values_and_sums(
+        leaf, grad, hess, n_leaves, l2, lr
+    )
+    if len(split_features) == 0:
+        values[0, :] = 0.0
+
+    tree = MultiNonObliviousTree(
         features[:n_nodes].copy(),
         thresholds[:n_nodes].copy(),
         left_child[:n_nodes].copy(),
