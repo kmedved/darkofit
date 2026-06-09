@@ -934,6 +934,110 @@ def test_leafwise_multiclass_leaf_update_matches_predict():
     assert np.array_equal(direct, predicted)
 
 
+def test_multiclass_refill_subtract_matches_two_step():
+    from chimeraboost.tree import (
+        _refill_multiclass_leaf_segment_histograms_counts_into,
+        _refill_multiclass_left_subtract_right_counts_into,
+        _refill_multiclass_right_subtract_left_counts_into,
+    )
+
+    rng = np.random.default_rng(59)
+    Xb = rng.integers(0, 23, size=(128, 9), dtype=np.uint8)
+    grad = rng.normal(size=(4, Xb.shape[0]))
+    hess = rng.uniform(0.05, 1.5, size=grad.shape)
+    row_order = np.arange(Xb.shape[0], dtype=np.int64)
+    leaf_start = np.array([0, 37, 88, 128], dtype=np.int64)
+    left_leaf = 1
+    right_leaf = 2
+
+    base_hg = rng.normal(size=(4, Xb.shape[1], 3, 23))
+    base_hh = rng.uniform(0.0, 5.0, size=base_hg.shape)
+    base_hc = rng.uniform(0.0, 5.0, size=(Xb.shape[1], 3, 23))
+
+    fused_hg = base_hg.copy()
+    fused_hh = base_hh.copy()
+    fused_hc = base_hc.copy()
+    ref_hg = base_hg.copy()
+    ref_hh = base_hh.copy()
+    ref_hc = base_hc.copy()
+    _refill_multiclass_right_subtract_left_counts_into(
+        Xb, grad, hess, row_order, leaf_start, left_leaf, right_leaf,
+        fused_hg, fused_hh, fused_hc
+    )
+    _refill_multiclass_leaf_segment_histograms_counts_into(
+        Xb, grad, hess, row_order, leaf_start,
+        np.array([right_leaf], dtype=np.int64), 1, ref_hg, ref_hh, ref_hc
+    )
+    ref_hg[:, :, left_leaf] -= ref_hg[:, :, right_leaf]
+    ref_hh[:, :, left_leaf] -= ref_hh[:, :, right_leaf]
+    ref_hc[:, left_leaf] -= ref_hc[:, right_leaf]
+    assert np.array_equal(fused_hg, ref_hg)
+    assert np.array_equal(fused_hh, ref_hh)
+    assert np.array_equal(fused_hc, ref_hc)
+
+    fused_hg = base_hg.copy()
+    fused_hh = base_hh.copy()
+    fused_hc = base_hc.copy()
+    ref_hg = base_hg.copy()
+    ref_hh = base_hh.copy()
+    ref_hc = base_hc.copy()
+    parent_hg = ref_hg[:, :, left_leaf].copy()
+    parent_hh = ref_hh[:, :, left_leaf].copy()
+    parent_hc = ref_hc[:, left_leaf].copy()
+    _refill_multiclass_left_subtract_right_counts_into(
+        Xb, grad, hess, row_order, leaf_start, left_leaf, right_leaf,
+        fused_hg, fused_hh, fused_hc
+    )
+    _refill_multiclass_leaf_segment_histograms_counts_into(
+        Xb, grad, hess, row_order, leaf_start,
+        np.array([left_leaf], dtype=np.int64), 1, ref_hg, ref_hh, ref_hc
+    )
+    ref_hg[:, :, right_leaf] = parent_hg - ref_hg[:, :, left_leaf]
+    ref_hh[:, :, right_leaf] = parent_hh - ref_hh[:, :, left_leaf]
+    ref_hc[:, right_leaf] = parent_hc - ref_hc[:, left_leaf]
+    assert np.array_equal(fused_hg, ref_hg)
+    assert np.array_equal(fused_hh, ref_hh)
+    assert np.array_equal(fused_hc, ref_hc)
+
+
+def test_leafwise_multiclass_histogram_subtraction_matches_full_refill():
+    from chimeraboost.tree import build_leafwise_multiclass_tree
+
+    rng = np.random.default_rng(60)
+    Xb = rng.integers(0, 48, size=(900, 14), dtype=np.uint8)
+    grad = rng.normal(size=(3, Xb.shape[0]))
+    hess = rng.uniform(0.05, 1.5, size=grad.shape)
+    n_bins = np.full(Xb.shape[1], 48, dtype=np.int64)
+
+    reused = build_leafwise_multiclass_tree(
+        Xb, grad, hess, n_bins, 6, 1.2, 0.1,
+        max_leaves=13, min_child_samples=5, min_child_weight=0.1,
+        min_gain_to_split=0.0, return_training_state=True,
+        reuse_leaf_histograms=True,
+    )
+    full = build_leafwise_multiclass_tree(
+        Xb, grad, hess, n_bins, 6, 1.2, 0.1,
+        max_leaves=13, min_child_samples=5, min_child_weight=0.1,
+        min_gain_to_split=0.0, return_training_state=True,
+        reuse_leaf_histograms=False,
+    )
+
+    reused_tree, reused_leaf, reused_G, reused_H = reused
+    full_tree, full_leaf, full_G, full_H = full
+    assert np.array_equal(reused_tree.features, full_tree.features)
+    assert np.array_equal(reused_tree.thresholds, full_tree.thresholds)
+    assert np.array_equal(reused_tree.left_child, full_tree.left_child)
+    assert np.array_equal(reused_tree.right_child, full_tree.right_child)
+    assert np.array_equal(reused_tree.leaf_index, full_tree.leaf_index)
+    assert np.array_equal(reused_tree.splits_feat, full_tree.splits_feat)
+    assert np.array_equal(reused_tree.splits_thr, full_tree.splits_thr)
+    assert np.allclose(reused_tree.gains, full_tree.gains)
+    assert np.allclose(reused_tree.values, full_tree.values)
+    assert np.array_equal(reused_leaf, full_leaf)
+    assert np.allclose(reused_G, full_G)
+    assert np.allclose(reused_H, full_H)
+
+
 def test_leafwise_no_split_tree_predicts_root_value():
     from chimeraboost.tree import build_leafwise_tree
 

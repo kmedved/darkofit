@@ -2112,6 +2112,77 @@ def _refill_multiclass_leaf_segment_histograms_counts_into(
 
 
 @njit(cache=True, parallel=True)
+def _refill_multiclass_right_subtract_left_counts_into(
+    X_binned, grad, hess, row_order, leaf_start, left_leaf, right_leaf,
+    hg, hh, hc
+):
+    """Refill the right multiclass child and derive the left child."""
+    K = grad.shape[0]
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[3]
+    for f in prange(n_features):
+        for k in range(K):
+            for b in range(max_bins):
+                hg[k, f, right_leaf, b] = 0.0
+                hh[k, f, right_leaf, b] = 0.0
+        for b in range(max_bins):
+            hc[f, right_leaf, b] = 0.0
+
+        for p in range(leaf_start[right_leaf], leaf_start[right_leaf + 1]):
+            i = row_order[p]
+            b = X_binned[i, f]
+            if hess[0, i] > 0.0:
+                hc[f, right_leaf, b] += 1.0
+            for k in range(K):
+                hg[k, f, right_leaf, b] += grad[k, i]
+                hh[k, f, right_leaf, b] += hess[k, i]
+
+        for k in range(K):
+            for b in range(max_bins):
+                hg[k, f, left_leaf, b] -= hg[k, f, right_leaf, b]
+                hh[k, f, left_leaf, b] -= hh[k, f, right_leaf, b]
+        for b in range(max_bins):
+            hc[f, left_leaf, b] -= hc[f, right_leaf, b]
+
+
+@njit(cache=True, parallel=True)
+def _refill_multiclass_left_subtract_right_counts_into(
+    X_binned, grad, hess, row_order, leaf_start, left_leaf, right_leaf,
+    hg, hh, hc
+):
+    """Refill the left multiclass child and derive the right child."""
+    K = grad.shape[0]
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[3]
+    for f in prange(n_features):
+        for k in range(K):
+            for b in range(max_bins):
+                hg[k, f, right_leaf, b] = hg[k, f, left_leaf, b]
+                hh[k, f, right_leaf, b] = hh[k, f, left_leaf, b]
+                hg[k, f, left_leaf, b] = 0.0
+                hh[k, f, left_leaf, b] = 0.0
+        for b in range(max_bins):
+            hc[f, right_leaf, b] = hc[f, left_leaf, b]
+            hc[f, left_leaf, b] = 0.0
+
+        for p in range(leaf_start[left_leaf], leaf_start[left_leaf + 1]):
+            i = row_order[p]
+            b = X_binned[i, f]
+            if hess[0, i] > 0.0:
+                hc[f, left_leaf, b] += 1.0
+            for k in range(K):
+                hg[k, f, left_leaf, b] += grad[k, i]
+                hh[k, f, left_leaf, b] += hess[k, i]
+
+        for k in range(K):
+            for b in range(max_bins):
+                hg[k, f, right_leaf, b] -= hg[k, f, left_leaf, b]
+                hh[k, f, right_leaf, b] -= hh[k, f, left_leaf, b]
+        for b in range(max_bins):
+            hc[f, right_leaf, b] -= hc[f, left_leaf, b]
+
+
+@njit(cache=True, parallel=True)
 def _best_multiclass_splits_for_leaf_ids_counts(
     hg, hh, hc, n_bins_per_feature, l2, feat_mask, min_child_weight,
     min_child_samples, leaf_ids, n_leaf_ids, out_feat, out_thr, out_gain
@@ -3384,10 +3455,20 @@ def build_leafwise_multiclass_tree(
 
     while n_leaves < max_leaves:
         if reuse_leaf_histograms and histograms_initialized:
-            _refill_multiclass_leaf_segment_histograms_counts_into(
-                X_hist_binned, grad, hess, row_order, leaf_start,
-                changed_leaves, n_changed_leaves, hg, hh, hc
-            )
+            left_child_leaf = changed_leaves[0]
+            right_child_leaf = changed_leaves[1]
+            left_count = leaf_start[left_child_leaf + 1] - leaf_start[left_child_leaf]
+            right_count = leaf_start[right_child_leaf + 1] - leaf_start[right_child_leaf]
+            if right_count <= left_count:
+                _refill_multiclass_right_subtract_left_counts_into(
+                    X_hist_binned, grad, hess, row_order, leaf_start,
+                    left_child_leaf, right_child_leaf, hg, hh, hc
+                )
+            else:
+                _refill_multiclass_left_subtract_right_counts_into(
+                    X_hist_binned, grad, hess, row_order, leaf_start,
+                    left_child_leaf, right_child_leaf, hg, hh, hc
+                )
         else:
             _build_multiclass_histograms_counts_into(
                 X_hist_binned, grad, hess, leaf, n_leaves, hg, hh, hc
