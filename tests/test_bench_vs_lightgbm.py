@@ -30,3 +30,9 @@ def test_chimera_max_bins_arg_is_preserved():
     args = _resolve_default_depth(parse_args(["--chimera-max-bins", "64"]))
 
     assert args.chimera_max_bins == 64
+
+
+def test_chimera_l2_leaf_reg_arg_is_preserved():
+    args = _resolve_default_depth(parse_args(["--chimera-l2-leaf-reg", "0.5"]))
+
+    assert args.chimera_l2_leaf_reg == 0.5

@@ -354,6 +354,7 @@ def _run_chimera(spec, X_train, y_train, X_test, y_test, cat_features, args, see
             early_stopping_rounds=args.patience,
             learning_rate=args.learning_rate,
             depth=args.depth,
+            l2_leaf_reg=args.chimera_l2_leaf_reg,
             max_bins=args.chimera_max_bins,
             num_leaves=args.chimera_num_leaves,
             min_child_samples=args.chimera_min_child_samples,
@@ -683,6 +684,7 @@ def parse_args(argv):
     parser.add_argument("--lightgbm-min-child-samples", type=int, default=20)
     parser.add_argument("--lightgbm-min-sum-hessian-in-leaf", type=float, default=1e-3)
     parser.add_argument("--lightgbm-min-gain-to-split", type=float, default=0.0)
+    parser.add_argument("--chimera-l2-leaf-reg", type=float, default=3.0)
     parser.add_argument("--chimera-max-bins", type=int, default=128)
     parser.add_argument("--chimera-num-leaves", type=int, default=None)
     parser.add_argument("--chimera-min-child-samples", type=int, default=20)
