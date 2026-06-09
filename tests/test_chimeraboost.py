@@ -956,6 +956,7 @@ def test_leafwise_cached_splits_match_full_rescore():
             full = build_leafwise_tree(
                 Xb, grad, case["hess"], prep.n_bins_, 5, 3.0, 0.1,
                 recompute_all_leaf_splits=True,
+                reuse_leaf_histograms=False,
                 **common,
             )
             results.append((cached, full))
