@@ -1438,6 +1438,25 @@ def test_lightgbm_zero_weight_rows_do_not_affect_tree_structure():
     assert np.array_equal(full_tree.predict(X_active), active_tree.predict(X_active))
 
 
+def test_partition_last_leaf_keeps_stable_segments():
+    from chimeraboost.tree import _partition_leaf_rows
+
+    Xb = np.array([[0], [3], [1], [4], [2], [5]], dtype=np.uint8)
+    row_order = np.array([4, 5, 0, 1, 2, 3], dtype=np.int64)
+    row_scratch = np.empty_like(row_order)
+    leaf = np.array([1, 1, 1, 1, 0, 0], dtype=np.int64)
+    leaf_start = np.array([0, 2, 6, 0], dtype=np.int64)
+
+    _partition_leaf_rows(
+        Xb, row_order, row_scratch, leaf, leaf_start,
+        2, 1, 2, 0, 2
+    )
+
+    assert np.array_equal(row_order, np.array([4, 5, 0, 2, 1, 3]))
+    assert np.array_equal(leaf, np.array([1, 2, 1, 2, 0, 0]))
+    assert np.array_equal(leaf_start[:4], np.array([0, 2, 4, 6]))
+
+
 def test_leafwise_histogram_subtraction_matches_full_refill():
     from chimeraboost.tree import build_leafwise_tree
 
