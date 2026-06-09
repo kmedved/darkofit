@@ -267,6 +267,21 @@ def test_preprocessor_can_include_raw_category_code_features():
     assert with_codes.transform(Xt).shape[1] == 5
 
 
+def test_kfold_target_encoding_uses_out_of_fold_totals():
+    from chimeraboost.target_encoding import OrderedTargetEncoder
+
+    codes = np.array([[0], [1], [2], [2]], dtype=np.int64)
+    y = np.array([10.0, -10.0, 1.0, 3.0])
+    prior = y.mean()
+
+    enc = OrderedTargetEncoder(1.0, 0, mode="kfold", n_folds=2)
+    train_encoded = enc.fit_transform(codes, y)
+
+    assert train_encoded[0, 0] == prior
+    assert train_encoded[1, 0] == prior
+    assert not np.allclose(enc.transform(codes[:2])[:, 0], prior)
+
+
 def test_loaded_pandas_factorize_fast_path_preserves_missing_codes():
     pytest.importorskip("pandas")
     from chimeraboost.target_encoding import factorize
@@ -1235,6 +1250,9 @@ def test_lightgbm_mode_adds_category_code_features_for_classification():
     assert catboost.model_.prep_.n_bins_.shape[0] == 3
     assert lightgbm_reg.model_.prep_.n_bins_.shape[0] == 3
     assert lightgbm_binary.model_.prep_.n_bins_.shape[0] == 5
+    assert catboost.model_.prep_.target_encoding_mode == "ordered"
+    assert lightgbm_reg.model_.prep_.target_encoding_mode == "kfold"
+    assert lightgbm_binary.model_.prep_.target_encoding_mode == "kfold"
     assert np.array_equal(
         lightgbm_binary.model_.prep_.feature_map_, np.array([2, 0, 1, 0, 1])
     )

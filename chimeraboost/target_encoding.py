@@ -81,6 +81,37 @@ def _ordered_ts_weighted(codes, y, weight, perm, n_cat, prior, a):
     return out, sums, counts
 
 
+def _kfold_ts(codes, y, weight, folds, n_cat, prior, a):
+    sums = np.zeros(n_cat)
+    counts = np.zeros(n_cat)
+    if weight is None:
+        np.add.at(sums, codes, y)
+        np.add.at(counts, codes, 1.0)
+    else:
+        np.add.at(sums, codes, weight * y)
+        np.add.at(counts, codes, weight)
+
+    out = np.empty(codes.shape[0], dtype=np.float64)
+    for fold in folds:
+        if fold.size == 0:
+            continue
+        fold_codes = codes[fold]
+        fold_sums = np.zeros(n_cat)
+        fold_counts = np.zeros(n_cat)
+        if weight is None:
+            np.add.at(fold_sums, fold_codes, y[fold])
+            np.add.at(fold_counts, fold_codes, 1.0)
+        else:
+            np.add.at(fold_sums, fold_codes, weight[fold] * y[fold])
+            np.add.at(fold_counts, fold_codes, weight[fold])
+        train_sums = sums - fold_sums
+        train_counts = counts - fold_counts
+        out[fold] = (
+            train_sums[fold_codes] + prior * a
+        ) / (train_counts[fold_codes] + a)
+    return out, sums, counts
+
+
 class OrderedTargetEncoder:
     """Encodes one or more categorical columns into numeric ctr columns.
 
@@ -88,9 +119,16 @@ class OrderedTargetEncoder:
     Use `factorize` to turn arbitrary (string/object) columns into codes.
     """
 
-    def __init__(self, smoothing=1.0, random_state=None):
+    def __init__(self, smoothing=1.0, random_state=None, mode="ordered",
+                 n_folds=20):
         self.smoothing = float(smoothing)
         self.random_state = random_state
+        self.mode = str(mode).lower().replace("-", "_")
+        if self.mode not in {"ordered", "kfold"}:
+            raise ValueError("mode must be 'ordered' or 'kfold'")
+        self.n_folds = int(n_folds)
+        if self.n_folds < 2:
+            raise ValueError("n_folds must be at least 2")
         self.prior_ = None
         self.sums_ = None       # list per column
         self.counts_ = None     # list per column
@@ -103,6 +141,7 @@ class OrderedTargetEncoder:
         n_samples, n_cols = codes_matrix.shape
         rng = np.random.default_rng(self.random_state)
         perm = rng.permutation(n_samples)
+        folds = np.array_split(perm, min(self.n_folds, max(n_samples, 1)))
 
         if sample_weight is None:
             weight = None
@@ -116,7 +155,12 @@ class OrderedTargetEncoder:
         for j in range(n_cols):
             codes = np.ascontiguousarray(codes_matrix[:, j])
             n_cat = int(codes.max()) + 1 if codes.size else 1
-            if weight is None:
+            if self.mode == "kfold":
+                enc, sums, counts = _kfold_ts(
+                    codes, y, weight, folds, n_cat, self.prior_,
+                    self.smoothing
+                )
+            elif weight is None:
                 enc, sums, counts = _ordered_ts(
                     codes, y, perm, n_cat, self.prior_, self.smoothing
                 )

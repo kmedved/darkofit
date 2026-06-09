@@ -285,7 +285,12 @@ class _BaseBooster:
         """Build a FeaturePreprocessor configured from this booster's params."""
         return FeaturePreprocessor(self.max_bins, self.cat_smoothing,
                                    self.random_state,
-                                   include_cat_codes=self._include_cat_codes())
+                                   include_cat_codes=self._include_cat_codes(),
+                                   target_encoding_mode=(
+                                       "kfold"
+                                       if self.tree_mode_ == "lightgbm"
+                                       else "ordered"
+                                   ))
 
     def _include_cat_codes(self):
         return self.tree_mode_ == "lightgbm"

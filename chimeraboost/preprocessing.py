@@ -32,11 +32,14 @@ class FeaturePreprocessor:
     """
 
     def __init__(self, max_bins=128, cat_smoothing=1.0, random_state=None,
-                 include_cat_codes=False):
+                 include_cat_codes=False, target_encoding_mode="ordered",
+                 target_encoding_folds=20):
         self.max_bins = int(max_bins)
         self.cat_smoothing = float(cat_smoothing)
         self.random_state = random_state
         self.include_cat_codes = bool(include_cat_codes)
+        self.target_encoding_mode = target_encoding_mode
+        self.target_encoding_folds = int(target_encoding_folds)
 
     # ---- helpers -------------------------------------------------------------
     def _split_columns_fit(self, X, cat_features):
@@ -97,6 +100,8 @@ class FeaturePreprocessor:
                 enc = OrderedTargetEncoder(
                     self.cat_smoothing,
                     None if self.random_state is None else self.random_state + t,
+                    mode=self.target_encoding_mode,
+                    n_folds=self.target_encoding_folds,
                 )
                 encoded_blocks.append(
                     enc.fit_transform(codes, target, sample_weight=sample_weight)
