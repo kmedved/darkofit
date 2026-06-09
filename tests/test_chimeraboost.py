@@ -1157,6 +1157,32 @@ def test_lightgbm_mode_rejects_ordered_boosting_true():
         ).fit(X[:80], y[:80])
 
 
+def test_tree_mode_default_depth_resolution():
+    X, y = load_breast_cancer(return_X_y=True)
+    Xtr, _, ytr, _ = train_test_split(
+        X, y, test_size=0.75, random_state=4, stratify=y
+    )
+
+    catboost = ChimeraBoostClassifier(
+        iterations=2, tree_mode="catboost", random_state=0
+    ).fit(Xtr, ytr)
+    depthwise = ChimeraBoostClassifier(
+        iterations=2, tree_mode="depthwise", random_state=0
+    ).fit(Xtr, ytr)
+    lightgbm = ChimeraBoostClassifier(
+        iterations=2, tree_mode="lightgbm", num_leaves=64, random_state=0
+    ).fit(Xtr, ytr)
+    explicit = ChimeraBoostClassifier(
+        iterations=2, tree_mode="lightgbm", depth=3, num_leaves=64,
+        random_state=0
+    ).fit(Xtr, ytr)
+
+    assert catboost.model_.depth == 6
+    assert depthwise.model_.depth == 6
+    assert lightgbm.model_.depth == -1
+    assert explicit.model_.depth == 3
+
+
 def test_public_api_rejects_unsupported_lightgbm_options():
     X, y = load_breast_cancer(return_X_y=True)
     with pytest.raises(ValueError, match="num_leaves"):
@@ -1167,6 +1193,21 @@ def test_public_api_rejects_unsupported_lightgbm_options():
         ChimeraBoostClassifier(
             iterations=2, tree_mode="lightgbm", depth=0
         ).fit(X[:80], y[:80])
+
+
+def test_cat_smoothing_must_be_positive():
+    X = np.array([
+        ["a", 0.0],
+        ["b", 1.0],
+        ["a", 2.0],
+        ["b", 3.0],
+    ], dtype=object)
+    y = np.array([0.0, 1.0, 0.5, 1.5])
+
+    with pytest.raises(ValueError, match="cat_smoothing must be positive"):
+        ChimeraBoostRegressor(iterations=1, cat_smoothing=0.0).fit(
+            X, y, cat_features=[0]
+        )
 
 
 def test_sparse_inputs_raise_clear_error():

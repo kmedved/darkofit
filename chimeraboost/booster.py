@@ -134,6 +134,14 @@ def _validate_sample_weight(sample_weight, n_samples, name="sample_weight"):
     return w * (n_samples / total)
 
 
+def _resolve_default_depth(depth, tree_mode_):
+    if depth is not None:
+        return int(depth)
+    if tree_mode_ == "lightgbm":
+        return -1
+    return 6
+
+
 class _BaseBooster:
     """Shared machinery for the scalar and multiclass boosters.
 
@@ -143,22 +151,23 @@ class _BaseBooster:
     `fit` and `predict_raw`.
     """
 
-    def __init__(self, iterations=500, learning_rate=None, depth=6,
+    def __init__(self, iterations=500, learning_rate=None, depth=None,
                  l2_leaf_reg=3.0, max_bins=128, subsample=1.0,
                  colsample=1.0, cat_smoothing=1.0, early_stopping_rounds=None,
                  min_child_weight=1.0, min_child_samples=20,
                  min_gain_to_split=0.0, num_leaves=None, thread_count=None,
                  random_state=None, verbose=False, ordered_boosting="auto",
                  verbose_timing=False, tree_mode="catboost",
-                 sampling="uniform", top_rate=0.2, other_rate=0.1):
+        sampling="uniform", top_rate=0.2, other_rate=0.1):
         self.iterations = int(iterations)
         self.learning_rate = learning_rate
-        self.depth = None if depth is None else int(depth)
         self.l2_leaf_reg = float(l2_leaf_reg)
         self.max_bins = int(max_bins)
         self.subsample = float(subsample)
         self.colsample = float(colsample)
         self.cat_smoothing = float(cat_smoothing)
+        if self.cat_smoothing <= 0.0:
+            raise ValueError("cat_smoothing must be positive")
         self.early_stopping_rounds = early_stopping_rounds
         self.min_child_weight = float(min_child_weight)
         self.min_child_samples = int(min_child_samples)
@@ -171,6 +180,7 @@ class _BaseBooster:
         self.verbose_timing = bool(verbose_timing)
         self.tree_mode = tree_mode
         self.tree_mode_ = _normalize_tree_mode(tree_mode)
+        self.depth = _resolve_default_depth(depth, self.tree_mode_)
         self.sampling = sampling
         self.top_rate = float(top_rate)
         self.other_rate = float(other_rate)
