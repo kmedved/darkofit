@@ -1078,6 +1078,23 @@ def _multiclass_leaf_values_and_sums(leaf, grad, hess, n_leaves, l2, lr):
 
 
 @njit(cache=True)
+def add_leaf_values_inplace(leaf, values, out):
+    """Add precomputed scalar leaf values for already-routed training rows."""
+    for i in range(leaf.shape[0]):
+        out[i] += values[leaf[i]]
+
+
+@njit(cache=True)
+def add_multiclass_leaf_values_inplace(leaf, values, out):
+    """Add vector leaf values into a class-major margin matrix."""
+    K = out.shape[0]
+    for i in range(leaf.shape[0]):
+        l = leaf[i]
+        for k in range(K):
+            out[k, i] += values[l, k]
+
+
+@njit(cache=True)
 def _predict_tree(X_binned, splits_feat, splits_thr, values):
     """Route each row to its leaf and return the leaf value for each row."""
     leaf = _assign_leaves(X_binned, splits_feat, splits_thr)

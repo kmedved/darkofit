@@ -11,6 +11,7 @@ classification it is the log-odds, turned into a probability by a sigmoid.
 """
 
 import numpy as np
+from numba import njit
 
 
 # --------------------------------------------------------------------------
@@ -59,6 +60,27 @@ def _sigmoid(z):
     ez = np.exp(z[~pos])
     out[~pos] = ez / (1.0 + ez)
     return out
+
+
+@njit(cache=True)
+def _logloss_grad_hess_into(y, raw, sample_weight, grad_out, hess_out):
+    for i in range(raw.shape[0]):
+        z = raw[i]
+        if z >= 0.0:
+            p = 1.0 / (1.0 + np.exp(-z))
+        else:
+            ez = np.exp(z)
+            p = ez / (1.0 + ez)
+        grad = p - y[i]
+        hess = p * (1.0 - p)
+        if hess < 1e-6:
+            hess = 1e-6
+        if sample_weight is not None:
+            w = sample_weight[i]
+            grad *= w
+            hess *= w
+        grad_out[i] = grad
+        hess_out[i] = hess
 
 
 class RMSE:
@@ -110,13 +132,7 @@ class Logloss:
         return grad, hess
 
     def grad_hess_into(self, y, raw, sample_weight, grad_out, hess_out):
-        p = _sigmoid(raw)
-        np.subtract(p, y, out=grad_out)
-        np.multiply(p, 1.0 - p, out=hess_out)
-        np.maximum(hess_out, 1e-6, out=hess_out)
-        if sample_weight is not None:
-            grad_out *= sample_weight
-            hess_out *= sample_weight
+        _logloss_grad_hess_into(y, raw, sample_weight, grad_out, hess_out)
 
     def eval(self, y, raw, sample_weight=None):
         p = np.clip(_sigmoid(raw), 1e-9, 1 - 1e-9)
@@ -216,6 +232,35 @@ def _softmax_class_major(F):
     return ez / ez.sum(axis=0, keepdims=True)
 
 
+@njit(cache=True)
+def _softmax_class_major_grad_hess_into(Y, F, sample_weight, grad_out, hess_out):
+    K, n = F.shape
+    for i in range(n):
+        max_f = F[0, i]
+        for k in range(1, K):
+            if F[k, i] > max_f:
+                max_f = F[k, i]
+
+        denom = 0.0
+        for k in range(K):
+            p = np.exp(F[k, i] - max_f)
+            grad_out[k, i] = p
+            denom += p
+
+        for k in range(K):
+            p = grad_out[k, i] / denom
+            grad = p - Y[k, i]
+            hess = p * (1.0 - p)
+            if hess < 1e-6:
+                hess = 1e-6
+            if sample_weight is not None:
+                w = sample_weight[i]
+                grad *= w
+                hess *= w
+            grad_out[k, i] = grad
+            hess_out[k, i] = hess
+
+
 class MultiSoftmax:
     """Multinomial logistic loss. Operates on raw scores F of shape (n, K)."""
 
@@ -247,13 +292,9 @@ class MultiSoftmax:
         return grad, hess
 
     def grad_hess_class_major_into(self, Y, F, sample_weight, grad_out, hess_out):
-        P = _softmax_class_major(F)
-        np.subtract(P, Y, out=grad_out)
-        np.multiply(P, 1.0 - P, out=hess_out)
-        np.maximum(hess_out, 1e-6, out=hess_out)
-        if sample_weight is not None:
-            grad_out *= sample_weight[None, :]
-            hess_out *= sample_weight[None, :]
+        _softmax_class_major_grad_hess_into(
+            Y, F, sample_weight, grad_out, hess_out
+        )
 
     def eval(self, Y, F, sample_weight=None):
         P = np.clip(_softmax(F), 1e-12, 1.0)

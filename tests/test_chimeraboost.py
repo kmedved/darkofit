@@ -53,6 +53,47 @@ def test_loss_grad_hess_into_matches_allocating_paths():
         assert np.array_equal(hess_out, hess)
 
 
+def test_classification_grad_hess_into_extreme_values_match_allocating_paths():
+    from chimeraboost.losses import Logloss, MultiSoftmax
+
+    y = np.array([0.0, 1.0, 0.0, 1.0])
+    raw = np.array([-1000.0, -60.0, 60.0, 1000.0])
+    weights = np.array([0.5, 2.0, 0.25, 3.0])
+    loss = Logloss()
+    for w in (None, weights):
+        grad, hess = loss.grad_hess(y, raw)
+        if w is not None:
+            grad = grad * w
+            hess = hess * w
+        grad_out = np.empty_like(raw)
+        hess_out = np.empty_like(raw)
+        loss.grad_hess_into(y, raw, w, grad_out, hess_out)
+        assert np.array_equal(grad_out, grad)
+        assert np.array_equal(hess_out, hess)
+
+    Y = np.array([
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0],
+    ])
+    F = np.array([
+        [800.0, -800.0, 0.0],
+        [799.0, -799.0, 1.0],
+        [798.0, -798.0, -1.0],
+    ])
+    loss = MultiSoftmax(3)
+    for w in (None, weights[:3]):
+        grad, hess = loss.grad_hess_class_major(Y, F)
+        if w is not None:
+            grad = grad * w[None, :]
+            hess = hess * w[None, :]
+        grad_out = np.empty_like(F)
+        hess_out = np.empty_like(F)
+        loss.grad_hess_class_major_into(Y, F, w, grad_out, hess_out)
+        assert np.array_equal(grad_out, grad)
+        assert np.array_equal(hess_out, hess)
+
+
 def test_binner_uses_smallest_safe_unsigned_dtype():
     from chimeraboost.binning import Binner
 
@@ -780,7 +821,7 @@ def _reference_leafwise_splits(Xb, grad, hess, n_bins, max_leaves, max_depth,
 
 def test_leafwise_tree_matches_bruteforce_reference():
     """LightGBM mode must grow best-first leaf-wise, not depth-wise."""
-    from chimeraboost.tree import build_leafwise_tree
+    from chimeraboost.tree import add_leaf_values_inplace, build_leafwise_tree
 
     Xb = np.array([
         [0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2],
@@ -814,6 +855,41 @@ def test_leafwise_tree_matches_bruteforce_reference():
     out = np.zeros(Xb.shape[0])
     tree.add_predict(Xb, out)
     assert np.array_equal(out, tree.predict(Xb))
+    direct = np.zeros(Xb.shape[0])
+    add_leaf_values_inplace(leaf, tree.values, direct)
+    assert np.array_equal(direct, out)
+
+
+def test_leafwise_multiclass_leaf_update_matches_predict():
+    """Training leaf ids should be reusable for shared multiclass updates."""
+    from chimeraboost.tree import (
+        add_multiclass_leaf_values_inplace,
+        build_leafwise_multiclass_tree,
+    )
+
+    Xb = np.array([
+        [0, 0], [0, 1], [1, 0], [1, 1],
+        [2, 0], [2, 1], [2, 2], [0, 2],
+    ], dtype=np.uint8)
+    grad = np.array([
+        [0.3, -0.2, 0.1, -0.4, 0.2, 0.0, -0.3, 0.1],
+        [-0.1, 0.4, -0.2, 0.2, -0.3, 0.1, 0.2, -0.4],
+        [-0.2, -0.2, 0.1, 0.2, 0.1, -0.1, 0.1, 0.3],
+    ], dtype=np.float64)
+    hess = np.full_like(grad, 0.5)
+    n_bins = np.array([3, 3], dtype=np.int64)
+
+    tree, leaf, _, _ = build_leafwise_multiclass_tree(
+        Xb, grad, hess, n_bins, 3, 1.0, 0.1,
+        max_leaves=4, min_child_samples=1, min_child_weight=0.0,
+        min_gain_to_split=0.0, return_training_state=True,
+    )
+
+    predicted = np.zeros_like(grad)
+    tree.add_predict_class_major(Xb, predicted)
+    direct = np.zeros_like(grad)
+    add_multiclass_leaf_values_inplace(leaf, tree.values, direct)
+    assert np.array_equal(direct, predicted)
 
 
 def test_leafwise_no_split_tree_predicts_root_value():

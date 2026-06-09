@@ -11,6 +11,8 @@ import numpy as np
 from .losses import LOSSES, MultiSoftmax
 from .preprocessing import FeaturePreprocessor
 from .tree import (
+    add_leaf_values_inplace,
+    add_multiclass_leaf_values_inplace,
     build_leafwise_multiclass_tree,
     build_leafwise_tree,
     build_levelwise_tree,
@@ -424,6 +426,8 @@ class GradientBoosting(_BaseBooster):
                 F += _ordered_leaf_update(
                     self.lr_, leaf, leaf_G, leaf_H, g, h, self.l2_leaf_reg
                 )
+            elif self.tree_mode_ == "lightgbm":
+                add_leaf_values_inplace(leaf, tree.values, F)
             else:
                 tree.add_predict(X_binned, F)
             _add_timing(timing, "train_update", phase)
@@ -645,7 +649,7 @@ class MulticlassBoosting(_BaseBooster):
                 phase = _start_timing(timing)
                 self.trees_.append(tree)
                 self._accumulate_importance(tree)
-                tree.add_predict_class_major(X_binned, F)
+                add_multiclass_leaf_values_inplace(leaf, tree.values, F)
                 _add_timing(timing, "train_update", phase)
 
                 phase = _start_timing(timing)
