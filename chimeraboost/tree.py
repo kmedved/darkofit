@@ -2426,10 +2426,13 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
     changed_leaves = np.empty(2, dtype=np.int64)
     changed_leaves[0] = 0
     n_changed_leaves = 1
-    row_order = np.arange(n_samples, dtype=np.int64)
-    row_scratch = np.empty(n_samples, dtype=np.int64)
+    if row_indices is None:
+        row_order = np.arange(n_samples, dtype=np.int64)
+    else:
+        row_order = row_indices.copy()
+    row_scratch = np.empty(row_order.shape[0], dtype=np.int64)
     leaf_start = np.zeros(max_leaves + 1, dtype=np.int64)
-    leaf_start[1] = n_samples
+    leaf_start[1] = row_order.shape[0]
     split_features = []
     split_thresholds = []
     split_gains = []
@@ -2439,10 +2442,7 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
     n_leaves = 1
     actual_depth = 0
     use_serial_kernels = get_num_threads() == 1
-    can_reuse_leaf_histograms = (
-        reuse_leaf_histograms
-        and row_indices is None
-    )
+    can_reuse_leaf_histograms = reuse_leaf_histograms
     histograms_initialized = False
 
     while n_leaves < max_leaves:
@@ -2708,6 +2708,10 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                 X_binned, row_order, row_scratch, leaf, leaf_start,
                 n_leaves, split_leaf, new_leaf, f, t
             )
+            if row_indices is not None:
+                _update_leafwise_leaves_with_split(
+                    X_binned, leaf, split_leaf, new_leaf, f, t
+                )
         else:
             _update_leafwise_leaves_with_split(
                 X_binned, leaf, split_leaf, new_leaf, f, t

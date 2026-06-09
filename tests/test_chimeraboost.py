@@ -1058,6 +1058,11 @@ def test_leafwise_cached_splits_match_full_rescore():
                 "feature_mask": feature_mask,
             },
         ),
+        dict(hess=hess_nonconstant, extra={"row_indices": row_indices}),
+        dict(
+            hess=hess_constant,
+            extra={"constant_hessian": True, "row_indices": row_indices},
+        ),
         dict(
             hess=hess_nonconstant,
             extra={
