@@ -2453,6 +2453,58 @@ def test_lightgbm_numeric_multiclass_training_update_uses_leaf_ids(monkeypatch):
     ).fit(X[order], y[order])
 
 
+def test_lightgbm_numeric_multiclass_marks_unweighted_hessians_positive(monkeypatch):
+    import chimeraboost.booster as booster
+    from chimeraboost import ChimeraBoostClassifier
+
+    rng = np.random.default_rng(59)
+    X = rng.normal(size=(120, 6))
+    y = np.repeat(np.arange(3), 40)
+    order = rng.permutation(len(y))
+    calls = []
+    original = booster.build_leafwise_tree
+
+    def wrapped_build_tree(*args, **kwargs):
+        calls.append(bool(kwargs.get("hessian_always_positive", False)))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(booster, "build_leafwise_tree", wrapped_build_tree)
+    ChimeraBoostClassifier(
+        iterations=1, tree_mode="lightgbm", num_leaves=5, depth=3,
+        random_state=0
+    ).fit(X[order], y[order])
+
+    assert calls
+    assert all(calls)
+
+
+def test_lightgbm_numeric_multiclass_weighted_hessians_use_generic_path(monkeypatch):
+    import chimeraboost.booster as booster
+    from chimeraboost import ChimeraBoostClassifier
+
+    rng = np.random.default_rng(60)
+    X = rng.normal(size=(120, 6))
+    y = np.repeat(np.arange(3), 40)
+    order = rng.permutation(len(y))
+    weights = np.ones_like(y, dtype=np.float64)
+    weights[order[:10]] = 0.0
+    calls = []
+    original = booster.build_leafwise_tree
+
+    def wrapped_build_tree(*args, **kwargs):
+        calls.append(bool(kwargs.get("hessian_always_positive", False)))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(booster, "build_leafwise_tree", wrapped_build_tree)
+    ChimeraBoostClassifier(
+        iterations=1, tree_mode="lightgbm", num_leaves=5, depth=3,
+        random_state=0
+    ).fit(X[order], y[order], sample_weight=weights[order])
+
+    assert calls
+    assert not any(calls)
+
+
 def test_goss_subsample_keeps_large_gradients_and_scales_sampled_rows():
     from chimeraboost.booster import GradientBoosting
 

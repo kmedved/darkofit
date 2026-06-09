@@ -844,7 +844,12 @@ class MulticlassBoosting(_BaseBooster):
                     self.l2_leaf_reg, self.lr_,
                     **self._builder_kwargs(
                         fmask, findices, row_indices_round, hist_buffers,
-                        split_buffers, X_hist_binned, False
+                        split_buffers, X_hist_binned, False,
+                        hessian_always_positive=(
+                            self.tree_mode_ == "lightgbm"
+                            and w is None
+                            and row_indices_round is None
+                        )
                     ),
                 )
                 _add_timing(timing, "tree_build", phase)
