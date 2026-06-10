@@ -3329,7 +3329,8 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                          return_training_state=False, X_hist_binned=None,
                          feature_indices=None, row_indices=None,
                          constant_hessian=False, rowpar_buffers=None,
-                         level_histogram_subtraction="auto"):
+                         level_histogram_subtraction="auto",
+                         root_histograms=None):
     """Grow one oblivious tree level by level and return an ObliviousTree.
 
     X_hist_binned: optional feature-contiguous view/copy of X_binned used only
@@ -3363,6 +3364,10 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     the full rebuild to float64 rounding; empty children are exact. "auto"
     enables it at <= 2 threads, where it measured 13-45% faster; True/False
     force it on/off.
+    root_histograms: optional (grad, hess[, ...]) (n_features, max_bins)
+    arrays holding the precomputed root histograms (e.g. from one fused
+    class-major pass in the multiclass booster). When supplied in the
+    full-row/full-feature lane, level 0 copies them instead of scanning.
     """
     if X_hist_binned is None:
         X_hist_binned = X_binned
@@ -3463,14 +3468,25 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
         and row_indices is None
         and feature_indices is None
     )
+    root_copy_lane = (
+        root_histograms is not None
+        and row_indices is None
+        and feature_indices is None
+    )
 
     for d in range(max_depth):
         n_leaves = 1 << d
         subtract_level = subtract_lane and d >= 1
+        root_copy = root_copy_lane and d == 0
+        if root_copy:
+            hg[:n_features, 0, :max_bins] = root_histograms[0]
+            hh[:n_features, 0, :max_bins] = root_histograms[1]
         if subtract_level:
             scan_idx, scan_side = _level_scan_plan(leaf, n_leaves >> 1)
         if use_serial_kernels:
-            if subtract_level:
+            if root_copy:
+                pass
+            elif subtract_level:
                 if constant_hessian:
                     _build_level_histograms_subtract_unit_hess_into_serial(
                         X_binned, grad, leaf, scan_idx, scan_side,
@@ -3524,7 +3540,9 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                 min_child_weight, n_leaves
             )
         else:
-            if subtract_level:
+            if root_copy:
+                pass
+            elif subtract_level:
                 if constant_hessian:
                     _build_level_histograms_subtract_unit_hess_into(
                         X_hist_binned, grad, leaf, scan_idx, scan_side,
@@ -3888,7 +3906,7 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                         hessian_always_positive=False,
                         leafwise_row_layout="auto",
                         fused_changed_leaf_scoring=False,
-                        rowpar_buffers=None):
+                        rowpar_buffers=None, root_histograms=None):
     """Grow a LightGBM-like leaf-wise, best-first non-oblivious tree.
 
     This builder chooses the best legal split for each current leaf, then splits
@@ -4321,6 +4339,18 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                         left_child_leaf, right_child_leaf, feature_indices,
                         hg, hh, hc
                     )
+        elif (
+            n_leaves == 1
+            and root_histograms is not None
+            and row_indices is None
+            and feature_indices is None
+        ):
+            # Root histograms precomputed by the caller (one fused class-major
+            # pass in the multiclass booster); copy instead of scanning.
+            hg[:n_features, 0, :max_bins] = root_histograms[0]
+            hh[:n_features, 0, :max_bins] = root_histograms[1]
+            if not constant_hessian:
+                hc[:n_features, 0, :max_bins] = root_histograms[2]
         elif use_serial_kernels:
             if constant_hessian and row_indices is None and feature_indices is None:
                 _build_histograms_unit_hess_into_serial(

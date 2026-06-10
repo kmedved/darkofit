@@ -17,6 +17,7 @@ from .flat_model import (
 from .losses import LOSSES, MultiSoftmax
 from .preprocessing import FeaturePreprocessor
 from .tree import (
+    _build_multiclass_histograms_counts_into,
     add_leaf_values_inplace,
     add_multiclass_leaf_values_inplace,
     build_leafwise_multiclass_tree,
@@ -441,6 +442,49 @@ class _BaseBooster:
         )
         return g, h, row_indices
 
+    def _goss_subsample_multiclass(self, grad, hess, rng):
+        """Gradient-based one-side sampling for class-major (K, n) gradients.
+
+        Rows are ranked by the L1 norm of their per-class gradients; the kept
+        row set and the small-gradient scaling are shared across classes so
+        every class tree in the round sees the same sample.
+        """
+        n_samples = grad.shape[1]
+        if n_samples <= 1:
+            return grad, hess, None
+        top_count = min(n_samples, max(1, int(round(self.top_rate * n_samples))))
+        remaining_count = n_samples - top_count
+        if remaining_count <= 0:
+            return grad, hess, None
+        other_count = min(
+            remaining_count, max(1, int(round(self.other_rate * n_samples)))
+        )
+
+        abs_grad = np.abs(grad).sum(axis=0)
+        top_idx = np.argpartition(abs_grad, n_samples - top_count)[-top_count:]
+        remaining_mask = np.ones(n_samples, dtype=bool)
+        remaining_mask[top_idx] = False
+        remaining_idx = np.flatnonzero(remaining_mask)
+        if other_count >= remaining_idx.shape[0]:
+            other_idx = remaining_idx
+        else:
+            other_idx = rng.choice(remaining_idx, size=other_count, replace=False)
+
+        if top_idx.shape[0] + other_idx.shape[0] == n_samples:
+            return grad, hess, None
+
+        g = np.zeros_like(grad)
+        h = np.zeros_like(hess)
+        g[:, top_idx] = grad[:, top_idx]
+        h[:, top_idx] = hess[:, top_idx]
+        scale = remaining_count / max(other_idx.shape[0], 1)
+        g[:, other_idx] = grad[:, other_idx] * scale
+        h[:, other_idx] = hess[:, other_idx] * scale
+        row_indices = np.sort(
+            np.concatenate((top_idx.astype(np.int64), other_idx.astype(np.int64)))
+        )
+        return g, h, row_indices
+
     def _builder_kwargs(self, fmask, findices, row_indices,
                         hist_buffers, split_buffers, X_hist_binned,
                         use_constant_hessian, hessian_always_positive=False,
@@ -789,10 +833,9 @@ class MulticlassBoosting(_BaseBooster):
             self.thread_count, self.tree_mode_, n_samples
         )
         self._validate_sampling_config()
-        if self.sampling_ != "uniform":
+        if self.sampling_ == "goss" and self.subsample < 1.0:
             raise ValueError(
-                "sampling='goss' is currently supported only for "
-                "binary classification and regression"
+                "sampling='goss' controls row sampling; use subsample=1.0"
             )
         self.ordered_boosting_ = self._resolve_ordered_boosting()
         w = _validate_sample_weight(sample_weight, n_samples)
@@ -831,6 +874,7 @@ class MulticlassBoosting(_BaseBooster):
             )
         can_use_shared_lightgbm_multiclass = (
             self.tree_mode_ == "lightgbm"
+            and self.sampling_ == "uniform"
             and self.subsample >= 1.0
             and self.colsample >= 1.0
             and not self.ordered_boosting_
@@ -854,6 +898,22 @@ class MulticlassBoosting(_BaseBooster):
             self._alloc_multiclass_hist_buffers(K, X_binned.shape[1], n_bins)
             if use_shared_lightgbm_multiclass else None
         )
+        # One fused class-major pass per round builds every class's root
+        # histogram in a single scan of X; per-class builders then copy
+        # their slice instead of re-scanning all rows K times.
+        use_fused_root = (
+            not use_shared_lightgbm_multiclass
+            and self.tree_mode_ in {"catboost", "lightgbm"}
+            and self.sampling_ == "uniform"
+            and self.subsample >= 1.0
+            and self.colsample >= 1.0
+        )
+        if use_fused_root:
+            max_bins_ = int(n_bins.max()) if len(n_bins) else 1
+            root_g = np.zeros((K, X_binned.shape[1], 1, max_bins_))
+            root_h = np.zeros((K, X_binned.shape[1], 1, max_bins_))
+            root_c = np.zeros((X_binned.shape[1], 1, max_bins_))
+            root_leaf = np.zeros(n_samples, dtype=np.int64)
         self._importance = np.zeros(self.prep_.n_input_features_)
 
         Xv_binned = Yv_class = Fv = yv_idx = wv = None
@@ -900,7 +960,11 @@ class MulticlassBoosting(_BaseBooster):
                     grad = grad * w[None, :]
                     hess = hess * w[None, :]
             fmask, findices = self._feature_selection(X_binned.shape[1], rng)
-            if self.subsample >= 1.0:
+            if self.sampling_ == "goss":
+                grad, hess, row_indices_round = self._goss_subsample_multiclass(
+                    grad, hess, rng
+                )
+            elif self.subsample >= 1.0:
                 row_indices_round = None
             else:
                 mask = rng.random(n_samples) < self.subsample
@@ -963,10 +1027,20 @@ class MulticlassBoosting(_BaseBooster):
                     print(msg)
                 continue
 
+            phase = _start_timing(timing)
+            fuse_root_this_round = use_fused_root and fmask is None
+            if fuse_root_this_round:
+                _build_multiclass_histograms_counts_into(
+                    X_hist_binned, grad, hess, root_leaf, 1,
+                    root_g, root_h, root_c
+                )
+            _add_timing(timing, "tree_build", phase)
+
             round_trees = []
             for k in range(K):
                 phase = _start_timing(timing)
-                if row_indices_round is None:
+                if row_indices_round is None or self.sampling_ == "goss":
+                    # GOSS gradients are already zeroed and scaled in place.
                     g, h = grad[k], hess[k]
                 else:
                     row_mask = np.zeros(n_samples, dtype=bool)
@@ -975,19 +1049,25 @@ class MulticlassBoosting(_BaseBooster):
                     h = np.where(row_mask, hess[k], 0.0)
                 _add_timing(timing, "grad_hess", phase)
                 phase = _start_timing(timing)
+                builder_kwargs = self._builder_kwargs(
+                    fmask, findices, row_indices_round, hist_buffers,
+                    split_buffers, X_hist_binned, False,
+                    hessian_always_positive=(
+                        self.tree_mode_ == "lightgbm"
+                        and w is None
+                        and row_indices_round is None
+                    ),
+                    rowpar_buffers=rowpar_buffers
+                )
+                if fuse_root_this_round:
+                    builder_kwargs["root_histograms"] = (
+                        root_g[k, :, 0, :], root_h[k, :, 0, :],
+                        root_c[:, 0, :],
+                    )
                 tree, leaf, leaf_G, leaf_H = self._tree_builder()(
                     X_binned, g, h, n_bins, self._max_tree_depth(),
                     self.l2_leaf_reg_, self.lr_,
-                    **self._builder_kwargs(
-                        fmask, findices, row_indices_round, hist_buffers,
-                        split_buffers, X_hist_binned, False,
-                        hessian_always_positive=(
-                            self.tree_mode_ == "lightgbm"
-                            and w is None
-                            and row_indices_round is None
-                        ),
-                        rowpar_buffers=rowpar_buffers
-                    ),
+                    **builder_kwargs,
                 )
                 _add_timing(timing, "tree_build", phase)
                 phase = _start_timing(timing)

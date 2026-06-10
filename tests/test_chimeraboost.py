@@ -2865,7 +2865,7 @@ def test_goss_lightgbm_scalar_fit_uses_sampled_nonconstant_hessians(monkeypatch)
     assert constant_hessian is False
 
 
-def test_goss_rejects_uniform_subsample_and_multiclass():
+def test_goss_rejects_uniform_subsample():
     X, y = load_diabetes(return_X_y=True)
     with pytest.raises(ValueError, match="use subsample=1.0"):
         ChimeraBoostRegressor(
@@ -2873,13 +2873,14 @@ def test_goss_rejects_uniform_subsample_and_multiclass():
             subsample=0.8, random_state=0
         ).fit(X[:80], y[:80])
 
+    # Multiclass GOSS is supported now; it fits without error.
     Xc = np.vstack([X[:30], X[30:60], X[60:90]])
     yc = np.repeat([0, 1, 2], 30)
-    with pytest.raises(ValueError, match="binary classification and regression"):
-        ChimeraBoostClassifier(
-            iterations=1, tree_mode="lightgbm", sampling="goss",
-            random_state=0
-        ).fit(Xc, yc)
+    m = ChimeraBoostClassifier(
+        iterations=3, tree_mode="lightgbm", sampling="goss",
+        random_state=0
+    ).fit(Xc, yc)
+    assert m.predict_proba(Xc).shape == (90, 3)
 
 
 def test_multiclass_no_split_class_tree_is_boosting_noop(monkeypatch):
@@ -4554,3 +4555,96 @@ def test_level_subtraction_auto_resolution():
             assert _resolve_level_subtraction(True) is True
     finally:
         numba.set_num_threads(old)
+
+
+@pytest.mark.parametrize("tree_mode", ["catboost", "lightgbm"])
+def test_multiclass_fused_root_histograms_bitwise(tree_mode, monkeypatch):
+    """The fused class-major root pass accumulates rows in the same order as
+    each per-class root scan, so fits must be bitwise identical with the
+    fused pass stripped."""
+    import chimeraboost.booster as booster_mod
+    from sklearn.datasets import load_wine
+
+    X, y = load_wine(return_X_y=True)
+    kw = dict(iterations=12, random_state=0, tree_mode=tree_mode)
+    fused = ChimeraBoostClassifier(**kw).fit(X, y)
+
+    name = ("build_leafwise_tree" if tree_mode == "lightgbm"
+            else "build_oblivious_tree")
+    original = getattr(booster_mod, name)
+
+    def strip_root(*args, **kwargs):
+        kwargs.pop("root_histograms", None)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(booster_mod, name, strip_root)
+    plain = ChimeraBoostClassifier(**kw).fit(X, y)
+    assert np.array_equal(fused.predict_proba(X), plain.predict_proba(X))
+
+
+def test_leafwise_root_histograms_kwarg_matches_self_scan():
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.tree import (
+        _build_multiclass_histograms_counts_into, build_leafwise_tree
+    )
+
+    rng = np.random.default_rng(6)
+    n, F = 20_000, 8
+    X = rng.normal(size=(n, F))
+    y = X[:, 0] + rng.normal(0, 0.5, n)
+    prep = FeaturePreprocessor(32, 1.0, 0)
+    Xb = prep.fit_transform(X, [y], None)
+    nb = prep.n_bins_
+    B = int(nb.max())
+    K = 3
+    grad = rng.normal(size=(K, n))
+    hess = np.maximum(rng.uniform(0.01, 0.25, size=(K, n)), 1e-6)
+    Xf = np.asfortranarray(Xb)
+
+    root_g = np.zeros((K, F, 1, B))
+    root_h = np.zeros((K, F, 1, B))
+    root_c = np.zeros((F, 1, B))
+    _build_multiclass_histograms_counts_into(
+        Xf, grad, hess, np.zeros(n, dtype=np.int64), 1, root_g, root_h, root_c
+    )
+
+    for k in range(K):
+        base = build_leafwise_tree(
+            Xb, grad[k], hess[k], nb, -1, 1.0, 0.1, max_leaves=15,
+            X_hist_binned=Xf,
+        )
+        fast = build_leafwise_tree(
+            Xb, grad[k], hess[k], nb, -1, 1.0, 0.1, max_leaves=15,
+            X_hist_binned=Xf,
+            root_histograms=(root_g[k, :, 0, :], root_h[k, :, 0, :],
+                             root_c[:, 0, :]),
+        )
+        assert np.array_equal(base.splits_feat, fast.splits_feat)
+        assert np.array_equal(base.splits_thr, fast.splits_thr)
+        assert np.array_equal(base.values, fast.values)
+
+
+def test_multiclass_goss_runs_and_validates():
+    from sklearn.datasets import load_wine
+    from sklearn.model_selection import train_test_split
+
+    X, y = load_wine(return_X_y=True)
+    Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.25,
+                                          random_state=0, stratify=y)
+    for tree_mode in ("catboost", "lightgbm"):
+        m = ChimeraBoostClassifier(
+            iterations=120, random_state=0, sampling="goss",
+            top_rate=0.3, other_rate=0.2, tree_mode=tree_mode,
+        ).fit(Xtr, ytr)
+        acc = (m.predict(Xte) == yte).mean()
+        assert acc > 0.85, (tree_mode, acc)
+
+    with pytest.raises(ValueError):
+        ChimeraBoostClassifier(
+            iterations=5, sampling="goss", tree_mode="lightgbm",
+            multiclass_tree_strategy="shared_vector",
+        ).fit(X, y)
+    with pytest.raises(ValueError):
+        ChimeraBoostClassifier(
+            iterations=5, sampling="goss", subsample=0.8,
+        ).fit(X, y)
