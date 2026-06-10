@@ -85,6 +85,11 @@ def _logloss_grad_hess_into(y, raw, sample_weight, grad_out, hess_out):
 
 @njit(cache=True, parallel=True)
 def _logloss_eval(y, raw, sample_weight):
+    # The reduction variables are updated exactly once per iteration,
+    # unconditionally: numba's parfor reduction analysis is fragile with
+    # reductions inside branches (the "unexpected cycle in lookup()"
+    # assertion), and 1.0 * ce == ce keeps the unweighted sums bitwise
+    # identical to the plain accumulation.
     total = 0.0
     weight_total = 0.0
     for i in prange(raw.shape[0]):
@@ -100,12 +105,11 @@ def _logloss_eval(y, raw, sample_weight):
             p = 1.0 - 1e-9
         ce = -(y[i] * np.log(p) + (1.0 - y[i]) * np.log(1.0 - p))
         if sample_weight is None:
-            total += ce
-            weight_total += 1.0
+            w = 1.0
         else:
             w = sample_weight[i]
-            total += w * ce
-            weight_total += w
+        total += w * ce
+        weight_total += w
     return total / weight_total
 
 
@@ -310,13 +314,13 @@ def _softmax_class_major_eval(Y, F, sample_weight):
         elif p > 1.0:
             p = 1.0
         ce = -np.log(p)
+        # Unconditional reduction updates; see _logloss_eval.
         if sample_weight is None:
-            total += ce
-            weight_total += 1.0
+            w = 1.0
         else:
             w = sample_weight[i]
-            total += w * ce
-            weight_total += w
+        total += w * ce
+        weight_total += w
     return total / weight_total
 
 
@@ -346,13 +350,13 @@ def _softmax_class_major_eval_labels(labels, F, sample_weight):
         elif p > 1.0:
             p = 1.0
         ce = -np.log(p)
+        # Unconditional reduction updates; see _logloss_eval.
         if sample_weight is None:
-            total += ce
-            weight_total += 1.0
+            w = 1.0
         else:
             w = sample_weight[i]
-            total += w * ce
-            weight_total += w
+        total += w * ce
+        weight_total += w
     return total / weight_total
 
 
