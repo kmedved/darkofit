@@ -3873,3 +3873,210 @@ def test_codes_for_transform_pandas_path_matches_dict_path():
 
     assert np.array_equal(fast, slow)
     assert fast[0, 0] == -1
+
+
+def _rowpar_test_data(n=40_000, n_feat=8, max_bins=16, seed=9):
+    """Binned data plus power-of-two grad/hess so float sums are exact and
+    row-parallel chunked summation must match feature-parallel bitwise."""
+    rng = np.random.default_rng(seed)
+    X_binned = rng.integers(0, max_bins - 1, size=(n, n_feat)).astype(np.uint8)
+    n_bins = np.full(n_feat, max_bins, dtype=np.int64)
+    grad = rng.integers(-8, 9, size=n).astype(np.float64)
+    hess = np.choose(rng.integers(0, 3, size=n), [0.5, 1.0, 2.0])
+    return X_binned, n_bins, grad, hess
+
+
+def _alloc_test_rowpar(n_feat, leaf_slots, max_bins, n_arrays):
+    import numba
+    T = numba.get_num_threads()
+    return tuple(
+        np.zeros((T, n_feat, leaf_slots, max_bins)) for _ in range(n_arrays)
+    )
+
+
+@pytest.mark.parametrize("constant_hessian", [False, True])
+def test_oblivious_rowpar_matches_feature_parallel(constant_hessian):
+    import numba
+    from chimeraboost.tree import build_oblivious_tree
+
+    if numba.get_num_threads() < 2:
+        pytest.skip("requires multithreaded numba")
+    X_binned, n_bins, grad, hess = _rowpar_test_data()
+    if constant_hessian:
+        hess = np.ones_like(hess)
+    depth = 4
+    Xf = np.asfortranarray(X_binned)
+
+    base, leaf_b, G_b, H_b = build_oblivious_tree(
+        X_binned, grad, hess, n_bins, depth, 3.0, 0.1,
+        X_hist_binned=Xf, constant_hessian=constant_hessian,
+        return_training_state=True,
+    )
+    rowpar = _alloc_test_rowpar(X_binned.shape[1], 1 << depth, 16, 2)
+    fast, leaf_f, G_f, H_f = build_oblivious_tree(
+        X_binned, grad, hess, n_bins, depth, 3.0, 0.1,
+        X_hist_binned=Xf, constant_hessian=constant_hessian,
+        return_training_state=True, rowpar_buffers=rowpar,
+    )
+    assert np.array_equal(base.splits_feat, fast.splits_feat)
+    assert np.array_equal(base.splits_thr, fast.splits_thr)
+    assert np.array_equal(base.values, fast.values)
+    assert np.array_equal(base.gains, fast.gains)
+    assert np.array_equal(leaf_b, leaf_f)
+    assert np.array_equal(G_b, G_f) and np.array_equal(H_b, H_f)
+
+
+@pytest.mark.parametrize("case", ["nonconstant", "constant", "positive"])
+def test_leafwise_rowpar_matches_feature_parallel(case):
+    import numba
+    from chimeraboost.tree import build_leafwise_tree
+
+    if numba.get_num_threads() < 2:
+        pytest.skip("requires multithreaded numba")
+    X_binned, n_bins, grad, hess = _rowpar_test_data(n=60_000)
+    kw = dict(max_leaves=31, min_child_samples=5)
+    if case == "constant":
+        hess = np.ones_like(hess)
+        kw["constant_hessian"] = True
+    elif case == "positive":
+        kw["hessian_always_positive"] = True
+    Xf = np.asfortranarray(X_binned)
+
+    base, leaf_b, G_b, H_b = build_leafwise_tree(
+        X_binned, grad, hess, n_bins, -1, 3.0, 0.1,
+        X_hist_binned=Xf, return_training_state=True, **kw,
+    )
+    rowpar = _alloc_test_rowpar(X_binned.shape[1], 1, 16, 3)
+    fast, leaf_f, G_f, H_f = build_leafwise_tree(
+        X_binned, grad, hess, n_bins, -1, 3.0, 0.1,
+        X_hist_binned=Xf, return_training_state=True,
+        rowpar_buffers=rowpar, **kw,
+    )
+    assert np.array_equal(base.splits_feat, fast.splits_feat)
+    assert np.array_equal(base.splits_thr, fast.splits_thr)
+    assert np.array_equal(base.values, fast.values)
+    assert np.array_equal(base.gains, fast.gains)
+    assert np.array_equal(leaf_b, leaf_f)
+    assert np.array_equal(G_b, G_f) and np.array_equal(H_b, H_f)
+    assert fast.n_leaves > 8  # the tree actually grew through refills
+
+
+def test_leafwise_rowpar_with_row_indices_matches():
+    """Subsampled rows flow through row_order segments; the rowpar refill
+    must agree with the feature-parallel selected-row path exactly."""
+    import numba
+    from chimeraboost.tree import build_leafwise_tree
+
+    if numba.get_num_threads() < 2:
+        pytest.skip("requires multithreaded numba")
+    X_binned, n_bins, grad, hess = _rowpar_test_data(n=60_000)
+    rng = np.random.default_rng(3)
+    rows = np.sort(rng.choice(60_000, size=45_000, replace=False)).astype(np.int64)
+    mask = np.zeros(60_000, dtype=bool)
+    mask[rows] = True
+    g = np.where(mask, grad, 0.0)
+    h = np.where(mask, hess, 0.0)
+    Xf = np.asfortranarray(X_binned)
+    kw = dict(max_leaves=31, min_child_samples=5, row_indices=rows)
+
+    base, leaf_b, G_b, H_b = build_leafwise_tree(
+        X_binned, g, h, n_bins, -1, 3.0, 0.1,
+        X_hist_binned=Xf, return_training_state=True, **kw,
+    )
+    rowpar = _alloc_test_rowpar(X_binned.shape[1], 1, 16, 3)
+    fast, leaf_f, G_f, H_f = build_leafwise_tree(
+        X_binned, g, h, n_bins, -1, 3.0, 0.1,
+        X_hist_binned=Xf, return_training_state=True,
+        rowpar_buffers=rowpar, **kw,
+    )
+    assert np.array_equal(base.splits_feat, fast.splits_feat)
+    assert np.array_equal(base.splits_thr, fast.splits_thr)
+    assert np.array_equal(base.values, fast.values)
+    assert np.array_equal(leaf_b, leaf_f)
+    assert np.array_equal(G_b, G_f) and np.array_equal(H_b, H_f)
+
+
+def test_booster_allocates_rowpar_buffers_by_mode():
+    from chimeraboost.booster import GradientBoosting
+
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(30_000, 6))
+    y = X[:, 0] + rng.normal(0, 0.1, 30_000)
+    n_bins = np.full(6, 128, dtype=np.int64)
+
+    # Default ('auto') keeps the feature-parallel kernels: no buffers.
+    default = GradientBoosting(iterations=2, depth=4, random_state=0)
+    default.fit(X, y)
+    assert default._alloc_rowpar_buffers(6, n_bins, 30_000) is None
+
+    m = GradientBoosting(iterations=2, depth=4, random_state=0,
+                         histogram_parallelism="row")
+    m.fit(X, y)
+    buffers = m._alloc_rowpar_buffers(6, n_bins, 30_000)
+    if m.n_threads_ > 1:
+        assert buffers is not None and len(buffers) == 2
+        assert buffers[0].shape[2] == 1 << 4
+    # lightgbm mode: per-segment locals, three arrays, one leaf slot
+    m2 = GradientBoosting(iterations=2, tree_mode="lightgbm", random_state=0,
+                          histogram_parallelism="row")
+    m2.fit(X, y)
+    buffers2 = m2._alloc_rowpar_buffers(6, n_bins, 30_000)
+    if m2.n_threads_ > 1:
+        assert buffers2 is not None and len(buffers2) == 3
+        assert buffers2[0].shape[2] == 1
+    # tiny fits and huge locals fall back
+    assert m._alloc_rowpar_buffers(6, n_bins, 500) is None
+    assert m._alloc_rowpar_buffers(2_000_000, n_bins, 10**6) is None
+    with pytest.raises(ValueError):
+        GradientBoosting(histogram_parallelism="diagonal")
+
+
+def test_histogram_parallelism_row_keeps_quality():
+    """Opt-in row-parallel fits must train a model of the same quality."""
+    from sklearn.datasets import make_regression
+
+    X, y = make_regression(n_samples=30_000, n_features=10, noise=10,
+                           random_state=3)
+    base = ChimeraBoostRegressor(iterations=60, random_state=0).fit(X, y)
+    row = ChimeraBoostRegressor(iterations=60, random_state=0,
+                                histogram_parallelism="row").fit(X, y)
+    rmse_base = np.sqrt(np.mean((y - base.predict(X)) ** 2))
+    rmse_row = np.sqrt(np.mean((y - row.predict(X)) ** 2))
+    assert abs(rmse_base - rmse_row) < 0.05 * rmse_base
+
+    lgb_base = ChimeraBoostRegressor(
+        iterations=60, tree_mode="lightgbm", random_state=0
+    ).fit(X, y)
+    lgb_row = ChimeraBoostRegressor(
+        iterations=60, tree_mode="lightgbm", random_state=0,
+        histogram_parallelism="row"
+    ).fit(X, y)
+    rmse_lgb_base = np.sqrt(np.mean((y - lgb_base.predict(X)) ** 2))
+    rmse_lgb_row = np.sqrt(np.mean((y - lgb_row.predict(X)) ** 2))
+    assert abs(rmse_lgb_base - rmse_lgb_row) < 0.05 * rmse_lgb_base
+
+
+def test_levelwise_rowpar_matches_feature_parallel():
+    import numba
+    from chimeraboost.tree import build_levelwise_tree
+
+    if numba.get_num_threads() < 2:
+        pytest.skip("requires multithreaded numba")
+    X_binned, n_bins, grad, hess = _rowpar_test_data()
+    depth = 4
+    Xf = np.asfortranarray(X_binned)
+
+    base, leaf_b, G_b, H_b = build_levelwise_tree(
+        X_binned, grad, hess, n_bins, depth, 3.0, 0.1,
+        X_hist_binned=Xf, return_training_state=True,
+    )
+    rowpar = _alloc_test_rowpar(X_binned.shape[1], 1 << depth, 16, 2)
+    fast, leaf_f, G_f, H_f = build_levelwise_tree(
+        X_binned, grad, hess, n_bins, depth, 3.0, 0.1,
+        X_hist_binned=Xf, return_training_state=True, rowpar_buffers=rowpar,
+    )
+    assert np.array_equal(base.node_features, fast.node_features)
+    assert np.array_equal(base.node_thresholds, fast.node_thresholds)
+    assert np.array_equal(base.values, fast.values)
+    assert np.array_equal(leaf_b, leaf_f)
+    assert np.array_equal(G_b, G_f) and np.array_equal(H_b, H_f)

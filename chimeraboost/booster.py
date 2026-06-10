@@ -168,7 +168,8 @@ class _BaseBooster:
                  verbose_timing=False, tree_mode="catboost",
                  sampling="uniform", top_rate=0.2, other_rate=0.1,
                  multiclass_tree_strategy="auto", eval_train_loss=True,
-                 bin_sample_count=DEFAULT_BIN_SAMPLE_COUNT):
+                 bin_sample_count=DEFAULT_BIN_SAMPLE_COUNT,
+                 histogram_parallelism="auto"):
         self.iterations = int(iterations)
         self.learning_rate = learning_rate
         self.l2_leaf_reg = float(l2_leaf_reg)
@@ -197,6 +198,11 @@ class _BaseBooster:
         self.multiclass_tree_strategy = multiclass_tree_strategy
         self.eval_train_loss = bool(eval_train_loss)
         self.bin_sample_count = bin_sample_count
+        self.histogram_parallelism = histogram_parallelism
+        if histogram_parallelism not in {"auto", "feature", "row"}:
+            raise ValueError(
+                "histogram_parallelism must be 'auto', 'feature', or 'row'"
+            )
         self._validate_sampling_config()
 
     def _validate_sampling_config(self):
@@ -274,6 +280,37 @@ class _BaseBooster:
         """Allocate reusable per-feature split-search scratch buffers."""
         max_leaves = self._max_tree_leaves()
         return tuple(np.empty((n_features, max_leaves)) for _ in range(5))
+
+    _ROWPAR_MAX_BYTES = 512 * 1024 * 1024
+
+    def _alloc_rowpar_buffers(self, n_features, n_bins, n_samples):
+        """Thread-local accumulators for the row-parallel histogram kernels.
+
+        Opt-in via histogram_parallelism='row'. The row-parallel kernels read
+        grad/hess/leaf once instead of once per feature, which targets
+        machines where those streams fall out of cache; on the Apple-silicon
+        dev box they measured slower than the feature-parallel kernels at
+        every size tried, so 'auto' currently means 'feature'. Returns None
+        for single-threaded fits, fits too small for the eligibility rule to
+        ever fire, or local buffers beyond the memory budget.
+        """
+        if self.histogram_parallelism != "row":
+            return None
+        if self.n_threads_ <= 1 or self.tree_mode_ == "depthwise":
+            return None
+        max_bins = int(n_bins.max()) if len(n_bins) else 1
+        n_chunks = self.n_threads_
+        if n_samples < 4 * n_chunks * max_bins:
+            return None
+        if self.tree_mode_ == "lightgbm":
+            leaf_slots, n_arrays = 1, 3
+        else:
+            leaf_slots, n_arrays = self._max_tree_leaves(), 2
+        n_bytes = 8 * n_arrays * n_chunks * n_features * leaf_slots * max_bins
+        if n_bytes > self._ROWPAR_MAX_BYTES:
+            return None
+        shape = (n_chunks, n_features, leaf_slots, max_bins)
+        return tuple(np.zeros(shape) for _ in range(n_arrays))
 
     def _alloc_multiclass_hist_buffers(self, n_classes, n_features, n_bins):
         """Allocate reusable class-major LightGBM-mode histogram buffers."""
@@ -386,7 +423,8 @@ class _BaseBooster:
 
     def _builder_kwargs(self, fmask, findices, row_indices,
                         hist_buffers, split_buffers, X_hist_binned,
-                        use_constant_hessian, hessian_always_positive=False):
+                        use_constant_hessian, hessian_always_positive=False,
+                        rowpar_buffers=None):
         kwargs = {
             "feature_mask": fmask,
             "min_child_weight": self.min_child_weight,
@@ -397,6 +435,7 @@ class _BaseBooster:
             "feature_indices": findices,
             "row_indices": row_indices,
             "constant_hessian": use_constant_hessian,
+            "rowpar_buffers": rowpar_buffers,
         }
         if self.tree_mode_ == "lightgbm":
             kwargs.update(
@@ -491,6 +530,9 @@ class GradientBoosting(_BaseBooster):
             self._alloc_split_buffers(X_binned.shape[1])
             if self.n_threads_ > 1 else None
         )
+        rowpar_buffers = self._alloc_rowpar_buffers(
+            X_binned.shape[1], n_bins, n_samples
+        )
         self._importance = np.zeros(self.prep_.n_input_features_)
 
         Xv_binned = yv = Fv = wv = None
@@ -543,7 +585,8 @@ class GradientBoosting(_BaseBooster):
                 **self._builder_kwargs(
                     fmask, findices, row_indices, hist_buffers, split_buffers,
                     X_hist_binned, use_constant_hessian,
-                    hessian_always_positive=hessian_always_positive
+                    hessian_always_positive=hessian_always_positive,
+                    rowpar_buffers=rowpar_buffers
                 ),
             )
             _add_timing(timing, "tree_build", phase)
@@ -719,6 +762,9 @@ class MulticlassBoosting(_BaseBooster):
             self._alloc_split_buffers(X_binned.shape[1])
             if self.n_threads_ > 1 else None
         )
+        rowpar_buffers = self._alloc_rowpar_buffers(
+            X_binned.shape[1], n_bins, n_samples
+        )
         strategy = self.multiclass_tree_strategy
         if strategy not in {"auto", "per_class", "shared_vector"}:
             raise ValueError(
@@ -880,7 +926,8 @@ class MulticlassBoosting(_BaseBooster):
                             self.tree_mode_ == "lightgbm"
                             and w is None
                             and row_indices_round is None
-                        )
+                        ),
+                        rowpar_buffers=rowpar_buffers
                     ),
                 )
                 _add_timing(timing, "tree_build", phase)

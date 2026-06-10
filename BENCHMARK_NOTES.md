@@ -29,6 +29,15 @@ not default speed wins:
   for compatible LightGBM-mode multiclass fits. Forced shared-vector trees were
   slower on numeric multiclass in the focused benchmark, so `auto` preserves the
   previous default behavior.
+- `histogram_parallelism="row"` is an opt-in lane that fills histograms with
+  row-chunked thread-local accumulators (one read of grad/hess/leaf per scan)
+  instead of the feature-parallel kernels (one read per feature). It has exact
+  parity coverage at the tree level. On the Apple-silicon dev machine it
+  measured 5-20% slower than feature-parallel at 400k x 40 and 1M x 80 (the
+  redundant streams stay cache-resident there), so `auto` keeps the
+  feature-parallel kernels. Re-evaluate on machines with smaller caches /
+  lower memory bandwidth, where FINDINGS.md attributes the 500k-row
+  per-iteration deficit to exactly these redundant reads.
 
 Treat these as scaffolding for future architecture work, not as current default
 performance claims.

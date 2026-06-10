@@ -510,6 +510,231 @@ def _build_histograms_counts_selected_rows_into(X_binned, grad, hess, leaf,
                 hc[f, l, b] += 1.0
 
 
+# --------------------------------------------------------------------------
+# Row-parallel histogram kernels.
+#
+# The feature-parallel kernels above re-read grad/hess/leaf once per feature
+# (24 bytes x rows x features of redundant gather traffic), which is why their
+# thread scaling saturates on large fits. These kernels instead split the rows
+# into chunks, accumulate each chunk row-major into a thread-local buffer of
+# shape (n_chunks, n_features, leaf_slots, max_bins), and then reduce the
+# chunks feature-parallel. grad/hess/leaf are read exactly once and X is read
+# row-contiguously, so callers should pass the C-order matrix here (not the
+# Fortran copy used by the feature-parallel kernels).
+#
+# Summation order differs from the serial/feature-parallel kernels (per-chunk
+# partials combined in chunk order), so results match to float64 rounding,
+# not bitwise; for a fixed local-buffer shape they are deterministic.
+# --------------------------------------------------------------------------
+
+# Modes for the leaf-wise segment kernels.
+_ROWPAR_ROOT = 0        # write the scanned sums into leaf 0, no sibling
+_ROWPAR_SCAN_RIGHT = 1  # scanned = right child; left holds parent, subtract
+_ROWPAR_SCAN_LEFT = 2   # scanned = left child; derive right = parent - left
+
+
+@njit(cache=True, parallel=True)
+def _build_histograms_rowpar_into(X_binned, grad, hess, leaf, n_leaves,
+                                  hg, hh, lg, lh):
+    """Row-parallel gradient/hessian histogram fill for all leaves."""
+    n_samples, n_features = X_binned.shape
+    max_bins = hg.shape[2]
+    n_chunks = lg.shape[0]
+    chunk = (n_samples + n_chunks - 1) // n_chunks
+    for t in prange(n_chunks):
+        for f in range(n_features):
+            for l in range(n_leaves):
+                for b in range(max_bins):
+                    lg[t, f, l, b] = 0.0
+                    lh[t, f, l, b] = 0.0
+        start = t * chunk
+        end = min(n_samples, start + chunk)
+        for i in range(start, end):
+            l = leaf[i]
+            gi = grad[i]
+            hi = hess[i]
+            for f in range(n_features):
+                b = X_binned[i, f]
+                lg[t, f, l, b] += gi
+                lh[t, f, l, b] += hi
+    for f in prange(n_features):
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                g = 0.0
+                h = 0.0
+                for t in range(n_chunks):
+                    g += lg[t, f, l, b]
+                    h += lh[t, f, l, b]
+                hg[f, l, b] = g
+                hh[f, l, b] = h
+
+
+@njit(cache=True, parallel=True)
+def _build_histograms_unit_hess_rowpar_into(X_binned, grad, leaf, n_leaves,
+                                            hg, hh, lg, lh):
+    """Row-parallel unit-Hessian histogram fill for all leaves."""
+    n_samples, n_features = X_binned.shape
+    max_bins = hg.shape[2]
+    n_chunks = lg.shape[0]
+    chunk = (n_samples + n_chunks - 1) // n_chunks
+    for t in prange(n_chunks):
+        for f in range(n_features):
+            for l in range(n_leaves):
+                for b in range(max_bins):
+                    lg[t, f, l, b] = 0.0
+                    lh[t, f, l, b] = 0.0
+        start = t * chunk
+        end = min(n_samples, start + chunk)
+        for i in range(start, end):
+            l = leaf[i]
+            gi = grad[i]
+            for f in range(n_features):
+                b = X_binned[i, f]
+                lg[t, f, l, b] += gi
+                lh[t, f, l, b] += 1.0
+    for f in prange(n_features):
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                g = 0.0
+                h = 0.0
+                for t in range(n_chunks):
+                    g += lg[t, f, l, b]
+                    h += lh[t, f, l, b]
+                hg[f, l, b] = g
+                hh[f, l, b] = h
+
+
+@njit(cache=True, parallel=True)
+def _leafwise_segment_hist_rowpar_counts(X_binned, grad, hess, row_order,
+                                         seg_start, seg_end, left_leaf,
+                                         right_leaf, mode, hg, hh, hc,
+                                         lg, lh, lc):
+    """Row-parallel grad/hess/count fill of one leaf-wise row segment.
+
+    mode selects what happens at merge time:
+      _ROWPAR_ROOT       write sums into leaf 0 (initial full build)
+      _ROWPAR_SCAN_RIGHT scanned segment is the right child; the parent
+                         histogram sits in left_leaf and right is subtracted
+                         from it
+      _ROWPAR_SCAN_LEFT  scanned segment is the left child; the parent sits in
+                         left_leaf and the right child is derived as
+                         parent - left
+    """
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[2]
+    n_chunks = lg.shape[0]
+    seg_len = seg_end - seg_start
+    chunk = (seg_len + n_chunks - 1) // n_chunks
+    for t in prange(n_chunks):
+        for f in range(n_features):
+            for b in range(max_bins):
+                lg[t, f, 0, b] = 0.0
+                lh[t, f, 0, b] = 0.0
+                lc[t, f, 0, b] = 0.0
+        start = seg_start + t * chunk
+        end = min(seg_end, start + chunk)
+        for p in range(start, end):
+            i = row_order[p]
+            gi = grad[i]
+            hi = hess[i]
+            for f in range(n_features):
+                b = X_binned[i, f]
+                lg[t, f, 0, b] += gi
+                lh[t, f, 0, b] += hi
+                if hi > 0.0:
+                    lc[t, f, 0, b] += 1.0
+    for f in prange(n_features):
+        for b in range(max_bins):
+            g = 0.0
+            h = 0.0
+            c = 0.0
+            for t in range(n_chunks):
+                g += lg[t, f, 0, b]
+                h += lh[t, f, 0, b]
+                c += lc[t, f, 0, b]
+            if mode == _ROWPAR_ROOT:
+                hg[f, 0, b] = g
+                hh[f, 0, b] = h
+                hc[f, 0, b] = c
+            elif mode == _ROWPAR_SCAN_RIGHT:
+                hg[f, right_leaf, b] = g
+                hh[f, right_leaf, b] = h
+                hc[f, right_leaf, b] = c
+                hg[f, left_leaf, b] -= g
+                hh[f, left_leaf, b] -= h
+                hc[f, left_leaf, b] -= c
+            else:
+                pg = hg[f, left_leaf, b]
+                ph = hh[f, left_leaf, b]
+                pc = hc[f, left_leaf, b]
+                hg[f, left_leaf, b] = g
+                hh[f, left_leaf, b] = h
+                hc[f, left_leaf, b] = c
+                hg[f, right_leaf, b] = pg - g
+                hh[f, right_leaf, b] = ph - h
+                hc[f, right_leaf, b] = pc - c
+
+
+@njit(cache=True, parallel=True)
+def _leafwise_segment_hist_rowpar_unit_hess(X_binned, grad, row_order,
+                                            seg_start, seg_end, left_leaf,
+                                            right_leaf, mode, hg, hh, lg, lh):
+    """Row-parallel unit-Hessian fill of one leaf-wise row segment."""
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[2]
+    n_chunks = lg.shape[0]
+    seg_len = seg_end - seg_start
+    chunk = (seg_len + n_chunks - 1) // n_chunks
+    for t in prange(n_chunks):
+        for f in range(n_features):
+            for b in range(max_bins):
+                lg[t, f, 0, b] = 0.0
+                lh[t, f, 0, b] = 0.0
+        start = seg_start + t * chunk
+        end = min(seg_end, start + chunk)
+        for p in range(start, end):
+            i = row_order[p]
+            gi = grad[i]
+            for f in range(n_features):
+                b = X_binned[i, f]
+                lg[t, f, 0, b] += gi
+                lh[t, f, 0, b] += 1.0
+    for f in prange(n_features):
+        for b in range(max_bins):
+            g = 0.0
+            h = 0.0
+            for t in range(n_chunks):
+                g += lg[t, f, 0, b]
+                h += lh[t, f, 0, b]
+            if mode == _ROWPAR_ROOT:
+                hg[f, 0, b] = g
+                hh[f, 0, b] = h
+            elif mode == _ROWPAR_SCAN_RIGHT:
+                hg[f, right_leaf, b] = g
+                hh[f, right_leaf, b] = h
+                hg[f, left_leaf, b] -= g
+                hh[f, left_leaf, b] -= h
+            else:
+                pg = hg[f, left_leaf, b]
+                ph = hh[f, left_leaf, b]
+                hg[f, left_leaf, b] = g
+                hh[f, left_leaf, b] = h
+                hg[f, right_leaf, b] = pg - g
+                hh[f, right_leaf, b] = ph - h
+
+
+def _rowpar_eligible(n_scanned, rowpar_buffers, n_leaves, max_bins):
+    """Heuristic: row-parallel wins once the rows scanned dwarf the
+    per-chunk buffer traffic (zero + merge of n_chunks*n_leaves*max_bins
+    cells per feature)."""
+    if rowpar_buffers is None:
+        return False
+    lg = rowpar_buffers[0]
+    if lg.shape[2] < n_leaves:
+        return False
+    return n_scanned >= 4 * lg.shape[0] * n_leaves * max_bins
+
+
 @njit(cache=True)
 def _partition_leaf_rows(X_binned, row_order, row_scratch, leaf, leaf_start,
                          n_leaves, split_leaf, new_leaf, feature, threshold):
@@ -2922,7 +3147,7 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                          split_buffers=None,
                          return_training_state=False, X_hist_binned=None,
                          feature_indices=None, row_indices=None,
-                         constant_hessian=False):
+                         constant_hessian=False, rowpar_buffers=None):
     """Grow one oblivious tree level by level and return an ObliviousTree.
 
     X_hist_binned: optional feature-contiguous view/copy of X_binned used only
@@ -2945,6 +3170,11 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     are allocated here (convenient for one-off calls and tests).
     split_buffers: optional five-array tuple of shape
     (n_features, 2**max_depth) reused by the threaded split search.
+    rowpar_buffers: optional (lg, lh) thread-local accumulators of shape
+    (n_chunks, n_features, leaf_slots, max_bins). When supplied (and the
+    full-row/full-feature lane is active with enough rows per level), the
+    histogram fill switches to the row-parallel kernels, which read
+    grad/hess/leaf once instead of once per feature.
     """
     if X_hist_binned is None:
         X_hist_binned = X_binned
@@ -3005,6 +3235,23 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     splits_gain = []
     leaf = np.zeros(X_binned.shape[0], dtype=np.int64)
     use_serial_kernels = get_num_threads() == 1
+    if rowpar_buffers is not None:
+        if len(rowpar_buffers) < 2:
+            raise ValueError("rowpar_buffers must contain at least two arrays")
+        lg_rp, lh_rp = rowpar_buffers[0], rowpar_buffers[1]
+        if (
+            lg_rp.ndim != 4
+            or lg_rp.shape != lh_rp.shape
+            or lg_rp.shape[1] < n_features
+            or lg_rp.shape[3] < max_bins
+        ):
+            raise ValueError("rowpar_buffers are too small")
+    rowpar_full_lane = (
+        rowpar_buffers is not None
+        and not use_serial_kernels
+        and row_indices is None
+        and feature_indices is None
+    )
     if use_serial_kernels:
         split_scratch = None
     elif split_buffers is None:
@@ -3069,7 +3316,20 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                 min_child_weight, n_leaves
             )
         else:
-            if constant_hessian and row_indices is None and feature_indices is None:
+            if rowpar_full_lane and _rowpar_eligible(
+                n_samples, rowpar_buffers, n_leaves, max_bins
+            ):
+                if constant_hessian:
+                    _build_histograms_unit_hess_rowpar_into(
+                        X_binned, grad, leaf, n_leaves, hg, hh,
+                        rowpar_buffers[0], rowpar_buffers[1]
+                    )
+                else:
+                    _build_histograms_rowpar_into(
+                        X_binned, grad, hess, leaf, n_leaves, hg, hh,
+                        rowpar_buffers[0], rowpar_buffers[1]
+                    )
+            elif constant_hessian and row_indices is None and feature_indices is None:
                 _build_histograms_unit_hess_into(
                     X_hist_binned, grad, leaf, n_leaves, hg, hh
                 )
@@ -3143,7 +3403,7 @@ def build_levelwise_tree(X_binned, grad, hess, n_bins_per_feature,
                          split_buffers=None,
                          return_training_state=False, X_hist_binned=None,
                          feature_indices=None, row_indices=None,
-                         constant_hessian=False):
+                         constant_hessian=False, rowpar_buffers=None):
     """Grow a level-wise, non-oblivious tree.
 
     Unlike ``build_oblivious_tree``, this builder chooses one best split per
@@ -3218,6 +3478,12 @@ def build_levelwise_tree(X_binned, grad, hess, n_bins_per_feature,
     flat_gains = []
     leaf = np.zeros(X_binned.shape[0], dtype=np.int64)
     use_serial_kernels = get_num_threads() == 1
+    rowpar_full_lane = (
+        rowpar_buffers is not None
+        and not use_serial_kernels
+        and row_indices is None
+        and feature_indices is None
+    )
     actual_depth = 0
 
     for d in range(max_depth):
@@ -3262,7 +3528,20 @@ def build_levelwise_tree(X_binned, grad, hess, n_bins_per_feature,
                     feature_indices, row_indices
                 )
         else:
-            if constant_hessian and row_indices is None and feature_indices is None:
+            if rowpar_full_lane and _rowpar_eligible(
+                n_samples, rowpar_buffers, n_leaves, max_bins
+            ):
+                if constant_hessian:
+                    _build_histograms_unit_hess_rowpar_into(
+                        X_binned, grad, leaf, n_leaves, hg, hh,
+                        rowpar_buffers[0], rowpar_buffers[1]
+                    )
+                else:
+                    _build_histograms_rowpar_into(
+                        X_binned, grad, hess, leaf, n_leaves, hg, hh,
+                        rowpar_buffers[0], rowpar_buffers[1]
+                    )
+            elif constant_hessian and row_indices is None and feature_indices is None:
                 _build_histograms_unit_hess_into(
                     X_hist_binned, grad, leaf, n_leaves, hg, hh
                 )
@@ -3358,7 +3637,8 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                         reuse_leaf_histograms=True,
                         hessian_always_positive=False,
                         leafwise_row_layout="auto",
-                        fused_changed_leaf_scoring=False):
+                        fused_changed_leaf_scoring=False,
+                        rowpar_buffers=None):
     """Grow a LightGBM-like leaf-wise, best-first non-oblivious tree.
 
     This builder chooses the best legal split for each current leaf, then splits
@@ -3516,6 +3796,28 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
         and get_num_threads() <= 2
         and not use_segmented_rows
     )
+    if rowpar_buffers is not None:
+        if len(rowpar_buffers) < 2 or (
+            not constant_hessian and len(rowpar_buffers) < 3
+        ):
+            raise ValueError("rowpar_buffers are too small")
+        lg_rp = rowpar_buffers[0]
+        if (
+            lg_rp.ndim != 4
+            or lg_rp.shape[1] < n_features
+            or lg_rp.shape[3] < max_bins
+        ):
+            raise ValueError("rowpar_buffers are too small")
+    # Segment scans (the root build and child refills) read each row once, so
+    # the row-parallel kernels apply whenever the full feature set is active;
+    # subsampled rows are fine because the row_order segments already contain
+    # only the scanned rows.
+    rowpar_segment_lane = (
+        rowpar_buffers is not None
+        and not use_serial_kernels
+        and not use_segmented_rows
+        and feature_indices is None
+    )
     split_features = []
     split_thresholds = []
     split_gains = []
@@ -3567,6 +3869,28 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                         n_changed_leaves, best_feat, best_thr, best_gain
                     )
                     changed_leaves_scored = True
+                elif rowpar_segment_lane and _rowpar_eligible(
+                    right_count, rowpar_buffers, 1, max_bins
+                ):
+                    if constant_hessian:
+                        _leafwise_segment_hist_rowpar_unit_hess(
+                            X_binned, grad, row_order,
+                            leaf_start[right_child_leaf],
+                            leaf_start[right_child_leaf + 1],
+                            left_child_leaf, right_child_leaf,
+                            _ROWPAR_SCAN_RIGHT, hg, hh,
+                            rowpar_buffers[0], rowpar_buffers[1]
+                        )
+                    else:
+                        _leafwise_segment_hist_rowpar_counts(
+                            X_binned, grad, hess, row_order,
+                            leaf_start[right_child_leaf],
+                            leaf_start[right_child_leaf + 1],
+                            left_child_leaf, right_child_leaf,
+                            _ROWPAR_SCAN_RIGHT, hg, hh, hc,
+                            rowpar_buffers[0], rowpar_buffers[1],
+                            rowpar_buffers[2]
+                        )
                 elif use_segmented_rows:
                     if constant_hessian:
                         _refill_right_subtract_left_unit_hess_by_count_into(
@@ -3656,7 +3980,29 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                         hg, hh, hc
                     )
             else:
-                if use_segmented_rows:
+                if rowpar_segment_lane and _rowpar_eligible(
+                    left_count, rowpar_buffers, 1, max_bins
+                ):
+                    if constant_hessian:
+                        _leafwise_segment_hist_rowpar_unit_hess(
+                            X_binned, grad, row_order,
+                            leaf_start[left_child_leaf],
+                            leaf_start[left_child_leaf + 1],
+                            left_child_leaf, right_child_leaf,
+                            _ROWPAR_SCAN_LEFT, hg, hh,
+                            rowpar_buffers[0], rowpar_buffers[1]
+                        )
+                    else:
+                        _leafwise_segment_hist_rowpar_counts(
+                            X_binned, grad, hess, row_order,
+                            leaf_start[left_child_leaf],
+                            leaf_start[left_child_leaf + 1],
+                            left_child_leaf, right_child_leaf,
+                            _ROWPAR_SCAN_LEFT, hg, hh, hc,
+                            rowpar_buffers[0], rowpar_buffers[1],
+                            rowpar_buffers[2]
+                        )
+                elif use_segmented_rows:
                     if constant_hessian:
                         _refill_left_subtract_right_unit_hess_by_count_into(
                             X_hist_binned, grad, row_order, leaf_start,
@@ -3765,7 +4111,29 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                     feature_indices, row_indices
                 )
         else:
-            if constant_hessian and row_indices is None and feature_indices is None:
+            if (
+                rowpar_segment_lane
+                and n_leaves == 1
+                and _rowpar_eligible(
+                    row_order.shape[0], rowpar_buffers, 1, max_bins
+                )
+            ):
+                # Root build: leaf 0's segment is the whole (possibly
+                # subsampled) row_order, untouched because no split happened.
+                if constant_hessian:
+                    _leafwise_segment_hist_rowpar_unit_hess(
+                        X_binned, grad, row_order, 0, row_order.shape[0],
+                        0, 0, _ROWPAR_ROOT, hg, hh,
+                        rowpar_buffers[0], rowpar_buffers[1]
+                    )
+                else:
+                    _leafwise_segment_hist_rowpar_counts(
+                        X_binned, grad, hess, row_order, 0,
+                        row_order.shape[0], 0, 0, _ROWPAR_ROOT, hg, hh, hc,
+                        rowpar_buffers[0], rowpar_buffers[1],
+                        rowpar_buffers[2]
+                    )
+            elif constant_hessian and row_indices is None and feature_indices is None:
                 _build_histograms_unit_hess_into(
                     X_hist_binned, grad, leaf, n_leaves, hg, hh
                 )
