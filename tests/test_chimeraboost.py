@@ -3734,3 +3734,142 @@ def test_ordered_leaf_update_inplace_matches_numpy_formula():
             leaf, leaf_G, leaf_H, grad, hess, lr, l2, F_kernel
         )
         assert np.array_equal(F_kernel, F_numpy)
+
+
+def test_bin_transform_kernel_matches_searchsorted_reference():
+    """The numba binning kernel must reproduce the numpy searchsorted path
+    bit-for-bit, including NaN/inf routing and low-cardinality columns."""
+    from chimeraboost.binning import Binner
+
+    rng = np.random.default_rng(5)
+    n = 3000
+    X = np.column_stack([
+        rng.normal(size=n),                       # smooth numeric
+        rng.integers(0, 3, n).astype(float),      # low cardinality
+        np.full(n, 7.0),                          # constant (no borders)
+        rng.normal(size=n),                       # gets NaN/inf injected
+        np.full(n, np.nan),                       # all-missing column
+    ])
+    X[::7, 3] = np.nan
+    X[3::11, 3] = np.inf
+    X[5::13, 3] = -np.inf
+
+    binner = Binner(max_bins=16).fit(X)
+    got = binner.transform(X)
+
+    for f in range(X.shape[1]):
+        borders = binner.borders_[f]
+        col = X[:, f]
+        nan_bin = len(borders) + 1
+        ref = np.searchsorted(borders, col, side="right")
+        ref[~np.isfinite(col)] = nan_bin
+        assert np.array_equal(got[:, f].astype(np.int64), ref), f"feature {f}"
+
+
+def test_binner_sampling_is_deterministic_and_off_for_small_data():
+    from chimeraboost.binning import Binner
+
+    rng = np.random.default_rng(8)
+    X = rng.normal(size=(5000, 3))
+
+    # n <= sample_count: borders must be identical to the unsampled path.
+    full = Binner(max_bins=32, sample_count=None).fit(X)
+    capped = Binner(max_bins=32, sample_count=5000, random_state=0).fit(X)
+    for a, b in zip(full.borders_, capped.borders_):
+        assert np.array_equal(a, b)
+
+    # n > sample_count: deterministic under a fixed seed, borders stay sane.
+    s1 = Binner(max_bins=32, sample_count=1000, random_state=0).fit(X)
+    s2 = Binner(max_bins=32, sample_count=1000, random_state=0).fit(X)
+    for a, b in zip(s1.borders_, s2.borders_):
+        assert np.array_equal(a, b)
+    t = s1.transform(X)
+    assert t.max() < s1.n_bins_.max()
+    # Sampled borders approximate the full-data quantiles.
+    assert all(
+        len(b) > 0 and np.all(np.diff(b) > 0) for b in s1.borders_
+    )
+
+
+def test_preprocessor_blocks_match_stacked_reference():
+    """Binning blocks separately must equal binning the hstacked matrix."""
+    from chimeraboost.binning import Binner
+    from chimeraboost.preprocessing import FeaturePreprocessor
+
+    rng = np.random.default_rng(2)
+    n = 1500
+    region = rng.choice(["a", "b", "c", "d"], n)
+    X = np.empty((n, 4), dtype=object)
+    X[:, 0] = rng.normal(size=n)
+    X[:, 1] = region
+    X[:, 2] = rng.normal(size=n) * 10
+    X[:, 3] = rng.choice(["x", "y"], n)
+    y = rng.normal(size=n)
+
+    prep = FeaturePreprocessor(64, 1.0, 0, include_cat_codes=True,
+                               target_encoding_mode="kfold")
+    Xb = prep.fit_transform(X, [y], cat_features=[1, 3])
+
+    num = np.asarray(X[:, [0, 2]], dtype=np.float64)
+    codes = prep._codes_for_transform(X)  # same X -> same codes as fit time
+
+    # Fit-time check: borders must equal those learned from the hstacked
+    # matrix the old implementation materialized. The encoder is seeded, so
+    # replaying it reproduces the fit-time (out-of-fold) encoded block.
+    from chimeraboost.target_encoding import OrderedTargetEncoder
+    enc_replay = OrderedTargetEncoder(1.0, 0, mode="kfold", n_folds=20)
+    encoded_fit = enc_replay.fit_transform(codes, y)
+    stacked_fit = np.hstack([num, codes.astype(np.float64), encoded_fit])
+    ref = Binner(max_bins=64).fit(stacked_fit)
+    assert len(ref.borders_) == len(prep.binner_.borders_)
+    for a, b in zip(ref.borders_, prep.binner_.borders_):
+        assert np.array_equal(a, b)
+
+    # Transform-time check: blockwise binning must equal searchsorted over
+    # the stacked transform-time matrix (full-total encodings).
+    raw_codes = codes.astype(np.float64)
+    raw_codes[raw_codes < 0] = np.nan
+    encoded = prep.encoders_[0].transform(codes)
+    stacked_transform = np.hstack([num, raw_codes, encoded])
+    Xb_t = prep.transform(X)
+    for f in range(stacked_transform.shape[1]):
+        got = Xb_t[:, f].astype(np.int64)
+        borders = prep.binner_.borders_[f]
+        want = np.searchsorted(borders, stacked_transform[:, f], side="right")
+        want[~np.isfinite(stacked_transform[:, f])] = len(borders) + 1
+        assert np.array_equal(got, want), f"column {f}"
+    assert Xb.shape == Xb_t.shape
+
+
+def test_codes_for_transform_pandas_path_matches_dict_path():
+    from chimeraboost.preprocessing import FeaturePreprocessor
+
+    pytest.importorskip("pandas")
+    rng = np.random.default_rng(4)
+    n = 400
+    col = rng.choice(["red", "green", "blue"], n).astype(object)
+    col[::17] = None
+    col[3::23] = np.nan
+    X = np.empty((n, 2), dtype=object)
+    X[:, 0] = col
+    X[:, 1] = rng.normal(size=n)
+    y = rng.normal(size=n)
+
+    prep = FeaturePreprocessor(32, 1.0, 0)
+    prep.fit_transform(X, [y], cat_features=[0])
+
+    X_new = X.copy()
+    X_new[0, 0] = "purple"   # unseen -> -1
+    X_new[1, 0] = None       # missing -> "__nan__" code
+    X_new[2, 0] = np.nan
+
+    fast = prep._codes_for_transform(X_new)
+
+    # Force the dict fallback by making the pandas path report failure.
+    prep_fallback = FeaturePreprocessor(32, 1.0, 0)
+    prep_fallback.fit_transform(X, [y], cat_features=[0])
+    prep_fallback._pandas_codes_for_column = lambda pd, col, j: None
+    slow = prep_fallback._codes_for_transform(X_new)
+
+    assert np.array_equal(fast, slow)
+    assert fast[0, 0] == -1

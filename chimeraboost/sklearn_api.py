@@ -108,7 +108,7 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
                  early_stopping=False, validation_fraction=0.1,
                  verbose_timing=False, tree_mode="catboost",
                  sampling="uniform", top_rate=0.2, other_rate=0.1,
-                 eval_train_loss=True):
+                 eval_train_loss=True, bin_sample_count=200_000):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -136,6 +136,7 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
         self.top_rate = top_rate
         self.other_rate = other_rate
         self.eval_train_loss = eval_train_loss
+        self.bin_sample_count = bin_sample_count
 
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
             sample_weight=None, eval_sample_weight=None):
@@ -247,7 +248,8 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
                  early_stopping=False, validation_fraction=0.1,
                  verbose_timing=False, tree_mode="catboost",
                  sampling="uniform", top_rate=0.2, other_rate=0.1,
-                 multiclass_tree_strategy="auto", eval_train_loss=True):
+                 multiclass_tree_strategy="auto", eval_train_loss=True,
+                 bin_sample_count=200_000):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -274,6 +276,7 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
         self.other_rate = other_rate
         self.multiclass_tree_strategy = multiclass_tree_strategy
         self.eval_train_loss = eval_train_loss
+        self.bin_sample_count = bin_sample_count
 
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
             sample_weight=None, eval_sample_weight=None):

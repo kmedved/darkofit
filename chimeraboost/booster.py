@@ -8,6 +8,7 @@ Two boosters share the same machinery (FeaturePreprocessor, oblivious trees):
 import time
 import numpy as np
 
+from .binning import DEFAULT_BIN_SAMPLE_COUNT
 from .losses import LOSSES, MultiSoftmax
 from .preprocessing import FeaturePreprocessor
 from .tree import (
@@ -166,7 +167,8 @@ class _BaseBooster:
                  random_state=None, verbose=False, ordered_boosting="auto",
                  verbose_timing=False, tree_mode="catboost",
                  sampling="uniform", top_rate=0.2, other_rate=0.1,
-                 multiclass_tree_strategy="auto", eval_train_loss=True):
+                 multiclass_tree_strategy="auto", eval_train_loss=True,
+                 bin_sample_count=DEFAULT_BIN_SAMPLE_COUNT):
         self.iterations = int(iterations)
         self.learning_rate = learning_rate
         self.l2_leaf_reg = float(l2_leaf_reg)
@@ -194,6 +196,7 @@ class _BaseBooster:
         self.other_rate = float(other_rate)
         self.multiclass_tree_strategy = multiclass_tree_strategy
         self.eval_train_loss = bool(eval_train_loss)
+        self.bin_sample_count = bin_sample_count
         self._validate_sampling_config()
 
     def _validate_sampling_config(self):
@@ -312,7 +315,8 @@ class _BaseBooster:
                                        "kfold"
                                        if self.tree_mode_ == "lightgbm"
                                        else "ordered"
-                                   ))
+                                   ),
+                                   bin_sample_count=self.bin_sample_count)
 
     def _include_cat_codes(self):
         return self.tree_mode_ == "lightgbm"
