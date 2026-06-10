@@ -2935,6 +2935,120 @@ def test_early_stopped_prediction_matches_best_prefix():
     assert np.allclose(stages[-1], model.predict_proba(Xte))
 
 
+def test_get_refit_params_freezes_learning_rate_and_exact_rounds():
+    X, y = load_breast_cancer(return_X_y=True)
+    model = ChimeraBoostClassifier(
+        iterations=120, early_stopping=True, early_stopping_rounds=5,
+        validation_fraction=0.2, random_state=0
+    ).fit(X, y)
+
+    params = model.get_refit_params()
+    assert params["iterations"] == model.best_n_estimators_
+    assert params["iterations"] == model.n_estimators_
+    assert params["learning_rate"] == model.learning_rate_
+    assert params["learning_rate"] == model.model_.lr_
+    assert params["early_stopping"] is False
+    assert params["early_stopping_rounds"] is None
+
+
+def test_get_refit_params_scaled_strategies_use_empirical_split():
+    X, y = load_breast_cancer(return_X_y=True)
+    model = ChimeraBoostClassifier(
+        iterations=120, early_stopping=True, early_stopping_rounds=5,
+        validation_fraction=0.2, random_state=0
+    ).fit(X, y)
+
+    scale = model._selection_n_total_ / model._selection_n_train_
+    sqrt_params = model.get_refit_params(strategy="sqrt")
+    linear_params = model.get_refit_params(strategy="linear")
+    scaled_params = model.get_refit_params(strategy="scaled")
+
+    assert sqrt_params["iterations"] == int(
+        np.ceil(model.best_n_estimators_ * np.sqrt(scale))
+    )
+    assert linear_params["iterations"] == int(
+        np.ceil(model.best_n_estimators_ * scale)
+    )
+    assert scaled_params["iterations"] == linear_params["iterations"]
+
+
+def test_get_refit_params_scaled_requires_auto_split():
+    X, y = load_breast_cancer(return_X_y=True)
+    Xtr, Xv, ytr, yv = train_test_split(
+        X, y, test_size=0.2, random_state=0, stratify=y
+    )
+    model = ChimeraBoostClassifier(
+        iterations=80, early_stopping_rounds=5, random_state=0
+    ).fit(Xtr, ytr, eval_set=(Xv, yv))
+
+    assert model.get_refit_params(strategy="exact")["iterations"] == (
+        model.best_n_estimators_
+    )
+    with pytest.raises(ValueError, match="automatic validation split"):
+        model.get_refit_params(strategy="sqrt")
+
+
+def test_get_refit_params_regressor_preserves_loss_params():
+    X, y = load_diabetes(return_X_y=True)
+    model = ChimeraBoostRegressor(
+        iterations=60, loss="Quantile", alpha=0.8,
+        early_stopping=True, early_stopping_rounds=5, random_state=0
+    ).fit(X, y)
+
+    params = model.get_refit_params(strategy="best")
+    assert params["iterations"] == model.best_n_estimators_
+    assert params["learning_rate"] == model.learning_rate_
+    assert params["loss"] == "Quantile"
+    assert params["alpha"] == 0.8
+    assert params["early_stopping"] is False
+
+
+def test_early_stopping_refit_trains_final_model_with_exact_rounds():
+    X, y = load_breast_cancer(return_X_y=True)
+    model = ChimeraBoostClassifier(
+        iterations=120, early_stopping=True, early_stopping_rounds=5,
+        validation_fraction=0.2, refit=True, random_state=0
+    ).fit(X, y)
+
+    assert model.refit_ is True
+    assert model.refit_strategy_ == "exact"
+    assert model.selection_model_ is not model.model_
+    assert model.best_n_estimators_ == len(model.selection_model_.trees_)
+    assert model.n_estimators_ == model.best_n_estimators_
+    assert model.refit_n_estimators_ == model.n_estimators_
+    assert model.learning_rate_ == model.selection_model_.lr_
+    assert model.best_score_ == model.selection_model_.best_score_
+    assert model.get_refit_params()["refit"] is False
+
+
+def test_early_stopping_refit_scaled_rounds_use_empirical_split():
+    X, y = load_breast_cancer(return_X_y=True)
+    model = ChimeraBoostClassifier(
+        iterations=120, early_stopping=True, early_stopping_rounds=5,
+        validation_fraction=0.2, refit=True, refit_strategy="sqrt",
+        random_state=0
+    ).fit(X, y)
+
+    scale = model._selection_n_total_ / model._selection_n_train_
+    expected = int(np.ceil(model.best_n_estimators_ * np.sqrt(scale)))
+    assert model.refit_ is True
+    assert model.refit_strategy_ == "sqrt"
+    assert model.n_estimators_ == expected
+    assert model.refit_n_estimators_ == expected
+
+
+def test_refit_without_early_stopping_does_not_double_fit():
+    X, y = load_diabetes(return_X_y=True)
+    model = ChimeraBoostRegressor(
+        iterations=8, refit=True, random_state=0
+    ).fit(X, y)
+
+    assert model.refit_ is False
+    assert not hasattr(model, "selection_model_")
+    assert model.n_estimators_ == 8
+    assert model.best_n_estimators_ == 8
+
+
 def test_eval_labels_must_be_training_classes():
     from sklearn.datasets import load_wine
     X, y = load_wine(return_X_y=True)
@@ -3701,6 +3815,80 @@ def test_eval_train_loss_false_multiclass_and_verbose_override(capsys):
     assert len(verbose.model_.train_history_) == 8
 
 
+def test_auto_params_records_resolved_regression_context(tmp_path):
+    rng = np.random.default_rng(83)
+    X = rng.normal(size=(80, 4))
+    y = X[:, 0] - 0.5 * X[:, 1] + rng.normal(0.0, 0.1, size=80)
+    Xtr, Xv, ytr, yv = train_test_split(X, y, test_size=0.25, random_state=0)
+    w = np.linspace(0.5, 2.0, len(ytr))
+    wv = np.linspace(1.0, 3.0, len(yv))
+
+    model = ChimeraBoostRegressor(
+        iterations=6,
+        learning_rate=0.07,
+        depth=3,
+        max_bins=16,
+        early_stopping_rounds=2,
+        random_state=0,
+    ).fit(Xtr, ytr, eval_set=(Xv, yv), sample_weight=w, eval_sample_weight=wv)
+    meta = model.model_.auto_params_
+
+    w_norm = w * (len(w) / w.sum())
+    wv_norm = wv * (len(wv) / wv.sum())
+    n_eff = (w_norm.sum() ** 2) / np.dot(w_norm, w_norm)
+    eval_n_eff = (wv_norm.sum() ** 2) / np.dot(wv_norm, wv_norm)
+
+    assert meta["loss"] == "RMSE"
+    assert meta["iterations"] == 6
+    assert meta["learning_rate"] == {
+        "resolved": 0.07,
+        "source": "explicit",
+        "input": 0.07,
+    }
+    assert meta["sample_weight"]["provided"] is True
+    assert np.isclose(meta["sample_weight"]["effective_sample_size"], n_eff)
+    assert meta["features"]["raw_feature_count"] == 4
+    assert meta["features"]["model_feature_count"] == 4
+    assert meta["tree"]["tree_mode"] == "catboost"
+    assert meta["tree"]["depth"] == 3
+    assert meta["tree"]["max_leaves"] == 8
+    assert meta["tree"]["l2_leaf_reg"] == 3.0
+    assert meta["tree"]["min_child_samples"] == 20
+    assert meta["tree"]["min_child_weight"] == 1.0
+    assert meta["binning"]["max_bins"] == 16
+    assert meta["binning"]["numeric_binning_weighted"] is True
+    assert meta["binning"]["weighted_sampling"] is False
+    assert meta["early_stopping"]["enabled"] is True
+    assert meta["early_stopping"]["rounds"] == 2
+    assert meta["early_stopping"]["eval_n_samples"] == len(yv)
+    assert np.isclose(meta["early_stopping"]["eval_effective_sample_size"], eval_n_eff)
+
+    path = tmp_path / "reg.npz"
+    model.save_model(path)
+    loaded = ChimeraBoostRegressor.load_model(path)
+    assert loaded.model_.auto_params_["tree"]["max_leaves"] == 8
+    assert loaded.model_.auto_params_["learning_rate"]["resolved"] == 0.07
+
+
+def test_auto_params_records_classifier_context():
+    X, y = load_breast_cancer(return_X_y=True)
+    model = ChimeraBoostClassifier(
+        iterations=3,
+        tree_mode="lightgbm",
+        random_state=0,
+        eval_train_loss=False,
+    ).fit(X, y)
+    meta = model.model_.auto_params_
+
+    assert meta["loss"] == "Logloss"
+    assert meta["learning_rate"]["source"] == "auto"
+    assert meta["features"]["raw_feature_count"] == X.shape[1]
+    assert meta["tree"]["tree_mode"] == "lightgbm"
+    assert meta["tree"]["max_leaves"] == 31
+    assert meta["tree"]["l2_leaf_reg"] == 3.0
+    assert meta["early_stopping"]["enabled"] is False
+
+
 def test_ordered_leaf_update_inplace_matches_numpy_formula():
     from chimeraboost.tree import ordered_leaf_update_inplace
 
@@ -3790,6 +3978,66 @@ def test_binner_sampling_is_deterministic_and_off_for_small_data():
     assert all(
         len(b) > 0 and np.all(np.diff(b) > 0) for b in s1.borders_
     )
+
+
+def test_binner_all_ones_weights_match_unweighted_borders():
+    from chimeraboost.binning import Binner
+
+    rng = np.random.default_rng(84)
+    X = rng.normal(size=(200, 4))
+    X[::9, 2] = np.nan
+    unweighted = Binner(max_bins=16, sample_count=None).fit(X)
+    weighted = Binner(max_bins=16, sample_count=None).fit(
+        X, sample_weight=np.ones(len(X))
+    )
+
+    assert weighted.weighted_ is False
+    for a, b in zip(unweighted.borders_, weighted.borders_):
+        assert np.array_equal(a, b)
+    assert np.array_equal(unweighted.transform(X), weighted.transform(X))
+
+
+def test_binner_weighted_borders_follow_weighted_mass():
+    from chimeraboost.binning import Binner
+
+    X = np.arange(100, dtype=float).reshape(-1, 1)
+    weights = np.ones(100)
+    weights[-10:] = 100.0
+
+    unweighted = Binner(max_bins=4, sample_count=None).fit(X)
+    weighted = Binner(max_bins=4, sample_count=None).fit(
+        X, sample_weight=weights
+    )
+
+    assert weighted.weighted_ is True
+    assert weighted.borders_[0][0] > unweighted.borders_[0][0]
+    assert weighted.borders_[0][-1] > unweighted.borders_[0][-1]
+
+
+def test_binner_sampled_weighted_borders_use_weights_once():
+    from chimeraboost.binning import Binner
+
+    rng = np.random.default_rng(85)
+    X = rng.normal(size=(500, 3))
+    weights = np.linspace(0.25, 4.0, len(X))
+    sample_count = 80
+    seed = 17
+
+    sampled = Binner(
+        max_bins=16, sample_count=sample_count, random_state=seed
+    ).fit(X, sample_weight=weights)
+    sample_idx = np.sort(
+        np.random.default_rng(seed).choice(len(X), sample_count, replace=False)
+    )
+    expected = Binner(max_bins=16, sample_count=None).fit(
+        X[sample_idx], sample_weight=weights[sample_idx]
+    )
+
+    assert sampled.weighted_ is True
+    assert sampled.weighted_sampling_ is False
+    assert sampled.weighted_sample_count_ == sample_count
+    for got, want in zip(sampled.borders_, expected.borders_):
+        assert np.array_equal(got, want)
 
 
 def test_preprocessor_blocks_match_stacked_reference():

@@ -48,6 +48,63 @@ def _feature_borders(col, max_bins):
     return np.unique(borders).astype(np.float64)
 
 
+def _sample_weight_is_uniform(sample_weight):
+    if sample_weight is None:
+        return True
+    w = np.asarray(sample_weight, dtype=np.float64)
+    return w.size == 0 or np.all(w == w[0])
+
+
+def _validate_binning_sample_weight(sample_weight, n_samples):
+    if sample_weight is None:
+        return None
+    w = np.asarray(sample_weight, dtype=np.float64)
+    if w.shape != (n_samples,):
+        raise ValueError(f"sample_weight must have shape ({n_samples},)")
+    if not np.all(np.isfinite(w)):
+        raise ValueError("sample_weight must contain only finite values")
+    if np.any(w < 0.0):
+        raise ValueError("sample_weight must be nonnegative")
+    if np.sum(w) <= 0.0:
+        raise ValueError("sample_weight must have positive total weight")
+    return w
+
+
+def _weighted_feature_borders(col, max_bins, sample_weight):
+    """Weighted quantile borders for one numeric column.
+
+    Rows with larger weights contribute more quantile mass. Duplicate feature
+    values are collapsed before cut-point lookup so borders still fall between
+    distinct observed values, matching the unweighted low-cardinality behavior.
+    """
+    mask = np.isfinite(col)
+    x = col[mask]
+    if x.size == 0:
+        return np.array([], dtype=np.float64)
+    w = np.asarray(sample_weight, dtype=np.float64)[mask]
+    positive = w > 0.0
+    x = x[positive]
+    w = w[positive]
+    if x.size == 0:
+        return np.array([], dtype=np.float64)
+
+    order = np.argsort(x)
+    x = x[order]
+    w = w[order]
+    uniq, start = np.unique(x, return_index=True)
+    if uniq.size <= max_bins:
+        return ((uniq[:-1] + uniq[1:]) / 2.0).astype(np.float64)
+
+    w_sum = np.add.reduceat(w, start)
+    cumw = np.cumsum(w_sum)
+    total = cumw[-1]
+    qs = np.linspace(0.0, 1.0, max_bins + 1)[1:-1] * total
+    idx = np.searchsorted(cumw, qs, side="right")
+    idx = np.clip(idx, 1, uniq.size - 1)
+    borders = (uniq[idx - 1] + uniq[idx]) / 2.0
+    return np.unique(borders).astype(np.float64)
+
+
 @njit(cache=True, parallel=True)
 def _bin_columns_into(X, borders_flat, border_offsets, out, col_offset):
     """Bin one float block into integer bin ids, parallel over features.
@@ -96,11 +153,12 @@ class Binner:
         self.borders_ = None       # list of np.ndarray, one per feature
         self.n_bins_ = None        # np.ndarray int, width per feature
 
-    def fit(self, X):
+    def fit(self, X, sample_weight=None):
         """Learn quantile borders for each column from training data."""
-        return self.fit_blocks([np.asarray(X, dtype=np.float64)])
+        return self.fit_blocks([np.asarray(X, dtype=np.float64)],
+                               sample_weight=sample_weight)
 
-    def fit_blocks(self, blocks):
+    def fit_blocks(self, blocks, sample_weight=None):
         """Learn borders over the columns of several blocks, in order.
 
         ``blocks`` is a list of (n_samples, width_b) float64 matrices that
@@ -108,6 +166,8 @@ class Binner:
         materializing their horizontal concatenation.
         """
         n_samples = blocks[0].shape[0] if blocks else 0
+        sample_weight = _validate_binning_sample_weight(sample_weight, n_samples)
+        use_weighted_borders = not _sample_weight_is_uniform(sample_weight)
         if (
             self.sample_count is not None
             and n_samples > self.sample_count
@@ -119,11 +179,28 @@ class Binner:
         else:
             sample_idx = None
 
+        self.weighted_ = bool(use_weighted_borders)
+        self.weighted_sampling_ = False
+        self.weighted_sample_count_ = (
+            None if sample_idx is None else int(len(sample_idx))
+        )
+        if sample_idx is not None and sample_weight is not None:
+            sample_weight_fit = sample_weight[sample_idx]
+        else:
+            sample_weight_fit = sample_weight
+
         self.borders_ = []
         for block in blocks:
             for j in range(block.shape[1]):
                 col = block[:, j] if sample_idx is None else block[sample_idx, j]
-                self.borders_.append(_feature_borders(col, self.max_bins))
+                if use_weighted_borders:
+                    self.borders_.append(
+                        _weighted_feature_borders(
+                            col, self.max_bins, sample_weight_fit
+                        )
+                    )
+                else:
+                    self.borders_.append(_feature_borders(col, self.max_bins))
         # +1 for the searchsorted upper bucket, +1 for the NaN bucket.
         self.n_bins_ = np.array(
             [len(b) + 2 for b in self.borders_], dtype=np.int64
@@ -168,8 +245,10 @@ class Binner:
             col_offset += width
         return out
 
-    def fit_transform(self, X):
-        return self.fit(X).transform(X)
+    def fit_transform(self, X, sample_weight=None):
+        return self.fit(X, sample_weight=sample_weight).transform(X)
 
-    def fit_transform_blocks(self, blocks):
-        return self.fit_blocks(blocks).transform_blocks(blocks)
+    def fit_transform_blocks(self, blocks, sample_weight=None):
+        return self.fit_blocks(
+            blocks, sample_weight=sample_weight
+        ).transform_blocks(blocks)

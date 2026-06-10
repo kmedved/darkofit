@@ -5,7 +5,17 @@ from .booster import GradientBoosting, MulticlassBoosting
 from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin
 
 # Parameters that exist only on the sklearn wrappers, not on the core boosters.
-_SKLEARN_ONLY = frozenset({"early_stopping", "validation_fraction"})
+_SKLEARN_ONLY = frozenset({
+    "early_stopping", "validation_fraction", "refit", "refit_strategy",
+})
+
+_REFIT_STRATEGY_EXPONENT = {
+    "best": 0.0,
+    "exact": 0.0,
+    "sqrt": 0.5,
+    "linear": 1.0,
+    "scaled": 1.0,
+}
 
 
 def _should_early_stop(setting):
@@ -82,7 +92,111 @@ def _make_eval_split(X, y, validation_fraction, random_state,
 
     return train_idx, val_idx
 
-class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
+
+class _RefitParamsMixin:
+    """Shared fitted-model metadata and full-data refit helpers."""
+
+    def _clear_refit_selection_metadata(self):
+        for name in (
+            "_selection_n_total_", "_selection_n_train_",
+            "_best_n_estimators_", "_best_score_", "_learning_rate_",
+            "selection_model_", "refit_", "refit_n_estimators_",
+            "refit_strategy_",
+        ):
+            if hasattr(self, name):
+                delattr(self, name)
+
+    def _record_refit_selection_metadata(self, n_total, train_idx):
+        self._selection_n_total_ = int(n_total)
+        self._selection_n_train_ = int(len(train_idx))
+
+    def _record_selection_result(self, model):
+        self._best_n_estimators_ = int(model.best_iteration_)
+        self._best_score_ = model.best_score_
+        self._learning_rate_ = model.lr_
+        self.refit_ = False
+        self.refit_n_estimators_ = None
+        self.refit_strategy_ = None
+
+    def _record_refit_result(self, selection_model, strategy):
+        self.selection_model_ = selection_model
+        self.refit_ = True
+        self.refit_n_estimators_ = len(self.model_.trees_)
+        self.refit_strategy_ = strategy
+
+    def _refit_params_for_booster(self, strategy):
+        params = self.get_refit_params(strategy=strategy)
+        return {
+            k: v for k, v in params.items()
+            if k not in {"loss", "alpha"} | _SKLEARN_ONLY
+        }
+
+    def get_refit_params(self, strategy="exact"):
+        """Return parameters for a fresh full-data refit.
+
+        The returned params disable early stopping, set ``iterations`` to the
+        fitted round count (or an explicit scaling of it), and freeze the
+        resolved learning rate from the selection fit. Freezing the learning
+        rate avoids changing the boosting path when ``learning_rate=None`` was
+        used with early stopping.
+
+        Parameters
+        ----------
+        strategy : {"exact", "best", "sqrt", "linear", "scaled"}
+            ``"exact"`` and ``"best"`` use the fitted number of boosting
+            rounds. ``"sqrt"`` and ``"linear"`` scale that count by the
+            empirical automatic validation split ratio. ``"scaled"`` is an
+            alias for ``"linear"``.
+        """
+        if not hasattr(self, "model_"):
+            raise ValueError("model must be fitted before calling get_refit_params")
+
+        try:
+            exponent = _REFIT_STRATEGY_EXPONENT[strategy]
+        except KeyError as exc:
+            valid = ", ".join(sorted(_REFIT_STRATEGY_EXPONENT))
+            raise ValueError(
+                f"unknown refit strategy {strategy!r}; expected one of {valid}"
+            ) from exc
+
+        rounds = int(self.best_n_estimators_)
+        if exponent:
+            if not (hasattr(self, "_selection_n_total_") and
+                    hasattr(self, "_selection_n_train_")):
+                raise ValueError(
+                    f"strategy={strategy!r} requires an automatic validation "
+                    "split from fit; use strategy='exact' or set iterations "
+                    "manually when fit used an explicit eval_set"
+                )
+            scale = self._selection_n_total_ / max(1, self._selection_n_train_)
+            rounds = int(np.ceil(rounds * (scale ** exponent)))
+
+        params = self.get_params()
+        params["iterations"] = max(0, rounds)
+        params["learning_rate"] = self.learning_rate_
+        params["early_stopping"] = False
+        params["early_stopping_rounds"] = None
+        if "refit" in params:
+            params["refit"] = False
+        return params
+
+    @property
+    def best_n_estimators_(self):
+        """Number of boosting rounds selected/retained by the fitted model."""
+        return getattr(self, "_best_n_estimators_", self.model_.best_iteration_)
+
+    @property
+    def n_estimators_(self):
+        """Number of boosting rounds present in the fitted model."""
+        return len(self.model_.trees_)
+
+    @property
+    def learning_rate_(self):
+        """Resolved learning rate used by the fitted booster."""
+        return getattr(self, "_learning_rate_", self.model_.lr_)
+
+
+class ChimeraBoostRegressor(_RefitParamsMixin, BaseEstimator, RegressorMixin):
     """Gradient boosted oblivious trees for regression.
 
     loss: "RMSE" (default), "MAE", or "Quantile". For "Quantile" pass the level
@@ -106,6 +220,7 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
                  thread_count=None, random_state=None, verbose=False,
                  ordered_boosting="auto",
                  early_stopping=False, validation_fraction=0.1,
+                 refit=False, refit_strategy="exact",
                  verbose_timing=False, tree_mode="catboost",
                  sampling="uniform", top_rate=0.2, other_rate=0.1,
                  eval_train_loss=True, bin_sample_count=200_000,
@@ -131,6 +246,8 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
         self.ordered_boosting = ordered_boosting
         self.early_stopping = early_stopping
         self.validation_fraction = validation_fraction
+        self.refit = refit
+        self.refit_strategy = refit_strategy
         self.verbose_timing = verbose_timing
         self.tree_mode = tree_mode
         self.sampling = sampling
@@ -170,13 +287,18 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
         y = np.asarray(y, dtype=np.float64)
         if sample_weight is not None:
             sample_weight = np.asarray(sample_weight, dtype=np.float64)
+        X_full, y_full = X, y
+        sample_weight_full = sample_weight
 
+        self._clear_refit_selection_metadata()
         es_active = _should_early_stop(self.early_stopping)
         if es_active and eval_set is None:
+            n_total = X.shape[0]
             train_idx, val_idx = _make_eval_split(
                 X, y, self.validation_fraction, self.random_state,
                 groups=groups, stratify=None,
             )
+            self._record_refit_selection_metadata(n_total, train_idx)
             eval_set = (X[val_idx], y[val_idx])
             if sample_weight is not None:
                 eval_sample_weight = sample_weight[val_idx]
@@ -198,6 +320,20 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
         self.model_.fit(X, y, cat_features=cat_features, eval_set=eval_set,
                         sample_weight=sample_weight,
                         eval_sample_weight=eval_sample_weight)
+        selection_model = self.model_
+        self._record_selection_result(selection_model)
+
+        selection_active = es_rounds is not None and eval_set is not None
+        if self.refit and selection_active:
+            refit_kw = self._refit_params_for_booster(self.refit_strategy)
+            self.model_ = GradientBoosting(
+                loss=self.loss, loss_kwargs=loss_kwargs, **refit_kw
+            )
+            self.model_.fit(
+                X_full, y_full, cat_features=cat_features,
+                sample_weight=sample_weight_full,
+            )
+            self._record_refit_result(selection_model, self.refit_strategy)
         return self
 
     def predict(self, X):
@@ -246,11 +382,11 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
 
     @property
     def best_iteration_(self):
-        return self.model_.best_iteration_
+        return self.best_n_estimators_
 
     @property
     def best_score_(self):
-        return self.model_.best_score_
+        return getattr(self, "_best_score_", self.model_.best_score_)
 
     @property
     def feature_importances_(self):
@@ -261,7 +397,7 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
         return self.model_.timing_
 
 
-class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
+class ChimeraBoostClassifier(_RefitParamsMixin, BaseEstimator, ClassifierMixin):
     """Gradient boosted oblivious trees for classification.
 
     Automatically uses binary logloss for 2 classes and softmax multiclass for
@@ -283,6 +419,7 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
                  min_gain_to_split=0.0, num_leaves=None, thread_count=None,
                  random_state=None, verbose=False, ordered_boosting="auto",
                  early_stopping=False, validation_fraction=0.1,
+                 refit=False, refit_strategy="exact",
                  verbose_timing=False, tree_mode="catboost",
                  sampling="uniform", top_rate=0.2, other_rate=0.1,
                  multiclass_tree_strategy="auto", eval_train_loss=True,
@@ -306,6 +443,8 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
         self.ordered_boosting = ordered_boosting
         self.early_stopping = early_stopping
         self.validation_fraction = validation_fraction
+        self.refit = refit
+        self.refit_strategy = refit_strategy
         self.verbose_timing = verbose_timing
         self.tree_mode = tree_mode
         self.sampling = sampling
@@ -349,13 +488,18 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
             raise ValueError("Need at least 2 classes.")
         if sample_weight is not None:
             sample_weight = np.asarray(sample_weight, dtype=np.float64)
+        X_full, y_full = X, y
+        sample_weight_full = sample_weight
 
+        self._clear_refit_selection_metadata()
         es_active = _should_early_stop(self.early_stopping)
         if es_active and eval_set is None:
+            n_total = X.shape[0]
             train_idx, val_idx = _make_eval_split(
                 X, y, self.validation_fraction, self.random_state,
                 groups=groups, stratify=y,  # always stratify for classification
             )
+            self._record_refit_selection_metadata(n_total, train_idx)
             eval_set = (X[val_idx], y[val_idx])
             if sample_weight is not None:
                 eval_sample_weight = sample_weight[val_idx]
@@ -393,6 +537,27 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
                             sample_weight=sample_weight,
                             eval_sample_weight=eval_sample_weight)
             self.classes_ = self.model_.classes_
+        selection_model = self.model_
+        self._record_selection_result(selection_model)
+
+        selection_active = es_rounds is not None and eval_set is not None
+        if self.refit and selection_active:
+            refit_kw = self._refit_params_for_booster(self.refit_strategy)
+            if self._multiclass:
+                self.model_ = MulticlassBoosting(**refit_kw)
+                self.model_.fit(
+                    X_full, y_full, cat_features=cat_features,
+                    sample_weight=sample_weight_full,
+                )
+                self.classes_ = self.model_.classes_
+            else:
+                y01_full = (y_full == self.classes_[1]).astype(np.float64)
+                self.model_ = GradientBoosting(loss="Logloss", **refit_kw)
+                self.model_.fit(
+                    X_full, y01_full, cat_features=cat_features,
+                    sample_weight=sample_weight_full,
+                )
+            self._record_refit_result(selection_model, self.refit_strategy)
         return self
 
     def predict_proba(self, X):
@@ -484,11 +649,11 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
 
     @property
     def best_iteration_(self):
-        return self.model_.best_iteration_
+        return self.best_n_estimators_
 
     @property
     def best_score_(self):
-        return self.model_.best_score_
+        return getattr(self, "_best_score_", self.model_.best_score_)
 
     @property
     def feature_importances_(self):

@@ -29,6 +29,16 @@ clf.save_model("model.npz")
 clf2 = ChimeraBoostClassifier.load_model("model.npz")
 ```
 
+After fitting, `model_.auto_params_` records the resolved training context:
+the actual learning rate, effective sample size, feature counts, tree sizing,
+regularization, binning policy, early-stopping policy, sampling policy, and
+threading choice used by that fit.
+
+```
+clf.model_.auto_params_["learning_rate"]
+clf.model_.auto_params_["binning"]
+```
+
 Tree builders are selectable:
 
 ```
@@ -56,6 +66,25 @@ Row sampling is selectable with `sampling="uniform"` (default) or
 Large-fit preprocessing samples up to 200,000 rows when learning numeric bin
 borders, similar to LightGBM's `bin_construct_sample_cnt`. Set
 `bin_sample_count=None` to recover exact full-data border learning.
+When `sample_weight` is supplied, those numeric borders use weighted quantiles;
+`sample_weight=None` and all-ones weights preserve the unweighted border path.
+
+Early-stopping selection can optionally be followed by a full-data refit:
+
+```
+clf = ChimeraBoostClassifier(
+    early_stopping=True,
+    refit=True,
+    refit_strategy="exact",
+)
+clf.fit(X, y)
+```
+
+`get_refit_params()` returns the frozen parameters for a manual full-data refit:
+it disables early stopping, uses the selected round count, and freezes the
+resolved learning rate. Strategies `"sqrt"` and `"linear"` scale the selected
+round count by the automatic validation split ratio; `"scaled"` aliases
+`"linear"`.
 
 Training loss is evaluated every round by default for diagnostics. Set
 `eval_train_loss=False` to skip that pass when you only care about the fitted

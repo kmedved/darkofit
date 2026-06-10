@@ -241,6 +241,7 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
         "lr": float(booster.lr_),
         "best_iteration": int(booster.best_iteration_),
         "best_score": float(booster.best_score_),
+        "auto_params": _jsonify(getattr(booster, "auto_params_", {})),
         "n_input_features": int(prep.n_input_features_),
         "prep": {
             "max_bins": prep.max_bins,
@@ -384,6 +385,7 @@ def load_booster(path, return_wrapper_payload=False):
         booster.lr_ = header["lr"]
         booster.best_iteration_ = header["best_iteration"]
         booster.best_score_ = header["best_score"]
+        booster.auto_params_ = header.get("auto_params", {})
         booster._importance = data["importance"]
 
         # ---- trees ----------------------------------------------------------

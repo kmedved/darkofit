@@ -154,7 +154,8 @@ class FeaturePreprocessor:
         self.binner_ = Binner(self.max_bins, sample_count=self.bin_sample_count,
                               random_state=self.random_state)
         X_binned = self.binner_.fit_transform_blocks(
-            [num] + code_blocks + encoded_blocks
+            [num] + code_blocks + encoded_blocks,
+            sample_weight=sample_weight,
         )
         self.n_bins_ = self.binner_.n_bins_
         return X_binned

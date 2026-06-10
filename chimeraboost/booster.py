@@ -148,6 +148,17 @@ def _validate_sample_weight(sample_weight, n_samples, name="sample_weight"):
     return w * (n_samples / total)
 
 
+def _effective_sample_size(sample_weight, n_samples):
+    """Kish effective sample size for normalized or raw sample weights."""
+    if sample_weight is None:
+        return float(n_samples)
+    w = np.asarray(sample_weight, dtype=np.float64)
+    denom = float(np.dot(w, w))
+    if denom <= 0.0:
+        return 0.0
+    return float((w.sum() ** 2) / denom)
+
+
 def _resolve_default_depth(depth, tree_mode_):
     if depth is not None:
         return int(depth)
@@ -224,6 +235,110 @@ class _BaseBooster:
                 raise ValueError(
                     "top_rate + other_rate must be <= 1 for sampling='goss'"
                 )
+
+    def _resolved_auto_params(
+        self,
+        *,
+        n_samples,
+        n_raw_features,
+        X_binned,
+        n_bins,
+        sample_weight,
+        eval_set_present,
+        eval_n_samples=0,
+        eval_sample_weight=None,
+        rowpar_buffers=None,
+        extra=None,
+    ):
+        """Expose resolved fit-time defaults and data-dependent fit context.
+
+        The dictionary is deliberately observational: it records what this fit
+        used without changing any model behavior. Future data-aware defaults can
+        extend it while preserving a single debugging surface.
+        """
+        n_eff = _effective_sample_size(sample_weight, n_samples)
+        max_bins_observed = int(np.max(n_bins)) if len(n_bins) else 0
+        binner = self.prep_.binner_
+        params = {
+            "loss": getattr(self, "loss_name", "MultiClass"),
+            "iterations": int(self.iterations),
+            "learning_rate": {
+                "resolved": float(self.lr_),
+                "source": "explicit" if self.learning_rate is not None else "auto",
+                "input": None if self.learning_rate is None else float(self.learning_rate),
+            },
+            "sample_weight": {
+                "provided": sample_weight is not None,
+                "effective_sample_size": n_eff,
+                "effective_sample_size_fraction": (
+                    n_eff / float(n_samples) if n_samples else 0.0
+                ),
+                "normalized_sum": (
+                    None if sample_weight is None else float(np.sum(sample_weight))
+                ),
+            },
+            "features": {
+                "raw_feature_count": int(n_raw_features),
+                "model_feature_count": int(X_binned.shape[1]),
+                "input_feature_count": int(self.prep_.n_input_features_),
+            },
+            "tree": {
+                "tree_mode": self.tree_mode_,
+                "ordered_boosting": bool(self.ordered_boosting_),
+                "depth": int(self.depth) if self.depth is not None else None,
+                "max_tree_depth": int(self._max_tree_depth()),
+                "max_leaves": int(self._max_tree_leaves()),
+                "num_leaves": None if self.num_leaves is None else int(self.num_leaves),
+                "l2_leaf_reg": float(getattr(self, "l2_leaf_reg_", self.l2_leaf_reg)),
+                "min_child_samples": int(self.min_child_samples),
+                "min_child_weight": float(self.min_child_weight),
+                "min_gain_to_split": float(self.min_gain_to_split),
+            },
+            "binning": {
+                "max_bins": int(self.max_bins),
+                "bin_sample_count": (
+                    None if self.bin_sample_count is None else int(self.bin_sample_count)
+                ),
+                "numeric_binning_weighted": bool(getattr(binner, "weighted_", False)),
+                "weighted_sampling": bool(getattr(binner, "weighted_sampling_", False)),
+                "weighted_sample_count": getattr(binner, "weighted_sample_count_", None),
+                "observed_max_bins": max_bins_observed,
+                "observed_total_bins": int(np.sum(n_bins)) if len(n_bins) else 0,
+            },
+            "early_stopping": {
+                "enabled": bool(self.early_stopping_rounds is not None and eval_set_present),
+                "rounds": (
+                    None
+                    if self.early_stopping_rounds is None
+                    else int(self.early_stopping_rounds)
+                ),
+                "eval_set_provided": bool(eval_set_present),
+                "eval_n_samples": int(eval_n_samples) if eval_set_present else None,
+                "eval_sample_weight_provided": eval_sample_weight is not None,
+                "eval_effective_sample_size": (
+                    None
+                    if not eval_set_present
+                    else _effective_sample_size(eval_sample_weight, eval_n_samples)
+                ),
+                "improvement_tolerance": 1e-9,
+            },
+            "sampling": {
+                "sampling": self.sampling_,
+                "subsample": float(self.subsample),
+                "colsample": float(self.colsample),
+                "top_rate": float(self.top_rate),
+                "other_rate": float(self.other_rate),
+            },
+            "threading": {
+                "thread_count_input": self.thread_count,
+                "thread_count_resolved": int(self.n_threads_),
+                "histogram_parallelism": self.histogram_parallelism,
+                "row_parallel_histograms_active": rowpar_buffers is not None,
+            },
+        }
+        if extra:
+            params.update(extra)
+        return params
 
     def _catboost_depth(self):
         if self.depth is None or self.depth < 1:
@@ -640,6 +755,17 @@ class GradientBoosting(_BaseBooster):
             )
             Xv_binned = self.prep_.transform(Xv)
         _add_timing(timing, "preprocess", phase)
+        self.auto_params_ = self._resolved_auto_params(
+            n_samples=n_samples,
+            n_raw_features=X.shape[1],
+            X_binned=X_binned,
+            n_bins=n_bins,
+            sample_weight=w,
+            eval_set_present=eval_set is not None,
+            eval_n_samples=0 if yv is None else len(yv),
+            eval_sample_weight=wv,
+            rowpar_buffers=rowpar_buffers,
+        )
 
         self.init_ = self.loss_.init(y, w)
         F = np.full(n_samples, self.init_, dtype=np.float64)
@@ -931,6 +1057,25 @@ class MulticlassBoosting(_BaseBooster):
             )
             Xv_binned = self.prep_.transform(Xv)
         _add_timing(timing, "preprocess", phase)
+        self.auto_params_ = self._resolved_auto_params(
+            n_samples=n_samples,
+            n_raw_features=X.shape[1],
+            X_binned=X_binned,
+            n_bins=n_bins,
+            sample_weight=w,
+            eval_set_present=eval_set is not None,
+            eval_n_samples=0 if yv_idx is None else len(yv_idx),
+            eval_sample_weight=wv,
+            rowpar_buffers=rowpar_buffers,
+            extra={
+                "multiclass": {
+                    "n_classes": int(K),
+                    "tree_strategy": self.multiclass_tree_strategy_,
+                    "shared_lightgbm_multiclass": bool(use_shared_lightgbm_multiclass),
+                    "fused_root_histograms": bool(use_fused_root),
+                }
+            },
+        )
 
         self.init_ = self.loss_.init_class_major(Y_class, w)  # (K,)
         F = np.tile(self.init_[:, None], (1, n_samples))  # class-major (K, n)
