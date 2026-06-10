@@ -493,6 +493,23 @@ class _BaseBooster:
         s = imp.sum()
         return imp / s if s > 0 else imp
 
+    def save_model(self, path):
+        """Serialize this fitted booster to a single ``.npz`` file."""
+        from .serialization import save_booster
+        save_booster(self, path)
+
+    @classmethod
+    def load_model(cls, path):
+        """Load a booster saved with :meth:`save_model`."""
+        from .serialization import load_booster
+        booster = load_booster(path)
+        if cls is not _BaseBooster and not isinstance(booster, cls):
+            raise TypeError(
+                f"{path!r} contains a {type(booster).__name__}, "
+                f"not a {cls.__name__}"
+            )
+        return booster
+
 
 class GradientBoosting(_BaseBooster):
     """Scalar booster: regression and binary classification."""

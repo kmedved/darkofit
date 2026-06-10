@@ -11,6 +11,10 @@ Public API:
   >>> proba = model.predict_proba(X_test)
 """
 
+# Single source of truth for the package version (pyproject reads this).
+# Defined before submodule imports so they may reference it safely.
+__version__ = "0.5.2"
+
 from .sklearn_api import (
     ChimeraBoostRegressor,
     ChimeraBoostClassifier,
@@ -20,4 +24,3 @@ __all__ = [
     "ChimeraBoostRegressor",
     "ChimeraBoostClassifier",
 ]
-__version__ = "0.4.0"

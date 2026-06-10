@@ -209,6 +209,41 @@ class ChimeraBoostRegressor(BaseEstimator, RegressorMixin):
         X = _ensure_dense(X)
         yield from self.model_.staged_predict_raw(X)
 
+    def save_model(self, path):
+        """Serialize the fitted model to a single ``.npz`` file."""
+        if not hasattr(self, "model_"):
+            raise ValueError("cannot save an unfitted model")
+        from .serialization import save_booster
+        save_booster(
+            self.model_, path,
+            wrapper_header={"wrapper_class": type(self).__name__,
+                            "params": self.get_params()},
+        )
+
+    @classmethod
+    def load_model(cls, path):
+        """Load a model saved with :meth:`save_model`."""
+        from .serialization import load_booster
+        booster, wrapper_header, _ = load_booster(
+            path, return_wrapper_payload=True
+        )
+        saved_class = wrapper_header.get("wrapper_class")
+        if saved_class is not None and saved_class != cls.__name__:
+            raise TypeError(
+                f"{path!r} was saved by {saved_class}, not {cls.__name__}"
+            )
+        if isinstance(booster, MulticlassBoosting):
+            raise TypeError(
+                f"{path!r} contains a multiclass model; "
+                "use ChimeraBoostClassifier.load_model"
+            )
+        est = cls()
+        params = wrapper_header.get("params") or {}
+        known = est.get_params()
+        est.set_params(**{k: v for k, v in params.items() if k in known})
+        est.model_ = booster
+        return est
+
     @property
     def best_iteration_(self):
         return self.model_.best_iteration_
@@ -391,6 +426,61 @@ class ChimeraBoostClassifier(BaseEstimator, ClassifierMixin):
         """Yield raw margins after each successive boosting round."""
         X = _ensure_dense(X)
         yield from self.model_.staged_predict_raw(X)
+
+    def save_model(self, path):
+        """Serialize the fitted model to a single ``.npz`` file."""
+        if not hasattr(self, "model_"):
+            raise ValueError("cannot save an unfitted model")
+        from .serialization import _encode_categories, save_booster
+
+        cls_arr = np.asarray(self.classes_)
+        if cls_arr.dtype == object:
+            values, kinds = _encode_categories(self.classes_)
+            wrapper_arrays = {"classes": values, "classes_kinds": kinds}
+        else:
+            wrapper_arrays = {"classes": cls_arr}
+        save_booster(
+            self.model_, path,
+            wrapper_header={"wrapper_class": type(self).__name__,
+                            "params": self.get_params()},
+            wrapper_arrays=wrapper_arrays,
+        )
+
+    @classmethod
+    def load_model(cls, path):
+        """Load a model saved with :meth:`save_model`."""
+        from .serialization import _decode_categories, load_booster
+
+        booster, wrapper_header, wrapper_arrays = load_booster(
+            path, return_wrapper_payload=True
+        )
+        saved_class = wrapper_header.get("wrapper_class")
+        if saved_class is not None and saved_class != cls.__name__:
+            raise TypeError(
+                f"{path!r} was saved by {saved_class}, not {cls.__name__}"
+            )
+        est = cls()
+        params = wrapper_header.get("params") or {}
+        known = est.get_params()
+        est.set_params(**{k: v for k, v in params.items() if k in known})
+        est.model_ = booster
+        est._multiclass = isinstance(booster, MulticlassBoosting)
+        if "classes" in wrapper_arrays:
+            classes = wrapper_arrays["classes"]
+            if "classes_kinds" in wrapper_arrays:
+                classes = _decode_categories(
+                    classes, wrapper_arrays["classes_kinds"]
+                )
+        elif est._multiclass:
+            classes = booster.classes_  # booster-level multiclass save
+        else:
+            raise ValueError(
+                f"{path!r} has no class labels; binary classifiers must be "
+                "saved with ChimeraBoostClassifier.save_model"
+            )
+        est.classes_ = classes
+        est.n_classes_ = len(classes)
+        return est
 
     @property
     def best_iteration_(self):

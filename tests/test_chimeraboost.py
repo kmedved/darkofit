@@ -4273,3 +4273,157 @@ def test_flat_kernels_direct_parity_all_families():
                 for k in range(K):
                     rt[k].add_predict(Xb, want[k])
         assert np.array_equal(got, want), kw
+
+
+def _cat_dataset(n=1500, seed=0, with_nan=True):
+    rng = np.random.default_rng(seed)
+    region = rng.choice(["north", "south", "east"], n).astype(object)
+    if with_nan:
+        region[::13] = None
+    X = np.empty((n, 3), dtype=object)
+    X[:, 0] = rng.normal(size=n)
+    X[:, 1] = region
+    X[:, 2] = rng.normal(size=n) * 4
+    y = (np.where(region == "north", 1.5, -0.5).astype(float)
+         + 0.7 * X[:, 0].astype(float) + rng.normal(0, 0.3, n))
+    return X, y
+
+
+def test_save_load_regressor_round_trip(tmp_path):
+    X, y = _cat_dataset()
+    path = str(tmp_path / "reg.npz")
+
+    for kw in ({}, {"tree_mode": "lightgbm"},
+               {"loss": "Quantile", "alpha": 0.8}):
+        m = ChimeraBoostRegressor(iterations=40, random_state=0, **kw)
+        m.fit(X, y, cat_features=[1])
+        m.save_model(path)
+        loaded = ChimeraBoostRegressor.load_model(path)
+
+        # Unseen and missing categories at predict time round-trip too.
+        X_new = X[:50].copy()
+        X_new[0, 1] = "west"
+        X_new[1, 1] = None
+        assert np.array_equal(m.predict(X_new), loaded.predict(X_new)), kw
+        assert np.array_equal(m.feature_importances_,
+                              loaded.feature_importances_)
+        assert loaded.best_iteration_ == m.best_iteration_
+        assert loaded.get_params()["tree_mode"] == m.get_params()["tree_mode"]
+
+
+def test_save_load_classifier_round_trip(tmp_path):
+    from sklearn.datasets import load_breast_cancer, load_wine
+
+    path = str(tmp_path / "clf.npz")
+
+    # Binary with numeric labels.
+    Xb, yb = load_breast_cancer(return_X_y=True)
+    binary = ChimeraBoostClassifier(iterations=30, random_state=0).fit(Xb, yb)
+    binary.save_model(path)
+    loaded = ChimeraBoostClassifier.load_model(path)
+    assert np.array_equal(binary.predict_proba(Xb), loaded.predict_proba(Xb))
+    assert np.array_equal(binary.classes_, loaded.classes_)
+
+    # Multiclass with string labels, both tree strategies.
+    Xw, yw_num = load_wine(return_X_y=True)
+    yw = np.array(["lo", "mid", "hi"])[yw_num]
+    for kw in ({}, {"tree_mode": "lightgbm"},
+               {"tree_mode": "lightgbm",
+                "multiclass_tree_strategy": "shared_vector"}):
+        mc = ChimeraBoostClassifier(iterations=15, random_state=0, **kw)
+        mc.fit(Xw, yw)
+        mc.save_model(path)
+        loaded = ChimeraBoostClassifier.load_model(path)
+        assert np.array_equal(mc.predict_proba(Xw), loaded.predict_proba(Xw)), kw
+        assert list(loaded.classes_) == list(mc.classes_)
+        assert np.array_equal(mc.predict(Xw), loaded.predict(Xw))
+
+
+def test_save_load_booster_level_and_errors(tmp_path):
+    from chimeraboost.booster import GradientBoosting, MulticlassBoosting
+    from sklearn.datasets import load_wine
+
+    path = str(tmp_path / "booster.npz")
+    X, y = load_diabetes(return_X_y=True)
+    m = GradientBoosting(iterations=20, random_state=0).fit(X, y)
+    m.save_model(path)
+    loaded = GradientBoosting.load_model(path)
+    assert np.array_equal(m.predict_raw(X), loaded.predict_raw(X))
+
+    with pytest.raises(TypeError):
+        MulticlassBoosting.load_model(path)
+
+    with pytest.raises(ValueError):
+        GradientBoosting(iterations=2).save_model(path)  # unfitted
+
+    depthwise = GradientBoosting(iterations=3, tree_mode="depthwise",
+                                 depth=3, random_state=0).fit(X, y)
+    with pytest.raises(ValueError):
+        depthwise.save_model(path)
+
+    Xw, yw = load_wine(return_X_y=True)
+    mc = MulticlassBoosting(iterations=10, random_state=0).fit(Xw, yw)
+    mc.save_model(path)
+    mc_loaded = MulticlassBoosting.load_model(path)
+    assert np.array_equal(mc.predict_raw(Xw), mc_loaded.predict_raw(Xw))
+    assert np.array_equal(mc.classes_, mc_loaded.classes_)
+
+
+def test_save_load_weighted_fit_round_trip(tmp_path):
+    X, y = _cat_dataset(seed=4)
+    rng = np.random.default_rng(0)
+    w = rng.uniform(0.5, 2.0, len(y))
+    m = ChimeraBoostRegressor(iterations=30, random_state=0)
+    m.fit(X, y, cat_features=[1], sample_weight=w)
+    path = str(tmp_path / "weighted.npz")
+    m.save_model(path)
+    loaded = ChimeraBoostRegressor.load_model(path)
+    assert np.array_equal(m.predict(X), loaded.predict(X))
+
+
+def test_pickle_round_trip():
+    import pickle
+
+    X, y = _cat_dataset(seed=7)
+    m = ChimeraBoostRegressor(iterations=25, random_state=0)
+    m.fit(X, y, cat_features=[1])
+    clone = pickle.loads(pickle.dumps(m))
+    assert np.array_equal(m.predict(X), clone.predict(X))
+
+    from sklearn.datasets import load_wine
+    Xw, yw = load_wine(return_X_y=True)
+    mc = ChimeraBoostClassifier(iterations=10, random_state=0).fit(Xw, yw)
+    clone = pickle.loads(pickle.dumps(mc))
+    assert np.array_equal(mc.predict_proba(Xw), clone.predict_proba(Xw))
+
+
+def test_load_model_cross_class_errors(tmp_path):
+    from sklearn.datasets import load_wine
+
+    Xw, yw = load_wine(return_X_y=True)
+    X, y = load_diabetes(return_X_y=True)
+
+    clf_path = str(tmp_path / "clf.npz")
+    ChimeraBoostClassifier(iterations=5, random_state=0).fit(
+        Xw, yw
+    ).save_model(clf_path)
+    with pytest.raises(TypeError):
+        ChimeraBoostRegressor.load_model(clf_path)
+
+    reg_path = str(tmp_path / "reg.npz")
+    ChimeraBoostRegressor(iterations=5, random_state=0).fit(
+        X, y
+    ).save_model(reg_path)
+    with pytest.raises(TypeError):
+        ChimeraBoostClassifier.load_model(reg_path)
+
+    # A booster-level multiclass save still loads through the classifier
+    # wrapper (class labels live on the booster there).
+    from chimeraboost.booster import MulticlassBoosting
+    booster_path = str(tmp_path / "mc.npz")
+    MulticlassBoosting(iterations=5, random_state=0).fit(
+        Xw, yw
+    ).save_model(booster_path)
+    loaded = ChimeraBoostClassifier.load_model(booster_path)
+    assert loaded.n_classes_ == 3
+    assert loaded.predict_proba(Xw).shape == (len(yw), 3)
