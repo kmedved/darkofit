@@ -3049,6 +3049,53 @@ def test_refit_without_early_stopping_does_not_double_fit():
     assert model.best_n_estimators_ == 8
 
 
+def test_refit_metadata_round_trips_through_save_load(tmp_path):
+    X, y = load_breast_cancer(return_X_y=True)
+    model = ChimeraBoostClassifier(
+        iterations=120, early_stopping=True, early_stopping_rounds=5,
+        validation_fraction=0.2, refit=True, refit_strategy="sqrt",
+        random_state=0
+    ).fit(X, y)
+    path = tmp_path / "refit_clf.npz"
+
+    model.save_model(path)
+    loaded = ChimeraBoostClassifier.load_model(path)
+
+    assert loaded.refit_ is True
+    assert loaded.refit_strategy_ == "sqrt"
+    assert loaded.refit_n_estimators_ == model.refit_n_estimators_
+    assert loaded.best_n_estimators_ == model.best_n_estimators_
+    assert loaded.best_score_ == model.best_score_
+    assert loaded.learning_rate_ == model.learning_rate_
+    assert loaded.n_estimators_ == model.n_estimators_
+    assert loaded.get_refit_params(strategy="sqrt")["iterations"] == (
+        model.get_refit_params(strategy="sqrt")["iterations"]
+    )
+
+
+def test_refit_strategy_errors_before_partial_fit():
+    X, y = load_breast_cancer(return_X_y=True)
+    model = ChimeraBoostClassifier(
+        iterations=20, early_stopping=True, refit=True,
+        refit_strategy="bogus", random_state=0
+    )
+    with pytest.raises(ValueError, match="unknown refit strategy"):
+        model.fit(X, y)
+    assert not hasattr(model, "model_")
+    assert not hasattr(model, "_selection_n_total_")
+
+    Xtr, Xv, ytr, yv = train_test_split(
+        X, y, test_size=0.2, random_state=0, stratify=y
+    )
+    model = ChimeraBoostClassifier(
+        iterations=20, early_stopping_rounds=5, refit=True,
+        refit_strategy="linear", random_state=0
+    )
+    with pytest.raises(ValueError, match="automatic validation split"):
+        model.fit(Xtr, ytr, eval_set=(Xv, yv))
+    assert not hasattr(model, "model_")
+
+
 def test_eval_labels_must_be_training_classes():
     from sklearn.datasets import load_wine
     X, y = load_wine(return_X_y=True)

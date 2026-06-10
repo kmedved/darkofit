@@ -124,12 +124,65 @@ class _RefitParamsMixin:
         self.refit_n_estimators_ = len(self.model_.trees_)
         self.refit_strategy_ = strategy
 
+    def _wrapper_state_header(self):
+        if not hasattr(self, "model_"):
+            return {}
+        state = {
+            "best_n_estimators": self.best_n_estimators_,
+            "best_score": self.best_score_,
+            "learning_rate": self.learning_rate_,
+            "refit": getattr(self, "refit_", False),
+            "refit_n_estimators": getattr(self, "refit_n_estimators_", None),
+            "refit_strategy": getattr(self, "refit_strategy_", None),
+        }
+        if hasattr(self, "_selection_n_total_"):
+            state["selection_n_total"] = self._selection_n_total_
+        if hasattr(self, "_selection_n_train_"):
+            state["selection_n_train"] = self._selection_n_train_
+        return state
+
+    def _restore_wrapper_state(self, state):
+        if not state:
+            return
+        if "best_n_estimators" in state:
+            self._best_n_estimators_ = int(state["best_n_estimators"])
+        if "best_score" in state:
+            self._best_score_ = state["best_score"]
+        if "learning_rate" in state:
+            self._learning_rate_ = state["learning_rate"]
+        self.refit_ = bool(state.get("refit", False))
+        self.refit_n_estimators_ = state.get("refit_n_estimators")
+        self.refit_strategy_ = state.get("refit_strategy")
+        if "selection_n_total" in state:
+            self._selection_n_total_ = int(state["selection_n_total"])
+        if "selection_n_train" in state:
+            self._selection_n_train_ = int(state["selection_n_train"])
+
     def _refit_params_for_booster(self, strategy):
         params = self.get_refit_params(strategy=strategy)
         return {
             k: v for k, v in params.items()
             if k not in {"loss", "alpha"} | _SKLEARN_ONLY
         }
+
+    def _refit_strategy_exponent(self, strategy):
+        try:
+            return _REFIT_STRATEGY_EXPONENT[strategy]
+        except KeyError as exc:
+            valid = ", ".join(sorted(_REFIT_STRATEGY_EXPONENT))
+            raise ValueError(
+                f"unknown refit strategy {strategy!r}; expected one of {valid}"
+            ) from exc
+
+    def _validate_refit_strategy_for_fit(self, strategy):
+        exponent = self._refit_strategy_exponent(strategy)
+        if exponent and not (hasattr(self, "_selection_n_total_") and
+                             hasattr(self, "_selection_n_train_")):
+            raise ValueError(
+                f"strategy={strategy!r} requires an automatic validation "
+                "split from fit; use strategy='exact' or set iterations "
+                "manually when fit used an explicit eval_set"
+            )
 
     def get_refit_params(self, strategy="exact"):
         """Return parameters for a fresh full-data refit.
@@ -151,13 +204,7 @@ class _RefitParamsMixin:
         if not hasattr(self, "model_"):
             raise ValueError("model must be fitted before calling get_refit_params")
 
-        try:
-            exponent = _REFIT_STRATEGY_EXPONENT[strategy]
-        except KeyError as exc:
-            valid = ", ".join(sorted(_REFIT_STRATEGY_EXPONENT))
-            raise ValueError(
-                f"unknown refit strategy {strategy!r}; expected one of {valid}"
-            ) from exc
+        exponent = self._refit_strategy_exponent(strategy)
 
         rounds = int(self.best_n_estimators_)
         if exponent:
@@ -291,6 +338,8 @@ class ChimeraBoostRegressor(_RefitParamsMixin, BaseEstimator, RegressorMixin):
         sample_weight_full = sample_weight
 
         self._clear_refit_selection_metadata()
+        if self.refit:
+            self._refit_strategy_exponent(self.refit_strategy)
         es_active = _should_early_stop(self.early_stopping)
         if es_active and eval_set is None:
             n_total = X.shape[0]
@@ -310,6 +359,9 @@ class ChimeraBoostRegressor(_RefitParamsMixin, BaseEstimator, RegressorMixin):
         es_rounds = self.early_stopping_rounds
         if es_active and es_rounds is None:
             es_rounds = 10
+        selection_active = es_rounds is not None and eval_set is not None
+        if self.refit and selection_active:
+            self._validate_refit_strategy_for_fit(self.refit_strategy)
 
         loss_kwargs = {"alpha": self.alpha} if self.loss == "Quantile" else {}
         kw = {k: v for k, v in self.get_params().items()
@@ -323,7 +375,6 @@ class ChimeraBoostRegressor(_RefitParamsMixin, BaseEstimator, RegressorMixin):
         selection_model = self.model_
         self._record_selection_result(selection_model)
 
-        selection_active = es_rounds is not None and eval_set is not None
         if self.refit and selection_active:
             refit_kw = self._refit_params_for_booster(self.refit_strategy)
             self.model_ = GradientBoosting(
@@ -353,7 +404,8 @@ class ChimeraBoostRegressor(_RefitParamsMixin, BaseEstimator, RegressorMixin):
         save_booster(
             self.model_, path,
             wrapper_header={"wrapper_class": type(self).__name__,
-                            "params": self.get_params()},
+                            "params": self.get_params(),
+                            "state": self._wrapper_state_header()},
         )
 
     @classmethod
@@ -378,6 +430,7 @@ class ChimeraBoostRegressor(_RefitParamsMixin, BaseEstimator, RegressorMixin):
         known = est.get_params()
         est.set_params(**{k: v for k, v in params.items() if k in known})
         est.model_ = booster
+        est._restore_wrapper_state(wrapper_header.get("state", {}))
         return est
 
     @property
@@ -492,6 +545,8 @@ class ChimeraBoostClassifier(_RefitParamsMixin, BaseEstimator, ClassifierMixin):
         sample_weight_full = sample_weight
 
         self._clear_refit_selection_metadata()
+        if self.refit:
+            self._refit_strategy_exponent(self.refit_strategy)
         es_active = _should_early_stop(self.early_stopping)
         if es_active and eval_set is None:
             n_total = X.shape[0]
@@ -513,6 +568,9 @@ class ChimeraBoostClassifier(_RefitParamsMixin, BaseEstimator, ClassifierMixin):
         es_rounds = self.early_stopping_rounds
         if es_active and es_rounds is None:
             es_rounds = 10
+        selection_active = es_rounds is not None and eval_set is not None
+        if self.refit and selection_active:
+            self._validate_refit_strategy_for_fit(self.refit_strategy)
 
         kw = {k: v for k, v in self.get_params().items()
               if k not in _SKLEARN_ONLY}
@@ -540,7 +598,6 @@ class ChimeraBoostClassifier(_RefitParamsMixin, BaseEstimator, ClassifierMixin):
         selection_model = self.model_
         self._record_selection_result(selection_model)
 
-        selection_active = es_rounds is not None and eval_set is not None
         if self.refit and selection_active:
             refit_kw = self._refit_params_for_booster(self.refit_strategy)
             if self._multiclass:
@@ -607,7 +664,8 @@ class ChimeraBoostClassifier(_RefitParamsMixin, BaseEstimator, ClassifierMixin):
         save_booster(
             self.model_, path,
             wrapper_header={"wrapper_class": type(self).__name__,
-                            "params": self.get_params()},
+                            "params": self.get_params(),
+                            "state": self._wrapper_state_header()},
             wrapper_arrays=wrapper_arrays,
         )
 
@@ -629,6 +687,7 @@ class ChimeraBoostClassifier(_RefitParamsMixin, BaseEstimator, ClassifierMixin):
         known = est.get_params()
         est.set_params(**{k: v for k, v in params.items() if k in known})
         est.model_ = booster
+        est._restore_wrapper_state(wrapper_header.get("state", {}))
         est._multiclass = isinstance(booster, MulticlassBoosting)
         if "classes" in wrapper_arrays:
             classes = wrapper_arrays["classes"]
