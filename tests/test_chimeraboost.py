@@ -4427,3 +4427,130 @@ def test_load_model_cross_class_errors(tmp_path):
     loaded = ChimeraBoostClassifier.load_model(booster_path)
     assert loaded.n_classes_ == 3
     assert loaded.predict_proba(Xw).shape == (len(yw), 3)
+
+
+@pytest.mark.parametrize("threads", [1, 0])  # 0 -> all available
+@pytest.mark.parametrize("constant_hessian", [False, True])
+def test_oblivious_level_subtraction_matches_full_rebuild(threads,
+                                                          constant_hessian):
+    import numba
+    from chimeraboost.tree import build_oblivious_tree
+
+    if threads == 0:
+        threads = numba.config.NUMBA_NUM_THREADS
+    if threads > 1 and numba.config.NUMBA_NUM_THREADS < 2:
+        pytest.skip("requires multithreaded numba")
+    rng = np.random.default_rng(17)
+    n, n_feat, max_bins = 40_000, 8, 16
+    # Skewed bins so deeper levels produce empty and near-empty children,
+    # exercising the exact empty-side handling.
+    X_binned = np.minimum(
+        rng.geometric(0.35, size=(n, n_feat)) - 1, max_bins - 2
+    ).astype(np.uint8)
+    n_bins = np.full(n_feat, max_bins, dtype=np.int64)
+    grad = rng.integers(-8, 9, size=n).astype(np.float64)
+    hess = (np.ones(n) if constant_hessian
+            else np.choose(rng.integers(0, 3, size=n), [0.5, 1.0, 2.0]))
+    Xf = np.asfortranarray(X_binned)
+
+    old_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(threads)
+        kw = dict(X_hist_binned=Xf, constant_hessian=constant_hessian,
+                  return_training_state=True)
+        base, leaf_b, G_b, H_b = build_oblivious_tree(
+            X_binned, grad, hess, n_bins, 5, 3.0, 0.1,
+            level_histogram_subtraction=False, **kw
+        )
+        fast, leaf_f, G_f, H_f = build_oblivious_tree(
+            X_binned, grad, hess, n_bins, 5, 3.0, 0.1,
+            level_histogram_subtraction=True, **kw
+        )
+    finally:
+        numba.set_num_threads(old_threads)
+
+    assert np.array_equal(base.splits_feat, fast.splits_feat)
+    assert np.array_equal(base.splits_thr, fast.splits_thr)
+    assert np.array_equal(base.values, fast.values)
+    assert np.array_equal(base.gains, fast.gains)
+    assert np.array_equal(leaf_b, leaf_f)
+    assert np.array_equal(G_b, G_f) and np.array_equal(H_b, H_f)
+    assert base.depth >= 4  # deep enough to exercise several levels
+
+
+def test_levelwise_level_subtraction_matches_full_rebuild():
+    import numba
+    from chimeraboost.tree import build_levelwise_tree
+
+    rng = np.random.default_rng(23)
+    n, n_feat, max_bins = 30_000, 6, 16
+    X_binned = np.minimum(
+        rng.geometric(0.4, size=(n, n_feat)) - 1, max_bins - 2
+    ).astype(np.uint8)
+    n_bins = np.full(n_feat, max_bins, dtype=np.int64)
+    grad = rng.integers(-8, 9, size=n).astype(np.float64)
+    hess = np.choose(rng.integers(0, 3, size=n), [0.5, 1.0, 2.0])
+    Xf = np.asfortranarray(X_binned)
+    kw = dict(X_hist_binned=Xf, return_training_state=True,
+              min_child_weight=8.0)
+
+    base, leaf_b, G_b, H_b = build_levelwise_tree(
+        X_binned, grad, hess, n_bins, 5, 3.0, 0.1,
+        level_histogram_subtraction=False, **kw
+    )
+    fast, leaf_f, G_f, H_f = build_levelwise_tree(
+        X_binned, grad, hess, n_bins, 5, 3.0, 0.1,
+        level_histogram_subtraction=True, **kw
+    )
+    assert np.array_equal(base.node_features, fast.node_features)
+    assert np.array_equal(base.node_thresholds, fast.node_thresholds)
+    assert np.array_equal(base.values, fast.values)
+    assert np.array_equal(leaf_b, leaf_f)
+    assert np.array_equal(G_b, G_f) and np.array_equal(H_b, H_f)
+
+
+def test_level_subtraction_float_quality_parity(monkeypatch):
+    """With real-valued gradients the subtraction differs only by float64
+    rounding; fitted-model quality must be unchanged. Both lanes are forced
+    explicitly because 'auto' is thread-count dependent."""
+    from sklearn.datasets import make_regression
+    import chimeraboost.tree as tree_mod
+    import chimeraboost.booster as booster_mod
+
+    X, y = make_regression(n_samples=20_000, n_features=15, noise=15,
+                           random_state=5)
+    original = tree_mod.build_oblivious_tree
+
+    def forced(setting):
+        def build(*args, **kwargs):
+            kwargs["level_histogram_subtraction"] = setting
+            return original(*args, **kwargs)
+        return build
+
+    monkeypatch.setattr(booster_mod, "build_oblivious_tree", forced(True))
+    m = ChimeraBoostRegressor(iterations=80, random_state=0).fit(X, y)
+    rmse_subtract = np.sqrt(np.mean((y - m.predict(X)) ** 2))
+
+    monkeypatch.setattr(booster_mod, "build_oblivious_tree", forced(False))
+    m2 = ChimeraBoostRegressor(iterations=80, random_state=0).fit(X, y)
+    rmse_full = np.sqrt(np.mean((y - m2.predict(X)) ** 2))
+    assert abs(rmse_subtract - rmse_full) < 0.02 * rmse_full
+
+
+def test_level_subtraction_auto_resolution():
+    from chimeraboost.tree import (
+        _LEVEL_SUBTRACTION_MAX_THREADS, _resolve_level_subtraction
+    )
+    import numba
+
+    old = numba.get_num_threads()
+    try:
+        numba.set_num_threads(1)
+        assert _resolve_level_subtraction("auto") is True
+        assert _resolve_level_subtraction(False) is False
+        if numba.config.NUMBA_NUM_THREADS > _LEVEL_SUBTRACTION_MAX_THREADS:
+            numba.set_num_threads(numba.config.NUMBA_NUM_THREADS)
+            assert _resolve_level_subtraction("auto") is False
+            assert _resolve_level_subtraction(True) is True
+    finally:
+        numba.set_num_threads(old)
