@@ -17,6 +17,7 @@ from .tree import (
     build_leafwise_tree,
     build_levelwise_tree,
     build_oblivious_tree,
+    ordered_leaf_update_inplace,
 )
 
 _LEAF_CORRECTION_SORT_MIN_LEAVES = 16
@@ -62,15 +63,6 @@ def _auto_learning_rate(n_samples, iterations, early_stopping):
         return 0.1
     lr = 20.0 / max(iterations, 1)
     return float(np.clip(lr, 0.03, 0.2))
-
-
-def _ordered_leaf_update(lr, leaf, leaf_G, leaf_H, grad, hess, l2):
-    """Leave-one-out update, finite even for singleton leaves with l2=0."""
-    numerator = leaf_G[leaf] - grad
-    denominator = np.maximum(leaf_H[leaf] - hess, 0.0) + l2
-    update = np.zeros_like(numerator, dtype=np.float64)
-    np.divide(-lr * numerator, denominator, out=update, where=denominator > 0.0)
-    return update
 
 
 def _one_hot_class_major(y_idx, n_classes):
@@ -174,7 +166,7 @@ class _BaseBooster:
                  random_state=None, verbose=False, ordered_boosting="auto",
                  verbose_timing=False, tree_mode="catboost",
                  sampling="uniform", top_rate=0.2, other_rate=0.1,
-                 multiclass_tree_strategy="auto"):
+                 multiclass_tree_strategy="auto", eval_train_loss=True):
         self.iterations = int(iterations)
         self.learning_rate = learning_rate
         self.l2_leaf_reg = float(l2_leaf_reg)
@@ -201,6 +193,7 @@ class _BaseBooster:
         self.top_rate = float(top_rate)
         self.other_rate = float(other_rate)
         self.multiclass_tree_strategy = multiclass_tree_strategy
+        self.eval_train_loss = bool(eval_train_loss)
         self._validate_sampling_config()
 
     def _validate_sampling_config(self):
@@ -518,6 +511,10 @@ class GradientBoosting(_BaseBooster):
         rng = np.random.default_rng(self.random_state)
         self.trees_ = []
         self.train_history_, self.valid_history_ = [], []
+        # Train loss is diagnostic only (early stopping watches the eval set),
+        # so skipping it when nobody will read it saves one full O(n) pass per
+        # round. verbose forces it back on because the progress log prints it.
+        eval_train = self.eval_train_loss or bool(self.verbose)
         best_score, best_iter = np.inf, 0
         t0 = time.time()
 
@@ -564,8 +561,8 @@ class GradientBoosting(_BaseBooster):
                 # tree.values keeps the standard Newton values for inference;
                 # only the training F uses this corrected update. Subsampled-out
                 # rows (g=h=0) fall back to the standard leaf value.
-                F += _ordered_leaf_update(
-                    self.lr_, leaf, leaf_G, leaf_H, g, h, self.l2_leaf_reg
+                ordered_leaf_update_inplace(
+                    leaf, leaf_G, leaf_H, g, h, self.lr_, self.l2_leaf_reg, F
                 )
             elif self.tree_mode_ == "lightgbm":
                 add_leaf_values_inplace(leaf, tree.values, F)
@@ -573,9 +570,10 @@ class GradientBoosting(_BaseBooster):
                 tree.add_predict(X_binned, F)
             _add_timing(timing, "train_update", phase)
 
-            phase = _start_timing(timing)
-            self.train_history_.append(self.loss_.eval(y, F, w))
-            _add_timing(timing, "loss_eval", phase)
+            if eval_train:
+                phase = _start_timing(timing)
+                self.train_history_.append(self.loss_.eval(y, F, w))
+                _add_timing(timing, "loss_eval", phase)
 
             if Fv is not None:
                 phase = _start_timing(timing)
@@ -776,6 +774,7 @@ class MulticlassBoosting(_BaseBooster):
         rng = np.random.default_rng(self.random_state)
         self.trees_ = []                           # list of rounds; each = K trees
         self.train_history_, self.valid_history_ = [], []
+        eval_train = self.eval_train_loss or bool(self.verbose)
         best_score, best_iter = np.inf, 0
         t0 = time.time()
 
@@ -824,11 +823,12 @@ class MulticlassBoosting(_BaseBooster):
                 add_multiclass_leaf_values_inplace(leaf, tree.values, F)
                 _add_timing(timing, "train_update", phase)
 
-                phase = _start_timing(timing)
-                self.train_history_.append(
-                    self.loss_.eval_class_major_labels(y_idx, F, w)
-                )
-                _add_timing(timing, "loss_eval", phase)
+                if eval_train:
+                    phase = _start_timing(timing)
+                    self.train_history_.append(
+                        self.loss_.eval_class_major_labels(y_idx, F, w)
+                    )
+                    _add_timing(timing, "loss_eval", phase)
 
                 if Fv is not None:
                     phase = _start_timing(timing)
@@ -890,8 +890,9 @@ class MulticlassBoosting(_BaseBooster):
                 if tree.depth > 0:
                     self._accumulate_importance(tree)
                 if self.ordered_boosting_ and tree.depth > 0:
-                    F[k] += _ordered_leaf_update(
-                        self.lr_, leaf, leaf_G, leaf_H, g, h, self.l2_leaf_reg_
+                    ordered_leaf_update_inplace(
+                        leaf, leaf_G, leaf_H, g, h, self.lr_,
+                        self.l2_leaf_reg_, F[k]
                     )
                 elif self.tree_mode_ == "lightgbm" and tree.depth > 0:
                     add_leaf_values_inplace(leaf, tree.values, F[k])
@@ -906,11 +907,12 @@ class MulticlassBoosting(_BaseBooster):
                           f"stopping.")
                 break
             self.trees_.append(round_trees)
-            phase = _start_timing(timing)
-            self.train_history_.append(
-                self.loss_.eval_class_major_labels(y_idx, F, w)
-            )
-            _add_timing(timing, "loss_eval", phase)
+            if eval_train:
+                phase = _start_timing(timing)
+                self.train_history_.append(
+                    self.loss_.eval_class_major_labels(y_idx, F, w)
+                )
+                _add_timing(timing, "loss_eval", phase)
 
             if Fv is not None:
                 phase = _start_timing(timing)

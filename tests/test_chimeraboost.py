@@ -3076,18 +3076,21 @@ def test_best_split_serial_matches_parallel_histogram_search():
 
 def test_ordered_leaf_update_l2_zero_singleton_is_finite():
     """Leave-one-out ordered updates should remain finite when l2=0."""
-    from chimeraboost.booster import _ordered_leaf_update
+    from chimeraboost.tree import ordered_leaf_update_inplace
 
-    leaf = np.array([0, 1, 1])
+    leaf = np.array([0, 1, 1], dtype=np.int64)
     grad = np.array([1.0, 2.0, 3.0])
     hess = np.ones(3)
     leaf_G = np.array([1.0, 5.0])
     leaf_H = np.array([1.0, 2.0])
+    F = np.zeros(3)
 
-    update = _ordered_leaf_update(0.1, leaf, leaf_G, leaf_H, grad, hess, 0.0)
+    ordered_leaf_update_inplace(leaf, leaf_G, leaf_H, grad, hess, 0.1, 0.0, F)
 
-    assert np.all(np.isfinite(update))
-    assert update[0] == 0.0
+    assert np.all(np.isfinite(F))
+    # The singleton leaf's leave-one-out denominator is zero, so its row gets
+    # no update.
+    assert F[0] == 0.0
 
 
 def test_feature_contiguous_hist_layout_matches_c_order_tree_build():
@@ -3645,3 +3648,89 @@ def test_empty_tree_stops_boosting_early():
     m = ChimeraBoostRegressor(iterations=1000, min_child_weight=30,
                               random_state=0).fit(X, y)
     assert len(m.model_.trees_) < 1000
+
+
+def test_eval_train_loss_false_skips_train_history():
+    """Disabling train-loss evaluation must not change the fitted model, only
+    leave train_history_ empty (train loss never influences tree growth)."""
+    X, y = load_diabetes(return_X_y=True)
+    Xtr, Xv, ytr, yv = train_test_split(X, y, test_size=0.2, random_state=0)
+
+    on = ChimeraBoostRegressor(iterations=40, random_state=0).fit(Xtr, ytr)
+    off = ChimeraBoostRegressor(
+        iterations=40, random_state=0, eval_train_loss=False
+    ).fit(Xtr, ytr)
+    assert len(on.model_.train_history_) == 40
+    assert off.model_.train_history_ == []
+    assert np.array_equal(on.predict(Xv), off.predict(Xv))
+    # Without an eval set, best_score_ falls back to a final train evaluation.
+    assert np.isclose(off.best_score_, on.model_.train_history_[-1])
+
+    # With early stopping, the eval-set path is untouched.
+    es_on = ChimeraBoostRegressor(
+        iterations=300, early_stopping_rounds=20, random_state=0
+    ).fit(Xtr, ytr, eval_set=(Xv, yv))
+    es_off = ChimeraBoostRegressor(
+        iterations=300, early_stopping_rounds=20, random_state=0,
+        eval_train_loss=False
+    ).fit(Xtr, ytr, eval_set=(Xv, yv))
+    assert es_off.best_iteration_ == es_on.best_iteration_
+    assert es_off.model_.valid_history_ == es_on.model_.valid_history_
+    assert np.array_equal(es_on.predict(Xv), es_off.predict(Xv))
+
+
+def test_eval_train_loss_false_multiclass_and_verbose_override(capsys):
+    from sklearn.datasets import load_wine
+
+    X, y = load_wine(return_X_y=True)
+    on = ChimeraBoostClassifier(iterations=8, random_state=0).fit(X, y)
+    off = ChimeraBoostClassifier(
+        iterations=8, random_state=0, eval_train_loss=False
+    ).fit(X, y)
+    assert len(on.model_.train_history_) == 8
+    assert off.model_.train_history_ == []
+    assert np.array_equal(on.predict_proba(X), off.predict_proba(X))
+
+    # verbose needs the train loss for its progress log, so it forces the
+    # evaluation back on even when eval_train_loss=False.
+    verbose = ChimeraBoostClassifier(
+        iterations=8, random_state=0, eval_train_loss=False, verbose=True
+    ).fit(X, y)
+    capsys.readouterr()
+    assert len(verbose.model_.train_history_) == 8
+
+
+def test_ordered_leaf_update_inplace_matches_numpy_formula():
+    from chimeraboost.tree import ordered_leaf_update_inplace
+
+    rng = np.random.default_rng(11)
+    n, n_leaves = 500, 8
+    leaf = rng.integers(0, n_leaves, size=n).astype(np.int64)
+    grad = rng.normal(size=n)
+    hess = rng.uniform(0.1, 2.0, size=n)
+    # Force one singleton leaf so the zero-denominator fallback is exercised
+    # when l2 = 0.
+    leaf[0] = n_leaves - 1
+    leaf[leaf == n_leaves - 1] = 0
+    leaf[0] = n_leaves - 1
+    leaf_G = np.zeros(n_leaves)
+    leaf_H = np.zeros(n_leaves)
+    np.add.at(leaf_G, leaf, grad)
+    np.add.at(leaf_H, leaf, hess)
+
+    for l2 in (0.0, 3.0):
+        F_kernel = rng.normal(size=n)
+        F_numpy = F_kernel.copy()
+        lr = 0.1
+
+        numerator = leaf_G[leaf] - grad
+        denominator = np.maximum(leaf_H[leaf] - hess, 0.0) + l2
+        update = np.zeros_like(numerator)
+        np.divide(-lr * numerator, denominator, out=update,
+                  where=denominator > 0.0)
+        F_numpy += update
+
+        ordered_leaf_update_inplace(
+            leaf, leaf_G, leaf_H, grad, hess, lr, l2, F_kernel
+        )
+        assert np.array_equal(F_kernel, F_numpy)

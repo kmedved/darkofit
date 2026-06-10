@@ -1921,6 +1921,25 @@ def add_leaf_values_inplace(leaf, values, out):
         out[i] += values[leaf[i]]
 
 
+@njit(cache=True, parallel=True)
+def ordered_leaf_update_inplace(leaf, leaf_G, leaf_H, grad, hess, lr, l2, F):
+    """Leave-one-out Newton step added directly into the training margin.
+
+    Each row's update uses its leaf's gradient/hessian totals with that row's
+    own contribution removed. Rows whose leave-one-out denominator is not
+    positive (e.g. singleton leaves with l2=0) are left unchanged, matching
+    the zero-update fallback of the numpy formulation this replaces.
+    """
+    for i in prange(F.shape[0]):
+        l = leaf[i]
+        denom = leaf_H[l] - hess[i]
+        if denom < 0.0:
+            denom = 0.0
+        denom += l2
+        if denom > 0.0:
+            F[i] += -lr * (leaf_G[l] - grad[i]) / denom
+
+
 @njit(cache=True)
 def add_multiclass_leaf_values_inplace(leaf, values, out):
     """Add vector leaf values into a class-major margin matrix."""

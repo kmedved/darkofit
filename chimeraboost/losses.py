@@ -11,7 +11,7 @@ classification it is the log-odds, turned into a probability by a sigmoid.
 """
 
 import numpy as np
-from numba import njit
+from numba import njit, prange
 
 
 # --------------------------------------------------------------------------
@@ -62,9 +62,9 @@ def _sigmoid(z):
     return out
 
 
-@njit(cache=True)
+@njit(cache=True, parallel=True)
 def _logloss_grad_hess_into(y, raw, sample_weight, grad_out, hess_out):
-    for i in range(raw.shape[0]):
+    for i in prange(raw.shape[0]):
         z = raw[i]
         if z >= 0.0:
             p = 1.0 / (1.0 + np.exp(-z))
@@ -83,11 +83,11 @@ def _logloss_grad_hess_into(y, raw, sample_weight, grad_out, hess_out):
         hess_out[i] = hess
 
 
-@njit(cache=True)
+@njit(cache=True, parallel=True)
 def _logloss_eval(y, raw, sample_weight):
     total = 0.0
     weight_total = 0.0
-    for i in range(raw.shape[0]):
+    for i in prange(raw.shape[0]):
         z = raw[i]
         if z >= 0.0:
             p = 1.0 / (1.0 + np.exp(-z))
@@ -256,10 +256,10 @@ def _softmax_class_major(F):
     return ez / ez.sum(axis=0, keepdims=True)
 
 
-@njit(cache=True)
+@njit(cache=True, parallel=True)
 def _softmax_class_major_grad_hess_into(Y, F, sample_weight, grad_out, hess_out):
     K, n = F.shape
-    for i in range(n):
+    for i in prange(n):
         max_f = F[0, i]
         for k in range(1, K):
             if F[k, i] > max_f:
@@ -285,12 +285,12 @@ def _softmax_class_major_grad_hess_into(Y, F, sample_weight, grad_out, hess_out)
             hess_out[k, i] = hess
 
 
-@njit(cache=True)
+@njit(cache=True, parallel=True)
 def _softmax_class_major_eval(Y, F, sample_weight):
     K, n = F.shape
     total = 0.0
     weight_total = 0.0
-    for i in range(n):
+    for i in prange(n):
         max_f = F[0, i]
         for k in range(1, K):
             if F[k, i] > max_f:
@@ -320,12 +320,12 @@ def _softmax_class_major_eval(Y, F, sample_weight):
     return total / weight_total
 
 
-@njit(cache=True)
+@njit(cache=True, parallel=True)
 def _softmax_class_major_eval_labels(labels, F, sample_weight):
     K, n = F.shape
     total = 0.0
     weight_total = 0.0
-    for i in range(n):
+    for i in prange(n):
         max_f = F[0, i]
         for k in range(1, K):
             if F[k, i] > max_f:
