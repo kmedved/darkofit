@@ -22,6 +22,13 @@ clf = ChimeraBoostClassifier(early_stopping=True)
 clf.fit(X, y, sample_weight=w)
 ```
 
+Models can be saved without pickle:
+
+```
+clf.save_model("model.npz")
+clf2 = ChimeraBoostClassifier.load_model("model.npz")
+```
+
 Tree builders are selectable:
 
 ```
@@ -43,9 +50,26 @@ maximum path-depth cap. `ordered_boosting` defaults to off for this mode; settin
 Categorical features still use ChimeraBoost's ordered target-stat preprocessing,
 not native LightGBM category-partition splits.
 
+Row sampling is selectable with `sampling="uniform"` (default) or
+`sampling="goss"` plus `top_rate` / `other_rate`.
+
+Large-fit preprocessing samples up to 200,000 rows when learning numeric bin
+borders, similar to LightGBM's `bin_construct_sample_cnt`. Set
+`bin_sample_count=None` to recover exact full-data border learning.
+
+Training loss is evaluated every round by default for diagnostics. Set
+`eval_train_loss=False` to skip that pass when you only care about the fitted
+model or validation-set early stopping; validation loss and early stopping are
+unchanged.
+
+`histogram_parallelism="row"` enables an experimental row-parallel histogram
+builder. The default `"auto"` keeps the measured-best feature-parallel path on
+the current benchmark machine; use the row-parallel lane only when profiling
+shows it helps your hardware.
+
 Not implemented in `tree_mode="lightgbm"`: native LightGBM categorical splits,
-GOSS, DART, GPU training, sparse optimization, monotone constraints, ranking,
-custom objectives, custom eval metrics, or LightGBM model import/export.
+DART, GPU training, sparse optimization, monotone constraints, ranking, custom
+objectives, custom eval metrics, or LightGBM model import/export.
 
 Benchmark notes and fair comparison recipes live in
 [BENCHMARK_NOTES.md](BENCHMARK_NOTES.md).
