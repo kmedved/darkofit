@@ -9,6 +9,11 @@ import time
 import numpy as np
 
 from .binning import DEFAULT_BIN_SAMPLE_COUNT
+from .flat_model import (
+    build_flat_ensemble,
+    build_flat_multiclass_ensemble,
+    flat_predict_preferred,
+)
 from .losses import LOSSES, MultiSoftmax
 from .preprocessing import FeaturePreprocessor
 from .tree import (
@@ -468,6 +473,19 @@ class _BaseBooster:
             orig = self.prep_.feature_map_[f]
             self._importance[orig] += g
 
+    def _flat_ensemble(self):
+        """Build (lazily, once per fitted tree list) the flattened ensemble
+        used for batch prediction. Returns None for unsupported tree types,
+        in which case callers fall back to the per-tree loop. The cache is
+        keyed on the trees_ list identity, so a refit (which rebinds trees_)
+        invalidates it exactly."""
+        cache = getattr(self, "_flat_cache_", None)
+        if cache is not None and cache[0] is self.trees_:
+            return cache[1]
+        flat = self._build_flat_ensemble()
+        self._flat_cache_ = (self.trees_, flat)
+        return flat
+
     @property
     def feature_importances_(self):
         """Total split gain per ORIGINAL input column, normalized to sum 1."""
@@ -571,6 +589,7 @@ class GradientBoosting(_BaseBooster):
 
         rng = np.random.default_rng(self.random_state)
         self.trees_ = []
+        self._flat_cache_ = None  # drop any previous fit's flattened ensemble
         self.train_history_, self.valid_history_ = [], []
         # Train loss is diagnostic only (early stopping watches the eval set),
         # so skipping it when nobody will read it saves one full O(n) pass per
@@ -701,6 +720,9 @@ class GradientBoosting(_BaseBooster):
             tree.values[l] = self.lr_ * self.loss_.leaf_value(r, w)
             start = end
 
+    def _build_flat_ensemble(self):
+        return build_flat_ensemble(self.trees_)
+
     def predict_raw(self, X):
         """Return raw additive scores (pre-link): the regression prediction, or
         the log-odds for binary classification."""
@@ -708,8 +730,12 @@ class GradientBoosting(_BaseBooster):
              else np.asarray(X, dtype=np.float64))
         X_binned = self.prep_.transform(X)
         F = np.full(X_binned.shape[0], self.init_, dtype=np.float64)
-        for tree in self.trees_:
-            tree.add_predict(X_binned, F)
+        flat = self._flat_ensemble()
+        if flat is not None and flat_predict_preferred(flat):
+            flat.add_predict(X_binned, F)
+        else:
+            for tree in self.trees_:
+                tree.add_predict(X_binned, F)
         return F
 
     def staged_predict_raw(self, X):
@@ -838,6 +864,7 @@ class MulticlassBoosting(_BaseBooster):
 
         rng = np.random.default_rng(self.random_state)
         self.trees_ = []                           # list of rounds; each = K trees
+        self._flat_cache_ = None  # drop any previous fit's flattened ensemble
         self.train_history_, self.valid_history_ = [], []
         eval_train = self.eval_train_loss or bool(self.verbose)
         best_score, best_iter = np.inf, 0
@@ -1016,6 +1043,9 @@ class MulticlassBoosting(_BaseBooster):
             self.best_score_ = self.loss_.eval_class_major_labels(y_idx, F, w)
         return self
 
+    def _build_flat_ensemble(self):
+        return build_flat_multiclass_ensemble(self.trees_, self.n_classes_)
+
     def predict_raw(self, X):
         """Return the (n_samples, n_classes) matrix of raw per-class scores
         (pre-softmax)."""
@@ -1023,12 +1053,16 @@ class MulticlassBoosting(_BaseBooster):
              else np.asarray(X, dtype=np.float64))
         X_binned = self.prep_.transform(X)
         F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
-        for round_trees in self.trees_:
-            if hasattr(round_trees, "add_predict_class_major"):
-                round_trees.add_predict_class_major(X_binned, F)
-            else:
-                for k in range(self.n_classes_):
-                    round_trees[k].add_predict(X_binned, F[k])
+        flat = self._flat_ensemble()
+        if flat is not None and flat_predict_preferred(flat):
+            flat.add_predict_class_major(X_binned, F)
+        else:
+            for round_trees in self.trees_:
+                if hasattr(round_trees, "add_predict_class_major"):
+                    round_trees.add_predict_class_major(X_binned, F)
+                else:
+                    for k in range(self.n_classes_):
+                        round_trees[k].add_predict(X_binned, F[k])
         return F.T
 
     def staged_predict_raw(self, X):

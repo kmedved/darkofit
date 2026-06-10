@@ -4130,3 +4130,146 @@ def test_interleaved_hist_buffers_lightgbm_mode_bitwise(monkeypatch):
         iterations=40, tree_mode="lightgbm", thread_count=2, random_state=0
     ).fit(X, y)
     assert np.array_equal(a.predict(X), b.predict(X))
+
+
+def _loop_predict_raw(model, X):
+    """Reference per-tree prediction loop (what predict_raw used to do)."""
+    X = (np.asarray(X, dtype=object) if model.prep_.cat_features_
+         else np.asarray(X, dtype=np.float64))
+    Xb = model.prep_.transform(X)
+    F = np.full(Xb.shape[0], model.init_, dtype=np.float64)
+    for tree in model.trees_:
+        tree.add_predict(Xb, F)
+    return F
+
+
+def _loop_predict_raw_multiclass(model, X):
+    X = (np.asarray(X, dtype=object) if model.prep_.cat_features_
+         else np.asarray(X, dtype=np.float64))
+    Xb = model.prep_.transform(X)
+    F = np.tile(model.init_[:, None], (1, Xb.shape[0]))
+    for round_trees in model.trees_:
+        if hasattr(round_trees, "add_predict_class_major"):
+            round_trees.add_predict_class_major(Xb, F)
+        else:
+            for k in range(model.n_classes_):
+                round_trees[k].add_predict(Xb, F[k])
+    return F.T
+
+
+def test_flat_prediction_matches_tree_loop_bitwise():
+    from sklearn.datasets import make_regression, make_classification
+
+    Xr, yr = make_regression(n_samples=3000, n_features=12, noise=5,
+                             random_state=0)
+    Xc, yc = make_classification(n_samples=3000, n_features=12,
+                                 random_state=0)
+
+    cat = ChimeraBoostRegressor(iterations=60, random_state=0).fit(Xr, yr)
+    assert np.array_equal(cat.predict(Xr), _loop_predict_raw(cat.model_, Xr))
+
+    lgb = ChimeraBoostRegressor(iterations=60, tree_mode="lightgbm",
+                                random_state=0).fit(Xr, yr)
+    assert np.array_equal(lgb.predict(Xr), _loop_predict_raw(lgb.model_, Xr))
+
+    binary = ChimeraBoostClassifier(iterations=60, tree_mode="lightgbm",
+                                    random_state=0).fit(Xc, yc)
+    raw = binary.model_.predict_raw(Xc)
+    assert np.array_equal(raw, _loop_predict_raw(binary.model_, Xc))
+
+
+def test_flat_multiclass_prediction_matches_loop_bitwise():
+    from sklearn.datasets import load_wine
+
+    X, y = load_wine(return_X_y=True)
+
+    for kw in (
+        {},                                            # catboost per-class
+        {"tree_mode": "lightgbm"},                     # lightgbm per-class
+        {"tree_mode": "lightgbm",
+         "multiclass_tree_strategy": "shared_vector"},  # vector leaves
+    ):
+        m = ChimeraBoostClassifier(iterations=20, random_state=0, **kw)
+        m.fit(X, y)
+        got = m.model_.predict_raw(X)
+        want = _loop_predict_raw_multiclass(m.model_, X)
+        assert np.array_equal(got, want), kw
+
+
+def test_flat_prediction_fallback_and_refit_invalidation():
+    from sklearn.datasets import make_regression
+    from chimeraboost.booster import GradientBoosting
+
+    X, y = make_regression(n_samples=2000, n_features=8, noise=5,
+                           random_state=1)
+
+    # Experimental depthwise trees are not flattened; the loop fallback runs.
+    depthwise = GradientBoosting(iterations=10, tree_mode="depthwise",
+                                 depth=4, random_state=0)
+    depthwise.fit(X, y)
+    assert depthwise._flat_ensemble() is None
+    assert np.array_equal(depthwise.predict_raw(X), _loop_predict_raw(depthwise, X))
+
+    # Refitting the same booster object must invalidate the flat cache.
+    m = GradientBoosting(iterations=15, random_state=0)
+    m.fit(X, y)
+    first = m.predict_raw(X)
+    assert m._flat_cache_[0] is m.trees_
+    X2, y2 = make_regression(n_samples=2000, n_features=8, noise=5,
+                             random_state=2)
+    m.fit(X2, y2)
+    second = m.predict_raw(X2)
+    fresh = GradientBoosting(iterations=15, random_state=0).fit(X2, y2)
+    assert np.array_equal(second, fresh.predict_raw(X2))
+    assert not np.array_equal(first[:10], second[:10])
+
+
+def test_flat_kernels_direct_parity_all_families():
+    """Exercise every flat-ensemble kernel directly against the per-tree
+    loop, including families the predict router currently sends to the loop
+    (explicit-node trees), since they back model serialization."""
+    import numba
+    from sklearn.datasets import make_regression, load_wine
+    from chimeraboost.flat_model import (
+        FlatNonObliviousEnsemble, FlatObliviousEnsemble, flat_predict_preferred
+    )
+
+    Xr, yr = make_regression(n_samples=2500, n_features=10, noise=5,
+                             random_state=0)
+    lgb = ChimeraBoostRegressor(iterations=40, tree_mode="lightgbm",
+                                random_state=0).fit(Xr, yr)
+    flat = lgb.model_._flat_ensemble()
+    assert isinstance(flat, FlatNonObliviousEnsemble)
+    assert not flat_predict_preferred(flat)  # router keeps the loop
+    Xb = lgb.model_.prep_.transform(np.asarray(Xr, dtype=np.float64))
+    got = np.zeros(Xb.shape[0])
+    flat.add_predict(Xb, got)
+    want = np.zeros(Xb.shape[0])
+    for tree in lgb.model_.trees_:
+        tree.add_predict(Xb, want)
+    assert np.array_equal(got, want)
+
+    Xw, yw = load_wine(return_X_y=True)
+    for kw, expect_pref in (
+        ({}, numba.get_num_threads() > 1),               # oblivious class
+        ({"tree_mode": "lightgbm"}, False),              # nonobl class
+        ({"tree_mode": "lightgbm",
+          "multiclass_tree_strategy": "shared_vector"}, False),
+    ):
+        m = ChimeraBoostClassifier(iterations=15, random_state=0, **kw)
+        m.fit(Xw, yw)
+        flat = m.model_._flat_ensemble()
+        assert flat is not None
+        assert flat_predict_preferred(flat) == expect_pref, kw
+        Xb = m.model_.prep_.transform(np.asarray(Xw, dtype=np.float64))
+        K = m.model_.n_classes_
+        got = np.zeros((K, Xb.shape[0]))
+        flat.add_predict_class_major(Xb, got)
+        want = np.zeros((K, Xb.shape[0]))
+        for rt in m.model_.trees_:
+            if hasattr(rt, "add_predict_class_major"):
+                rt.add_predict_class_major(Xb, want)
+            else:
+                for k in range(K):
+                    rt[k].add_predict(Xb, want[k])
+        assert np.array_equal(got, want), kw
