@@ -29,6 +29,13 @@ not default speed wins:
   for compatible LightGBM-mode multiclass fits. Forced shared-vector trees were
   slower on numeric multiclass in the focused benchmark, so `auto` preserves the
   previous default behavior.
+- Histogram buffers are interleaved lane views of one
+  `(features, leaves, bins, 2-or-3)` base array for fits at <= 4 threads, so
+  each bin's grad/hess(/count) share a cache line. Results are bitwise
+  identical (the kernels are layout-agnostic and summation order is
+  unchanged). Measured end-to-end on the Apple-silicon dev box at 200k x 40:
+  +27% at 1 thread, +6% at 2 threads, neutral at 4; at 8+ threads the effect
+  was neutral-to-negative, so larger fits keep separate buffers.
 - `histogram_parallelism="row"` is an opt-in lane that fills histograms with
   row-chunked thread-local accumulators (one read of grad/hess/leaf per scan)
   instead of the feature-parallel kernels (one read per feature). It has exact

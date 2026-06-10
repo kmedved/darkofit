@@ -4080,3 +4080,53 @@ def test_levelwise_rowpar_matches_feature_parallel():
     assert np.array_equal(base.values, fast.values)
     assert np.array_equal(leaf_b, leaf_f)
     assert np.array_equal(G_b, G_f) and np.array_equal(H_b, H_f)
+
+
+def test_interleaved_hist_buffers_bitwise_match_separate(monkeypatch):
+    """Low-thread fits use lane views of one interleaved base array; results
+    must be bitwise identical to separate buffers (same summation order)."""
+    import chimeraboost.booster as booster_mod
+
+    X, y = load_breast_cancer(return_X_y=True)
+
+    interleaved = ChimeraBoostClassifier(
+        iterations=40, thread_count=2, random_state=0
+    ).fit(X, y)
+    bufs = interleaved.model_._alloc_hist_buffers(
+        5, np.full(5, 32, dtype=np.int64)
+    )
+    # Lane views of one interleaved base: 16-byte last-axis stride (two
+    # adjacent float64 lanes), one shared base array. np.shares_memory would
+    # be False here because interleaved lanes never overlap byte-for-byte.
+    assert bufs[0].base is not None and bufs[0].base is bufs[1].base
+    assert bufs[0].strides[-1] == 16
+
+    monkeypatch.setattr(
+        booster_mod._BaseBooster, "_HIST_INTERLEAVE_MAX_THREADS", -1
+    )
+    separate = ChimeraBoostClassifier(
+        iterations=40, thread_count=2, random_state=0
+    ).fit(X, y)
+    sep_bufs = separate.model_._alloc_hist_buffers(
+        5, np.full(5, 32, dtype=np.int64)
+    )
+    assert sep_bufs[0].base is None or sep_bufs[0].base is not sep_bufs[1].base
+    assert np.array_equal(
+        interleaved.predict_proba(X), separate.predict_proba(X)
+    )
+
+
+def test_interleaved_hist_buffers_lightgbm_mode_bitwise(monkeypatch):
+    import chimeraboost.booster as booster_mod
+
+    X, y = load_diabetes(return_X_y=True)
+    a = ChimeraBoostRegressor(
+        iterations=40, tree_mode="lightgbm", thread_count=2, random_state=0
+    ).fit(X, y)
+    monkeypatch.setattr(
+        booster_mod._BaseBooster, "_HIST_INTERLEAVE_MAX_THREADS", -1
+    )
+    b = ChimeraBoostRegressor(
+        iterations=40, tree_mode="lightgbm", thread_count=2, random_state=0
+    ).fit(X, y)
+    assert np.array_equal(a.predict(X), b.predict(X))

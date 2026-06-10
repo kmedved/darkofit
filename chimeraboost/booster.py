@@ -259,6 +259,12 @@ class _BaseBooster:
             )
         return resolved
 
+    # Interleaving wins by touching one cache line per (row, feature) instead
+    # of two or three, which pays off while per-thread bandwidth is the
+    # constraint; at higher thread counts the shared memory bus saturates
+    # either way and the measured effect is neutral-to-negative.
+    _HIST_INTERLEAVE_MAX_THREADS = 4
+
     def _alloc_hist_buffers(self, n_features, n_bins):
         """Allocate reusable histogram buffers once per fit.
 
@@ -266,15 +272,24 @@ class _BaseBooster:
         via _build_histograms_into, which zeroes the active slice each call.
         This avoids reallocating these (potentially large) arrays thousands of
         times over a long boosting run.
+
+        At low thread counts the gradient/hessian(/count) buffers are lane
+        views into one interleaved (n_features, leaves, bins, n_arrays) base
+        array, so each bin's statistics share a cache line. The kernels are
+        layout-agnostic and the per-bin summation order is unchanged, so
+        results are bitwise identical to separate buffers.
         """
         max_leaves = self._max_tree_leaves()
         max_bins = int(n_bins.max()) if len(n_bins) else 1
-        hg = np.zeros((n_features, max_leaves, max_bins))
-        hh = np.zeros((n_features, max_leaves, max_bins))
-        if self.tree_mode_ == "lightgbm":
-            hc = np.zeros((n_features, max_leaves, max_bins))
-            return (hg, hh, hc)
-        return (hg, hh)
+        n_arrays = 3 if self.tree_mode_ == "lightgbm" else 2
+        n_threads = getattr(self, "n_threads_", 1)
+        if n_threads <= self._HIST_INTERLEAVE_MAX_THREADS:
+            base = np.zeros((n_features, max_leaves, max_bins, n_arrays))
+            return tuple(base[..., k] for k in range(n_arrays))
+        return tuple(
+            np.zeros((n_features, max_leaves, max_bins))
+            for _ in range(n_arrays)
+        )
 
     def _alloc_split_buffers(self, n_features):
         """Allocate reusable per-feature split-search scratch buffers."""
