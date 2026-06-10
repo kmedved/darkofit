@@ -114,6 +114,7 @@ def _tree_kind(trees_):
             return "oblivious_per_class"
         if type(inner) is NonObliviousTree:
             return "nonoblivious_per_class"
+        first = inner  # report the per-class tree type in the error
     elif type(first) is ObliviousTree:
         return "oblivious"
     elif type(first) is NonObliviousTree:
