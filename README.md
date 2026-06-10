@@ -47,6 +47,9 @@ Not implemented in `tree_mode="lightgbm"`: native LightGBM categorical splits,
 GOSS, DART, GPU training, sparse optimization, monotone constraints, ranking,
 custom objectives, custom eval metrics, or LightGBM model import/export.
 
+Benchmark notes and fair comparison recipes live in
+[BENCHMARK_NOTES.md](BENCHMARK_NOTES.md).
+
 
 
 * **To Do:**
