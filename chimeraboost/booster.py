@@ -1033,6 +1033,18 @@ class MulticlassBoosting(_BaseBooster):
                 "multiclass_tree_strategy must be 'auto', 'per_class', "
                 "or 'shared_vector'"
             )
+        can_use_shared_lightgbm_multiclass = (
+            self.tree_mode_ == "lightgbm"
+            and self.sampling_ == "uniform"
+            and self.subsample >= 1.0
+            and self.colsample >= 1.0
+            and not self.ordered_boosting_
+        )
+        if strategy == "shared_vector" and not can_use_shared_lightgbm_multiclass:
+            raise ValueError(
+                "multiclass_tree_strategy='shared_vector' requires "
+                "tree_mode='lightgbm', no ordered boosting, and full row/column sampling"
+            )
 
         timing = _new_timing(self.verbose_timing)
         self.timing_ = timing
@@ -1059,18 +1071,6 @@ class MulticlassBoosting(_BaseBooster):
         rowpar_buffers = self._alloc_rowpar_buffers(
             X_binned.shape[1], n_bins, n_samples
         )
-        can_use_shared_lightgbm_multiclass = (
-            self.tree_mode_ == "lightgbm"
-            and self.sampling_ == "uniform"
-            and self.subsample >= 1.0
-            and self.colsample >= 1.0
-            and not self.ordered_boosting_
-        )
-        if strategy == "shared_vector" and not can_use_shared_lightgbm_multiclass:
-            raise ValueError(
-                "multiclass_tree_strategy='shared_vector' requires "
-                "tree_mode='lightgbm', no ordered boosting, and full row/column sampling"
-            )
         use_shared_lightgbm_multiclass = (
             can_use_shared_lightgbm_multiclass
             and (
