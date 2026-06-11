@@ -289,12 +289,12 @@ def _softmax_class_major_grad_hess_into(Y, F, sample_weight, grad_out, hess_out)
             hess_out[k, i] = hess
 
 
-@njit(cache=True, parallel=True)
+@njit(cache=True)
 def _softmax_class_major_eval(Y, F, sample_weight):
     K, n = F.shape
     total = 0.0
     weight_total = 0.0
-    for i in prange(n):
+    for i in range(n):
         max_f = F[0, i]
         for k in range(1, K):
             if F[k, i] > max_f:
@@ -324,12 +324,12 @@ def _softmax_class_major_eval(Y, F, sample_weight):
     return total / weight_total
 
 
-@njit(cache=True, parallel=True)
+@njit(cache=True)
 def _softmax_class_major_eval_labels(labels, F, sample_weight):
     K, n = F.shape
     total = 0.0
     weight_total = 0.0
-    for i in prange(n):
+    for i in range(n):
         max_f = F[0, i]
         for k in range(1, K):
             if F[k, i] > max_f:

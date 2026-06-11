@@ -2927,12 +2927,89 @@ def test_early_stopped_prediction_matches_best_prefix():
     model = ChimeraBoostClassifier(
         iterations=120, early_stopping=True, early_stopping_rounds=5,
         validation_fraction=0.2, tree_mode="lightgbm", num_leaves=7,
-        depth=3, random_state=0
+        depth=3, learning_rate=0.2, random_state=0
     ).fit(Xtr, ytr)
     assert model.best_iteration_ < 120
     stages = list(model.staged_predict_proba(Xte))
     assert len(stages) == model.best_iteration_
     assert np.allclose(stages[-1], model.predict_proba(Xte))
+
+
+def test_auto_learning_rate_catboost_transplant_corridor():
+    from chimeraboost.auto_params import auto_learning_rate
+
+    lr = auto_learning_rate(
+        "RMSE", n_eff=20_000, iterations=1000,
+        use_best_model=False, tree_mode="catboost", max_leaves=64
+    )
+    assert 0.065 < lr < 0.067
+
+    low_eff_lr = auto_learning_rate(
+        "RMSE", n_eff=500, iterations=1000,
+        use_best_model=False, tree_mode="catboost", max_leaves=64
+    )
+    assert low_eff_lr < lr
+
+    lightgbm_lr = auto_learning_rate(
+        "RMSE", n_eff=20_000, iterations=1000,
+        use_best_model=False, tree_mode="lightgbm", max_leaves=127
+    )
+    assert lightgbm_lr < lr
+
+    weighted_lightgbm_lr = auto_learning_rate(
+        "RMSE", n_eff=16_000, iterations=1000,
+        use_best_model=False, tree_mode="lightgbm", max_leaves=31,
+        n_eff_fraction=0.8,
+    )
+    unweighted_lightgbm_lr = auto_learning_rate(
+        "RMSE", n_eff=20_000, iterations=1000,
+        use_best_model=False, tree_mode="lightgbm", max_leaves=31,
+        n_eff_fraction=1.0,
+    )
+    assert unweighted_lightgbm_lr < weighted_lightgbm_lr
+
+    unweighted_catboost_lr = auto_learning_rate(
+        "RMSE", n_eff=20_000, iterations=1000,
+        use_best_model=False, tree_mode="catboost", max_leaves=64,
+        n_eff_fraction=1.0,
+    )
+    weighted_catboost_lr = auto_learning_rate(
+        "RMSE", n_eff=17_000, iterations=1000,
+        use_best_model=False, tree_mode="catboost", max_leaves=64,
+        n_eff_fraction=0.85,
+    )
+    assert weighted_catboost_lr > unweighted_catboost_lr
+
+    weighted_mae_lr = auto_learning_rate(
+        "MAE", n_eff=17_000, iterations=1000,
+        use_best_model=False, tree_mode="catboost", max_leaves=64,
+        n_eff_fraction=0.85,
+    )
+    unweighted_mae_lr = auto_learning_rate(
+        "MAE", n_eff=17_000, iterations=1000,
+        use_best_model=False, tree_mode="catboost", max_leaves=64,
+        n_eff_fraction=1.0,
+    )
+    assert weighted_mae_lr == unweighted_mae_lr
+
+
+def test_auto_learning_rate_uniform_weights_match_none():
+    rng = np.random.default_rng(86)
+    X = rng.normal(size=(80, 3))
+    y = X[:, 0] + rng.normal(0.0, 0.1, size=80)
+
+    no_weight = ChimeraBoostRegressor(
+        iterations=3, random_state=0, eval_train_loss=False
+    ).fit(X, y)
+    ones = ChimeraBoostRegressor(
+        iterations=3, random_state=0, eval_train_loss=False
+    ).fit(X, y, sample_weight=np.ones(len(y)))
+
+    assert ones.model_.auto_params_["learning_rate"]["rule"] == (
+        "catboost-transplant-v1"
+    )
+    assert ones.model_.auto_params_["binning"]["max_bins"] == 254
+    assert ones.learning_rate_ == no_weight.learning_rate_
 
 
 def test_get_refit_params_freezes_learning_rate_and_exact_rounds():
@@ -3789,7 +3866,7 @@ def test_sample_weight_shifts_predictions():
 
 def test_sample_weight_early_stopping_slices_correctly():
     """When early_stopping=True, the weight array must be sliced to match the
-    training split; the fit should complete without error and stop early."""
+    training split; the fit should complete and record split-consistent sums."""
     X, y = load_breast_cancer(return_X_y=True)
     rng = np.random.default_rng(7)
     w = rng.uniform(0.5, 2.0, len(y))
@@ -3797,7 +3874,16 @@ def test_sample_weight_early_stopping_slices_correctly():
         iterations=500, early_stopping=True, validation_fraction=0.15,
         early_stopping_rounds=20, random_state=0
     ).fit(X, y, sample_weight=w)
-    assert m.best_iteration_ < 500
+    meta = m.model_.auto_params_
+    assert m.best_iteration_ <= 500
+    assert meta["sample_weight"]["provided"] is True
+    assert np.isclose(
+        meta["sample_weight"]["normalized_sum"], m._selection_n_train_
+    )
+    assert meta["early_stopping"]["eval_sample_weight_provided"] is True
+    assert meta["early_stopping"]["eval_n_samples"] == (
+        m._selection_n_total_ - m._selection_n_train_
+    )
 
 
 def test_empty_tree_stops_boosting_early():
@@ -3887,11 +3973,10 @@ def test_auto_params_records_resolved_regression_context(tmp_path):
 
     assert meta["loss"] == "RMSE"
     assert meta["iterations"] == 6
-    assert meta["learning_rate"] == {
-        "resolved": 0.07,
-        "source": "explicit",
-        "input": 0.07,
-    }
+    assert meta["learning_rate"]["resolved"] == 0.07
+    assert meta["learning_rate"]["source"] == "explicit"
+    assert meta["learning_rate"]["input"] == 0.07
+    assert meta["learning_rate"]["rule"] == "explicit"
     assert meta["sample_weight"]["provided"] is True
     assert np.isclose(meta["sample_weight"]["effective_sample_size"], n_eff)
     assert meta["features"]["raw_feature_count"] == 4
@@ -3929,6 +4014,7 @@ def test_auto_params_records_classifier_context():
 
     assert meta["loss"] == "Logloss"
     assert meta["learning_rate"]["source"] == "auto"
+    assert meta["auto_policy"]["lightgbm_unweighted_lr_multiplier"] == 0.421916
     assert meta["features"]["raw_feature_count"] == X.shape[1]
     assert meta["tree"]["tree_mode"] == "lightgbm"
     assert meta["tree"]["max_leaves"] == 31

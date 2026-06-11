@@ -53,7 +53,7 @@ class FitConfig:
     iterations: int = 1_500
     patience: int = 50
     depth: int = 6
-    max_bins: int = 128
+    max_bins: int = 254
     num_leaves: Optional[int] = None
     learning_rate: Optional[float] = None
     threads: Optional[int] = None

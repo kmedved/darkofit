@@ -36,7 +36,7 @@ class FeaturePreprocessor:
     output matrix; their float64 horizontal concatenation is never materialized.
     """
 
-    def __init__(self, max_bins=128, cat_smoothing=1.0, random_state=None,
+    def __init__(self, max_bins=254, cat_smoothing=1.0, random_state=None,
                  include_cat_codes=False, target_encoding_mode="ordered",
                  target_encoding_folds=20,
                  bin_sample_count=DEFAULT_BIN_SAMPLE_COUNT):

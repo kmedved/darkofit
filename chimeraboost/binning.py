@@ -145,7 +145,7 @@ class Binner:
     transform always bins every row.
     """
 
-    def __init__(self, max_bins=128, sample_count=DEFAULT_BIN_SAMPLE_COUNT,
+    def __init__(self, max_bins=254, sample_count=DEFAULT_BIN_SAMPLE_COUNT,
                  random_state=None):
         self.max_bins = int(max_bins)
         self.sample_count = None if sample_count is None else int(sample_count)

@@ -259,8 +259,8 @@ class ChimeraBoostRegressor(_RefitParamsMixin, BaseEstimator, RegressorMixin):
         Ignored when an explicit *eval_set* is given to ``fit``.
     """
 
-    def __init__(self, iterations=500, learning_rate=None, depth=None,
-                 l2_leaf_reg=3.0, max_bins=128, subsample=1.0, colsample=1.0,
+    def __init__(self, iterations=1000, learning_rate=None, depth=None,
+                 l2_leaf_reg=3.0, max_bins=254, subsample=1.0, colsample=1.0,
                  cat_smoothing=1.0, early_stopping_rounds=None,
                  loss="RMSE", alpha=0.5, min_child_weight=1.0,
                  min_child_samples=20, min_gain_to_split=0.0, num_leaves=None,
@@ -355,7 +355,6 @@ class ChimeraBoostRegressor(_RefitParamsMixin, BaseEstimator, RegressorMixin):
             if sample_weight is not None:
                 sample_weight = sample_weight[train_idx]
 
-        # If early stopping is active but patience not explicitly set, use 10.
         es_rounds = self.early_stopping_rounds
         if es_active and es_rounds is None:
             es_rounds = 10
@@ -465,8 +464,8 @@ class ChimeraBoostClassifier(_RefitParamsMixin, BaseEstimator, ClassifierMixin):
         Ignored when an explicit *eval_set* is given to ``fit``.
     """
 
-    def __init__(self, iterations=500, learning_rate=None, depth=None,
-                 l2_leaf_reg=3.0, max_bins=128, subsample=1.0, colsample=1.0,
+    def __init__(self, iterations=1000, learning_rate=None, depth=None,
+                 l2_leaf_reg=3.0, max_bins=254, subsample=1.0, colsample=1.0,
                  cat_smoothing=1.0, early_stopping_rounds=None,
                  min_child_weight=1.0, min_child_samples=20,
                  min_gain_to_split=0.0, num_leaves=None, thread_count=None,

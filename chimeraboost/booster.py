@@ -8,6 +8,14 @@ Two boosters share the same machinery (FeaturePreprocessor, oblivious trees):
 import time
 import numpy as np
 
+from .auto_params import (
+    AUTO_LR_RULE,
+    CATBOOST_WEIGHTED_RMSE_LR_MULTIPLIER,
+    LIGHTGBM_UNWEIGHTED_LR_MULTIPLIERS,
+    effective_sample_size,
+    is_auto_learning_rate,
+    resolve_learning_rate,
+)
 from .binning import DEFAULT_BIN_SAMPLE_COUNT
 from .flat_model import (
     build_flat_ensemble,
@@ -58,18 +66,6 @@ def _fit_thread_count(thread_count, tree_mode_, n_samples):
             return _apply_thread_count(2)
         return _apply_thread_count(min(int(thread_count), 2))
     return _apply_thread_count(thread_count)
-
-
-def _auto_learning_rate(n_samples, iterations, early_stopping):
-    """Pick a default learning rate when the user did not specify one.
-
-    With early stopping, we default to 0.1. Without early stopping, the rate
-    scales inversely with the iteration budget.
-    """
-    if early_stopping:
-        return 0.1
-    lr = 20.0 / max(iterations, 1)
-    return float(np.clip(lr, 0.03, 0.2))
 
 
 def _one_hot_class_major(y_idx, n_classes):
@@ -148,17 +144,6 @@ def _validate_sample_weight(sample_weight, n_samples, name="sample_weight"):
     return w * (n_samples / total)
 
 
-def _effective_sample_size(sample_weight, n_samples):
-    """Kish effective sample size for normalized or raw sample weights."""
-    if sample_weight is None:
-        return float(n_samples)
-    w = np.asarray(sample_weight, dtype=np.float64)
-    denom = float(np.dot(w, w))
-    if denom <= 0.0:
-        return 0.0
-    return float((w.sum() ** 2) / denom)
-
-
 def _resolve_default_depth(depth, tree_mode_):
     if depth is not None:
         return int(depth)
@@ -176,8 +161,8 @@ class _BaseBooster:
     `fit` and `predict_raw`.
     """
 
-    def __init__(self, iterations=500, learning_rate=None, depth=None,
-                 l2_leaf_reg=3.0, max_bins=128, subsample=1.0,
+    def __init__(self, iterations=1000, learning_rate=None, depth=None,
+                 l2_leaf_reg=3.0, max_bins=254, subsample=1.0,
                  colsample=1.0, cat_smoothing=1.0, early_stopping_rounds=None,
                  min_child_weight=1.0, min_child_samples=20,
                  min_gain_to_split=0.0, num_leaves=None, thread_count=None,
@@ -236,6 +221,28 @@ class _BaseBooster:
                     "top_rate + other_rate must be <= 1 for sampling='goss'"
                 )
 
+    def _resolve_fit_auto_params(self, *, loss_name, n_samples, sample_weight,
+                                 eval_set_present):
+        self.iterations_ = int(self.iterations)
+        n_eff = effective_sample_size(sample_weight, n_samples)
+        n_eff_fraction = n_eff / float(n_samples) if n_samples else 0.0
+        self.lr_ = resolve_learning_rate(
+            self.learning_rate,
+            loss_name=loss_name,
+            n_eff=n_eff,
+            iterations=self.iterations_,
+            use_best_model=bool(eval_set_present and self.early_stopping_rounds is not None),
+            tree_mode=self.tree_mode_,
+            max_leaves=self._max_tree_leaves(),
+            n_eff_fraction=n_eff_fraction,
+        )
+        if self.early_stopping_rounds is None:
+            self.early_stopping_rounds_ = None
+        else:
+            self.early_stopping_rounds_ = int(self.early_stopping_rounds)
+        if self.verbose and is_auto_learning_rate(self.learning_rate):
+            print(f"Learning rate set to {self.lr_}")
+
     def _resolved_auto_params(
         self,
         *,
@@ -256,22 +263,70 @@ class _BaseBooster:
         used without changing any model behavior. Future data-aware defaults can
         extend it while preserving a single debugging surface.
         """
-        n_eff = _effective_sample_size(sample_weight, n_samples)
+        n_eff = effective_sample_size(sample_weight, n_samples)
+        n_eff_fraction = n_eff / float(n_samples) if n_samples else 0.0
         max_bins_observed = int(np.max(n_bins)) if len(n_bins) else 0
         binner = self.prep_.binner_
+        lightgbm_unweighted_damping = (
+            self.tree_mode_ == "lightgbm"
+            and is_auto_learning_rate(self.learning_rate)
+            and n_eff_fraction >= 0.99
+        )
+        lightgbm_multiplier = None
+        if lightgbm_unweighted_damping:
+            base_loss = getattr(self, "loss_name", "MultiClass")
+            if base_loss in {"MAE", "Quantile"}:
+                base_loss = "RMSE"
+            lightgbm_multiplier = LIGHTGBM_UNWEIGHTED_LR_MULTIPLIERS.get(base_loss, 0.4)
+        weighted_rmse_catboost_uplift = (
+            self.tree_mode_ in {"catboost", "oblivious"}
+            and getattr(self, "loss_name", "MultiClass") == "RMSE"
+            and is_auto_learning_rate(self.learning_rate)
+            and n_eff_fraction < 0.99
+        )
         params = {
             "loss": getattr(self, "loss_name", "MultiClass"),
-            "iterations": int(self.iterations),
+            "iterations": int(self.iterations_),
+            "iterations_input": (
+                None if self.iterations is None else int(self.iterations)
+            ),
+            "auto_policy": {
+                "learning_rate_rule": (
+                    AUTO_LR_RULE
+                    if is_auto_learning_rate(self.learning_rate)
+                    else "explicit"
+                ),
+                "lightgbm_unweighted_lr_multiplier": (
+                    lightgbm_multiplier
+                ),
+                "catboost_weighted_rmse_lr_multiplier": (
+                    CATBOOST_WEIGHTED_RMSE_LR_MULTIPLIER
+                    if weighted_rmse_catboost_uplift
+                    else None
+                ),
+            },
             "learning_rate": {
                 "resolved": float(self.lr_),
-                "source": "explicit" if self.learning_rate is not None else "auto",
-                "input": None if self.learning_rate is None else float(self.learning_rate),
+                "source": (
+                    "auto" if is_auto_learning_rate(self.learning_rate)
+                    else "explicit"
+                ),
+                "input": (
+                    self.learning_rate
+                    if is_auto_learning_rate(self.learning_rate)
+                    else float(self.learning_rate)
+                ),
+                "rule": (
+                    AUTO_LR_RULE
+                    if is_auto_learning_rate(self.learning_rate)
+                    else "explicit"
+                ),
             },
             "sample_weight": {
                 "provided": sample_weight is not None,
                 "effective_sample_size": n_eff,
                 "effective_sample_size_fraction": (
-                    n_eff / float(n_samples) if n_samples else 0.0
+                    n_eff_fraction
                 ),
                 "normalized_sum": (
                     None if sample_weight is None else float(np.sum(sample_weight))
@@ -306,19 +361,20 @@ class _BaseBooster:
                 "observed_total_bins": int(np.sum(n_bins)) if len(n_bins) else 0,
             },
             "early_stopping": {
-                "enabled": bool(self.early_stopping_rounds is not None and eval_set_present),
+                "enabled": bool(self.early_stopping_rounds_ is not None and eval_set_present),
                 "rounds": (
                     None
-                    if self.early_stopping_rounds is None
-                    else int(self.early_stopping_rounds)
+                    if self.early_stopping_rounds_ is None
+                    else int(self.early_stopping_rounds_)
                 ),
+                "rounds_input": self.early_stopping_rounds,
                 "eval_set_provided": bool(eval_set_present),
                 "eval_n_samples": int(eval_n_samples) if eval_set_present else None,
                 "eval_sample_weight_provided": eval_sample_weight is not None,
                 "eval_effective_sample_size": (
                     None
                     if not eval_set_present
-                    else _effective_sample_size(eval_sample_weight, eval_n_samples)
+                    else effective_sample_size(eval_sample_weight, eval_n_samples)
                 ),
                 "improvement_tolerance": 1e-9,
             },
@@ -719,10 +775,6 @@ class GradientBoosting(_BaseBooster):
             and self.loss_name == "Logloss"
             and w is None
         )
-        _es = self.early_stopping_rounds is not None and eval_set is not None
-        self.lr_ = (self.learning_rate if self.learning_rate is not None
-                    else _auto_learning_rate(n_samples, self.iterations, _es))
-
         timing = _new_timing(self.verbose_timing)
         self.timing_ = timing
         phase = _start_timing(timing)
@@ -734,6 +786,12 @@ class GradientBoosting(_BaseBooster):
             np.asfortranarray(X_binned) if self.n_threads_ > 1 else X_binned
         )
         n_bins = self.prep_.n_bins_
+        self._resolve_fit_auto_params(
+            loss_name=self.loss_name,
+            n_samples=n_samples,
+            sample_weight=w,
+            eval_set_present=eval_set is not None,
+        )
         hist_buffers = self._alloc_hist_buffers(X_binned.shape[1], n_bins)
         split_buffers = (
             self._alloc_split_buffers(X_binned.shape[1])
@@ -785,7 +843,7 @@ class GradientBoosting(_BaseBooster):
         best_score, best_iter = np.inf, 0
         t0 = time.time()
 
-        for m in range(self.iterations):
+        for m in range(self.iterations_):
             phase = _start_timing(timing)
             if hasattr(self.loss_, "grad_hess_into"):
                 self.loss_.grad_hess_into(y, F, w, grad_buffer, hess_buffer)
@@ -853,15 +911,15 @@ class GradientBoosting(_BaseBooster):
                 self.valid_history_.append(val)
                 if val < best_score - 1e-9:
                     best_score, best_iter = val, m
-                elif (self.early_stopping_rounds and
-                      m - best_iter >= self.early_stopping_rounds):
+                elif (self.early_stopping_rounds_ and
+                      m - best_iter >= self.early_stopping_rounds_):
                     if self.verbose:
                         print(f"Early stop at {m} (best {best_iter}, "
                               f"val {best_score:.5f})")
                     self.trees_ = self.trees_[: best_iter + 1]
                     break
 
-            if self.verbose and (m % max(1, self.iterations // 10) == 0):
+            if self.verbose and (m % max(1, self.iterations_ // 10) == 0):
                 msg = f"[{m}] train {self.train_history_[-1]:.5f}"
                 if Fv is not None:
                     msg += f"  val {self.valid_history_[-1]:.5f}"
@@ -966,12 +1024,15 @@ class MulticlassBoosting(_BaseBooster):
         self.ordered_boosting_ = self._resolve_ordered_boosting()
         w = _validate_sample_weight(sample_weight, n_samples)
         self.loss_ = MultiSoftmax(K)
-        _es = self.early_stopping_rounds is not None and eval_set is not None
-        self.lr_ = (self.learning_rate if self.learning_rate is not None
-                    else _auto_learning_rate(n_samples, self.iterations, _es))
         self.l2_leaf_reg_ = self.l2_leaf_reg
         if self.tree_mode_ == "lightgbm" and self.l2_leaf_reg == 3.0:
             self.l2_leaf_reg_ = 1.0
+        strategy = self.multiclass_tree_strategy
+        if strategy not in {"auto", "per_class", "shared_vector"}:
+            raise ValueError(
+                "multiclass_tree_strategy must be 'auto', 'per_class', "
+                "or 'shared_vector'"
+            )
 
         timing = _new_timing(self.verbose_timing)
         self.timing_ = timing
@@ -984,6 +1045,12 @@ class MulticlassBoosting(_BaseBooster):
             np.asfortranarray(X_binned) if self.n_threads_ > 1 else X_binned
         )
         n_bins = self.prep_.n_bins_
+        self._resolve_fit_auto_params(
+            loss_name="MultiClass",
+            n_samples=n_samples,
+            sample_weight=w,
+            eval_set_present=eval_set is not None,
+        )
         hist_buffers = self._alloc_hist_buffers(X_binned.shape[1], n_bins)
         split_buffers = (
             self._alloc_split_buffers(X_binned.shape[1])
@@ -992,12 +1059,6 @@ class MulticlassBoosting(_BaseBooster):
         rowpar_buffers = self._alloc_rowpar_buffers(
             X_binned.shape[1], n_bins, n_samples
         )
-        strategy = self.multiclass_tree_strategy
-        if strategy not in {"auto", "per_class", "shared_vector"}:
-            raise ValueError(
-                "multiclass_tree_strategy must be 'auto', 'per_class', "
-                "or 'shared_vector'"
-            )
         can_use_shared_lightgbm_multiclass = (
             self.tree_mode_ == "lightgbm"
             and self.sampling_ == "uniform"
@@ -1092,7 +1153,7 @@ class MulticlassBoosting(_BaseBooster):
         best_score, best_iter = np.inf, 0
         t0 = time.time()
 
-        for m in range(self.iterations):
+        for m in range(self.iterations_):
             phase = _start_timing(timing)
             if hasattr(self.loss_, "grad_hess_class_major_into"):
                 self.loss_.grad_hess_class_major_into(
@@ -1158,14 +1219,14 @@ class MulticlassBoosting(_BaseBooster):
                     self.valid_history_.append(val)
                     if val < best_score - 1e-9:
                         best_score, best_iter = val, m
-                    elif (self.early_stopping_rounds and
-                          m - best_iter >= self.early_stopping_rounds):
+                    elif (self.early_stopping_rounds_ and
+                          m - best_iter >= self.early_stopping_rounds_):
                         if self.verbose:
                             print(f"Early stop at {m} (best {best_iter})")
                         self.trees_ = self.trees_[: best_iter + 1]
                         break
 
-                if self.verbose and (m % max(1, self.iterations // 10) == 0):
+                if self.verbose and (m % max(1, self.iterations_ // 10) == 0):
                     msg = f"[{m}] train {self.train_history_[-1]:.5f}"
                     if Fv is not None:
                         msg += f"  val {self.valid_history_[-1]:.5f}"
@@ -1260,14 +1321,14 @@ class MulticlassBoosting(_BaseBooster):
                 self.valid_history_.append(val)
                 if val < best_score - 1e-9:
                     best_score, best_iter = val, m
-                elif (self.early_stopping_rounds and
-                      m - best_iter >= self.early_stopping_rounds):
+                elif (self.early_stopping_rounds_ and
+                      m - best_iter >= self.early_stopping_rounds_):
                     if self.verbose:
                         print(f"Early stop at {m} (best {best_iter})")
                     self.trees_ = self.trees_[: best_iter + 1]
                     break
 
-            if self.verbose and (m % max(1, self.iterations // 10) == 0):
+            if self.verbose and (m % max(1, self.iterations_ // 10) == 0):
                 msg = f"[{m}] train {self.train_history_[-1]:.5f}"
                 if Fv is not None:
                     msg += f"  val {self.valid_history_[-1]:.5f}"

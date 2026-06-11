@@ -39,6 +39,18 @@ clf.model_.auto_params_["learning_rate"]
 clf.model_.auto_params_["binning"]
 ```
 
+When `learning_rate=None` or `"auto"`, ChimeraBoost uses a transparent
+CatBoost-form rule fitted as `log(lr) ~ log(n) + log(iterations)`, with Kish
+effective sample size replacing raw row count when `sample_weight` is supplied.
+For materially weighted RMSE fits in CatBoost/oblivious-tree mode, the selector
+applies an LR-only ChimeraBoost correction; unweighted and all-ones-weight fits
+keep the raw CatBoost-form value.
+LightGBM-mode unweighted fits apply an additional provisional dampening factor
+because the CatBoost coefficients were fitted on symmetric-tree regularization,
+not ChimeraBoost's leaf-wise stack.
+The default boosting budget is `iterations=1000`, and the default numeric bin
+budget is `max_bins=254`.
+
 Tree builders are selectable:
 
 ```
