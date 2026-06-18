@@ -1510,6 +1510,138 @@ def test_sparse_inputs_raise_clear_error():
         list(reg.staged_predict(sparse.csr_matrix(Xr_v)))
 
 
+def test_cat_features_accepts_numpy_arrays_across_public_layers():
+    from chimeraboost.booster import GradientBoosting, MulticlassBoosting
+
+    X = np.array([
+        ["red", 0.0],
+        ["blue", 1.0],
+        ["red", 2.0],
+        ["green", 3.0],
+        ["blue", 4.0],
+        ["green", 5.0],
+    ], dtype=object)
+    y_reg = np.array([0.0, 1.0, 0.2, 1.4, 1.1, 1.7])
+    y_bin = np.array([0, 1, 0, 1, 1, 0])
+    y_multi = np.array(["a", "b", "c", "a", "b", "c"])
+    cat_features = np.array([0], dtype=np.int64)
+
+    reg = ChimeraBoostRegressor(iterations=3, random_state=0).fit(
+        X, y_reg, cat_features=cat_features
+    )
+    clf = ChimeraBoostClassifier(iterations=3, random_state=0).fit(
+        X, y_bin, cat_features=cat_features
+    )
+    core = GradientBoosting(iterations=3, random_state=0).fit(
+        X, y_reg, cat_features=cat_features
+    )
+    multiclass = MulticlassBoosting(iterations=3, random_state=0).fit(
+        X, y_multi, cat_features=cat_features
+    )
+
+    assert np.isfinite(reg.predict(X)).all()
+    assert np.isfinite(clf.predict_proba(X)).all()
+    assert np.isfinite(core.predict_raw(X)).all()
+    assert np.isfinite(multiclass.predict_raw(X)).all()
+
+
+def test_cat_features_validation_has_clear_errors():
+    X = np.arange(12, dtype=float).reshape(6, 2)
+    y = np.arange(6, dtype=float)
+
+    with pytest.raises(ValueError, match="out of bounds"):
+        ChimeraBoostRegressor(iterations=1).fit(
+            X, y, cat_features=np.array([2], dtype=np.int64)
+        )
+    with pytest.raises(ValueError, match="integer column indices"):
+        ChimeraBoostRegressor(iterations=1).fit(
+            X, y, cat_features=np.array([0.0])
+        )
+    with pytest.raises(ValueError, match="integer column indices"):
+        ChimeraBoostRegressor(iterations=1).fit(
+            X, y, cat_features=np.array([True])
+        )
+
+
+def test_sklearn_wrappers_raise_not_fitted_for_prediction_and_save(tmp_path):
+    from sklearn.exceptions import NotFittedError
+
+    X = np.arange(12, dtype=float).reshape(6, 2)
+    unfitted_reg = ChimeraBoostRegressor()
+    unfitted_clf = ChimeraBoostClassifier()
+
+    with pytest.raises(NotFittedError):
+        unfitted_reg.predict(X)
+    with pytest.raises(NotFittedError):
+        list(unfitted_reg.staged_predict(X))
+    with pytest.raises(NotFittedError):
+        unfitted_reg.save_model(tmp_path / "reg.npz")
+
+    with pytest.raises(NotFittedError):
+        unfitted_clf.predict_proba(X)
+    with pytest.raises(NotFittedError):
+        unfitted_clf.predict(X)
+    with pytest.raises(NotFittedError):
+        list(unfitted_clf.staged_predict_raw(X))
+    with pytest.raises(NotFittedError):
+        unfitted_clf.save_model(tmp_path / "clf.npz")
+
+
+def test_wrappers_record_and_enforce_feature_count():
+    X, y = load_diabetes(return_X_y=True)
+    reg = ChimeraBoostRegressor(iterations=2, random_state=0).fit(X[:80], y[:80])
+    assert reg.n_features_in_ == X.shape[1]
+
+    with pytest.raises(ValueError, match="expecting"):
+        reg.predict(X[:5, :-1])
+    with pytest.raises(ValueError, match="expecting"):
+        list(reg.staged_predict(X[:5, :-1]))
+    with pytest.raises(ValueError, match="eval_set\\[0\\] has"):
+        ChimeraBoostRegressor(iterations=2, random_state=0).fit(
+            X[:80], y[:80], eval_set=(X[:10, :-1], y[:10])
+        )
+
+    Xc, yc = load_breast_cancer(return_X_y=True)
+    clf = ChimeraBoostClassifier(iterations=2, random_state=0).fit(
+        Xc[:100], yc[:100]
+    )
+    assert clf.n_features_in_ == Xc.shape[1]
+
+    with pytest.raises(ValueError, match="expecting"):
+        clf.predict_proba(Xc[:5, :-1])
+    with pytest.raises(ValueError, match="expecting"):
+        list(clf.staged_predict_proba(Xc[:5, :-1]))
+
+
+def test_failed_refit_does_not_publish_partial_wrapper_state():
+    X, y = load_diabetes(return_X_y=True)
+    reg = ChimeraBoostRegressor(iterations=2, random_state=0).fit(X[:80], y[:80])
+    old_reg_pred = reg.predict(X[:5])
+    old_reg_n_features = reg.n_features_in_
+
+    X_wide = np.column_stack([X[:80], np.ones(80)])
+    with pytest.raises(ValueError, match="sample_weight"):
+        reg.fit(X_wide, y[:80], sample_weight=np.ones(79))
+
+    assert reg.n_features_in_ == old_reg_n_features
+    assert np.array_equal(reg.predict(X[:5]), old_reg_pred)
+
+    Xc, yc = load_breast_cancer(return_X_y=True)
+    clf = ChimeraBoostClassifier(iterations=2, random_state=0).fit(
+        Xc[:120], yc[:120]
+    )
+    old_clf_proba = clf.predict_proba(Xc[:5])
+    old_classes = clf.classes_.copy()
+    old_clf_n_features = clf.n_features_in_
+
+    with pytest.raises(ValueError, match="Need at least 2 classes"):
+        clf.fit(np.column_stack([Xc[:20], np.ones(20)]), np.zeros(20))
+
+    assert clf.n_features_in_ == old_clf_n_features
+    assert np.array_equal(clf.classes_, old_classes)
+    assert np.array_equal(clf.predict_proba(Xc[:5]), old_clf_proba)
+
+
 def test_lightgbm_mode_enforces_leaf_constraints():
     X, y = load_diabetes(return_X_y=True)
     model = ChimeraBoostRegressor(
@@ -5307,6 +5439,7 @@ def test_save_load_regressor_round_trip(tmp_path):
                               loaded.feature_importances_)
         assert loaded.best_iteration_ == m.best_iteration_
         assert loaded.get_params()["tree_mode"] == m.get_params()["tree_mode"]
+        assert loaded.n_features_in_ == X.shape[1]
 
 
 def test_save_load_classifier_round_trip(tmp_path):
@@ -5321,6 +5454,7 @@ def test_save_load_classifier_round_trip(tmp_path):
     loaded = ChimeraBoostClassifier.load_model(path)
     assert np.array_equal(binary.predict_proba(Xb), loaded.predict_proba(Xb))
     assert np.array_equal(binary.classes_, loaded.classes_)
+    assert loaded.n_features_in_ == Xb.shape[1]
 
     # Multiclass with string labels, both tree strategies.
     Xw, yw_num = load_wine(return_X_y=True)
@@ -5335,6 +5469,7 @@ def test_save_load_classifier_round_trip(tmp_path):
         assert np.array_equal(mc.predict_proba(Xw), loaded.predict_proba(Xw)), kw
         assert list(loaded.classes_) == list(mc.classes_)
         assert np.array_equal(mc.predict(Xw), loaded.predict(Xw))
+        assert loaded.n_features_in_ == Xw.shape[1]
 
 
 def test_save_load_booster_level_and_errors(tmp_path):
@@ -5442,6 +5577,7 @@ def test_load_model_cross_class_errors(tmp_path):
     ).save_model(booster_path)
     loaded = ChimeraBoostClassifier.load_model(booster_path)
     assert loaded.n_classes_ == 3
+    assert loaded.n_features_in_ == Xw.shape[1]
     assert loaded.predict_proba(Xw).shape == (len(yw), 3)
 
 

@@ -9,6 +9,7 @@ import time
 import warnings
 import numpy as np
 
+from ._validation import n_features_from_array_like, normalize_cat_features
 from .auto_params import (
     AUTO_LR_RULE,
     AUTO_LR_MIN,
@@ -1497,10 +1498,13 @@ class GradientBoosting(_BaseBooster):
         `sample_weight` is a 1-D array of per-sample weights; None means uniform.
         Weights are normalized to mean 1 internally so the gradient scale stays
         comparable to the no-weight case."""
+        n_features = n_features_from_array_like(X)
+        cat_features = normalize_cat_features(cat_features, n_features)
         X = (np.asarray(X, dtype=object) if cat_features
              else np.asarray(X, dtype=np.float64))
         y = np.asarray(y, dtype=np.float64)
         n_samples = X.shape[0]
+        self.n_features_in_ = int(X.shape[1])
 
         # Normalize weights to mean=1. np.ones(n) stays np.ones(n), so
         # sample_weight=np.ones(n) is bitwise-equivalent to sample_weight=None
@@ -1567,6 +1571,14 @@ class GradientBoosting(_BaseBooster):
         Xv_binned = yv = Fv = wv = None
         if eval_set is not None:
             Xv, yv = eval_set
+            eval_n_features = n_features_from_array_like(
+                Xv, name="eval_set[0]"
+            )
+            if eval_n_features != self.n_features_in_:
+                raise ValueError(
+                    f"eval_set[0] has {eval_n_features} features, but X has "
+                    f"{self.n_features_in_} features"
+                )
             Xv = (np.asarray(Xv, dtype=object) if cat_features
                   else np.asarray(Xv, dtype=np.float64))
             yv = np.asarray(yv, dtype=np.float64)
@@ -1791,6 +1803,8 @@ class MulticlassBoosting(_BaseBooster):
         """Fit K trees per boosting round (one per class) under softmax loss.
         Same `cat_features` / `eval_set` / `sample_weight` semantics as the
         scalar booster."""
+        n_features = n_features_from_array_like(X)
+        cat_features = normalize_cat_features(cat_features, n_features)
         X = (np.asarray(X, dtype=object) if cat_features
              else np.asarray(X, dtype=np.float64))
         y = np.asarray(y)
@@ -1800,6 +1814,7 @@ class MulticlassBoosting(_BaseBooster):
         y_idx = np.searchsorted(self.classes_, y)
         Y_class = _one_hot_class_major(y_idx, K)  # class-major (K, n)
         n_samples = X.shape[0]
+        self.n_features_in_ = int(X.shape[1])
 
         self.tree_mode_ = _normalize_tree_mode(self.tree_mode)
         self.n_threads_ = _fit_thread_count(
@@ -1903,6 +1918,14 @@ class MulticlassBoosting(_BaseBooster):
         Xv_binned = Yv_class = Fv = yv_idx = wv = None
         if eval_set is not None:
             Xv, yv = eval_set
+            eval_n_features = n_features_from_array_like(
+                Xv, name="eval_set[0]"
+            )
+            if eval_n_features != self.n_features_in_:
+                raise ValueError(
+                    f"eval_set[0] has {eval_n_features} features, but X has "
+                    f"{self.n_features_in_} features"
+                )
             Xv = (np.asarray(Xv, dtype=object) if cat_features
                   else np.asarray(Xv, dtype=np.float64))
             yv_arr = np.asarray(yv)

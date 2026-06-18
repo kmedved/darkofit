@@ -15,6 +15,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, clone, is_classifier
 from sklearn.utils.validation import check_is_fitted
 
+from .._validation import n_features_from_array_like, normalize_cat_features
 from .optuna_backend import create_study, import_optuna, load_study, make_storage
 from .results import build_cv_results, phase_summary, weighted_mean
 from .scoring import resolve_scorer, score_estimator
@@ -105,7 +106,11 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
         self.scorer_ = resolve_scorer(
             self.estimator, self.scoring, self.greater_is_better
         )
-        self.cat_features_ = None if cat_features is None else list(cat_features)
+        n_features = n_features_from_array_like(X)
+        cat_features_normalized = normalize_cat_features(cat_features, n_features)
+        self.cat_features_ = (
+            None if cat_features is None else list(cat_features_normalized)
+        )
         self.n_workers_ = max(1, int(self.n_workers))
         self.trial_thread_count_ = _resolve_trial_thread_count(
             self.trial_thread_count, self.n_workers_
@@ -149,7 +154,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
 
         context = SpaceContext(
             estimator_params=self.estimator.get_params(),
-            has_categoricals=bool(cat_features),
+            has_categoricals=bool(cat_features_normalized),
             classifier=classifier,
             tree_modes=tuple(self.tree_modes),
         )

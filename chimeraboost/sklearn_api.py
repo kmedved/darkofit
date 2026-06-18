@@ -1,6 +1,7 @@
 """Scikit-learn flavored estimators: fit / predict / predict_proba."""
 
 import numpy as np
+from ._validation import n_features_from_array_like, normalize_cat_features
 from .booster import GradientBoosting, MulticlassBoosting
 from .auto_params import (
     effective_sample_size,
@@ -8,6 +9,7 @@ from .auto_params import (
     resolve_learning_rate_details,
 )
 from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin
+from sklearn.utils.validation import check_is_fitted
 
 # Parameters that exist only on the sklearn wrappers, not on the core boosters.
 _SKLEARN_ONLY = frozenset({
@@ -128,6 +130,65 @@ def _ensure_dense_eval_set(eval_set):
     return (_ensure_dense(Xv), yv)
 
 
+def _feature_names_from_input(X):
+    columns = getattr(X, "columns", None)
+    if columns is None:
+        return None
+    names = np.asarray(columns, dtype=object)
+    if names.ndim == 1 and all(isinstance(name, str) for name in names):
+        return names
+    return None
+
+
+def _coerce_fit_X(X, cat_features):
+    X = _ensure_dense(X)
+    n_features = n_features_from_array_like(X)
+    cat_features = normalize_cat_features(cat_features, n_features)
+    X_arr = (np.asarray(X, dtype=object) if cat_features
+             else np.asarray(X, dtype=np.float64))
+    if X_arr.ndim != 2:
+        raise ValueError("X must be a 2-dimensional array")
+    return X_arr, cat_features, n_features
+
+
+def _validate_eval_set_features(eval_set, n_features):
+    if eval_set is None:
+        return None
+    Xv, yv = eval_set
+    actual = n_features_from_array_like(Xv, name="eval_set[0]")
+    if actual != int(n_features):
+        raise ValueError(
+            f"eval_set[0] has {actual} features, but X has "
+            f"{int(n_features)} features"
+        )
+    return eval_set
+
+
+def _infer_model_n_features(model):
+    prep = getattr(model, "prep_", None)
+    if prep is None:
+        return None
+    n_features = getattr(prep, "n_input_features_", None)
+    return None if n_features is None else int(n_features)
+
+
+def _check_predict_input(estimator, X):
+    check_is_fitted(estimator, "model_")
+    X = _ensure_dense(X)
+    actual = n_features_from_array_like(X)
+    expected = getattr(estimator, "n_features_in_", None)
+    if expected is None:
+        expected = _infer_model_n_features(estimator.model_)
+        if expected is not None:
+            estimator.n_features_in_ = int(expected)
+    if expected is not None and actual != int(expected):
+        raise ValueError(
+            f"X has {actual} features, but {type(estimator).__name__} "
+            f"is expecting {int(expected)} features as input"
+        )
+    return X
+
+
 def _make_eval_split(X, y, validation_fraction, random_state,
                      groups=None, stratify=None, sample_weight=None,
                      validation_strategy="random"):
@@ -223,6 +284,19 @@ class _RefitParamsMixin:
             if hasattr(self, name):
                 delattr(self, name)
 
+    def _record_input_feature_metadata(self, X, n_features):
+        self.n_features_in_ = int(n_features)
+        feature_names = _feature_names_from_input(X)
+        if feature_names is not None:
+            self.feature_names_in_ = feature_names
+        elif hasattr(self, "feature_names_in_"):
+            delattr(self, "feature_names_in_")
+
+    def _restore_n_features_from_model(self):
+        n_features = _infer_model_n_features(getattr(self, "model_", None))
+        if n_features is not None:
+            self.n_features_in_ = int(n_features)
+
     def _record_refit_selection_metadata(self, n_total, train_idx):
         self._selection_n_total_ = int(n_total)
         self._selection_n_train_ = int(len(train_idx))
@@ -278,6 +352,10 @@ class _RefitParamsMixin:
             "refit_n_estimators": getattr(self, "refit_n_estimators_", None),
             "refit_strategy": getattr(self, "refit_strategy_", None),
         }
+        if hasattr(self, "n_features_in_"):
+            state["n_features_in"] = int(self.n_features_in_)
+        if hasattr(self, "feature_names_in_"):
+            state["feature_names_in"] = self.feature_names_in_.tolist()
         if getattr(self, "refit_", False):
             state["selection_model_persisted"] = False
         if hasattr(self, "_selection_n_total_"):
@@ -287,14 +365,21 @@ class _RefitParamsMixin:
         return state
 
     def _restore_wrapper_state(self, state):
-        if not state:
-            return
+        state = state or {}
         if "best_n_estimators" in state:
             self._best_n_estimators_ = int(state["best_n_estimators"])
         if "best_score" in state:
             self._best_score_ = state["best_score"]
         if "learning_rate" in state:
             self._learning_rate_ = state["learning_rate"]
+        if "n_features_in" in state:
+            self.n_features_in_ = int(state["n_features_in"])
+        else:
+            self._restore_n_features_from_model()
+        if "feature_names_in" in state:
+            self.feature_names_in_ = np.asarray(
+                state["feature_names_in"], dtype=object
+            )
         self.refit_ = bool(state.get("refit", False))
         self.refit_n_estimators_ = state.get("refit_n_estimators")
         self.refit_strategy_ = state.get("refit_strategy")
@@ -513,16 +598,19 @@ class _RefitParamsMixin:
     @property
     def best_n_estimators_(self):
         """Number of boosting rounds selected/retained by the fitted model."""
+        check_is_fitted(self, "model_")
         return getattr(self, "_best_n_estimators_", self.model_.best_iteration_)
 
     @property
     def n_estimators_(self):
         """Number of boosting rounds present in the fitted model."""
+        check_is_fitted(self, "model_")
         return len(self.model_.trees_)
 
     @property
     def learning_rate_(self):
         """Resolved learning rate used by the fitted booster."""
+        check_is_fitted(self, "model_")
         return getattr(self, "_learning_rate_", self.model_.lr_)
 
 
@@ -629,10 +717,10 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         eval_sample_weight : array-like of shape (n_validation_samples,) or None
             Validation weights used when evaluating early stopping.
         """
-        X = _ensure_dense(X)
+        X_input = X
+        X, cat_features, n_features = _coerce_fit_X(X, cat_features)
         eval_set = _ensure_dense_eval_set(eval_set)
-        X = (np.asarray(X, dtype=object) if cat_features
-             else np.asarray(X, dtype=np.float64))
+        eval_set = _validate_eval_set_features(eval_set, n_features)
         y = np.asarray(y, dtype=np.float64)
         sample_weight = _validate_wrapper_sample_weight(
             sample_weight, X.shape[0]
@@ -707,11 +795,14 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         )
         if probe_lr is not None:
             kw["learning_rate"] = probe_lr
-        self.model_ = GradientBoosting(loss=self.loss, loss_kwargs=loss_kwargs,
-                                       **kw)
-        self.model_.fit(X, y, cat_features=cat_features, eval_set=eval_set,
-                        sample_weight=sample_weight,
-                        eval_sample_weight=eval_sample_weight)
+        model = GradientBoosting(loss=self.loss, loss_kwargs=loss_kwargs, **kw)
+        model.fit(
+            X, y, cat_features=cat_features, eval_set=eval_set,
+            sample_weight=sample_weight,
+            eval_sample_weight=eval_sample_weight,
+        )
+        self.model_ = model
+        self._record_input_feature_metadata(X_input, n_features)
         if explicit_eval_set:
             split_source = "explicit_eval_set"
             realized_validation_policy = "explicit_eval_set"
@@ -740,13 +831,14 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
 
         if self.refit and selection_active:
             refit_kw = self._refit_params_for_booster(self.refit_strategy)
-            self.model_ = GradientBoosting(
+            refit_model = GradientBoosting(
                 loss=self.loss, loss_kwargs=loss_kwargs, **refit_kw
             )
-            self.model_.fit(
+            refit_model.fit(
                 X_full, y_full, cat_features=cat_features,
                 sample_weight=sample_weight_full,
             )
+            self.model_ = refit_model
             self._record_refit_result(selection_model, self.refit_strategy)
             refit_validation_metadata = {
                 "source": "refit_full_data",
@@ -768,18 +860,17 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         return self
 
     def predict(self, X):
-        X = _ensure_dense(X)
+        X = _check_predict_input(self, X)
         return self.model_.predict_raw(X)
 
     def staged_predict(self, X):
         """Yield the prediction after each successive tree."""
-        X = _ensure_dense(X)
+        X = _check_predict_input(self, X)
         yield from self.model_.staged_predict_raw(X)
 
     def save_model(self, path):
         """Serialize the fitted model to a single ``.npz`` file."""
-        if not hasattr(self, "model_"):
-            raise ValueError("cannot save an unfitted model")
+        check_is_fitted(self, "model_")
         from .serialization import save_booster
         save_booster(
             self.model_, path,
@@ -819,14 +910,17 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
 
     @property
     def best_score_(self):
+        check_is_fitted(self, "model_")
         return getattr(self, "_best_score_", self.model_.best_score_)
 
     @property
     def feature_importances_(self):
+        check_is_fitted(self, "model_")
         return self.model_.feature_importances_
 
     @property
     def timing_(self):
+        check_is_fitted(self, "model_")
         return self.model_.timing_
 
 
@@ -930,14 +1024,14 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         eval_sample_weight : array-like of shape (n_validation_samples,) or None
             Validation weights used when evaluating early stopping.
         """
-        X = _ensure_dense(X)
+        X_input = X
+        X, cat_features, n_features = _coerce_fit_X(X, cat_features)
         eval_set = _ensure_dense_eval_set(eval_set)
-        X = (np.asarray(X, dtype=object) if cat_features
-             else np.asarray(X, dtype=np.float64))
+        eval_set = _validate_eval_set_features(eval_set, n_features)
         y = np.asarray(y)
-        self.classes_ = np.unique(y)
-        self.n_classes_ = self.classes_.size
-        if self.n_classes_ < 2:
+        classes = np.unique(y)
+        n_classes = classes.size
+        if n_classes < 2:
             raise ValueError("Need at least 2 classes.")
         sample_weight = _validate_wrapper_sample_weight(
             sample_weight, X.shape[0]
@@ -986,7 +1080,7 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
             if sample_weight is not None:
                 sample_weight = sample_weight[train_idx]
             train_classes = np.unique(y)
-            if train_classes.size != self.classes_.size:
+            if train_classes.size != n_classes:
                 raise ValueError("automatic validation split removed a class from training data")
 
         es_rounds = self.early_stopping_rounds
@@ -1003,14 +1097,14 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         kw["early_stopping_rounds"] = es_rounds
         probe_metadata = None
 
-        if self.n_classes_ == 2:
-            self._multiclass = False
-            y01 = (y == self.classes_[1]).astype(np.float64)
+        if n_classes == 2:
+            multiclass = False
+            y01 = (y == classes[1]).astype(np.float64)
             if eval_set is not None:
                 Xv, yv = eval_set
-                if np.any(~np.isin(np.asarray(yv), self.classes_)):
+                if np.any(~np.isin(np.asarray(yv), classes)):
                     raise ValueError("eval_set contains labels not present in training data")
-                eval_set = (Xv, (np.asarray(yv) == self.classes_[1]).astype(np.float64))
+                eval_set = (Xv, (np.asarray(yv) == classes[1]).astype(np.float64))
             probe_lr, probe_metadata = self._run_learning_rate_probe(
                 lambda probe_kw: GradientBoosting(loss="Logloss", **probe_kw),
                 X, y01,
@@ -1022,12 +1116,14 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
             )
             if probe_lr is not None:
                 kw["learning_rate"] = probe_lr
-            self.model_ = GradientBoosting(loss="Logloss", **kw)
-            self.model_.fit(X, y01, cat_features=cat_features, eval_set=eval_set,
-                            sample_weight=sample_weight,
-                            eval_sample_weight=eval_sample_weight)
+            model = GradientBoosting(loss="Logloss", **kw)
+            model.fit(
+                X, y01, cat_features=cat_features, eval_set=eval_set,
+                sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight,
+            )
         else:
-            self._multiclass = True
+            multiclass = True
             probe_lr, probe_metadata = self._run_learning_rate_probe(
                 lambda probe_kw: MulticlassBoosting(**probe_kw),
                 X, y,
@@ -1039,11 +1135,18 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
             )
             if probe_lr is not None:
                 kw["learning_rate"] = probe_lr
-            self.model_ = MulticlassBoosting(**kw)
-            self.model_.fit(X, y, cat_features=cat_features, eval_set=eval_set,
-                            sample_weight=sample_weight,
-                            eval_sample_weight=eval_sample_weight)
-            self.classes_ = self.model_.classes_
+            model = MulticlassBoosting(**kw)
+            model.fit(
+                X, y, cat_features=cat_features, eval_set=eval_set,
+                sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight,
+            )
+            classes = model.classes_
+        self.model_ = model
+        self._multiclass = multiclass
+        self.classes_ = classes
+        self.n_classes_ = len(classes)
+        self._record_input_feature_metadata(X_input, n_features)
         if explicit_eval_set:
             split_source = "explicit_eval_set"
             realized_validation_policy = "explicit_eval_set"
@@ -1072,20 +1175,24 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
 
         if self.refit and selection_active:
             refit_kw = self._refit_params_for_booster(self.refit_strategy)
-            if self._multiclass:
-                self.model_ = MulticlassBoosting(**refit_kw)
-                self.model_.fit(
+            if multiclass:
+                refit_model = MulticlassBoosting(**refit_kw)
+                refit_model.fit(
                     X_full, y_full, cat_features=cat_features,
                     sample_weight=sample_weight_full,
                 )
-                self.classes_ = self.model_.classes_
+                classes = refit_model.classes_
             else:
-                y01_full = (y_full == self.classes_[1]).astype(np.float64)
-                self.model_ = GradientBoosting(loss="Logloss", **refit_kw)
-                self.model_.fit(
+                y01_full = (y_full == classes[1]).astype(np.float64)
+                refit_model = GradientBoosting(loss="Logloss", **refit_kw)
+                refit_model.fit(
                     X_full, y01_full, cat_features=cat_features,
                     sample_weight=sample_weight_full,
                 )
+            self.model_ = refit_model
+            self._multiclass = multiclass
+            self.classes_ = classes
+            self.n_classes_ = len(classes)
             self._record_refit_result(selection_model, self.refit_strategy)
             refit_validation_metadata = {
                 "source": "refit_full_data",
@@ -1107,7 +1214,7 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         return self
 
     def predict_proba(self, X):
-        X = _ensure_dense(X)
+        X = _check_predict_input(self, X)
         raw = self.model_.predict_raw(X)
         if self._multiclass:
             return self.model_.loss_.transform(raw)            # (n, K)
@@ -1120,7 +1227,7 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
 
     def staged_predict_proba(self, X):
         """Yield class probabilities after each successive boosting round."""
-        X = _ensure_dense(X)
+        X = _check_predict_input(self, X)
         for raw in self.model_.staged_predict_raw(X):
             if self._multiclass:
                 yield self.model_.loss_.transform(raw)
@@ -1135,13 +1242,12 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
 
     def staged_predict_raw(self, X):
         """Yield raw margins after each successive boosting round."""
-        X = _ensure_dense(X)
+        X = _check_predict_input(self, X)
         yield from self.model_.staged_predict_raw(X)
 
     def save_model(self, path):
         """Serialize the fitted model to a single ``.npz`` file."""
-        if not hasattr(self, "model_"):
-            raise ValueError("cannot save an unfitted model")
+        check_is_fitted(self, "model_")
         from .serialization import _encode_categories, save_booster
 
         cls_arr = np.asarray(self.classes_)
@@ -1201,12 +1307,15 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
 
     @property
     def best_score_(self):
+        check_is_fitted(self, "model_")
         return getattr(self, "_best_score_", self.model_.best_score_)
 
     @property
     def feature_importances_(self):
+        check_is_fitted(self, "model_")
         return self.model_.feature_importances_
 
     @property
     def timing_(self):
+        check_is_fitted(self, "model_")
         return self.model_.timing_
