@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+* Change sklearn estimator defaults to `l2_leaf_reg="auto"`; the resolver keeps
+  CatBoost-mode fits near the historical `3.0` default while preserving the
+  task/tree-mode-specific auto-structure metadata in `auto_params_`.
+* Require `early_stopping` to be a Boolean on sklearn estimators, so string
+  values such as `"auto"` or `"false"` no longer activate early stopping by
+  truthiness.
 * Replace the previous automatic learning-rate heuristic with a transparent
   CatBoost-form selector keyed to loss, resolved iteration budget, eval-set
   presence, and Kish effective sample size.
@@ -45,10 +51,11 @@
   `diagnostic_warnings={"once","always","never"}`. Diagnostics also record
   weighted-binning activation, observed bin counts, feature expansion, and the
   best-prefix policy.
-* Add opt-in auto structure defaults (`depth`, `num_leaves`, `l2_leaf_reg`,
-  `min_child_samples`, `min_child_weight`, and `cat_smoothing`) with resolved
-  values recorded under `auto_params_["auto_structure"]`; refit helpers freeze
-  these resolved values along with the resolved learning rate.
+* Add auto structure defaults (`l2_leaf_reg` by default on sklearn estimators,
+  and opt-in `depth`, `num_leaves`, `min_child_samples`, `min_child_weight`,
+  and `cat_smoothing`) with resolved values recorded under
+  `auto_params_["auto_structure"]`; refit helpers freeze these resolved values
+  along with the resolved learning rate.
 * Add opt-in sklearn-wrapper learning-rate probing with
   `auto_learning_rate_probe=True`, recording candidate scores, the selected
   explicit learning rate, and the final-budget automatic base rate under

@@ -2849,8 +2849,10 @@ def test_lightgbm_multiclass_uses_task_specific_default_l2():
         l2_leaf_reg=2.0, random_state=0
     ).fit(X[order], y[order])
 
-    assert lightgbm_default.model_.l2_leaf_reg == 3.0
+    assert lightgbm_default.l2_leaf_reg == "auto"
+    assert lightgbm_default.model_.l2_leaf_reg == 1.0
     assert lightgbm_default.model_.l2_leaf_reg_ == 1.0
+    assert catboost_default.l2_leaf_reg == "auto"
     assert catboost_default.model_.l2_leaf_reg == 3.0
     assert catboost_default.model_.l2_leaf_reg_ == 3.0
     assert lightgbm_explicit.model_.l2_leaf_reg == 2.0
@@ -4352,7 +4354,8 @@ def test_auto_params_records_resolved_regression_context(tmp_path):
     assert meta["tree"]["tree_mode"] == "catboost"
     assert meta["tree"]["depth"] == 3
     assert meta["tree"]["max_leaves"] == 8
-    assert meta["tree"]["l2_leaf_reg"] == 3.0
+    assert np.isclose(meta["tree"]["l2_leaf_reg"], model.model_.l2_leaf_reg)
+    assert meta["tree"]["l2_leaf_reg"] > 3.0
     assert meta["tree"]["min_child_samples"] == 20
     assert meta["tree"]["min_child_weight"] == 1.0
     assert meta["binning"]["max_bins"] == 16
@@ -4392,8 +4395,32 @@ def test_auto_params_records_classifier_context():
     assert meta["features"]["raw_feature_count"] == X.shape[1]
     assert meta["tree"]["tree_mode"] == "lightgbm"
     assert meta["tree"]["max_leaves"] == 31
-    assert meta["tree"]["l2_leaf_reg"] == 3.0
+    assert meta["tree"]["l2_leaf_reg"] == 1.0
     assert meta["early_stopping"]["enabled"] is False
+
+
+def test_sklearn_default_l2_leaf_reg_is_auto():
+    reg = ChimeraBoostRegressor()
+    clf = ChimeraBoostClassifier()
+
+    assert reg.l2_leaf_reg == "auto"
+    assert clf.l2_leaf_reg == "auto"
+    assert reg.get_params()["l2_leaf_reg"] == "auto"
+    assert clf.get_params()["l2_leaf_reg"] == "auto"
+
+
+def test_early_stopping_rejects_string_values():
+    X, y = load_diabetes(return_X_y=True)
+
+    with pytest.raises(ValueError, match="early_stopping must be a bool"):
+        ChimeraBoostRegressor(
+            iterations=2, early_stopping="auto", random_state=0
+        ).fit(X[:40], y[:40])
+
+    with pytest.raises(ValueError, match="early_stopping must be a bool"):
+        ChimeraBoostClassifier(
+            iterations=2, early_stopping="false", random_state=0
+        ).fit(X[:40], (y[:40] > np.median(y[:40])).astype(int))
 
 
 def test_early_stopping_min_delta_records_legacy_explicit_and_auto():

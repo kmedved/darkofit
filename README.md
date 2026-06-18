@@ -164,11 +164,13 @@ is not feasible. Weighted target stratification is supported for ungrouped
 regression splits; classification and grouped splits use their own explicit
 class/group-aware split policies and reject this regression-only strategy.
 
-Several structure defaults are available as opt-in auto modes without changing
-package defaults: `depth="auto"`, `num_leaves="auto"`,
-`l2_leaf_reg="auto"`, `min_child_samples="auto"`,
-`min_child_weight="auto"`, and `cat_smoothing="auto"`. Resolved values and the
-rule source are recorded in `auto_params_["auto_structure"]`.
+`l2_leaf_reg` defaults to `"auto"` on the sklearn estimators. The resolver is
+conservative: CatBoost-mode fits usually resolve near the historical `3.0`
+default, while LightGBM-mode fits use that mode's lower regularization base.
+Other structure defaults remain opt-in: `depth="auto"`, `num_leaves="auto"`,
+`min_child_samples="auto"`, `min_child_weight="auto"`, and
+`cat_smoothing="auto"`. Resolved values and the rule source are recorded in
+`auto_params_["auto_structure"]`.
 
 `get_refit_params()` returns the frozen parameters for a manual full-data refit:
 it disables early stopping, uses the selected round count, and freezes the

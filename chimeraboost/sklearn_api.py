@@ -27,6 +27,8 @@ _REFIT_STRATEGY_EXPONENT = {
 
 def _should_early_stop(setting):
     """Resolve early_stopping to a bool."""
+    if not isinstance(setting, (bool, np.bool_)):
+        raise ValueError("early_stopping must be a bool")
     return bool(setting)
 
 
@@ -542,7 +544,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
     """
 
     def __init__(self, iterations=1000, learning_rate=None, depth=None,
-                 l2_leaf_reg=3.0, max_bins=254, subsample=1.0, colsample=1.0,
+                 l2_leaf_reg="auto", max_bins=254, subsample=1.0, colsample=1.0,
                  cat_smoothing=1.0, early_stopping_rounds=None,
                  early_stopping_min_delta=None,
                  loss="RMSE", alpha=0.5, min_child_weight=1.0,
@@ -845,7 +847,7 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
     """
 
     def __init__(self, iterations=1000, learning_rate=None, depth=None,
-                 l2_leaf_reg=3.0, max_bins=254, subsample=1.0, colsample=1.0,
+                 l2_leaf_reg="auto", max_bins=254, subsample=1.0, colsample=1.0,
                  cat_smoothing=1.0, early_stopping_rounds=None,
                  early_stopping_min_delta=None,
                  min_child_weight=1.0, min_child_samples=20,
