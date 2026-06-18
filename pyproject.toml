@@ -11,11 +11,12 @@ requires-python = ">=3.9"
 dependencies = [
     "numpy>=1.22",
     "numba>=0.57",
-    "scikit-learn>=1.0", 
+    "scikit-learn>=1.0",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest"]
+tuning = ["optuna>=4"]
 
 [tool.setuptools.packages.find]
 include = ["chimeraboost*"]

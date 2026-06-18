@@ -180,7 +180,7 @@ class Binner:
             sample_idx = None
 
         self.weighted_ = bool(use_weighted_borders)
-        self.weighted_sampling_ = False
+        self.weighted_sampling_ = bool(use_weighted_borders and sample_idx is not None)
         self.weighted_sample_count_ = (
             None if sample_idx is None else int(len(sample_idx))
         )

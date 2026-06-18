@@ -13,7 +13,11 @@ import math
 import numpy as np
 
 
-AUTO_LR_RULE = "catboost-transplant-v1"
+AUTO_LR_RULE = "catboost-transplant-v2"
+AUTO_LR_MIN = 0.005
+AUTO_LR_MAX = 0.5
+AUTO_LR_FEATURE_RATIO_REFERENCE = 0.05
+AUTO_LR_FEATURE_MULTIPLIER_MIN = 0.85
 CATBOOST_WEIGHTED_RMSE_LR_MULTIPLIER = 1.543
 LIGHTGBM_UNWEIGHTED_LR_MULTIPLIERS = {
     "RMSE": 0.370462,
@@ -52,7 +56,7 @@ def effective_sample_size(sample_weight, n_samples):
     return float((w.sum() ** 2) / denom)
 
 
-def auto_learning_rate(
+def _raw_auto_learning_rate(
     loss_name,
     n_eff,
     iterations,
@@ -60,14 +64,8 @@ def auto_learning_rate(
     tree_mode,
     max_leaves,
     n_eff_fraction=1.0,
+    p_model=None,
 ):
-    """Resolve a CatBoost-form automatic learning rate.
-
-    The fitted CatBoost source formula is:
-        exp(a * log(n) + b) * (iterations / 1000) ** c
-
-    ``n_eff`` replaces raw n to respect sample-weight concentration.
-    """
     base_loss, multiplier = _FALLBACK_LOSS.get(loss_name, (loss_name, 1.0))
     key = (base_loss, bool(use_best_model))
     if key not in _LR_COEFS:
@@ -89,7 +87,98 @@ def auto_learning_rate(
         lr *= (31.0 / leaves) ** 0.25
         if float(n_eff_fraction) >= 0.99:
             lr *= LIGHTGBM_UNWEIGHTED_LR_MULTIPLIERS.get(base_loss, 0.4)
-    return round(float(np.clip(lr, 0.005, 0.5)), 6)
+    lr *= feature_count_learning_rate_multiplier(n_eff, p_model)
+    return float(lr)
+
+
+def feature_count_learning_rate_multiplier(n_eff, p_model):
+    """Return a small bounded LR shrinkage for high-dimensional expansions."""
+    if p_model is None:
+        return 1.0
+    p = max(float(p_model), 0.0)
+    if p <= 0.0:
+        return 1.0
+    ratio = p / max(float(n_eff), 1.0)
+    if ratio <= AUTO_LR_FEATURE_RATIO_REFERENCE:
+        return 1.0
+    multiplier = (AUTO_LR_FEATURE_RATIO_REFERENCE / ratio) ** 0.05
+    return float(np.clip(multiplier, AUTO_LR_FEATURE_MULTIPLIER_MIN, 1.0))
+
+
+def auto_learning_rate_details(
+    loss_name,
+    n_eff,
+    iterations,
+    use_best_model,
+    tree_mode,
+    max_leaves,
+    n_eff_fraction=1.0,
+    p_model=None,
+):
+    """Return the automatic learning rate plus clipping diagnostics.
+
+    The fitted CatBoost source formula is:
+        exp(a * log(n) + b) * (iterations / 1000) ** c
+
+    ``n_eff`` replaces raw n to respect sample-weight concentration.
+    """
+    raw = _raw_auto_learning_rate(
+        loss_name,
+        n_eff,
+        iterations,
+        use_best_model,
+        tree_mode,
+        max_leaves,
+        n_eff_fraction=n_eff_fraction,
+        p_model=p_model,
+    )
+    clipped = float(np.clip(raw, AUTO_LR_MIN, AUTO_LR_MAX))
+    clip_bound = None
+    if raw < AUTO_LR_MIN:
+        clip_bound = "min"
+    elif raw > AUTO_LR_MAX:
+        clip_bound = "max"
+    feature_ratio = (
+        None
+        if p_model is None
+        else float(max(float(p_model), 0.0) / max(float(n_eff), 1.0))
+    )
+    feature_multiplier = feature_count_learning_rate_multiplier(n_eff, p_model)
+    return {
+        "resolved": round(clipped, 6),
+        "raw_auto": raw,
+        "p_model": None if p_model is None else int(p_model),
+        "feature_ratio": feature_ratio,
+        "feature_multiplier": feature_multiplier,
+        "feature_shrinkage_active": bool(feature_multiplier < 1.0),
+        "clipped": clip_bound is not None,
+        "clip_bound": clip_bound,
+        "clip_min": AUTO_LR_MIN,
+        "clip_max": AUTO_LR_MAX,
+    }
+
+
+def auto_learning_rate(
+    loss_name,
+    n_eff,
+    iterations,
+    use_best_model,
+    tree_mode,
+    max_leaves,
+    n_eff_fraction=1.0,
+    p_model=None,
+):
+    """Resolve a CatBoost-form automatic learning rate."""
+    return auto_learning_rate_details(
+        loss_name,
+        n_eff,
+        iterations,
+        use_best_model,
+        tree_mode,
+        max_leaves,
+        n_eff_fraction=n_eff_fraction,
+        p_model=p_model,
+    )["resolved"]
 
 
 def resolve_learning_rate(
@@ -102,10 +191,37 @@ def resolve_learning_rate(
     tree_mode,
     max_leaves,
     n_eff_fraction=1.0,
+    p_model=None,
 ):
     """Resolve explicit or automatic learning_rate values."""
+    return resolve_learning_rate_details(
+        learning_rate,
+        loss_name=loss_name,
+        n_eff=n_eff,
+        iterations=iterations,
+        use_best_model=use_best_model,
+        tree_mode=tree_mode,
+        max_leaves=max_leaves,
+        n_eff_fraction=n_eff_fraction,
+        p_model=p_model,
+    )["resolved"]
+
+
+def resolve_learning_rate_details(
+    learning_rate,
+    *,
+    loss_name,
+    n_eff,
+    iterations,
+    use_best_model,
+    tree_mode,
+    max_leaves,
+    n_eff_fraction=1.0,
+    p_model=None,
+):
+    """Resolve explicit or automatic learning_rate values with metadata."""
     if is_auto_learning_rate(learning_rate):
-        return auto_learning_rate(
+        details = auto_learning_rate_details(
             loss_name,
             n_eff,
             iterations,
@@ -113,10 +229,32 @@ def resolve_learning_rate(
             tree_mode,
             max_leaves,
             n_eff_fraction=n_eff_fraction,
+            p_model=p_model,
         )
+        details.update({
+            "source": "auto",
+            "input": learning_rate,
+            "rule": AUTO_LR_RULE,
+        })
+        return details
     try:
-        return float(learning_rate)
+        lr = float(learning_rate)
     except (TypeError, ValueError) as exc:
         raise ValueError(
             "learning_rate must be a number, None, or 'auto'"
         ) from exc
+    return {
+        "resolved": lr,
+        "raw_auto": None,
+        "source": "explicit",
+        "input": lr,
+        "rule": "explicit",
+        "p_model": None if p_model is None else int(p_model),
+        "feature_ratio": None,
+        "feature_multiplier": 1.0,
+        "feature_shrinkage_active": False,
+        "clipped": False,
+        "clip_bound": None,
+        "clip_min": AUTO_LR_MIN,
+        "clip_max": AUTO_LR_MAX,
+    }

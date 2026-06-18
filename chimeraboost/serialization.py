@@ -279,18 +279,31 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
     else:
         raise TypeError(f"unsupported booster type {type(booster).__name__}")
 
-    params = {
-        name: _jsonify(getattr(booster, name))
-        for name in (
-            "iterations", "learning_rate", "depth", "l2_leaf_reg",
-            "max_bins", "subsample", "colsample", "cat_smoothing",
-            "early_stopping_rounds", "min_child_weight", "min_child_samples",
-            "min_gain_to_split", "num_leaves", "thread_count", "random_state",
-            "ordered_boosting", "tree_mode", "sampling", "top_rate",
-            "other_rate", "multiclass_tree_strategy", "eval_train_loss",
-            "bin_sample_count", "histogram_parallelism",
-        )
+    param_names = (
+        "iterations", "learning_rate", "depth", "l2_leaf_reg",
+        "max_bins", "subsample", "colsample", "cat_smoothing",
+        "early_stopping_rounds", "early_stopping_min_delta",
+        "min_child_weight", "min_child_samples", "min_gain_to_split",
+        "num_leaves", "thread_count", "random_state", "ordered_boosting",
+        "tree_mode", "sampling", "top_rate", "other_rate",
+        "multiclass_tree_strategy", "eval_train_loss", "bin_sample_count",
+        "histogram_parallelism", "use_best_model", "bootstrap_type",
+        "bagging_temperature", "mvs_reg", "random_strength",
+        "diagnostic_warnings",
+    )
+    constructor_inputs = {
+        "depth": "_depth_input",
+        "num_leaves": "_num_leaves_input",
+        "l2_leaf_reg": "_l2_leaf_reg_input",
+        "min_child_samples": "_min_child_samples_input",
+        "min_child_weight": "_min_child_weight_input",
+        "cat_smoothing": "_cat_smoothing_input",
     }
+    params = {}
+    for name in param_names:
+        attr = constructor_inputs.get(name)
+        value = getattr(booster, attr) if attr and hasattr(booster, attr) else getattr(booster, name)
+        params[name] = _jsonify(value)
     header["params"] = params
 
     # ---- trees -------------------------------------------------------------

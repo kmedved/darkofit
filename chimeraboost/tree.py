@@ -3147,6 +3147,279 @@ def _best_multiclass_splits_for_leaf_ids_counts(
         out_gain[l] = best_gain
 
 
+def _split_noise(random_strength, split_seed, tree_iteration, step, leaf, feature,
+                 threshold):
+    if random_strength <= 0.0:
+        return 0.0
+    x = int(split_seed)
+    x ^= (int(tree_iteration) + 0x9E3779B97F4A7C15) & 0xFFFFFFFFFFFFFFFF
+    x ^= (int(step) + 0xBF58476D1CE4E5B9) & 0xFFFFFFFFFFFFFFFF
+    x ^= (int(leaf) + 0x94D049BB133111EB) & 0xFFFFFFFFFFFFFFFF
+    x ^= (int(feature) * 0x2545F4914F6CDD1D) & 0xFFFFFFFFFFFFFFFF
+    x ^= (int(threshold) * 0xD6E8FEB86659FD93) & 0xFFFFFFFFFFFFFFFF
+    x &= 0xFFFFFFFFFFFFFFFF
+    x ^= x >> 30
+    x = (x * 0xBF58476D1CE4E5B9) & 0xFFFFFFFFFFFFFFFF
+    x ^= x >> 27
+    x = (x * 0x94D049BB133111EB) & 0xFFFFFFFFFFFFFFFF
+    x ^= x >> 31
+    unit = (x >> 11) * (1.0 / (1 << 53))
+    return random_strength * (2.0 * unit - 1.0)
+
+
+def _noisy_score(gain, random_strength, split_seed, tree_iteration, step, leaf,
+                 feature, threshold):
+    if not np.isfinite(gain):
+        return gain
+    return gain + _split_noise(
+        random_strength, split_seed, tree_iteration, step, leaf, feature,
+        threshold
+    )
+
+
+def _best_split_with_noise_py(hg, hh, n_bins_per_feature, l2, feat_mask,
+                              min_child_weight, n_leaves, random_strength,
+                              split_seed, tree_iteration, step, min_gain):
+    n_features = hg.shape[0]
+    best_f = 0
+    best_t = -1
+    best_gain = -np.inf
+    best_score = -np.inf
+    for f in range(n_features):
+        if feat_mask[f] == 0:
+            continue
+        nb = int(n_bins_per_feature[f])
+        Gt = hg[f, :n_leaves, :nb].sum(axis=1)
+        Ht = hh[f, :n_leaves, :nb].sum(axis=1)
+        GL = np.zeros(n_leaves, dtype=np.float64)
+        HL = np.zeros(n_leaves, dtype=np.float64)
+        parent = np.zeros(n_leaves, dtype=np.float64)
+        ok_parent = (Ht > 0.0) & ((Ht + l2) > 0.0)
+        parent[ok_parent] = Gt[ok_parent] * Gt[ok_parent] / (Ht[ok_parent] + l2)
+        for t in range(nb - 1):
+            GL += hg[f, :n_leaves, t]
+            HL += hh[f, :n_leaves, t]
+            gain = 0.0
+            legal = True
+            any_nonempty = False
+            for l in range(n_leaves):
+                if Ht[l] <= 0.0:
+                    continue
+                any_nonempty = True
+                hr = Ht[l] - HL[l]
+                left_denom = HL[l] + l2
+                right_denom = hr + l2
+                parent_denom = Ht[l] + l2
+                if (
+                    HL[l] < min_child_weight
+                    or hr < min_child_weight
+                    or left_denom <= 0.0
+                    or right_denom <= 0.0
+                    or parent_denom <= 0.0
+                ):
+                    legal = False
+                    break
+                gr = Gt[l] - GL[l]
+                gain += GL[l] * GL[l] / left_denom + gr * gr / right_denom - parent[l]
+            if legal and any_nonempty and gain > min_gain:
+                score = _noisy_score(
+                    gain, random_strength, split_seed, tree_iteration, step,
+                    -1, f, t
+                )
+                if score > best_score:
+                    best_score = score
+                    best_gain = gain
+                    best_f = f
+                    best_t = t
+    return best_f, best_t, best_gain
+
+
+def _best_splits_by_leaf_with_noise_py(hg, hh, n_bins_per_feature, l2,
+                                       feat_mask, min_child_weight, n_leaves,
+                                       out_feat, out_thr, out_gain,
+                                       random_strength, split_seed,
+                                       tree_iteration, step, min_gain):
+    n_features = hg.shape[0]
+    for l in range(n_leaves):
+        best_f = -1
+        best_t = -1
+        best_gain = -np.inf
+        best_score = -np.inf
+        for f in range(n_features):
+            if feat_mask[f] == 0:
+                continue
+            nb = int(n_bins_per_feature[f])
+            Gt = float(np.sum(hg[f, l, :nb]))
+            Ht = float(np.sum(hh[f, l, :nb]))
+            parent_denom = Ht + l2
+            if Ht <= 0.0 or parent_denom <= 0.0:
+                continue
+            parent_gain = Gt * Gt / parent_denom
+            GL = 0.0
+            HL = 0.0
+            for t in range(nb - 1):
+                GL += hg[f, l, t]
+                HL += hh[f, l, t]
+                HR = Ht - HL
+                if HL < min_child_weight or HR < min_child_weight:
+                    continue
+                left_denom = HL + l2
+                right_denom = HR + l2
+                if left_denom <= 0.0 or right_denom <= 0.0:
+                    continue
+                GR = Gt - GL
+                gain = GL * GL / left_denom + GR * GR / right_denom - parent_gain
+                if gain <= min_gain:
+                    continue
+                score = _noisy_score(
+                    gain, random_strength, split_seed, tree_iteration, step,
+                    l, f, t
+                )
+                if score > best_score:
+                    best_score = score
+                    best_gain = gain
+                    best_f = f
+                    best_t = t
+        out_feat[l] = best_f
+        out_thr[l] = best_t
+        out_gain[l] = best_gain
+
+
+def _best_splits_counts_for_leaf_ids_with_noise_py(
+    hg, hh, hc, n_bins_per_feature, l2, feat_mask, min_child_weight,
+    min_child_samples, leaf_ids, n_leaf_ids, out_feat, out_thr, out_gain,
+    random_strength, split_seed, tree_iteration, step, min_gain
+):
+    n_features = hg.shape[0]
+    for idx in range(n_leaf_ids):
+        l = int(leaf_ids[idx])
+        best_f = -1
+        best_t = -1
+        best_gain = -np.inf
+        best_score = -np.inf
+        for f in range(n_features):
+            if feat_mask[f] == 0:
+                continue
+            nb = int(n_bins_per_feature[f])
+            Gt = float(np.sum(hg[f, l, :nb]))
+            Ht = float(np.sum(hh[f, l, :nb]))
+            Ct = float(np.sum(hc[f, l, :nb]))
+            parent_denom = Ht + l2
+            if Ht <= 0.0 or Ct <= 0.0 or parent_denom <= 0.0:
+                continue
+            parent_gain = Gt * Gt / parent_denom
+            GL = 0.0
+            HL = 0.0
+            CL = 0.0
+            for t in range(nb - 1):
+                GL += hg[f, l, t]
+                HL += hh[f, l, t]
+                CL += hc[f, l, t]
+                HR = Ht - HL
+                CR = Ct - CL
+                if (
+                    HL < min_child_weight
+                    or HR < min_child_weight
+                    or CL < min_child_samples
+                    or CR < min_child_samples
+                ):
+                    continue
+                left_denom = HL + l2
+                right_denom = HR + l2
+                if left_denom <= 0.0 or right_denom <= 0.0:
+                    continue
+                GR = Gt - GL
+                gain = GL * GL / left_denom + GR * GR / right_denom - parent_gain
+                if gain <= min_gain:
+                    continue
+                score = _noisy_score(
+                    gain, random_strength, split_seed, tree_iteration, step,
+                    l, f, t
+                )
+                if score > best_score:
+                    best_score = score
+                    best_gain = gain
+                    best_f = f
+                    best_t = t
+        out_feat[l] = best_f
+        out_thr[l] = best_t
+        out_gain[l] = best_gain
+
+
+def _best_multiclass_splits_counts_for_leaf_ids_with_noise_py(
+    hg, hh, hc, n_bins_per_feature, l2, feat_mask, min_child_weight,
+    min_child_samples, leaf_ids, n_leaf_ids, out_feat, out_thr, out_gain,
+    random_strength, split_seed, tree_iteration, step, min_gain
+):
+    K = hg.shape[0]
+    n_features = hg.shape[1]
+    for idx in range(n_leaf_ids):
+        l = int(leaf_ids[idx])
+        best_f = -1
+        best_t = -1
+        best_gain = -np.inf
+        best_score = -np.inf
+        for f in range(n_features):
+            if feat_mask[f] == 0:
+                continue
+            nb = int(n_bins_per_feature[f])
+            Ct = float(np.sum(hc[f, l, :nb]))
+            if Ct <= 0.0:
+                continue
+            Gt = np.sum(hg[:K, f, l, :nb], axis=1)
+            Ht = np.sum(hh[:K, f, l, :nb], axis=1)
+            GL = np.zeros(K, dtype=np.float64)
+            HL = np.zeros(K, dtype=np.float64)
+            CL = 0.0
+            for t in range(nb - 1):
+                CL += hc[f, l, t]
+                GL += hg[:K, f, l, t]
+                HL += hh[:K, f, l, t]
+                CR = Ct - CL
+                if CL < min_child_samples or CR < min_child_samples:
+                    continue
+                split_gain = 0.0
+                legal = True
+                for k in range(K):
+                    HR = Ht[k] - HL[k]
+                    if (
+                        Ht[k] <= 0.0
+                        or HL[k] < min_child_weight
+                        or HR < min_child_weight
+                    ):
+                        legal = False
+                        break
+                    parent_denom = Ht[k] + l2
+                    left_denom = HL[k] + l2
+                    right_denom = HR + l2
+                    if (
+                        parent_denom <= 0.0
+                        or left_denom <= 0.0
+                        or right_denom <= 0.0
+                    ):
+                        legal = False
+                        break
+                    GR = Gt[k] - GL[k]
+                    split_gain += (
+                        GL[k] * GL[k] / left_denom
+                        + GR * GR / right_denom
+                        - Gt[k] * Gt[k] / parent_denom
+                    )
+                if legal and split_gain > min_gain:
+                    score = _noisy_score(
+                        split_gain, random_strength, split_seed,
+                        tree_iteration, step, l, f, t
+                    )
+                    if score > best_score:
+                        best_score = score
+                        best_gain = split_gain
+                        best_f = f
+                        best_t = t
+        out_feat[l] = best_f
+        out_thr[l] = best_t
+        out_gain[l] = best_gain
+
+
 class ObliviousTree:
     """A single symmetric tree. Stores its splits and leaf values."""
 
@@ -3330,7 +3603,8 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                          feature_indices=None, row_indices=None,
                          constant_hessian=False, rowpar_buffers=None,
                          level_histogram_subtraction="auto",
-                         root_histograms=None):
+                         root_histograms=None, random_strength=0.0,
+                         split_seed=0, tree_iteration=0):
     """Grow one oblivious tree level by level and return an ObliviousTree.
 
     X_hist_binned: optional feature-contiguous view/copy of X_binned used only
@@ -3535,10 +3809,17 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                     X_binned, grad, hess, leaf, n_leaves, hg, hh,
                     feature_indices, row_indices
                 )
-            f, t, gain = _best_split_serial(
-                hg, hh, n_bins_per_feature, l2, feature_mask,
-                min_child_weight, n_leaves
-            )
+            if random_strength > 0.0:
+                f, t, gain = _best_split_with_noise_py(
+                    hg, hh, n_bins_per_feature, l2, feature_mask,
+                    min_child_weight, n_leaves, random_strength, split_seed,
+                    tree_iteration, d, min_gain
+                )
+            else:
+                f, t, gain = _best_split_serial(
+                    hg, hh, n_bins_per_feature, l2, feature_mask,
+                    min_child_weight, n_leaves
+                )
         else:
             if root_copy:
                 pass
@@ -3604,12 +3885,19 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                     X_hist_binned, grad, hess, leaf, n_leaves, hg, hh,
                     feature_indices, row_indices
                 )
-            f, t, gain = _best_split(
-                hg, hh, n_bins_per_feature, l2, feature_mask,
-                min_child_weight, n_leaves, split_scratch[0],
-                split_scratch[1], split_scratch[2], split_scratch[3],
-                split_scratch[4]
-            )
+            if random_strength > 0.0:
+                f, t, gain = _best_split_with_noise_py(
+                    hg, hh, n_bins_per_feature, l2, feature_mask,
+                    min_child_weight, n_leaves, random_strength, split_seed,
+                    tree_iteration, d, min_gain
+                )
+            else:
+                f, t, gain = _best_split(
+                    hg, hh, n_bins_per_feature, l2, feature_mask,
+                    min_child_weight, n_leaves, split_scratch[0],
+                    split_scratch[1], split_scratch[2], split_scratch[3],
+                    split_scratch[4]
+                )
         if gain <= min_gain or t < 0:
             break
         splits_feat.append(f)
@@ -3641,7 +3929,9 @@ def build_levelwise_tree(X_binned, grad, hess, n_bins_per_feature,
                          return_training_state=False, X_hist_binned=None,
                          feature_indices=None, row_indices=None,
                          constant_hessian=False, rowpar_buffers=None,
-                         level_histogram_subtraction="auto"):
+                         level_histogram_subtraction="auto",
+                         random_strength=0.0, split_seed=0,
+                         tree_iteration=0):
     """Grow a level-wise, non-oblivious tree.
 
     Unlike ``build_oblivious_tree``, this builder chooses one best split per
@@ -3848,10 +4138,18 @@ def build_levelwise_tree(X_binned, grad, hess, n_bins_per_feature,
                     feature_indices, row_indices
                 )
 
-        _best_splits_by_leaf(
-            hg, hh, n_bins_per_feature, l2, feature_mask, min_child_weight,
-            n_leaves, leaf_best_feat, leaf_best_thr, leaf_best_gain
-        )
+        if random_strength > 0.0:
+            _best_splits_by_leaf_with_noise_py(
+                hg, hh, n_bins_per_feature, l2, feature_mask,
+                min_child_weight, n_leaves, leaf_best_feat, leaf_best_thr,
+                leaf_best_gain, random_strength, split_seed, tree_iteration, d,
+                min_gain
+            )
+        else:
+            _best_splits_by_leaf(
+                hg, hh, n_bins_per_feature, l2, feature_mask, min_child_weight,
+                n_leaves, leaf_best_feat, leaf_best_thr, leaf_best_gain
+            )
 
         any_split = False
         for l in range(n_leaves):
@@ -3906,7 +4204,9 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                         hessian_always_positive=False,
                         leafwise_row_layout="auto",
                         fused_changed_leaf_scoring=False,
-                        rowpar_buffers=None, root_histograms=None):
+                        rowpar_buffers=None, root_histograms=None,
+                        random_strength=0.0, split_seed=0,
+                        tree_iteration=0):
     """Grow a LightGBM-like leaf-wise, best-first non-oblivious tree.
 
     This builder chooses the best legal split for each current leaf, then splits
@@ -4462,7 +4762,17 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
 
         histograms_initialized = True
         count_hist = hh if constant_hessian else hc
-        if changed_leaves_scored:
+        if random_strength > 0.0:
+            noise_leaf_ids = np.arange(n_leaves, dtype=np.int64)
+            noise_n_leaf_ids = n_leaves
+            _best_splits_counts_for_leaf_ids_with_noise_py(
+                hg, hh, count_hist, n_bins_per_feature, l2, feature_mask,
+                min_child_weight, min_child_samples, noise_leaf_ids,
+                noise_n_leaf_ids, best_feat, best_thr, best_gain,
+                random_strength, split_seed, tree_iteration, n_nodes,
+                min_gain_to_split
+            )
+        elif changed_leaves_scored:
             pass
         elif recompute_all_leaf_splits or n_changed_leaves >= n_leaves:
             if full_feature_positive_split:
@@ -4499,13 +4809,21 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
 
         split_leaf = -1
         split_gain = -np.inf
+        split_score = -np.inf
         for l in range(n_leaves):
             if max_depth_cap >= 0 and leaf_depth[l] >= max_depth_cap:
                 continue
-            if best_thr[l] >= 0 and best_gain[l] > split_gain:
+            if best_thr[l] < 0 or best_gain[l] <= min_gain_to_split:
+                continue
+            score = _noisy_score(
+                best_gain[l], random_strength, split_seed, tree_iteration,
+                n_nodes, l, best_feat[l], best_thr[l]
+            )
+            if score > split_score:
                 split_leaf = l
                 split_gain = best_gain[l]
-        if split_leaf < 0 or split_gain <= min_gain_to_split:
+                split_score = score
+        if split_leaf < 0:
             break
 
         node = leaf_node[split_leaf]
@@ -4591,6 +4909,7 @@ def build_leafwise_multiclass_tree(
     hist_buffers=None, return_training_state=False, X_hist_binned=None,
     max_leaves=None, min_gain_to_split=None, min_child_samples=20,
     reuse_leaf_histograms=True,
+    random_strength=0.0, split_seed=0, tree_iteration=0,
 ):
     """Grow one shared-structure leaf-wise tree with vector leaf values."""
     if min_gain_to_split is None:
@@ -4716,21 +5035,39 @@ def build_leafwise_multiclass_tree(
             n_changed_leaves = n_leaves
             # The first iteration has a single leaf; later code never requests
             # a full multiclass rescore, so the fixed two-slot buffer is enough.
-        _best_multiclass_splits_for_leaf_ids_counts(
-            hg, hh, hc, n_bins_per_feature, l2, feature_mask,
-            min_child_weight, min_child_samples, changed_leaves,
-            n_changed_leaves, best_feat, best_thr, best_gain
-        )
+        if random_strength > 0.0:
+            noise_leaf_ids = np.arange(n_leaves, dtype=np.int64)
+            _best_multiclass_splits_counts_for_leaf_ids_with_noise_py(
+                hg, hh, hc, n_bins_per_feature, l2, feature_mask,
+                min_child_weight, min_child_samples, noise_leaf_ids,
+                n_leaves, best_feat, best_thr, best_gain,
+                random_strength, split_seed, tree_iteration, n_nodes,
+                min_gain_to_split
+            )
+        else:
+            _best_multiclass_splits_for_leaf_ids_counts(
+                hg, hh, hc, n_bins_per_feature, l2, feature_mask,
+                min_child_weight, min_child_samples, changed_leaves,
+                n_changed_leaves, best_feat, best_thr, best_gain
+            )
 
         split_leaf = -1
         split_gain = -np.inf
+        split_score = -np.inf
         for l in range(n_leaves):
             if max_depth_cap >= 0 and leaf_depth[l] >= max_depth_cap:
                 continue
-            if best_thr[l] >= 0 and best_gain[l] > split_gain:
+            if best_thr[l] < 0 or best_gain[l] <= min_gain_to_split:
+                continue
+            score = _noisy_score(
+                best_gain[l], random_strength, split_seed, tree_iteration,
+                n_nodes, l, best_feat[l], best_thr[l]
+            )
+            if score > split_score:
                 split_leaf = l
                 split_gain = best_gain[l]
-        if split_leaf < 0 or split_gain <= min_gain_to_split:
+                split_score = score
+        if split_leaf < 0:
             break
 
         node = leaf_node[split_leaf]

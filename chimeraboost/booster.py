@@ -6,15 +6,20 @@ Two boosters share the same machinery (FeaturePreprocessor, oblivious trees):
 """
 
 import time
+import warnings
 import numpy as np
 
 from .auto_params import (
     AUTO_LR_RULE,
+    AUTO_LR_MIN,
+    AUTO_LR_MAX,
+    AUTO_LR_FEATURE_MULTIPLIER_MIN,
+    AUTO_LR_FEATURE_RATIO_REFERENCE,
     CATBOOST_WEIGHTED_RMSE_LR_MULTIPLIER,
     LIGHTGBM_UNWEIGHTED_LR_MULTIPLIERS,
     effective_sample_size,
     is_auto_learning_rate,
-    resolve_learning_rate,
+    resolve_learning_rate_details,
 )
 from .binning import DEFAULT_BIN_SAMPLE_COUNT
 from .flat_model import (
@@ -36,6 +41,13 @@ from .tree import (
 )
 
 _LEAF_CORRECTION_SORT_MIN_LEAVES = 16
+_LOW_EFFECTIVE_SAMPLE_FRACTION = 0.3
+_EMITTED_DIAGNOSTIC_WARNING_CODES = set()
+
+
+def reset_diagnostic_warning_registry():
+    """Clear process-level diagnostic warning throttling state."""
+    _EMITTED_DIAGNOSTIC_WARNING_CODES.clear()
 
 
 def _apply_thread_count(thread_count):
@@ -124,7 +136,36 @@ def _normalize_sampling(sampling):
         return "uniform"
     if mode == "goss":
         return "goss"
-    raise ValueError("sampling must be one of 'uniform' or experimental 'goss'")
+    if mode in {"weighted_goss", "weightedgoss", "goss_weighted"}:
+        return "weighted_goss"
+    if mode == "mvs":
+        return "mvs"
+    raise ValueError(
+        "sampling must be one of 'uniform', experimental 'goss', "
+        "experimental 'weighted_goss', or experimental 'mvs'"
+    )
+
+
+def _normalize_bootstrap_type(bootstrap_type):
+    if bootstrap_type is None:
+        bootstrap_type = "none"
+    mode = str(bootstrap_type).lower().replace("-", "_")
+    if mode in {"none", "no", "off"}:
+        return "none"
+    if mode in {"bayesian", "bayes"}:
+        return "bayesian"
+    raise ValueError("bootstrap_type must be 'none' or experimental 'bayesian'")
+
+
+def _normalize_diagnostic_warnings(value):
+    if isinstance(value, bool):
+        return "always" if value else "never"
+    mode = str(value).lower().replace("-", "_")
+    if mode in {"once", "always", "never"}:
+        return mode
+    raise ValueError(
+        "diagnostic_warnings must be 'once', 'always', 'never', or a bool"
+    )
 
 
 def _validate_sample_weight(sample_weight, n_samples, name="sample_weight"):
@@ -152,6 +193,10 @@ def _resolve_default_depth(depth, tree_mode_):
     return 6
 
 
+def _is_auto_param(value):
+    return isinstance(value, str) and value.lower().replace("-", "_") == "auto"
+
+
 class _BaseBooster:
     """Shared machinery for the scalar and multiclass boosters.
 
@@ -164,6 +209,7 @@ class _BaseBooster:
     def __init__(self, iterations=1000, learning_rate=None, depth=None,
                  l2_leaf_reg=3.0, max_bins=254, subsample=1.0,
                  colsample=1.0, cat_smoothing=1.0, early_stopping_rounds=None,
+                 early_stopping_min_delta=None,
                  min_child_weight=1.0, min_child_samples=20,
                  min_gain_to_split=0.0, num_leaves=None, thread_count=None,
                  random_state=None, verbose=False, ordered_boosting="auto",
@@ -171,19 +217,39 @@ class _BaseBooster:
                  sampling="uniform", top_rate=0.2, other_rate=0.1,
                  multiclass_tree_strategy="auto", eval_train_loss=True,
                  bin_sample_count=DEFAULT_BIN_SAMPLE_COUNT,
-                 histogram_parallelism="auto"):
+                 histogram_parallelism="auto", use_best_model=True,
+                 bootstrap_type="none", bagging_temperature=0.0,
+                 mvs_reg=1.0, random_strength=0.0,
+        diagnostic_warnings="once"):
         self.iterations = int(iterations)
         self.learning_rate = learning_rate
-        self.l2_leaf_reg = float(l2_leaf_reg)
+        self._depth_input = depth
+        self._num_leaves_input = num_leaves
+        self._l2_leaf_reg_input = l2_leaf_reg
+        self._min_child_samples_input = min_child_samples
+        self._min_child_weight_input = min_child_weight
+        self._cat_smoothing_input = cat_smoothing
+        self.l2_leaf_reg = l2_leaf_reg if _is_auto_param(l2_leaf_reg) else float(l2_leaf_reg)
         self.max_bins = int(max_bins)
         self.subsample = float(subsample)
         self.colsample = float(colsample)
-        self.cat_smoothing = float(cat_smoothing)
-        if self.cat_smoothing <= 0.0:
+        self.cat_smoothing = (
+            cat_smoothing if _is_auto_param(cat_smoothing) else float(cat_smoothing)
+        )
+        if not _is_auto_param(self.cat_smoothing) and self.cat_smoothing <= 0.0:
             raise ValueError("cat_smoothing must be positive")
         self.early_stopping_rounds = early_stopping_rounds
-        self.min_child_weight = float(min_child_weight)
-        self.min_child_samples = int(min_child_samples)
+        self.early_stopping_min_delta = early_stopping_min_delta
+        self.min_child_weight = (
+            min_child_weight
+            if _is_auto_param(min_child_weight)
+            else float(min_child_weight)
+        )
+        self.min_child_samples = (
+            min_child_samples
+            if _is_auto_param(min_child_samples)
+            else int(min_child_samples)
+        )
         self.min_gain_to_split = float(min_gain_to_split)
         self.num_leaves = num_leaves
         self.thread_count = thread_count
@@ -193,7 +259,7 @@ class _BaseBooster:
         self.verbose_timing = bool(verbose_timing)
         self.tree_mode = tree_mode
         self.tree_mode_ = _normalize_tree_mode(tree_mode)
-        self.depth = _resolve_default_depth(depth, self.tree_mode_)
+        self.depth = "auto" if _is_auto_param(depth) else _resolve_default_depth(depth, self.tree_mode_)
         self.sampling = sampling
         self.top_rate = float(top_rate)
         self.other_rate = float(other_rate)
@@ -201,47 +267,447 @@ class _BaseBooster:
         self.eval_train_loss = bool(eval_train_loss)
         self.bin_sample_count = bin_sample_count
         self.histogram_parallelism = histogram_parallelism
+        self.use_best_model = bool(use_best_model)
+        self.bootstrap_type = bootstrap_type
+        self.bootstrap_type_ = _normalize_bootstrap_type(bootstrap_type)
+        self.bagging_temperature = float(bagging_temperature)
+        self.mvs_reg = float(mvs_reg)
+        self.random_strength = float(random_strength)
+        self.diagnostic_warnings = diagnostic_warnings
+        self.diagnostic_warnings_ = _normalize_diagnostic_warnings(
+            diagnostic_warnings
+        )
+        if self.bagging_temperature < 0.0:
+            raise ValueError("bagging_temperature must be nonnegative")
+        if self.mvs_reg < 0.0:
+            raise ValueError("mvs_reg must be nonnegative")
+        if self.random_strength < 0.0:
+            raise ValueError("random_strength must be nonnegative")
         if histogram_parallelism not in {"auto", "feature", "row"}:
             raise ValueError(
                 "histogram_parallelism must be 'auto', 'feature', or 'row'"
             )
         self._validate_sampling_config()
 
-    def _validate_sampling_config(self):
-        self.sampling_ = _normalize_sampling(self.sampling)
-        self.top_rate = float(self.top_rate)
-        self.other_rate = float(self.other_rate)
-        if self.sampling_ == "goss":
-            if not (0.0 < self.top_rate < 1.0):
-                raise ValueError("top_rate must be in (0, 1) for sampling='goss'")
-            if not (0.0 < self.other_rate < 1.0):
-                raise ValueError("other_rate must be in (0, 1) for sampling='goss'")
-            if self.top_rate + self.other_rate > 1.0:
-                raise ValueError(
-                    "top_rate + other_rate must be <= 1 for sampling='goss'"
-                )
-
-    def _resolve_fit_auto_params(self, *, loss_name, n_samples, sample_weight,
-                                 eval_set_present):
-        self.iterations_ = int(self.iterations)
+    def _resolve_auto_structure_params(
+        self, *, loss_name, n_samples, sample_weight, X=None, cat_features=None
+    ):
         n_eff = effective_sample_size(sample_weight, n_samples)
         n_eff_fraction = n_eff / float(n_samples) if n_samples else 0.0
-        self.lr_ = resolve_learning_rate(
+        resolved = {}
+        candidates = {}
+
+        depth_input = self._depth_input
+        if _is_auto_param(depth_input):
+            if self.tree_mode_ == "lightgbm":
+                depth = -1
+                candidates["depth"] = {"rule": "lightgbm_unlimited"}
+            else:
+                if n_eff < 512:
+                    depth = 4
+                elif n_eff < 5_000:
+                    depth = 5
+                elif n_eff < 50_000:
+                    depth = 6
+                else:
+                    depth = 7
+                candidates["depth"] = {"rule": "n_eff_buckets_4_7"}
+            self.depth = int(depth)
+            depth_source = "auto"
+        else:
+            if self.depth == "auto":
+                self.depth = _resolve_default_depth(depth_input, self.tree_mode_)
+            depth_source = "default" if depth_input is None else "explicit"
+        resolved["depth"] = {
+            "input": depth_input,
+            "resolved": self.depth,
+            "source": depth_source,
+        }
+
+        num_leaves_input = self._num_leaves_input
+        if _is_auto_param(num_leaves_input):
+            if self.tree_mode_ == "lightgbm":
+                leaves = int(np.clip(round(np.sqrt(max(n_eff, 1.0))), 7, 63))
+                if self.depth is not None and self.depth > 0:
+                    leaves = min(leaves, 1 << int(self.depth))
+                self.num_leaves = max(1, leaves)
+                source = "auto"
+                candidates["num_leaves"] = {"rule": "sqrt_n_eff_clipped_7_63"}
+            else:
+                self.num_leaves = None
+                source = "auto_disabled_for_symmetric_trees"
+                candidates["num_leaves"] = {"rule": "not_applicable"}
+        else:
+            source = "default" if num_leaves_input is None else "explicit"
+        resolved["num_leaves"] = {
+            "input": num_leaves_input,
+            "resolved": self.num_leaves,
+            "source": source,
+        }
+
+        l2_input = self._l2_leaf_reg_input
+        if _is_auto_param(l2_input):
+            base = 1.0 if self.tree_mode_ == "lightgbm" else 3.0
+            concentration = (
+                np.sqrt(1.0 / max(n_eff_fraction, 1e-12))
+                if n_eff_fraction < 1.0 else 1.0
+            )
+            self.l2_leaf_reg = float(np.clip(base * concentration, base, 20.0))
+            source = "auto"
+            candidates["l2_leaf_reg"] = {
+                "rule": "base_by_tree_mode_times_weight_concentration",
+                "base": base,
+            }
+        else:
+            self.l2_leaf_reg = float(self.l2_leaf_reg)
+            source = "default" if l2_input == 3.0 else "explicit"
+        resolved["l2_leaf_reg"] = {
+            "input": l2_input,
+            "resolved": float(self.l2_leaf_reg),
+            "source": source,
+        }
+
+        samples_input = self._min_child_samples_input
+        if _is_auto_param(samples_input):
+            self.min_child_samples = int(np.clip(np.ceil(0.01 * n_eff), 5, 100))
+            source = "auto"
+            candidates["min_child_samples"] = {"rule": "ceil_1pct_n_eff_clipped_5_100"}
+        else:
+            self.min_child_samples = int(self.min_child_samples)
+            source = "default" if samples_input == 20 else "explicit"
+        resolved["min_child_samples"] = {
+            "input": samples_input,
+            "resolved": int(self.min_child_samples),
+            "source": source,
+        }
+
+        weight_input = self._min_child_weight_input
+        if _is_auto_param(weight_input):
+            self.min_child_weight = float(np.clip(0.001 * n_eff, 1.0, 50.0))
+            source = "auto"
+            candidates["min_child_weight"] = {"rule": "0.1pct_n_eff_clipped_1_50"}
+        else:
+            self.min_child_weight = float(self.min_child_weight)
+            source = "default" if weight_input == 1.0 else "explicit"
+        resolved["min_child_weight"] = {
+            "input": weight_input,
+            "resolved": float(self.min_child_weight),
+            "source": source,
+        }
+
+        cat_cardinalities = []
+        smoothing_input = self._cat_smoothing_input
+        if _is_auto_param(smoothing_input):
+            if cat_features and X is not None:
+                X_arr = np.asarray(X, dtype=object)
+                for j in cat_features:
+                    col = X_arr[:, int(j)]
+                    cat_cardinalities.append(
+                        len({(type(v).__name__, repr(v)) for v in col})
+                    )
+            if cat_cardinalities:
+                median_cardinality = float(np.median(cat_cardinalities))
+                smoothing = np.sqrt(max(median_cardinality, 1.0))
+                if n_eff_fraction < 1.0:
+                    smoothing *= np.sqrt(1.0 / max(n_eff_fraction, 1e-12))
+                if (
+                    self.tree_mode_ == "lightgbm"
+                    and loss_name == "RMSE"
+                    and self._include_cat_codes()
+                ):
+                    smoothing = max(smoothing, 3.0)
+                self.cat_smoothing = float(np.clip(smoothing, 1.0, 50.0))
+                rule = "sqrt_median_cardinality_weight_adjusted"
+            else:
+                self.cat_smoothing = 1.0
+                rule = "no_categoricals"
+            source = "auto"
+            candidates["cat_smoothing"] = {"rule": rule}
+        else:
+            self.cat_smoothing = float(self.cat_smoothing)
+            if self.cat_smoothing <= 0.0:
+                raise ValueError("cat_smoothing must be positive")
+            source = "default" if smoothing_input == 1.0 else "explicit"
+        resolved["cat_smoothing"] = {
+            "input": smoothing_input,
+            "resolved": float(self.cat_smoothing),
+            "source": source,
+            "cat_cardinalities": cat_cardinalities,
+        }
+
+        self._auto_structure_params_ = {
+            "n_eff": float(n_eff),
+            "n_eff_fraction": float(n_eff_fraction),
+            "resolved": resolved,
+            "candidates": candidates,
+        }
+
+    def _validate_sampling_config(self):
+        self.sampling_ = _normalize_sampling(self.sampling)
+        self.bootstrap_type_ = _normalize_bootstrap_type(self.bootstrap_type)
+        self.top_rate = float(self.top_rate)
+        self.other_rate = float(self.other_rate)
+        if not np.isfinite(self.subsample):
+            raise ValueError("subsample must be finite")
+        if (
+            self.sampling_ in {"uniform", "mvs"}
+            and not (0.0 < self.subsample <= 1.0)
+        ):
+            raise ValueError(
+                "subsample must be in (0, 1] for sampling='uniform' or sampling='mvs'"
+            )
+        if self.sampling_ in {"goss", "weighted_goss"}:
+            if self.subsample != 1.0:
+                raise ValueError(
+                    "subsample must be 1.0 for sampling='goss' or "
+                    "sampling='weighted_goss'"
+                )
+            if not (0.0 < self.top_rate < 1.0):
+                raise ValueError(
+                    "top_rate must be in (0, 1) for sampling='goss' or "
+                    "sampling='weighted_goss'"
+                )
+            if not (0.0 < self.other_rate < 1.0):
+                raise ValueError(
+                    "other_rate must be in (0, 1) for sampling='goss' or "
+                    "sampling='weighted_goss'"
+                )
+            if self.top_rate + self.other_rate > 1.0:
+                raise ValueError(
+                    "top_rate + other_rate must be <= 1 for sampling='goss' "
+                    "or sampling='weighted_goss'"
+                )
+
+    def _bayesian_bootstrap_active(self):
+        return self.bootstrap_type_ == "bayesian" and self.bagging_temperature > 0.0
+
+    def _mvs_active(self):
+        return self.sampling_ == "mvs" and self.subsample < 1.0
+
+    def _row_sampling_active(self):
+        return (
+            self.sampling_ in {"goss", "weighted_goss"}
+            or self._mvs_active()
+            or (self.sampling_ == "uniform" and self.subsample < 1.0)
+        )
+
+    def _reset_stochastic_diagnostics(self):
+        self._stochastic_diagnostics_ = {
+            "sampled_rows": 0,
+            "sampling_rounds": 0,
+            "sampling_fraction_sum": 0.0,
+            "bootstrap_rounds": 0,
+            "random_strength_seed_policy": (
+                "per_tree_deterministic_hash"
+                if self.random_strength > 0.0
+                else "disabled"
+            ),
+        }
+
+    def _record_sampling_diagnostic(self, row_indices, n_samples):
+        diag = getattr(self, "_stochastic_diagnostics_", None)
+        if diag is None:
+            return
+        if row_indices is None:
+            sampled = int(n_samples)
+        else:
+            sampled = int(row_indices.shape[0])
+        diag["sampled_rows"] += sampled
+        diag["sampling_rounds"] += 1
+        diag["sampling_fraction_sum"] += (
+            sampled / float(n_samples) if n_samples else 0.0
+        )
+
+    def _record_bootstrap_diagnostic(self, factors):
+        diag = getattr(self, "_stochastic_diagnostics_", None)
+        if diag is None or factors is None:
+            return
+        diag["bootstrap_rounds"] += 1
+
+    def _initialize_split_seed(self, rng):
+        if self.random_strength <= 0.0:
+            self._split_seed_ = 0 if self.random_state is None else int(self.random_state)
+            return
+        if self.random_state is None:
+            self._split_seed_ = int(rng.integers(0, np.iinfo(np.int32).max))
+        else:
+            self._split_seed_ = int(self.random_state)
+
+    def _bayesian_bootstrap_factors(self, n_samples, rng):
+        if (
+            not self._bayesian_bootstrap_active()
+            or n_samples <= 0
+        ):
+            return None
+        factors = rng.exponential(scale=1.0, size=n_samples)
+        if self.bagging_temperature != 1.0:
+            factors = factors ** self.bagging_temperature
+        mean = float(np.mean(factors))
+        if mean > 0.0 and np.isfinite(mean):
+            factors = factors / mean
+        self._record_bootstrap_diagnostic(factors)
+        return factors.astype(np.float64, copy=False)
+
+    def _apply_bootstrap(self, grad, hess, factors):
+        if factors is None:
+            return grad, hess
+        return grad * factors, hess * factors
+
+    def _apply_bootstrap_multiclass(self, grad, hess, factors):
+        if factors is None:
+            return grad, hess
+        return grad * factors[None, :], hess * factors[None, :]
+
+    def _resolve_fit_auto_params(self, *, loss_name, n_samples, sample_weight,
+                                 eval_set_present, p_model=None):
+        self.iterations_ = int(self.iterations)
+        self.use_best_model_ = bool(eval_set_present and self.use_best_model)
+        n_eff = effective_sample_size(sample_weight, n_samples)
+        n_eff_fraction = n_eff / float(n_samples) if n_samples else 0.0
+        self._learning_rate_details_ = resolve_learning_rate_details(
             self.learning_rate,
             loss_name=loss_name,
             n_eff=n_eff,
             iterations=self.iterations_,
-            use_best_model=bool(eval_set_present and self.early_stopping_rounds is not None),
+            use_best_model=self.use_best_model_,
             tree_mode=self.tree_mode_,
             max_leaves=self._max_tree_leaves(),
             n_eff_fraction=n_eff_fraction,
+            p_model=p_model,
         )
+        self.lr_ = self._learning_rate_details_["resolved"]
         if self.early_stopping_rounds is None:
             self.early_stopping_rounds_ = None
+            self.early_stopping_rounds_rule_ = "none"
+        elif self.early_stopping_rounds == "auto":
+            self.early_stopping_rounds_ = int(
+                np.clip(np.ceil(5.0 / max(self.lr_, 1e-12)), 20, 200)
+            )
+            self.early_stopping_rounds_rule_ = "ceil(5/lr)_clipped_20_200"
         else:
             self.early_stopping_rounds_ = int(self.early_stopping_rounds)
+            self.early_stopping_rounds_rule_ = "explicit"
+        if self.early_stopping_min_delta is None:
+            self.early_stopping_min_delta_ = 1e-9
+            self.early_stopping_min_delta_rule_ = "legacy_1e-9"
+        elif self.early_stopping_min_delta == "auto":
+            self.early_stopping_min_delta_ = None
+            self.early_stopping_min_delta_rule_ = "auto"
+        else:
+            self.early_stopping_min_delta_ = float(self.early_stopping_min_delta)
+            if self.early_stopping_min_delta_ < 0.0:
+                raise ValueError("early_stopping_min_delta must be nonnegative")
+            self.early_stopping_min_delta_rule_ = "explicit"
         if self.verbose and is_auto_learning_rate(self.learning_rate):
             print(f"Learning rate set to {self.lr_}")
+
+    def _finalize_early_stopping_min_delta(self, baseline_loss, loss_name):
+        if self.early_stopping_min_delta_ is not None:
+            return
+        delta = max(1e-12, 1e-4 * abs(float(baseline_loss)))
+        self.early_stopping_min_delta_ = float(delta)
+
+    def _record_scalar_target_stats(self, y, sample_weight):
+        y = np.asarray(y, dtype=np.float64)
+        stats = {
+            "n_samples": int(y.shape[0]),
+            "mean": float(np.mean(y)) if y.size else None,
+            "std": float(np.std(y)) if y.size else None,
+            "min": float(np.min(y)) if y.size else None,
+            "max": float(np.max(y)) if y.size else None,
+        }
+        if sample_weight is not None and y.size:
+            w = np.asarray(sample_weight, dtype=np.float64)
+            mean = float(np.average(y, weights=w))
+            variance = float(np.average((y - mean) ** 2, weights=w))
+            stats.update({
+                "weighted_mean": mean,
+                "weighted_std": float(np.sqrt(max(variance, 0.0))),
+            })
+        self._target_stats_ = stats
+
+    def _record_classification_target_stats(self, y_idx, classes, sample_weight):
+        y_idx = np.asarray(y_idx, dtype=np.int64)
+        counts = np.bincount(y_idx, minlength=len(classes)).astype(np.float64)
+        if sample_weight is None:
+            weighted_counts = counts.copy()
+        else:
+            weighted_counts = np.bincount(
+                y_idx, weights=np.asarray(sample_weight, dtype=np.float64),
+                minlength=len(classes),
+            ).astype(np.float64)
+        total = float(np.sum(counts))
+        weighted_total = float(np.sum(weighted_counts))
+        self._target_stats_ = {
+            "n_samples": int(y_idx.shape[0]),
+            "n_classes": int(len(classes)),
+            "class_counts": counts.astype(int).tolist(),
+            "class_weighted_counts": weighted_counts.tolist(),
+            "class_frequencies": (
+                (counts / total).tolist() if total > 0.0 else []
+            ),
+            "class_weighted_frequencies": (
+                (weighted_counts / weighted_total).tolist()
+                if weighted_total > 0.0 else []
+            ),
+        }
+
+    def _diagnostic_warnings(self, *, n_eff_fraction, sample_weight_provided):
+        warning_records = []
+        if (
+            self._learning_rate_details_.get("clipped")
+            and is_auto_learning_rate(self.learning_rate)
+        ):
+            bound = self._learning_rate_details_["clip_bound"]
+            limit = AUTO_LR_MIN if bound == "min" else AUTO_LR_MAX
+            raw = self._learning_rate_details_["raw_auto"]
+            warning_records.append({
+                "code": f"learning_rate_clipped_{bound}",
+                "message": (
+                    "ChimeraBoost automatic learning rate clipped to "
+                    f"{bound} {limit:g} (raw={raw:.6g})."
+                ),
+            })
+        if (
+            sample_weight_provided
+            and
+            n_eff_fraction < _LOW_EFFECTIVE_SAMPLE_FRACTION
+            and n_eff_fraction < 1.0
+        ):
+            warning_records.append({
+                "code": "low_effective_sample_size_fraction",
+                "message": (
+                    "ChimeraBoost effective sample size is low "
+                    f"(n_eff/n={n_eff_fraction:.3f} < "
+                    f"{_LOW_EFFECTIVE_SAMPLE_FRACTION:.2f}); sample weights "
+                    "are highly concentrated."
+                ),
+            })
+        return warning_records
+
+    def _emit_auto_param_warnings(self):
+        policy = getattr(self, "diagnostic_warnings_", "once")
+        diagnostics = getattr(self, "auto_params_", {}).get("diagnostics", {})
+        emitted = []
+        if policy == "never":
+            diagnostics["runtime_warning_policy"] = policy
+            diagnostics["runtime_warnings_emitted"] = emitted
+            return
+        for warning_record in diagnostics.get("warnings", []):
+            code = warning_record.get("code")
+            if policy == "once" and code in _EMITTED_DIAGNOSTIC_WARNING_CODES:
+                continue
+            warnings.warn(
+                warning_record["message"],
+                RuntimeWarning,
+                stacklevel=3,
+            )
+            if code is not None:
+                emitted.append(code)
+                if policy == "once":
+                    _EMITTED_DIAGNOSTIC_WARNING_CODES.add(code)
+        diagnostics["runtime_warning_policy"] = policy
+        diagnostics["runtime_warnings_emitted"] = emitted
 
     def _resolved_auto_params(
         self,
@@ -266,7 +732,20 @@ class _BaseBooster:
         n_eff = effective_sample_size(sample_weight, n_samples)
         n_eff_fraction = n_eff / float(n_samples) if n_samples else 0.0
         max_bins_observed = int(np.max(n_bins)) if len(n_bins) else 0
+        observed_total_bins = int(np.sum(n_bins)) if len(n_bins) else 0
+        raw_feature_count = int(n_raw_features)
+        model_feature_count = int(X_binned.shape[1])
+        feature_expansion_factor = (
+            model_feature_count / float(raw_feature_count)
+            if raw_feature_count else 0.0
+        )
         binner = self.prep_.binner_
+        weighted_binning_active = bool(getattr(binner, "weighted_", False))
+        best_prefix_policy = (
+            "validation_best_prefix"
+            if eval_set_present and getattr(self, "use_best_model_", False)
+            else "disabled"
+        )
         lightgbm_unweighted_damping = (
             self.tree_mode_ == "lightgbm"
             and is_auto_learning_rate(self.learning_rate)
@@ -284,6 +763,11 @@ class _BaseBooster:
             and is_auto_learning_rate(self.learning_rate)
             and n_eff_fraction < 0.99
         )
+        diagnostic_warnings = self._diagnostic_warnings(
+            n_eff_fraction=n_eff_fraction,
+            sample_weight_provided=sample_weight is not None,
+        )
+        learning_rate_details = getattr(self, "_learning_rate_details_", {})
         params = {
             "loss": getattr(self, "loss_name", "MultiClass"),
             "iterations": int(self.iterations_),
@@ -304,23 +788,27 @@ class _BaseBooster:
                     if weighted_rmse_catboost_uplift
                     else None
                 ),
+                "feature_lr_reference_ratio": AUTO_LR_FEATURE_RATIO_REFERENCE,
+                "feature_lr_min_multiplier": AUTO_LR_FEATURE_MULTIPLIER_MIN,
             },
             "learning_rate": {
                 "resolved": float(self.lr_),
-                "source": (
-                    "auto" if is_auto_learning_rate(self.learning_rate)
-                    else "explicit"
+                "source": learning_rate_details.get("source", "explicit"),
+                "input": learning_rate_details.get("input"),
+                "rule": learning_rate_details.get("rule", "explicit"),
+                "raw_auto": learning_rate_details.get("raw_auto"),
+                "p_model": learning_rate_details.get("p_model"),
+                "feature_ratio": learning_rate_details.get("feature_ratio"),
+                "feature_multiplier": learning_rate_details.get(
+                    "feature_multiplier", 1.0
                 ),
-                "input": (
-                    self.learning_rate
-                    if is_auto_learning_rate(self.learning_rate)
-                    else float(self.learning_rate)
+                "feature_shrinkage_active": bool(
+                    learning_rate_details.get("feature_shrinkage_active", False)
                 ),
-                "rule": (
-                    AUTO_LR_RULE
-                    if is_auto_learning_rate(self.learning_rate)
-                    else "explicit"
-                ),
+                "clipped": bool(learning_rate_details.get("clipped", False)),
+                "clip_bound": learning_rate_details.get("clip_bound"),
+                "clip_min": float(AUTO_LR_MIN),
+                "clip_max": float(AUTO_LR_MAX),
             },
             "sample_weight": {
                 "provided": sample_weight is not None,
@@ -332,10 +820,12 @@ class _BaseBooster:
                     None if sample_weight is None else float(np.sum(sample_weight))
                 ),
             },
+            "target": getattr(self, "_target_stats_", {}),
             "features": {
-                "raw_feature_count": int(n_raw_features),
-                "model_feature_count": int(X_binned.shape[1]),
+                "raw_feature_count": raw_feature_count,
+                "model_feature_count": model_feature_count,
                 "input_feature_count": int(self.prep_.n_input_features_),
+                "feature_expansion_factor": feature_expansion_factor,
             },
             "tree": {
                 "tree_mode": self.tree_mode_,
@@ -348,17 +838,21 @@ class _BaseBooster:
                 "min_child_samples": int(self.min_child_samples),
                 "min_child_weight": float(self.min_child_weight),
                 "min_gain_to_split": float(self.min_gain_to_split),
+                "auto_structure": getattr(self, "_auto_structure_params_", {}),
             },
+            "auto_structure": getattr(self, "_auto_structure_params_", {}),
             "binning": {
                 "max_bins": int(self.max_bins),
                 "bin_sample_count": (
                     None if self.bin_sample_count is None else int(self.bin_sample_count)
                 ),
-                "numeric_binning_weighted": bool(getattr(binner, "weighted_", False)),
+                "cat_smoothing_input": self._cat_smoothing_input,
+                "cat_smoothing_resolved": float(self.prep_.cat_smoothing),
+                "numeric_binning_weighted": weighted_binning_active,
                 "weighted_sampling": bool(getattr(binner, "weighted_sampling_", False)),
                 "weighted_sample_count": getattr(binner, "weighted_sample_count_", None),
                 "observed_max_bins": max_bins_observed,
-                "observed_total_bins": int(np.sum(n_bins)) if len(n_bins) else 0,
+                "observed_total_bins": observed_total_bins,
             },
             "early_stopping": {
                 "enabled": bool(self.early_stopping_rounds_ is not None and eval_set_present),
@@ -368,33 +862,119 @@ class _BaseBooster:
                     else int(self.early_stopping_rounds_)
                 ),
                 "rounds_input": self.early_stopping_rounds,
+                "rounds_rule": self.early_stopping_rounds_rule_,
+                "min_delta": float(self.early_stopping_min_delta_),
+                "min_delta_input": self.early_stopping_min_delta,
+                "min_delta_rule": self.early_stopping_min_delta_rule_,
                 "eval_set_provided": bool(eval_set_present),
                 "eval_n_samples": int(eval_n_samples) if eval_set_present else None,
                 "eval_sample_weight_provided": eval_sample_weight is not None,
+                "use_best_model": bool(
+                    eval_set_present and getattr(self, "use_best_model_", False)
+                ),
+                "use_best_model_input": bool(self.use_best_model),
+                "best_prefix_policy": best_prefix_policy,
                 "eval_effective_sample_size": (
                     None
                     if not eval_set_present
                     else effective_sample_size(eval_sample_weight, eval_n_samples)
                 ),
-                "improvement_tolerance": 1e-9,
+                "improvement_tolerance": float(self.early_stopping_min_delta_),
             },
             "sampling": {
                 "sampling": self.sampling_,
+                "weighted_goss_active": bool(self.sampling_ == "weighted_goss"),
                 "subsample": float(self.subsample),
                 "colsample": float(self.colsample),
                 "top_rate": float(self.top_rate),
                 "other_rate": float(self.other_rate),
+                "mvs_reg": float(self.mvs_reg),
             },
+            "stochastic_regularization": self._resolved_stochastic_params(
+                n_samples
+            ),
             "threading": {
                 "thread_count_input": self.thread_count,
                 "thread_count_resolved": int(self.n_threads_),
                 "histogram_parallelism": self.histogram_parallelism,
                 "row_parallel_histograms_active": rowpar_buffers is not None,
             },
+            "diagnostics": {
+                "warnings": diagnostic_warnings,
+                "low_effective_sample_size_fraction_threshold": (
+                    _LOW_EFFECTIVE_SAMPLE_FRACTION
+                ),
+                "effective_sample_size_fraction": n_eff_fraction,
+                "learning_rate_clipped": bool(
+                    learning_rate_details.get("clipped", False)
+                ),
+                "learning_rate_clip_bound": learning_rate_details.get("clip_bound"),
+                "weighted_binning_active": weighted_binning_active,
+                "observed_max_bins": max_bins_observed,
+                "observed_total_bins": observed_total_bins,
+                "feature_expansion_factor": feature_expansion_factor,
+                "learning_rate_feature_multiplier": learning_rate_details.get(
+                    "feature_multiplier", 1.0
+                ),
+                "learning_rate_feature_shrinkage_active": bool(
+                    learning_rate_details.get("feature_shrinkage_active", False)
+                ),
+                "best_prefix_policy": best_prefix_policy,
+                "use_best_model": bool(
+                    eval_set_present and getattr(self, "use_best_model_", False)
+                ),
+                "runtime_warning_policy": self.diagnostic_warnings_,
+                "runtime_warnings_emitted": [],
+            },
         }
         if extra:
             params.update(extra)
         return params
+
+    def _resolved_stochastic_params(self, n_samples):
+        diag = getattr(self, "_stochastic_diagnostics_", {})
+        rounds = int(diag.get("sampling_rounds", 0))
+        sampled_rows = int(diag.get("sampled_rows", 0))
+        avg_fraction = (
+            float(diag.get("sampling_fraction_sum", 0.0)) / rounds
+            if rounds else None
+        )
+        return {
+            "bootstrap_type": self.bootstrap_type_,
+            "bagging_temperature": float(self.bagging_temperature),
+            "bayesian_bootstrap_active": bool(self._bayesian_bootstrap_active()),
+            "bayesian_bootstrap_rounds": int(diag.get("bootstrap_rounds", 0)),
+            "sampling": self.sampling_,
+            "subsample": float(self.subsample),
+            "mvs_reg": float(self.mvs_reg),
+            "mvs_active": bool(self._mvs_active()),
+            "weighted_goss_active": bool(self.sampling_ == "weighted_goss"),
+            "row_sampling_active": bool(self._row_sampling_active()),
+            "sampled_rows_total": sampled_rows,
+            "sampling_rounds": rounds,
+            "average_sampled_row_fraction": avg_fraction,
+            "n_samples": int(n_samples),
+            "random_strength": float(self.random_strength),
+            "random_strength_active": bool(self.random_strength > 0.0),
+            "random_strength_seed_policy": diag.get(
+                "random_strength_seed_policy", "disabled"
+            ),
+        }
+
+    def _refresh_stochastic_auto_params(self, n_samples):
+        if hasattr(self, "auto_params_"):
+            stochastic = self._resolved_stochastic_params(n_samples)
+            self.auto_params_["stochastic_regularization"] = stochastic
+            self.auto_params_.setdefault("diagnostics", {})
+            self.auto_params_["diagnostics"]["stochastic_regularization"] = stochastic
+
+    def _truncate_to_best_model(self, best_iter, valid_history):
+        if not (getattr(self, "use_best_model_", False) and valid_history):
+            return
+        keep = int(best_iter) + 1
+        if keep < len(self.trees_):
+            self.trees_ = self.trees_[:keep]
+            self._flat_cache_ = None
 
     def _catboost_depth(self):
         if self.depth is None or self.depth < 1:
@@ -564,12 +1144,182 @@ class _BaseBooster:
         the old fallback behavior, while histogram builders can skip them.
         """
         if self.sampling_ == "goss":
-            return self._goss_subsample(grad, hess, rng)
+            g, h, row_indices = self._goss_subsample(grad, hess, rng)
+            self._record_sampling_diagnostic(row_indices, grad.shape[0])
+            return g, h, row_indices
+        if self.sampling_ == "weighted_goss":
+            g, h, row_indices = self._weighted_goss_subsample(grad, hess, rng)
+            self._record_sampling_diagnostic(row_indices, grad.shape[0])
+            return g, h, row_indices
+        if self.sampling_ == "mvs":
+            g, h, row_indices = self._mvs_subsample(grad, hess, rng)
+            self._record_sampling_diagnostic(row_indices, grad.shape[0])
+            return g, h, row_indices
         if self.subsample >= 1.0:
+            self._record_sampling_diagnostic(None, grad.shape[0])
             return grad, hess, None
         mask = rng.random(grad.shape[0]) < self.subsample
         row_indices = np.flatnonzero(mask).astype(np.int64)
+        self._record_sampling_diagnostic(row_indices, grad.shape[0])
         return np.where(mask, grad, 0.0), np.where(mask, hess, 0.0), row_indices
+
+    def _mvs_probabilities(self, importance):
+        n_samples = importance.shape[0]
+        if n_samples <= 1 or self.subsample >= 1.0:
+            return None
+        target = float(np.clip(self.subsample, 0.0, 1.0)) * n_samples
+        if target <= 0.0:
+            return np.zeros(n_samples, dtype=np.float64)
+        if target >= n_samples:
+            return None
+        importance = np.asarray(importance, dtype=np.float64)
+        if (
+            not np.all(np.isfinite(importance))
+            or float(np.sum(importance)) <= 0.0
+            or np.all(importance <= 0.0)
+        ):
+            return np.full(n_samples, target / n_samples, dtype=np.float64)
+        lo = 0.0
+        hi = float(np.max(importance)) * n_samples / max(target, 1.0)
+        if hi <= 0.0:
+            return np.full(n_samples, target / n_samples, dtype=np.float64)
+        for _ in range(48):
+            mid = (lo + hi) * 0.5
+            if mid <= 0.0:
+                lo = mid
+                continue
+            expected = np.minimum(1.0, importance / mid).sum()
+            if expected > target:
+                lo = mid
+            else:
+                hi = mid
+        probs = np.minimum(1.0, importance / max(hi, 1e-300))
+        probs *= target / max(float(probs.sum()), 1e-300)
+        return np.minimum(1.0, probs)
+
+    def _mvs_subsample(self, grad, hess, rng):
+        n_samples = grad.shape[0]
+        probs = self._mvs_probabilities(
+            np.sqrt(grad * grad + self.mvs_reg * hess * hess)
+        )
+        if probs is None:
+            return grad, hess, None
+        mask = rng.random(n_samples) < probs
+        if not np.any(mask):
+            mask[int(np.argmax(probs))] = True
+        row_indices = np.flatnonzero(mask).astype(np.int64)
+        scale = np.zeros(n_samples, dtype=np.float64)
+        scale[row_indices] = 1.0 / np.maximum(probs[row_indices], 1e-300)
+        return grad * scale, hess * scale, row_indices
+
+    def _mvs_subsample_multiclass(self, grad, hess, rng):
+        n_samples = grad.shape[1]
+        importance = np.sqrt(
+            np.sum(grad * grad, axis=0) + self.mvs_reg * np.sum(hess * hess, axis=0)
+        )
+        probs = self._mvs_probabilities(importance)
+        if probs is None:
+            self._record_sampling_diagnostic(None, n_samples)
+            return grad, hess, None
+        mask = rng.random(n_samples) < probs
+        if not np.any(mask):
+            mask[int(np.argmax(probs))] = True
+        row_indices = np.flatnonzero(mask).astype(np.int64)
+        scale = np.zeros(n_samples, dtype=np.float64)
+        scale[row_indices] = 1.0 / np.maximum(probs[row_indices], 1e-300)
+        self._record_sampling_diagnostic(row_indices, n_samples)
+        return grad * scale[None, :], hess * scale[None, :], row_indices
+
+    def _weighted_goss_probabilities(self, mass, target_mass):
+        mass = np.asarray(mass, dtype=np.float64)
+        if (
+            mass.size == 0
+            or target_mass <= 0.0
+            or not np.all(np.isfinite(mass))
+            or float(np.sum(mass)) <= 0.0
+        ):
+            return None
+        target_mass = min(float(target_mass), float(np.sum(mass)))
+        lo = 0.0
+        hi = 1.0 / max(float(np.max(mass)), 1e-300)
+        while np.sum(np.minimum(1.0, hi * mass) * mass) < target_mass:
+            hi *= 2.0
+        for _ in range(48):
+            mid = (lo + hi) * 0.5
+            expected_mass = np.sum(np.minimum(1.0, mid * mass) * mass)
+            if expected_mass < target_mass:
+                lo = mid
+            else:
+                hi = mid
+        return np.minimum(1.0, hi * mass)
+
+    def _weighted_goss_subsample_from_score(self, grad, hess, score, mass, rng):
+        n_samples = score.shape[0]
+        if n_samples <= 1:
+            return grad, hess, None
+        mass = np.asarray(mass, dtype=np.float64)
+        if (
+            not np.all(np.isfinite(mass))
+            or float(np.sum(mass)) <= 0.0
+            or np.all(mass <= 0.0)
+        ):
+            mass = np.ones(n_samples, dtype=np.float64)
+        else:
+            mass = np.maximum(mass, 0.0)
+        total_mass = float(np.sum(mass))
+        top_target = self.top_rate * total_mass
+        order = np.argsort(score)[::-1]
+        cum_mass = np.cumsum(mass[order])
+        top_count = min(
+            n_samples,
+            max(1, int(np.searchsorted(cum_mass, top_target, side="left") + 1)),
+        )
+        top_idx = order[:top_count]
+        remaining_idx = order[top_count:]
+        if remaining_idx.size == 0:
+            return grad, hess, None
+
+        target_other_mass = self.other_rate * total_mass
+        probs = self._weighted_goss_probabilities(
+            mass[remaining_idx], target_other_mass
+        )
+        if probs is None:
+            probs = np.full(
+                remaining_idx.shape[0],
+                min(1.0, self.other_rate * n_samples / remaining_idx.shape[0]),
+                dtype=np.float64,
+            )
+        other_mask = rng.random(remaining_idx.shape[0]) < probs
+        if not np.any(other_mask):
+            other_mask[int(np.argmax(probs))] = True
+        other_idx = remaining_idx[other_mask]
+
+        if top_idx.shape[0] + other_idx.shape[0] == n_samples:
+            return grad, hess, None
+
+        scale = np.zeros(n_samples, dtype=np.float64)
+        scale[top_idx] = 1.0
+        scale[other_idx] = 1.0 / np.maximum(probs[other_mask], 1e-300)
+        row_indices = np.sort(
+            np.concatenate((top_idx.astype(np.int64), other_idx.astype(np.int64)))
+        )
+        if grad.ndim == 1:
+            return grad * scale, hess * scale, row_indices
+        return grad * scale[None, :], hess * scale[None, :], row_indices
+
+    def _weighted_goss_subsample(self, grad, hess, rng):
+        score = np.abs(grad)
+        mass = np.maximum(hess, 0.0)
+        return self._weighted_goss_subsample_from_score(
+            grad, hess, score, mass, rng
+        )
+
+    def _weighted_goss_subsample_multiclass(self, grad, hess, rng):
+        score = np.abs(grad).sum(axis=0)
+        mass = np.maximum(hess, 0.0).sum(axis=0)
+        return self._weighted_goss_subsample_from_score(
+            grad, hess, score, mass, rng
+        )
 
     def _goss_subsample(self, grad, hess, rng):
         """Gradient-based one-side sampling for scalar boosters.
@@ -659,7 +1409,7 @@ class _BaseBooster:
     def _builder_kwargs(self, fmask, findices, row_indices,
                         hist_buffers, split_buffers, X_hist_binned,
                         use_constant_hessian, hessian_always_positive=False,
-                        rowpar_buffers=None):
+                        rowpar_buffers=None, tree_iteration=0):
         kwargs = {
             "feature_mask": fmask,
             "min_child_weight": self.min_child_weight,
@@ -671,6 +1421,9 @@ class _BaseBooster:
             "row_indices": row_indices,
             "constant_hessian": use_constant_hessian,
             "rowpar_buffers": rowpar_buffers,
+            "random_strength": self.random_strength,
+            "split_seed": int(getattr(self, "_split_seed_", 0)),
+            "tree_iteration": int(tree_iteration),
         }
         if self.tree_mode_ == "lightgbm":
             kwargs.update(
@@ -758,22 +1511,30 @@ class GradientBoosting(_BaseBooster):
             self.thread_count, self.tree_mode_, n_samples
         )
         self._validate_sampling_config()
-        if self.sampling_ == "goss" and self.subsample < 1.0:
-            raise ValueError(
-                "sampling='goss' controls row sampling; use subsample=1.0"
-            )
         self.ordered_boosting_ = self._resolve_ordered_boosting()
         w = _validate_sample_weight(sample_weight, n_samples)
         self.loss_ = LOSSES[self.loss_name](**self.loss_kwargs)
+        self._resolve_auto_structure_params(
+            loss_name=self.loss_name,
+            n_samples=n_samples,
+            sample_weight=w,
+            X=X,
+            cat_features=cat_features,
+        )
         use_constant_hessian = (
             getattr(self.loss_, "constant_hessian", False)
             and w is None
-            and self.sampling_ != "goss"
+            and self.sampling_ not in {"goss", "weighted_goss"}
+            and not self._mvs_active()
+            and not self._bayesian_bootstrap_active()
         )
         hessian_always_positive = (
             self.tree_mode_ == "lightgbm"
             and self.loss_name == "Logloss"
             and w is None
+            and self.sampling_ not in {"goss", "weighted_goss"}
+            and not self._mvs_active()
+            and not self._bayesian_bootstrap_active()
         )
         timing = _new_timing(self.verbose_timing)
         self.timing_ = timing
@@ -791,6 +1552,7 @@ class GradientBoosting(_BaseBooster):
             n_samples=n_samples,
             sample_weight=w,
             eval_set_present=eval_set is not None,
+            p_model=X_binned.shape[1],
         )
         hist_buffers = self._alloc_hist_buffers(X_binned.shape[1], n_bins)
         split_buffers = (
@@ -813,6 +1575,20 @@ class GradientBoosting(_BaseBooster):
             )
             Xv_binned = self.prep_.transform(Xv)
         _add_timing(timing, "preprocess", phase)
+
+        self.init_ = self.loss_.init(y, w)
+        self._record_scalar_target_stats(y, w)
+        F = np.full(n_samples, self.init_, dtype=np.float64)
+        grad_buffer = np.empty(n_samples, dtype=np.float64)
+        hess_buffer = np.empty(n_samples, dtype=np.float64)
+        if yv is not None:
+            Fv = np.full(len(yv), self.init_)
+        baseline_loss = (
+            self.loss_.eval(yv, Fv, wv)
+            if Fv is not None
+            else self.loss_.eval(y, F, w)
+        )
+        self._finalize_early_stopping_min_delta(baseline_loss, self.loss_name)
         self.auto_params_ = self._resolved_auto_params(
             n_samples=n_samples,
             n_raw_features=X.shape[1],
@@ -824,15 +1600,11 @@ class GradientBoosting(_BaseBooster):
             eval_sample_weight=wv,
             rowpar_buffers=rowpar_buffers,
         )
-
-        self.init_ = self.loss_.init(y, w)
-        F = np.full(n_samples, self.init_, dtype=np.float64)
-        grad_buffer = np.empty(n_samples, dtype=np.float64)
-        hess_buffer = np.empty(n_samples, dtype=np.float64)
-        if yv is not None:
-            Fv = np.full(len(yv), self.init_)
+        self._emit_auto_param_warnings()
+        self._reset_stochastic_diagnostics()
 
         rng = np.random.default_rng(self.random_state)
+        self._initialize_split_seed(rng)
         self.trees_ = []
         self._flat_cache_ = None  # drop any previous fit's flattened ensemble
         self.train_history_, self.valid_history_ = [], []
@@ -840,7 +1612,8 @@ class GradientBoosting(_BaseBooster):
         # so skipping it when nobody will read it saves one full O(n) pass per
         # round. verbose forces it back on because the progress log prints it.
         eval_train = self.eval_train_loss or bool(self.verbose)
-        best_score, best_iter = np.inf, 0
+        patience_score, patience_iter = np.inf, 0
+        best_prefix_score, best_prefix_iter = np.inf, 0
         t0 = time.time()
 
         for m in range(self.iterations_):
@@ -853,6 +1626,8 @@ class GradientBoosting(_BaseBooster):
                 if w is not None:
                     grad = grad * w
                     hess = hess * w
+            bootstrap_factors = self._bayesian_bootstrap_factors(n_samples, rng)
+            grad, hess = self._apply_bootstrap(grad, hess, bootstrap_factors)
             g, h, row_indices = self._maybe_subsample(grad, hess, rng)
             fmask, findices = self._feature_selection(X_binned.shape[1], rng)
             _add_timing(timing, "grad_hess", phase)
@@ -865,7 +1640,8 @@ class GradientBoosting(_BaseBooster):
                     fmask, findices, row_indices, hist_buffers, split_buffers,
                     X_hist_binned, use_constant_hessian,
                     hessian_always_positive=hessian_always_positive,
-                    rowpar_buffers=rowpar_buffers
+                    rowpar_buffers=rowpar_buffers,
+                    tree_iteration=m,
                 ),
             )
             _add_timing(timing, "tree_build", phase)
@@ -877,7 +1653,10 @@ class GradientBoosting(_BaseBooster):
                 break
             phase = _start_timing(timing)
             if getattr(self.loss_, "adjusts_leaves", False):
-                self._correct_leaves(tree, X_binned, y - F, w, leaf=leaf)
+                correction_weight = self._correction_weight(w, bootstrap_factors)
+                self._correct_leaves(
+                    tree, X_binned, y - F, correction_weight, leaf=leaf
+                )
             self.trees_.append(tree)
             self._accumulate_importance(tree)
             if self.ordered_boosting_ and not getattr(self.loss_, "adjusts_leaves", False):
@@ -909,14 +1688,15 @@ class GradientBoosting(_BaseBooster):
                 val = self.loss_.eval(yv, Fv, wv)
                 _add_timing(timing, "loss_eval", phase)
                 self.valid_history_.append(val)
-                if val < best_score - 1e-9:
-                    best_score, best_iter = val, m
+                if val < best_prefix_score:
+                    best_prefix_score, best_prefix_iter = val, m
+                if patience_score - val > self.early_stopping_min_delta_:
+                    patience_score, patience_iter = val, m
                 elif (self.early_stopping_rounds_ and
-                      m - best_iter >= self.early_stopping_rounds_):
+                      m - patience_iter >= self.early_stopping_rounds_):
                     if self.verbose:
-                        print(f"Early stop at {m} (best {best_iter}, "
-                              f"val {best_score:.5f})")
-                    self.trees_ = self.trees_[: best_iter + 1]
+                        print(f"Early stop at {m} (best {best_prefix_iter}, "
+                              f"val {best_prefix_score:.5f})")
                     break
 
             if self.verbose and (m % max(1, self.iterations_ // 10) == 0):
@@ -926,9 +1706,11 @@ class GradientBoosting(_BaseBooster):
                 print(msg)
 
         self.fit_time_ = time.time() - t0
+        self._truncate_to_best_model(best_prefix_iter, self.valid_history_)
+        self._refresh_stochastic_auto_params(n_samples)
         self.best_iteration_ = len(self.trees_)
         if self.valid_history_:
-            self.best_score_ = best_score
+            self.best_score_ = best_prefix_score
         elif Fv is not None:
             self.best_score_ = self.loss_.eval(yv, Fv, wv)
         elif self.train_history_:
@@ -936,6 +1718,13 @@ class GradientBoosting(_BaseBooster):
         else:
             self.best_score_ = self.loss_.eval(y, F, w)
         return self
+
+    def _correction_weight(self, sample_weight, bootstrap_factors):
+        if bootstrap_factors is None:
+            return sample_weight
+        if sample_weight is None:
+            return bootstrap_factors
+        return sample_weight * bootstrap_factors
 
     def _correct_leaves(self, tree, X_binned, residuals, sample_weight=None, leaf=None):
         """Override Newton leaf values with the loss-appropriate residual
@@ -1017,15 +1806,22 @@ class MulticlassBoosting(_BaseBooster):
             self.thread_count, self.tree_mode_, n_samples
         )
         self._validate_sampling_config()
-        if self.sampling_ == "goss" and self.subsample < 1.0:
-            raise ValueError(
-                "sampling='goss' controls row sampling; use subsample=1.0"
-            )
         self.ordered_boosting_ = self._resolve_ordered_boosting()
         w = _validate_sample_weight(sample_weight, n_samples)
         self.loss_ = MultiSoftmax(K)
+        self._resolve_auto_structure_params(
+            loss_name="MultiClass",
+            n_samples=n_samples,
+            sample_weight=w,
+            X=X,
+            cat_features=cat_features,
+        )
         self.l2_leaf_reg_ = self.l2_leaf_reg
-        if self.tree_mode_ == "lightgbm" and self.l2_leaf_reg == 3.0:
+        if (
+            self.tree_mode_ == "lightgbm"
+            and self.l2_leaf_reg == 3.0
+            and not _is_auto_param(self._l2_leaf_reg_input)
+        ):
             self.l2_leaf_reg_ = 1.0
         strategy = self.multiclass_tree_strategy
         if strategy not in {"auto", "per_class", "shared_vector"}:
@@ -1035,8 +1831,8 @@ class MulticlassBoosting(_BaseBooster):
             )
         can_use_shared_lightgbm_multiclass = (
             self.tree_mode_ == "lightgbm"
-            and self.sampling_ == "uniform"
-            and self.subsample >= 1.0
+            and not self._row_sampling_active()
+            and not self._bayesian_bootstrap_active()
             and self.colsample >= 1.0
             and not self.ordered_boosting_
         )
@@ -1062,6 +1858,7 @@ class MulticlassBoosting(_BaseBooster):
             n_samples=n_samples,
             sample_weight=w,
             eval_set_present=eval_set is not None,
+            p_model=X_binned.shape[1],
         )
         hist_buffers = self._alloc_hist_buffers(X_binned.shape[1], n_bins)
         split_buffers = (
@@ -1091,8 +1888,8 @@ class MulticlassBoosting(_BaseBooster):
         use_fused_root = (
             not use_shared_lightgbm_multiclass
             and self.tree_mode_ in {"catboost", "lightgbm"}
-            and self.sampling_ == "uniform"
-            and self.subsample >= 1.0
+            and not self._row_sampling_active()
+            and not self._bayesian_bootstrap_active()
             and self.colsample >= 1.0
         )
         if use_fused_root:
@@ -1118,6 +1915,20 @@ class MulticlassBoosting(_BaseBooster):
             )
             Xv_binned = self.prep_.transform(Xv)
         _add_timing(timing, "preprocess", phase)
+
+        self.init_ = self.loss_.init_class_major(Y_class, w)  # (K,)
+        self._record_classification_target_stats(y_idx, self.classes_, w)
+        F = np.tile(self.init_[:, None], (1, n_samples))  # class-major (K, n)
+        grad_buffer = np.empty_like(F)
+        hess_buffer = np.empty_like(F)
+        if Yv_class is not None:
+            Fv = np.tile(self.init_[:, None], (1, len(yv_idx)))
+        baseline_loss = (
+            self.loss_.eval_class_major_labels(yv_idx, Fv, wv)
+            if Fv is not None
+            else self.loss_.eval_class_major_labels(y_idx, F, w)
+        )
+        self._finalize_early_stopping_min_delta(baseline_loss, "MultiClass")
         self.auto_params_ = self._resolved_auto_params(
             n_samples=n_samples,
             n_raw_features=X.shape[1],
@@ -1137,20 +1948,17 @@ class MulticlassBoosting(_BaseBooster):
                 }
             },
         )
-
-        self.init_ = self.loss_.init_class_major(Y_class, w)  # (K,)
-        F = np.tile(self.init_[:, None], (1, n_samples))  # class-major (K, n)
-        grad_buffer = np.empty_like(F)
-        hess_buffer = np.empty_like(F)
-        if Yv_class is not None:
-            Fv = np.tile(self.init_[:, None], (1, len(yv_idx)))
+        self._emit_auto_param_warnings()
+        self._reset_stochastic_diagnostics()
 
         rng = np.random.default_rng(self.random_state)
+        self._initialize_split_seed(rng)
         self.trees_ = []                           # list of rounds; each = K trees
         self._flat_cache_ = None  # drop any previous fit's flattened ensemble
         self.train_history_, self.valid_history_ = [], []
         eval_train = self.eval_train_loss or bool(self.verbose)
-        best_score, best_iter = np.inf, 0
+        patience_score, patience_iter = np.inf, 0
+        best_prefix_score, best_prefix_iter = np.inf, 0
         t0 = time.time()
 
         for m in range(self.iterations_):
@@ -1165,16 +1973,33 @@ class MulticlassBoosting(_BaseBooster):
                 if w is not None:
                     grad = grad * w[None, :]
                     hess = hess * w[None, :]
+            bootstrap_factors = self._bayesian_bootstrap_factors(n_samples, rng)
+            grad, hess = self._apply_bootstrap_multiclass(
+                grad, hess, bootstrap_factors
+            )
             fmask, findices = self._feature_selection(X_binned.shape[1], rng)
             if self.sampling_ == "goss":
                 grad, hess, row_indices_round = self._goss_subsample_multiclass(
                     grad, hess, rng
                 )
+                self._record_sampling_diagnostic(row_indices_round, n_samples)
+            elif self.sampling_ == "weighted_goss":
+                grad, hess, row_indices_round = self._weighted_goss_subsample_multiclass(
+                    grad, hess, rng
+                )
+                self._record_sampling_diagnostic(row_indices_round, n_samples)
+            elif self.sampling_ == "mvs":
+                grad, hess, row_indices_round = self._mvs_subsample_multiclass(
+                    grad, hess, rng
+                )
+                self._record_sampling_diagnostic(row_indices_round, n_samples)
             elif self.subsample >= 1.0:
                 row_indices_round = None
+                self._record_sampling_diagnostic(None, n_samples)
             else:
                 mask = rng.random(n_samples) < self.subsample
                 row_indices_round = np.flatnonzero(mask).astype(np.int64)
+                self._record_sampling_diagnostic(row_indices_round, n_samples)
             _add_timing(timing, "grad_hess", phase)
             if use_shared_lightgbm_multiclass:
                 phase = _start_timing(timing)
@@ -1189,6 +2014,9 @@ class MulticlassBoosting(_BaseBooster):
                     max_leaves=self._max_tree_leaves(),
                     min_child_samples=self.min_child_samples,
                     min_gain_to_split=self.min_gain_to_split,
+                    random_strength=self.random_strength,
+                    split_seed=int(getattr(self, "_split_seed_", 0)),
+                    tree_iteration=m,
                 )
                 _add_timing(timing, "tree_build", phase)
                 if tree.depth == 0:
@@ -1217,13 +2045,14 @@ class MulticlassBoosting(_BaseBooster):
                     val = self.loss_.eval_class_major_labels(yv_idx, Fv, wv)
                     _add_timing(timing, "loss_eval", phase)
                     self.valid_history_.append(val)
-                    if val < best_score - 1e-9:
-                        best_score, best_iter = val, m
+                    if val < best_prefix_score:
+                        best_prefix_score, best_prefix_iter = val, m
+                    if patience_score - val > self.early_stopping_min_delta_:
+                        patience_score, patience_iter = val, m
                     elif (self.early_stopping_rounds_ and
-                          m - best_iter >= self.early_stopping_rounds_):
+                          m - patience_iter >= self.early_stopping_rounds_):
                         if self.verbose:
-                            print(f"Early stop at {m} (best {best_iter})")
-                        self.trees_ = self.trees_[: best_iter + 1]
+                            print(f"Early stop at {m} (best {best_prefix_iter})")
                         break
 
                 if self.verbose and (m % max(1, self.iterations_ // 10) == 0):
@@ -1245,8 +2074,8 @@ class MulticlassBoosting(_BaseBooster):
             round_trees = []
             for k in range(K):
                 phase = _start_timing(timing)
-                if row_indices_round is None or self.sampling_ == "goss":
-                    # GOSS gradients are already zeroed and scaled in place.
+                if row_indices_round is None or self.sampling_ in {"goss", "weighted_goss"}:
+                    # GOSS-style gradients are already zeroed and scaled in place.
                     g, h = grad[k], hess[k]
                 else:
                     row_mask = np.zeros(n_samples, dtype=bool)
@@ -1263,7 +2092,8 @@ class MulticlassBoosting(_BaseBooster):
                         and w is None
                         and row_indices_round is None
                     ),
-                    rowpar_buffers=rowpar_buffers
+                    rowpar_buffers=rowpar_buffers,
+                    tree_iteration=(m * K + k),
                 )
                 if fuse_root_this_round:
                     builder_kwargs["root_histograms"] = (
@@ -1319,13 +2149,14 @@ class MulticlassBoosting(_BaseBooster):
                 val = self.loss_.eval_class_major_labels(yv_idx, Fv, wv)
                 _add_timing(timing, "loss_eval", phase)
                 self.valid_history_.append(val)
-                if val < best_score - 1e-9:
-                    best_score, best_iter = val, m
+                if val < best_prefix_score:
+                    best_prefix_score, best_prefix_iter = val, m
+                if patience_score - val > self.early_stopping_min_delta_:
+                    patience_score, patience_iter = val, m
                 elif (self.early_stopping_rounds_ and
-                      m - best_iter >= self.early_stopping_rounds_):
+                      m - patience_iter >= self.early_stopping_rounds_):
                     if self.verbose:
-                        print(f"Early stop at {m} (best {best_iter})")
-                    self.trees_ = self.trees_[: best_iter + 1]
+                        print(f"Early stop at {m} (best {best_prefix_iter})")
                     break
 
             if self.verbose and (m % max(1, self.iterations_ // 10) == 0):
@@ -1335,9 +2166,11 @@ class MulticlassBoosting(_BaseBooster):
                 print(msg)
 
         self.fit_time_ = time.time() - t0
+        self._truncate_to_best_model(best_prefix_iter, self.valid_history_)
+        self._refresh_stochastic_auto_params(n_samples)
         self.best_iteration_ = len(self.trees_)
         if self.valid_history_:
-            self.best_score_ = best_score
+            self.best_score_ = best_prefix_score
         elif Fv is not None:
             self.best_score_ = self.loss_.eval_class_major_labels(yv_idx, Fv, wv)
         elif self.train_history_:

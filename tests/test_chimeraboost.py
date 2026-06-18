@@ -1,5 +1,7 @@
 """Test suite for ChimeraBoost. Run with: pytest -q"""
 
+import warnings
+
 import numpy as np
 import pytest
 from sklearn.datasets import load_diabetes, load_breast_cancer
@@ -1417,6 +1419,9 @@ def test_lightgbm_mode_adds_category_code_features_for_scalar_tasks():
     assert lightgbm_binary.model_.prep_.target_encoding_mode == "kfold"
     assert lightgbm_reg.model_.prep_.cat_smoothing == 3.0
     assert lightgbm_binary.model_.prep_.cat_smoothing == 1.0
+    assert lightgbm_reg.model_.auto_params_["binning"]["cat_smoothing_input"] == 1.0
+    assert lightgbm_reg.model_.auto_params_["binning"]["cat_smoothing_resolved"] == 3.0
+    assert lightgbm_binary.model_.auto_params_["binning"]["cat_smoothing_resolved"] == 1.0
     assert np.array_equal(
         lightgbm_reg.model_.prep_.feature_map_, np.array([2, 0, 1, 0, 1])
     )
@@ -1593,6 +1598,49 @@ def test_lightgbm_shared_multiclass_tree_routes_only_categorical():
         min_child_samples=1, min_child_weight=0.0, random_state=0
     ).fit(X_cat, y, cat_features=[0])
     assert hasattr(categorical.model_.trees_[0], "add_predict_class_major")
+
+
+def test_inactive_stochastic_settings_preserve_shared_vector_multiclass_lightgbm():
+    X_num = np.array([
+        [0.0, 0.1], [0.2, 0.0], [1.0, 0.8], [1.2, 1.1],
+        [2.0, 2.2], [2.2, 1.9], [0.1, 0.2], [1.1, 1.0],
+        [2.1, 2.0],
+    ])
+    y = np.array([0, 0, 1, 1, 2, 2, 0, 1, 2])
+    X_cat = np.empty((len(y), 2), dtype=object)
+    X_cat[:, 0] = np.array(
+        ["a", "a", "b", "b", "c", "c", "a", "b", "c"], dtype=object
+    )
+    X_cat[:, 1] = X_num[:, 1]
+    kw = dict(
+        iterations=2,
+        tree_mode="lightgbm",
+        num_leaves=3,
+        min_child_samples=1,
+        min_child_weight=0.0,
+        random_state=0,
+    )
+
+    base = ChimeraBoostClassifier(**kw).fit(X_cat, y, cat_features=[0])
+    zero_bootstrap = ChimeraBoostClassifier(
+        **kw, bootstrap_type="bayesian", bagging_temperature=0.0
+    ).fit(X_cat, y, cat_features=[0])
+    full_mvs = ChimeraBoostClassifier(
+        **kw, sampling="mvs", subsample=1.0
+    ).fit(X_cat, y, cat_features=[0])
+    explicit = ChimeraBoostClassifier(
+        **kw,
+        multiclass_tree_strategy="shared_vector",
+        bootstrap_type="bayesian",
+        bagging_temperature=0.0,
+        sampling="mvs",
+        subsample=1.0,
+    ).fit(X_cat, y, cat_features=[0])
+
+    for model in (base, zero_bootstrap, full_mvs, explicit):
+        assert model.model_.multiclass_tree_strategy_ == "shared_vector"
+        assert hasattr(model.model_.trees_[0], "add_predict_class_major")
+        assert np.array_equal(base.predict_proba(X_cat), model.predict_proba(X_cat))
 
 
 def test_lightgbm_numeric_multiclass_can_force_shared_vector_tree():
@@ -2867,11 +2915,19 @@ def test_goss_lightgbm_scalar_fit_uses_sampled_nonconstant_hessians(monkeypatch)
 
 def test_goss_rejects_uniform_subsample():
     X, y = load_diabetes(return_X_y=True)
-    with pytest.raises(ValueError, match="use subsample=1.0"):
-        ChimeraBoostRegressor(
-            iterations=1, tree_mode="lightgbm", sampling="goss",
-            subsample=0.8, random_state=0
-        ).fit(X[:80], y[:80])
+    for subsample in (0.8, 1.2):
+        with pytest.raises(ValueError, match="subsample must be 1.0"):
+            ChimeraBoostRegressor(
+                iterations=1, tree_mode="lightgbm", sampling="goss",
+                subsample=subsample, random_state=0
+            ).fit(X[:80], y[:80])
+
+    for subsample in (0.0, -0.1, 1.1, np.nan):
+        with pytest.raises(ValueError, match="subsample must"):
+            ChimeraBoostRegressor(
+                iterations=1, tree_mode="lightgbm", sampling="uniform",
+                subsample=subsample, random_state=0
+            ).fit(X[:80], y[:80])
 
     # Multiclass GOSS is supported now; it fits without error.
     Xc = np.vstack([X[:30], X[30:60], X[60:90]])
@@ -2935,6 +2991,145 @@ def test_early_stopped_prediction_matches_best_prefix():
     assert np.allclose(stages[-1], model.predict_proba(Xte))
 
 
+def test_eval_set_keeps_best_prefix_without_patience():
+    X, y = load_diabetes(return_X_y=True)
+    Xtr, Xv, ytr, yv = train_test_split(
+        X, y, test_size=0.25, random_state=0
+    )
+    kw = dict(iterations=80, learning_rate=0.1, depth=2, random_state=0)
+
+    keep_all = ChimeraBoostRegressor(
+        **kw, use_best_model=False
+    ).fit(Xtr, ytr, eval_set=(Xv, yv))
+    best_n = int(np.argmin(keep_all.model_.valid_history_)) + 1
+    assert best_n < len(keep_all.model_.trees_)
+
+    best = ChimeraBoostRegressor(**kw).fit(Xtr, ytr, eval_set=(Xv, yv))
+    assert best.best_iteration_ == best_n
+    assert len(best.model_.trees_) == best_n
+    assert best.best_score_ == min(keep_all.model_.valid_history_)
+    assert best.model_.auto_params_["early_stopping"]["use_best_model"] is True
+    assert (
+        keep_all.model_.auto_params_["early_stopping"]["use_best_model"]
+        is False
+    )
+
+    keep_all_best_pred = list(keep_all.staged_predict(Xv))[best_n - 1]
+    assert np.allclose(best.predict(Xv), keep_all_best_pred)
+
+
+def test_patience_stop_respects_use_best_model_false():
+    X, y = load_diabetes(return_X_y=True)
+    Xtr, Xv, ytr, yv = train_test_split(
+        X, y, test_size=0.25, random_state=0
+    )
+    model = ChimeraBoostRegressor(
+        iterations=120,
+        learning_rate=0.3,
+        depth=2,
+        early_stopping_rounds=5,
+        use_best_model=False,
+        random_state=0,
+    ).fit(Xtr, ytr, eval_set=(Xv, yv))
+
+    best_n = int(np.argmin(model.model_.valid_history_)) + 1
+    assert model.n_estimators_ > best_n
+    assert model.model_.auto_params_["early_stopping"]["use_best_model"] is False
+    assert (
+        model.model_.auto_params_["early_stopping"]["best_prefix_policy"]
+        == "disabled"
+    )
+
+
+def test_refit_uses_best_prefix_selection_without_patience():
+    X, y = load_diabetes(return_X_y=True)
+    Xtr, Xv, ytr, yv = train_test_split(
+        X, y, test_size=0.25, random_state=0
+    )
+    model = ChimeraBoostRegressor(
+        iterations=80,
+        learning_rate=0.1,
+        depth=2,
+        random_state=0,
+        refit=True,
+    ).fit(Xtr, ytr, eval_set=(Xv, yv))
+
+    assert model.refit_ is True
+    assert model.selection_model_.best_iteration_ < 80
+    assert model.refit_n_estimators_ == model.selection_model_.best_iteration_
+    assert model.n_estimators_ == model.selection_model_.best_iteration_
+
+
+def test_auto_early_stopping_patience_resolves_from_learning_rate():
+    X, y = load_diabetes(return_X_y=True)
+    Xtr, Xv, ytr, yv = train_test_split(
+        X, y, test_size=0.25, random_state=0
+    )
+
+    slow = ChimeraBoostRegressor(
+        iterations=3,
+        learning_rate=0.05,
+        early_stopping=True,
+        random_state=0,
+    ).fit(Xtr, ytr, eval_set=(Xv, yv))
+    slow_meta = slow.model_.auto_params_["early_stopping"]
+    assert slow_meta["rounds_input"] == "auto"
+    assert slow_meta["rounds"] == 100
+    assert slow_meta["rounds_rule"] == "ceil(5/lr)_clipped_20_200"
+
+    clipped_slow = ChimeraBoostRegressor(
+        iterations=3,
+        learning_rate=0.001,
+        early_stopping_rounds="auto",
+        random_state=0,
+    ).fit(Xtr, ytr, eval_set=(Xv, yv))
+    assert clipped_slow.model_.auto_params_["early_stopping"]["rounds"] == 200
+
+    hot = ChimeraBoostRegressor(
+        iterations=3,
+        learning_rate=0.5,
+        early_stopping_rounds="auto",
+        random_state=0,
+    ).fit(Xtr, ytr, eval_set=(Xv, yv))
+    hot_meta = hot.model_.auto_params_["early_stopping"]
+    assert hot_meta["rounds"] == 20
+
+    explicit = ChimeraBoostRegressor(
+        iterations=3,
+        learning_rate=0.05,
+        early_stopping=True,
+        early_stopping_rounds=7,
+        random_state=0,
+    ).fit(Xtr, ytr, eval_set=(Xv, yv))
+    explicit_meta = explicit.model_.auto_params_["early_stopping"]
+    assert explicit_meta["rounds"] == 7
+    assert explicit_meta["rounds_rule"] == "explicit"
+
+
+def test_multiclass_eval_set_keeps_best_prefix_without_patience():
+    from sklearn.datasets import load_wine
+
+    X, y = load_wine(return_X_y=True)
+    Xtr, Xv, ytr, yv = train_test_split(
+        X, y, test_size=0.25, random_state=1, stratify=y
+    )
+    kw = dict(iterations=50, learning_rate=0.5, depth=2, random_state=0)
+
+    keep_all = ChimeraBoostClassifier(
+        **kw, use_best_model=False
+    ).fit(Xtr, ytr, eval_set=(Xv, yv))
+    best_n = int(np.argmin(keep_all.model_.valid_history_)) + 1
+    assert best_n < len(keep_all.model_.trees_)
+
+    best = ChimeraBoostClassifier(**kw).fit(Xtr, ytr, eval_set=(Xv, yv))
+    assert best.best_iteration_ == best_n
+    assert len(best.model_.trees_) == best_n
+    assert best.best_score_ == min(keep_all.model_.valid_history_)
+
+    keep_all_best_proba = list(keep_all.staged_predict_proba(Xv))[best_n - 1]
+    assert np.allclose(best.predict_proba(Xv), keep_all_best_proba)
+
+
 def test_auto_learning_rate_catboost_transplant_corridor():
     from chimeraboost.auto_params import auto_learning_rate
 
@@ -2993,6 +3188,57 @@ def test_auto_learning_rate_catboost_transplant_corridor():
     assert weighted_mae_lr == unweighted_mae_lr
 
 
+def test_auto_learning_rate_uses_bounded_feature_shrinkage():
+    from chimeraboost.auto_params import (
+        AUTO_LR_FEATURE_MULTIPLIER_MIN,
+        auto_learning_rate_details,
+    )
+
+    base = auto_learning_rate_details(
+        "RMSE", n_eff=1000, iterations=1000,
+        use_best_model=False, tree_mode="catboost", max_leaves=64,
+        p_model=10,
+    )
+    wide = auto_learning_rate_details(
+        "RMSE", n_eff=1000, iterations=1000,
+        use_best_model=False, tree_mode="catboost", max_leaves=64,
+        p_model=10_000,
+    )
+
+    assert base["feature_multiplier"] == 1.0
+    assert base["feature_shrinkage_active"] is False
+    assert wide["feature_multiplier"] == AUTO_LR_FEATURE_MULTIPLIER_MIN
+    assert wide["feature_shrinkage_active"] is True
+    assert wide["raw_auto"] < base["raw_auto"]
+    assert wide["p_model"] == 10_000
+
+
+def test_auto_learning_rate_details_record_clipping_bounds():
+    from chimeraboost.auto_params import (
+        AUTO_LR_MAX,
+        AUTO_LR_MIN,
+        auto_learning_rate_details,
+    )
+
+    hot = auto_learning_rate_details(
+        "RMSE", n_eff=100, iterations=1,
+        use_best_model=False, tree_mode="catboost", max_leaves=64
+    )
+    assert hot["resolved"] == AUTO_LR_MAX
+    assert hot["clipped"] is True
+    assert hot["clip_bound"] == "max"
+    assert hot["raw_auto"] > AUTO_LR_MAX
+
+    slow = auto_learning_rate_details(
+        "Logloss", n_eff=2, iterations=1_000_000,
+        use_best_model=False, tree_mode="lightgbm", max_leaves=31
+    )
+    assert slow["resolved"] == AUTO_LR_MIN
+    assert slow["clipped"] is True
+    assert slow["clip_bound"] == "min"
+    assert slow["raw_auto"] < AUTO_LR_MIN
+
+
 def test_auto_learning_rate_uniform_weights_match_none():
     rng = np.random.default_rng(86)
     X = rng.normal(size=(80, 3))
@@ -3006,10 +3252,104 @@ def test_auto_learning_rate_uniform_weights_match_none():
     ).fit(X, y, sample_weight=np.ones(len(y)))
 
     assert ones.model_.auto_params_["learning_rate"]["rule"] == (
-        "catboost-transplant-v1"
+        "catboost-transplant-v2"
     )
     assert ones.model_.auto_params_["binning"]["max_bins"] == 254
     assert ones.learning_rate_ == no_weight.learning_rate_
+
+
+def test_auto_params_records_warnings_and_diagnostics():
+    import chimeraboost.booster as booster_mod
+
+    rng = np.random.default_rng(91)
+    X = rng.normal(size=(80, 3))
+    y = X[:, 0] - 0.25 * X[:, 1] + rng.normal(0.0, 0.1, size=80)
+    w = np.ones(80)
+    w[0] = 1000.0
+
+    booster_mod.reset_diagnostic_warning_registry()
+    with warnings.catch_warnings(record=True) as first_caught:
+        warnings.simplefilter("always")
+        model = ChimeraBoostRegressor(
+            iterations=1,
+            random_state=0,
+            eval_train_loss=False,
+        ).fit(X, y, sample_weight=w)
+    with warnings.catch_warnings(record=True) as second_caught:
+        warnings.simplefilter("always")
+        ChimeraBoostRegressor(
+            iterations=1,
+            random_state=1,
+            eval_train_loss=False,
+        ).fit(X, y, sample_weight=w)
+    with warnings.catch_warnings(record=True) as never_caught:
+        warnings.simplefilter("always")
+        never = ChimeraBoostRegressor(
+            iterations=1,
+            random_state=2,
+            eval_train_loss=False,
+            diagnostic_warnings="never",
+        ).fit(X, y, sample_weight=w)
+
+    messages = [str(warning.message) for warning in first_caught]
+    assert any("automatic learning rate clipped" in msg for msg in messages)
+    assert any("effective sample size is low" in msg for msg in messages)
+    assert [str(warning.message) for warning in second_caught] == []
+    assert [str(warning.message) for warning in never_caught] == []
+
+    meta = model.model_.auto_params_
+    warning_codes = {
+        warning["code"] for warning in meta["diagnostics"]["warnings"]
+    }
+    assert "learning_rate_clipped_max" in warning_codes
+    assert "low_effective_sample_size_fraction" in warning_codes
+    assert meta["learning_rate"]["clipped"] is True
+    assert meta["learning_rate"]["clip_bound"] == "max"
+    assert meta["learning_rate"]["raw_auto"] > meta["learning_rate"]["clip_max"]
+    assert meta["diagnostics"]["learning_rate_clipped"] is True
+    assert meta["diagnostics"]["learning_rate_clip_bound"] == "max"
+    assert meta["diagnostics"]["low_effective_sample_size_fraction_threshold"] == 0.3
+    assert meta["diagnostics"]["effective_sample_size_fraction"] < 0.3
+    assert meta["binning"]["numeric_binning_weighted"] is True
+    assert meta["diagnostics"]["weighted_binning_active"] is True
+    assert (
+        meta["diagnostics"]["observed_max_bins"]
+        == meta["binning"]["observed_max_bins"]
+    )
+    assert (
+        meta["diagnostics"]["observed_total_bins"]
+        == meta["binning"]["observed_total_bins"]
+    )
+    assert meta["features"]["feature_expansion_factor"] == 1.0
+    assert meta["diagnostics"]["feature_expansion_factor"] == 1.0
+    assert meta["diagnostics"]["runtime_warning_policy"] == "once"
+    assert set(meta["diagnostics"]["runtime_warnings_emitted"]) == warning_codes
+    assert meta["diagnostics"]["best_prefix_policy"] == "disabled"
+    never_meta = never.model_.auto_params_
+    assert {
+        warning["code"] for warning in never_meta["diagnostics"]["warnings"]
+    } == warning_codes
+    assert never_meta["diagnostics"]["runtime_warning_policy"] == "never"
+    assert never_meta["diagnostics"]["runtime_warnings_emitted"] == []
+
+    booster_mod.reset_diagnostic_warning_registry()
+    with warnings.catch_warnings(record=True) as always_caught:
+        warnings.simplefilter("always")
+        ChimeraBoostRegressor(
+            iterations=1,
+            random_state=3,
+            eval_train_loss=False,
+            diagnostic_warnings="always",
+        ).fit(X, y, sample_weight=w)
+    with warnings.catch_warnings(record=True) as after_always_caught:
+        warnings.simplefilter("always")
+        ChimeraBoostRegressor(
+            iterations=1,
+            random_state=4,
+            eval_train_loss=False,
+        ).fit(X, y, sample_weight=w)
+    assert len(always_caught) >= 2
+    assert len(after_always_caught) >= 2
 
 
 def test_get_refit_params_freezes_learning_rate_and_exact_rounds():
@@ -3114,6 +3454,27 @@ def test_early_stopping_refit_scaled_rounds_use_empirical_split():
     assert model.refit_n_estimators_ == expected
 
 
+def test_refit_freezes_resolved_auto_structure_across_size_boundary():
+    rng = np.random.default_rng(109)
+    X = rng.normal(size=(5400, 2))
+    y = X[:, 0] - 0.5 * X[:, 1] + rng.normal(0.0, 0.2, size=5400)
+
+    model = ChimeraBoostRegressor(
+        iterations=3,
+        depth="auto",
+        early_stopping=True,
+        early_stopping_rounds=2,
+        validation_fraction=0.1,
+        refit=True,
+        random_state=0,
+        eval_train_loss=False,
+    ).fit(X, y)
+
+    assert model.selection_model_.depth == 5
+    assert model.model_.depth == 5
+    assert model.get_refit_params()["depth"] == 5
+
+
 def test_refit_without_early_stopping_does_not_double_fit():
     X, y = load_diabetes(return_X_y=True)
     model = ChimeraBoostRegressor(
@@ -3145,6 +3506,8 @@ def test_refit_metadata_round_trips_through_save_load(tmp_path):
     assert loaded.best_score_ == model.best_score_
     assert loaded.learning_rate_ == model.learning_rate_
     assert loaded.n_estimators_ == model.n_estimators_
+    assert loaded.selection_model_ is None
+    assert loaded.selection_model_persisted_ is False
     assert loaded.get_refit_params(strategy="sqrt")["iterations"] == (
         model.get_refit_params(strategy="sqrt")["iterations"]
     )
@@ -3977,10 +4340,15 @@ def test_auto_params_records_resolved_regression_context(tmp_path):
     assert meta["learning_rate"]["source"] == "explicit"
     assert meta["learning_rate"]["input"] == 0.07
     assert meta["learning_rate"]["rule"] == "explicit"
+    assert meta["learning_rate"]["p_model"] == 4
+    assert meta["learning_rate"]["feature_multiplier"] == 1.0
+    assert meta["learning_rate"]["feature_shrinkage_active"] is False
+    assert meta["learning_rate"]["clipped"] is False
     assert meta["sample_weight"]["provided"] is True
     assert np.isclose(meta["sample_weight"]["effective_sample_size"], n_eff)
     assert meta["features"]["raw_feature_count"] == 4
     assert meta["features"]["model_feature_count"] == 4
+    assert meta["features"]["feature_expansion_factor"] == 1.0
     assert meta["tree"]["tree_mode"] == "catboost"
     assert meta["tree"]["depth"] == 3
     assert meta["tree"]["max_leaves"] == 8
@@ -3992,8 +4360,12 @@ def test_auto_params_records_resolved_regression_context(tmp_path):
     assert meta["binning"]["weighted_sampling"] is False
     assert meta["early_stopping"]["enabled"] is True
     assert meta["early_stopping"]["rounds"] == 2
+    assert meta["early_stopping"]["best_prefix_policy"] == "validation_best_prefix"
     assert meta["early_stopping"]["eval_n_samples"] == len(yv)
     assert np.isclose(meta["early_stopping"]["eval_effective_sample_size"], eval_n_eff)
+    assert meta["diagnostics"]["warnings"] == []
+    assert meta["diagnostics"]["weighted_binning_active"] is True
+    assert meta["diagnostics"]["best_prefix_policy"] == "validation_best_prefix"
 
     path = tmp_path / "reg.npz"
     model.save_model(path)
@@ -4014,12 +4386,229 @@ def test_auto_params_records_classifier_context():
 
     assert meta["loss"] == "Logloss"
     assert meta["learning_rate"]["source"] == "auto"
+    assert meta["learning_rate"]["p_model"] == X.shape[1]
+    assert meta["learning_rate"]["feature_multiplier"] <= 1.0
     assert meta["auto_policy"]["lightgbm_unweighted_lr_multiplier"] == 0.421916
     assert meta["features"]["raw_feature_count"] == X.shape[1]
     assert meta["tree"]["tree_mode"] == "lightgbm"
     assert meta["tree"]["max_leaves"] == 31
     assert meta["tree"]["l2_leaf_reg"] == 3.0
     assert meta["early_stopping"]["enabled"] is False
+
+
+def test_early_stopping_min_delta_records_legacy_explicit_and_auto():
+    rng = np.random.default_rng(101)
+    X = rng.normal(size=(120, 4))
+    y = X[:, 0] - 0.25 * X[:, 1] + rng.normal(0.0, 0.05, size=120)
+    Xtr, Xv, ytr, yv = train_test_split(X, y, test_size=0.25, random_state=0)
+
+    legacy = ChimeraBoostRegressor(
+        iterations=4,
+        early_stopping_rounds=2,
+        random_state=0,
+    ).fit(Xtr, ytr, eval_set=(Xv, yv))
+    explicit = ChimeraBoostRegressor(
+        iterations=4,
+        early_stopping_rounds=2,
+        early_stopping_min_delta=0.123,
+        random_state=0,
+    ).fit(Xtr, ytr, eval_set=(Xv, yv))
+    auto = ChimeraBoostRegressor(
+        iterations=4,
+        early_stopping_rounds=2,
+        early_stopping_min_delta="auto",
+        random_state=0,
+    ).fit(Xtr, ytr, eval_set=(Xv, yv))
+
+    assert legacy.model_.auto_params_["early_stopping"]["min_delta"] == 1e-9
+    assert legacy.model_.auto_params_["early_stopping"]["min_delta_rule"] == "legacy_1e-9"
+    assert explicit.model_.auto_params_["early_stopping"]["min_delta"] == 0.123
+    assert explicit.model_.auto_params_["early_stopping"]["min_delta_rule"] == "explicit"
+    assert auto.model_.auto_params_["early_stopping"]["min_delta"] > 0.0
+    assert auto.model_.auto_params_["early_stopping"]["min_delta_rule"] == "auto"
+
+
+def test_early_stopping_min_delta_does_not_gate_best_prefix_argmin():
+    X, y = load_diabetes(return_X_y=True)
+    Xtr, Xv, ytr, yv = train_test_split(
+        X, y, test_size=0.25, random_state=0
+    )
+    kw = dict(
+        iterations=80,
+        learning_rate=0.03,
+        depth=2,
+        early_stopping_min_delta=10.0,
+        random_state=0,
+    )
+
+    keep_all = ChimeraBoostRegressor(
+        **kw, use_best_model=False
+    ).fit(Xtr, ytr, eval_set=(Xv, yv))
+    best_n = int(np.argmin(keep_all.model_.valid_history_)) + 1
+    assert best_n > 1
+
+    best = ChimeraBoostRegressor(**kw).fit(Xtr, ytr, eval_set=(Xv, yv))
+    assert best.best_score_ == min(keep_all.model_.valid_history_)
+    assert best.n_estimators_ == best_n
+
+
+def test_validation_fraction_auto_weighted_stratified_and_refit_metadata():
+    rng = np.random.default_rng(102)
+    X = rng.normal(size=(96, 5))
+    y = np.r_[rng.normal(-2.0, 0.2, 48), rng.normal(2.0, 0.2, 48)]
+    w = np.ones(96)
+    w[:6] = 25.0
+
+    model = ChimeraBoostRegressor(
+        iterations=6,
+        early_stopping=True,
+        validation_fraction="auto",
+        validation_strategy="weighted_stratified",
+        refit=True,
+        random_state=0,
+    ).fit(X, y, sample_weight=w)
+
+    split = model.model_.auto_params_["validation_split"]
+    assert split["source"] == "refit_full_data"
+    assert split["selection_source"] == "automatic"
+    assert split["validation_strategy"] == "weighted_stratified"
+    assert split["realized_validation_strategy"] == "refit_full_data"
+    assert split["validation_fraction_resolved"] is None
+    assert split["eval_n_samples"] is None
+    assert split["refit"] is True
+    selection_split = model.model_.auto_params_["selection_validation_split"]
+    assert selection_split["source"] == "automatic"
+    assert selection_split["validation_fraction_input"] == "auto"
+    assert selection_split["validation_strategy"] == "weighted_stratified"
+    assert selection_split["realized_validation_strategy"] == "weighted_target_stratified"
+    assert 0.10 <= selection_split["validation_fraction_resolved"] <= 0.25
+    assert model.refit_ is True
+
+
+def test_weighted_stratified_rejects_silent_noop_split_modes():
+    X = np.arange(80, dtype=np.float64).reshape(40, 2)
+    y_reg = np.linspace(-1.0, 1.0, 40)
+    groups = np.repeat(np.arange(20), 2)
+
+    with pytest.raises(ValueError, match="ungrouped regression"):
+        ChimeraBoostRegressor(
+            iterations=2,
+            early_stopping=True,
+            validation_strategy="weighted_stratified",
+        ).fit(X, y_reg, groups=groups)
+
+    y_cls = np.r_[np.zeros(20), np.ones(20)]
+    with pytest.raises(ValueError, match="regression automatic validation"):
+        ChimeraBoostClassifier(
+            iterations=2,
+            early_stopping=True,
+            validation_strategy="weighted_stratified",
+        ).fit(X, y_cls)
+
+
+def test_weighted_stratified_default_fraction_caps_small_regression_strata():
+    rng = np.random.default_rng(107)
+    X = rng.normal(size=(40, 4))
+    y = np.linspace(-2.0, 2.0, 40) + rng.normal(0.0, 0.01, 40)
+    w = np.linspace(0.5, 3.0, 40)
+
+    model = ChimeraBoostRegressor(
+        iterations=4,
+        early_stopping=True,
+        validation_fraction=0.1,
+        validation_strategy="weighted_stratified",
+        random_state=0,
+    ).fit(X, y, sample_weight=w)
+
+    split = model.model_.auto_params_["validation_split"]
+    assert split["validation_strategy"] == "weighted_stratified"
+    assert split["realized_validation_strategy"] == "weighted_target_stratified"
+    assert split["eval_n_samples"] == 4
+
+
+def test_wrapper_validates_sample_weight_before_auto_validation_split():
+    X = np.arange(40, dtype=np.float64).reshape(20, 2)
+    y = np.linspace(-1.0, 1.0, 20)
+
+    with pytest.raises(ValueError, match=r"sample_weight must have shape"):
+        ChimeraBoostRegressor(
+            iterations=2,
+            early_stopping=True,
+            validation_fraction="auto",
+            validation_strategy="weighted_stratified",
+        ).fit(X, y, sample_weight=np.ones(19))
+
+    bad = np.ones(20)
+    bad[0] = -1.0
+    with pytest.raises(ValueError, match="sample_weight must be nonnegative"):
+        ChimeraBoostRegressor(
+            iterations=2,
+            early_stopping=True,
+            validation_fraction="auto",
+        ).fit(X, y, sample_weight=bad)
+
+
+def test_auto_structure_and_cat_smoothing_are_opt_in_and_recorded():
+    rng = np.random.default_rng(103)
+    numeric = rng.normal(size=(140, 3)).astype(object)
+    cats = np.array([f"c{j % 9}" for j in range(140)], dtype=object)[:, None]
+    X = np.concatenate([numeric, cats], axis=1)
+    y = rng.normal(size=140)
+    w = np.ones(140)
+    w[:8] = 12.0
+
+    model = ChimeraBoostRegressor(
+        iterations=3,
+        depth="auto",
+        l2_leaf_reg="auto",
+        min_child_samples="auto",
+        min_child_weight="auto",
+        cat_smoothing="auto",
+        random_state=0,
+    ).fit(X, y, cat_features=[3], sample_weight=w)
+
+    meta = model.model_.auto_params_["auto_structure"]["resolved"]
+    assert meta["depth"]["source"] == "auto"
+    assert isinstance(model.model_.depth, int)
+    assert meta["l2_leaf_reg"]["source"] == "auto"
+    assert meta["min_child_samples"]["source"] == "auto"
+    assert meta["min_child_weight"]["source"] == "auto"
+    assert meta["cat_smoothing"]["source"] == "auto"
+    assert model.model_.prep_.cat_smoothing == meta["cat_smoothing"]["resolved"]
+
+
+def test_learning_rate_probe_is_opt_in_and_records_candidates():
+    rng = np.random.default_rng(104)
+    X = rng.normal(size=(110, 4))
+    y = X[:, 0] + rng.normal(0.0, 0.1, size=110)
+
+    disabled = ChimeraBoostRegressor(
+        iterations=1000,
+        early_stopping=True,
+        validation_fraction=0.2,
+        random_state=0,
+    ).fit(X, y)
+    probed = ChimeraBoostRegressor(
+        iterations=1000,
+        early_stopping=True,
+        validation_fraction=0.2,
+        auto_learning_rate_probe=True,
+        auto_learning_rate_probe_iterations=3,
+        random_state=0,
+    ).fit(X, y)
+
+    disabled_meta = disabled.model_.auto_params_["learning_rate_probe"]
+    probe_meta = probed.model_.auto_params_["learning_rate_probe"]
+    assert disabled_meta == {"enabled": False, "reason": "disabled"}
+    assert probe_meta["enabled"] is True
+    assert probe_meta["probe_iterations"] == 3
+    assert probe_meta["final_iterations"] == 1000
+    assert probe_meta["base_learning_rate"] == disabled.model_.lr_
+    assert probe_meta["base_learning_rate_full_iterations"] == disabled.model_.lr_
+    assert probe_meta["base_learning_rate_short_iterations"] != disabled.model_.lr_
+    assert len(probe_meta["candidates"]) >= 5
+    assert sum(c["source"] == "auto_base" for c in probe_meta["candidates"]) == 1
+    assert probed.model_.lr_ == probe_meta["selected_learning_rate"]
 
 
 def test_ordered_leaf_update_inplace_matches_numpy_formula():
@@ -4167,7 +4756,7 @@ def test_binner_sampled_weighted_borders_use_weights_once():
     )
 
     assert sampled.weighted_ is True
-    assert sampled.weighted_sampling_ is False
+    assert sampled.weighted_sampling_ is True
     assert sampled.weighted_sample_count_ == sample_count
     for got, want in zip(sampled.borders_, expected.borders_):
         assert np.array_equal(got, want)
@@ -4732,6 +5321,24 @@ def test_save_load_booster_level_and_errors(tmp_path):
     loaded = GradientBoosting.load_model(path)
     assert np.array_equal(m.predict_raw(X), loaded.predict_raw(X))
 
+    auto = GradientBoosting(
+        iterations=3,
+        depth="auto",
+        l2_leaf_reg="auto",
+        min_child_samples="auto",
+        min_child_weight="auto",
+        cat_smoothing="auto",
+        random_state=0,
+    ).fit(X[:120], y[:120])
+    auto.save_model(path)
+    auto_loaded = GradientBoosting.load_model(path)
+    assert auto_loaded.depth == "auto"
+    assert auto_loaded.l2_leaf_reg == "auto"
+    assert auto_loaded.min_child_samples == "auto"
+    assert auto_loaded.min_child_weight == "auto"
+    assert auto_loaded.cat_smoothing == "auto"
+    assert np.array_equal(auto.predict_raw(X[:20]), auto_loaded.predict_raw(X[:20]))
+
     with pytest.raises(TypeError):
         MulticlassBoosting.load_model(path)
 
@@ -5029,3 +5636,299 @@ def test_multiclass_goss_runs_and_validates():
         ChimeraBoostClassifier(
             iterations=5, sampling="goss", subsample=0.8,
         ).fit(X, y)
+
+
+def test_stochastic_regularization_defaults_match_disabled_explicit():
+    from sklearn.datasets import load_diabetes
+
+    X, y = load_diabetes(return_X_y=True)
+    base = ChimeraBoostRegressor(iterations=20, random_state=0).fit(X, y)
+    explicit = ChimeraBoostRegressor(
+        iterations=20,
+        random_state=0,
+        bootstrap_type="none",
+        bagging_temperature=1.0,
+        sampling="uniform",
+        mvs_reg=3.0,
+        random_strength=0.0,
+    ).fit(X, y)
+
+    assert np.array_equal(base.predict(X), explicit.predict(X))
+    meta = explicit.model_.auto_params_["stochastic_regularization"]
+    assert meta["bayesian_bootstrap_active"] is False
+    assert meta["random_strength_active"] is False
+
+
+def test_bayesian_bootstrap_is_seeded_and_all_ones_weight_equivalent():
+    from sklearn.datasets import load_diabetes
+
+    X, y = load_diabetes(return_X_y=True)
+    kw = dict(
+        iterations=25,
+        random_state=11,
+        bootstrap_type="bayesian",
+        bagging_temperature=1.0,
+    )
+    a = ChimeraBoostRegressor(**kw).fit(X, y)
+    b = ChimeraBoostRegressor(**kw).fit(X, y)
+    ones = ChimeraBoostRegressor(**kw).fit(X, y, sample_weight=np.ones(len(y)))
+    different_seed = ChimeraBoostRegressor(
+        **{**kw, "random_state": 12}
+    ).fit(X, y)
+
+    assert np.array_equal(a.predict(X), b.predict(X))
+    assert np.array_equal(a.predict(X), ones.predict(X))
+    assert not np.array_equal(a.predict(X), different_seed.predict(X))
+    meta = a.model_.auto_params_["stochastic_regularization"]
+    assert meta["bayesian_bootstrap_active"] is True
+    assert meta["bayesian_bootstrap_rounds"] == len(a.model_.trees_)
+
+
+def test_bayesian_bootstrap_temperature_zero_matches_no_bootstrap():
+    from sklearn.datasets import load_diabetes
+
+    X, y = load_diabetes(return_X_y=True)
+    base = ChimeraBoostRegressor(iterations=20, random_state=0).fit(X, y)
+    zero = ChimeraBoostRegressor(
+        iterations=20,
+        random_state=0,
+        bootstrap_type="bayesian",
+        bagging_temperature=0.0,
+    ).fit(X, y)
+
+    assert np.array_equal(base.predict(X), zero.predict(X))
+
+
+def test_mvs_sampling_diagnostics_and_full_fraction_parity():
+    from sklearn.datasets import load_diabetes
+
+    X, y = load_diabetes(return_X_y=True)
+    full_uniform = ChimeraBoostRegressor(
+        iterations=20, random_state=0, sampling="uniform", subsample=1.0
+    ).fit(X, y)
+    full_mvs = ChimeraBoostRegressor(
+        iterations=20, random_state=0, sampling="mvs", subsample=1.0
+    ).fit(X, y)
+    sampled = ChimeraBoostRegressor(
+        iterations=10,
+        random_state=0,
+        sampling="mvs",
+        subsample=0.5,
+        mvs_reg=2.0,
+    ).fit(X, y)
+
+    assert np.array_equal(full_uniform.predict(X), full_mvs.predict(X))
+    meta = sampled.model_.auto_params_["stochastic_regularization"]
+    assert meta["mvs_active"] is True
+    assert meta["sampling_rounds"] == len(sampled.model_.trees_)
+    assert 0.2 <= meta["average_sampled_row_fraction"] <= 0.8
+    assert sampled.model_.auto_params_["sampling"]["mvs_reg"] == 2.0
+
+
+def test_mvs_rejects_invalid_subsample():
+    from sklearn.datasets import load_diabetes
+
+    X, y = load_diabetes(return_X_y=True)
+    for subsample in (0.0, -0.1, 1.1, np.nan):
+        with pytest.raises(ValueError, match="subsample must"):
+            ChimeraBoostRegressor(
+                iterations=1,
+                sampling="mvs",
+                subsample=subsample,
+            ).fit(X, y)
+
+
+def test_weighted_goss_is_opt_in_and_records_diagnostics():
+    rng = np.random.default_rng(107)
+    X = rng.normal(size=(120, 4))
+    y = X[:, 0] - X[:, 1] + rng.normal(0.0, 0.1, size=120)
+    w = np.ones(120)
+    w[:10] = 15.0
+
+    model = ChimeraBoostRegressor(
+        iterations=8,
+        random_state=0,
+        tree_mode="lightgbm",
+        num_leaves=7,
+        min_child_samples=2,
+        min_child_weight=0.0,
+        sampling="weighted_goss",
+        top_rate=0.25,
+        other_rate=0.25,
+    ).fit(X, y, sample_weight=w)
+
+    meta = model.model_.auto_params_["stochastic_regularization"]
+    assert model.model_.sampling_ == "weighted_goss"
+    assert meta["weighted_goss_active"] is True
+    assert meta["row_sampling_active"] is True
+    assert meta["sampling_rounds"] == len(model.model_.trees_)
+    assert 0.0 < meta["average_sampled_row_fraction"] < 1.0
+
+
+def test_multiclass_mvs_uses_shared_row_sample_per_round(monkeypatch):
+    from sklearn.datasets import load_wine
+    import chimeraboost.booster as booster_mod
+
+    X, y = load_wine(return_X_y=True)
+    seen = []
+    original = booster_mod.build_oblivious_tree
+
+    def capture(*args, **kwargs):
+        rows = kwargs.get("row_indices")
+        seen.append(None if rows is None else tuple(rows.tolist()))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(booster_mod, "build_oblivious_tree", capture)
+    model = ChimeraBoostClassifier(
+        iterations=3,
+        random_state=0,
+        sampling="mvs",
+        subsample=0.6,
+        multiclass_tree_strategy="per_class",
+    ).fit(X, y)
+
+    K = model.n_classes_
+    assert len(seen) == len(model.model_.trees_) * K
+    for start in range(0, len(seen), K):
+        assert len(set(seen[start:start + K])) == 1
+
+
+def test_random_strength_is_seeded_and_stores_true_gain():
+    from chimeraboost.tree import build_oblivious_tree
+
+    Xb = np.array([
+        [0, 0],
+        [0, 1],
+        [1, 0],
+        [1, 1],
+        [2, 0],
+        [2, 1],
+        [3, 0],
+        [3, 1],
+    ], dtype=np.uint8)
+    grad = np.array([-0.7, -0.6, -0.1, 0.0, 0.1, 0.2, 0.6, 0.7])
+    hess = np.ones_like(grad)
+    n_bins = np.array([4, 2], dtype=np.int64)
+
+    a = build_oblivious_tree(
+        Xb, grad, hess, n_bins, 2, 1.0, 0.1,
+        random_strength=5.0, split_seed=4, tree_iteration=2,
+    )
+    b = build_oblivious_tree(
+        Xb, grad, hess, n_bins, 2, 1.0, 0.1,
+        random_strength=5.0, split_seed=4, tree_iteration=2,
+    )
+    c = build_oblivious_tree(
+        Xb, grad, hess, n_bins, 2, 1.0, 0.1,
+        random_strength=5.0, split_seed=5, tree_iteration=2,
+    )
+
+    assert np.array_equal(a.splits_feat, b.splits_feat)
+    assert np.array_equal(a.splits_thr, b.splits_thr)
+    assert np.array_equal(a.gains, b.gains)
+    assert np.all(np.isfinite(a.gains))
+    assert np.all(a.gains < 10.0)
+    assert (
+        not np.array_equal(a.splits_feat, c.splits_feat)
+        or not np.array_equal(a.splits_thr, c.splits_thr)
+    )
+
+
+def test_random_strength_filters_min_gain_before_noisy_argmax():
+    from chimeraboost.tree import _best_split_with_noise_py
+
+    hg = np.zeros((2, 1, 2), dtype=np.float64)
+    hh = np.ones((2, 1, 2), dtype=np.float64)
+    hg[0, 0, :] = [1.0, -1.0]      # true gain = 2.0
+    hg[1, 0, :] = [0.5, -0.5]      # true gain = 0.5, below threshold
+    n_bins = np.array([2, 2], dtype=np.int64)
+    feat_mask = np.ones(2, dtype=np.uint8)
+
+    f, t, gain = _best_split_with_noise_py(
+        hg,
+        hh,
+        n_bins,
+        0.0,
+        feat_mask,
+        0.0,
+        1,
+        10.0,
+        0,
+        0,
+        0,
+        1.0,
+    )
+
+    assert (f, t) == (0, 0)
+    assert gain == 2.0
+
+
+def test_leafwise_random_strength_rescores_all_leaves(monkeypatch):
+    import chimeraboost.tree as tree_mod
+
+    calls = []
+    original = tree_mod._best_splits_counts_for_leaf_ids_with_noise_py
+
+    def capture(*args, **kwargs):
+        leaf_ids = args[8]
+        n_leaf_ids = args[9]
+        calls.append((leaf_ids[:n_leaf_ids].copy(), int(n_leaf_ids)))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(
+        tree_mod, "_best_splits_counts_for_leaf_ids_with_noise_py", capture
+    )
+    rng = np.random.default_rng(47)
+    Xb = rng.integers(0, 24, size=(180, 8), dtype=np.uint8)
+    n_bins = np.full(Xb.shape[1], 24, dtype=np.int64)
+    grad = rng.normal(size=Xb.shape[0])
+    hess = rng.uniform(0.2, 1.4, size=Xb.shape[0])
+
+    tree_mod.build_leafwise_tree(
+        Xb,
+        grad,
+        hess,
+        n_bins,
+        5,
+        1.0,
+        0.1,
+        max_leaves=6,
+        min_child_samples=2,
+        min_child_weight=0.1,
+        min_gain_to_split=0.0,
+        random_strength=0.5,
+        split_seed=0,
+        tree_iteration=0,
+    )
+
+    assert any(
+        n_leaf_ids > 2 and np.array_equal(leaf_ids, np.arange(n_leaf_ids))
+        for leaf_ids, n_leaf_ids in calls
+    )
+
+
+def test_stochastic_regularization_persists_through_save_load(tmp_path):
+    from sklearn.datasets import load_diabetes
+
+    X, y = load_diabetes(return_X_y=True)
+    model = ChimeraBoostRegressor(
+        iterations=8,
+        random_state=0,
+        sampling="mvs",
+        subsample=0.7,
+        mvs_reg=2.5,
+        bootstrap_type="bayesian",
+        bagging_temperature=0.4,
+        random_strength=0.3,
+    ).fit(X, y)
+    path = tmp_path / "stochastic.npz"
+    model.save_model(path)
+    loaded = ChimeraBoostRegressor.load_model(path)
+
+    assert loaded.model_.sampling == "mvs"
+    assert loaded.model_.bootstrap_type == "bayesian"
+    assert loaded.model_.bagging_temperature == 0.4
+    assert loaded.model_.mvs_reg == 2.5
+    assert loaded.model_.random_strength == 0.3
+    assert loaded.model_.auto_params_["stochastic_regularization"]["mvs_active"] is True
+    assert np.array_equal(model.predict(X), loaded.predict(X))
