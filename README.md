@@ -96,6 +96,11 @@ maximum path-depth cap. `ordered_boosting` defaults to off for this mode; settin
 Categorical features still use ChimeraBoost's ordered target-stat preprocessing,
 not native LightGBM category-partition splits.
 
+For compatible LightGBM-mode multiclass fits,
+`multiclass_tree_strategy="auto"` uses a shared vector-valued tree per boosting
+round. Pass `multiclass_tree_strategy="per_class"` to force the older one-tree-
+per-class route for comparisons.
+
 Row sampling is selectable with `sampling="uniform"` (default),
 `sampling="goss"` plus `top_rate` / `other_rate`,
 `sampling="weighted_goss"` for a sample-weight-aware GOSS variant, or

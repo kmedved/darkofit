@@ -21,14 +21,19 @@ not default speed wins:
 - `leafwise_row_layout="segmented"` is an internal opt-in row layout for
   leaf-wise trees. It has exact parity coverage, but default full-fit benchmarks
   regressed, so `auto` keeps the normal prefix layout.
-- `fused_changed_leaf_scoring=True` is an internal opt-in fused refill/subtract
-  plus split-scoring path for scalar LightGBM-mode trees. It improved a direct
-  tree microbenchmark but regressed a full large `numeric_binary` fit, so it is
-  not routed from public estimators.
-- `multiclass_tree_strategy="shared_vector"` is an explicit classifier option
-  for compatible LightGBM-mode multiclass fits. Forced shared-vector trees were
-  slower on numeric multiclass in the focused benchmark, so `auto` preserves the
-  previous default behavior.
+- `fused_changed_leaf_scoring=True` is routed for the narrow scalar
+  LightGBM-mode lane where retesting kept exact predictions and improved speed:
+  unweighted logloss fits with full rows/features, positive Hessians, no
+  row-parallel buffers, no split-score noise, and more than two threads. Keep
+  it off for `random_strength > 0` because noisy split scoring dominates that
+  path.
+- `multiclass_tree_strategy="shared_vector"` is the `auto` default for
+  compatible LightGBM-mode multiclass fits. The full harness retest found the
+  shared-vector path materially faster on numeric multiclass, neutral-to-better
+  on F1 in the synthetic multiclass cases, and already equivalent to categorical
+  auto where it was previously selected. Explicit
+  `multiclass_tree_strategy="per_class"` remains available as a fallback and
+  comparison lane.
 - Histogram buffers are interleaved lane views of one
   `(features, leaves, bins, 2-or-3)` base array for fits at <= 4 threads, so
   each bin's grad/hess(/count) share a cache line. Results are bitwise
@@ -93,4 +98,3 @@ The next serious optimization tracks are:
 
 Start those on a fresh branch with a fresh profile rather than by widening the
 current experimental hooks.
-

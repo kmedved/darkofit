@@ -1222,8 +1222,12 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         return np.column_stack([1.0 - p1, p1])
 
     def predict(self, X):
-        proba = self.predict_proba(X)
-        return self.classes_[np.argmax(proba, axis=1)]
+        X = _check_predict_input(self, X)
+        raw = self.model_.predict_raw(X)
+        if self._multiclass:
+            return self.classes_[np.argmax(raw, axis=1)]
+        p1 = self.model_.loss_.transform(raw)
+        return self.classes_[(p1 > 0.5).astype(np.int64)]
 
     def staged_predict_proba(self, X):
         """Yield class probabilities after each successive boosting round."""
@@ -1237,8 +1241,13 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
 
     def staged_predict(self, X):
         """Yield class labels after each successive boosting round."""
-        for proba in self.staged_predict_proba(X):
-            yield self.classes_[np.argmax(proba, axis=1)]
+        X = _check_predict_input(self, X)
+        for raw in self.model_.staged_predict_raw(X):
+            if self._multiclass:
+                yield self.classes_[np.argmax(raw, axis=1)]
+            else:
+                p1 = self.model_.loss_.transform(raw)
+                yield self.classes_[(p1 > 0.5).astype(np.int64)]
 
     def staged_predict_raw(self, X):
         """Yield raw margins after each successive boosting round."""

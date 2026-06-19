@@ -1432,6 +1432,16 @@ class _BaseBooster:
                 min_child_samples=self.min_child_samples,
                 min_gain_to_split=self.min_gain_to_split,
                 hessian_always_positive=hessian_always_positive,
+                fused_changed_leaf_scoring=(
+                    hessian_always_positive
+                    and not use_constant_hessian
+                    and self.random_strength <= 0.0
+                    and fmask is None
+                    and row_indices is None
+                    and findices is None
+                    and rowpar_buffers is None
+                    and getattr(self, "n_threads_", 1) > 2
+                ),
             )
         return kwargs
 
@@ -1885,10 +1895,7 @@ class MulticlassBoosting(_BaseBooster):
         )
         use_shared_lightgbm_multiclass = (
             can_use_shared_lightgbm_multiclass
-            and (
-                strategy == "shared_vector"
-                or (strategy == "auto" and bool(cat_features))
-            )
+            and strategy in {"auto", "shared_vector"}
         )
         self.multiclass_tree_strategy_ = (
             "shared_vector" if use_shared_lightgbm_multiclass else "per_class"

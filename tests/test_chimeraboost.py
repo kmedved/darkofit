@@ -1707,7 +1707,7 @@ def test_lightgbm_multiclass_no_split_first_round_keeps_initial_model():
     assert np.allclose(proba.sum(axis=1), 1.0)
 
 
-def test_lightgbm_shared_multiclass_tree_routes_only_categorical():
+def test_lightgbm_shared_multiclass_tree_routes_when_auto_compatible():
     X_num = np.array([
         [0.0, 0.1], [0.2, 0.0], [1.0, 0.8], [1.2, 1.1],
         [2.0, 2.2], [2.2, 1.9], [0.1, 0.2], [1.1, 1.0],
@@ -1718,7 +1718,16 @@ def test_lightgbm_shared_multiclass_tree_routes_only_categorical():
         iterations=2, tree_mode="lightgbm", num_leaves=3,
         min_child_samples=1, min_child_weight=0.0, random_state=0
     ).fit(X_num, y)
-    assert isinstance(numeric.model_.trees_[0], list)
+    assert numeric.model_.multiclass_tree_strategy_ == "shared_vector"
+    assert hasattr(numeric.model_.trees_[0], "add_predict_class_major")
+
+    per_class = ChimeraBoostClassifier(
+        iterations=2, tree_mode="lightgbm", num_leaves=3,
+        min_child_samples=1, min_child_weight=0.0,
+        multiclass_tree_strategy="per_class", random_state=0
+    ).fit(X_num, y)
+    assert per_class.model_.multiclass_tree_strategy_ == "per_class"
+    assert isinstance(per_class.model_.trees_[0], list)
 
     X_cat = np.empty((len(y), 2), dtype=object)
     X_cat[:, 0] = np.array(
@@ -2718,6 +2727,48 @@ def test_leafwise_fused_changed_leaf_scoring_matches_default_path():
     assert np.array_equal(fused_tree.predict(Xb), default_tree.predict(Xb))
 
 
+def test_lightgbm_scalar_routes_fused_changed_leaf_scoring_only_when_eligible():
+    from chimeraboost.booster import GradientBoosting
+
+    booster = GradientBoosting(
+        tree_mode="lightgbm",
+        num_leaves=31,
+        random_strength=0.0,
+    )
+    booster.tree_mode_ = "lightgbm"
+    booster.n_threads_ = 4
+
+    def fused_enabled(**overrides):
+        params = dict(
+            fmask=None,
+            findices=None,
+            row_indices=None,
+            hist_buffers=None,
+            split_buffers=None,
+            X_hist_binned=None,
+            use_constant_hessian=False,
+            hessian_always_positive=True,
+            rowpar_buffers=None,
+            tree_iteration=0,
+        )
+        params.update(overrides)
+        return booster._builder_kwargs(**params)["fused_changed_leaf_scoring"]
+
+    assert fused_enabled() is True
+    assert fused_enabled(use_constant_hessian=True) is False
+    assert fused_enabled(hessian_always_positive=False) is False
+    assert fused_enabled(fmask=np.ones(2, dtype=np.uint8)) is False
+    assert fused_enabled(findices=np.array([0], dtype=np.int64)) is False
+    assert fused_enabled(row_indices=np.array([0], dtype=np.int64)) is False
+    assert fused_enabled(rowpar_buffers=(np.empty((1, 1, 1, 1)),)) is False
+
+    booster.random_strength = 0.1
+    assert fused_enabled() is False
+    booster.random_strength = 0.0
+    booster.n_threads_ = 2
+    assert fused_enabled() is False
+
+
 def test_leafwise_threaded_changed_leaf_split_matches_full_rescore():
     import numba
     from chimeraboost.tree import build_leafwise_tree
@@ -2859,6 +2910,32 @@ def test_multiclass_staged_predictions_match_final():
     assert np.allclose(stages[-1].sum(axis=1), 1.0)
 
 
+def test_multiclass_predict_labels_use_raw_margin_argmax(monkeypatch):
+    from sklearn.datasets import load_wine
+
+    X, y = load_wine(return_X_y=True)
+    Xtr, Xte, ytr, _ = train_test_split(
+        X, y, test_size=0.25, random_state=2, stratify=y
+    )
+    model = ChimeraBoostClassifier(iterations=8, random_state=0).fit(Xtr, ytr)
+    expected = model.classes_[np.argmax(model.model_.predict_raw(Xte), axis=1)]
+    expected_stages = [
+        model.classes_[np.argmax(raw, axis=1)]
+        for raw in model.model_.staged_predict_raw(Xte)
+    ]
+
+    def fail_transform(raw):
+        raise AssertionError("predict labels should not compute softmax")
+
+    monkeypatch.setattr(model.model_.loss_, "transform", fail_transform)
+
+    assert np.array_equal(model.predict(Xte), expected)
+    got_stages = list(model.staged_predict(Xte))
+    assert len(got_stages) == len(expected_stages)
+    for got, want in zip(got_stages, expected_stages):
+        assert np.array_equal(got, want)
+
+
 def test_multiclass_subsampling_shared_per_round(monkeypatch):
     import chimeraboost.booster as booster
     from sklearn.datasets import load_wine
@@ -2927,6 +3004,7 @@ def test_lightgbm_numeric_multiclass_marks_unweighted_hessians_positive(monkeypa
     monkeypatch.setattr(booster, "build_leafwise_tree", wrapped_build_tree)
     ChimeraBoostClassifier(
         iterations=1, tree_mode="lightgbm", num_leaves=5, depth=3,
+        multiclass_tree_strategy="per_class",
         random_state=0
     ).fit(X[order], y[order])
 
@@ -2954,6 +3032,7 @@ def test_lightgbm_numeric_multiclass_weighted_hessians_use_generic_path(monkeypa
     monkeypatch.setattr(booster, "build_leafwise_tree", wrapped_build_tree)
     ChimeraBoostClassifier(
         iterations=1, tree_mode="lightgbm", num_leaves=5, depth=3,
+        multiclass_tree_strategy="per_class",
         random_state=0
     ).fit(X[order], y[order], sample_weight=weights[order])
 
