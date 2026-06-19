@@ -318,6 +318,15 @@ class _BaseBooster:
         else:
             if self.depth == "auto":
                 self.depth = _resolve_default_depth(depth_input, self.tree_mode_)
+            if (
+                depth_input is None
+                and self.tree_mode_ == "depthwise"
+                and loss_name == "RMSE"
+            ):
+                self.depth = 2
+                candidates["depth"] = {
+                    "rule": "depthwise_rmse_shallow_default"
+                }
             depth_source = "default" if depth_input is None else "explicit"
         resolved["depth"] = {
             "input": depth_input,

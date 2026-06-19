@@ -688,9 +688,10 @@ def parse_args(argv):
         type=int,
         default=None,
         help=(
-            "ChimeraBoost max tree depth. Default is 6 for CatBoost/depthwise "
-            "modes and -1 (unlimited) for LightGBM mode to match the LightGBM "
-            "baseline's uncapped leaf-wise growth."
+            "ChimeraBoost max tree depth. Default is 6 for CatBoost mode, "
+            "estimator-resolved for depthwise/levelwise mode, and -1 "
+            "(unlimited) for LightGBM mode to match the LightGBM baseline's "
+            "uncapped leaf-wise growth."
         ),
     )
     parser.add_argument("--learning-rate", type=float, default=None)
@@ -785,7 +786,10 @@ def parse_args(argv):
 
 def _resolve_default_depth(args):
     if args.depth is None:
-        args.depth = -1 if args.tree_mode == "lightgbm" else 6
+        if args.tree_mode == "lightgbm":
+            args.depth = -1
+        elif args.tree_mode in {"catboost", "oblivious"}:
+            args.depth = 6
     return args
 
 

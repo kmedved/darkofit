@@ -17,9 +17,11 @@ from bench_vs_lightgbm import (  # noqa: E402
 def test_default_depth_matches_tree_mode():
     lightgbm_args = _resolve_default_depth(parse_args(["--tree-mode", "lightgbm"]))
     catboost_args = _resolve_default_depth(parse_args(["--tree-mode", "catboost"]))
+    depthwise_args = _resolve_default_depth(parse_args(["--tree-mode", "depthwise"]))
 
     assert lightgbm_args.depth == -1
     assert catboost_args.depth == 6
+    assert depthwise_args.depth is None
 
 
 def test_explicit_depth_is_preserved_for_lightgbm_mode():

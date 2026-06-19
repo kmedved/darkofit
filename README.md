@@ -92,8 +92,9 @@ Tree modes:
   prediction compatibility with Microsoft LightGBM.
 * `tree_mode="depthwise"` (also accepted as `"levelwise"`) uses the
   experimental level-wise non-oblivious builder. Current benchmark notes show it
-  can reduce rounds on some medium numeric tasks, but it is not a default
-  candidate yet because wide-regression quality regressed in the focused probe.
+  can reduce rounds on some medium numeric tasks. For RMSE regression with
+  omitted `depth`, this mode defaults to a shallow depth of 2; explicit depths
+  and classification defaults are unchanged.
 
 In LightGBM mode, `num_leaves` is the main tree-size control and `depth` is a
 maximum path-depth cap. `ordered_boosting` defaults to off for this mode; setting

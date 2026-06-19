@@ -1400,6 +1400,7 @@ def test_tree_mode_default_depth_resolution():
     Xtr, _, ytr, _ = train_test_split(
         X, y, test_size=0.75, random_state=4, stratify=y
     )
+    Xr, yr = load_diabetes(return_X_y=True)
 
     catboost = ChimeraBoostClassifier(
         iterations=2, tree_mode="catboost", random_state=0
@@ -1414,9 +1415,19 @@ def test_tree_mode_default_depth_resolution():
         iterations=2, tree_mode="lightgbm", depth=3, num_leaves=64,
         random_state=0
     ).fit(Xtr, ytr)
+    depthwise_reg = ChimeraBoostRegressor(
+        iterations=2, tree_mode="depthwise", random_state=0
+    ).fit(Xr, yr)
 
     assert catboost.model_.depth == 6
     assert depthwise.model_.depth == 6
+    assert depthwise_reg.model_.depth == 2
+    depth_meta = depthwise_reg.model_.auto_params_["auto_structure"]
+    assert depth_meta["resolved"]["depth"]["source"] == "default"
+    assert (
+        depth_meta["candidates"]["depth"]["rule"]
+        == "depthwise_rmse_shallow_default"
+    )
     assert lightgbm.model_.depth == -1
     assert explicit.model_.depth == 3
 

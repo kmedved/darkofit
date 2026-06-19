@@ -43,16 +43,34 @@ levelwise path (`friedman_numeric` 0.0054s -> 0.0013s, `numeric_binary` 0.0276s
 0.0135s -> 0.0038s). Treat depth-wise trees as an experimental comparison lane
 until the wide-regression quality/defaults issue is addressed.
 
-A first quality sweep points to a regression-specific depth/default issue, not
+A first quality sweep pointed to a regression-specific depth/default issue, not
 a global depth-wise default. On the same medium benchmark matrix, `depth=2`
 with the original 800-round budget improved `wide_numeric_reg` RMSE from 88.29
 to 52.71 and fit speed from x1.52 to x4.21 versus LightGBM, but it damaged
 classification quality (`numeric_binary` F1 0.9166 -> 0.8466,
 `numeric_multiclass` F1 0.8786 -> 0.8175). With a 1500-round budget, compact
 two-seed `wide_numeric_reg` probes found `depth=2` near 45.44 RMSE, much closer
-to CatBoost mode's 40.08 than the depth-6 path. Do not promote a global
-depth-wise default from this; the next tuning pass should validate a
-regression-only shallow-depth rule across more regression datasets and sizes.
+to CatBoost mode's 40.08 than the depth-6 path.
+
+A follow-up regression-only matrix over `diabetes_resampled`, `friedman_numeric`,
+`wide_numeric_reg`, and `categorical_reg` at small/medium sizes found that
+shallow depth improved depth-wise RMSE versus the old depth-6 default in every
+dataset/size cell. Best depth-wise configurations used depth 2 or 3; L2 did not
+produce a stable cross-dataset rule. The current estimator therefore resolves
+omitted `depth` to 2 only for `tree_mode="depthwise"` RMSE regression. Explicit
+depths, `depth="auto"`, CatBoost mode, LightGBM mode, and depth-wise
+classification keep their existing behavior.
+
+Validation after the default-rule change reran the benchmark harness with
+`--tree-mode levelwise` and no explicit `--depth`, so the estimator resolved
+depth per task. At medium size and two seeds, the depth-wise RMSE default beat
+LightGBM on `diabetes_resampled` (+2.42%), `friedman_numeric` (+3.45%), and
+`wide_numeric_reg` (+42.95%), while `categorical_reg` trailed LightGBM by
+6.42% but remained far better than the old depth-6 depth-wise regression lane.
+At small size and two seeds, it beat LightGBM on all four regression tasks. A
+large one-seed smoke on `friedman_numeric`, `wide_numeric_reg`, and
+`categorical_reg` kept fit-speed ratios above x1.5 and quality roughly tied or
+better (`wide_numeric_reg` RMSE 42.69 vs LightGBM 68.57).
 
 ## Experimental LightGBM-Mode Hooks
 
