@@ -2798,10 +2798,9 @@ def _best_splits_by_leaf_counts_full_features(
     """Best split per leaf when every row and every feature is active.
 
     In this lane each non-missing row contributes exactly once to every
-    feature's count histogram, so the total count for a leaf is already known
-    from the row partition. Split legality still uses per-threshold histogram
-    counts, but the parent count does not need to be recomputed for each
-    feature.
+    feature histogram, so leaf totals are invariant across features. Split
+    legality still uses per-threshold histogram counts, but parent totals do
+    not need to be recomputed for each feature.
     """
     n_features = hg.shape[0]
     for l in prange(n_leaves):
@@ -2816,18 +2815,22 @@ def _best_splits_by_leaf_counts_full_features(
             out_gain[l] = best_gain
             continue
 
+        nb0 = n_bins_per_feature[0]
+        Gt = 0.0
+        Ht = 0.0
+        for b in range(nb0):
+            Gt += hg[0, l, b]
+            Ht += hh[0, l, b]
+        parent_denom = Ht + l2
+        if Ht <= 0.0 or parent_denom <= 0.0:
+            out_feat[l] = best_f
+            out_thr[l] = best_t
+            out_gain[l] = best_gain
+            continue
+        parent_gain = Gt * Gt / parent_denom
+
         for f in range(n_features):
             nb = n_bins_per_feature[f]
-            Gt = 0.0
-            Ht = 0.0
-            for b in range(nb):
-                Gt += hg[f, l, b]
-                Ht += hh[f, l, b]
-            parent_denom = Ht + l2
-            if Ht <= 0.0 or parent_denom <= 0.0:
-                continue
-            parent_gain = Gt * Gt / parent_denom
-
             GL = 0.0
             HL = 0.0
             CL = 0.0
@@ -2885,18 +2888,22 @@ def _best_splits_for_leaf_ids_counts_full_features(
             out_gain[l] = best_gain
             continue
 
+        nb0 = n_bins_per_feature[0]
+        Gt = 0.0
+        Ht = 0.0
+        for b in range(nb0):
+            Gt += hg[0, l, b]
+            Ht += hh[0, l, b]
+        parent_denom = Ht + l2
+        if Ht <= 0.0 or parent_denom <= 0.0:
+            out_feat[l] = best_f
+            out_thr[l] = best_t
+            out_gain[l] = best_gain
+            continue
+        parent_gain = Gt * Gt / parent_denom
+
         for f in range(n_features):
             nb = n_bins_per_feature[f]
-            Gt = 0.0
-            Ht = 0.0
-            for b in range(nb):
-                Gt += hg[f, l, b]
-                Ht += hh[f, l, b]
-            parent_denom = Ht + l2
-            if Ht <= 0.0 or parent_denom <= 0.0:
-                continue
-            parent_gain = Gt * Gt / parent_denom
-
             GL = 0.0
             HL = 0.0
             CL = 0.0
@@ -4361,7 +4368,6 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
         and row_indices is None
         and feature_indices is None
         and bool(np.all(feature_mask != 0))
-        and get_num_threads() <= 2
         and not use_segmented_rows
     )
     if rowpar_buffers is not None:

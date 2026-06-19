@@ -27,6 +27,13 @@ not default speed wins:
   row-parallel buffers, no split-score noise, and more than two threads. Keep
   it off for `random_strength > 0` because noisy split scoring dominates that
   path.
+- Full-row/full-feature positive-Hessian split scoring reuses the parent
+  gradient/Hessian totals once per leaf instead of recomputing them for every
+  feature. The invariant only holds in that full-feature lane. Direct
+  leaf-wise tree timings at 120k x 80, 64 leaves, 128 bins kept identical split
+  signatures and improved the 2-thread median from 0.0295s to 0.0282s; the
+  4-thread median was neutral because changed-leaf scoring is dominated by the
+  fused/feature-parallel lanes.
 - `multiclass_tree_strategy="shared_vector"` is the `auto` default for
   compatible LightGBM-mode multiclass fits. The full harness retest found the
   shared-vector path materially faster on numeric multiclass, neutral-to-better

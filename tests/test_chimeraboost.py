@@ -2645,36 +2645,40 @@ def test_leafwise_positive_split_fast_path_matches_generic_tree():
 
     old_threads = numba.get_num_threads()
     try:
-        numba.set_num_threads(min(2, numba.config.NUMBA_NUM_THREADS))
-        fast = build_leafwise_tree(
-            Xb, grad, hess, n_bins, -1, 1.0, 0.1,
-            max_leaves=12, min_child_samples=5, min_child_weight=0.1,
-            min_gain_to_split=0.0, return_training_state=True,
-            hessian_always_positive=True,
-        )
-        generic = build_leafwise_tree(
-            Xb, grad, hess, n_bins, -1, 1.0, 0.1,
-            max_leaves=12, min_child_samples=5, min_child_weight=0.1,
-            min_gain_to_split=0.0, return_training_state=True,
-            hessian_always_positive=False,
-        )
+        cases = [2]
+        if numba.config.NUMBA_NUM_THREADS >= 4:
+            cases.append(4)
+        for n_threads in cases:
+            numba.set_num_threads(n_threads)
+            fast = build_leafwise_tree(
+                Xb, grad, hess, n_bins, -1, 1.0, 0.1,
+                max_leaves=12, min_child_samples=5, min_child_weight=0.1,
+                min_gain_to_split=0.0, return_training_state=True,
+                hessian_always_positive=True,
+            )
+            generic = build_leafwise_tree(
+                Xb, grad, hess, n_bins, -1, 1.0, 0.1,
+                max_leaves=12, min_child_samples=5, min_child_weight=0.1,
+                min_gain_to_split=0.0, return_training_state=True,
+                hessian_always_positive=False,
+            )
+
+            fast_tree, fast_leaf, fast_G, fast_H = fast
+            generic_tree, generic_leaf, generic_G, generic_H = generic
+            assert np.array_equal(fast_tree.features, generic_tree.features)
+            assert np.array_equal(fast_tree.thresholds, generic_tree.thresholds)
+            assert np.array_equal(fast_tree.left_child, generic_tree.left_child)
+            assert np.array_equal(fast_tree.right_child, generic_tree.right_child)
+            assert np.array_equal(fast_tree.leaf_index, generic_tree.leaf_index)
+            assert np.array_equal(fast_tree.splits_feat, generic_tree.splits_feat)
+            assert np.array_equal(fast_tree.splits_thr, generic_tree.splits_thr)
+            assert np.allclose(fast_tree.gains, generic_tree.gains)
+            assert np.allclose(fast_tree.values, generic_tree.values)
+            assert np.array_equal(fast_leaf, generic_leaf)
+            assert np.allclose(fast_G, generic_G)
+            assert np.allclose(fast_H, generic_H)
     finally:
         numba.set_num_threads(old_threads)
-
-    fast_tree, fast_leaf, fast_G, fast_H = fast
-    generic_tree, generic_leaf, generic_G, generic_H = generic
-    assert np.array_equal(fast_tree.features, generic_tree.features)
-    assert np.array_equal(fast_tree.thresholds, generic_tree.thresholds)
-    assert np.array_equal(fast_tree.left_child, generic_tree.left_child)
-    assert np.array_equal(fast_tree.right_child, generic_tree.right_child)
-    assert np.array_equal(fast_tree.leaf_index, generic_tree.leaf_index)
-    assert np.array_equal(fast_tree.splits_feat, generic_tree.splits_feat)
-    assert np.array_equal(fast_tree.splits_thr, generic_tree.splits_thr)
-    assert np.allclose(fast_tree.gains, generic_tree.gains)
-    assert np.allclose(fast_tree.values, generic_tree.values)
-    assert np.array_equal(fast_leaf, generic_leaf)
-    assert np.allclose(fast_G, generic_G)
-    assert np.allclose(fast_H, generic_H)
 
 
 def test_leafwise_fused_changed_leaf_scoring_matches_default_path():
