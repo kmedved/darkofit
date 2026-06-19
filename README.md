@@ -80,6 +80,7 @@ Tree builders are selectable:
 ```
 ChimeraBoostClassifier(tree_mode="catboost")  # symmetric/oblivious default
 ChimeraBoostClassifier(tree_mode="lightgbm")  # leaf-wise, non-oblivious
+ChimeraBoostClassifier(tree_mode="depthwise") # experimental level-wise
 ```
 
 Tree modes:
@@ -89,6 +90,11 @@ Tree modes:
 * `tree_mode="lightgbm"` builds ChimeraBoost's LightGBM-like histogram trees:
   non-oblivious, leaf-wise, best-first CART-style trees. This is not model or
   prediction compatibility with Microsoft LightGBM.
+* `tree_mode="depthwise"` (also accepted as `"levelwise"`) uses the
+  experimental level-wise non-oblivious builder. Current benchmark notes show it
+  can reduce rounds on some medium numeric tasks, but it is not a default
+  candidate yet because prediction is slower and wide-regression quality
+  regressed in the focused probe.
 
 In LightGBM mode, `num_leaves` is the main tree-size control and `depth` is a
 maximum path-depth cap. `ordered_boosting` defaults to off for this mode; setting

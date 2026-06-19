@@ -752,7 +752,10 @@ def parse_args(argv):
         "--tree-mode",
         choices=["catboost", "oblivious", "lightgbm", "depthwise", "levelwise"],
         default="catboost",
-        help="ChimeraBoost tree builder: symmetric CatBoost-like or leaf-wise LightGBM-like.",
+        help=(
+            "ChimeraBoost tree builder: symmetric CatBoost-like, leaf-wise "
+            "LightGBM-like, or experimental depth-wise/level-wise."
+        ),
     )
     parser.add_argument("--no-ordered-boosting", action="store_true")
     parser.add_argument("--no-warmup", action="store_true")

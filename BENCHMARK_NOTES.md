@@ -13,6 +13,31 @@ keeping exact, gated speed wins from this fork where they were proven.
 It is not LightGBM model compatibility. It is a native ChimeraBoost training
 mode intended to be compared against LightGBM-style leaf-wise boosting.
 
+`tree_mode="levelwise"` is accepted by the benchmark harness as an alias for
+the experimental depth-wise builder (`tree_mode="depthwise"` internally). A
+focused medium-size probe on 2026-06-19 used:
+
+```bash
+/Users/kmedved/.venvs/darko311/bin/python benchmarks/bench_vs_lightgbm.py \
+  --tree-mode levelwise \
+  --sizes medium \
+  --datasets friedman_numeric numeric_binary numeric_multiclass wide_numeric_reg \
+  --seeds 2 \
+  --threads 8 \
+  --iterations 800 \
+  --patience 50 \
+  --repeat 2 \
+  --csv /tmp/chimeraboost_levelwise_medium.csv
+```
+
+Compared with the same current-main CatBoost-mode run, levelwise reduced the
+round count and fit time on `friedman_numeric` and `numeric_multiclass`, but it
+was not a safe default candidate: prediction was 1.3-6.5x slower than CatBoost
+mode across the probe, `numeric_binary` fit time was neutral-to-slower, and
+`wide_numeric_reg` RMSE regressed from 40.08 to 88.29 while fitting 1.23x
+slower. Treat depth-wise trees as an experimental comparison lane until their
+prediction path and wide-regression quality are addressed.
+
 ## Experimental LightGBM-Mode Hooks
 
 The current main branch includes a few infrastructure hooks that are intentionally
@@ -99,7 +124,8 @@ change worth promoting. The useful conclusions are:
 
 The next serious optimization tracks are:
 
-- reduce numeric and multiclass round count with stronger tree strategy;
+- reduce numeric and multiclass round count with a stronger tree strategy that
+  does not lose the current CatBoost-mode wide-regression quality;
 - redesign leaf-wise histogram refill, scoring, and reuse so large fits do less
   repeated work per split.
 
