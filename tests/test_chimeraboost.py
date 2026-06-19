@@ -470,6 +470,38 @@ def test_multiclass_preprocessor_receives_class_major_target_views(monkeypatch):
     assert all(contiguous and not owns_data for contiguous, owns_data in seen[0])
 
 
+def test_multiclass_eval_set_uses_label_indices_without_one_hot(monkeypatch):
+    """Validation loss should not allocate a dense eval one-hot matrix."""
+    import chimeraboost.booster as booster
+
+    calls = []
+    original = booster._one_hot_class_major
+
+    def wrapped_one_hot(y_idx, n_classes):
+        calls.append((len(y_idx), int(n_classes)))
+        return original(y_idx, n_classes)
+
+    monkeypatch.setattr(booster, "_one_hot_class_major", wrapped_one_hot)
+    X = np.array([
+        [0.0, 0.0],
+        [1.0, 0.1],
+        [2.0, 0.2],
+        [3.0, 1.0],
+        [4.0, 1.1],
+        [5.0, 1.2],
+        [6.0, 2.0],
+        [7.0, 2.1],
+        [8.0, 2.2],
+    ])
+    y = np.array([0, 1, 2, 0, 1, 2, 0, 1, 2])
+
+    ChimeraBoostClassifier(iterations=1, random_state=0).fit(
+        X[:6], y[:6], eval_set=(X[6:], y[6:])
+    )
+
+    assert calls == [(6, 3)]
+
+
 def test_multiclass_class_major_loss_matches_row_major():
     from chimeraboost.losses import MultiSoftmax
 

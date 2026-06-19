@@ -1922,7 +1922,7 @@ class MulticlassBoosting(_BaseBooster):
             root_leaf = np.zeros(n_samples, dtype=np.int64)
         self._importance = np.zeros(self.prep_.n_input_features_)
 
-        Xv_binned = Yv_class = Fv = yv_idx = wv = None
+        Xv_binned = Fv = yv_idx = wv = None
         if eval_set is not None:
             Xv, yv = eval_set
             eval_n_features = n_features_from_array_like(
@@ -1939,7 +1939,6 @@ class MulticlassBoosting(_BaseBooster):
             if np.any(~np.isin(yv_arr, self.classes_)):
                 raise ValueError("eval_set contains labels not present in training data")
             yv_idx = np.searchsorted(self.classes_, yv_arr)
-            Yv_class = _one_hot_class_major(yv_idx, K)
             wv = _validate_sample_weight(
                 eval_sample_weight, len(yv_idx), name="eval_sample_weight"
             )
@@ -1951,7 +1950,7 @@ class MulticlassBoosting(_BaseBooster):
         F = np.tile(self.init_[:, None], (1, n_samples))  # class-major (K, n)
         grad_buffer = np.empty_like(F)
         hess_buffer = np.empty_like(F)
-        if Yv_class is not None:
+        if yv_idx is not None:
             Fv = np.tile(self.init_[:, None], (1, len(yv_idx)))
         baseline_loss = (
             self.loss_.eval_class_major_labels(yv_idx, Fv, wv)
