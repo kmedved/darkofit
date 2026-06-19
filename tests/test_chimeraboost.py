@@ -5422,6 +5422,13 @@ def test_flat_prediction_matches_tree_loop_bitwise():
     raw = binary.model_.predict_raw(Xc)
     assert np.array_equal(raw, _loop_predict_raw(binary.model_, Xc))
 
+    depthwise = ChimeraBoostRegressor(
+        iterations=60, tree_mode="depthwise", random_state=0
+    ).fit(Xr, yr)
+    assert np.array_equal(
+        depthwise.predict(Xr), _loop_predict_raw(depthwise.model_, Xr)
+    )
+
 
 def test_flat_multiclass_prediction_matches_loop_bitwise():
     from sklearn.datasets import load_wine
@@ -5433,6 +5440,7 @@ def test_flat_multiclass_prediction_matches_loop_bitwise():
         {"tree_mode": "lightgbm"},                     # lightgbm per-class
         {"tree_mode": "lightgbm",
          "multiclass_tree_strategy": "shared_vector"},  # vector leaves
+        {"tree_mode": "depthwise"},                    # depthwise per-class
     ):
         m = ChimeraBoostClassifier(iterations=20, random_state=0, **kw)
         m.fit(X, y)
@@ -5448,11 +5456,11 @@ def test_flat_prediction_fallback_and_refit_invalidation():
     X, y = make_regression(n_samples=2000, n_features=8, noise=5,
                            random_state=1)
 
-    # Experimental depthwise trees are not flattened; the loop fallback runs.
+    # Experimental depthwise trees flatten into a level-wise batch predictor.
     depthwise = GradientBoosting(iterations=10, tree_mode="depthwise",
                                  depth=4, random_state=0)
     depthwise.fit(X, y)
-    assert depthwise._flat_ensemble() is None
+    assert depthwise._flat_ensemble() is not None
     assert np.array_equal(depthwise.predict_raw(X), _loop_predict_raw(depthwise, X))
 
     # Refitting the same booster object must invalidate the flat cache.
@@ -5476,7 +5484,8 @@ def test_flat_kernels_direct_parity_all_families():
     import numba
     from sklearn.datasets import make_regression, load_wine
     from chimeraboost.flat_model import (
-        FlatNonObliviousEnsemble, FlatObliviousEnsemble, flat_predict_preferred
+        FlatLevelwiseEnsemble, FlatNonObliviousEnsemble,
+        FlatObliviousEnsemble, flat_predict_preferred
     )
 
     Xr, yr = make_regression(n_samples=2500, n_features=10, noise=5,
@@ -5494,12 +5503,27 @@ def test_flat_kernels_direct_parity_all_families():
         tree.add_predict(Xb, want)
     assert np.array_equal(got, want)
 
+    depthwise = ChimeraBoostRegressor(
+        iterations=40, tree_mode="depthwise", random_state=0
+    ).fit(Xr, yr)
+    flat = depthwise.model_._flat_ensemble()
+    assert isinstance(flat, FlatLevelwiseEnsemble)
+    assert flat_predict_preferred(flat) == (numba.get_num_threads() > 1)
+    Xb = depthwise.model_.prep_.transform(np.asarray(Xr, dtype=np.float64))
+    got = np.zeros(Xb.shape[0])
+    flat.add_predict(Xb, got)
+    want = np.zeros(Xb.shape[0])
+    for tree in depthwise.model_.trees_:
+        tree.add_predict(Xb, want)
+    assert np.array_equal(got, want)
+
     Xw, yw = load_wine(return_X_y=True)
     for kw, expect_pref in (
         ({}, numba.get_num_threads() > 1),               # oblivious class
         ({"tree_mode": "lightgbm"}, False),              # nonobl class
         ({"tree_mode": "lightgbm",
           "multiclass_tree_strategy": "shared_vector"}, False),
+        ({"tree_mode": "depthwise"}, numba.get_num_threads() > 1),
     ):
         m = ChimeraBoostClassifier(iterations=15, random_state=0, **kw)
         m.fit(Xw, yw)

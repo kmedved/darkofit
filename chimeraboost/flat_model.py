@@ -10,14 +10,19 @@ Per-row accumulation runs in the same tree order as the original loop and
 starts from the existing output value, so predictions are bitwise identical
 to per-tree ``add_predict`` calls.
 
-Unsupported tree types (the experimental level-wise trees) return None from
-the builders; callers fall back to the per-tree loop.
+Unsupported tree types return None from the builders; callers fall back to the
+per-tree loop.
 """
 
 import numpy as np
 from numba import get_num_threads, njit, prange
 
-from .tree import MultiNonObliviousTree, NonObliviousTree, ObliviousTree
+from .tree import (
+    LevelwiseTree,
+    MultiNonObliviousTree,
+    NonObliviousTree,
+    ObliviousTree,
+)
 
 _PARALLEL_MIN_ROWS = 8192
 
@@ -177,6 +182,93 @@ def _flat_multi_add_parallel(X_binned, node_offsets, features, thresholds,
                     out[k, i] += values[l, k]
 
 
+@njit(cache=True)
+def _flat_levelwise_add(X_binned, node_offsets, depths, features, thresholds,
+                        value_offsets, values, out):
+    n = X_binned.shape[0]
+    n_trees = depths.shape[0]
+    for start in range(0, n, _ROW_BLOCK):
+        end = min(n, start + _ROW_BLOCK)
+        for t in range(n_trees):
+            depth = depths[t]
+            if depth == 0:
+                continue
+            base = node_offsets[t]
+            voff = value_offsets[t]
+            for i in range(start, end):
+                idx = 0
+                level_base = 0
+                for d in range(depth):
+                    pos = base + level_base + idx
+                    f = features[pos]
+                    bit = 0
+                    if f >= 0:
+                        bit = 1 if X_binned[i, f] > thresholds[pos] else 0
+                    idx = idx * 2 + bit
+                    level_base += 1 << d
+                out[i] += values[voff + idx]
+
+
+@njit(cache=True, parallel=True)
+def _flat_levelwise_add_parallel(X_binned, node_offsets, depths, features,
+                                 thresholds, value_offsets, values, out):
+    n = X_binned.shape[0]
+    n_trees = depths.shape[0]
+    n_blocks = (n + _ROW_BLOCK - 1) // _ROW_BLOCK
+    for blk in prange(n_blocks):
+        start = blk * _ROW_BLOCK
+        end = min(n, start + _ROW_BLOCK)
+        for t in range(n_trees):
+            depth = depths[t]
+            if depth == 0:
+                continue
+            base = node_offsets[t]
+            voff = value_offsets[t]
+            for i in range(start, end):
+                idx = 0
+                level_base = 0
+                for d in range(depth):
+                    pos = base + level_base + idx
+                    f = features[pos]
+                    bit = 0
+                    if f >= 0:
+                        bit = 1 if X_binned[i, f] > thresholds[pos] else 0
+                    idx = idx * 2 + bit
+                    level_base += 1 << d
+                out[i] += values[voff + idx]
+
+
+@njit(cache=True, parallel=True)
+def _flat_levelwise_class_add_parallel(X_binned, node_offsets, depths,
+                                       features, thresholds, value_offsets,
+                                       values, class_ids, out):
+    n = X_binned.shape[0]
+    n_trees = depths.shape[0]
+    n_blocks = (n + _ROW_BLOCK - 1) // _ROW_BLOCK
+    for blk in prange(n_blocks):
+        start = blk * _ROW_BLOCK
+        end = min(n, start + _ROW_BLOCK)
+        for t in range(n_trees):
+            depth = depths[t]
+            if depth == 0:
+                continue
+            base = node_offsets[t]
+            voff = value_offsets[t]
+            k = class_ids[t]
+            for i in range(start, end):
+                idx = 0
+                level_base = 0
+                for d in range(depth):
+                    pos = base + level_base + idx
+                    f = features[pos]
+                    bit = 0
+                    if f >= 0:
+                        bit = 1 if X_binned[i, f] > thresholds[pos] else 0
+                    idx = idx * 2 + bit
+                    level_base += 1 << d
+                out[k, i] += values[voff + idx]
+
+
 class FlatObliviousEnsemble:
     """Padded (n_trees, max_depth) split matrices plus concatenated values."""
 
@@ -291,17 +383,83 @@ class FlatNonObliviousEnsemble:
             )
 
 
+class FlatLevelwiseEnsemble:
+    """Concatenated complete-level split tables for level-wise trees."""
+
+    __slots__ = ("node_offsets", "depths", "features", "thresholds",
+                 "value_offsets", "values", "class_ids")
+
+    def __init__(self, trees, class_ids=None):
+        n_trees = len(trees)
+        self.node_offsets = np.zeros(n_trees + 1, dtype=np.int64)
+        self.depths = np.array([t.depth for t in trees], dtype=np.int64)
+        self.value_offsets = np.zeros(n_trees, dtype=np.int64)
+        feat_chunks, thr_chunks, value_chunks = [], [], []
+        n_offset = 0
+        v_offset = 0
+        for t, tree in enumerate(trees):
+            self.node_offsets[t] = n_offset
+            self.value_offsets[t] = v_offset
+            depth = tree.depth
+            if depth:
+                nodes = (1 << depth) - 1
+                feat = np.empty(nodes, dtype=np.int64)
+                thr = np.empty(nodes, dtype=np.int64)
+                pos = 0
+                for d in range(depth):
+                    width = 1 << d
+                    feat[pos:pos + width] = tree.node_features[d, :width]
+                    thr[pos:pos + width] = tree.node_thresholds[d, :width]
+                    pos += width
+                feat_chunks.append(feat)
+                thr_chunks.append(thr)
+                n_offset += nodes
+            value_chunks.append(tree.values)
+            v_offset += tree.values.shape[0]
+        self.node_offsets[n_trees] = n_offset
+        self.features = (np.concatenate(feat_chunks) if feat_chunks
+                         else np.empty(0, dtype=np.int64))
+        self.thresholds = (np.concatenate(thr_chunks) if thr_chunks
+                           else np.empty(0, dtype=np.int64))
+        self.values = (np.concatenate(value_chunks) if value_chunks
+                       else np.empty(0, dtype=np.float64))
+        self.class_ids = class_ids
+
+    def add_predict(self, X_binned, out):
+        if get_num_threads() > 1:
+            _flat_levelwise_add_parallel(
+                X_binned, self.node_offsets, self.depths, self.features,
+                self.thresholds, self.value_offsets, self.values, out
+            )
+        else:
+            _flat_levelwise_add(
+                X_binned, self.node_offsets, self.depths, self.features,
+                self.thresholds, self.value_offsets, self.values, out
+            )
+
+    def add_predict_class_major(self, X_binned, out):
+        _flat_levelwise_class_add_parallel(
+            X_binned, self.node_offsets, self.depths, self.features,
+            self.thresholds, self.value_offsets, self.values, self.class_ids,
+            out
+        )
+
+
 def flat_predict_preferred(flat):
     """Empirical routing for batch prediction.
 
     The fused kernel is a clear win for oblivious ensembles with threads
     (branch-free fixed-depth walks; the per-tree oblivious kernel is serial).
-    For explicit-node trees the per-tree parallel loop measured at parity or
-    better at every thread count tried, and single-threaded the per-tree
-    loop won for every family, so those keep the loop.
+    For explicit-node leaf-wise trees the per-tree parallel loop measured at
+    parity or better at every thread count tried, and single-threaded the
+    per-tree loop won for every family, so those keep the loop. Level-wise trees
+    have only serial per-tree kernels, so the flattened row-parallel kernel is
+    preferred when multiple threads are available.
     """
     return (
         isinstance(flat, FlatObliviousEnsemble) and get_num_threads() > 1
+    ) or (
+        isinstance(flat, FlatLevelwiseEnsemble) and get_num_threads() > 1
     )
 
 
@@ -313,6 +471,8 @@ def build_flat_ensemble(trees):
         return FlatObliviousEnsemble(trees)
     if all(type(t) is NonObliviousTree for t in trees):
         return FlatNonObliviousEnsemble(trees)
+    if all(type(t) is LevelwiseTree for t in trees):
+        return FlatLevelwiseEnsemble(trees)
     return None
 
 
@@ -339,4 +499,6 @@ def build_flat_multiclass_ensemble(rounds, n_classes):
         return FlatObliviousEnsemble(flat_trees, class_ids=class_ids)
     if all(type(t) is NonObliviousTree for t in flat_trees):
         return FlatNonObliviousEnsemble(flat_trees, class_ids=class_ids)
+    if all(type(t) is LevelwiseTree for t in flat_trees):
+        return FlatLevelwiseEnsemble(flat_trees, class_ids=class_ids)
     return None

@@ -32,11 +32,27 @@ focused medium-size probe on 2026-06-19 used:
 
 Compared with the same current-main CatBoost-mode run, levelwise reduced the
 round count and fit time on `friedman_numeric` and `numeric_multiclass`, but it
-was not a safe default candidate: prediction was 1.3-6.5x slower than CatBoost
-mode across the probe, `numeric_binary` fit time was neutral-to-slower, and
-`wide_numeric_reg` RMSE regressed from 40.08 to 88.29 while fitting 1.23x
-slower. Treat depth-wise trees as an experimental comparison lane until their
-prediction path and wide-regression quality are addressed.
+was not a safe default candidate: `numeric_binary` fit time was
+neutral-to-slower, and `wide_numeric_reg` RMSE regressed from 40.08 to 88.29
+while fitting 1.23x slower.
+
+A follow-up flat-prediction pass added level-wise ensemble flattening and reran
+the same medium probe. Prediction improved 3.38-4.01x over the previous
+levelwise path (`friedman_numeric` 0.0054s -> 0.0013s, `numeric_binary` 0.0276s
+-> 0.0082s, `numeric_multiclass` 0.0420s -> 0.0105s, `wide_numeric_reg`
+0.0135s -> 0.0038s). Treat depth-wise trees as an experimental comparison lane
+until the wide-regression quality/defaults issue is addressed.
+
+A first quality sweep points to a regression-specific depth/default issue, not
+a global depth-wise default. On the same medium benchmark matrix, `depth=2`
+with the original 800-round budget improved `wide_numeric_reg` RMSE from 88.29
+to 52.71 and fit speed from x1.52 to x4.21 versus LightGBM, but it damaged
+classification quality (`numeric_binary` F1 0.9166 -> 0.8466,
+`numeric_multiclass` F1 0.8786 -> 0.8175). With a 1500-round budget, compact
+two-seed `wide_numeric_reg` probes found `depth=2` near 45.44 RMSE, much closer
+to CatBoost mode's 40.08 than the depth-6 path. Do not promote a global
+depth-wise default from this; the next tuning pass should validate a
+regression-only shallow-depth rule across more regression datasets and sizes.
 
 ## Experimental LightGBM-Mode Hooks
 
