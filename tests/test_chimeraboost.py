@@ -11,6 +11,56 @@ from sklearn.metrics import roc_auc_score, mean_squared_error
 from chimeraboost import ChimeraBoostRegressor, ChimeraBoostClassifier
 
 
+def test_descend_leaves_matches_numpy_reference():
+    from chimeraboost.tree import _descend_leaves
+
+    rng = np.random.default_rng(0)
+    for _ in range(300):
+        n = int(rng.integers(1, 6000))
+        d = int(rng.integers(0, 6))
+        leaf = rng.integers(0, 1 << d, size=n).astype(np.int64)
+        Xf = rng.integers(0, 260, size=n).astype(np.uint16)
+        threshold = int(rng.integers(-1, 260))
+
+        expected = (leaf << 1) + (Xf > threshold).astype(np.int64)
+        actual = leaf.copy()
+        _descend_leaves(actual, Xf, threshold)
+
+        assert np.array_equal(actual, expected)
+
+
+def test_binning_transform_matches_searchsorted_reference():
+    from chimeraboost.binning import Binner, _bin_dtype_for_n_bins
+
+    def reference(binner, X):
+        X = np.asarray(X, dtype=np.float64)
+        out = np.empty(X.shape, dtype=_bin_dtype_for_n_bins(binner.n_bins_))
+        for f in range(X.shape[1]):
+            col = X[:, f]
+            borders = binner.borders_[f]
+            binned = np.searchsorted(borders, col, side="right").astype(out.dtype)
+            binned[~np.isfinite(col)] = len(borders) + 1
+            out[:, f] = binned
+        return out
+
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(4000, 10))
+    X[:, 2] = rng.integers(0, 4, size=4000)
+    X[:, 5] = 1.0
+    X[rng.integers(0, 4000, 300), rng.integers(0, 10, 300)] = np.nan
+    X[rng.integers(0, 4000, 100), rng.integers(0, 10, 100)] = np.inf
+    X[rng.integers(0, 4000, 100), rng.integers(0, 10, 100)] = -np.inf
+
+    binner = Binner(max_bins=64).fit(X)
+    assert np.array_equal(binner.transform(X), reference(binner, X))
+    assert np.array_equal(binner.transform(X[:1]), reference(binner, X[:1]))
+    assert binner.transform(X[:0]).shape == (0, 10)
+
+    blocks = [X[:, :4], X[:, 4:]]
+    block_binner = Binner(max_bins=64).fit_blocks(blocks)
+    assert np.array_equal(block_binner.transform_blocks(blocks), reference(block_binner, X))
+
+
 def test_loss_grad_hess_into_matches_allocating_paths():
     from chimeraboost.losses import Logloss, MAE, MultiSoftmax, Quantile, RMSE
 

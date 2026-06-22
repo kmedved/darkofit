@@ -106,8 +106,8 @@ def _weighted_feature_borders(col, max_bins, sample_weight):
 
 
 @njit(cache=True, parallel=True)
-def _bin_columns_into(X, borders_flat, border_offsets, out, col_offset):
-    """Bin one float block into integer bin ids, parallel over features.
+def _bin_rows_into(X, borders_flat, border_offsets, out, col_offset):
+    """Bin one float block into integer bin ids, parallel over rows.
 
     border_offsets holds absolute [start, end) positions into borders_flat
     for each of this block's columns. Matches
@@ -117,11 +117,11 @@ def _bin_columns_into(X, borders_flat, border_offsets, out, col_offset):
     """
     n = X.shape[0]
     n_cols = X.shape[1]
-    for f in prange(n_cols):
-        lo = border_offsets[f]
-        hi = border_offsets[f + 1]
-        nan_bin = (hi - lo) + 1
-        for i in range(n):
+    for i in prange(n):
+        for f in range(n_cols):
+            lo = border_offsets[f]
+            hi = border_offsets[f + 1]
+            nan_bin = (hi - lo) + 1
             v = X[i, f]
             if np.isfinite(v):
                 left = lo
@@ -235,7 +235,7 @@ class Binner:
             width = block.shape[1]
             if width:
                 block = np.ascontiguousarray(block, dtype=np.float64)
-                _bin_columns_into(
+                _bin_rows_into(
                     block,
                     self._borders_flat_,
                     self._border_offsets_[col_offset:col_offset + width + 1],

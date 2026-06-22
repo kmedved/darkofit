@@ -2224,12 +2224,18 @@ def _assign_leaves(X_binned, splits_feat, splits_thr):
     return leaf
 
 
-@njit(cache=True)
+@njit(cache=True, parallel=True)
+def _descend_leaves(leaf, Xf, split_thr):
+    """Append one oblivious split bit to existing leaf ids in place."""
+    for i in prange(leaf.shape[0]):
+        leaf[i] = (leaf[i] << 1) + (1 if Xf[i] > split_thr else 0)
+
+
+@njit(cache=True, parallel=True)
 def _update_leaves_with_split(X_binned, leaf, split_feat, split_thr):
     """Append one split bit to existing leaf ids in place."""
-    for i in range(leaf.shape[0]):
-        bit = 1 if X_binned[i, split_feat] > split_thr else 0
-        leaf[i] = leaf[i] * 2 + bit
+    for i in prange(leaf.shape[0]):
+        leaf[i] = (leaf[i] << 1) + (1 if X_binned[i, split_feat] > split_thr else 0)
 
 
 @njit(cache=True)
