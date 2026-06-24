@@ -147,6 +147,38 @@ For ChimeraBoost timings, use a warm numba cache and `--repeat >= 2`. Cold-cache
 or single-repeat timings can include one-time numba compilation and should not be
 used for speed conclusions.
 
+## Default-Regret Benchmarking
+
+Use the revision harness in policy-suite mode when the question is whether a
+public default policy improved, rather than whether one checkout beat another:
+
+```bash
+python benchmarks/bench_compare_revisions.py \
+  --policy-suite default-regret \
+  --candidate . \
+  --datasets all \
+  --sizes small medium large \
+  --seeds 3 \
+  --weight-modes none uniform stress \
+  --repeat 2 \
+  --threads 8 \
+  --csv benchmarks/default_regret_raw.csv
+```
+
+Then summarize the raw rows by default regret:
+
+```bash
+python benchmarks/default_regret_report.py \
+  benchmarks/default_regret_raw.csv \
+  --default-policy candidate_default \
+  --output-csv benchmarks/default_regret_cases.csv
+```
+
+The report compares `candidate_default` against the best policy available for
+each matched dataset/size/seed/weight case, then reports median, p90, and worst
+quality regret plus Pareto-dominated cases. Treat this as the default-change
+decision layer; use the raw CSV for drill-down when a worst case needs profiling.
+
 ## Current Performance Interpretation
 
 The recent LightGBM-mode optimization probes did not find a small default kernel

@@ -42,6 +42,7 @@ try:
         default_revision_specs,
         estimator_kwargs,
         make_sample_weight,
+        policy_suite_specs,
         split_case,
     )
     from weighted_metrics import metric_bundle
@@ -55,6 +56,7 @@ except ImportError:  # pragma: no cover - supports `python -m benchmarks...`
         default_revision_specs,
         estimator_kwargs,
         make_sample_weight,
+        policy_suite_specs,
         split_case,
     )
     from benchmarks.weighted_metrics import metric_bundle
@@ -319,6 +321,12 @@ def _effective_sampling(task, config):
 
 
 def _base_row(variant, spec, size, seed, weight_mode, split, config):
+    if variant.use_defaults:
+        n_train = split["n_train"] + split["n_val"]
+        n_val = 0
+    else:
+        n_train = split["n_train"]
+        n_val = split["n_val"]
     return {
         "variant": variant.label,
         "revision_path": str(Path(variant.path).resolve()),
@@ -333,8 +341,8 @@ def _base_row(variant, spec, size, seed, weight_mode, split, config):
         "size": size,
         "seed": seed,
         "weight_mode": weight_mode,
-        "n_train": split["n_train"],
-        "n_val": split["n_val"],
+        "n_train": n_train,
+        "n_val": n_val,
         "n_test": split["n_test"],
         "n_features": split["n_features"],
     }
@@ -349,6 +357,16 @@ def parse_args(argv):
     parser.add_argument("--upstream", type=Path, default=None)
     parser.add_argument("--fork", type=Path, default=None)
     parser.add_argument("--candidate", type=Path, default=Path("."))
+    parser.add_argument(
+        "--policy-suite",
+        choices=["revision", "default-regret"],
+        default="revision",
+        help=(
+            "'revision' preserves the historical upstream/fork/candidate "
+            "comparison. 'default-regret' runs named policies for one candidate "
+            "checkout so benchmarks can be summarized by default regret."
+        ),
+    )
     parser.add_argument("--sizes", nargs="+", choices=SIZE_SAMPLES, default=["tiny"])
     parser.add_argument(
         "--datasets",
@@ -402,11 +420,16 @@ def parse_args(argv):
 
 def main(argv=None):
     args = parse_args(argv or sys.argv[1:])
-    variants = default_revision_specs(
-        upstream=str(args.upstream) if args.upstream else None,
-        fork=str(args.fork) if args.fork else None,
-        candidate=str(args.candidate) if args.candidate else None,
-    )
+    if args.policy_suite == "default-regret":
+        if not args.candidate:
+            raise SystemExit("--policy-suite default-regret requires --candidate")
+        variants = policy_suite_specs(str(args.candidate), suite=args.policy_suite)
+    else:
+        variants = default_revision_specs(
+            upstream=str(args.upstream) if args.upstream else None,
+            fork=str(args.fork) if args.fork else None,
+            candidate=str(args.candidate) if args.candidate else None,
+        )
     if args.models:
         wanted = set(args.models)
         variants = [v for v in variants if v.label in wanted]

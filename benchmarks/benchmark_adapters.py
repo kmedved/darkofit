@@ -333,6 +333,13 @@ def estimator_kwargs(estimator_cls, config: FitConfig, variant: RevisionSpec, se
     if variant.use_defaults:
         set_if("thread_count", config.threads)
         set_if("random_state", seed)
+        if variant.tree_mode is not None:
+            if "tree_mode" not in accepted:
+                raise TypeError(
+                    f"{estimator_cls.__name__} does not support tree_mode="
+                    f"{variant.tree_mode!r}"
+                )
+            kwargs["tree_mode"] = variant.tree_mode
         return kwargs
 
     if "n_estimators" in accepted:
@@ -384,3 +391,28 @@ def default_revision_specs(upstream=None, fork=None, candidate=None):
         specs.append(RevisionSpec("candidate_catboost", candidate, tree_mode="catboost"))
         specs.append(RevisionSpec("candidate_lightgbm_leafwise", candidate, tree_mode="lightgbm"))
     return specs
+
+
+def policy_suite_specs(candidate: str, suite: str = "default-regret"):
+    """Return named candidate policies for default-quality benchmark decisions.
+
+    These are not revision comparisons; they are different public or near-public
+    policies for the same checkout, intended to feed a default-regret report.
+    ``use_defaults`` variants preserve estimator-owned defaults except for the
+    explicitly named tree mode, while explicit variants use the shared
+    benchmark ``FitConfig`` so their capacity and early-stopping budget are
+    controlled.
+    """
+    if suite != "default-regret":
+        raise ValueError(f"unknown policy suite {suite!r}")
+    return [
+        RevisionSpec("candidate_default", candidate, use_defaults=True),
+        RevisionSpec("candidate_catboost_explicit", candidate, tree_mode="catboost"),
+        RevisionSpec("candidate_lightgbm_explicit", candidate, tree_mode="lightgbm"),
+        RevisionSpec(
+            "candidate_depthwise_default",
+            candidate,
+            tree_mode="depthwise",
+            use_defaults=True,
+        ),
+    ]

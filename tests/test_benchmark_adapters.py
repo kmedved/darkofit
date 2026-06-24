@@ -16,9 +16,10 @@ from benchmark_adapters import (  # noqa: E402
     default_revision_specs,
     estimator_kwargs,
     make_sample_weight,
+    policy_suite_specs,
     split_case,
 )
-from bench_compare_revisions import _effective_sampling  # noqa: E402
+from bench_compare_revisions import _base_row, _effective_sampling  # noqa: E402
 from weighted_metrics import metric_bundle  # noqa: E402
 
 
@@ -189,6 +190,26 @@ def test_estimator_kwargs_default_variant_keeps_defaults():
     assert kwargs == {"thread_count": 3, "random_state": 12}
 
 
+def test_estimator_kwargs_default_tree_mode_variant_keeps_native_defaults():
+    cfg = FitConfig(iterations=999, patience=99, threads=3)
+    variant = RevisionSpec(
+        "candidate_depthwise_default",
+        "/repo",
+        tree_mode="depthwise",
+        use_defaults=True,
+    )
+
+    kwargs = estimator_kwargs(IterationsEstimator, cfg, variant, seed=12)
+
+    assert kwargs == {
+        "thread_count": 3,
+        "random_state": 12,
+        "tree_mode": "depthwise",
+    }
+    assert "iterations" not in kwargs
+    assert "depth" not in kwargs
+
+
 def test_default_revision_specs_expand_expected_labels():
     specs = default_revision_specs("/up", "/fork", "/candidate")
 
@@ -202,6 +223,52 @@ def test_default_revision_specs_expand_expected_labels():
     ]
     assert specs[3].tree_mode == "lightgbm"
     assert specs[0].use_defaults is True
+
+
+def test_policy_suite_specs_expands_default_regret_policies():
+    specs = policy_suite_specs("/candidate")
+
+    assert [s.label for s in specs] == [
+        "candidate_default",
+        "candidate_catboost_explicit",
+        "candidate_lightgbm_explicit",
+        "candidate_depthwise_default",
+    ]
+    assert specs[0].use_defaults is True
+    assert specs[1].tree_mode == "catboost"
+    assert specs[2].tree_mode == "lightgbm"
+    assert specs[3].tree_mode == "depthwise"
+    assert specs[3].use_defaults is True
+
+
+def test_base_row_reports_default_policy_training_rows_without_validation():
+    spec = type("Spec", (), {"name": "demo", "task": "regression"})()
+    split = {"n_train": 60, "n_val": 20, "n_test": 20, "n_features": 4}
+    config = FitConfig(max_bins=128)
+
+    default_row = _base_row(
+        RevisionSpec("candidate_default", "/repo", use_defaults=True),
+        spec,
+        "tiny",
+        seed=0,
+        weight_mode="none",
+        split=split,
+        config=config,
+    )
+    explicit_row = _base_row(
+        RevisionSpec("candidate_catboost_explicit", "/repo", tree_mode="catboost"),
+        spec,
+        "tiny",
+        seed=0,
+        weight_mode="none",
+        split=split,
+        config=config,
+    )
+
+    assert default_row["n_train"] == 80
+    assert default_row["n_val"] == 0
+    assert explicit_row["n_train"] == 60
+    assert explicit_row["n_val"] == 20
 
 
 def test_split_case_preserves_weight_modes():
