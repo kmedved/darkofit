@@ -353,14 +353,17 @@ def estimator_kwargs(estimator_cls, config: FitConfig, variant: RevisionSpec, se
     set_if("early_stopping_rounds", config.patience)
     set_if("depth", config.depth)
     set_if("max_bins", config.max_bins)
-    if variant.tree_mode == "lightgbm":
+    if variant.tree_mode in {"lightgbm", "hybrid", "auto"}:
         set_if("num_leaves", config.num_leaves)
     set_if("learning_rate", config.learning_rate)
     set_if("thread_count", config.threads)
     set_if("random_state", seed)
-    ordered_boosting = (
-        False if variant.tree_mode == "lightgbm" else config.ordered_boosting
-    )
+    if variant.tree_mode == "auto":
+        ordered_boosting = "auto"
+    elif variant.tree_mode in {"lightgbm", "hybrid"}:
+        ordered_boosting = False
+    else:
+        ordered_boosting = config.ordered_boosting
     set_if("ordered_boosting", ordered_boosting)
     set_if("verbose_timing", config.verbose_timing)
     set_if("min_child_samples", config.min_child_samples)
@@ -390,6 +393,8 @@ def default_revision_specs(upstream=None, fork=None, candidate=None):
     if candidate:
         specs.append(RevisionSpec("candidate_catboost", candidate, tree_mode="catboost"))
         specs.append(RevisionSpec("candidate_lightgbm_leafwise", candidate, tree_mode="lightgbm"))
+        specs.append(RevisionSpec("candidate_hybrid_leafwise", candidate, tree_mode="hybrid"))
+        specs.append(RevisionSpec("candidate_tree_auto", candidate, tree_mode="auto"))
     return specs
 
 
@@ -409,6 +414,8 @@ def policy_suite_specs(candidate: str, suite: str = "default-regret"):
         RevisionSpec("candidate_default", candidate, use_defaults=True),
         RevisionSpec("candidate_catboost_explicit", candidate, tree_mode="catboost"),
         RevisionSpec("candidate_lightgbm_explicit", candidate, tree_mode="lightgbm"),
+        RevisionSpec("candidate_hybrid_explicit", candidate, tree_mode="hybrid"),
+        RevisionSpec("candidate_tree_auto_explicit", candidate, tree_mode="auto"),
         RevisionSpec(
             "candidate_depthwise_default",
             candidate,

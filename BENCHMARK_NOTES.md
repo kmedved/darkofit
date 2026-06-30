@@ -120,6 +120,22 @@ not default speed wins:
 Treat these as scaffolding for future architecture work, not as current default
 performance claims.
 
+## Deferred Speed Gates
+
+Paged/fused leaf-wise building is still the right xlarge-speed direction, but it
+is not promoted by this pass. The current code already has histogram reuse,
+smaller-child refill/subtraction, an opt-in segmented row layout, row-parallel
+histogram buffers, narrow fused changed-leaf scoring, and fused multiclass root
+histograms. The next win is therefore a larger builder redesign: page row
+segments and histogram state together, fuse refill plus scoring across changed
+leaves, and preserve exact row-order/leaf-update semantics.
+
+Promotion requires the leaf-wise phase profiler and the end-to-end benchmark
+suite to show lower tree-build time on large/xlarge cases without quality,
+prediction, save/load, or flat-prediction regressions. A small extra hook should
+stay experimental unless it beats the current narrow fused/row-layout lanes on
+the same warm-cache profile.
+
 ## Fair LightGBM-Mode Benchmarking
 
 For LightGBM-mode comparisons, match leaf capacity explicitly:
@@ -140,12 +156,13 @@ For LightGBM-mode comparisons, match leaf capacity explicitly:
 ```
 
 The benchmark harness also has `--match-lightgbm-leaves`, which defaults an
-unspecified ChimeraBoost leaf count to the LightGBM leaf count in LightGBM mode.
+unspecified ChimeraBoost leaf count to the LightGBM leaf count for
+`tree_mode="lightgbm"`, `tree_mode="hybrid"`, and leaf-wise auto candidates.
 Passing both values explicitly is still the least ambiguous recipe for reports.
 
-For ChimeraBoost timings, use a warm numba cache and `--repeat >= 2`. Cold-cache
-or single-repeat timings can include one-time numba compilation and should not be
-used for speed conclusions.
+For ChimeraBoost timings, use a warm Numba cache and `--repeat >= 2`.
+Cold-cache or single-repeat timings can include one-time Numba compilation and
+should not be used for speed conclusions.
 
 ## Default-Regret Benchmarking
 
@@ -178,6 +195,40 @@ The report compares `candidate_default` against the best policy available for
 each matched dataset/size/seed/weight case, then reports median, p90, and worst
 quality regret plus Pareto-dominated cases. Treat this as the default-change
 decision layer; use the raw CSV for drill-down when a worst case needs profiling.
+
+## Promotion Contract
+
+Use the benchmark suite as the gate for any default-facing model, tree-mode, or
+speed claim. A change is eligible for promotion only when all of these hold:
+
+- It is measured on warm Numba caches with `--repeat >= 2` for ChimeraBoost and
+  at least three seeds for quality-sensitive comparisons.
+- It reports package-default, equal-capacity or equal-compute, and explicit-lane
+  comparisons when the change affects public defaults.
+- It includes weighted and unweighted cases, and the primary decision metric is
+  the task-appropriate weighted held-out loss or score.
+- It reports fit time, prediction time, best round, preprocessing time, and
+  quality regret; speed-only wins do not promote when quality regret worsens.
+- It preserves raw per-case CSV rows so regressions can be paired by dataset,
+  size, seed, task, and weight mode.
+- It is demoted or kept experimental when the default-regret report shows a new
+  worst-case regression, an increased p90 quality regret, or materially more
+  Pareto-dominated cases without an explicit product reason.
+
+## Deferred Accuracy Gates
+
+Learned missing-value direction remains a promising missing-heavy-data idea, but
+it is not promoted by this pass. Missing numeric values are binned as the top
+bin, so current tree prediction routes them to the `> threshold` side. A real
+learned-direction implementation must carry, at minimum, a per-split direction
+bit and the feature's missing-bin id through tree scoring, tree objects,
+flattened prediction kernels, and model serialization. A partial scorer-only
+change would be incorrect at prediction time because finite high bins and the
+missing top bin cannot be distinguished from the threshold alone.
+
+Promotion requires a missing-heavy benchmark slice that proves lower held-out
+loss without regressing non-missing cases, plus save/load and flat-prediction
+parity for every tree representation the feature supports.
 
 ## Current Performance Interpretation
 

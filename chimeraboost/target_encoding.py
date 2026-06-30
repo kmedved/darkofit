@@ -104,11 +104,9 @@ def _kfold_ts(codes, y, weight, folds, n_cat, prior, a):
         else:
             np.add.at(fold_sums, fold_codes, weight[fold] * y[fold])
             np.add.at(fold_counts, fold_codes, weight[fold])
-        train_sums = sums - fold_sums
-        train_counts = counts - fold_counts
         out[fold] = (
-            train_sums[fold_codes] + prior * a
-        ) / (train_counts[fold_codes] + a)
+            sums[fold_codes] - fold_sums[fold_codes] + prior * a
+        ) / (counts[fold_codes] - fold_counts[fold_codes] + a)
     return out, sums, counts
 
 

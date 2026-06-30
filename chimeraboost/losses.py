@@ -218,6 +218,8 @@ class Quantile:
 
     def __init__(self, alpha=0.5):
         self.alpha = float(alpha)
+        if not np.isfinite(self.alpha) or not (0.0 < self.alpha < 1.0):
+            raise ValueError("alpha must be finite and in (0, 1)")
 
     def leaf_value(self, residuals, weights=None):
         return _weighted_quantile(residuals, weights, self.alpha)

@@ -9,7 +9,11 @@ import time
 import warnings
 import numpy as np
 
-from ._validation import n_features_from_array_like, normalize_cat_features
+from ._validation import (
+    n_features_from_array_like,
+    normalize_cat_features,
+    validate_target_vector,
+)
 from .auto_params import (
     AUTO_LR_RULE,
     AUTO_LR_MIN,
@@ -34,6 +38,7 @@ from .tree import (
     _build_multiclass_histograms_counts_into,
     add_leaf_values_inplace,
     add_multiclass_leaf_values_inplace,
+    build_hybrid_tree,
     build_leafwise_multiclass_tree,
     build_leafwise_tree,
     build_levelwise_tree,
@@ -74,11 +79,16 @@ def _fit_thread_count(thread_count, tree_mode_, n_samples):
     Treat the public thread_count as a maximum and cap smaller LightGBM-mode
     fits at two threads. Larger fits can still use the caller's requested count.
     """
-    if tree_mode_ == "lightgbm" and n_samples <= 50_000:
+    if tree_mode_ in {"lightgbm", "hybrid"} and n_samples <= 50_000:
         if thread_count is None or thread_count < 0:
             return _apply_thread_count(2)
         return _apply_thread_count(min(int(thread_count), 2))
     return _apply_thread_count(thread_count)
+
+
+def _reject_eval_sample_weight_without_eval_set(eval_sample_weight, eval_set):
+    if eval_sample_weight is not None and eval_set is None:
+        raise ValueError("eval_sample_weight requires an explicit eval_set")
 
 
 def _one_hot_class_major(y_idx, n_classes):
@@ -120,12 +130,14 @@ def _normalize_tree_mode(tree_mode):
         return "catboost"
     if mode in {"lightgbm", "leafwise", "leaf_wise"}:
         return "lightgbm"
+    if mode in {"hybrid", "hybrid_leafwise", "shared_prefix"}:
+        return "hybrid"
     if mode in {"levelwise", "level_wise", "depthwise", "depth_wise",
                 "non_oblivious"}:
         return "depthwise"
     raise ValueError(
         "tree_mode must be one of 'catboost', 'oblivious', "
-        "'lightgbm', or experimental 'depthwise'"
+        "'lightgbm', experimental 'hybrid', or experimental 'depthwise'"
     )
 
 
@@ -189,7 +201,7 @@ def _validate_sample_weight(sample_weight, n_samples, name="sample_weight"):
 def _resolve_default_depth(depth, tree_mode_):
     if depth is not None:
         return int(depth)
-    if tree_mode_ == "lightgbm":
+    if tree_mode_ in {"lightgbm", "hybrid"}:
         return -1
     return 6
 
@@ -300,9 +312,9 @@ class _BaseBooster:
 
         depth_input = self._depth_input
         if _is_auto_param(depth_input):
-            if self.tree_mode_ == "lightgbm":
+            if self.tree_mode_ in {"lightgbm", "hybrid"}:
                 depth = -1
-                candidates["depth"] = {"rule": "lightgbm_unlimited"}
+                candidates["depth"] = {"rule": f"{self.tree_mode_}_unlimited"}
             else:
                 if n_eff < 512:
                     depth = 4
@@ -336,7 +348,7 @@ class _BaseBooster:
 
         num_leaves_input = self._num_leaves_input
         if _is_auto_param(num_leaves_input):
-            if self.tree_mode_ == "lightgbm":
+            if self.tree_mode_ in {"lightgbm", "hybrid"}:
                 leaves = int(np.clip(round(np.sqrt(max(n_eff, 1.0))), 7, 63))
                 if self.depth is not None and self.depth > 0:
                     leaves = min(leaves, 1 << int(self.depth))
@@ -357,7 +369,12 @@ class _BaseBooster:
 
         l2_input = self._l2_leaf_reg_input
         if _is_auto_param(l2_input):
-            base = 1.0 if self.tree_mode_ == "lightgbm" else 3.0
+            if self.tree_mode_ == "lightgbm":
+                base = 1.0
+            elif self.tree_mode_ == "hybrid":
+                base = 2.0
+            else:
+                base = 3.0
             concentration = (
                 np.sqrt(1.0 / max(n_eff_fraction, 1e-12))
                 if n_eff_fraction < 1.0 else 1.0
@@ -421,7 +438,7 @@ class _BaseBooster:
                 if n_eff_fraction < 1.0:
                     smoothing *= np.sqrt(1.0 / max(n_eff_fraction, 1e-12))
                 if (
-                    self.tree_mode_ == "lightgbm"
+                    self.tree_mode_ in {"lightgbm", "hybrid"}
                     and loss_name == "RMSE"
                     and self._include_cat_codes()
                 ):
@@ -985,6 +1002,7 @@ class _BaseBooster:
         if keep < len(self.trees_):
             self.trees_ = self.trees_[:keep]
             self._flat_cache_ = None
+            self._rebuild_importance_from_trees()
 
     def _catboost_depth(self):
         if self.depth is None or self.depth < 1:
@@ -994,10 +1012,16 @@ class _BaseBooster:
     def _max_tree_leaves(self):
         if self.tree_mode_ in {"catboost", "depthwise"}:
             if self.num_leaves is not None:
-                raise ValueError("num_leaves is only supported with tree_mode='lightgbm'")
+                raise ValueError(
+                    "num_leaves is only supported with tree_mode='lightgbm' "
+                    "or tree_mode='hybrid'"
+                )
             return 1 << self._catboost_depth()
         if self.depth == 0 or (self.depth is not None and self.depth < -1):
-            raise ValueError("depth must be positive, None, or -1 for tree_mode='lightgbm'")
+            raise ValueError(
+                "depth must be positive, None, or -1 for tree_mode='lightgbm' "
+                "or tree_mode='hybrid'"
+            )
         if self.num_leaves is None:
             if self.depth is None or self.depth < 0:
                 return 31
@@ -1020,7 +1044,7 @@ class _BaseBooster:
         if self.ordered_boosting == "auto":
             return self.tree_mode_ in {"catboost", "depthwise"}
         resolved = bool(self.ordered_boosting)
-        if self.tree_mode_ == "lightgbm" and resolved:
+        if self.tree_mode_ in {"lightgbm", "hybrid"} and resolved:
             raise ValueError(
                 "ordered_boosting=True is only supported with tree_mode='catboost'"
             )
@@ -1048,7 +1072,7 @@ class _BaseBooster:
         """
         max_leaves = self._max_tree_leaves()
         max_bins = int(n_bins.max()) if len(n_bins) else 1
-        n_arrays = 3 if self.tree_mode_ == "lightgbm" else 2
+        n_arrays = 3 if self.tree_mode_ in {"lightgbm", "hybrid"} else 2
         n_threads = getattr(self, "n_threads_", 1)
         if n_threads <= self._HIST_INTERLEAVE_MAX_THREADS:
             base = np.zeros((n_features, max_leaves, max_bins, n_arrays))
@@ -1084,7 +1108,7 @@ class _BaseBooster:
         n_chunks = self.n_threads_
         if n_samples < 4 * n_chunks * max_bins:
             return None
-        if self.tree_mode_ == "lightgbm":
+        if self.tree_mode_ in {"lightgbm", "hybrid"}:
             leaf_slots, n_arrays = 1, 3
         else:
             leaf_slots, n_arrays = self._max_tree_leaves(), 2
@@ -1093,6 +1117,19 @@ class _BaseBooster:
             return None
         shape = (n_chunks, n_features, leaf_slots, max_bins)
         return tuple(np.zeros(shape) for _ in range(n_arrays))
+
+    def _coerce_predict_X(self, X):
+        actual = n_features_from_array_like(X)
+        expected = getattr(self, "n_features_in_", None)
+        if expected is None:
+            expected = getattr(self.prep_, "n_input_features_", None)
+        if expected is not None and actual != int(expected):
+            raise ValueError(
+                f"X has {actual} features, but {type(self).__name__} "
+                f"is expecting {int(expected)} features as input"
+            )
+        return (np.asarray(X, dtype=object) if self.prep_.cat_features_
+                else np.asarray(X, dtype=np.float64))
 
     def _alloc_multiclass_hist_buffers(self, n_classes, n_features, n_bins):
         """Allocate reusable class-major LightGBM-mode histogram buffers."""
@@ -1117,7 +1154,7 @@ class _BaseBooster:
         """Build a FeaturePreprocessor configured from this booster's params."""
         cat_smoothing = self.cat_smoothing
         if (
-            self.tree_mode_ == "lightgbm"
+            self.tree_mode_ in {"lightgbm", "hybrid"}
             and getattr(self, "loss_name", None) == "RMSE"
             and cat_smoothing == 1.0
             and self._include_cat_codes()
@@ -1132,17 +1169,19 @@ class _BaseBooster:
                                    include_cat_codes=self._include_cat_codes(),
                                    target_encoding_mode=(
                                        "kfold"
-                                       if self.tree_mode_ == "lightgbm"
+                                       if self.tree_mode_ in {"lightgbm", "hybrid"}
                                        else "ordered"
                                    ),
                                    bin_sample_count=self.bin_sample_count)
 
     def _include_cat_codes(self):
-        return self.tree_mode_ == "lightgbm"
+        return self.tree_mode_ in {"lightgbm", "hybrid"}
 
     def _tree_builder(self):
         if self.tree_mode_ == "lightgbm":
             return build_leafwise_tree
+        if self.tree_mode_ == "hybrid":
+            return build_hybrid_tree
         if self.tree_mode_ == "depthwise":
             return build_levelwise_tree
         return build_oblivious_tree
@@ -1277,15 +1316,15 @@ class _BaseBooster:
         else:
             mass = np.maximum(mass, 0.0)
         total_mass = float(np.sum(mass))
+        if mass[0] > 0.0 and np.all(mass == mass[0]):
+            return self._weighted_goss_uniform_mass_subsample(
+                grad, hess, score, rng
+            )
         top_target = self.top_rate * total_mass
-        order = np.argsort(score)[::-1]
-        cum_mass = np.cumsum(mass[order])
-        top_count = min(
-            n_samples,
-            max(1, int(np.searchsorted(cum_mass, top_target, side="left") + 1)),
-        )
-        top_idx = order[:top_count]
-        remaining_idx = order[top_count:]
+        top_idx = self._weighted_goss_top_indices(score, mass, top_target)
+        remaining_mask = np.ones(n_samples, dtype=bool)
+        remaining_mask[top_idx] = False
+        remaining_idx = np.flatnonzero(remaining_mask)
         if remaining_idx.size == 0:
             return grad, hess, None
 
@@ -1300,8 +1339,6 @@ class _BaseBooster:
                 dtype=np.float64,
             )
         other_mask = rng.random(remaining_idx.shape[0]) < probs
-        if not np.any(other_mask):
-            other_mask[int(np.argmax(probs))] = True
         other_idx = remaining_idx[other_mask]
 
         if top_idx.shape[0] + other_idx.shape[0] == n_samples:
@@ -1310,6 +1347,72 @@ class _BaseBooster:
         scale = np.zeros(n_samples, dtype=np.float64)
         scale[top_idx] = 1.0
         scale[other_idx] = 1.0 / np.maximum(probs[other_mask], 1e-300)
+        row_indices = np.sort(
+            np.concatenate((top_idx.astype(np.int64), other_idx.astype(np.int64)))
+        )
+        if grad.ndim == 1:
+            return grad * scale, hess * scale, row_indices
+        return grad * scale[None, :], hess * scale[None, :], row_indices
+
+    def _weighted_goss_top_indices(self, score, mass, target_mass):
+        """Return highest-score rows whose cumulative sample mass hits target."""
+        n_samples = score.shape[0]
+        if n_samples <= 1:
+            return np.arange(n_samples, dtype=np.int64)
+        target_mass = min(max(float(target_mass), 0.0), float(np.sum(mass)))
+        mean_mass = float(np.mean(mass))
+        if target_mass <= 0.0 or mean_mass <= 0.0:
+            top_count = 1
+        else:
+            top_count = int(np.ceil(target_mass / mean_mass))
+            top_count = min(n_samples, max(1, top_count))
+
+        while top_count < n_samples:
+            candidate = np.argpartition(score, n_samples - top_count)[
+                n_samples - top_count:
+            ]
+            if float(np.sum(mass[candidate])) >= target_mass:
+                break
+            top_count = min(n_samples, max(top_count + 1, top_count * 2))
+        else:
+            candidate = np.arange(n_samples, dtype=np.int64)
+
+        candidate_order = np.argsort(score[candidate])[::-1]
+        ordered = candidate[candidate_order]
+        cum_mass = np.cumsum(mass[ordered])
+        selected_count = min(
+            ordered.shape[0],
+            max(1, int(np.searchsorted(cum_mass, target_mass, side="left") + 1)),
+        )
+        return ordered[:selected_count].astype(np.int64, copy=False)
+
+    def _weighted_goss_uniform_mass_subsample(self, grad, hess, score, rng):
+        n_samples = score.shape[0]
+        top_count = min(
+            n_samples,
+            max(1, int(np.ceil(self.top_rate * n_samples))),
+        )
+        remaining_count = n_samples - top_count
+        if remaining_count <= 0:
+            return grad, hess, None
+
+        top_idx = np.argpartition(score, n_samples - top_count)[-top_count:]
+        remaining_mask = np.ones(n_samples, dtype=bool)
+        remaining_mask[top_idx] = False
+        remaining_idx = np.flatnonzero(remaining_mask)
+        prob = min(1.0, self.other_rate * n_samples / remaining_idx.shape[0])
+        if prob >= 1.0:
+            other_idx = remaining_idx
+        else:
+            other_mask = rng.random(remaining_idx.shape[0]) < prob
+            other_idx = remaining_idx[other_mask]
+
+        if top_idx.shape[0] + other_idx.shape[0] == n_samples:
+            return grad, hess, None
+
+        scale = np.zeros(n_samples, dtype=np.float64)
+        scale[top_idx] = 1.0
+        scale[other_idx] = 1.0 / max(prob, 1e-300)
         row_indices = np.sort(
             np.concatenate((top_idx.astype(np.int64), other_idx.astype(np.int64)))
         )
@@ -1435,7 +1538,7 @@ class _BaseBooster:
             "split_seed": int(getattr(self, "_split_seed_", 0)),
             "tree_iteration": int(tree_iteration),
         }
-        if self.tree_mode_ == "lightgbm":
+        if self.tree_mode_ in {"lightgbm", "hybrid"}:
             kwargs.update(
                 max_leaves=self._max_tree_leaves(),
                 min_child_samples=self.min_child_samples,
@@ -1460,6 +1563,19 @@ class _BaseBooster:
         for f, g in zip(tree.splits_feat, tree.gains):
             orig = self.prep_.feature_map_[f]
             self._importance[orig] += g
+
+    def _iter_tree_objects(self):
+        for item in self.trees_:
+            if isinstance(item, (list, tuple)):
+                yield from item
+            else:
+                yield item
+
+    def _rebuild_importance_from_trees(self):
+        self._importance = np.zeros(self.prep_.n_input_features_)
+        for tree in self._iter_tree_objects():
+            if getattr(tree, "depth", 0) > 0:
+                self._accumulate_importance(tree)
 
     def _flat_ensemble(self):
         """Build (lazily, once per fitted tree list) the flattened ensemble
@@ -1508,7 +1624,10 @@ class GradientBoosting(_BaseBooster):
         self.loss_kwargs = loss_kwargs or {}
 
     def _include_cat_codes(self):
-        return self.tree_mode_ == "lightgbm" and self.loss_name in {"Logloss", "RMSE"}
+        return (
+            self.tree_mode_ in {"lightgbm", "hybrid"}
+            and self.loss_name in {"Logloss", "RMSE"}
+        )
 
     def fit(self, X, y, cat_features=None, eval_set=None, sample_weight=None,
             eval_sample_weight=None):
@@ -1521,8 +1640,11 @@ class GradientBoosting(_BaseBooster):
         cat_features = normalize_cat_features(cat_features, n_features)
         X = (np.asarray(X, dtype=object) if cat_features
              else np.asarray(X, dtype=np.float64))
-        y = np.asarray(y, dtype=np.float64)
         n_samples = X.shape[0]
+        y = validate_target_vector(
+            y, n_samples, dtype=np.float64
+        )
+        _reject_eval_sample_weight_without_eval_set(eval_sample_weight, eval_set)
         self.n_features_in_ = int(X.shape[1])
 
         # Normalize weights to mean=1. np.ones(n) stays np.ones(n), so
@@ -1552,7 +1674,7 @@ class GradientBoosting(_BaseBooster):
             and not self._bayesian_bootstrap_active()
         )
         hessian_always_positive = (
-            self.tree_mode_ == "lightgbm"
+            self.tree_mode_ in {"lightgbm", "hybrid"}
             and self.loss_name == "Logloss"
             and w is None
             and self.sampling_ not in {"goss", "weighted_goss"}
@@ -1600,7 +1722,9 @@ class GradientBoosting(_BaseBooster):
                 )
             Xv = (np.asarray(Xv, dtype=object) if cat_features
                   else np.asarray(Xv, dtype=np.float64))
-            yv = np.asarray(yv, dtype=np.float64)
+            yv = validate_target_vector(
+                yv, Xv.shape[0], name="eval_set[1]", dtype=np.float64
+            )
             wv = _validate_sample_weight(
                 eval_sample_weight, len(yv), name="eval_sample_weight"
             )
@@ -1700,7 +1824,7 @@ class GradientBoosting(_BaseBooster):
                 ordered_leaf_update_inplace(
                     leaf, leaf_G, leaf_H, g, h, self.lr_, self.l2_leaf_reg, F
                 )
-            elif self.tree_mode_ == "lightgbm":
+            elif self.tree_mode_ in {"lightgbm", "hybrid"}:
                 add_leaf_values_inplace(leaf, tree.values, F)
             else:
                 tree.add_predict(X_binned, F)
@@ -1791,8 +1915,7 @@ class GradientBoosting(_BaseBooster):
     def predict_raw(self, X):
         """Return raw additive scores (pre-link): the regression prediction, or
         the log-odds for binary classification."""
-        X = (np.asarray(X, dtype=object) if self.prep_.cat_features_
-             else np.asarray(X, dtype=np.float64))
+        X = self._coerce_predict_X(X)
         X_binned = self.prep_.transform(X)
         F = np.full(X_binned.shape[0], self.init_, dtype=np.float64)
         flat = self._flat_ensemble()
@@ -1805,8 +1928,7 @@ class GradientBoosting(_BaseBooster):
 
     def staged_predict_raw(self, X):
         """Yield the cumulative raw prediction after each tree (1..n_trees)."""
-        X = (np.asarray(X, dtype=object) if self.prep_.cat_features_
-             else np.asarray(X, dtype=np.float64))
+        X = self._coerce_predict_X(X)
         X_binned = self.prep_.transform(X)
         F = np.full(X_binned.shape[0], self.init_, dtype=np.float64)
         for tree in self.trees_:
@@ -1826,13 +1948,14 @@ class MulticlassBoosting(_BaseBooster):
         cat_features = normalize_cat_features(cat_features, n_features)
         X = (np.asarray(X, dtype=object) if cat_features
              else np.asarray(X, dtype=np.float64))
-        y = np.asarray(y)
+        y = validate_target_vector(y, X.shape[0])
         self.classes_ = np.unique(y)
         K = self.classes_.size
         self.n_classes_ = K
         y_idx = np.searchsorted(self.classes_, y)
         Y_class = _one_hot_class_major(y_idx, K)  # class-major (K, n)
         n_samples = X.shape[0]
+        _reject_eval_sample_weight_without_eval_set(eval_sample_weight, eval_set)
         self.n_features_in_ = int(X.shape[1])
 
         self.tree_mode_ = _normalize_tree_mode(self.tree_mode)
@@ -1852,11 +1975,11 @@ class MulticlassBoosting(_BaseBooster):
         )
         self.l2_leaf_reg_ = self.l2_leaf_reg
         if (
-            self.tree_mode_ == "lightgbm"
+            self.tree_mode_ in {"lightgbm", "hybrid"}
             and self.l2_leaf_reg == 3.0
             and not _is_auto_param(self._l2_leaf_reg_input)
         ):
-            self.l2_leaf_reg_ = 1.0
+            self.l2_leaf_reg_ = 1.0 if self.tree_mode_ == "lightgbm" else 2.0
         strategy = self.multiclass_tree_strategy
         if strategy not in {"auto", "per_class", "shared_vector"}:
             raise ValueError(
@@ -1944,7 +2067,9 @@ class MulticlassBoosting(_BaseBooster):
                 )
             Xv = (np.asarray(Xv, dtype=object) if cat_features
                   else np.asarray(Xv, dtype=np.float64))
-            yv_arr = np.asarray(yv)
+            yv_arr = validate_target_vector(
+                yv, Xv.shape[0], name="eval_set[1]"
+            )
             if np.any(~np.isin(yv_arr, self.classes_)):
                 raise ValueError("eval_set contains labels not present in training data")
             yv_idx = np.searchsorted(self.classes_, yv_arr)
@@ -2109,24 +2234,24 @@ class MulticlassBoosting(_BaseBooster):
                 )
             _add_timing(timing, "tree_build", phase)
 
+            phase = _start_timing(timing)
+            grad_for_tree, hess_for_tree = grad, hess
+            if row_indices_round is not None and self.sampling_ == "uniform":
+                row_mask = np.zeros(n_samples, dtype=bool)
+                row_mask[row_indices_round] = True
+                grad_for_tree = np.where(row_mask[None, :], grad, 0.0)
+                hess_for_tree = np.where(row_mask[None, :], hess, 0.0)
+            _add_timing(timing, "grad_hess", phase)
+
             round_trees = []
             for k in range(K):
-                phase = _start_timing(timing)
-                if row_indices_round is None or self.sampling_ in {"goss", "weighted_goss"}:
-                    # GOSS-style gradients are already zeroed and scaled in place.
-                    g, h = grad[k], hess[k]
-                else:
-                    row_mask = np.zeros(n_samples, dtype=bool)
-                    row_mask[row_indices_round] = True
-                    g = np.where(row_mask, grad[k], 0.0)
-                    h = np.where(row_mask, hess[k], 0.0)
-                _add_timing(timing, "grad_hess", phase)
+                g, h = grad_for_tree[k], hess_for_tree[k]
                 phase = _start_timing(timing)
                 builder_kwargs = self._builder_kwargs(
                     fmask, findices, row_indices_round, hist_buffers,
                     split_buffers, X_hist_binned, False,
                     hessian_always_positive=(
-                        self.tree_mode_ == "lightgbm"
+                        self.tree_mode_ in {"lightgbm", "hybrid"}
                         and w is None
                         and row_indices_round is None
                     ),
@@ -2158,7 +2283,7 @@ class MulticlassBoosting(_BaseBooster):
                         leaf, leaf_G, leaf_H, g, h, self.lr_,
                         self.l2_leaf_reg_, F[k]
                     )
-                elif self.tree_mode_ == "lightgbm" and tree.depth > 0:
+                elif self.tree_mode_ in {"lightgbm", "hybrid"} and tree.depth > 0:
                     add_leaf_values_inplace(leaf, tree.values, F[k])
                 elif tree.depth > 0:
                     tree.add_predict(X_binned, F[k])
@@ -2223,8 +2348,7 @@ class MulticlassBoosting(_BaseBooster):
     def predict_raw(self, X):
         """Return the (n_samples, n_classes) matrix of raw per-class scores
         (pre-softmax)."""
-        X = (np.asarray(X, dtype=object) if self.prep_.cat_features_
-             else np.asarray(X, dtype=np.float64))
+        X = self._coerce_predict_X(X)
         X_binned = self.prep_.transform(X)
         F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
         flat = self._flat_ensemble()
@@ -2241,8 +2365,7 @@ class MulticlassBoosting(_BaseBooster):
 
     def staged_predict_raw(self, X):
         """Yield raw scores after each complete multiclass boosting round."""
-        X = (np.asarray(X, dtype=object) if self.prep_.cat_features_
-             else np.asarray(X, dtype=np.float64))
+        X = self._coerce_predict_X(X)
         X_binned = self.prep_.transform(X)
         F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
         for round_trees in self.trees_:

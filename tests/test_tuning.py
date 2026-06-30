@@ -16,12 +16,13 @@ from chimeraboost.tuning.spaces import (
     make_phase_spec,
     phase_names,
     SpaceContext,
+    suggest_joint_compact,
     suggest_learning_rate,
     suggest_sampling_regularization,
     suggest_split_noise,
     suggest_structure,
 )
-from chimeraboost.tuning.validation import make_cv_splits
+from chimeraboost.tuning.validation import make_cv_splits, validate_cv_splits
 
 
 class FakeTrial:
@@ -58,6 +59,26 @@ def test_search_spaces_emit_legal_mode_specific_params():
     assert lgb["tree_mode"] == "lightgbm"
     assert lgb["ordered_boosting"] == "auto"
     assert lgb["num_leaves"] >= 2
+
+
+class LastChoiceTrial(FakeTrial):
+    def suggest_categorical(self, name, choices):
+        return choices[-1]
+
+
+def test_search_spaces_preserve_requested_hybrid_lane():
+    context = SpaceContext(
+        estimator_params=ChimeraBoostRegressor().get_params(),
+        has_categoricals=False,
+        classifier=False,
+        tree_modes=("catboost", "hybrid"),
+    )
+
+    joint = suggest_joint_compact(LastChoiceTrial(), context, LaneState("hybrid"))
+    structure = suggest_structure(FakeTrial(), context, LaneState("hybrid"))
+
+    assert joint["tree_mode"] == "hybrid"
+    assert structure["tree_mode"] == "hybrid"
 
 
 class GossTrial(FakeTrial):
@@ -112,6 +133,62 @@ def test_group_cv_splits_never_overlap_groups():
     )
     for train_idx, valid_idx in splits:
         assert not set(groups[train_idx]).intersection(groups[valid_idx])
+
+
+def test_custom_iterable_cv_splits_accept_lists_with_groups():
+    X = np.arange(24).reshape(12, 2)
+    y = np.tile([0, 1], 6)
+    groups = np.repeat(np.arange(6), 2)
+    cv = [([0, 1, 2, 3, 4, 5], [6, 7, 8, 9, 10, 11])]
+
+    splits = make_cv_splits(
+        X, y, cv=cv, groups=groups, classifier=True, random_state=0
+    )
+
+    train_idx, valid_idx = splits[0]
+    assert train_idx.dtype == np.int64
+    assert valid_idx.dtype == np.int64
+    assert np.array_equal(train_idx, np.array(cv[0][0], dtype=np.int64))
+    assert np.array_equal(valid_idx, np.array(cv[0][1], dtype=np.int64))
+
+
+def test_cv_splits_require_positive_weight_mass_in_each_fold():
+    y = np.tile([0, 1], 6)
+    splits = [(np.arange(6), np.arange(6, 12))]
+    weights = np.zeros(12, dtype=np.float64)
+    weights[:6] = 1.0
+
+    with pytest.raises(ValueError, match="positive sample_weight mass"):
+        validate_cv_splits(
+            splits, y, classifier=True, sample_weight=weights
+        )
+
+
+def test_cv_splits_reject_invalid_sample_weights():
+    y = np.tile([0, 1], 6)
+    splits = [(np.arange(6), np.arange(6, 12))]
+
+    for bad, message in [
+        (np.full(12, np.nan), "finite"),
+        (np.r_[1.0, -1.0, np.ones(10)], "nonnegative"),
+        (np.zeros(12), "positive total"),
+    ]:
+        with pytest.raises(ValueError, match=message):
+            validate_cv_splits(
+                splits, y, classifier=True, sample_weight=bad
+            )
+
+
+def test_cv_splits_require_positive_weight_mass_per_class():
+    y = np.tile([0, 1], 6)
+    splits = [(np.arange(6), np.arange(6, 12))]
+    weights = np.ones(12, dtype=np.float64)
+    weights[[7, 9, 11]] = 0.0
+
+    with pytest.raises(ValueError, match="positive-mass class"):
+        validate_cv_splits(
+            splits, y, classifier=True, sample_weight=weights
+        )
 
 
 def test_validation_fraction_holdout_mode():
@@ -290,6 +367,37 @@ def test_search_slices_weights_for_fit_eval_and_scoring():
     for call, score_weight in zip(fold_calls, RecordingClassifier.score_weights):
         assert np.array_equal(call["eval_sample_weight"], score_weight)
         assert call["sample_weight"].sum() + score_weight.sum() == w.sum()
+
+
+def test_search_validates_training_and_eval_payload_shapes():
+    X = np.arange(24).reshape(12, 2)
+    y = np.tile([0, 1], 6)
+    search = ChimeraBoostStepwiseSearchCV(
+        RecordingClassifier(iterations=3),
+        phases=("probe",),
+        tree_modes=("catboost",),
+        n_trials={"probe": 1},
+        cv=3,
+        scoring=recording_scorer,
+        refit=False,
+        resume=False,
+    )
+
+    with pytest.raises(ValueError, match=r"y must have shape \(12,\)"):
+        search.fit(X, y[:10])
+    with pytest.raises(ValueError, match=r"sample_weight must have shape \(12,\)"):
+        search.fit(X, y, sample_weight=np.ones(13))
+    with pytest.raises(
+        ValueError, match="eval_sample_weight requires an explicit eval_set"
+    ):
+        search.fit(X, y, eval_sample_weight=np.ones(4))
+    with pytest.raises(ValueError, match=r"eval_set\[1\] must have shape"):
+        search.fit(X, y, eval_set=(X[:4], y[:5]))
+    with pytest.raises(ValueError, match=r"eval_sample_weight must have shape"):
+        search.fit(
+            X, y, eval_set=(X[:4], y[:4]),
+            eval_sample_weight=np.ones(5)
+        )
 
 
 def test_explicit_eval_set_uses_single_validation_payload():
@@ -653,6 +761,24 @@ def test_lane_fixed_params_are_applied_without_suggestor_convention():
         {},
     )
     assert params["tree_mode"] == "catboost"
+
+
+def test_lane_build_params_drop_leafwise_only_num_leaves_for_catboost():
+    estimator = ChimeraBoostRegressor(tree_mode="lightgbm", num_leaves=31)
+
+    catboost_params = search_mod._build_model_params(
+        estimator,
+        LaneState("catboost", fixed_params={"tree_mode": "catboost"}),
+        {},
+    )
+    lightgbm_params = search_mod._build_model_params(
+        estimator,
+        LaneState("lightgbm", fixed_params={"tree_mode": "lightgbm"}),
+        {},
+    )
+
+    assert catboost_params["num_leaves"] is None
+    assert lightgbm_params["num_leaves"] == 31
 
 
 def test_default_refit_preserves_rounds_and_auto_learning_rate():

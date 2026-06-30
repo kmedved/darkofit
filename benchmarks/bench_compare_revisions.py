@@ -68,6 +68,7 @@ CSV_FIELDS = [
     "variant",
     "revision_path",
     "tree_mode",
+    "selected_tree_mode",
     "max_bins",
     "sampling",
     "top_rate",
@@ -85,6 +86,8 @@ CSV_FIELDS = [
     "fit_seconds",
     "predict_seconds",
     "boost_seconds",
+    "selection_overhead_seconds",
+    "timing_scope",
     "best_iteration",
     "primary_metric",
     "primary_value",
@@ -193,6 +196,23 @@ def _timing_fields(model):
     return out
 
 
+def _selection_timing_fields(model, fit_seconds, boost_seconds):
+    selected_tree_mode = getattr(getattr(model, "model_", None), "tree_mode_", "")
+    tree_mode_selection = getattr(model, "tree_mode_selection_", None)
+    out = {
+        "selected_tree_mode": selected_tree_mode,
+        "selection_overhead_seconds": "",
+        "timing_scope": "fit_model",
+    }
+    if tree_mode_selection is not None:
+        out["timing_scope"] = "selected_model"
+        if boost_seconds is not None:
+            out["selection_overhead_seconds"] = max(
+                0.0, float(fit_seconds) - float(boost_seconds)
+            )
+    return out
+
+
 def _fit_worker(payload):
     variant = RevisionSpec(**payload["variant"])
     config = FitConfig(**payload["fit_config"])
@@ -280,6 +300,7 @@ def _fit_worker(payload):
         "boost_seconds": "" if boost_seconds is None else float(boost_seconds),
         "best_iteration": _best_iteration(best_model) or "",
     }
+    row.update(_selection_timing_fields(best_model, fit_seconds, boost_seconds))
     row.update(metrics)
     row.update(_timing_fields(best_model))
     return row

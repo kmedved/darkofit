@@ -92,14 +92,26 @@ class FeaturePreprocessor:
                     continue
             m = self.cat_maps_[j]
             if _MISSING_CATEGORY in m:
-                for i in range(X.shape[0]):
-                    v = col[i]
-                    if v is None or (isinstance(v, float) and v != v):
-                        v = _MISSING_CATEGORY
-                    codes[i, j] = m.get(v, -1)   # unseen -> prior fallback
+                missing = _MISSING_CATEGORY
+                codes[:, j] = np.fromiter(
+                    (
+                        m.get(
+                            missing
+                            if v is None or (isinstance(v, float) and v != v)
+                            else v,
+                            -1,
+                        )
+                        for v in col
+                    ),
+                    dtype=np.int64,
+                    count=X.shape[0],
+                )
             else:
-                for i in range(X.shape[0]):
-                    codes[i, j] = m.get(col[i], -1)
+                codes[:, j] = np.fromiter(
+                    (m.get(v, -1) for v in col),
+                    dtype=np.int64,
+                    count=X.shape[0],
+                )
         return codes
 
     def _pandas_codes_for_column(self, pd, col, j):

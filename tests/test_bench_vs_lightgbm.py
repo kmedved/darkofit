@@ -2,12 +2,16 @@
 
 import sys
 from pathlib import Path
+from types import SimpleNamespace
+
+import numpy as np
 
 BENCH_DIR = Path(__file__).resolve().parents[1] / "benchmarks"
 if str(BENCH_DIR) not in sys.path:
     sys.path.insert(0, str(BENCH_DIR))
 
 from bench_vs_lightgbm import (  # noqa: E402
+    _result_from_prediction,
     _resolve_benchmark_capacity,
     _resolve_default_depth,
     parse_args,
@@ -16,10 +20,14 @@ from bench_vs_lightgbm import (  # noqa: E402
 
 def test_default_depth_matches_tree_mode():
     lightgbm_args = _resolve_default_depth(parse_args(["--tree-mode", "lightgbm"]))
+    hybrid_args = _resolve_default_depth(parse_args(["--tree-mode", "hybrid"]))
+    auto_args = _resolve_default_depth(parse_args(["--tree-mode", "auto"]))
     catboost_args = _resolve_default_depth(parse_args(["--tree-mode", "catboost"]))
     depthwise_args = _resolve_default_depth(parse_args(["--tree-mode", "depthwise"]))
 
     assert lightgbm_args.depth == -1
+    assert hybrid_args.depth == -1
+    assert auto_args.depth is None
     assert catboost_args.depth == 6
     assert depthwise_args.depth is None
 
@@ -71,6 +79,60 @@ def test_lightgbm_mode_matches_leaf_capacity_by_default():
     assert args.lightgbm_num_leaves == 64
     assert args.chimera_num_leaves == 64
     assert args.chimera_effective_num_leaves == 64
+
+
+def test_hybrid_mode_matches_leaf_capacity_by_default():
+    args = _resolve_benchmark_capacity(
+        _resolve_default_depth(parse_args(["--tree-mode", "hybrid"]))
+    )
+
+    assert args.lightgbm_num_leaves == 64
+    assert args.chimera_num_leaves == 64
+    assert args.chimera_effective_num_leaves == 64
+
+
+def test_auto_mode_passes_leaf_capacity_for_leafwise_candidates():
+    args = _resolve_benchmark_capacity(
+        _resolve_default_depth(parse_args(["--tree-mode", "auto"]))
+    )
+
+    assert args.lightgbm_num_leaves == 64
+    assert args.chimera_num_leaves == 64
+    assert args.chimera_effective_num_leaves is None
+
+
+def test_result_records_fitted_tree_mode_and_resolved_auto_capacity():
+    spec = SimpleNamespace(name="synthetic", task="regression")
+    core = SimpleNamespace(
+        tree_mode_="hybrid",
+        auto_params_={"tree": {"max_leaves": 31}},
+        sampling_="uniform",
+        top_rate=None,
+        other_rate=None,
+    )
+    model = SimpleNamespace(model_=core, best_iteration_=7)
+
+    result = _result_from_prediction(
+        spec=spec,
+        size_name="small",
+        seed=0,
+        model_name="ChimeraBoost",
+        model=model,
+        y_test=np.array([1.0, 2.0]),
+        pred=np.array([1.0, 2.0]),
+        proba=None,
+        fit_seconds=0.1,
+        predict_seconds=0.01,
+        n_train=10,
+        n_test=2,
+        n_features=3,
+        chimera_effective_num_leaves=None,
+        lightgbm_num_leaves=64,
+    )
+
+    assert result.chimera_fitted_tree_mode == "hybrid"
+    assert result.chimera_resolved_num_leaves == 31
+    assert result.lightgbm_num_leaves == 64
 
 
 def test_explicit_chimera_num_leaves_is_preserved():

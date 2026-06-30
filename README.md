@@ -5,7 +5,9 @@ Full-featured gradient boosting library with a Python/numba backend, inspired by
 
 * **What?**
     * GBDT library that only depends on numpy, numba, and scikit-learn
-    * Near equivalent performance to CatBoost on CPU (~97% R^2 / F1 in benchmarks), at 20x the speed
+    * Accuracy-competitive with CatBoost and LightGBM in the benchmark suite,
+      with speed depending strongly on dataset size, tree mode, and whether the
+      Numba kernels are warm
     * Supports sample weights and automatic early stopping
 
 * **Why?**
@@ -80,6 +82,8 @@ Tree builders are selectable:
 ```
 ChimeraBoostClassifier(tree_mode="catboost")  # symmetric/oblivious default
 ChimeraBoostClassifier(tree_mode="lightgbm")  # leaf-wise, non-oblivious
+ChimeraBoostClassifier(tree_mode="hybrid")    # experimental shared-prefix then leaf-wise
+ChimeraBoostClassifier(tree_mode="auto")      # validation-selected tree mode
 ChimeraBoostClassifier(tree_mode="depthwise") # experimental level-wise
 ```
 
@@ -90,17 +94,26 @@ Tree modes:
 * `tree_mode="lightgbm"` builds ChimeraBoost's LightGBM-like histogram trees:
   non-oblivious, leaf-wise, best-first CART-style trees. This is not model or
   prediction compatibility with Microsoft LightGBM.
+* `tree_mode="hybrid"` uses an experimental non-oblivious tree with a shallow
+  shared symmetric prefix followed by best-first leaf-wise expansion. It stores
+  and predicts as a normal ChimeraBoost non-oblivious tree.
+* `tree_mode="auto"` is opt-in validation selection across `"catboost"`,
+  `"lightgbm"`, and `"hybrid"`. Pair it with `refit=True` to train the selected
+  concrete tree mode on all rows after selection.
 * `tree_mode="depthwise"` (also accepted as `"levelwise"`) uses the
   experimental level-wise non-oblivious builder. Current benchmark notes show it
   can reduce rounds on some medium numeric tasks. For RMSE regression with
   omitted `depth`, this mode defaults to a shallow depth of 2; explicit depths
   and classification defaults are unchanged.
 
-In LightGBM mode, `num_leaves` is the main tree-size control and `depth` is a
-maximum path-depth cap. `ordered_boosting` defaults to off for this mode; setting
-`ordered_boosting=True` with `tree_mode="lightgbm"` raises a `ValueError`.
-Categorical features still use ChimeraBoost's ordered target-stat preprocessing,
-not native LightGBM category-partition splits.
+In LightGBM and hybrid modes, `num_leaves` is the main tree-size control and
+`depth` is a maximum path-depth cap. `ordered_boosting` defaults to off for
+these modes; setting `ordered_boosting=True` with either mode raises a
+`ValueError`.
+Categorical features still use ChimeraBoost's target-stat preprocessing, not
+native LightGBM category-partition splits. CatBoost/depthwise modes use ordered
+target statistics; LightGBM and hybrid modes use K-fold target statistics and
+include raw category-code features for categorical fits, including multiclass.
 
 For compatible LightGBM-mode multiclass fits,
 `multiclass_tree_strategy="auto"` uses a shared vector-valued tree per boosting
@@ -199,9 +212,10 @@ builder. The default `"auto"` keeps the measured-best feature-parallel path on
 the current benchmark machine; use the row-parallel lane only when profiling
 shows it helps your hardware.
 
-Not implemented in `tree_mode="lightgbm"`: native LightGBM categorical splits,
-DART, GPU training, sparse optimization, monotone constraints, ranking, custom
-objectives, custom eval metrics, or LightGBM model import/export.
+Not implemented in `tree_mode="lightgbm"` or `tree_mode="hybrid"`: native
+LightGBM categorical splits, DART, GPU training, sparse optimization, monotone
+constraints, ranking, custom objectives, custom eval metrics, or LightGBM model
+import/export.
 
 Benchmark notes and fair comparison recipes live in
 [BENCHMARK_NOTES.md](BENCHMARK_NOTES.md).

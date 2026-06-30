@@ -71,6 +71,7 @@ def _run_fit(spec, size_name, thread_count, args, seed):
             random_state=seed,
             verbose_timing=True,
             tree_mode=args.tree_mode,
+            use_best_model=False,
         )
         start = time.perf_counter()
         model.fit(X_fit, y_fit, cat_features=cat_features, eval_set=(X_val, y_val))
@@ -159,7 +160,10 @@ def parse_args(argv):
     parser.add_argument("--learning-rate", type=float, default=0.1)
     parser.add_argument(
         "--tree-mode",
-        choices=["catboost", "oblivious", "lightgbm", "depthwise", "levelwise"],
+        choices=[
+            "catboost", "oblivious", "lightgbm", "hybrid", "depthwise",
+            "levelwise",
+        ],
         default="catboost",
     )
     parser.add_argument("--no-ordered-boosting", action="store_true")

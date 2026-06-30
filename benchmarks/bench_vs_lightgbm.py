@@ -96,6 +96,8 @@ class Result:
     lightgbm_num_leaves: int | None
     primary_metric: str
     primary_value: float
+    chimera_fitted_tree_mode: str = ""
+    chimera_resolved_num_leaves: int | None = None
     sampling: str = ""
     top_rate: float | None = None
     other_rate: float | None = None
@@ -496,6 +498,11 @@ def _result_from_prediction(
     if best_iter is not None:
         best_iter = int(best_iter)
     fitted_core = getattr(model, "model_", model)
+    chimera_fitted_tree_mode = getattr(fitted_core, "tree_mode_", "")
+    chimera_resolved_num_leaves = None
+    auto_tree = getattr(fitted_core, "auto_params_", {}).get("tree", {})
+    if "max_leaves" in auto_tree:
+        chimera_resolved_num_leaves = int(auto_tree["max_leaves"])
 
     common = dict(
         dataset=spec.name,
@@ -513,6 +520,8 @@ def _result_from_prediction(
         predict_seconds=predict_seconds,
         best_iteration=best_iter,
         chimera_effective_num_leaves=chimera_effective_num_leaves,
+        chimera_fitted_tree_mode=chimera_fitted_tree_mode,
+        chimera_resolved_num_leaves=chimera_resolved_num_leaves,
         lightgbm_num_leaves=lightgbm_num_leaves,
     )
     if spec.task == "regression":
@@ -689,9 +698,9 @@ def parse_args(argv):
         default=None,
         help=(
             "ChimeraBoost max tree depth. Default is 6 for CatBoost mode, "
-            "estimator-resolved for depthwise/levelwise mode, and -1 "
-            "(unlimited) for LightGBM mode to match the LightGBM baseline's "
-            "uncapped leaf-wise growth."
+            "estimator-resolved for auto/depthwise/levelwise mode, and -1 "
+            "(unlimited) for LightGBM/hybrid mode to match the LightGBM "
+            "baseline's uncapped leaf-wise growth."
         ),
     )
     parser.add_argument("--learning-rate", type=float, default=None)
@@ -709,9 +718,11 @@ def parse_args(argv):
         action="store_true",
         default=True,
         help=(
-            "For tree_mode=lightgbm, default an unspecified ChimeraBoost "
-            "num_leaves to --lightgbm-num-leaves so benchmark comparisons use "
-            "matched leaf capacity."
+            "For tree_mode=lightgbm/hybrid/auto, default an unspecified "
+            "ChimeraBoost num_leaves to --lightgbm-num-leaves so benchmark "
+            "comparisons use matched leaf capacity for leaf-wise candidates. "
+            "Auto-mode CSV rows record the selected concrete mode and resolved "
+            "leaf capacity separately."
         ),
     )
     parser.add_argument(
@@ -720,7 +731,7 @@ def parse_args(argv):
         action="store_false",
         help=(
             "Leave ChimeraBoost num_leaves unset when --chimera-num-leaves is "
-            "omitted, preserving the estimator's native LightGBM-mode default."
+            "omitted, preserving native leaf-wise or auto-selection defaults."
         ),
     )
     parser.add_argument("--chimera-subsample", type=float, default=1.0)
@@ -751,11 +762,15 @@ def parse_args(argv):
     )
     parser.add_argument(
         "--tree-mode",
-        choices=["catboost", "oblivious", "lightgbm", "depthwise", "levelwise"],
+        choices=[
+            "catboost", "oblivious", "lightgbm", "hybrid", "auto",
+            "depthwise", "levelwise",
+        ],
         default="catboost",
         help=(
             "ChimeraBoost tree builder: symmetric CatBoost-like, leaf-wise "
-            "LightGBM-like, or experimental depth-wise/level-wise."
+            "LightGBM-like, hybrid shared-prefix/leaf-wise, validation-selected "
+            "auto, or experimental depth-wise/level-wise."
         ),
     )
     parser.add_argument("--no-ordered-boosting", action="store_true")
@@ -786,7 +801,7 @@ def parse_args(argv):
 
 def _resolve_default_depth(args):
     if args.depth is None:
-        if args.tree_mode == "lightgbm":
+        if args.tree_mode in {"lightgbm", "hybrid"}:
             args.depth = -1
         elif args.tree_mode in {"catboost", "oblivious"}:
             args.depth = 6
@@ -794,7 +809,7 @@ def _resolve_default_depth(args):
 
 
 def _chimera_effective_num_leaves(args):
-    if args.tree_mode != "lightgbm":
+    if args.tree_mode not in {"lightgbm", "hybrid"}:
         if args.depth is None or args.depth < 1:
             return None
         return 1 << int(args.depth)
@@ -810,7 +825,7 @@ def _chimera_effective_num_leaves(args):
 
 def _resolve_benchmark_capacity(args):
     if (
-        args.tree_mode == "lightgbm"
+        args.tree_mode in {"lightgbm", "hybrid", "auto"}
         and args.match_lightgbm_leaves
         and args.chimera_num_leaves is None
     ):
