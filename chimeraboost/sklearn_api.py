@@ -1,8 +1,13 @@
 """Scikit-learn flavored estimators: fit / predict / predict_proba."""
 
 import numpy as np
-from ._validation import n_features_from_array_like, normalize_cat_features
-from .booster import GradientBoosting, MulticlassBoosting
+from ._validation import (
+    n_features_from_array_like,
+    n_samples_from_array_like,
+    normalize_cat_features,
+    validate_target_vector,
+)
+from .booster import GradientBoosting, MulticlassBoosting, _apply_thread_count
 from .auto_params import (
     effective_sample_size,
     is_auto_learning_rate,
@@ -25,6 +30,18 @@ _REFIT_STRATEGY_EXPONENT = {
     "linear": 1.0,
     "scaled": 1.0,
 }
+
+_AUTO_TREE_MODE_CANDIDATES = ("catboost", "lightgbm", "hybrid")
+
+
+def _normalize_tree_mode_token(tree_mode):
+    if tree_mode is None:
+        return "catboost"
+    return str(tree_mode).lower().replace("-", "_")
+
+
+def _is_auto_tree_mode(tree_mode):
+    return _normalize_tree_mode_token(tree_mode) == "auto"
 
 
 def _should_early_stop(setting):
@@ -66,6 +83,43 @@ def _validate_wrapper_sample_weight(sample_weight, n_samples, name="sample_weigh
     if float(np.sum(w)) <= 0.0:
         raise ValueError(f"{name} must have positive total weight")
     return w
+
+
+def _reject_eval_sample_weight_without_eval_set(eval_sample_weight, eval_set):
+    if eval_sample_weight is not None and eval_set is None:
+        raise ValueError(
+            "eval_sample_weight requires an explicit eval_set; automatic "
+            "validation splits derive validation weights from sample_weight"
+        )
+
+
+def _validate_split_sample_weight_mass(
+    sample_weight, train_idx, val_idx, stratify=None
+):
+    if sample_weight is None:
+        return
+    w = np.asarray(sample_weight, dtype=np.float64)
+    train_mass = float(np.sum(w[train_idx]))
+    val_mass = float(np.sum(w[val_idx]))
+    if train_mass <= 0.0 or val_mass <= 0.0:
+        raise ValueError(
+            "automatic validation split must assign positive sample_weight "
+            "mass to both training and validation sets"
+        )
+    if stratify is None:
+        return
+    labels = np.asarray(stratify)
+    for cls in np.unique(labels):
+        if float(np.sum(w[labels == cls])) <= 0.0:
+            continue
+        train_class_mass = float(np.sum(w[train_idx][labels[train_idx] == cls]))
+        val_class_mass = float(np.sum(w[val_idx][labels[val_idx] == cls]))
+        if train_class_mass <= 0.0 or val_class_mass <= 0.0:
+            raise ValueError(
+                "automatic validation split must assign positive sample_weight "
+                "mass for each positive-mass class to both training and "
+                "validation sets"
+            )
 
 
 def _weighted_quantile(values, sample_weight, qs):
@@ -151,7 +205,19 @@ def _coerce_fit_X(X, cat_features):
     return X_arr, cat_features, n_features
 
 
-def _validate_eval_set_features(eval_set, n_features):
+def _validate_feature_names(expected_names, X, *, name="X"):
+    if expected_names is None:
+        return
+    actual_names = _feature_names_from_input(X)
+    if actual_names is None:
+        return
+    if not np.array_equal(actual_names, expected_names):
+        raise ValueError(
+            f"{name} feature names must match fit feature names in the same order"
+        )
+
+
+def _validate_eval_set_features(eval_set, n_features, expected_feature_names=None):
     if eval_set is None:
         return None
     Xv, yv = eval_set
@@ -161,7 +227,14 @@ def _validate_eval_set_features(eval_set, n_features):
             f"eval_set[0] has {actual} features, but X has "
             f"{int(n_features)} features"
         )
-    return eval_set
+    _validate_feature_names(
+        expected_feature_names, Xv, name="eval_set[0]"
+    )
+    yv = validate_target_vector(
+        yv, n_samples_from_array_like(Xv, name="eval_set[0]"),
+        name="eval_set[1]",
+    )
+    return (Xv, yv)
 
 
 def _infer_model_n_features(model):
@@ -186,6 +259,11 @@ def _check_predict_input(estimator, X):
             f"X has {actual} features, but {type(estimator).__name__} "
             f"is expecting {int(expected)} features as input"
         )
+    _validate_feature_names(
+        getattr(estimator, "feature_names_in_", None),
+        X,
+        name="X",
+    )
     return X
 
 
@@ -268,6 +346,9 @@ def _make_eval_split(X, y, validation_fraction, random_state,
         train_idx, val_idx = next(splitter.split(X))
         realized_policy = "random"
 
+    _validate_split_sample_weight_mass(
+        sample_weight, train_idx, val_idx, stratify=stratify
+    )
     return train_idx, val_idx, realized_policy
 
 
@@ -279,7 +360,7 @@ class _RefitParamsMixin:
             "_selection_n_total_", "_selection_n_train_",
             "_best_n_estimators_", "_best_score_", "_learning_rate_",
             "selection_model_", "refit_", "refit_n_estimators_",
-            "refit_strategy_",
+            "refit_strategy_", "tree_mode_selection_",
         ):
             if hasattr(self, name):
                 delattr(self, name)
@@ -341,6 +422,100 @@ class _RefitParamsMixin:
             auto_params.setdefault("diagnostics", {})
             auto_params["diagnostics"]["selection_validation_split"] = metadata
 
+    def _attach_tree_mode_selection_metadata(self, metadata):
+        if metadata is None:
+            return
+        self.tree_mode_selection_ = metadata
+        model = getattr(self, "model_", None)
+        auto_params = getattr(model, "auto_params_", None)
+        if auto_params is not None:
+            auto_params["tree_mode_selection"] = metadata
+            auto_params.setdefault("diagnostics", {})
+            auto_params["diagnostics"]["tree_mode_selection"] = metadata
+
+    def _validate_tree_mode_selection_request(self):
+        if not _is_auto_tree_mode(self.tree_mode):
+            return
+        if self.ordered_boosting == "auto":
+            return
+        if bool(self.ordered_boosting):
+            raise ValueError(
+                "ordered_boosting=True cannot be combined with "
+                "tree_mode='auto'; use tree_mode='catboost' for ordered-only "
+                "fits or leave ordered_boosting='auto'"
+            )
+
+    def _tree_mode_candidate_kwargs(self, fit_kwargs, tree_mode):
+        candidate_kwargs = dict(fit_kwargs)
+        candidate_kwargs["tree_mode"] = tree_mode
+        if tree_mode not in {"lightgbm", "hybrid"}:
+            candidate_kwargs["num_leaves"] = None
+        return candidate_kwargs
+
+    def _tree_mode_selection_score(self, model):
+        valid_history = getattr(model, "valid_history_", None)
+        if valid_history is not None and len(valid_history) > 0:
+            if getattr(model, "use_best_model_", False):
+                return float(model.best_score_)
+            return float(valid_history[-1])
+        return float(model.best_score_)
+
+    def _fit_tree_mode_auto(
+        self, make_model, fit_kwargs, X, y, *, cat_features, eval_set,
+        sample_weight, eval_sample_weight
+    ):
+        results = []
+        best_model = None
+        best_score = np.inf
+        best_probe_metadata = None
+
+        for tree_mode in _AUTO_TREE_MODE_CANDIDATES:
+            candidate_kwargs = self._tree_mode_candidate_kwargs(
+                fit_kwargs, tree_mode
+            )
+            probe_lr, probe_metadata = self._run_learning_rate_probe(
+                make_model,
+                X, y,
+                cat_features=cat_features,
+                eval_set=eval_set,
+                sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight,
+                fit_kwargs=candidate_kwargs,
+            )
+            if probe_lr is not None:
+                candidate_kwargs["learning_rate"] = probe_lr
+            model = make_model(candidate_kwargs)
+            model.fit(
+                X, y, cat_features=cat_features, eval_set=eval_set,
+                sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight,
+            )
+            score = self._tree_mode_selection_score(model)
+            results.append({
+                "tree_mode": tree_mode,
+                "score": score,
+                "best_iteration": int(model.best_iteration_),
+                "n_estimators": len(model.trees_),
+                "learning_rate": float(model.lr_),
+                "probe": probe_metadata,
+            })
+            if score < best_score:
+                best_score = score
+                best_model = model
+                best_probe_metadata = probe_metadata
+
+        selected = getattr(best_model, "tree_mode_", None)
+        metadata = {
+            "enabled": True,
+            "input": self.tree_mode,
+            "candidates": results,
+            "selected_tree_mode": selected,
+            "selected_score": float(best_score),
+        }
+        if hasattr(best_model, "n_threads_"):
+            _apply_thread_count(best_model.n_threads_)
+        return best_model, best_probe_metadata, metadata
+
     def _wrapper_state_header(self):
         if not hasattr(self, "model_"):
             return {}
@@ -358,6 +533,8 @@ class _RefitParamsMixin:
             state["feature_names_in"] = self.feature_names_in_.tolist()
         if getattr(self, "refit_", False):
             state["selection_model_persisted"] = False
+        if hasattr(self, "tree_mode_selection_"):
+            state["tree_mode_selection"] = self.tree_mode_selection_
         if hasattr(self, "_selection_n_total_"):
             state["selection_n_total"] = self._selection_n_total_
         if hasattr(self, "_selection_n_train_"):
@@ -383,6 +560,8 @@ class _RefitParamsMixin:
         self.refit_ = bool(state.get("refit", False))
         self.refit_n_estimators_ = state.get("refit_n_estimators")
         self.refit_strategy_ = state.get("refit_strategy")
+        if "tree_mode_selection" in state:
+            self.tree_mode_selection_ = state["tree_mode_selection"]
         if self.refit_ and state.get("selection_model_persisted") is False:
             self.selection_model_ = None
             self.selection_model_persisted_ = False
@@ -510,7 +689,7 @@ class _RefitParamsMixin:
                 sample_weight=sample_weight,
                 eval_sample_weight=eval_sample_weight,
             )
-            score = float(model.best_score_)
+            score = self._tree_mode_selection_score(model)
             results.append({
                 "learning_rate": float(lr),
                 "score": score,
@@ -577,6 +756,9 @@ class _RefitParamsMixin:
         params = self.get_params()
         params["iterations"] = max(0, rounds)
         params["learning_rate"] = self.learning_rate_
+        selected_tree_mode = getattr(self.model_, "tree_mode_", None)
+        if selected_tree_mode is not None:
+            params["tree_mode"] = selected_tree_mode
         params["early_stopping"] = False
         params["early_stopping_rounds"] = None
         auto = getattr(self.model_, "auto_params_", {})
@@ -720,11 +902,15 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         X_input = X
         X, cat_features, n_features = _coerce_fit_X(X, cat_features)
         eval_set = _ensure_dense_eval_set(eval_set)
-        eval_set = _validate_eval_set_features(eval_set, n_features)
-        y = np.asarray(y, dtype=np.float64)
+        eval_set = _validate_eval_set_features(
+            eval_set, n_features,
+            expected_feature_names=_feature_names_from_input(X_input),
+        )
+        y = validate_target_vector(y, X.shape[0], dtype=np.float64)
         sample_weight = _validate_wrapper_sample_weight(
             sample_weight, X.shape[0]
         )
+        _reject_eval_sample_weight_without_eval_set(eval_sample_weight, eval_set)
         X_full, y_full = X, y
         sample_weight_full = sample_weight
         explicit_eval_set = eval_set is not None
@@ -737,11 +923,13 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         split_eval_n = None
 
         self._clear_refit_selection_metadata()
+        tree_mode_auto = _is_auto_tree_mode(self.tree_mode)
+        self._validate_tree_mode_selection_request()
         if self.refit:
             self._refit_strategy_exponent(self.refit_strategy)
         es_active = _should_early_stop(self.early_stopping)
         if (
-            es_active
+            (es_active or tree_mode_auto)
             and eval_set is None
             and groups is not None
             and validation_strategy_ == "weighted_stratified"
@@ -750,7 +938,13 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 "validation_strategy='weighted_stratified' is only supported "
                 "for ungrouped regression automatic validation splits"
             )
-        if es_active and eval_set is None:
+        if (es_active or tree_mode_auto) and eval_set is None:
+            if eval_sample_weight is not None:
+                raise ValueError(
+                    "eval_sample_weight requires an explicit eval_set; "
+                    "automatic validation splits derive validation weights "
+                    "from sample_weight"
+                )
             n_total = X.shape[0]
             validation_fraction_resolved = _resolve_validation_fraction(
                 self.validation_fraction, sample_weight, n_total
@@ -773,7 +967,8 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         if es_active and es_rounds is None:
             es_rounds = "auto"
         selection_active = (
-            eval_set is not None and (es_rounds is not None or self.use_best_model)
+            eval_set is not None
+            and (es_rounds is not None or self.use_best_model or tree_mode_auto)
         )
         if self.refit and selection_active:
             self._validate_refit_strategy_for_fit(self.refit_strategy)
@@ -782,31 +977,46 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         kw = {k: v for k, v in self.get_params().items()
               if k not in {"loss", "alpha"} | _SKLEARN_ONLY}
         kw["early_stopping_rounds"] = es_rounds
-        probe_lr, probe_metadata = self._run_learning_rate_probe(
-            lambda probe_kw: GradientBoosting(
-                loss=self.loss, loss_kwargs=loss_kwargs, **probe_kw
-            ),
-            X, y,
-            cat_features=cat_features,
-            eval_set=eval_set,
-            sample_weight=sample_weight,
-            eval_sample_weight=eval_sample_weight,
-            fit_kwargs=kw,
+        make_model = lambda model_kw: GradientBoosting(
+            loss=self.loss, loss_kwargs=loss_kwargs, **model_kw
         )
-        if probe_lr is not None:
-            kw["learning_rate"] = probe_lr
-        model = GradientBoosting(loss=self.loss, loss_kwargs=loss_kwargs, **kw)
-        model.fit(
-            X, y, cat_features=cat_features, eval_set=eval_set,
-            sample_weight=sample_weight,
-            eval_sample_weight=eval_sample_weight,
-        )
+        tree_mode_selection_metadata = None
+        if tree_mode_auto:
+            model, probe_metadata, tree_mode_selection_metadata = (
+                self._fit_tree_mode_auto(
+                    make_model, kw, X, y,
+                    cat_features=cat_features,
+                    eval_set=eval_set,
+                    sample_weight=sample_weight,
+                    eval_sample_weight=eval_sample_weight,
+                )
+            )
+        else:
+            probe_lr, probe_metadata = self._run_learning_rate_probe(
+                make_model,
+                X, y,
+                cat_features=cat_features,
+                eval_set=eval_set,
+                sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight,
+                fit_kwargs=kw,
+            )
+            if probe_lr is not None:
+                kw["learning_rate"] = probe_lr
+            model = make_model(kw)
+            model.fit(
+                X, y, cat_features=cat_features, eval_set=eval_set,
+                sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight,
+            )
         self.model_ = model
         self._record_input_feature_metadata(X_input, n_features)
         if explicit_eval_set:
             split_source = "explicit_eval_set"
             realized_validation_policy = "explicit_eval_set"
             split_eval_n = len(eval_set[1]) if eval_set is not None else None
+        elif tree_mode_auto and not es_active:
+            split_source = "automatic_tree_mode_selection"
         elif es_active:
             split_source = "automatic"
         else:
@@ -826,6 +1036,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         }
         self._attach_validation_metadata(validation_metadata)
         self._attach_learning_rate_probe_metadata(probe_metadata)
+        self._attach_tree_mode_selection_metadata(tree_mode_selection_metadata)
         selection_model = self.model_
         self._record_selection_result(selection_model)
 
@@ -857,6 +1068,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             self._attach_validation_metadata(refit_validation_metadata)
             self._attach_selection_validation_metadata(validation_metadata)
             self._attach_learning_rate_probe_metadata(probe_metadata)
+            self._attach_tree_mode_selection_metadata(tree_mode_selection_metadata)
         return self
 
     def predict(self, X):
@@ -1027,8 +1239,11 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         X_input = X
         X, cat_features, n_features = _coerce_fit_X(X, cat_features)
         eval_set = _ensure_dense_eval_set(eval_set)
-        eval_set = _validate_eval_set_features(eval_set, n_features)
-        y = np.asarray(y)
+        eval_set = _validate_eval_set_features(
+            eval_set, n_features,
+            expected_feature_names=_feature_names_from_input(X_input),
+        )
+        y = validate_target_vector(y, X.shape[0])
         classes = np.unique(y)
         n_classes = classes.size
         if n_classes < 2:
@@ -1036,6 +1251,7 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         sample_weight = _validate_wrapper_sample_weight(
             sample_weight, X.shape[0]
         )
+        _reject_eval_sample_weight_without_eval_set(eval_sample_weight, eval_set)
         X_full, y_full = X, y
         sample_weight_full = sample_weight
         explicit_eval_set = eval_set is not None
@@ -1048,11 +1264,13 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         split_eval_n = None
 
         self._clear_refit_selection_metadata()
+        tree_mode_auto = _is_auto_tree_mode(self.tree_mode)
+        self._validate_tree_mode_selection_request()
         if self.refit:
             self._refit_strategy_exponent(self.refit_strategy)
         es_active = _should_early_stop(self.early_stopping)
         if (
-            es_active
+            (es_active or tree_mode_auto)
             and eval_set is None
             and validation_strategy_ == "weighted_stratified"
         ):
@@ -1060,7 +1278,13 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                 "validation_strategy='weighted_stratified' is only supported "
                 "for regression automatic validation splits"
             )
-        if es_active and eval_set is None:
+        if (es_active or tree_mode_auto) and eval_set is None:
+            if eval_sample_weight is not None:
+                raise ValueError(
+                    "eval_sample_weight requires an explicit eval_set; "
+                    "automatic validation splits derive validation weights "
+                    "from sample_weight"
+                )
             n_total = X.shape[0]
             validation_fraction_resolved = _resolve_validation_fraction(
                 self.validation_fraction, sample_weight, n_total
@@ -1087,7 +1311,8 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         if es_active and es_rounds is None:
             es_rounds = "auto"
         selection_active = (
-            eval_set is not None and (es_rounds is not None or self.use_best_model)
+            eval_set is not None
+            and (es_rounds is not None or self.use_best_model or tree_mode_auto)
         )
         if self.refit and selection_active:
             self._validate_refit_strategy_for_fit(self.refit_strategy)
@@ -1096,6 +1321,7 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
               if k not in _SKLEARN_ONLY}
         kw["early_stopping_rounds"] = es_rounds
         probe_metadata = None
+        tree_mode_selection_metadata = None
 
         if n_classes == 2:
             multiclass = False
@@ -1105,42 +1331,68 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                 if np.any(~np.isin(np.asarray(yv), classes)):
                     raise ValueError("eval_set contains labels not present in training data")
                 eval_set = (Xv, (np.asarray(yv) == classes[1]).astype(np.float64))
-            probe_lr, probe_metadata = self._run_learning_rate_probe(
-                lambda probe_kw: GradientBoosting(loss="Logloss", **probe_kw),
-                X, y01,
-                cat_features=cat_features,
-                eval_set=eval_set,
-                sample_weight=sample_weight,
-                eval_sample_weight=eval_sample_weight,
-                fit_kwargs=kw,
+            make_model = lambda model_kw: GradientBoosting(
+                loss="Logloss", **model_kw
             )
-            if probe_lr is not None:
-                kw["learning_rate"] = probe_lr
-            model = GradientBoosting(loss="Logloss", **kw)
-            model.fit(
-                X, y01, cat_features=cat_features, eval_set=eval_set,
-                sample_weight=sample_weight,
-                eval_sample_weight=eval_sample_weight,
-            )
+            if tree_mode_auto:
+                model, probe_metadata, tree_mode_selection_metadata = (
+                    self._fit_tree_mode_auto(
+                        make_model, kw, X, y01,
+                        cat_features=cat_features,
+                        eval_set=eval_set,
+                        sample_weight=sample_weight,
+                        eval_sample_weight=eval_sample_weight,
+                    )
+                )
+            else:
+                probe_lr, probe_metadata = self._run_learning_rate_probe(
+                    make_model,
+                    X, y01,
+                    cat_features=cat_features,
+                    eval_set=eval_set,
+                    sample_weight=sample_weight,
+                    eval_sample_weight=eval_sample_weight,
+                    fit_kwargs=kw,
+                )
+                if probe_lr is not None:
+                    kw["learning_rate"] = probe_lr
+                model = make_model(kw)
+                model.fit(
+                    X, y01, cat_features=cat_features, eval_set=eval_set,
+                    sample_weight=sample_weight,
+                    eval_sample_weight=eval_sample_weight,
+                )
         else:
             multiclass = True
-            probe_lr, probe_metadata = self._run_learning_rate_probe(
-                lambda probe_kw: MulticlassBoosting(**probe_kw),
-                X, y,
-                cat_features=cat_features,
-                eval_set=eval_set,
-                sample_weight=sample_weight,
-                eval_sample_weight=eval_sample_weight,
-                fit_kwargs=kw,
-            )
-            if probe_lr is not None:
-                kw["learning_rate"] = probe_lr
-            model = MulticlassBoosting(**kw)
-            model.fit(
-                X, y, cat_features=cat_features, eval_set=eval_set,
-                sample_weight=sample_weight,
-                eval_sample_weight=eval_sample_weight,
-            )
+            make_model = lambda model_kw: MulticlassBoosting(**model_kw)
+            if tree_mode_auto:
+                model, probe_metadata, tree_mode_selection_metadata = (
+                    self._fit_tree_mode_auto(
+                        make_model, kw, X, y,
+                        cat_features=cat_features,
+                        eval_set=eval_set,
+                        sample_weight=sample_weight,
+                        eval_sample_weight=eval_sample_weight,
+                    )
+                )
+            else:
+                probe_lr, probe_metadata = self._run_learning_rate_probe(
+                    make_model,
+                    X, y,
+                    cat_features=cat_features,
+                    eval_set=eval_set,
+                    sample_weight=sample_weight,
+                    eval_sample_weight=eval_sample_weight,
+                    fit_kwargs=kw,
+                )
+                if probe_lr is not None:
+                    kw["learning_rate"] = probe_lr
+                model = make_model(kw)
+                model.fit(
+                    X, y, cat_features=cat_features, eval_set=eval_set,
+                    sample_weight=sample_weight,
+                    eval_sample_weight=eval_sample_weight,
+                )
             classes = model.classes_
         self.model_ = model
         self._multiclass = multiclass
@@ -1151,6 +1403,8 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
             split_source = "explicit_eval_set"
             realized_validation_policy = "explicit_eval_set"
             split_eval_n = len(eval_set[1]) if eval_set is not None else None
+        elif tree_mode_auto and not es_active:
+            split_source = "automatic_tree_mode_selection"
         elif es_active:
             split_source = "automatic"
         else:
@@ -1170,6 +1424,7 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         }
         self._attach_validation_metadata(validation_metadata)
         self._attach_learning_rate_probe_metadata(probe_metadata)
+        self._attach_tree_mode_selection_metadata(tree_mode_selection_metadata)
         selection_model = self.model_
         self._record_selection_result(selection_model)
 
@@ -1211,6 +1466,7 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
             self._attach_validation_metadata(refit_validation_metadata)
             self._attach_selection_validation_metadata(validation_metadata)
             self._attach_learning_rate_probe_metadata(probe_metadata)
+            self._attach_tree_mode_selection_metadata(tree_mode_selection_metadata)
         return self
 
     def predict_proba(self, X):

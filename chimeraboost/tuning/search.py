@@ -15,7 +15,12 @@ import numpy as np
 from sklearn.base import BaseEstimator, clone, is_classifier
 from sklearn.utils.validation import check_is_fitted
 
-from .._validation import n_features_from_array_like, normalize_cat_features
+from .._validation import (
+    n_features_from_array_like,
+    n_samples_from_array_like,
+    normalize_cat_features,
+    validate_target_vector,
+)
 from .optuna_backend import create_study, import_optuna, load_study, make_storage
 from .results import build_cv_results, phase_summary, weighted_mean
 from .scoring import resolve_scorer, score_estimator
@@ -26,6 +31,21 @@ from .spaces import (
     phase_names,
 )
 from .validation import make_cv_splits, slice_fit_payload, validation_mass
+
+
+def _validate_search_sample_weight(sample_weight, n_samples, name="sample_weight"):
+    if sample_weight is None:
+        return None
+    w = np.asarray(sample_weight, dtype=np.float64)
+    if w.shape != (int(n_samples),):
+        raise ValueError(f"{name} must have shape ({int(n_samples)},)")
+    if not np.all(np.isfinite(w)):
+        raise ValueError(f"{name} must contain only finite values")
+    if np.any(w < 0.0):
+        raise ValueError(f"{name} must be nonnegative")
+    if float(np.sum(w)) <= 0.0:
+        raise ValueError(f"{name} must have positive total weight")
+    return w
 
 
 class ChimeraBoostStepwiseSearchCV(BaseEstimator):
@@ -97,10 +117,10 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
         optuna = import_optuna()
         if self.n_trials is None and self.timeout is None:
             raise ValueError("at least one of n_trials or timeout must be set")
-        y_arr = np.asarray(y)
-        sample_weight_arr = (
-            None if sample_weight is None
-            else np.asarray(sample_weight, dtype=np.float64)
+        n_samples = n_samples_from_array_like(X)
+        y_arr = validate_target_vector(y, n_samples)
+        sample_weight_arr = _validate_search_sample_weight(
+            sample_weight, n_samples
         )
         classifier = is_classifier(self.estimator)
         self.scorer_ = resolve_scorer(
@@ -115,6 +135,11 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
         self.trial_thread_count_ = _resolve_trial_thread_count(
             self.trial_thread_count, self.n_workers_
         )
+        if eval_sample_weight is not None and eval_set is None:
+            raise ValueError(
+                "eval_sample_weight requires an explicit eval_set; CV "
+                "validation weights are derived from sample_weight"
+            )
         self.study_name_ = (
             self.study_name
             or f"chimeraboost-stepwise-search-{uuid.uuid4().hex}"
@@ -139,15 +164,31 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
                 X, y_arr, cv=self.cv, groups=groups, classifier=classifier,
                 random_state=self.random_state,
                 validation_fraction=self.validation_fraction,
+                sample_weight=sample_weight_arr,
             )
         else:
             X_eval, y_eval = eval_set
+            eval_n_features = n_features_from_array_like(
+                X_eval, name="eval_set[0]"
+            )
+            if eval_n_features != int(n_features):
+                raise ValueError(
+                    f"eval_set[0] has {eval_n_features} features, but X has "
+                    f"{int(n_features)} features"
+                )
+            y_eval_arr = validate_target_vector(
+                y_eval,
+                n_samples_from_array_like(X_eval, name="eval_set[0]"),
+                name="eval_set[1]",
+            )
+            eval_sample_weight_arr = _validate_search_sample_weight(
+                eval_sample_weight, y_eval_arr.shape[0],
+                name="eval_sample_weight"
+            )
             eval_payload = (
                 X_eval,
-                np.asarray(y_eval),
-                None if eval_sample_weight is None else np.asarray(
-                    eval_sample_weight, dtype=np.float64
-                ),
+                y_eval_arr,
+                eval_sample_weight_arr,
             )
             self.cv_splits_ = [(np.arange(y_arr.shape[0]), None)]
         self.n_splits_ = len(self.cv_splits_)
@@ -610,6 +651,11 @@ def _build_model_params(estimator, lane_state, suggested):
         key: value for key, value in suggested.items()
         if key not in _RUNTIME_PARAM_KEYS
     })
+    tree_mode = str(params.get("tree_mode", "catboost")).lower().replace("-", "_")
+    if tree_mode not in {"lightgbm", "leafwise", "leaf_wise",
+                         "hybrid", "hybrid_leafwise", "shared_prefix",
+                         "auto"}:
+        params["num_leaves"] = None
     return _filter_params(params, estimator)
 
 

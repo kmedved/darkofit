@@ -19,7 +19,11 @@ from benchmark_adapters import (  # noqa: E402
     policy_suite_specs,
     split_case,
 )
-from bench_compare_revisions import _base_row, _effective_sampling  # noqa: E402
+from bench_compare_revisions import (  # noqa: E402
+    _base_row,
+    _effective_sampling,
+    _selection_timing_fields,
+)
 from weighted_metrics import metric_bundle  # noqa: E402
 
 
@@ -120,7 +124,28 @@ def test_effective_sampling_keeps_multiclass_uniform_for_goss_config():
     assert _effective_sampling("multiclass", cfg) == "uniform"
 
 
-def test_estimator_kwargs_num_leaves_only_for_lightgbm():
+def test_selection_timing_fields_record_auto_overhead_scope():
+    core = type("Core", (), {"tree_mode_": "hybrid"})()
+    model = type(
+        "Model",
+        (),
+        {"model_": core, "tree_mode_selection_": {"selected_tree_mode": "hybrid"}},
+    )()
+    fields = _selection_timing_fields(model, fit_seconds=12.5, boost_seconds=3.0)
+
+    assert fields["selected_tree_mode"] == "hybrid"
+    assert fields["timing_scope"] == "selected_model"
+    assert fields["selection_overhead_seconds"] == 9.5
+
+    plain = type("Plain", (), {"model_": core})()
+    plain_fields = _selection_timing_fields(
+        plain, fit_seconds=4.0, boost_seconds=3.5
+    )
+    assert plain_fields["timing_scope"] == "fit_model"
+    assert plain_fields["selection_overhead_seconds"] == ""
+
+
+def test_estimator_kwargs_num_leaves_only_for_leafwise_modes():
     cfg = FitConfig(num_leaves=15)
 
     catboost = estimator_kwargs(
@@ -135,9 +160,23 @@ def test_estimator_kwargs_num_leaves_only_for_lightgbm():
         RevisionSpec("candidate_lightgbm_leafwise", "/repo", tree_mode="lightgbm"),
         seed=0,
     )
+    hybrid = estimator_kwargs(
+        IterationsEstimator,
+        cfg,
+        RevisionSpec("candidate_hybrid_leafwise", "/repo", tree_mode="hybrid"),
+        seed=0,
+    )
+    auto = estimator_kwargs(
+        IterationsEstimator,
+        cfg,
+        RevisionSpec("candidate_tree_auto", "/repo", tree_mode="auto"),
+        seed=0,
+    )
 
     assert "num_leaves" not in catboost
     assert lightgbm["num_leaves"] == 15
+    assert hybrid["num_leaves"] == 15
+    assert auto["num_leaves"] == 15
 
 
 def test_estimator_kwargs_ordered_boosting_scoped_by_tree_mode():
@@ -155,9 +194,23 @@ def test_estimator_kwargs_ordered_boosting_scoped_by_tree_mode():
         RevisionSpec("candidate_lightgbm_leafwise", "/repo", tree_mode="lightgbm"),
         seed=0,
     )
+    hybrid = estimator_kwargs(
+        IterationsEstimator,
+        cfg,
+        RevisionSpec("candidate_hybrid_leafwise", "/repo", tree_mode="hybrid"),
+        seed=0,
+    )
+    auto = estimator_kwargs(
+        IterationsEstimator,
+        cfg,
+        RevisionSpec("candidate_tree_auto", "/repo", tree_mode="auto"),
+        seed=0,
+    )
 
     assert catboost["ordered_boosting"] is True
     assert lightgbm["ordered_boosting"] is False
+    assert hybrid["ordered_boosting"] is False
+    assert auto["ordered_boosting"] == "auto"
 
 
 def test_estimator_kwargs_maps_n_estimators_api_and_rejects_tree_mode():
@@ -220,8 +273,12 @@ def test_default_revision_specs_expand_expected_labels():
         "fork_lightgbm_leafwise_matched",
         "candidate_catboost",
         "candidate_lightgbm_leafwise",
+        "candidate_hybrid_leafwise",
+        "candidate_tree_auto",
     ]
     assert specs[3].tree_mode == "lightgbm"
+    assert specs[6].tree_mode == "hybrid"
+    assert specs[7].tree_mode == "auto"
     assert specs[0].use_defaults is True
 
 
@@ -232,13 +289,17 @@ def test_policy_suite_specs_expands_default_regret_policies():
         "candidate_default",
         "candidate_catboost_explicit",
         "candidate_lightgbm_explicit",
+        "candidate_hybrid_explicit",
+        "candidate_tree_auto_explicit",
         "candidate_depthwise_default",
     ]
     assert specs[0].use_defaults is True
     assert specs[1].tree_mode == "catboost"
     assert specs[2].tree_mode == "lightgbm"
-    assert specs[3].tree_mode == "depthwise"
-    assert specs[3].use_defaults is True
+    assert specs[3].tree_mode == "hybrid"
+    assert specs[4].tree_mode == "auto"
+    assert specs[5].tree_mode == "depthwise"
+    assert specs[5].use_defaults is True
 
 
 def test_base_row_reports_default_policy_training_rows_without_validation():

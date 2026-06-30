@@ -2208,6 +2208,136 @@ def _best_split_serial(hg, hh, n_bins_per_feature, l2, feat_mask,
 
 
 @njit(cache=True)
+def _best_shared_split_counts(hg, hh, hc, n_bins_per_feature, l2, feat_mask,
+                              min_child_weight, min_child_samples, n_leaves):
+    """Best shared split across active leaves with Hessian and count legality."""
+    n_features = hg.shape[0]
+    max_bins = hg.shape[2]
+    Gt = np.empty(n_leaves)
+    Ht = np.empty(n_leaves)
+    Ct = np.empty(n_leaves)
+    GL = np.empty(n_leaves)
+    HL = np.empty(n_leaves)
+    CL = np.empty(n_leaves)
+    parent_gain = np.empty(n_leaves)
+
+    best_f = 0
+    best_t = -1
+    best_gain = -np.inf
+
+    for f in range(n_features):
+        if feat_mask[f] == 0:
+            continue
+        nb = n_bins_per_feature[f]
+        for l in range(n_leaves):
+            gt = 0.0
+            ht = 0.0
+            ct = 0.0
+            for b in range(nb):
+                gt += hg[f, l, b]
+                ht += hh[f, l, b]
+                ct += hc[f, l, b]
+            Gt[l] = gt
+            Ht[l] = ht
+            Ct[l] = ct
+            GL[l] = 0.0
+            HL[l] = 0.0
+            CL[l] = 0.0
+            parent_denom = ht + l2
+            if ht > 0.0 and parent_denom > 0.0:
+                parent_gain[l] = gt * gt / parent_denom
+            else:
+                parent_gain[l] = 0.0
+
+        feat_best_gain = -np.inf
+        feat_best_t = -1
+        for t in range(nb - 1):
+            gain = 0.0
+            legal = True
+            any_nonempty = False
+            for l in range(n_leaves):
+                GL[l] += hg[f, l, t]
+                HL[l] += hh[f, l, t]
+                CL[l] += hc[f, l, t]
+
+                if Ct[l] > 0.0:
+                    any_nonempty = True
+                    hl = HL[l]
+                    hr = Ht[l] - hl
+                    cl = CL[l]
+                    cr = Ct[l] - cl
+                    left_denom = hl + l2
+                    right_denom = hr + l2
+                    parent_denom = Ht[l] + l2
+                    if (
+                        hl < min_child_weight
+                        or hr < min_child_weight
+                        or cl < min_child_samples
+                        or cr < min_child_samples
+                        or left_denom <= 0.0
+                        or right_denom <= 0.0
+                        or parent_denom <= 0.0
+                    ):
+                        legal = False
+                    else:
+                        gl = GL[l]
+                        gr = Gt[l] - gl
+                        gain += (
+                            gl * gl / left_denom
+                            + gr * gr / right_denom
+                            - parent_gain[l]
+                        )
+            if legal and any_nonempty and gain > feat_best_gain:
+                feat_best_gain = gain
+                feat_best_t = t
+
+        if feat_best_gain > best_gain:
+            best_gain = feat_best_gain
+            best_f = f
+            best_t = feat_best_t
+
+    return best_f, best_t, best_gain
+
+
+@njit(cache=True)
+def _shared_split_leaf_gains(hg, hh, n_bins_per_feature, l2, feature,
+                             threshold, n_leaves, out_gain):
+    """Fill true per-leaf gains for a selected shared split."""
+    nb = n_bins_per_feature[feature]
+    for l in range(n_leaves):
+        gt = 0.0
+        ht = 0.0
+        gl = 0.0
+        hl = 0.0
+        for b in range(nb):
+            gb = hg[feature, l, b]
+            hb = hh[feature, l, b]
+            gt += gb
+            ht += hb
+            if b <= threshold:
+                gl += gb
+                hl += hb
+        hr = ht - hl
+        parent_denom = ht + l2
+        left_denom = hl + l2
+        right_denom = hr + l2
+        if (
+            ht > 0.0
+            and parent_denom > 0.0
+            and left_denom > 0.0
+            and right_denom > 0.0
+        ):
+            gr = gt - gl
+            out_gain[l] = (
+                gl * gl / left_denom
+                + gr * gr / right_denom
+                - gt * gt / parent_denom
+            )
+        else:
+            out_gain[l] = 0.0
+
+
+@njit(cache=True)
 def _assign_leaves(X_binned, splits_feat, splits_thr):
     """Map every row to its leaf index given the chosen splits."""
     n = X_binned.shape[0]
@@ -3160,26 +3290,29 @@ def _best_multiclass_splits_for_leaf_ids_counts(
         out_gain[l] = best_gain
 
 
+@njit(cache=True)
 def _split_noise(random_strength, split_seed, tree_iteration, step, leaf, feature,
                  threshold):
     if random_strength <= 0.0:
         return 0.0
-    x = int(split_seed)
-    x ^= (int(tree_iteration) + 0x9E3779B97F4A7C15) & 0xFFFFFFFFFFFFFFFF
-    x ^= (int(step) + 0xBF58476D1CE4E5B9) & 0xFFFFFFFFFFFFFFFF
-    x ^= (int(leaf) + 0x94D049BB133111EB) & 0xFFFFFFFFFFFFFFFF
-    x ^= (int(feature) * 0x2545F4914F6CDD1D) & 0xFFFFFFFFFFFFFFFF
-    x ^= (int(threshold) * 0xD6E8FEB86659FD93) & 0xFFFFFFFFFFFFFFFF
-    x &= 0xFFFFFFFFFFFFFFFF
-    x ^= x >> 30
-    x = (x * 0xBF58476D1CE4E5B9) & 0xFFFFFFFFFFFFFFFF
-    x ^= x >> 27
-    x = (x * 0x94D049BB133111EB) & 0xFFFFFFFFFFFFFFFF
-    x ^= x >> 31
-    unit = (x >> 11) * (1.0 / (1 << 53))
+    mask = np.uint64(0xFFFFFFFFFFFFFFFF)
+    x = np.uint64(split_seed)
+    x ^= (np.uint64(tree_iteration) + np.uint64(0x9E3779B97F4A7C15)) & mask
+    x ^= (np.uint64(step) + np.uint64(0xBF58476D1CE4E5B9)) & mask
+    x ^= (np.uint64(leaf) + np.uint64(0x94D049BB133111EB)) & mask
+    x ^= (np.uint64(feature) * np.uint64(0x2545F4914F6CDD1D)) & mask
+    x ^= (np.uint64(threshold) * np.uint64(0xD6E8FEB86659FD93)) & mask
+    x &= mask
+    x ^= x >> np.uint64(30)
+    x = (x * np.uint64(0xBF58476D1CE4E5B9)) & mask
+    x ^= x >> np.uint64(27)
+    x = (x * np.uint64(0x94D049BB133111EB)) & mask
+    x ^= x >> np.uint64(31)
+    unit = float(x >> np.uint64(11)) * (1.0 / float(1 << 53))
     return random_strength * (2.0 * unit - 1.0)
 
 
+@njit(cache=True)
 def _noisy_score(gain, random_strength, split_seed, tree_iteration, step, leaf,
                  feature, threshold):
     if not np.isfinite(gain):
@@ -3190,6 +3323,7 @@ def _noisy_score(gain, random_strength, split_seed, tree_iteration, step, leaf,
     )
 
 
+@njit(cache=True)
 def _best_split_with_noise_py(hg, hh, n_bins_per_feature, l2, feat_mask,
                               min_child_weight, n_leaves, random_strength,
                               split_seed, tree_iteration, step, min_gain):
@@ -3247,6 +3381,73 @@ def _best_split_with_noise_py(hg, hh, n_bins_per_feature, l2, feat_mask,
     return best_f, best_t, best_gain
 
 
+@njit(cache=True)
+def _best_shared_split_counts_with_noise_py(
+    hg, hh, hc, n_bins_per_feature, l2, feat_mask, min_child_weight,
+    min_child_samples, n_leaves, random_strength, split_seed, tree_iteration,
+    step, min_gain
+):
+    n_features = hg.shape[0]
+    best_f = 0
+    best_t = -1
+    best_gain = -np.inf
+    best_score = -np.inf
+    for f in range(n_features):
+        if feat_mask[f] == 0:
+            continue
+        nb = int(n_bins_per_feature[f])
+        gt = hg[f, :n_leaves, :nb].sum(axis=1)
+        ht = hh[f, :n_leaves, :nb].sum(axis=1)
+        ct = hc[f, :n_leaves, :nb].sum(axis=1)
+        gl = np.zeros(n_leaves, dtype=np.float64)
+        hl = np.zeros(n_leaves, dtype=np.float64)
+        cl = np.zeros(n_leaves, dtype=np.float64)
+        parent = np.zeros(n_leaves, dtype=np.float64)
+        ok_parent = (ht > 0.0) & ((ht + l2) > 0.0)
+        parent[ok_parent] = gt[ok_parent] * gt[ok_parent] / (ht[ok_parent] + l2)
+        for t in range(nb - 1):
+            gl += hg[f, :n_leaves, t]
+            hl += hh[f, :n_leaves, t]
+            cl += hc[f, :n_leaves, t]
+            gain = 0.0
+            legal = True
+            any_nonempty = False
+            for l in range(n_leaves):
+                if ct[l] <= 0.0:
+                    continue
+                any_nonempty = True
+                hr = ht[l] - hl[l]
+                cr = ct[l] - cl[l]
+                left_denom = hl[l] + l2
+                right_denom = hr + l2
+                parent_denom = ht[l] + l2
+                if (
+                    hl[l] < min_child_weight
+                    or hr < min_child_weight
+                    or cl[l] < min_child_samples
+                    or cr < min_child_samples
+                    or left_denom <= 0.0
+                    or right_denom <= 0.0
+                    or parent_denom <= 0.0
+                ):
+                    legal = False
+                    break
+                gr = gt[l] - gl[l]
+                gain += gl[l] * gl[l] / left_denom + gr * gr / right_denom - parent[l]
+            if legal and any_nonempty and gain > min_gain:
+                score = _noisy_score(
+                    gain, random_strength, split_seed, tree_iteration, step,
+                    -1, f, t
+                )
+                if score > best_score:
+                    best_score = score
+                    best_gain = gain
+                    best_f = f
+                    best_t = t
+    return best_f, best_t, best_gain
+
+
+@njit(cache=True)
 def _best_splits_by_leaf_with_noise_py(hg, hh, n_bins_per_feature, l2,
                                        feat_mask, min_child_weight, n_leaves,
                                        out_feat, out_thr, out_gain,
@@ -3298,6 +3499,7 @@ def _best_splits_by_leaf_with_noise_py(hg, hh, n_bins_per_feature, l2,
         out_gain[l] = best_gain
 
 
+@njit(cache=True)
 def _best_splits_counts_for_leaf_ids_with_noise_py(
     hg, hh, hc, n_bins_per_feature, l2, feat_mask, min_child_weight,
     min_child_samples, leaf_ids, n_leaf_ids, out_feat, out_thr, out_gain,
@@ -3359,6 +3561,7 @@ def _best_splits_counts_for_leaf_ids_with_noise_py(
         out_gain[l] = best_gain
 
 
+@njit(cache=True)
 def _best_multiclass_splits_counts_for_leaf_ids_with_noise_py(
     hg, hh, hc, n_bins_per_feature, l2, feat_mask, min_child_weight,
     min_child_samples, leaf_ids, n_leaf_ids, out_feat, out_thr, out_gain,
@@ -4219,7 +4422,7 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                         fused_changed_leaf_scoring=False,
                         rowpar_buffers=None, root_histograms=None,
                         random_strength=0.0, split_seed=0,
-                        tree_iteration=0):
+                        tree_iteration=0, shared_trunk_depth=0):
     """Grow a LightGBM-like leaf-wise, best-first non-oblivious tree.
 
     This builder chooses the best legal split for each current leaf, then splits
@@ -4408,6 +4611,155 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
     actual_depth = 0
     can_reuse_leaf_histograms = reuse_leaf_histograms
     histograms_initialized = False
+    shared_trunk_depth = int(shared_trunk_depth)
+    if shared_trunk_depth < 0:
+        raise ValueError("shared_trunk_depth must be nonnegative")
+
+    if shared_trunk_depth and max_leaves > 1:
+        trunk_levels = shared_trunk_depth
+        if max_depth_cap >= 0:
+            trunk_levels = min(trunk_levels, max_depth_cap)
+        while actual_depth < trunk_levels and n_leaves * 2 <= max_leaves:
+            if use_serial_kernels:
+                if constant_hessian and row_indices is None and feature_indices is None:
+                    _build_histograms_unit_hess_into_serial(
+                        X_binned, grad, leaf, n_leaves, hg, hh
+                    )
+                elif constant_hessian and row_indices is None:
+                    _build_histograms_selected_unit_hess_into_serial(
+                        X_binned, grad, leaf, n_leaves, hg, hh,
+                        feature_indices
+                    )
+                elif constant_hessian and feature_indices is None:
+                    _build_histograms_rows_unit_hess_into_serial(
+                        X_binned, grad, leaf, n_leaves, hg, hh,
+                        row_indices
+                    )
+                elif constant_hessian:
+                    _build_histograms_selected_rows_unit_hess_into_serial(
+                        X_binned, grad, leaf, n_leaves, hg, hh,
+                        feature_indices, row_indices
+                    )
+                elif row_indices is None and feature_indices is None:
+                    _build_histograms_counts_into_serial(
+                        X_binned, grad, hess, leaf, n_leaves, hg, hh, hc
+                    )
+                elif row_indices is None:
+                    _build_histograms_counts_selected_into_serial(
+                        X_binned, grad, hess, leaf, n_leaves, hg, hh, hc,
+                        feature_indices
+                    )
+                elif feature_indices is None:
+                    _build_histograms_counts_rows_into_serial(
+                        X_binned, grad, hess, leaf, n_leaves, hg, hh, hc,
+                        row_indices
+                    )
+                else:
+                    _build_histograms_counts_selected_rows_into_serial(
+                        X_binned, grad, hess, leaf, n_leaves, hg, hh, hc,
+                        feature_indices, row_indices
+                    )
+            else:
+                if constant_hessian and row_indices is None and feature_indices is None:
+                    _build_histograms_unit_hess_into(
+                        X_hist_binned, grad, leaf, n_leaves, hg, hh
+                    )
+                elif constant_hessian and row_indices is None:
+                    _build_histograms_selected_unit_hess_into(
+                        X_hist_binned, grad, leaf, n_leaves, hg, hh,
+                        feature_indices
+                    )
+                elif constant_hessian and feature_indices is None:
+                    _build_histograms_rows_unit_hess_into(
+                        X_hist_binned, grad, leaf, n_leaves, hg, hh,
+                        row_indices
+                    )
+                elif constant_hessian:
+                    _build_histograms_selected_rows_unit_hess_into(
+                        X_hist_binned, grad, leaf, n_leaves, hg, hh,
+                        feature_indices, row_indices
+                    )
+                elif row_indices is None and feature_indices is None:
+                    _build_histograms_counts_into(
+                        X_hist_binned, grad, hess, leaf, n_leaves, hg, hh, hc
+                    )
+                elif row_indices is None:
+                    _build_histograms_counts_selected_into(
+                        X_hist_binned, grad, hess, leaf, n_leaves, hg, hh, hc,
+                        feature_indices
+                    )
+                elif feature_indices is None:
+                    _build_histograms_counts_rows_into(
+                        X_hist_binned, grad, hess, leaf, n_leaves, hg, hh, hc,
+                        row_indices
+                    )
+                else:
+                    _build_histograms_counts_selected_rows_into(
+                        X_hist_binned, grad, hess, leaf, n_leaves, hg, hh, hc,
+                        feature_indices, row_indices
+                    )
+
+            count_hist = hh if constant_hessian else hc
+            if random_strength > 0.0:
+                f, t, gain = _best_shared_split_counts_with_noise_py(
+                    hg, hh, count_hist, n_bins_per_feature, l2, feature_mask,
+                    min_child_weight, min_child_samples, n_leaves,
+                    random_strength, split_seed, tree_iteration, actual_depth,
+                    min_gain_to_split
+                )
+            else:
+                f, t, gain = _best_shared_split_counts(
+                    hg, hh, count_hist, n_bins_per_feature, l2, feature_mask,
+                    min_child_weight, min_child_samples, n_leaves
+                )
+            if t < 0 or gain <= min_gain_to_split:
+                break
+
+            old_n_leaves = n_leaves
+            shared_leaf_gains = np.empty(old_n_leaves, dtype=np.float64)
+            _shared_split_leaf_gains(
+                hg, hh, n_bins_per_feature, l2, int(f), int(t),
+                old_n_leaves, shared_leaf_gains
+            )
+            next_leaf_node = np.empty(max_leaves, dtype=np.int64)
+            next_leaf_depth = np.zeros(max_leaves, dtype=np.int64)
+            for l in range(old_n_leaves):
+                node = leaf_node[l]
+                left = n_nodes
+                right = n_nodes + 1
+                n_nodes += 2
+                features[node] = int(f)
+                thresholds[node] = int(t)
+                left_child[node] = left
+                right_child[node] = right
+                leaf_index[node] = -1
+                left_leaf = 2 * l
+                right_leaf = left_leaf + 1
+                next_leaf_node[left_leaf] = left
+                next_leaf_node[right_leaf] = right
+                next_leaf_depth[left_leaf] = leaf_depth[l] + 1
+                next_leaf_depth[right_leaf] = leaf_depth[l] + 1
+                leaf_index[left] = left_leaf
+                leaf_index[right] = right_leaf
+                split_features.append(int(f))
+                split_thresholds.append(int(t))
+                split_gains.append(float(shared_leaf_gains[l]))
+            leaf_node[:2 * old_n_leaves] = next_leaf_node[:2 * old_n_leaves]
+            leaf_depth[:2 * old_n_leaves] = next_leaf_depth[:2 * old_n_leaves]
+            _update_leaves_with_split(X_binned, leaf, int(f), int(t))
+            n_leaves = 2 * old_n_leaves
+            actual_depth += 1
+
+        if n_leaves > 1:
+            if row_indices is None:
+                row_order = np.argsort(leaf, kind="stable").astype(np.int64)
+            else:
+                row_order = row_order[np.argsort(leaf[row_order], kind="stable")]
+            counts = np.bincount(leaf[row_order], minlength=n_leaves).astype(np.int64)
+            leaf_start.fill(0)
+            np.cumsum(counts, out=leaf_start[1:n_leaves + 1])
+            leaf_count[:n_leaves] = counts
+            n_changed_leaves = n_leaves
 
     while n_leaves < max_leaves:
         refill_changed_histograms = (
@@ -4913,6 +5265,52 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
     if return_training_state:
         return tree, leaf, leaf_G, leaf_H
     return tree
+
+
+def build_hybrid_tree(X_binned, grad, hess, n_bins_per_feature,
+                      max_depth, l2, lr, min_gain=1e-8, feature_mask=None,
+                      min_child_weight=1.0, hist_buffers=None,
+                      split_buffers=None, return_training_state=False,
+                      X_hist_binned=None, feature_indices=None,
+                      row_indices=None, constant_hessian=False,
+                      max_leaves=None, min_gain_to_split=None,
+                      min_child_samples=20,
+                      recompute_all_leaf_splits=False,
+                      reuse_leaf_histograms=True,
+                      hessian_always_positive=False,
+                      leafwise_row_layout="auto",
+                      fused_changed_leaf_scoring=False,
+                      rowpar_buffers=None, root_histograms=None,
+                      random_strength=0.0, split_seed=0,
+                      tree_iteration=0, shared_trunk_depth=2):
+    """Grow a shallow shared-prefix tree followed by leaf-wise expansion."""
+    return build_leafwise_tree(
+        X_binned, grad, hess, n_bins_per_feature, max_depth, l2, lr,
+        min_gain=min_gain,
+        feature_mask=feature_mask,
+        min_child_weight=min_child_weight,
+        hist_buffers=hist_buffers,
+        split_buffers=split_buffers,
+        return_training_state=return_training_state,
+        X_hist_binned=X_hist_binned,
+        feature_indices=feature_indices,
+        row_indices=row_indices,
+        constant_hessian=constant_hessian,
+        max_leaves=max_leaves,
+        min_gain_to_split=min_gain_to_split,
+        min_child_samples=min_child_samples,
+        recompute_all_leaf_splits=recompute_all_leaf_splits,
+        reuse_leaf_histograms=reuse_leaf_histograms,
+        hessian_always_positive=hessian_always_positive,
+        leafwise_row_layout=leafwise_row_layout,
+        fused_changed_leaf_scoring=fused_changed_leaf_scoring,
+        rowpar_buffers=rowpar_buffers,
+        root_histograms=root_histograms,
+        random_strength=random_strength,
+        split_seed=split_seed,
+        tree_iteration=tree_iteration,
+        shared_trunk_depth=shared_trunk_depth,
+    )
 
 
 def build_leafwise_multiclass_tree(

@@ -24,6 +24,16 @@ BIN_DTYPE = np.uint16
 DEFAULT_BIN_SAMPLE_COUNT = 200_000
 
 
+def _unique_if_at_most(values, max_unique):
+    """Return sorted uniques only when cardinality is bounded."""
+    seen = set()
+    for value in values:
+        seen.add(float(value))
+        if len(seen) > max_unique:
+            return None
+    return np.array(sorted(seen), dtype=np.float64)
+
+
 def _bin_dtype_for_n_bins(n_bins):
     """Smallest unsigned dtype that can represent every learned bin id."""
     max_bin = int(np.max(n_bins)) - 1 if len(n_bins) else 0
@@ -39,8 +49,8 @@ def _feature_borders(col, max_bins):
     finite = col[np.isfinite(col)]
     if finite.size == 0:
         return np.array([], dtype=np.float64)
-    uniq = np.unique(finite)
-    if uniq.size <= max_bins:
+    uniq = _unique_if_at_most(finite, max_bins)
+    if uniq is not None:
         # Few distinct values: put a border between each pair.
         return ((uniq[:-1] + uniq[1:]) / 2.0).astype(np.float64)
     qs = np.linspace(0.0, 1.0, max_bins + 1)[1:-1]
@@ -173,9 +183,20 @@ class Binner:
             and n_samples > self.sample_count
         ):
             rng = np.random.default_rng(self.random_state)
-            sample_idx = np.sort(
-                rng.choice(n_samples, self.sample_count, replace=False)
-            )
+            if use_weighted_borders:
+                positive_idx = np.flatnonzero(sample_weight > 0.0)
+                if positive_idx.size <= self.sample_count:
+                    sample_idx = positive_idx
+                else:
+                    sample_idx = np.sort(
+                        rng.choice(
+                            positive_idx, self.sample_count, replace=False
+                        )
+                    )
+            else:
+                sample_idx = np.sort(
+                    rng.choice(n_samples, self.sample_count, replace=False)
+                )
         else:
             sample_idx = None
 

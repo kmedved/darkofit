@@ -100,7 +100,7 @@ def suggest_joint_compact(trial, context, state):
             "colsample": trial.suggest_float(f"{prefix}_colsample", 0.6, 1.0),
         }
     return {
-        "tree_mode": "lightgbm",
+        "tree_mode": tree_mode,
         "ordered_boosting": "auto",
         "num_leaves": trial.suggest_categorical(
             f"{prefix}_num_leaves", [7, 15, 31, 63, 127]
@@ -140,7 +140,7 @@ def suggest_structure(trial, context, state):
             "min_child_weight": trial.suggest_float(f"{prefix}_min_child_weight", 1.0, 100.0, log=True),
         }
     return {
-        "tree_mode": "lightgbm",
+        "tree_mode": state.tree_mode,
         "ordered_boosting": "auto",
         "num_leaves": trial.suggest_categorical(f"{prefix}_num_leaves", [7, 15, 31, 63, 127]),
         "depth": trial.suggest_categorical(f"{prefix}_depth", [-1, 3, 4, 5, 6, 8, 10]),
