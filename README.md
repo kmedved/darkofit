@@ -113,7 +113,9 @@ these modes; setting `ordered_boosting=True` with either mode raises a
 Categorical features still use ChimeraBoost's target-stat preprocessing, not
 native LightGBM category-partition splits. CatBoost/depthwise modes use ordered
 target statistics; LightGBM and hybrid modes use K-fold target statistics and
-include raw category-code features for categorical fits, including multiclass.
+include raw category-code features for compatible RMSE/logloss-style scalar and
+multiclass categorical fits. MAE and Quantile fits keep target-stat features
+only.
 
 For compatible LightGBM-mode multiclass fits,
 `multiclass_tree_strategy="auto"` uses a shared vector-valued tree per boosting

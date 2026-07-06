@@ -44,16 +44,30 @@ DEFAULT_PHASES = (
     "binning_categorical",
 )
 
+KNOWN_PHASES = frozenset((
+    "joint_compact",
+    "probe",
+    "structure",
+    "sampling_regularization",
+    "split_noise",
+    "learning_rate",
+    "binning_categorical",
+))
+
 
 def phase_names(phases):
     if phases == "auto":
         return DEFAULT_PHASES
     if isinstance(phases, str):
-        return (phases,)
-    return tuple(phases)
+        names = (phases,)
+    else:
+        names = tuple(phases)
+    _validate_phase_names(names)
+    return names
 
 
 def make_phase_spec(name, lane, n_trials):
+    _validate_phase_names((name,))
     suggest = {
         "joint_compact": suggest_joint_compact,
         "probe": suggest_probe,
@@ -79,6 +93,15 @@ def make_phase_spec(name, lane, n_trials):
     }[name]
     return PhaseSpec(name, lane, None if n_trials is None else int(n_trials),
                      tunable, suggest)
+
+
+def _validate_phase_names(names):
+    unknown = [name for name in names if name not in KNOWN_PHASES]
+    if unknown:
+        valid = ", ".join(sorted(KNOWN_PHASES))
+        raise ValueError(
+            f"unknown tuning phase {unknown[0]!r}; expected one of: {valid}"
+        )
 
 
 def suggest_joint_compact(trial, context, state):

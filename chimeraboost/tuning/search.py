@@ -15,9 +15,11 @@ import numpy as np
 from sklearn.base import BaseEstimator, clone, is_classifier
 from sklearn.utils.validation import check_is_fitted
 
+from ..auto_params import effective_sample_size
 from .._validation import (
     n_features_from_array_like,
     n_samples_from_array_like,
+    normalize_random_state_seed,
     normalize_cat_features,
     validate_target_vector,
 )
@@ -25,6 +27,7 @@ from .optuna_backend import create_study, import_optuna, load_study, make_storag
 from .results import build_cv_results, phase_summary, weighted_mean
 from .scoring import resolve_scorer, score_estimator
 from .spaces import (
+    KNOWN_PHASES,
     LaneState,
     SpaceContext,
     make_phase_spec,
@@ -112,6 +115,13 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
         self.error_score = error_score
         self.verbose = verbose
 
+    @property
+    def _estimator_type(self):
+        estimator_type = getattr(self.estimator, "_estimator_type", None)
+        if estimator_type is not None:
+            return estimator_type
+        return "classifier" if is_classifier(self.estimator) else None
+
     def fit(self, X, y, *, cat_features=None, groups=None, sample_weight=None,
             eval_set=None, eval_sample_weight=None):
         optuna = import_optuna()
@@ -122,6 +132,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
         sample_weight_arr = _validate_search_sample_weight(
             sample_weight, n_samples
         )
+        self.random_state_ = normalize_random_state_seed(self.random_state)
         classifier = is_classifier(self.estimator)
         self.scorer_ = resolve_scorer(
             self.estimator, self.scoring, self.greater_is_better
@@ -156,14 +167,23 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
             resume=self.resume,
             sampler=self.sampler,
             pruner=self.pruner,
+            sampler_seed=self.random_state_,
         )
 
         eval_payload = None
+        validation_fraction = self.validation_fraction
+        if validation_fraction == "auto":
+            n_eff = effective_sample_size(sample_weight_arr, n_samples)
+            validation_fraction = float(
+                np.clip(max(0.10, 200.0 / max(n_eff, 1.0)), 0.10, 0.25)
+            )
+        self.validation_fraction_ = validation_fraction
+
         if eval_set is None:
             self.cv_splits_ = make_cv_splits(
                 X, y_arr, cv=self.cv, groups=groups, classifier=classifier,
-                random_state=self.random_state,
-                validation_fraction=self.validation_fraction,
+                random_state=self.random_state_,
+                validation_fraction=validation_fraction,
                 sample_weight=sample_weight_arr,
             )
         else:
@@ -206,10 +226,11 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
         self.strategy_ = _resolve_strategy(
             self.strategy, self.n_trials, self.phases
         )
+        self.phases_ = tuple(phase_names(self.phases))
         planned_blocks = _make_budget_plan(
             n_trials=self.n_trials,
             timeout=self.timeout,
-            phases=phase_names(self.phases),
+            phases=self.phases_,
             tree_modes=tuple(self.tree_modes),
             strategy=self.strategy_,
         )
@@ -259,7 +280,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
                     phase_spec=spec,
                     lane_state=state,
                     context=context,
-                    random_state=self.random_state,
+                    random_state=self.random_state_,
                     trial_thread_count=self.trial_thread_count_,
                     error_score=self.error_score,
                 )
@@ -267,6 +288,12 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
                     objective_payload, spec.n_trials, optuna,
                     timeout=remaining_timeout, callbacks=callbacks,
                 )
+                if self.verbose:
+                    print(
+                        "ChimeraBoostStepwiseSearchCV "
+                        f"phase={spec.name} lane={state.tree_mode} "
+                        f"trials={spec.n_trials}"
+                    )
                 if self.storage_config_.storage is not None:
                     self.study_ = load_study(
                         storage_config=self.storage_config_,
@@ -289,10 +316,11 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
             t for t in self.study_.trials
             if _is_usable_trial(t)
         ]
+        self.cv_results_ = build_cv_results(self.study_.trials)
+        self.phase_results_ = phase_summary(self.study_.trials)
         if not completed:
             raise ValueError("no completed tuning trials")
         self.best_trial_ = min(completed, key=lambda t: t.value)
-        self.cv_results_ = build_cv_results(self.study_.trials)
         trial_numbers = list(self.cv_results_["trial_number"])
         self.best_index_ = trial_numbers.index(self.best_trial_.number)
         self.best_params_ = dict(
@@ -302,10 +330,9 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
         self.best_trial_params_ = dict(self.best_trial_.user_attrs["params_full"])
         self.best_loss_ = float(self.best_trial_.value)
         self.best_score_ = float(self.best_trial_.user_attrs["mean_score"])
-        self.phase_results_ = phase_summary(self.study_.trials)
         self.tuning_metadata_ = {
             "tree_modes": list(self.tree_modes),
-            "phases": list(phase_names(self.phases)),
+            "phases": list(self.phases_),
             "strategy": self.strategy_,
             "budget_plan_requested": [
                 block.__dict__.copy() for block in self.budget_plan_requested_
@@ -322,7 +349,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
             "storage_kind": self.storage_config_.storage_kind,
             "storage_url": self.storage_config_.storage_url,
             "resume": bool(self.resume),
-            "random_state": self.random_state,
+            "random_state": self.random_state_,
             "refit_rounds": self.refit_rounds,
             "refit_learning_rate": self.refit_learning_rate,
             "objective": "weighted_cv_loss",
@@ -365,6 +392,11 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
         if self.storage_config_.storage is None:
             raise ValueError("multiprocessing requires shared Optuna storage")
         quotas = _split_quota(n_trials, self.n_workers_)
+        if hasattr(self, "random_state_"):
+            sampler_seed_base = self.random_state_
+        else:
+            sampler_seed_base = normalize_random_state_seed(self.random_state)
+        sampler_seeds = _worker_sampler_seeds(sampler_seed_base, len(quotas))
         worker_payload = _WorkerPayload(
             objective_payload=objective_payload,
             storage_url=self.storage_config_.storage_url,
@@ -375,6 +407,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
             sampler=self.sampler,
             pruner=self.pruner,
             n_trials_by_worker=quotas,
+            sampler_seeds=sampler_seeds,
             timeout=timeout,
             callbacks=callbacks,
         )
@@ -408,7 +441,9 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
         if self.refit_learning_rate == "preserve":
             pass
         elif self.refit_learning_rate == "explicit":
-            pass
+            lr = self.best_trial_.user_attrs.get("mean_learning_rate")
+            if lr is not None and np.isfinite(float(lr)):
+                params["learning_rate"] = float(lr)
         elif self.refit_learning_rate == "fold_median":
             if fold_lrs:
                 params["learning_rate"] = float(np.median(fold_lrs))
@@ -420,9 +455,9 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
         params["early_stopping"] = False
         params["early_stopping_rounds"] = None
         params["refit"] = False
-        params["thread_count"] = _resolve_trial_thread_count(
-            self.trial_thread_count, 1
-        )
+        estimator_params = self.estimator.get_params()
+        if "thread_count" in estimator_params:
+            params["thread_count"] = estimator_params.get("thread_count")
         params = _filter_params(params, self.estimator)
 
         final = clone(self.estimator).set_params(**params)
@@ -458,7 +493,7 @@ class _ObjectivePayload:
     context: object
     random_state: object
     trial_thread_count: int
-    error_score: float
+    error_score: object
 
 
 class _TrialObjective:
@@ -544,9 +579,16 @@ class _TrialObjective:
         except optuna.TrialPruned:
             raise
         except Exception as exc:
-            if np.isnan(payload.error_score):
+            if (
+                isinstance(payload.error_score, str)
+                and payload.error_score == "raise"
+            ):
                 raise
-            error_loss = float(payload.error_score)
+            error_loss = (
+                float("inf")
+                if _error_score_is_nan(payload.error_score)
+                else float(payload.error_score)
+            )
             trial.set_user_attr("status", "ERROR_SCORE")
             trial.set_user_attr("error", repr(exc))
             trial.set_user_attr("fold_scores", [])
@@ -557,7 +599,7 @@ class _TrialObjective:
             trial.set_user_attr("mean_loss", error_loss)
             trial.set_user_attr("std_loss", float("nan"))
             trial.set_user_attr("fit_time", float(time.perf_counter() - start))
-            return float(payload.error_score)
+            return error_loss
 
         mean_loss = weighted_mean(fold_losses, fold_masses)
         mean_score = weighted_mean(fold_scores, fold_masses)
@@ -581,6 +623,13 @@ class _TrialObjective:
         return mean_loss
 
 
+def _error_score_is_nan(error_score):
+    try:
+        return bool(np.isnan(float(error_score)))
+    except (TypeError, ValueError):
+        return False
+
+
 @dataclass
 class _WorkerPayload:
     objective_payload: object
@@ -590,11 +639,14 @@ class _WorkerPayload:
     sampler: object
     pruner: object
     n_trials_by_worker: list[int]
+    sampler_seeds: list[int | None]
     timeout: float | None = None
     callbacks: object = None
 
     def iter_workers(self):
-        for n_trials in self.n_trials_by_worker:
+        for n_trials, sampler_seed in zip(
+            self.n_trials_by_worker, self.sampler_seeds
+        ):
             if n_trials is None or n_trials > 0:
                 yield (
                     self.objective_payload,
@@ -604,6 +656,7 @@ class _WorkerPayload:
                     self.sampler,
                     self.pruner,
                     n_trials,
+                    sampler_seed,
                     self.timeout,
                     self.callbacks,
                 )
@@ -611,7 +664,9 @@ class _WorkerPayload:
 
 def _optimize_worker(args):
     (objective_payload, storage_url, study_name, resume, sampler, pruner,
-     n_trials, timeout, callbacks) = args
+     n_trials, sampler_seed, timeout, callbacks) = args
+    if sampler is not None and hasattr(sampler, "reseed_rng"):
+        sampler.reseed_rng()
     storage_config = make_storage(
         storage_url, n_workers=1, study_name=study_name, resume=resume
     )
@@ -621,6 +676,7 @@ def _optimize_worker(args):
         resume=resume,
         sampler=sampler,
         pruner=pruner,
+        sampler_seed=sampler_seed,
     )
     # One trial thread per worker process: Chimeraboost itself receives a
     # bounded thread_count, so Optuna must not add thread-level parallelism.
@@ -675,11 +731,36 @@ def _set_trial_identity_attrs(trial, payload, tree_mode, params, params_model,
                               suggested):
     trial.set_user_attr("phase", payload.phase_spec.name)
     trial.set_user_attr("tree_mode_lane", tree_mode)
-    trial.set_user_attr("params_full", dict(params))
-    trial.set_user_attr("params_model", dict(params_model))
-    trial.set_user_attr("params_suggested", dict(suggested))
+    trial.set_user_attr("params_full", _metadata_safe_params(params))
+    trial.set_user_attr("params_model", _metadata_safe_params(params_model))
+    trial.set_user_attr("params_suggested", _metadata_safe_value(dict(suggested)))
     trial.set_user_attr("sampled_keys", list(suggested.keys()))
-    trial.set_user_attr("params_fixed", dict(payload.lane_state.best_params))
+    trial.set_user_attr(
+        "params_fixed", _metadata_safe_params(payload.lane_state.best_params)
+    )
+
+
+def _metadata_safe_params(params):
+    out = {}
+    for key, value in dict(params).items():
+        if key == "random_state" and isinstance(
+            value, (np.random.RandomState, np.random.Generator)
+        ):
+            continue
+        out[key] = _metadata_safe_value(value)
+    return out
+
+
+def _metadata_safe_value(value):
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, np.ndarray):
+        return [_metadata_safe_value(v) for v in value.tolist()]
+    if isinstance(value, dict):
+        return {str(k): _metadata_safe_value(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_metadata_safe_value(v) for v in value]
+    return value
 
 
 def _filter_params(params, estimator):
@@ -737,6 +818,7 @@ def _is_usable_trial(trial):
         state_name == "COMPLETE"
         and trial.value is not None
         and trial.user_attrs.get("params_full") is not None
+        and trial.user_attrs.get("status") != "ERROR_SCORE"
     )
 
 
@@ -749,6 +831,7 @@ def _study_stop_requested(study):
 
 def _make_budget_plan(n_trials, timeout, phases, tree_modes, strategy):
     tree_modes = tuple(tree_modes)
+    phases = tuple(phases)
     if isinstance(n_trials, Mapping):
         return _mapping_budget_plan(n_trials, phases, tree_modes, strategy)
     if n_trials is None:
@@ -764,6 +847,7 @@ def _make_budget_plan(n_trials, timeout, phases, tree_modes, strategy):
 
 
 def _mapping_budget_plan(n_trials, phases, tree_modes, strategy):
+    _validate_budget_mapping_keys(n_trials, phases, strategy)
     if strategy == "joint":
         total = sum(max(0, int(v)) for v in n_trials.values())
         return _joint_budget_plan(total, tree_modes)
@@ -773,6 +857,32 @@ def _mapping_budget_plan(n_trials, phases, tree_modes, strategy):
         if phase_total > 0:
             blocks.append(TrialBlock(phase, None, phase_total))
     return blocks
+
+
+def _validate_budget_mapping_keys(n_trials, phases, strategy):
+    keys = tuple(n_trials.keys())
+    unknown = [phase for phase in keys if phase not in KNOWN_PHASES]
+    if unknown:
+        _raise_unknown_phase(unknown[0])
+    if strategy == "joint":
+        return
+    omitted = [
+        phase for phase in keys
+        if max(0, int(n_trials.get(phase, 0))) > 0 and phase not in phases
+    ]
+    if omitted:
+        allowed = ", ".join(phases)
+        raise ValueError(
+            f"n_trials specifies phase {omitted[0]!r}, but phases does not "
+            f"include it; configured phases: {allowed}"
+        )
+
+
+def _raise_unknown_phase(phase):
+    valid = ", ".join(sorted(KNOWN_PHASES))
+    raise ValueError(
+        f"unknown tuning phase {phase!r}; expected one of: {valid}"
+    )
 
 
 def _timeout_budget_plan(tree_modes, strategy):
@@ -942,8 +1052,6 @@ class _NoImprovementStopper:
     patience: int
     min_trials: int = 20
     min_delta: float = 0.0
-    best_value: float | None = None
-    best_trial_count: int = 0
 
     def __call__(self, study, trial):
         if study.user_attrs.get("_chimeraboost_stop"):
@@ -956,12 +1064,14 @@ class _NoImprovementStopper:
         n_completed = len(completed)
         if n_completed < self.min_trials:
             return
-        current = min(float(t.value) for t in completed)
-        if self.best_value is None or current < self.best_value - self.min_delta:
-            self.best_value = current
-            self.best_trial_count = n_completed
-            return
-        if n_completed - self.best_trial_count >= self.patience:
+        best_value = float("inf")
+        best_trial_count = 0
+        for count, completed_trial in enumerate(completed, start=1):
+            value = float(completed_trial.value)
+            if value < best_value - self.min_delta:
+                best_value = value
+                best_trial_count = count
+        if n_completed - best_trial_count >= self.patience:
             study.set_user_attr("_chimeraboost_stop", True)
             study.stop()
 
@@ -981,6 +1091,18 @@ def _split_quota(n_trials, n_workers):
     base = int(n_trials) // n_workers
     extra = int(n_trials) % n_workers
     return [base + (1 if i < extra else 0) for i in range(n_workers)]
+
+
+def _worker_sampler_seeds(random_state, n_workers):
+    n_workers = max(0, int(n_workers))
+    if random_state is None:
+        return [None] * n_workers
+    base = int(random_state)
+    modulus = 2 ** 32 - 1
+    return [
+        int((base + 1_000_003 * (idx + 1)) % modulus)
+        for idx in range(n_workers)
+    ]
 
 
 def _fold_seed(random_state, trial_number, fold_idx):

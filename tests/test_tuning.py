@@ -8,6 +8,7 @@ optuna = pytest.importorskip("optuna")
 
 from chimeraboost import ChimeraBoostClassifier, ChimeraBoostRegressor
 import chimeraboost.tuning.search as search_mod
+import chimeraboost.tuning.optuna_backend as optuna_backend_mod
 from chimeraboost.tuning import ChimeraBoostSearchCV, ChimeraBoostStepwiseSearchCV
 from chimeraboost.tuning.optuna_backend import make_storage
 from chimeraboost.tuning.scoring import resolve_scorer
@@ -152,6 +153,26 @@ def test_custom_iterable_cv_splits_accept_lists_with_groups():
     assert np.array_equal(valid_idx, np.array(cv[0][1], dtype=np.int64))
 
 
+def test_custom_iterable_cv_splits_reject_leaky_or_malformed_indices():
+    X = np.arange(24).reshape(12, 2)
+    y = np.tile([0, 1], 6)
+
+    bad_cases = [
+        ([([0, 1, 1, 2], [3, 4])], "unique"),
+        ([([0, 1, 2], [2, 3])], "disjoint"),
+        ([([0, 1, 20], [3, 4])], "out of bounds"),
+        ([([[0, 1], [2, 3]], [4, 5])], "1-dimensional"),
+        ([([0, 1, 2], [3, 3])], "unique"),
+        ([([0, 1, 2], [-1, 3])], "out of bounds"),
+        ([([0.9, 1.0, 2.0], [3, 4])], "integer"),
+    ]
+    for cv, message in bad_cases:
+        with pytest.raises(ValueError, match=message):
+            make_cv_splits(
+                X, y, cv=cv, classifier=False, random_state=0
+            )
+
+
 def test_cv_splits_require_positive_weight_mass_in_each_fold():
     y = np.tile([0, 1], 6)
     splits = [(np.arange(6), np.arange(6, 12))]
@@ -210,6 +231,11 @@ def test_chimeraboost_classifier_has_classifier_tag():
     scorer = resolve_scorer(ChimeraBoostClassifier(), None, None)
     assert scorer.name == "neg_log_loss"
     assert ChimeraBoostSearchCV is ChimeraBoostStepwiseSearchCV
+
+
+def test_searchcv_delegates_estimator_type_to_wrapped_estimator():
+    search = ChimeraBoostStepwiseSearchCV(ChimeraBoostClassifier())
+    assert search._estimator_type == "classifier"
 
 
 class RecordingClassifier(ClassifierMixin, BaseEstimator):
@@ -283,6 +309,29 @@ def keyword_only_weight_scorer(estimator, X, y, *, sample_weight=None):
 
 def positional_weight_scorer(estimator, X, y, weight):
     return -float(np.average(np.ones(len(y)), weights=weight))
+
+
+def test_validation_fraction_auto_holdout_mode_resolves_before_splitter():
+    X = np.arange(80).reshape(40, 2)
+    y = np.tile([0, 1], 20)
+    search = ChimeraBoostStepwiseSearchCV(
+        RecordingClassifier(iterations=3),
+        phases=("probe",),
+        tree_modes=("catboost",),
+        n_trials={"probe": 1},
+        cv=None,
+        validation_fraction="auto",
+        scoring=recording_scorer,
+        refit=False,
+        random_state=0,
+        resume=False,
+    )
+
+    search.fit(X, y)
+
+    assert isinstance(search.validation_fraction_, float)
+    assert 0.10 <= search.validation_fraction_ <= 0.25
+    assert len(search.cv_splits_) == 1
 
 
 def exploding_kwargs_scorer(estimator, X, y, **kwargs):
@@ -436,10 +485,46 @@ def test_storage_defaults_to_journal_for_multiprocessing():
     assert cfg.storage_url.startswith("journal://")
 
 
+def test_default_journal_path_sanitizes_study_name_before_cleanup(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    temp_root = tmp_path / "tmp"
+    temp_root.mkdir()
+    victim = tmp_path / "victim.optuna-journal.log"
+    victim.write_text("keep me\n")
+    monkeypatch.setattr(
+        optuna_backend_mod.tempfile, "gettempdir", lambda: str(temp_root)
+    )
+
+    cfg = make_storage(
+        None,
+        n_workers=2,
+        study_name="../victim",
+        resume=False,
+    )
+    path = Path(cfg.storage_url[len("journal://"):])
+
+    assert cfg.storage_kind == "journal"
+    assert path.parent.resolve() == temp_root.resolve()
+    assert victim.read_text() == "keep me\n"
+
+
 def test_default_single_process_storage_is_fresh_in_memory():
     cfg = make_storage(None, n_workers=1, study_name="cb-test", resume=True)
     assert cfg.storage is None
     assert cfg.storage_kind == "in_memory"
+
+
+def test_user_supplied_journal_storage_is_not_deleted_when_fresh(tmp_path):
+    path = tmp_path / "user-owned.log"
+    path.write_text("not an optuna journal\n")
+
+    cfg = make_storage(
+        f"journal://{path}", n_workers=1, study_name="cb-test", resume=False
+    )
+
+    assert cfg.storage_kind == "journal"
+    assert path.read_text() == "not an optuna journal\n"
 
 
 def test_custom_storage_object_rejected_for_multiprocessing():
@@ -533,6 +618,13 @@ def test_multiprocess_scheduler_uses_spawn_process_workers(monkeypatch, tmp_path
             return []
 
     monkeypatch.setattr(search_mod, "ProcessPoolExecutor", FakeExecutor)
+    monkeypatch.setattr(
+        search_mod,
+        "normalize_random_state_seed",
+        lambda random_state: (_ for _ in ()).throw(
+            AssertionError("unused fallback seed should not be evaluated")
+        ),
+    )
 
     search = ChimeraBoostStepwiseSearchCV(
         RecordingClassifier(iterations=3),
@@ -554,6 +646,7 @@ def test_multiprocess_scheduler_uses_spawn_process_workers(monkeypatch, tmp_path
     )
     search.study_name_ = search.study_name
     search.n_workers_ = 2
+    search.random_state_ = 0
     payload = search_mod._ObjectivePayload(
         estimator=search.estimator,
         X=np.arange(12).reshape(6, 2),
@@ -577,6 +670,9 @@ def test_multiprocess_scheduler_uses_spawn_process_workers(monkeypatch, tmp_path
     assert captured["worker_fn"] is search_mod._optimize_worker
     assert [args[3] for args in captured["worker_args"]] == [True, True]
     assert [args[6] for args in captured["worker_args"]] == [1, 1]
+    assert [args[7] for args in captured["worker_args"]] == (
+        search_mod._worker_sampler_seeds(0, 2)
+    )
 
 
 def test_worker_calls_optuna_with_single_threaded_jobs(monkeypatch, tmp_path):
@@ -620,6 +716,7 @@ def test_worker_calls_optuna_with_single_threaded_jobs(monkeypatch, tmp_path):
         None,
         None,
         3,
+        None,
         None,
         None,
     ))
@@ -718,11 +815,79 @@ def test_finite_error_score_trial_remains_visible():
         resume=False,
         error_score=123.0,
     )
-    search.fit(X, y)
-    assert search.best_loss_ == 123.0
+    with pytest.raises(ValueError, match="no completed tuning trials"):
+        search.fit(X, y)
     assert search.cv_results_["status"] == ["ERROR_SCORE"]
     assert search.cv_results_["error"][0].startswith("RuntimeError")
     assert search.cv_results_["params"][0]["tree_mode"] == "catboost"
+    assert search.phase_results_ == []
+    assert not hasattr(search, "best_loss_")
+
+
+def test_error_score_raise_propagates_original_fit_exception():
+    X = np.arange(24).reshape(12, 2)
+    y = np.tile([0, 1], 6)
+    search = ChimeraBoostStepwiseSearchCV(
+        FailingClassifier(iterations=3),
+        phases=("probe",),
+        tree_modes=("catboost",),
+        n_trials={"probe": 1},
+        cv=2,
+        scoring=recording_scorer,
+        refit=False,
+        random_state=0,
+        resume=False,
+        error_score="raise",
+    )
+
+    with pytest.raises(RuntimeError, match="intentional fit failure"):
+        search.fit(X, y)
+
+
+def test_nan_error_score_records_failed_trial_before_no_completed_error():
+    X = np.arange(24).reshape(12, 2)
+    y = np.tile([0, 1], 6)
+    search = ChimeraBoostStepwiseSearchCV(
+        FailingClassifier(iterations=3),
+        phases=("probe",),
+        tree_modes=("catboost",),
+        n_trials={"probe": 1},
+        cv=2,
+        scoring=recording_scorer,
+        refit=False,
+        random_state=0,
+        resume=False,
+    )
+
+    with pytest.raises(ValueError, match="no completed tuning trials"):
+        search.fit(X, y)
+    assert search.cv_results_["status"] == ["ERROR_SCORE"]
+    assert np.isinf(search.cv_results_["mean_test_loss"][0])
+    assert search.phase_results_ == []
+
+
+def test_journal_storage_user_attrs_sanitize_estimator_random_state_objects(tmp_path):
+    X = np.arange(24).reshape(12, 2)
+    y = np.tile([0, 1], 6)
+    search = ChimeraBoostStepwiseSearchCV(
+        RecordingClassifier(
+            iterations=3, random_state=np.random.default_rng(0)
+        ),
+        phases=("probe",),
+        tree_modes=("catboost",),
+        n_trials={"probe": 1},
+        cv=2,
+        scoring=recording_scorer,
+        refit=False,
+        random_state=0,
+        resume=False,
+        storage=f"journal://{tmp_path / 'rng-metadata.log'}",
+    )
+
+    search.fit(X, y)
+
+    params = search.study_.trials[0].user_attrs["params_full"]
+    assert "random_state" not in params
 
 
 def test_trial_runtime_does_not_force_fixed_patience():
@@ -820,6 +985,45 @@ def test_median_fold_refit_is_opt_in():
     search.fit(X[:120], y[:120])
     assert search.refit_params_["iterations"] == search.best_n_estimators_
     assert search.refit_params_["learning_rate"] == search.learning_rate_
+
+
+def test_explicit_refit_learning_rate_freezes_trial_mean_rate():
+    X, y = load_breast_cancer(return_X_y=True)
+    search = ChimeraBoostStepwiseSearchCV(
+        ChimeraBoostClassifier(iterations=16, learning_rate=None, random_state=0),
+        phases=("probe",),
+        tree_modes=("catboost",),
+        n_trials={"probe": 1},
+        cv=2,
+        refit=True,
+        refit_learning_rate="explicit",
+        random_state=0,
+        resume=False,
+        trial_thread_count=1,
+    )
+    search.fit(X[:120], y[:120])
+    assert search.refit_params_["learning_rate"] == pytest.approx(
+        search.best_trial_.user_attrs["mean_learning_rate"]
+    )
+
+
+def test_refit_preserves_estimator_thread_count_not_trial_cap():
+    X = np.arange(80).reshape(40, 2)
+    y = np.tile([0, 1], 20)
+    search = ChimeraBoostStepwiseSearchCV(
+        RecordingClassifier(iterations=3, thread_count=7),
+        phases=("probe",),
+        tree_modes=("catboost",),
+        n_trials={"probe": 1},
+        cv=2,
+        scoring=recording_scorer,
+        refit=True,
+        random_state=0,
+        resume=False,
+        trial_thread_count=1,
+    )
+    search.fit(X, y)
+    assert search.refit_params_["thread_count"] == 7
 
 
 def test_numeric_n_trials_is_global_across_lanes():
@@ -1045,6 +1249,40 @@ def test_timeout_only_stepwise_requires_trial_budget():
             phases=phase_names("auto"),
             tree_modes=("catboost", "lightgbm"),
             strategy="stepwise",
+        )
+
+
+def test_phase_budget_mapping_rejects_unknown_and_inactive_phases():
+    with pytest.raises(ValueError, match="unknown tuning phase"):
+        search_mod._make_budget_plan(
+            n_trials={"typo": 1},
+            timeout=None,
+            phases=phase_names("auto"),
+            tree_modes=("catboost",),
+            strategy="stepwise",
+        )
+
+    with pytest.raises(ValueError, match="phases does not include"):
+        search_mod._make_budget_plan(
+            n_trials={"split_noise": 1},
+            timeout=None,
+            phases=phase_names("auto"),
+            tree_modes=("catboost",),
+            strategy="stepwise",
+        )
+
+
+def test_classifier_cv_rejects_more_folds_than_smallest_class():
+    X = np.arange(16).reshape(8, 2)
+    y = np.array([0, 0, 1, 1, 1, 1, 1, 1])
+
+    with pytest.raises(ValueError, match="least populated class"):
+        make_cv_splits(
+            X,
+            y,
+            cv=3,
+            classifier=True,
+            random_state=0,
         )
 
 

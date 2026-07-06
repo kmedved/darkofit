@@ -10,7 +10,9 @@ import warnings
 import numpy as np
 
 from ._validation import (
+    array_like_to_numpy,
     n_features_from_array_like,
+    normalize_random_state_seed,
     normalize_cat_features,
     validate_target_vector,
 )
@@ -551,14 +553,16 @@ class _BaseBooster:
             return
         diag["bootstrap_rounds"] += 1
 
-    def _initialize_split_seed(self, rng):
+    def _initialize_split_seed(self, rng, random_state_seed):
         if self.random_strength <= 0.0:
-            self._split_seed_ = 0 if self.random_state is None else int(self.random_state)
+            self._split_seed_ = (
+                0 if random_state_seed is None else int(random_state_seed)
+            )
             return
-        if self.random_state is None:
+        if random_state_seed is None:
             self._split_seed_ = int(rng.integers(0, np.iinfo(np.int32).max))
         else:
-            self._split_seed_ = int(self.random_state)
+            self._split_seed_ = int(random_state_seed)
 
     def _bayesian_bootstrap_factors(self, n_samples, rng):
         if (
@@ -1128,8 +1132,8 @@ class _BaseBooster:
                 f"X has {actual} features, but {type(self).__name__} "
                 f"is expecting {int(expected)} features as input"
             )
-        return (np.asarray(X, dtype=object) if self.prep_.cat_features_
-                else np.asarray(X, dtype=np.float64))
+        return (array_like_to_numpy(X, object) if self.prep_.cat_features_
+                else array_like_to_numpy(X, np.float64))
 
     def _alloc_multiclass_hist_buffers(self, n_classes, n_features, n_bins):
         """Allocate reusable class-major LightGBM-mode histogram buffers."""
@@ -1164,15 +1168,19 @@ class _BaseBooster:
             # target-stat columns from over-specializing before the code columns
             # have a chance to split.
             cat_smoothing = 3.0
-        return FeaturePreprocessor(self.max_bins, cat_smoothing,
-                                   self.random_state,
-                                   include_cat_codes=self._include_cat_codes(),
-                                   target_encoding_mode=(
-                                       "kfold"
-                                       if self.tree_mode_ in {"lightgbm", "hybrid"}
-                                       else "ordered"
-                                   ),
-                                   bin_sample_count=self.bin_sample_count)
+        random_state = getattr(
+            self, "_fit_random_state_seed_", self.random_state
+        )
+        return FeaturePreprocessor(
+            self.max_bins, cat_smoothing, random_state,
+            include_cat_codes=self._include_cat_codes(),
+            target_encoding_mode=(
+                "kfold"
+                if self.tree_mode_ in {"lightgbm", "hybrid"}
+                else "ordered"
+            ),
+            bin_sample_count=self.bin_sample_count,
+        )
 
     def _include_cat_codes(self):
         return self.tree_mode_ in {"lightgbm", "hybrid"}
@@ -1208,6 +1216,16 @@ class _BaseBooster:
             self._record_sampling_diagnostic(None, grad.shape[0])
             return grad, hess, None
         mask = rng.random(grad.shape[0]) < self.subsample
+        if not np.any(mask):
+            importance = np.abs(grad) + np.maximum(hess, 0.0)
+            if (
+                not np.any(np.isfinite(importance))
+                or float(np.sum(importance)) <= 0.0
+            ):
+                chosen = int(rng.integers(0, grad.shape[0]))
+            else:
+                chosen = int(np.nanargmax(importance))
+            mask[chosen] = True
         row_indices = np.flatnonzero(mask).astype(np.int64)
         self._record_sampling_diagnostic(row_indices, grad.shape[0])
         return np.where(mask, grad, 0.0), np.where(mask, hess, 0.0), row_indices
@@ -1268,7 +1286,6 @@ class _BaseBooster:
         )
         probs = self._mvs_probabilities(importance)
         if probs is None:
-            self._record_sampling_diagnostic(None, n_samples)
             return grad, hess, None
         mask = rng.random(n_samples) < probs
         if not np.any(mask):
@@ -1276,7 +1293,6 @@ class _BaseBooster:
         row_indices = np.flatnonzero(mask).astype(np.int64)
         scale = np.zeros(n_samples, dtype=np.float64)
         scale[row_indices] = 1.0 / np.maximum(probs[row_indices], 1e-300)
-        self._record_sampling_diagnostic(row_indices, n_samples)
         return grad * scale[None, :], hess * scale[None, :], row_indices
 
     def _weighted_goss_probabilities(self, mass, target_mass):
@@ -1638,8 +1654,8 @@ class GradientBoosting(_BaseBooster):
         comparable to the no-weight case."""
         n_features = n_features_from_array_like(X)
         cat_features = normalize_cat_features(cat_features, n_features)
-        X = (np.asarray(X, dtype=object) if cat_features
-             else np.asarray(X, dtype=np.float64))
+        X = (array_like_to_numpy(X, object) if cat_features
+             else array_like_to_numpy(X, np.float64))
         n_samples = X.shape[0]
         y = validate_target_vector(
             y, n_samples, dtype=np.float64
@@ -1652,6 +1668,8 @@ class GradientBoosting(_BaseBooster):
         # for all losses except MAE/Quantile (which use a different quantile
         # algorithm when weights are present).
         self.tree_mode_ = _normalize_tree_mode(self.tree_mode)
+        fit_random_state = normalize_random_state_seed(self.random_state)
+        self._fit_random_state_seed_ = fit_random_state
         self.n_threads_ = _fit_thread_count(
             self.thread_count, self.tree_mode_, n_samples
         )
@@ -1720,8 +1738,8 @@ class GradientBoosting(_BaseBooster):
                     f"eval_set[0] has {eval_n_features} features, but X has "
                     f"{self.n_features_in_} features"
                 )
-            Xv = (np.asarray(Xv, dtype=object) if cat_features
-                  else np.asarray(Xv, dtype=np.float64))
+            Xv = (array_like_to_numpy(Xv, object) if cat_features
+                  else array_like_to_numpy(Xv, np.float64))
             yv = validate_target_vector(
                 yv, Xv.shape[0], name="eval_set[1]", dtype=np.float64
             )
@@ -1758,8 +1776,8 @@ class GradientBoosting(_BaseBooster):
         self._emit_auto_param_warnings()
         self._reset_stochastic_diagnostics()
 
-        rng = np.random.default_rng(self.random_state)
-        self._initialize_split_seed(rng)
+        rng = np.random.default_rng(fit_random_state)
+        self._initialize_split_seed(rng, fit_random_state)
         self.trees_ = []
         self._flat_cache_ = None  # drop any previous fit's flattened ensemble
         self.train_history_, self.valid_history_ = [], []
@@ -1803,6 +1821,13 @@ class GradientBoosting(_BaseBooster):
             # A depth-0 tree found no legal split; subsequent rounds on the same
             # gradients would too, so stop rather than append empty trees.
             if tree.depth == 0:
+                if row_indices is not None and m + 1 < self.iterations_:
+                    if self.verbose:
+                        print(
+                            f"No split at sampled iteration {m}; retrying "
+                            "with a new row sample."
+                        )
+                    continue
                 if self.verbose:
                     print(f"No further splits at iteration {m}; stopping.")
                 break
@@ -1824,10 +1849,8 @@ class GradientBoosting(_BaseBooster):
                 ordered_leaf_update_inplace(
                     leaf, leaf_G, leaf_H, g, h, self.lr_, self.l2_leaf_reg, F
                 )
-            elif self.tree_mode_ in {"lightgbm", "hybrid"}:
-                add_leaf_values_inplace(leaf, tree.values, F)
             else:
-                tree.add_predict(X_binned, F)
+                add_leaf_values_inplace(leaf, tree.values, F)
             _add_timing(timing, "train_update", phase)
 
             if eval_train:
@@ -1843,12 +1866,13 @@ class GradientBoosting(_BaseBooster):
                 val = self.loss_.eval(yv, Fv, wv)
                 _add_timing(timing, "loss_eval", phase)
                 self.valid_history_.append(val)
+                successful_iter = len(self.trees_) - 1
                 if val < best_prefix_score:
-                    best_prefix_score, best_prefix_iter = val, m
+                    best_prefix_score, best_prefix_iter = val, successful_iter
                 if patience_score - val > self.early_stopping_min_delta_:
-                    patience_score, patience_iter = val, m
+                    patience_score, patience_iter = val, successful_iter
                 elif (self.early_stopping_rounds_ and
-                      m - patience_iter >= self.early_stopping_rounds_):
+                      successful_iter - patience_iter >= self.early_stopping_rounds_):
                     if self.verbose:
                         print(f"Early stop at {m} (best {best_prefix_iter}, "
                               f"val {best_prefix_score:.5f})")
@@ -1946,8 +1970,8 @@ class MulticlassBoosting(_BaseBooster):
         scalar booster."""
         n_features = n_features_from_array_like(X)
         cat_features = normalize_cat_features(cat_features, n_features)
-        X = (np.asarray(X, dtype=object) if cat_features
-             else np.asarray(X, dtype=np.float64))
+        X = (array_like_to_numpy(X, object) if cat_features
+             else array_like_to_numpy(X, np.float64))
         y = validate_target_vector(y, X.shape[0])
         self.classes_ = np.unique(y)
         K = self.classes_.size
@@ -1959,6 +1983,8 @@ class MulticlassBoosting(_BaseBooster):
         self.n_features_in_ = int(X.shape[1])
 
         self.tree_mode_ = _normalize_tree_mode(self.tree_mode)
+        fit_random_state = normalize_random_state_seed(self.random_state)
+        self._fit_random_state_seed_ = fit_random_state
         self.n_threads_ = _fit_thread_count(
             self.thread_count, self.tree_mode_, n_samples
         )
@@ -1974,12 +2000,6 @@ class MulticlassBoosting(_BaseBooster):
             cat_features=cat_features,
         )
         self.l2_leaf_reg_ = self.l2_leaf_reg
-        if (
-            self.tree_mode_ in {"lightgbm", "hybrid"}
-            and self.l2_leaf_reg == 3.0
-            and not _is_auto_param(self._l2_leaf_reg_input)
-        ):
-            self.l2_leaf_reg_ = 1.0 if self.tree_mode_ == "lightgbm" else 2.0
         strategy = self.multiclass_tree_strategy
         if strategy not in {"auto", "per_class", "shared_vector"}:
             raise ValueError(
@@ -2065,8 +2085,8 @@ class MulticlassBoosting(_BaseBooster):
                     f"eval_set[0] has {eval_n_features} features, but X has "
                     f"{self.n_features_in_} features"
                 )
-            Xv = (np.asarray(Xv, dtype=object) if cat_features
-                  else np.asarray(Xv, dtype=np.float64))
+            Xv = (array_like_to_numpy(Xv, object) if cat_features
+                  else array_like_to_numpy(Xv, np.float64))
             yv_arr = validate_target_vector(
                 yv, Xv.shape[0], name="eval_set[1]"
             )
@@ -2114,8 +2134,8 @@ class MulticlassBoosting(_BaseBooster):
         self._emit_auto_param_warnings()
         self._reset_stochastic_diagnostics()
 
-        rng = np.random.default_rng(self.random_state)
-        self._initialize_split_seed(rng)
+        rng = np.random.default_rng(fit_random_state)
+        self._initialize_split_seed(rng, fit_random_state)
         self.trees_ = []                           # list of rounds; each = K trees
         self._flat_cache_ = None  # drop any previous fit's flattened ensemble
         self.train_history_, self.valid_history_ = [], []
@@ -2161,13 +2181,35 @@ class MulticlassBoosting(_BaseBooster):
                 self._record_sampling_diagnostic(None, n_samples)
             else:
                 mask = rng.random(n_samples) < self.subsample
+                if not np.any(mask):
+                    importance = (
+                        np.sum(np.abs(grad), axis=0)
+                        + np.sum(np.maximum(hess, 0.0), axis=0)
+                    )
+                    if (
+                        not np.any(np.isfinite(importance))
+                        or float(np.sum(importance)) <= 0.0
+                    ):
+                        chosen = int(rng.integers(0, n_samples))
+                    else:
+                        chosen = int(np.nanargmax(importance))
+                    mask[chosen] = True
                 row_indices_round = np.flatnonzero(mask).astype(np.int64)
                 self._record_sampling_diagnostic(row_indices_round, n_samples)
             _add_timing(timing, "grad_hess", phase)
+
+            grad_for_round, hess_for_round = grad, hess
+            if row_indices_round is not None and self.sampling_ == "uniform":
+                row_mask = np.zeros(n_samples, dtype=bool)
+                row_mask[row_indices_round] = True
+                grad_for_round = np.where(row_mask[None, :], grad, 0.0)
+                hess_for_round = np.where(row_mask[None, :], hess, 0.0)
+
             if use_shared_lightgbm_multiclass:
                 phase = _start_timing(timing)
                 tree, leaf, leaf_G, leaf_H = build_leafwise_multiclass_tree(
-                    X_binned, grad, hess, n_bins, self._max_tree_depth(),
+                    X_binned, grad_for_round, hess_for_round, n_bins,
+                    self._max_tree_depth(),
                     self.l2_leaf_reg_, self.lr_,
                     feature_mask=fmask,
                     min_child_weight=self.min_child_weight,
@@ -2183,6 +2225,13 @@ class MulticlassBoosting(_BaseBooster):
                 )
                 _add_timing(timing, "tree_build", phase)
                 if tree.depth == 0:
+                    if row_indices_round is not None and m + 1 < self.iterations_:
+                        if self.verbose:
+                            print(
+                                f"No split at sampled iteration {m}; retrying "
+                                "with a new row sample."
+                            )
+                        continue
                     if self.verbose:
                         print(f"No further splits at iteration {m}; stopping.")
                     break
@@ -2208,12 +2257,13 @@ class MulticlassBoosting(_BaseBooster):
                     val = self.loss_.eval_class_major_labels(yv_idx, Fv, wv)
                     _add_timing(timing, "loss_eval", phase)
                     self.valid_history_.append(val)
+                    successful_iter = len(self.trees_) - 1
                     if val < best_prefix_score:
-                        best_prefix_score, best_prefix_iter = val, m
+                        best_prefix_score, best_prefix_iter = val, successful_iter
                     if patience_score - val > self.early_stopping_min_delta_:
-                        patience_score, patience_iter = val, m
+                        patience_score, patience_iter = val, successful_iter
                     elif (self.early_stopping_rounds_ and
-                          m - patience_iter >= self.early_stopping_rounds_):
+                          successful_iter - patience_iter >= self.early_stopping_rounds_):
                         if self.verbose:
                             print(f"Early stop at {m} (best {best_prefix_iter})")
                         break
@@ -2229,18 +2279,13 @@ class MulticlassBoosting(_BaseBooster):
             fuse_root_this_round = use_fused_root and fmask is None
             if fuse_root_this_round:
                 _build_multiclass_histograms_counts_into(
-                    X_hist_binned, grad, hess, root_leaf, 1,
+                    X_hist_binned, grad_for_round, hess_for_round, root_leaf, 1,
                     root_g, root_h, root_c
                 )
             _add_timing(timing, "tree_build", phase)
 
             phase = _start_timing(timing)
-            grad_for_tree, hess_for_tree = grad, hess
-            if row_indices_round is not None and self.sampling_ == "uniform":
-                row_mask = np.zeros(n_samples, dtype=bool)
-                row_mask[row_indices_round] = True
-                grad_for_tree = np.where(row_mask[None, :], grad, 0.0)
-                hess_for_tree = np.where(row_mask[None, :], hess, 0.0)
+            grad_for_tree, hess_for_tree = grad_for_round, hess_for_round
             _add_timing(timing, "grad_hess", phase)
 
             round_trees = []
@@ -2283,14 +2328,19 @@ class MulticlassBoosting(_BaseBooster):
                         leaf, leaf_G, leaf_H, g, h, self.lr_,
                         self.l2_leaf_reg_, F[k]
                     )
-                elif self.tree_mode_ in {"lightgbm", "hybrid"} and tree.depth > 0:
-                    add_leaf_values_inplace(leaf, tree.values, F[k])
                 elif tree.depth > 0:
-                    tree.add_predict(X_binned, F[k])
+                    add_leaf_values_inplace(leaf, tree.values, F[k])
                 _add_timing(timing, "train_update", phase)
             # Stop only if EVERY class exhausted its splits this round; if even
             # one class is still learning, the round was productive.
             if all(t.depth == 0 for t in round_trees):
+                if row_indices_round is not None and m + 1 < self.iterations_:
+                    if self.verbose:
+                        print(
+                            f"No class split at sampled iteration {m}; "
+                            "retrying with a new row sample."
+                        )
+                    continue
                 if self.verbose:
                     print(f"No further splits for any class at iteration {m}; "
                           f"stopping.")
@@ -2312,12 +2362,13 @@ class MulticlassBoosting(_BaseBooster):
                 val = self.loss_.eval_class_major_labels(yv_idx, Fv, wv)
                 _add_timing(timing, "loss_eval", phase)
                 self.valid_history_.append(val)
+                successful_iter = len(self.trees_) - 1
                 if val < best_prefix_score:
-                    best_prefix_score, best_prefix_iter = val, m
+                    best_prefix_score, best_prefix_iter = val, successful_iter
                 if patience_score - val > self.early_stopping_min_delta_:
-                    patience_score, patience_iter = val, m
+                    patience_score, patience_iter = val, successful_iter
                 elif (self.early_stopping_rounds_ and
-                      m - patience_iter >= self.early_stopping_rounds_):
+                      successful_iter - patience_iter >= self.early_stopping_rounds_):
                     if self.verbose:
                         print(f"Early stop at {m} (best {best_prefix_iter})")
                     break

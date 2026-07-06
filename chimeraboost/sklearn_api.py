@@ -2,8 +2,10 @@
 
 import numpy as np
 from ._validation import (
+    array_like_to_numpy,
     n_features_from_array_like,
     n_samples_from_array_like,
+    normalize_random_state_seed,
     normalize_cat_features,
     validate_target_vector,
 )
@@ -14,6 +16,7 @@ from .auto_params import (
     resolve_learning_rate_details,
 )
 from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin
+from sklearn.utils.multiclass import type_of_target
 from sklearn.utils.validation import check_is_fitted
 
 # Parameters that exist only on the sklearn wrappers, not on the core boosters.
@@ -180,6 +183,23 @@ def _ensure_dense(X):
 def _ensure_dense_eval_set(eval_set):
     if eval_set is None:
         return None
+    if isinstance(eval_set, (list, tuple)):
+        if (
+            len(eval_set) == 1
+            and isinstance(eval_set[0], (list, tuple))
+            and len(eval_set[0]) == 2
+        ):
+            eval_set = eval_set[0]
+        if len(eval_set) != 2:
+            raise ValueError(
+                "eval_set must be a (X_val, y_val) tuple or a one-element "
+                "list containing that tuple"
+            )
+    else:
+        raise ValueError(
+            "eval_set must be a (X_val, y_val) tuple or a one-element list "
+            "containing that tuple"
+        )
     Xv, yv = eval_set
     return (_ensure_dense(Xv), yv)
 
@@ -198,8 +218,8 @@ def _coerce_fit_X(X, cat_features):
     X = _ensure_dense(X)
     n_features = n_features_from_array_like(X)
     cat_features = normalize_cat_features(cat_features, n_features)
-    X_arr = (np.asarray(X, dtype=object) if cat_features
-             else np.asarray(X, dtype=np.float64))
+    X_arr = (array_like_to_numpy(X, object) if cat_features
+             else array_like_to_numpy(X, np.float64))
     if X_arr.ndim != 2:
         raise ValueError("X must be a 2-dimensional array")
     return X_arr, cat_features, n_features
@@ -296,7 +316,9 @@ def _make_eval_split(X, y, validation_fraction, random_state,
             # StratifiedGroupKFold approximates the desired val fraction via
             # n_splits = round(1 / validation_fraction).
             n_splits = max(2, round(1.0 / validation_fraction))
-            splitter = StratifiedGroupKFold(n_splits=n_splits)
+            splitter = StratifiedGroupKFold(
+                n_splits=n_splits, shuffle=True, random_state=random_state
+            )
             train_idx, val_idx = next(
                 splitter.split(X, stratify, groups=groups)
             )
@@ -361,6 +383,7 @@ class _RefitParamsMixin:
             "_best_n_estimators_", "_best_score_", "_learning_rate_",
             "selection_model_", "refit_", "refit_n_estimators_",
             "refit_strategy_", "tree_mode_selection_",
+            "selection_model_persisted_",
         ):
             if hasattr(self, name):
                 delattr(self, name)
@@ -392,6 +415,7 @@ class _RefitParamsMixin:
 
     def _record_refit_result(self, selection_model, strategy):
         self.selection_model_ = selection_model
+        self.selection_model_persisted_ = True
         self.refit_ = True
         self.refit_n_estimators_ = len(self.model_.trees_)
         self.refit_strategy_ = strategy
@@ -504,6 +528,11 @@ class _RefitParamsMixin:
                 best_model = model
                 best_probe_metadata = probe_metadata
 
+        if best_model is None:
+            raise ValueError(
+                "tree_mode='auto' could not select a model because all "
+                "candidate scores were non-finite"
+            )
         selected = getattr(best_model, "tree_mode_", None)
         metadata = {
             "enabled": True,
@@ -540,6 +569,20 @@ class _RefitParamsMixin:
         if hasattr(self, "_selection_n_train_"):
             state["selection_n_train"] = self._selection_n_train_
         return state
+
+    def _wrapper_params_header(self):
+        params = self.get_params()
+        random_state = params.get("random_state")
+        if random_state is not None:
+            fit_seed = getattr(
+                getattr(self, "model_", None), "_fit_random_state_seed_", None
+            )
+            params["random_state"] = (
+                int(fit_seed)
+                if fit_seed is not None
+                else normalize_random_state_seed(random_state)
+            )
+        return params
 
     def _restore_wrapper_state(self, state):
         state = state or {}
@@ -650,7 +693,11 @@ class _RefitParamsMixin:
         use_best_model = bool(
             eval_set is not None and getattr(context_model, "use_best_model_", False)
         )
-        loss_name = getattr(context_model, "loss_name", "RMSE")
+        loss_name = getattr(context_model, "loss_name", None)
+        if loss_name is None and hasattr(context_model, "loss_"):
+            loss_name = getattr(context_model.loss_, "name", None)
+        if loss_name is None:
+            loss_name = "RMSE"
         max_leaves = context_model._max_tree_leaves()
         base_details = resolve_learning_rate_details(
             self.learning_rate,
@@ -917,6 +964,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         validation_strategy_ = _normalize_validation_strategy(
             self.validation_strategy
         )
+        fit_random_state = normalize_random_state_seed(self.random_state)
         validation_fraction_resolved = None
         realized_validation_policy = "none"
         split_train_n = X.shape[0]
@@ -950,7 +998,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 self.validation_fraction, sample_weight, n_total
             )
             train_idx, val_idx, realized_validation_policy = _make_eval_split(
-                X, y, validation_fraction_resolved, self.random_state,
+                X, y, validation_fraction_resolved, fit_random_state,
                 groups=groups, stratify=None, sample_weight=sample_weight,
                 validation_strategy=validation_strategy_,
             )
@@ -977,6 +1025,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         kw = {k: v for k, v in self.get_params().items()
               if k not in {"loss", "alpha"} | _SKLEARN_ONLY}
         kw["early_stopping_rounds"] = es_rounds
+        kw["random_state"] = fit_random_state
         make_model = lambda model_kw: GradientBoosting(
             loss=self.loss, loss_kwargs=loss_kwargs, **model_kw
         )
@@ -1025,6 +1074,10 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             "source": split_source,
             "validation_fraction_input": self.validation_fraction,
             "validation_fraction_resolved": validation_fraction_resolved,
+            "validation_fraction_realized": (
+                None if split_eval_n is None
+                else float(split_eval_n) / max(1, int(split_train_n))
+            ),
             "validation_strategy": validation_strategy_,
             "realized_validation_strategy": realized_validation_policy,
             "groups_provided": groups is not None,
@@ -1087,7 +1140,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         save_booster(
             self.model_, path,
             wrapper_header={"wrapper_class": type(self).__name__,
-                            "params": self.get_params(),
+                            "params": self._wrapper_params_header(),
                             "state": self._wrapper_state_header()},
         )
 
@@ -1244,6 +1297,9 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
             expected_feature_names=_feature_names_from_input(X_input),
         )
         y = validate_target_vector(y, X.shape[0])
+        target_type = type_of_target(y)
+        if target_type not in {"binary", "multiclass"}:
+            raise ValueError(f"Unknown label type: {target_type}")
         classes = np.unique(y)
         n_classes = classes.size
         if n_classes < 2:
@@ -1258,6 +1314,7 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         validation_strategy_ = _normalize_validation_strategy(
             self.validation_strategy
         )
+        fit_random_state = normalize_random_state_seed(self.random_state)
         validation_fraction_resolved = None
         realized_validation_policy = "none"
         split_train_n = X.shape[0]
@@ -1290,7 +1347,7 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                 self.validation_fraction, sample_weight, n_total
             )
             train_idx, val_idx, realized_validation_policy = _make_eval_split(
-                X, y, validation_fraction_resolved, self.random_state,
+                X, y, validation_fraction_resolved, fit_random_state,
                 groups=groups, stratify=y,  # always stratify for classification
                 sample_weight=sample_weight,
                 validation_strategy=validation_strategy_,
@@ -1320,6 +1377,7 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         kw = {k: v for k, v in self.get_params().items()
               if k not in _SKLEARN_ONLY}
         kw["early_stopping_rounds"] = es_rounds
+        kw["random_state"] = fit_random_state
         probe_metadata = None
         tree_mode_selection_metadata = None
 
@@ -1413,6 +1471,10 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
             "source": split_source,
             "validation_fraction_input": self.validation_fraction,
             "validation_fraction_resolved": validation_fraction_resolved,
+            "validation_fraction_realized": (
+                None if split_eval_n is None
+                else float(split_eval_n) / max(1, int(split_train_n))
+            ),
             "validation_strategy": validation_strategy_,
             "realized_validation_strategy": realized_validation_policy,
             "groups_provided": groups is not None,
@@ -1524,7 +1586,7 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         save_booster(
             self.model_, path,
             wrapper_header={"wrapper_class": type(self).__name__,
-                            "params": self.get_params(),
+                            "params": self._wrapper_params_header(),
                             "state": self._wrapper_state_header()},
             wrapper_arrays=wrapper_arrays,
         )

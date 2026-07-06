@@ -22,7 +22,46 @@ import numpy as np
 import sys
 from numba import njit
 
-_MISSING_CATEGORY = "__nan__"
+
+def _get_missing_category():
+    return _MISSING_CATEGORY
+
+
+class _MissingCategory:
+    def __repr__(self):
+        return "<ChimeraBoost missing category>"
+
+    def __reduce__(self):
+        return (_get_missing_category, ())
+
+
+_MISSING_CATEGORY = _MissingCategory()
+
+
+def _is_missing_value(value):
+    if value is None:
+        return True
+    pd = sys.modules.get("pandas")
+    if pd is not None:
+        try:
+            result = pd.isna(value)
+            if isinstance(result, (bool, np.bool_)):
+                return bool(result)
+        except (TypeError, ValueError):
+            pass
+    try:
+        result = np.isnat(value)
+        if isinstance(result, (bool, np.bool_)):
+            return bool(result)
+    except (TypeError, ValueError):
+        pass
+    try:
+        result = np.isnan(value)
+        if isinstance(result, (bool, np.bool_)):
+            return bool(result)
+    except (TypeError, ValueError):
+        pass
+    return False
 
 
 def _factorize_with_loaded_pandas(col):
@@ -34,7 +73,7 @@ def _factorize_with_loaded_pandas(col):
         s = pd.Series(col, dtype=object)
         if s.hasnans:
             s = s.where(pd.notna(s), _MISSING_CATEGORY)
-        codes, categories = pd.factorize(s, sort=False, use_na_sentinel=False)
+        codes, categories = pd.factorize(s, sort=False)
     except Exception:
         return None
     return codes.astype(np.int64), np.asarray(categories, dtype=object)
@@ -195,20 +234,17 @@ def factorize(column):
     """
     col_raw = np.asarray(column)
     if col_raw.dtype != object:
-        try:
-            if np.issubdtype(col_raw.dtype, np.floating):
-                missing = np.isnan(col_raw)
-                if np.any(missing):
-                    col_obj = col_raw.astype(object)
-                    col_obj[missing] = _MISSING_CATEGORY
-                    categories, codes = np.unique(col_obj, return_inverse=True)
-                    return codes.astype(np.int64), categories.astype(object)
-            categories, codes = np.unique(col_raw, return_inverse=True)
-            return codes.astype(np.int64), categories.astype(object)
-        except TypeError:
-            pass
+        if np.issubdtype(col_raw.dtype, np.floating) and np.isnan(col_raw).any():
+            col = col_raw.astype(object)
+        else:
+            try:
+                categories, codes = np.unique(col_raw, return_inverse=True)
+                return codes.astype(np.int64), categories.astype(object)
+            except TypeError:
+                col = np.asarray(column, dtype=object)
+    else:
+        col = np.asarray(column, dtype=object)
 
-    col = np.asarray(column, dtype=object)
     pandas_result = _factorize_with_loaded_pandas(col)
     if pandas_result is not None:
         return pandas_result
@@ -217,7 +253,7 @@ def factorize(column):
     codes = np.empty(col.shape[0], dtype=np.int64)
     for i, v in enumerate(col):
         # Normalize missing values to a single key.
-        if v is None or (isinstance(v, float) and np.isnan(v)):
+        if _is_missing_value(v):
             v = _MISSING_CATEGORY
         if v not in cats:
             cats[v] = len(cats)

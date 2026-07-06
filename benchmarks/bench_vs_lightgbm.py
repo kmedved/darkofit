@@ -293,19 +293,18 @@ def _validation_split(X_train, y_train, task, seed):
     )
 
 
-def _encode_lightgbm(X_fit, X_val, X_test, cat_features):
+def _encode_lightgbm_fit(X_fit, X_val, cat_features):
     if not cat_features:
         return (
             np.asarray(X_fit, dtype=np.float64),
             np.asarray(X_val, dtype=np.float64),
-            np.asarray(X_test, dtype=np.float64),
+            None,
             None,
         )
 
     cat_features = list(cat_features)
     X_fit_lgb = np.asarray(X_fit, dtype=object).copy()
     X_val_lgb = np.asarray(X_val, dtype=object).copy()
-    X_test_lgb = np.asarray(X_test, dtype=object).copy()
 
     encoder = OrdinalEncoder(
         handle_unknown="use_encoded_value",
@@ -313,14 +312,22 @@ def _encode_lightgbm(X_fit, X_val, X_test, cat_features):
         encoded_missing_value=-1,
     )
     encoder.fit(X_fit_lgb[:, cat_features])
-    for arr in (X_fit_lgb, X_val_lgb, X_test_lgb):
+    for arr in (X_fit_lgb, X_val_lgb):
         arr[:, cat_features] = encoder.transform(arr[:, cat_features])
     return (
         X_fit_lgb.astype(np.float64),
         X_val_lgb.astype(np.float64),
-        X_test_lgb.astype(np.float64),
         cat_features,
+        encoder,
     )
+
+
+def _encode_lightgbm_test(X_test, cat_features, encoder):
+    if not cat_features:
+        return np.asarray(X_test, dtype=np.float64)
+    X_test_lgb = np.asarray(X_test, dtype=object).copy()
+    X_test_lgb[:, cat_features] = encoder.transform(X_test_lgb[:, cat_features])
+    return X_test_lgb.astype(np.float64)
 
 
 def _classification_metrics(y_true, pred, proba):
@@ -412,12 +419,6 @@ def _run_lightgbm(spec, X_train, y_train, X_test, y_test, cat_features, args, se
     import lightgbm as lgb
 
     X_fit, X_val, y_fit, y_val = _validation_split(X_train, y_train, spec.task, seed)
-    X_fit, X_val, X_test, lgb_cat = _encode_lightgbm(
-        X_fit,
-        X_val,
-        X_test,
-        cat_features,
-    )
     estimator_cls = lgb.LGBMRegressor if spec.task == "regression" else lgb.LGBMClassifier
     objective = None
     if spec.task == "binary":
@@ -426,6 +427,12 @@ def _run_lightgbm(spec, X_train, y_train, X_test, y_test, cat_features, args, se
         objective = "multiclass"
 
     def fit_once():
+        start = time.perf_counter()
+        X_fit_lgb, X_val_lgb, lgb_cat, encoder = _encode_lightgbm_fit(
+            X_fit,
+            X_val,
+            cat_features,
+        )
         model = estimator_cls(
             n_estimators=args.iterations,
             learning_rate=args.lightgbm_learning_rate,
@@ -438,30 +445,30 @@ def _run_lightgbm(spec, X_train, y_train, X_test, y_test, cat_features, args, se
             random_state=seed,
             verbosity=-1,
         )
-        start = time.perf_counter()
         model.fit(
-            X_fit,
+            X_fit_lgb,
             y_fit,
-            eval_set=[(X_val, y_val)],
+            eval_set=[(X_val_lgb, y_val)],
             categorical_feature=lgb_cat,
             callbacks=[lgb.early_stopping(args.patience, verbose=False)],
         )
-        return model, time.perf_counter() - start
+        return model, encoder, time.perf_counter() - start
 
-    model, fit_seconds = fit_once()
+    model, encoder, fit_seconds = fit_once()
     for _ in range(max(0, args.repeat - 1)):
-        candidate, elapsed = fit_once()
+        candidate, candidate_encoder, elapsed = fit_once()
         if elapsed < fit_seconds:
-            model, fit_seconds = candidate, elapsed
+            model, encoder, fit_seconds = candidate, candidate_encoder, elapsed
 
     def predict_once():
         start = time.perf_counter()
+        X_test_lgb = _encode_lightgbm_test(X_test, cat_features, encoder)
         if spec.task == "regression":
-            pred = model.predict(X_test)
+            pred = model.predict(X_test_lgb)
             proba = None
         else:
-            pred = model.predict(X_test)
-            proba = model.predict_proba(X_test)
+            pred = model.predict(X_test_lgb)
+            proba = model.predict_proba(X_test_lgb)
         return pred, proba, time.perf_counter() - start
 
     pred, proba, predict_seconds = predict_once()

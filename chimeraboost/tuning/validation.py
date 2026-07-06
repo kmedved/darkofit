@@ -77,16 +77,25 @@ def _materialize_cv_splits(splitter_or_splits, X, y, groups):
 
 def _normalize_cv_splits(splits):
     return [
-        (np.asarray(train_idx, dtype=np.int64),
-         np.asarray(valid_idx, dtype=np.int64))
+        (_normalize_cv_index_array("train", train_idx),
+         _normalize_cv_index_array("validation", valid_idx))
         for train_idx, valid_idx in splits
     ]
+
+
+def _normalize_cv_index_array(name, idx):
+    arr = np.asarray(idx)
+    if arr.ndim == 1 and arr.size > 0:
+        if not np.issubdtype(arr.dtype, np.integer):
+            raise ValueError(f"CV {name} indices must be integer")
+    return arr.astype(np.int64, copy=False)
 
 
 def validate_cv_splits(
     splits, y, *, groups=None, classifier=False, sample_weight=None
 ):
     y = np.asarray(y)
+    n_samples = int(y.shape[0])
     all_classes = np.unique(y) if classifier else None
     w = None if sample_weight is None else np.asarray(sample_weight, dtype=np.float64)
     positive_mass_classes = None
@@ -104,8 +113,12 @@ def validate_cv_splits(
                 cls for cls in all_classes if float(np.sum(w[y == cls])) > 0.0
             ]
     for train_idx, valid_idx in splits:
+        _validate_cv_index_array("train", train_idx, n_samples)
+        _validate_cv_index_array("validation", valid_idx, n_samples)
         if train_idx.size == 0 or valid_idx.size == 0:
             raise ValueError("CV splits must have non-empty train and validation folds")
+        if np.intersect1d(train_idx, valid_idx, assume_unique=True).size:
+            raise ValueError("CV train and validation indices must be disjoint")
         if w is not None:
             train_mass = float(np.sum(w[train_idx]))
             valid_mass = float(np.sum(w[valid_idx]))
@@ -137,6 +150,15 @@ def validate_cv_splits(
                 )
 
 
+def _validate_cv_index_array(name, idx, n_samples):
+    if idx.ndim != 1:
+        raise ValueError(f"CV {name} indices must be a 1-dimensional array")
+    if np.any((idx < 0) | (idx >= n_samples)):
+        raise ValueError(f"CV {name} indices are out of bounds")
+    if np.unique(idx).shape[0] != idx.shape[0]:
+        raise ValueError(f"CV {name} indices must be unique")
+
+
 def slice_fit_payload(X, y, train_idx, valid_idx, sample_weight=None):
     X_train = _safe_indexing(X, train_idx)
     y_train = _safe_indexing(y, train_idx)
@@ -166,7 +188,15 @@ def _plain_splitter(cv, y, *, classifier, random_state):
         return check_cv(cv=cv, y=y, classifier=classifier)
     if classifier:
         _, counts = np.unique(y, return_counts=True)
-        n_splits = max(2, min(int(cv), int(np.min(counts))))
+        n_splits = int(cv)
+        min_class_count = int(np.min(counts))
+        if n_splits < 2:
+            raise ValueError("cv must be at least 2 for classification")
+        if n_splits > min_class_count:
+            raise ValueError(
+                "cv cannot exceed the number of samples in the least "
+                f"populated class ({min_class_count})"
+            )
         return StratifiedKFold(n_splits=n_splits, shuffle=True,
                                random_state=random_state)
     return KFold(n_splits=int(cv), shuffle=True, random_state=random_state)

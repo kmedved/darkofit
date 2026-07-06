@@ -32,7 +32,14 @@ class StorageConfig:
 
 def default_journal_path(study_name):
     name = study_name or f"chimeraboost-study-{os.getpid()}"
-    return str(Path(tempfile.gettempdir()) / f"{name}.optuna-journal.log")
+    stem = Path(str(name)).name
+    if stem in {"", ".", ".."}:
+        stem = f"chimeraboost-study-{os.getpid()}"
+    tempdir = Path(tempfile.gettempdir()).resolve()
+    path = (tempdir / f"{stem}.optuna-journal.log").resolve()
+    if path.parent != tempdir:
+        path = tempdir / f"chimeraboost-study-{os.getpid()}.optuna-journal.log"
+    return str(path)
 
 
 def make_storage(storage, *, n_workers=1, study_name=None, resume=True):
@@ -46,6 +53,7 @@ def make_storage(storage, *, n_workers=1, study_name=None, resume=True):
     if storage is None:
         if n_workers and int(n_workers) > 1:
             path = default_journal_path(study_name)
+            _remove_journal_if_fresh(path, resume)
             backend = _journal_file_backend(path)
             return StorageConfig(
                 optuna.storages.JournalStorage(backend),
@@ -80,8 +88,11 @@ def make_storage(storage, *, n_workers=1, study_name=None, resume=True):
     return StorageConfig(storage, kind, storage if isinstance(storage, str) else None)
 
 
-def create_study(*, storage_config, study_name, resume, sampler, pruner):
+def create_study(*, storage_config, study_name, resume, sampler, pruner,
+                 sampler_seed=None):
     optuna = import_optuna()
+    if sampler is None and sampler_seed is not None:
+        sampler = optuna.samplers.TPESampler(seed=int(sampler_seed))
     if pruner is None:
         pruner = optuna.pruners.NopPruner()
     return optuna.create_study(
@@ -104,3 +115,11 @@ def _journal_file_backend(path):
 
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     return JournalFileBackend(path)
+
+
+def _remove_journal_if_fresh(path, resume):
+    if resume:
+        return
+    journal_path = Path(path)
+    if journal_path.exists() and journal_path.is_file():
+        journal_path.unlink()

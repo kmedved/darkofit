@@ -11,6 +11,8 @@ if str(BENCH_DIR) not in sys.path:
     sys.path.insert(0, str(BENCH_DIR))
 
 from bench_vs_lightgbm import (  # noqa: E402
+    _encode_lightgbm_fit,
+    _encode_lightgbm_test,
     _result_from_prediction,
     _resolve_benchmark_capacity,
     _resolve_default_depth,
@@ -69,6 +71,22 @@ def test_chimera_multiclass_tree_strategy_arg_is_preserved():
     )
 
     assert args.chimera_multiclass_tree_strategy == "shared_vector"
+
+
+def test_lightgbm_train_and_test_encoding_are_separate():
+    X_fit = np.array([["a", 1.0], ["b", 2.0]], dtype=object)
+    X_val = np.array([["b", 3.0]], dtype=object)
+    X_test = np.array([["missing", 4.0]], dtype=object)
+
+    X_fit_lgb, X_val_lgb, cat_features, encoder = _encode_lightgbm_fit(
+        X_fit, X_val, [0]
+    )
+    X_test_lgb = _encode_lightgbm_test(X_test, cat_features, encoder)
+
+    assert X_fit_lgb.shape == X_fit.shape
+    assert X_val_lgb.shape == X_val.shape
+    assert X_test_lgb.shape == X_test.shape
+    assert X_test_lgb[0, 0] == -1.0
 
 
 def test_lightgbm_mode_matches_leaf_capacity_by_default():

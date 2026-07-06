@@ -243,6 +243,8 @@ def resolve_learning_rate_details(
         raise ValueError(
             "learning_rate must be a number, None, or 'auto'"
         ) from exc
+    if not np.isfinite(lr) or lr <= 0.0:
+        raise ValueError("learning_rate must be positive and finite")
     return {
         "resolved": lr,
         "raw_auto": None,

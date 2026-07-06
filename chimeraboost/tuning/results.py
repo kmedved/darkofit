@@ -40,6 +40,8 @@ def phase_summary(trials):
         )
         if state_name != "COMPLETE":
             continue
+        if trial.user_attrs.get("status") == "ERROR_SCORE":
+            continue
         phase = trial.user_attrs.get("phase")
         lane = trial.user_attrs.get("tree_mode_lane")
         if phase is None or lane is None or trial.value is None:

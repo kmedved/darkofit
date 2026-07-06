@@ -20,7 +20,12 @@ import sys
 import numpy as np
 
 from .binning import Binner, DEFAULT_BIN_SAMPLE_COUNT
-from .target_encoding import OrderedTargetEncoder, factorize, _MISSING_CATEGORY
+from .target_encoding import (
+    OrderedTargetEncoder,
+    factorize,
+    _MISSING_CATEGORY,
+    _is_missing_value,
+)
 
 
 class FeaturePreprocessor:
@@ -57,8 +62,12 @@ class FeaturePreprocessor:
         self.cat_features_ = sorted(cat_set)
         self.num_features_ = [f for f in range(n_features) if f not in cat_set]
 
-        num = (np.asarray(X[:, self.num_features_], dtype=np.float64)
-               if self.num_features_ else np.empty((X.shape[0], 0)))
+        if not self.num_features_:
+            num = np.empty((X.shape[0], 0))
+        elif len(self.num_features_) == n_features:
+            num = np.asarray(X, dtype=np.float64)
+        else:
+            num = np.asarray(X[:, self.num_features_], dtype=np.float64)
 
         self._cat_indexes_ = {}  # lazy pd.Index cache; reset on every fit
         if self.cat_features_:
@@ -97,7 +106,7 @@ class FeaturePreprocessor:
                     (
                         m.get(
                             missing
-                            if v is None or (isinstance(v, float) and v != v)
+                            if _is_missing_value(v)
                             else v,
                             -1,
                         )
@@ -122,6 +131,13 @@ class FeaturePreprocessor:
         failure so the caller can fall back to the per-element dict loop.
         """
         try:
+            cat_map = self.cat_maps_[j]
+            if (
+                "__nan__" in cat_map
+                and _MISSING_CATEGORY in cat_map
+                and cat_map["__nan__"] == cat_map[_MISSING_CATEGORY]
+            ):
+                return None
             cache = getattr(self, "_cat_indexes_", None)
             if cache is None:
                 cache = self._cat_indexes_ = {}
@@ -132,7 +148,7 @@ class FeaturePreprocessor:
                     return None
                 cache[j] = index
             s = pd.Series(col, dtype=object)
-            if _MISSING_CATEGORY in self.cat_maps_[j]:
+            if _MISSING_CATEGORY in cat_map:
                 s = s.where(pd.notna(s), _MISSING_CATEGORY)
             return index.get_indexer(s)
         except Exception:
@@ -174,8 +190,20 @@ class FeaturePreprocessor:
 
     def transform(self, X):
         """Apply the fitted binning + categorical encoding to new data."""
-        num = (np.asarray(X[:, self.num_features_], dtype=np.float64)
-               if self.num_features_ else np.empty((X.shape[0], 0)))
+        if X.ndim != 2:
+            raise ValueError("X must be a 2-dimensional array")
+        expected = int(getattr(self, "n_input_features_", X.shape[1]))
+        if X.shape[1] != expected:
+            raise ValueError(
+                f"X has {X.shape[1]} features, but fitted preprocessor "
+                f"expects {expected}"
+            )
+        if not self.num_features_:
+            num = np.empty((X.shape[0], 0))
+        elif not self.cat_features_ and len(self.num_features_) == X.shape[1]:
+            num = np.asarray(X, dtype=np.float64)
+        else:
+            num = np.asarray(X[:, self.num_features_], dtype=np.float64)
         encoded_blocks = []
         code_blocks = []
         if self.cat_features_:

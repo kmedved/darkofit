@@ -2046,7 +2046,7 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
     active leaf, a threshold is legal only if it leaves at least
     `min_child_weight` hessian mass on both sides of every non-empty leaf.
     """
-    n_features = hg.shape[0]
+    n_features = n_bins_per_feature.shape[0]
     max_bins = hg.shape[2]
     feat_gain = np.full(n_features, -np.inf)
     feat_thr = np.full(n_features, -1, dtype=np.int64)
@@ -2131,7 +2131,7 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
 def _best_split_serial(hg, hh, n_bins_per_feature, l2, feat_mask,
                        min_child_weight, n_leaves):
     """Single-thread split search without per-feature temporary allocations."""
-    n_features = hg.shape[0]
+    n_features = n_bins_per_feature.shape[0]
     Gt = np.empty(n_leaves)
     Ht = np.empty(n_leaves)
     GL = np.empty(n_leaves)
@@ -2211,7 +2211,7 @@ def _best_split_serial(hg, hh, n_bins_per_feature, l2, feat_mask,
 def _best_shared_split_counts(hg, hh, hc, n_bins_per_feature, l2, feat_mask,
                               min_child_weight, min_child_samples, n_leaves):
     """Best shared split across active leaves with Hessian and count legality."""
-    n_features = hg.shape[0]
+    n_features = n_bins_per_feature.shape[0]
     max_bins = hg.shape[2]
     Gt = np.empty(n_leaves)
     Ht = np.empty(n_leaves)
@@ -2672,7 +2672,7 @@ def _best_splits_by_leaf(hg, hh, n_bins_per_feature, l2, feat_mask,
                          min_child_weight, n_leaves, out_feat, out_thr,
                          out_gain):
     """Find the best split independently for every active leaf."""
-    n_features = hg.shape[0]
+    n_features = n_bins_per_feature.shape[0]
     for l in prange(n_leaves):
         best_f = -1
         best_t = -1
@@ -2725,7 +2725,7 @@ def _best_splits_by_leaf_counts(hg, hh, hc, n_bins_per_feature, l2, feat_mask,
                                 min_child_weight, min_child_samples, n_leaves,
                                 out_feat, out_thr, out_gain):
     """Best split per active leaf with Hessian and positive-weight row limits."""
-    n_features = hg.shape[0]
+    n_features = n_bins_per_feature.shape[0]
     for l in prange(n_leaves):
         best_f = -1
         best_t = -1
@@ -2789,7 +2789,7 @@ def _best_splits_for_leaf_ids_counts(hg, hh, hc, n_bins_per_feature, l2,
                                      min_child_samples, leaf_ids, n_leaf_ids,
                                      out_feat, out_thr, out_gain):
     """Best split for a small set of changed leaves."""
-    n_features = hg.shape[0]
+    n_features = n_bins_per_feature.shape[0]
     for idx in prange(n_leaf_ids):
         l = leaf_ids[idx]
         best_f = -1
@@ -2855,7 +2855,7 @@ def _best_splits_for_leaf_ids_counts_feature_parallel(
     out_feat, out_thr, out_gain
 ):
     """Best split for changed leaves, parallelized over leaf-feature pairs."""
-    n_features = hg.shape[0]
+    n_features = n_bins_per_feature.shape[0]
     for flat in prange(n_leaf_ids * n_features):
         idx = flat // n_features
         f = flat - idx * n_features
@@ -2938,7 +2938,7 @@ def _best_splits_by_leaf_counts_full_features(
     legality still uses per-threshold histogram counts, but parent totals do
     not need to be recomputed for each feature.
     """
-    n_features = hg.shape[0]
+    n_features = n_bins_per_feature.shape[0]
     for l in prange(n_leaves):
         best_f = -1
         best_t = -1
@@ -3010,7 +3010,7 @@ def _best_splits_for_leaf_ids_counts_full_features(
     out_feat, out_thr, out_gain
 ):
     """Best split for changed leaves when every row/feature is active."""
-    n_features = hg.shape[0]
+    n_features = n_bins_per_feature.shape[0]
     for idx in prange(n_leaf_ids):
         l = leaf_ids[idx]
         best_f = -1
@@ -3097,7 +3097,10 @@ def _build_multiclass_histograms_counts_into(
         for i in range(n_samples):
             l = leaf[i]
             b = X_binned[i, f]
-            if hess[0, i] > 0.0:
+            h_sum = 0.0
+            for k in range(K):
+                h_sum += hess[k, i]
+            if h_sum > 0.0:
                 hc[f, l, b] += 1.0
             for k in range(K):
                 hg[k, f, l, b] += grad[k, i]
@@ -3126,7 +3129,10 @@ def _refill_multiclass_leaf_segment_histograms_counts_into(
             for p in range(leaf_start[l], leaf_start[l + 1]):
                 i = row_order[p]
                 b = X_binned[i, f]
-                if hess[0, i] > 0.0:
+                h_sum = 0.0
+                for k in range(K):
+                    h_sum += hess[k, i]
+                if h_sum > 0.0:
                     hc[f, l, b] += 1.0
                 for k in range(K):
                     hg[k, f, l, b] += grad[k, i]
@@ -3153,7 +3159,10 @@ def _refill_multiclass_right_subtract_left_counts_into(
         for p in range(leaf_start[right_leaf], leaf_start[right_leaf + 1]):
             i = row_order[p]
             b = X_binned[i, f]
-            if hess[0, i] > 0.0:
+            h_sum = 0.0
+            for k in range(K):
+                h_sum += hess[k, i]
+            if h_sum > 0.0:
                 hc[f, right_leaf, b] += 1.0
             for k in range(K):
                 hg[k, f, right_leaf, b] += grad[k, i]
@@ -3190,7 +3199,10 @@ def _refill_multiclass_left_subtract_right_counts_into(
         for p in range(leaf_start[left_leaf], leaf_start[left_leaf + 1]):
             i = row_order[p]
             b = X_binned[i, f]
-            if hess[0, i] > 0.0:
+            h_sum = 0.0
+            for k in range(K):
+                h_sum += hess[k, i]
+            if h_sum > 0.0:
                 hc[f, left_leaf, b] += 1.0
             for k in range(K):
                 hg[k, f, left_leaf, b] += grad[k, i]
@@ -3227,37 +3239,39 @@ def _best_multiclass_splits_for_leaf_ids_counts(
             Ht = np.zeros(K)
             GL = np.zeros(K)
             HL = np.zeros(K)
+            total_H = 0.0
             for b in range(nb):
                 Ct += hc[f, l, b]
                 for k in range(K):
                     Gt[k] += hg[k, f, l, b]
                     Ht[k] += hh[k, f, l, b]
-            if Ct <= 0.0:
+            for k in range(K):
+                total_H += Ht[k]
+            if Ct <= 0.0 or total_H <= 0.0:
                 continue
 
             CL = 0.0
             for t in range(nb - 1):
                 CL += hc[f, l, t]
-                CR = Ct - CL
-                if CL < min_child_samples or CR < min_child_samples:
-                    for k in range(K):
-                        GL[k] += hg[k, f, l, t]
-                        HL[k] += hh[k, f, l, t]
-                    continue
-
-                split_gain = 0.0
-                legal = True
+                sum_HL = 0.0
                 for k in range(K):
                     GL[k] += hg[k, f, l, t]
                     HL[k] += hh[k, f, l, t]
+                    sum_HL += HL[k]
+                CR = Ct - CL
+                if (
+                    CL < min_child_samples
+                    or CR < min_child_samples
+                    or sum_HL < min_child_weight
+                    or total_H - sum_HL < min_child_weight
+                ):
+                    continue
+
+                split_gain = 0.0
+                for k in range(K):
+                    if Ht[k] <= 0.0:
+                        continue
                     HR = Ht[k] - HL[k]
-                    if (
-                        Ht[k] <= 0.0
-                        or HL[k] < min_child_weight
-                        or HR < min_child_weight
-                    ):
-                        legal = False
-                        break
                     parent_denom = Ht[k] + l2
                     left_denom = HL[k] + l2
                     right_denom = HR + l2
@@ -3266,8 +3280,7 @@ def _best_multiclass_splits_for_leaf_ids_counts(
                         or left_denom <= 0.0
                         or right_denom <= 0.0
                     ):
-                        legal = False
-                        break
+                        continue
                     GR = Gt[k] - GL[k]
                     split_gain += (
                         GL[k] * GL[k] / left_denom
@@ -3275,15 +3288,10 @@ def _best_multiclass_splits_for_leaf_ids_counts(
                         - Gt[k] * Gt[k] / parent_denom
                     )
 
-                if legal and split_gain > best_gain:
+                if split_gain > best_gain:
                     best_gain = split_gain
                     best_f = f
                     best_t = t
-
-                if not legal:
-                    for kk in range(k + 1, K):
-                        GL[kk] += hg[kk, f, l, t]
-                        HL[kk] += hh[kk, f, l, t]
 
         out_feat[l] = best_f
         out_thr[l] = best_t
@@ -3327,7 +3335,7 @@ def _noisy_score(gain, random_strength, split_seed, tree_iteration, step, leaf,
 def _best_split_with_noise_py(hg, hh, n_bins_per_feature, l2, feat_mask,
                               min_child_weight, n_leaves, random_strength,
                               split_seed, tree_iteration, step, min_gain):
-    n_features = hg.shape[0]
+    n_features = n_bins_per_feature.shape[0]
     best_f = 0
     best_t = -1
     best_gain = -np.inf
@@ -3387,7 +3395,7 @@ def _best_shared_split_counts_with_noise_py(
     min_child_samples, n_leaves, random_strength, split_seed, tree_iteration,
     step, min_gain
 ):
-    n_features = hg.shape[0]
+    n_features = n_bins_per_feature.shape[0]
     best_f = 0
     best_t = -1
     best_gain = -np.inf
@@ -3453,7 +3461,7 @@ def _best_splits_by_leaf_with_noise_py(hg, hh, n_bins_per_feature, l2,
                                        out_feat, out_thr, out_gain,
                                        random_strength, split_seed,
                                        tree_iteration, step, min_gain):
-    n_features = hg.shape[0]
+    n_features = n_bins_per_feature.shape[0]
     for l in range(n_leaves):
         best_f = -1
         best_t = -1
@@ -3505,7 +3513,7 @@ def _best_splits_counts_for_leaf_ids_with_noise_py(
     min_child_samples, leaf_ids, n_leaf_ids, out_feat, out_thr, out_gain,
     random_strength, split_seed, tree_iteration, step, min_gain
 ):
-    n_features = hg.shape[0]
+    n_features = n_bins_per_feature.shape[0]
     for idx in range(n_leaf_ids):
         l = int(leaf_ids[idx])
         best_f = -1
@@ -3584,6 +3592,9 @@ def _best_multiclass_splits_counts_for_leaf_ids_with_noise_py(
                 continue
             Gt = np.sum(hg[:K, f, l, :nb], axis=1)
             Ht = np.sum(hh[:K, f, l, :nb], axis=1)
+            total_H = float(np.sum(Ht))
+            if total_H <= 0.0:
+                continue
             GL = np.zeros(K, dtype=np.float64)
             HL = np.zeros(K, dtype=np.float64)
             CL = 0.0
@@ -3592,19 +3603,19 @@ def _best_multiclass_splits_counts_for_leaf_ids_with_noise_py(
                 GL += hg[:K, f, l, t]
                 HL += hh[:K, f, l, t]
                 CR = Ct - CL
-                if CL < min_child_samples or CR < min_child_samples:
+                sum_HL = float(np.sum(HL))
+                if (
+                    CL < min_child_samples
+                    or CR < min_child_samples
+                    or sum_HL < min_child_weight
+                    or total_H - sum_HL < min_child_weight
+                ):
                     continue
                 split_gain = 0.0
-                legal = True
                 for k in range(K):
+                    if Ht[k] <= 0.0:
+                        continue
                     HR = Ht[k] - HL[k]
-                    if (
-                        Ht[k] <= 0.0
-                        or HL[k] < min_child_weight
-                        or HR < min_child_weight
-                    ):
-                        legal = False
-                        break
                     parent_denom = Ht[k] + l2
                     left_denom = HL[k] + l2
                     right_denom = HR + l2
@@ -3613,15 +3624,14 @@ def _best_multiclass_splits_counts_for_leaf_ids_with_noise_py(
                         or left_denom <= 0.0
                         or right_denom <= 0.0
                     ):
-                        legal = False
-                        break
+                        continue
                     GR = Gt[k] - GL[k]
                     split_gain += (
                         GL[k] * GL[k] / left_denom
                         + GR * GR / right_denom
                         - Gt[k] * Gt[k] / parent_denom
                     )
-                if legal and split_gain > min_gain:
+                if split_gain > min_gain:
                     score = _noisy_score(
                         split_gain, random_strength, split_seed,
                         tree_iteration, step, l, f, t
@@ -4786,6 +4796,7 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                     and not constant_hessian
                     and row_indices is None
                     and feature_indices is None
+                    and bool(np.all(feature_mask != 0))
                     and not use_segmented_rows
                     and split_scratch is not None
                     and get_num_threads() > 2
