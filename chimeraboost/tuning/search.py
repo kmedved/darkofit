@@ -35,6 +35,7 @@ from .spaces import (
     phase_names,
 )
 from .validation import make_cv_splits, slice_fit_payload, validation_mass
+from ..sklearn_api import _normalize_sigma_calibration
 
 
 def _validate_search_sample_weight(sample_weight, n_samples, name="sample_weight"):
@@ -50,6 +51,72 @@ def _validate_search_sample_weight(sample_weight, n_samples, name="sample_weight
     if float(np.sum(w)) <= 0.0:
         raise ValueError(f"{name} must have positive total weight")
     return w
+
+
+def _pooled_trial_sigma_calibration(trial):
+    fold_auto_params = trial.user_attrs.get("fold_auto_params") or []
+    fold_masses = trial.user_attrs.get("fold_weight_sums") or []
+    if not fold_auto_params or len(fold_auto_params) != len(fold_masses):
+        return None
+
+    scale2_num = 0.0
+    mass_den = 0.0
+    n_samples = 0
+    positive_weight_n = 0
+    effective_n = 0.0
+    threshold = None
+    any_small_fold = False
+
+    for auto_params, mass in zip(fold_auto_params, fold_masses):
+        if not isinstance(auto_params, Mapping):
+            return None
+        metadata = auto_params.get("sigma_calibration")
+        if not isinstance(metadata, Mapping):
+            return None
+        if metadata.get("method") != "scalar":
+            return None
+        scale = metadata.get("sigma_scale")
+        if scale is None:
+            return None
+        mass = float(mass)
+        if not np.isfinite(mass) or mass <= 0.0:
+            continue
+        scale = float(scale)
+        if not np.isfinite(scale) or scale <= 0.0:
+            return None
+
+        scale2_num += mass * scale * scale
+        mass_den += mass
+        n_samples += int(metadata.get("validation_n_samples", 0) or 0)
+        positive_weight_n += int(
+            metadata.get("validation_positive_weight_n", 0) or 0
+        )
+        effective_n += float(metadata.get("validation_effective_n", 0.0) or 0.0)
+        if threshold is None and metadata.get("small_fold_threshold") is not None:
+            threshold = float(metadata["small_fold_threshold"])
+        any_small_fold = any_small_fold or bool(
+            metadata.get("small_fold_warning", False)
+        )
+
+    if mass_den <= 0.0:
+        return None
+
+    stats = {
+        "validation_n_samples": n_samples,
+        "validation_positive_weight_n": positive_weight_n,
+        "validation_effective_n": effective_n,
+    }
+    if threshold is not None:
+        stats["small_fold_threshold"] = threshold
+        stats["small_fold_warning"] = effective_n < threshold
+    else:
+        stats["small_fold_warning"] = any_small_fold
+    return {
+        "method": "scalar",
+        "sigma_scale": float(np.sqrt(max(scale2_num / mass_den, 1e-12))),
+        "source": "search_cv_validation",
+        "fold_stats": stats,
+    }
 
 
 class ChimeraBoostStepwiseSearchCV(BaseEstimator):
@@ -468,12 +535,32 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
         params["early_stopping_rounds"] = None
         params["refit"] = False
         estimator_params = self.estimator.get_params()
+        sigma_calibration = None
+        if getattr(self.estimator, "loss", None) == "Gaussian":
+            sigma_calibration = _normalize_sigma_calibration(
+                estimator_params.get("sigma_calibration")
+            )
+            if sigma_calibration == "scalar":
+                params["sigma_calibration"] = None
         if "thread_count" in estimator_params:
             params["thread_count"] = estimator_params.get("thread_count")
         params = _filter_params(params, self.estimator)
 
         final = clone(self.estimator).set_params(**params)
         final.fit(X, y, cat_features=cat_features, sample_weight=sample_weight)
+        if sigma_calibration == "scalar":
+            calibration = _pooled_trial_sigma_calibration(self.best_trial_)
+            if calibration is None:
+                raise ValueError(
+                    "best trial does not contain sigma calibration metadata; "
+                    "set refit=False or rerun the search with the current "
+                    "ChimeraBoost version"
+                )
+            final.sigma_calibration_ = "scalar"
+            final.sigma_scale_ = float(calibration["sigma_scale"])
+            final.sigma_scale_source_ = calibration["source"]
+            final.sigma_calibration_fold_stats_ = calibration["fold_stats"]
+            final._attach_sigma_calibration_metadata()
         self.best_estimator_ = final
         self.refit_params_ = params
         self.best_n_estimators_ = getattr(final, "best_n_estimators_", None)
@@ -789,7 +876,14 @@ def _filter_params(params, estimator):
     for key, value in params.items():
         if key not in known:
             continue
-        if value is None and key not in {"num_leaves", "early_stopping_rounds"}:
+        if (
+            value is None
+            and key not in {
+                "num_leaves",
+                "early_stopping_rounds",
+                "sigma_calibration",
+            }
+        ):
             continue
         out[key] = value
     return out

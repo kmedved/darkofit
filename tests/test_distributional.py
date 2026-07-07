@@ -513,6 +513,33 @@ def test_gaussian_sigma_calibration_requires_validation_and_survives_refit_load(
     )
 
 
+def test_gaussian_get_refit_params_clears_scalar_sigma_calibration():
+    X, y = _make_heteroscedastic(seed=19, n=160)
+    model = ChimeraBoostRegressor(
+        loss="Gaussian",
+        tree_mode="lightgbm",
+        iterations=8,
+        learning_rate=0.08,
+        min_child_samples=3,
+        num_leaves=7,
+        early_stopping=True,
+        early_stopping_rounds=3,
+        validation_fraction=0.25,
+        sigma_calibration="scalar",
+        random_state=0,
+        diagnostic_warnings="never",
+        thread_count=1,
+    ).fit(X, y)
+
+    params = model.get_refit_params()
+    assert params["sigma_calibration"] is None
+    refit = ChimeraBoostRegressor(**params).fit(X, y)
+    assert refit.sigma_calibration_ is None
+    mu, sigma = refit.predict_dist(X[:8])
+    assert mu.shape == sigma.shape == (8,)
+    assert np.all(sigma > 0.0)
+
+
 def test_gaussian_refit_uses_distributional_booster():
     X, y = _make_heteroscedastic(seed=2, n=120)
     model = ChimeraBoostRegressor(
@@ -706,6 +733,54 @@ def test_gaussian_only_methods_and_tuner_lanes():
             tree_modes=("catboost",),
             n_trials=1,
         ).fit(X, y)
+
+
+def test_gaussian_searchcv_refit_freezes_scalar_sigma_calibration():
+    X, y = _make_heteroscedastic(seed=18, n=120)
+    search = ChimeraBoostStepwiseSearchCV(
+        ChimeraBoostRegressor(
+            loss="Gaussian",
+            tree_mode="lightgbm",
+            iterations=4,
+            learning_rate=0.1,
+            min_child_samples=2,
+            num_leaves=3,
+            sigma_calibration="scalar",
+            random_state=0,
+            diagnostic_warnings="never",
+            thread_count=1,
+        ),
+        phases=("probe",),
+        tree_modes=("lightgbm",),
+        n_trials={"probe": 1},
+        cv=2,
+        refit=True,
+        random_state=0,
+        resume=False,
+        trial_thread_count=1,
+    ).fit(X, y)
+
+    final = search.best_estimator_
+    assert search.refit_params_["sigma_calibration"] is None
+    assert final.sigma_calibration_ == "scalar"
+    assert final.sigma_scale_source_ == "search_cv_validation"
+    fold_metas = search.best_trial_.user_attrs["fold_auto_params"]
+    fold_masses = search.best_trial_.user_attrs["fold_weight_sums"]
+    expected_scale = np.sqrt(
+        np.average(
+            [
+                meta["sigma_calibration"]["sigma_scale"] ** 2
+                for meta in fold_metas
+            ],
+            weights=fold_masses,
+        )
+    )
+    assert final.sigma_scale_ == pytest.approx(expected_scale)
+    _, raw_sigma = final.model_.predict_dist(X[:8])
+    _, public_sigma = final.predict_dist(X[:8])
+    np.testing.assert_allclose(
+        public_sigma, raw_sigma * final.sigma_scale_, rtol=0.0, atol=0.0
+    )
 
 
 def test_gaussian_serialization_roundtrip(tmp_path):

@@ -274,8 +274,11 @@ Other structure defaults remain opt-in: `depth="auto"`, `num_leaves="auto"`,
 `get_refit_params()` returns the frozen parameters for a manual full-data refit:
 it disables early stopping, uses the selected round count, and freezes the
 resolved learning rate and resolved auto-structure/categorical-smoothing
-values. Strategies `"sqrt"` and `"linear"` scale the selected round count by
-the automatic validation split ratio; `"scaled"` aliases `"linear"`.
+values. For Gaussian models with scalar sigma calibration, the exported refit
+params clear `sigma_calibration` because the frozen scale is fitted metadata,
+not something a validation-free refit can recompute. Strategies `"sqrt"` and
+`"linear"` scale the selected round count by the automatic validation split
+ratio; `"scaled"` aliases `"linear"`.
 
 Training loss is evaluated every round by default for diagnostics. Set
 `eval_train_loss=False` to skip that pass when you only care about the fitted

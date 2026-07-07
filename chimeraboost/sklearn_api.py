@@ -924,7 +924,10 @@ class _RefitParamsMixin:
         fitted round count (or an explicit scaling of it), and freeze the
         resolved learning rate from the selection fit. Freezing the learning
         rate avoids changing the boosting path when ``learning_rate=None`` was
-        used with early stopping.
+        used with early stopping.  For Gaussian scalar sigma calibration, the
+        returned params disable ``sigma_calibration`` because the frozen scale
+        is fitted-state metadata, not a constructor parameter that can be
+        recomputed during a validation-free full-data refit.
 
         Parameters
         ----------
@@ -959,6 +962,13 @@ class _RefitParamsMixin:
             params["tree_mode"] = selected_tree_mode
         params["early_stopping"] = False
         params["early_stopping_rounds"] = None
+        if (
+            params.get("loss") == "Gaussian"
+            and _normalize_sigma_calibration(
+                params.get("sigma_calibration")
+            ) is not None
+        ):
+            params["sigma_calibration"] = None
         auto = getattr(self.model_, "auto_params_", {})
         resolved = auto.get("auto_structure", {}).get("resolved", {})
         for name in (
