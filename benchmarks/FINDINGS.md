@@ -457,3 +457,69 @@ remap payload rejection.
 
 Decision: keep both features opt-in. No default flip occurs until categorical
 regret/quality reports and LightGBM/hybrid benchmark gates show a durable win.
+
+## 2026-07-07 — Opt-in feature-mode performance campaign
+
+Command:
+
+```text
+python benchmarks/bench_feature_modes.py \
+  --warmups 1 --repeats 2 --threads 4 --seed 20260707 \
+  --json /private/tmp/chimera_feature_mode_benchmark.json
+```
+
+Environment: macOS-26.5.2 arm64, Python 3.13.13, ChimeraBoost 0.5.2,
+NumPy 2.4.6, Numba 0.66.0, scikit-learn 1.9.0. Each config ran in an isolated
+child process; timings are best-of-2 after one warmup fit, and memory is
+process peak RSS from `resource.getrusage`.
+
+Resolved shared fit config for feature-mode rows: `iterations=60`,
+`learning_rate=0.08`, `num_leaves=31`, `early_stopping=False`,
+`eval_train_loss=False`, `thread_count=4`, fixed seed 20260707. Correctness was
+checked against the default config for the same case using the first 2,000
+holdout predictions/probabilities plus `train_history_` equality. All rows below
+had exact prediction equality, zero metric delta, and equal empty
+`train_history_` (empty by design with `eval_train_loss=False`).
+
+| case | config | best fit | speedup vs default | peak RSS | metric |
+|---|---|---:|---:|---:|---:|
+| scalar LightGBM wide numeric, 200k × 80 | default | 1.7773s | 1.000× | 593.0 MB | RMSE 88.238472 |
+| scalar LightGBM wide numeric, 200k × 80 | `histogram_dtype="float32"` | 1.7758s | 1.001× | 601.2 MB | RMSE 88.238472 |
+| scalar LightGBM wide numeric, 200k × 80 | `leaf_dtype="uint32"` | 1.7716s | 1.003× | 587.0 MB | RMSE 88.238472 |
+| scalar LightGBM wide numeric, 200k × 80 | both opt-ins | 1.7365s | 1.024× | 591.5 MB | RMSE 88.238472 |
+| scalar hybrid categorical, 100k × 12 | default | 0.7285s | 1.000× | 362.7 MB | RMSE 1.313606 |
+| scalar hybrid categorical, 100k × 12 | `histogram_dtype="float32"` | 0.7209s | 1.011× | 376.5 MB | RMSE 1.313606 |
+| scalar hybrid categorical, 100k × 12 | `leaf_dtype="uint32"` | 0.6913s | 1.054× | 377.4 MB | RMSE 1.313606 |
+| scalar hybrid categorical, 100k × 12 | both opt-ins | 0.6870s | 1.060× | 384.8 MB | RMSE 1.313606 |
+| multiclass shared-vector LightGBM, 60k × 45 | default | 1.4549s | 1.000× | 387.2 MB | log-loss 0.482361 |
+| multiclass shared-vector LightGBM, 60k × 45 | `leaf_dtype="uint32"` | 1.3838s | 1.051× | 380.1 MB | log-loss 0.482361 |
+
+`histogram_dtype="float32"` remains scalar-only; multiclass still rejects it by
+design. The measured wins are real but small and single-machine/single-seed:
+roughly neutral on the 200k wide numeric scalar case, +1–6% on the hybrid
+categorical and shared-vector leaf-id cases. This is enough to keep the opt-in
+paths, but not enough to justify a default flip without the broader regret and
+benchmark matrix.
+
+Shared preprocessing cache measurement used a 60k × 12 categorical regression
+case with `tree_mode="auto"`, `auto_learning_rate_probe=True`,
+`auto_learning_rate_probe_values=[0.04, 0.08, 0.16]`,
+`auto_learning_rate_probe_iterations=4`, early stopping enabled, and 4 threads.
+The cache-off comparator monkeypatched core boosters to ignore the private
+selection/probe cache while leaving the wrapper search path intact.
+
+| config | best fit | speedup | `FeaturePreprocessor.fit_transform` calls | peak RSS | selected mode | prediction delta |
+|---|---:|---:|---:|---:|---|---:|
+| cache off | 0.5052s | 1.000× | 3 | 345.8 MB | lightgbm | 0 |
+| cache on | 0.4578s | 1.104× | 2 | 353.1 MB | lightgbm | 0 |
+
+This run also exposed and fixed a cache-key bottleneck: object-array content
+signatures originally looped through Python objects and were slower than the
+saved preprocessing work on this case. The current implementation hashes the
+contiguous PyObject pointer table in bulk, preserving the fit-local "same object
+graph" safety/copy-hit contract while making the cache a measured wall-clock
+win in this auto/probe scenario.
+
+Decision: keep `histogram_dtype` and `leaf_dtype` opt-in, keep the shared
+preprocessing cache enabled for tree-mode/probe selection, and do not flip any
+defaults from this campaign alone.

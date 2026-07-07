@@ -6,6 +6,7 @@ Two boosters share the same machinery (FeaturePreprocessor, oblivious trees):
 """
 
 import copy
+import ctypes
 import hashlib
 import time
 import warnings
@@ -287,15 +288,12 @@ def _array_content_signature(value):
     if arr.dtype == object:
         # Factorization groups object categories by Python equality/hash
         # behavior. Repr/hash fingerprints can legally collide for distinct
-        # objects, so include identity; this cache is fit-local and only needs
-        # to reuse the exact same raw object graph safely.
-        for item in arr.ravel(order="C"):
-            h.update(type(item).__name__.encode("utf-8", "surrogatepass"))
-            h.update(b"\0")
-            h.update(repr(item).encode("utf-8", "surrogatepass"))
-            h.update(b"\0")
-            h.update(str(id(item)).encode("utf-8"))
-            h.update(b"\0")
+        # objects, so hash the raw PyObject* pointer table. This cache is
+        # fit-local and only needs to reuse the same object graph safely; using
+        # the contiguous pointer bytes keeps large object-array keys cheap.
+        obj = np.ascontiguousarray(arr)
+        ptr = int(obj.__array_interface__["data"][0])
+        h.update(ctypes.string_at(ptr, obj.size * obj.dtype.itemsize))
     else:
         h.update(np.ascontiguousarray(arr).view(np.uint8))
     return (tuple(arr.shape), str(arr.dtype), h.hexdigest())
