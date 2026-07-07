@@ -30,6 +30,7 @@ _SKLEARN_ONLY = frozenset({
     "early_stopping", "validation_fraction", "validation_strategy", "refit",
     "refit_strategy", "auto_learning_rate_probe",
     "auto_learning_rate_probe_values", "auto_learning_rate_probe_iterations",
+    "sigma_calibration",
 })
 
 _REFIT_STRATEGY_EXPONENT = {
@@ -67,6 +68,39 @@ def _normalize_validation_strategy(strategy):
     raise ValueError(
         "validation_strategy must be 'random' or 'weighted_stratified'"
     )
+
+
+def _normalize_sigma_calibration(calibration):
+    if calibration is None or calibration is False:
+        return None
+    if calibration is True:
+        return "scalar"
+    mode = str(calibration).lower().replace("-", "_")
+    if mode in {"none", "off", "false", "no"}:
+        return None
+    if mode in {"scalar", "scale", "sigma_scale"}:
+        return "scalar"
+    raise ValueError("sigma_calibration must be None, False, True, or 'scalar'")
+
+
+def _fit_scalar_sigma_scale(model, X_val, y_val, sample_weight=None):
+    mu, sigma = model.predict_dist(X_val)
+    y_val = np.asarray(y_val, dtype=np.float64)
+    sigma = np.maximum(np.asarray(sigma, dtype=np.float64), 1e-12)
+    if sample_weight is None:
+        z2 = ((y_val - np.asarray(mu, dtype=np.float64)) / sigma) ** 2
+        scale2 = float(np.mean(z2))
+    else:
+        w = np.asarray(sample_weight, dtype=np.float64)
+        positive = w > 0.0
+        if not np.any(positive):
+            raise ValueError("eval_sample_weight must have positive total weight")
+        y_val = y_val[positive]
+        mu = np.asarray(mu, dtype=np.float64)[positive]
+        sigma = sigma[positive]
+        z2 = ((y_val - mu) / sigma) ** 2
+        scale2 = float(np.average(z2, weights=w[positive]))
+    return float(np.sqrt(max(scale2, 1e-12)))
 
 
 def _resolve_validation_fraction(validation_fraction, sample_weight, n_samples):
@@ -389,7 +423,8 @@ class _RefitParamsMixin:
             "_best_n_estimators_", "_best_score_", "_learning_rate_",
             "selection_model_", "refit_", "refit_n_estimators_",
             "refit_strategy_", "tree_mode_selection_",
-            "selection_model_persisted_",
+            "selection_model_persisted_", "sigma_calibration_",
+            "sigma_scale_", "sigma_scale_source_",
         ):
             if hasattr(self, name):
                 delattr(self, name)
@@ -574,6 +609,14 @@ class _RefitParamsMixin:
             state["selection_n_total"] = self._selection_n_total_
         if hasattr(self, "_selection_n_train_"):
             state["selection_n_train"] = self._selection_n_train_
+        if hasattr(self, "sigma_scale_"):
+            state["sigma_scale"] = float(self.sigma_scale_)
+            state["sigma_calibration"] = getattr(
+                self, "sigma_calibration_", None
+            )
+            state["sigma_scale_source"] = getattr(
+                self, "sigma_scale_source_", None
+            )
         return state
 
     def _wrapper_params_header(self):
@@ -618,6 +661,26 @@ class _RefitParamsMixin:
             self._selection_n_total_ = int(state["selection_n_total"])
         if "selection_n_train" in state:
             self._selection_n_train_ = int(state["selection_n_train"])
+        if "sigma_scale" in state:
+            self.sigma_scale_ = float(state["sigma_scale"])
+            self.sigma_calibration_ = state.get("sigma_calibration")
+            self.sigma_scale_source_ = state.get("sigma_scale_source")
+
+    def _attach_sigma_calibration_metadata(self):
+        if not hasattr(self, "sigma_scale_"):
+            return
+        model = getattr(self, "model_", None)
+        auto_params = getattr(model, "auto_params_", None)
+        if auto_params is None:
+            return
+        metadata = {
+            "method": getattr(self, "sigma_calibration_", None),
+            "sigma_scale": float(self.sigma_scale_),
+            "source": getattr(self, "sigma_scale_source_", None),
+        }
+        auto_params["sigma_calibration"] = metadata
+        auto_params.setdefault("diagnostics", {})
+        auto_params["diagnostics"]["sigma_calibration"] = metadata
 
     def _refit_params_for_booster(self, strategy):
         params = self.get_refit_params(strategy=strategy)
@@ -884,6 +947,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                  histogram_parallelism="auto", use_best_model=True,
                  bootstrap_type="none", bagging_temperature=0.0,
                  mvs_reg=1.0, random_strength=0.0,
+                 sigma_calibration=None,
                  diagnostic_warnings="once",
                  auto_learning_rate_probe=False,
                  auto_learning_rate_probe_values=None,
@@ -931,6 +995,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self.bagging_temperature = bagging_temperature
         self.mvs_reg = mvs_reg
         self.random_strength = random_strength
+        self.sigma_calibration = sigma_calibration
         self.diagnostic_warnings = diagnostic_warnings
         self.histogram_dtype = histogram_dtype
         self.leaf_dtype = leaf_dtype
@@ -989,12 +1054,19 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
 
         self._clear_refit_selection_metadata()
         tree_mode_auto = _is_auto_tree_mode(self.tree_mode)
+        sigma_calibration_ = _normalize_sigma_calibration(
+            self.sigma_calibration
+        )
         if (
             self.loss != "Gaussian"
             and self.eval_metric not in {None, "auto", "loss"}
         ):
             raise ValueError(
                 "eval_metric is only configurable for loss='Gaussian'"
+            )
+        if self.loss != "Gaussian" and sigma_calibration_ is not None:
+            raise ValueError(
+                "sigma_calibration is only supported for loss='Gaussian'"
             )
         if self.loss == "Gaussian":
             if self.alpha != 0.5:
@@ -1045,6 +1117,13 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             X, y = X[train_idx], y[train_idx]
             if sample_weight is not None:
                 sample_weight = sample_weight[train_idx]
+
+        if sigma_calibration_ is not None and eval_set is None:
+            raise ValueError(
+                "sigma_calibration='scalar' requires a validation set; pass "
+                "eval_set or set early_stopping=True to create an automatic "
+                "validation split"
+            )
 
         es_rounds = self.early_stopping_rounds
         if es_active and es_rounds is None:
@@ -1148,6 +1227,17 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self._attach_tree_mode_selection_metadata(tree_mode_selection_metadata)
         selection_model = self.model_
         self._record_selection_result(selection_model)
+        if self.loss == "Gaussian":
+            self.sigma_calibration_ = sigma_calibration_
+            self.sigma_scale_ = 1.0
+            self.sigma_scale_source_ = "none"
+            if sigma_calibration_ == "scalar":
+                X_cal, y_cal = eval_set
+                self.sigma_scale_ = _fit_scalar_sigma_scale(
+                    selection_model, X_cal, y_cal, eval_sample_weight
+                )
+                self.sigma_scale_source_ = "selection_validation"
+            self._attach_sigma_calibration_metadata()
 
         if self.refit and selection_active:
             refit_kw = self._refit_params_for_booster(self.refit_strategy)
@@ -1176,6 +1266,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             self._attach_selection_validation_metadata(validation_metadata)
             self._attach_learning_rate_probe_metadata(probe_metadata)
             self._attach_tree_mode_selection_metadata(tree_mode_selection_metadata)
+            self._attach_sigma_calibration_metadata()
         return self
 
     def predict(self, X):
@@ -1204,7 +1295,11 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
     def _predict_dist_checked(self, X, method_name):
         X = _check_predict_input(self, X)
         self._require_gaussian(method_name)
-        return self.model_.predict_dist(X)
+        mu, sigma = self.model_.predict_dist(X)
+        scale = float(getattr(self, "sigma_scale_", 1.0))
+        if scale != 1.0:
+            sigma = sigma * scale
+        return mu, sigma
 
     def predict_dist(self, X):
         """Return ``(mu, sigma)`` for a fitted Gaussian regression model."""

@@ -156,6 +156,19 @@ reg = ChimeraBoostRegressor(
 )
 ```
 
+For small data, early stopping is especially important for Gaussian fits:
+training too long can make the log-standard-deviation head overfit residuals
+and produce intervals that are too narrow. Use an explicit `eval_set` or
+`early_stopping=True` when interval calibration matters.
+
+`sigma_calibration="scalar"` is an opt-in validation-set calibration for
+Gaussian models. It fits the NLL-optimal global scale
+`sqrt(weighted_mean(((y - mu) / sigma) ** 2))` on the selected validation
+prefix, persists the scale through save/load, and applies it to
+`predict_dist`, `predict_interval`, and `sample`. It does not change
+`predict()` or `predict_raw()`. With `refit=True`, the scale is frozen from the
+selection-phase validation model and then applied to the full-data refit.
+
 Not implemented for Gaussian distributional regression in v1: CatBoost-style
 per-parameter scalar trees, GOSS/MVS distributional sampling, Bayesian
 bootstrap, additional heads such as Poisson/NegativeBinomial/StudentT or shared

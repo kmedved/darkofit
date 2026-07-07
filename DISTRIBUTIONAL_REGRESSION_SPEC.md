@@ -20,6 +20,36 @@ This revision incorporates three independent Oracle reviews of the first draft. 
 
 One Oracle comment was not adopted as written: `DistributionalBoosting` does not need its own `_include_cat_codes` method for correctness because `_BaseBooster._include_cat_codes` exists in current source and returns true for lightgbm/hybrid. The spec still requires extending the RMSE-specific smoothing gates so Gaussian receives RMSE-style categorical treatment.
 
+## 0.1 Post-implementation calibration revision
+
+A follow-up rounds sweep corrected the initial benchmark diagnosis. The
+n=800/20-round smoke over-coverage was an under-training snapshot: as rounds
+increase, coverage crosses nominal and eventually collapses because the
+log-σ head overfits shrinking train residuals. At 200k rows and 60 rounds the
+original Gaussian lane was essentially calibrated; on small data, the
+production risk is late-stage overconfidence, not intervals being too wide.
+
+Changes adopted from that evidence:
+
+- The benchmark adds a `chimera_gaussian_es` lane with validation NLL early
+  stopping, plus coverage binned by predicted σ. This distinguishes underfit,
+  well-stopped, and σ-overfit regimes and shows whether miscalibration depends
+  on predicted dispersion.
+- The sklearn wrapper adds opt-in `sigma_calibration="scalar"` for Gaussian
+  regressors. It requires an explicit validation set or an automatic
+  early-stopping split, computes the closed-form NLL-optimal global scale
+  `sqrt(weighted_mean(z²))` at the selected validation prefix after any
+  best-model truncation, persists it through wrapper state, and applies it to
+  `predict_dist`, `predict_interval`, and `sample`. It does **not** alter
+  `predict_raw` or `predict`.
+- With `refit=True`, the scalar scale is frozen from the selection-phase model
+  because the full-data refit has no validation target left for calibration.
+- OOF calibration, affine `a + b·log σ`, per-head LR/L2/gain knobs, and
+  two-stage μ-then-joint training stay out of scope. They add fit cost or
+  tuning surface without evidence yet; affine calibration should only be
+  revisited if σ-binned coverage shows dispersion-dependent residual error
+  that a scalar cannot fix.
+
 ---
 
 ## 1. Summary
@@ -615,7 +645,7 @@ The auto-structure resolvers (`l2_leaf_reg="auto"`, `num_leaves="auto"`, `min_ch
 
 ### 7.1 Constructor
 
-`ChimeraBoostRegressor.__init__` (sklearn_api.py:846): extend the `loss` docstring to `"RMSE" | "MAE" | "Quantile" | "Gaussian"`. Add `eval_metric=None` as the one public distributional metric knob (`None`/`"nll"` selects Gaussian NLL, `"crps"` selects closed-form Gaussian CRPS for validation history, early-stopping patience, and best-prefix truncation). `hessian_mode` is intentionally not exposed. Keep constructor sklearn-clone friendly; reject non-default `alpha` with `loss="Gaussian"` inside `fit`, not `__init__`; reject non-default `eval_metric` for non-Gaussian losses.
+`ChimeraBoostRegressor.__init__` (sklearn_api.py:846): extend the `loss` docstring to `"RMSE" | "MAE" | "Quantile" | "Gaussian"`. Add `eval_metric=None` as the public distributional metric knob (`None`/`"nll"` selects Gaussian NLL, `"crps"` selects closed-form Gaussian CRPS for validation history, early-stopping patience, and best-prefix truncation). Add `sigma_calibration=None` as a sklearn-wrapper-only Gaussian knob; accept `None`/`False` for off and `True`/`"scalar"` for the scalar validation calibrator. `hessian_mode` is intentionally not exposed. Keep constructor sklearn-clone friendly; reject non-default `alpha` with `loss="Gaussian"` inside `fit`, not `__init__`; reject non-default `eval_metric` or non-off `sigma_calibration` for non-Gaussian losses.
 
 ### 7.2 fit() routing
 
@@ -626,6 +656,9 @@ Before the `tree_mode_auto` branch, add Gaussian wrapper guards:
 ```python
 if self.loss != "Gaussian" and self.eval_metric not in {None, "auto", "loss"}:
     raise ValueError("eval_metric is only configurable for loss='Gaussian'")
+sigma_calibration_ = _normalize_sigma_calibration(self.sigma_calibration)
+if self.loss != "Gaussian" and sigma_calibration_ is not None:
+    raise ValueError("sigma_calibration is only supported for loss='Gaussian'")
 if self.loss == "Gaussian":
     if self.alpha != 0.5:
         raise ValueError("alpha is only used with loss='Quantile'; leave alpha=0.5 for loss='Gaussian'")
@@ -666,6 +699,35 @@ This requires importing `DistributionalBoosting` (and `_normalize_tree_mode` if 
 
 Everything else downstream (eval-split creation via `_make_eval_split` sklearn_api.py:290 — regression path incl. `weighted_stratified`; early-stopping params) flows unchanged because `DistributionalBoosting` mirrors the `GradientBoosting` fit signature and attribute surface. Explicitly verify these three integrations in tests: `validation_fraction`/`eval_set`, `refit=True` + `get_refit_params()` (freezes `lr_` and selected rounds — both exist on the new class; assert the refit model is a `DistributionalBoosting`), and `sample_weight` + `eval_sample_weight`.
 
+After any automatic validation split has been created, require a validation
+set for scalar sigma calibration:
+
+```python
+if sigma_calibration_ is not None and eval_set is None:
+    raise ValueError(
+        "sigma_calibration='scalar' requires a validation set; pass "
+        "eval_set or set early_stopping=True to create an automatic "
+        "validation split"
+    )
+```
+
+`sigma_calibration` must be added to `_SKLEARN_ONLY` so it is not forwarded to
+`GradientBoosting` or `DistributionalBoosting`. Once the selection model has
+finished and best-prefix truncation has run, compute:
+
+```python
+mu, sigma = selection_model.predict_dist(X_cal)
+z2 = ((y_cal - mu) / np.maximum(sigma, 1e-12)) ** 2
+sigma_scale_ = sqrt(weighted_average(z2, eval_sample_weight))
+```
+
+Store `sigma_calibration_`, `sigma_scale_`, and `sigma_scale_source_ =
+"selection_validation"` on the wrapper and mirror them into
+`model_.auto_params_["sigma_calibration"]` and
+`model_.auto_params_["diagnostics"]["sigma_calibration"]`. For `refit=True`,
+do not recompute the scale on full data; reattach the same frozen value to the
+refit model metadata.
+
 ### 7.3 LR probe
 
 `_run_learning_rate_probe` (sklearn_api.py:662): the fallback chain `getattr(context_model, "loss_name", None) → context_model.loss_.name → "RMSE"` (sklearn_api.py:696–700) resolves correctly because `DistributionalBoosting.loss_name = "Gaussian"`. The probe's candidate scoring uses validation loss from `fit` → NLL by default, or CRPS when `eval_metric="crps"` is set. Add a test that `auto_learning_rate_probe=True` runs end-to-end with `loss="Gaussian"`.
@@ -693,7 +755,8 @@ def staged_predict(self, X):
 def predict_dist(self, X):
     self._require_gaussian("predict_dist")
     X = _check_predict_input(self, X)
-    return self.model_.predict_dist(X)        # (mu, sigma)
+    mu, sigma = self.model_.predict_dist(X)   # raw MLE distribution
+    return mu, sigma * getattr(self, "sigma_scale_", 1.0)
 
 def predict_interval(self, X, alpha=0.1):
     self._require_gaussian("predict_interval")
@@ -713,9 +776,20 @@ def sample(self, X, n_samples=1, random_state=None):
 
 `_require_gaussian(name)` raises `AttributeError`-style `ValueError`: `f"{name}() requires loss='Gaussian'; this model was fit with loss='{self.loss}'"`. Follow sklearn convention: these methods check `check_is_fitted` via the same `_check_predict_input` path as `predict`.
 
+The scalar calibration scale is deliberately applied only through the public
+distributional methods (`predict_dist`, `predict_interval`, `sample`) and not
+inside `model_.predict_raw` / `model_.predict_dist`. Raw scores stay the fitted
+MLE scores for diagnostics, staged raw prediction, and future calibration
+experiments. `predict()` returns μ and is unchanged by sigma calibration.
+
 ### 7.5 predict() dispatch caveat
 
 The scalar losses return `(n,)` from `predict_raw` while Gaussian returns `(n, 2)` — the branch above keys on `self.loss`, which is correct for a fitted wrapper but **also make the loaded-model path set `self.loss = "Gaussian"`** (§8) so a wrapper reconstructed from npz dispatches correctly. In `ChimeraBoostRegressor.load_model`, after `booster, wrapper_header, _ = load_booster(...)`, if `isinstance(booster, DistributionalBoosting)`, force `est.loss = booster.loss_name` after restoring wrapper params. If wrapper params exist and say a different loss, raise a model-archive error rather than letting wrapper dispatch diverge from the loaded booster.
+
+Wrapper state must also persist `sigma_scale`, `sigma_calibration`, and
+`sigma_scale_source` when present. A loaded calibrated Gaussian wrapper should
+match pre-save `predict_dist` exactly; an uncalibrated or legacy archive should
+default to scale `1.0`.
 
 ### 7.6 Diagnostics
 
@@ -838,10 +912,10 @@ Training behavior:
 
 API and wiring:
 10. `predict(X) == predict_dist(X)[0]` exactly; `staged_predict` yields `(n,)` μ arrays (not `(n, 2)` raw) and its final element equals `predict`; interval symmetric about μ; `sample` mean/std → (μ, σ) as draws grow.
-11. **Early stopping** on eval_set fires; `best_iteration_` set; `use_best_model` truncation shortens `trees_`; `refit=True` runs end-to-end and `isinstance(reg.model_, DistributionalBoosting)` holds after refit (regression test for the hardcoded-`GradientBoosting` refit site, sklearn_api.py:1116); `get_refit_params()` round-trip runs.
+11. **Early stopping and calibration** on eval_set fires; `best_iteration_` set; `use_best_model` truncation shortens `trees_`; `sigma_calibration="scalar"` computes the validation `sqrt(weighted_mean(z²))` scale from the selected/truncated model, applies it to wrapper `predict_dist` but not core `model_.predict_dist`, rejects non-Gaussian losses and missing validation sets, and records metadata in `auto_params_`; `refit=True` runs end-to-end, freezes the selection-phase scale, and `isinstance(reg.model_, DistributionalBoosting)` holds after refit (regression test for the hardcoded-`GradientBoosting` refit site, sklearn_api.py:1116); `get_refit_params()` round-trip runs.
 12. **Auto LR:** `learning_rate=None` resolves; `auto_params_["learning_rate"]` records the Gaussian→RMSE rule source; probe (`auto_learning_rate_probe=True`) runs.
 13. **Guards raise / sampling fits / tuner runs:** Gaussian + `tree_mode="catboost"` (and `"auto"`, `"hybrid"`, `"depthwise"`); Gaussian + LightGBM aliases such as `"leafwise"` / `"leaf_wise"` fits successfully; + `sampling="goss"` and `sampling="mvs"` raise; + `subsample=0.5` fits and records stochastic diagnostics; + `colsample=0.8` fits; + sampled `tree.depth == 0` retries are capped; + `bootstrap_type="bayesian", bagging_temperature=0.5`; + `ordered_boosting=True`; + `histogram_dtype="float32"` (must raise, not silently fall back to float64); `predict_dist` on `loss="RMSE"` model; non-default `alpha` + Gaussian; `eval_metric="crps"` controls validation history; non-Gaussian `eval_metric="crps"` raises; tuner + Gaussian runs on the resolved LightGBM lane and uses `neg_gaussian_nll` by default. No classifier-specific Gaussian guard is needed unless the classifier API later adds a `loss` parameter.
-14. **Serialization round-trip:** save/load → `predict_dist` allclose (rtol 0, atol 0 expected — same arrays), header contains `n_outputs=2` and no `n_classes`, loader derives leaf width from `n_outputs` (§8.2), loaded wrapper `predict` dispatches to μ; a saved+loaded **multiclass** model still round-trips (guards the shared `kind == "multi"` width edit).
+14. **Serialization round-trip:** save/load → `predict_dist` allclose (rtol 0, atol 0 expected — same arrays), header contains `n_outputs=2` and no `n_classes`, loader derives leaf width from `n_outputs` (§8.2), loaded wrapper `predict` dispatches to μ, and scalar sigma calibration state survives wrapper save/load; a saved+loaded **multiclass** model still round-trips (guards the shared `kind == "multi"` width edit).
 15. **Categoricals:** fit with `cat_features` on a mixed-frame; runs and predicts (exercises the RMSE-style prep gate extension of §5.2 step 1).
 16. **Existing suite stays green:** no behavior change for any other loss (the only shared-code edits are the two `loss_name` set-literal extensions and auto_params mapping — assert `loss="RMSE"` fits byte-identical predictions before/after on a fixed seed, which the existing tests already effectively cover; run the full suite).
 
@@ -852,12 +926,16 @@ API and wiring:
 Follow the structure/CLI conventions of `benchmarks/bench_vs_lightgbm.py`. Datasets: the synthetic heteroscedastic generator from test (6) at 100k/500k rows, plus 2–3 OpenML regression sets already used by the existing bench harness. Contenders (each behind a soft import; skip with a printed notice if missing):
 
 - ChimeraBoost `loss="Gaussian"` (this work)
+- ChimeraBoost `loss="Gaussian"` with validation NLL early stopping
+  (`chimera_gaussian_es`)
+- ChimeraBoost `loss="Gaussian"` with validation NLL early stopping plus
+  `sigma_calibration="scalar"` (`chimera_gaussian_es_calibrated`)
 - NGBoost (`Normal` dist), equal rounds
 - CatBoost `loss_function="RMSEWithUncertainty"`
 - LightGBM twin-model baseline: model A = mean (L2); model B = L2 on `log((y−μ̂_oof)² + eps)` via out-of-fold μ̂ — the "practical hack" this feature replaces
 - ChimeraBoost quantile pair (α=0.05, 0.95) — interval-only baseline
 
-Metrics per contender: validation NLL, CRPS, 90% empirical coverage, mean interval width, fit wall-time (kernels warmed; respect the existing benchmark-fairness note about timing encoding inside vs outside the timer — encode outside for all contenders). Emit a markdown table; add the result summary to BENCHMARK_NOTES.md.
+Metrics per contender: validation NLL, CRPS, 90% empirical coverage, mean interval width, σ-binned 90% coverage for every lane that exposes per-row σ, fit wall-time (kernels warmed; respect the existing benchmark-fairness note about timing encoding inside vs outside the timer — encode outside for all contenders). Emit a markdown table; add the result summary to BENCHMARK_NOTES.md. The early-stopped lane should accept a larger max-round budget than the fixed-round lane so the benchmark can separate under-training from late σ overfit.
 
 ---
 

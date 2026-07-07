@@ -12,13 +12,19 @@
   sample does not stop the whole fit prematurely.
 * Add Gaussian `eval_metric="crps"` validation/early-stopping support while
   keeping Gaussian NLL as the default validation objective.
+* Add opt-in Gaussian `sigma_calibration="scalar"` on the sklearn regressor:
+  the wrapper fits a validation-set global sigma scale at the selected best
+  prefix, persists it through `.npz` save/load, and applies it to
+  `predict_dist`, `predict_interval`, and `sample` without changing raw scores
+  or point predictions.
 * Enable `ChimeraBoostStepwiseSearchCV` for Gaussian regressors on the
   LightGBM lane with Gaussian NLL default scoring and Gaussian-safe
   sampling/regularization suggestions.
 * Add `benchmarks/bench_distributional.py` for Gaussian NLL/CRPS/coverage
-  comparisons against RMSE constant-sigma, quantile-pair, NGBoost, CatBoost
-  uncertainty, and LightGBM twin-model baselines when optional packages are
-  installed.
+  comparisons against fixed-round and early-stopped Chimera Gaussian lanes,
+  RMSE constant-sigma, quantile-pair, NGBoost, CatBoost uncertainty, and
+  LightGBM twin-model baselines when optional packages are installed, including
+  coverage binned by predicted sigma.
 * Change sklearn estimator defaults to `l2_leaf_reg="auto"`; the resolver keeps
   CatBoost-mode fits near the historical `3.0` default while preserving the
   task/tree-mode-specific auto-structure metadata in `auto_params_`.

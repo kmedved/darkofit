@@ -47,6 +47,8 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 DEFAULT_MODELS = (
     "chimera_gaussian",
+    "chimera_gaussian_es",
+    "chimera_gaussian_es_calibrated",
     "chimera_rmse_const_sigma",
     "chimera_quantile_pair",
     "ngboost",
@@ -79,6 +81,7 @@ class Result:
     crps: float | None = None
     interval90_coverage: float | None = None
     interval90_width: float | None = None
+    cov90_by_sigma: str | None = None
     sigma_mean: float | None = None
     sigma_min: float | None = None
     sigma_max: float | None = None
@@ -161,8 +164,21 @@ def _normal_crps(y, mu, sigma):
     )
 
 
+def _sigma_binned_coverage(y, lo, hi, sigma, n_bins):
+    n_bins = int(n_bins)
+    if n_bins < 2:
+        return None
+    sigma = np.asarray(sigma, dtype=np.float64)
+    if sigma.size == 0:
+        return None
+    order = np.argsort(sigma)
+    covered = ((np.asarray(y) >= lo) & (np.asarray(y) <= hi))[order]
+    chunks = [chunk for chunk in np.array_split(covered, n_bins) if chunk.size]
+    return "/".join(f"{float(np.mean(chunk)):.3f}" for chunk in chunks)
+
+
 def _score(dataset, model_name, seed, Xtr, Xte, yte, fit_seconds, predict_seconds,
-           mu, sigma, best_iteration=None):
+           mu, sigma, best_iteration=None, sigma_bins=5):
     sigma = np.clip(np.asarray(sigma, dtype=np.float64), 1e-12, None)
     mu = np.asarray(mu, dtype=np.float64)
     lo = mu - 1.6448536269514722 * sigma
@@ -183,6 +199,9 @@ def _score(dataset, model_name, seed, Xtr, Xte, yte, fit_seconds, predict_second
         crps=_normal_crps(yte, mu, sigma),
         interval90_coverage=float(np.mean((yte >= lo) & (yte <= hi))),
         interval90_width=float(np.mean(hi - lo)),
+        cov90_by_sigma=_sigma_binned_coverage(
+            yte, lo, hi, sigma, sigma_bins
+        ),
         sigma_mean=float(np.mean(sigma)),
         sigma_min=float(np.min(sigma)),
         sigma_max=float(np.max(sigma)),
@@ -245,6 +264,73 @@ def _run_chimera_gaussian(dataset, seed, Xtr, Xte, ytr, yte, args):
         dataset, "chimera_gaussian", seed, Xtr, Xte, yte,
         fit_seconds, predict_seconds, mu, sigma,
         best_iteration=model.n_estimators_,
+        sigma_bins=args.sigma_bins,
+    )
+
+
+def _run_chimera_gaussian_es(dataset, seed, Xtr, Xte, ytr, yte, args):
+    t0 = time.perf_counter()
+    model = ChimeraBoostRegressor(
+        loss="Gaussian",
+        tree_mode="lightgbm",
+        iterations=(
+            args.early_stop_iterations
+            if args.early_stop_iterations is not None
+            else args.iterations
+        ),
+        learning_rate=args.learning_rate,
+        num_leaves=args.num_leaves,
+        min_child_samples=args.min_child_samples,
+        early_stopping=True,
+        early_stopping_rounds=args.early_stopping_rounds,
+        validation_fraction=args.validation_fraction,
+        thread_count=args.threads,
+        random_state=seed,
+        diagnostic_warnings="never",
+    ).fit(Xtr, ytr)
+    fit_seconds = time.perf_counter() - t0
+    t0 = time.perf_counter()
+    mu, sigma = model.predict_dist(Xte)
+    predict_seconds = time.perf_counter() - t0
+    return _score(
+        dataset, "chimera_gaussian_es", seed, Xtr, Xte, yte,
+        fit_seconds, predict_seconds, mu, sigma,
+        best_iteration=model.n_estimators_,
+        sigma_bins=args.sigma_bins,
+    )
+
+
+def _run_chimera_gaussian_es_calibrated(dataset, seed, Xtr, Xte, ytr, yte,
+                                        args):
+    t0 = time.perf_counter()
+    model = ChimeraBoostRegressor(
+        loss="Gaussian",
+        tree_mode="lightgbm",
+        iterations=(
+            args.early_stop_iterations
+            if args.early_stop_iterations is not None
+            else args.iterations
+        ),
+        learning_rate=args.learning_rate,
+        num_leaves=args.num_leaves,
+        min_child_samples=args.min_child_samples,
+        early_stopping=True,
+        early_stopping_rounds=args.early_stopping_rounds,
+        validation_fraction=args.validation_fraction,
+        sigma_calibration="scalar",
+        thread_count=args.threads,
+        random_state=seed,
+        diagnostic_warnings="never",
+    ).fit(Xtr, ytr)
+    fit_seconds = time.perf_counter() - t0
+    t0 = time.perf_counter()
+    mu, sigma = model.predict_dist(Xte)
+    predict_seconds = time.perf_counter() - t0
+    return _score(
+        dataset, "chimera_gaussian_es_calibrated", seed, Xtr, Xte, yte,
+        fit_seconds, predict_seconds, mu, sigma,
+        best_iteration=model.n_estimators_,
+        sigma_bins=args.sigma_bins,
     )
 
 
@@ -272,6 +358,7 @@ def _run_chimera_rmse_const_sigma(dataset, seed, Xtr, Xte, ytr, yte, args):
         dataset, "chimera_rmse_const_sigma", seed, Xtr, Xte, yte,
         fit_seconds, predict_seconds, mu, sigma,
         best_iteration=model.n_estimators_,
+        sigma_bins=args.sigma_bins,
     )
 
 
@@ -334,7 +421,8 @@ def _run_ngboost(dataset, seed, Xtr, Xte, ytr, yte, args):
     predict_seconds = time.perf_counter() - t0
     return _score(
         dataset, "ngboost", seed, Xtr, Xte, yte,
-        fit_seconds, predict_seconds, mu, sigma
+        fit_seconds, predict_seconds, mu, sigma,
+        sigma_bins=args.sigma_bins,
     )
 
 
@@ -374,6 +462,7 @@ def _run_catboost_uncertainty(dataset, seed, Xtr, Xte, ytr, yte, args):
         dataset, "catboost_uncertainty", seed, Xtr, Xte, yte,
         fit_seconds, predict_seconds, mu, sigma,
         best_iteration=getattr(model, "tree_count_", None),
+        sigma_bins=args.sigma_bins,
     )
 
 
@@ -423,11 +512,14 @@ def _run_lightgbm_twin(dataset, seed, Xtr, Xte, ytr, yte, args):
     return _score(
         dataset, "lightgbm_twin", seed, Xtr, Xte, yte,
         fit_seconds, predict_seconds, mu, sigma,
+        sigma_bins=args.sigma_bins,
     )
 
 
 RUNNERS = {
     "chimera_gaussian": _run_chimera_gaussian,
+    "chimera_gaussian_es": _run_chimera_gaussian_es,
+    "chimera_gaussian_es_calibrated": _run_chimera_gaussian_es_calibrated,
     "chimera_rmse_const_sigma": _run_chimera_rmse_const_sigma,
     "chimera_quantile_pair": _run_chimera_quantile_pair,
     "ngboost": _run_ngboost,
@@ -446,10 +538,12 @@ def _fmt(value, digits=5):
 
 def _print_results(rows):
     print("\nDistributional regression benchmark")
+    model_width = max([34, *(len(r.model) for r in rows)])
     print(
-        f"{'dataset':18s} {'model':28s} {'seed':>4s} {'status':>6s} {'fit_s':>8s} "
+        f"{'dataset':18s} {'model':{model_width}s} {'seed':>4s} {'status':>6s} {'fit_s':>8s} "
         f"{'pred_s':>8s} {'rmse_mu':>9s} {'nll':>9s} {'crps':>9s} "
-        f"{'cov90':>7s} {'width90':>8s} {'sigma':>20s} reason"
+        f"{'cov90':>7s} {'width90':>8s} {'cov90_by_sigma':>29s} "
+        f"{'sigma':>20s} reason"
     )
     for r in rows:
         sigma = "-"
@@ -459,11 +553,12 @@ def _print_results(rows):
                 f"[{r.sigma_min:.4f},{r.sigma_max:.4f}]"
             )
         print(
-            f"{r.dataset:18s} {r.model:28s} {r.seed:4d} {r.status:>6s} "
+            f"{r.dataset:18s} {r.model:{model_width}s} {r.seed:4d} {r.status:>6s} "
             f"{_fmt(r.fit_seconds, 3):>8s} {_fmt(r.predict_seconds, 3):>8s} "
             f"{_fmt(r.rmse_mu):>9s} {_fmt(r.nll):>9s} "
             f"{_fmt(r.crps):>9s} {_fmt(r.interval90_coverage, 3):>7s} "
-            f"{_fmt(r.interval90_width, 3):>8s} {sigma:>20s} {r.reason}"
+            f"{_fmt(r.interval90_width, 3):>8s} "
+            f"{_fmt(r.cov90_by_sigma):>29s} {sigma:>20s} {r.reason}"
         )
 
     ok_rows = [r for r in rows if r.status == "ok"]
@@ -476,7 +571,7 @@ def _print_results(rows):
             nll_values = [r.nll for r in subset if r.nll is not None]
             crps_values = [r.crps for r in subset if r.crps is not None]
             print(
-                f"  {dataset:18s} {model:28s}"
+                f"  {dataset:18s} {model:{model_width}s}"
                 f" fit={statistics.mean(r.fit_seconds for r in subset):.3f}s"
                 f" nll={_fmt(statistics.mean(nll_values) if nll_values else None)}"
                 f" crps={_fmt(statistics.mean(crps_values) if crps_values else None)}"
@@ -490,7 +585,7 @@ def _print_results(rows):
 def _markdown_table(rows):
     headers = [
         "dataset", "model", "seed", "status", "fit_s", "rmse_mu", "nll",
-        "crps", "cov90", "width90", "reason",
+        "crps", "cov90", "width90", "cov90_by_sigma", "reason",
     ]
     lines = [
         "| " + " | ".join(headers) + " |",
@@ -508,6 +603,7 @@ def _markdown_table(rows):
             _fmt(r.crps),
             _fmt(r.interval90_coverage, 3),
             _fmt(r.interval90_width, 3),
+            _fmt(r.cov90_by_sigma),
             r.reason,
         ]
         lines.append("| " + " | ".join(values) + " |")
@@ -539,10 +635,20 @@ def _warm_chimera(args):
     )
     warm_args = argparse.Namespace(**vars(args))
     warm_args.iterations = min(max(1, int(args.iterations)), 2)
+    if warm_args.early_stop_iterations is not None:
+        warm_args.early_stop_iterations = min(
+            max(1, int(warm_args.early_stop_iterations)), 2
+        )
     warm_args.num_leaves = min(max(3, int(args.num_leaves)), 7)
     warm_args.min_child_samples = min(max(2, int(args.min_child_samples)), 4)
     if "chimera_gaussian" in args.models:
         _run_chimera_gaussian("warmup", 0, Xtr, Xte, ytr, yte, warm_args)
+    if "chimera_gaussian_es" in args.models:
+        _run_chimera_gaussian_es("warmup", 0, Xtr, Xte, ytr, yte, warm_args)
+    if "chimera_gaussian_es_calibrated" in args.models:
+        _run_chimera_gaussian_es_calibrated(
+            "warmup", 0, Xtr, Xte, ytr, yte, warm_args
+        )
     if "chimera_rmse_const_sigma" in args.models:
         _run_chimera_rmse_const_sigma("warmup", 0, Xtr, Xte, ytr, yte, warm_args)
     if "chimera_quantile_pair" in args.models:
@@ -564,10 +670,18 @@ def parse_args(argv=None):
     parser.add_argument("--n-test", type=int, default=500)
     parser.add_argument("--n-features", type=int, default=6)
     parser.add_argument("--iterations", type=int, default=80)
+    parser.add_argument(
+        "--early-stop-iterations",
+        type=int,
+        help="max rounds for chimera_gaussian_es; defaults to --iterations",
+    )
+    parser.add_argument("--early-stopping-rounds", default="auto")
+    parser.add_argument("--validation-fraction", type=float, default=0.1)
     parser.add_argument("--learning-rate", type=float, default=0.06)
     parser.add_argument("--num-leaves", type=int, default=15)
     parser.add_argument("--min-child-samples", type=int, default=10)
     parser.add_argument("--threads", type=int, default=1)
+    parser.add_argument("--sigma-bins", type=int, default=5)
     parser.add_argument("--lightgbm-oof-folds", type=int, default=3)
     parser.add_argument("--lightgbm-variance-eps", type=float, default=1e-6)
     parser.add_argument("--csv", type=Path)
@@ -577,6 +691,19 @@ def parse_args(argv=None):
     args = parser.parse_args(argv)
     if args.n_features < 6:
         parser.error("--n-features must be at least 6")
+    if args.sigma_bins < 1:
+        parser.error("--sigma-bins must be at least 1")
+    if args.early_stop_iterations is not None and args.early_stop_iterations < 1:
+        parser.error("--early-stop-iterations must be positive")
+    if args.early_stopping_rounds != "auto":
+        try:
+            args.early_stopping_rounds = int(args.early_stopping_rounds)
+        except ValueError as exc:
+            raise SystemExit(
+                "--early-stopping-rounds must be an integer or 'auto'"
+            ) from exc
+        if args.early_stopping_rounds < 1:
+            parser.error("--early-stopping-rounds must be positive")
     if args.lightgbm_oof_folds < 2:
         parser.error("--lightgbm-oof-folds must be at least 2")
     return args

@@ -256,10 +256,14 @@ Native Gaussian distributional regression is measured with:
 ```bash
 python benchmarks/bench_distributional.py \
   --datasets synthetic_100k synthetic_500k \
-  --models chimera_gaussian chimera_rmse_const_sigma chimera_quantile_pair \
-           ngboost catboost_uncertainty lightgbm_twin \
+  --models chimera_gaussian chimera_gaussian_es \
+           chimera_gaussian_es_calibrated chimera_rmse_const_sigma \
+           chimera_quantile_pair ngboost catboost_uncertainty lightgbm_twin \
   --seeds 0 1 2 \
   --iterations 80 \
+  --early-stop-iterations 400 \
+  --early-stopping-rounds auto \
+  --validation-fraction 0.1 \
   --learning-rate 0.06 \
   --num-leaves 31 \
   --threads 8 \
@@ -268,11 +272,11 @@ python benchmarks/bench_distributional.py \
 ```
 
 The benchmark reports validation NLL, Gaussian CRPS, empirical 90% interval
-coverage, mean interval width, fit time, and prediction time on warm
-ChimeraBoost kernels. Optional
-competitors are soft imports: NGBoost, CatBoost `RMSEWithUncertainty`, and the
-LightGBM twin-model variance baseline print explicit skip rows when their
-packages are unavailable.
+coverage, coverage binned by predicted sigma, mean interval width, fit time,
+and prediction time on warm ChimeraBoost kernels. Optional competitors are
+soft imports: NGBoost, CatBoost `RMSEWithUncertainty`, and the LightGBM
+twin-model variance baseline print explicit skip rows when their packages are
+unavailable.
 
 Full local promotion run after installing `ngboost==0.5.11`,
 `catboost==1.2.10`, and `lightgbm==4.6.0`: all comparison lanes ran
@@ -282,23 +286,32 @@ successfully. Raw per-seed rows are in
 
 | dataset | model | fit_s | nll | crps | cov90 | width90 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| synthetic_100k | chimera_gaussian | 1.444 | 1.04395 | 0.40490 | 0.918 | 2.487 |
-| synthetic_100k | chimera_rmse_const_sigma | 1.238 | 1.10794 | 0.40356 | 0.897 | 2.385 |
-| synthetic_100k | chimera_quantile_pair | 3.111 | - | - | 0.906 | 2.530 |
-| synthetic_100k | ngboost | 28.630 | 1.01390 | 0.39712 | 0.904 | 2.332 |
-| synthetic_100k | catboost_uncertainty | 0.315 | 1.05816 | 0.41034 | 0.908 | 2.458 |
-| synthetic_100k | lightgbm_twin | 3.432 | 1.64377 | 0.41959 | 0.618 | 1.211 |
-| synthetic_500k | chimera_gaussian | 3.809 | 1.04370 | 0.40426 | 0.921 | 2.508 |
-| synthetic_500k | chimera_rmse_const_sigma | 2.726 | 1.10681 | 0.40316 | 0.899 | 2.403 |
-| synthetic_500k | chimera_quantile_pair | 8.822 | - | - | 0.910 | 2.527 |
-| synthetic_500k | ngboost | 150.039 | 1.00773 | 0.39523 | 0.905 | 2.329 |
-| synthetic_500k | catboost_uncertainty | 1.045 | 1.05592 | 0.40944 | 0.909 | 2.457 |
-| synthetic_500k | lightgbm_twin | 4.603 | 1.63048 | 0.41888 | 0.619 | 1.209 |
+| synthetic_100k | chimera_gaussian | 0.972 | 1.04395 | 0.40490 | 0.918 | 2.487 |
+| synthetic_100k | chimera_gaussian_es | 3.354 | 0.99145 | 0.39060 | 0.885 | 2.197 |
+| synthetic_100k | chimera_gaussian_es_calibrated | 3.343 | 0.98975 | 0.39050 | 0.899 | 2.284 |
+| synthetic_100k | chimera_rmse_const_sigma | 0.792 | 1.10794 | 0.40356 | 0.897 | 2.385 |
+| synthetic_100k | chimera_quantile_pair | 2.028 | - | - | 0.906 | 2.530 |
+| synthetic_100k | ngboost | 20.203 | 1.01390 | 0.39712 | 0.904 | 2.332 |
+| synthetic_100k | catboost_uncertainty | 0.255 | 1.05816 | 0.41034 | 0.908 | 2.458 |
+| synthetic_100k | lightgbm_twin | 1.841 | 1.64377 | 0.41959 | 0.618 | 1.211 |
+| synthetic_500k | chimera_gaussian | 2.815 | 1.04370 | 0.40426 | 0.921 | 2.508 |
+| synthetic_500k | chimera_gaussian_es | 10.952 | 0.98289 | 0.38881 | 0.894 | 2.237 |
+| synthetic_500k | chimera_gaussian_es_calibrated | 10.469 | 0.98265 | 0.38879 | 0.899 | 2.270 |
+| synthetic_500k | chimera_rmse_const_sigma | 1.966 | 1.10681 | 0.40316 | 0.899 | 2.403 |
+| synthetic_500k | chimera_quantile_pair | 6.247 | - | - | 0.910 | 2.527 |
+| synthetic_500k | ngboost | 125.871 | 1.00773 | 0.39523 | 0.905 | 2.329 |
+| synthetic_500k | catboost_uncertainty | 0.848 | 1.05592 | 0.40944 | 0.909 | 2.457 |
+| synthetic_500k | lightgbm_twin | 3.463 | 1.63048 | 0.41888 | 0.619 | 1.209 |
 
-Promotion-gate read: Chimera Gaussian is 1.40x the 500k RMSE constant-sigma fit
-time, comfortably below the <=2.5x gate, and 39.4x faster than NGBoost at the
-same row count and round budget. It has better NLL than CatBoost uncertainty
-and the LightGBM twin-model baseline on both sizes. NGBoost still has the best
-NLL/CRPS on this synthetic generator, but at much higher fit cost. The
-LightGBM twin model has strong point RMSE and sharply under-covers, with only
-about 62% empirical coverage for nominal 90% intervals.
+Promotion-gate read: fixed-round Chimera Gaussian is 1.43x the 500k RMSE
+constant-sigma fit time, comfortably below the <=2.5x equal-round gate, and
+44.7x faster than NGBoost at the same row count and round budget. The
+early-stopped Gaussian lane uses a larger 400-round budget and therefore is not
+the equal-round speed gate, but it materially improves quality: calibrated
+early-stopped Chimera has the best NLL/CRPS on both synthetic sizes and is
+12.0x faster than NGBoost at 500k rows. Scalar sigma calibration moves
+early-stopped coverage from mild undercoverage (0.894-0.885) back to about
+0.90, with sigma-bin coverage near flat in the generated per-seed tables.
+CatBoost uncertainty remains the fastest external uncertainty lane but has
+worse NLL/CRPS. The LightGBM twin model has strong point RMSE and sharply
+under-covers, with only about 62% empirical coverage for nominal 90% intervals.

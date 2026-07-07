@@ -331,6 +331,108 @@ def test_gaussian_crps_eval_metric_controls_validation_history():
         ).fit(Xtr, ytr)
 
 
+def test_gaussian_scalar_sigma_calibration_scales_public_distribution_only():
+    X, y = _make_heteroscedastic(seed=14, n=180)
+    Xtr, Xv = X[:120], X[120:]
+    ytr, yv = y[:120], y[120:]
+    yv_cal = yv.copy()
+    yv_cal[0] = 1e100
+    eval_weight = np.ones_like(yv_cal)
+    eval_weight[0] = 0.0
+
+    model = ChimeraBoostRegressor(
+        **_gaussian_test_params(
+            iterations=10,
+            learning_rate=0.08,
+            sigma_calibration="scalar",
+        )
+    ).fit(Xtr, ytr, eval_set=(Xv, yv_cal), eval_sample_weight=eval_weight)
+
+    raw_mu, raw_sigma = model.model_.predict_dist(Xv)
+    positive = eval_weight > 0.0
+    expected_scale = float(
+        np.sqrt(
+            np.average(
+                (
+                    (yv_cal[positive] - raw_mu[positive])
+                    / np.maximum(raw_sigma[positive], 1e-12)
+                ) ** 2,
+                weights=eval_weight[positive],
+            )
+        )
+    )
+    public_mu, public_sigma = model.predict_dist(Xv)
+    np.testing.assert_allclose(model.sigma_scale_, expected_scale)
+    np.testing.assert_allclose(public_mu, raw_mu, rtol=0.0, atol=0.0)
+    np.testing.assert_allclose(
+        public_sigma, raw_sigma * model.sigma_scale_, rtol=0.0, atol=0.0
+    )
+    np.testing.assert_allclose(model.predict(Xv), raw_mu, rtol=0.0, atol=0.0)
+    assert model.model_.auto_params_["sigma_calibration"] == {
+        "method": "scalar",
+        "sigma_scale": model.sigma_scale_,
+        "source": "selection_validation",
+    }
+
+
+def test_gaussian_sigma_calibration_requires_validation_and_survives_refit_load(
+    tmp_path,
+):
+    X, y = _make_heteroscedastic(seed=15, n=180)
+
+    with pytest.raises(ValueError, match="requires a validation set"):
+        ChimeraBoostRegressor(
+            loss="Gaussian",
+            tree_mode="lightgbm",
+            sigma_calibration="scalar",
+            iterations=2,
+            random_state=0,
+            diagnostic_warnings="never",
+        ).fit(X, y)
+    with pytest.raises(ValueError, match="only supported for loss='Gaussian'"):
+        ChimeraBoostRegressor(
+            loss="RMSE",
+            sigma_calibration="scalar",
+            iterations=2,
+        ).fit(X, y, eval_set=(X[:20], y[:20]))
+
+    model = ChimeraBoostRegressor(
+        loss="Gaussian",
+        tree_mode="lightgbm",
+        iterations=12,
+        learning_rate=0.08,
+        min_child_samples=3,
+        num_leaves=7,
+        early_stopping=True,
+        early_stopping_rounds=3,
+        validation_fraction=0.25,
+        refit=True,
+        sigma_calibration=True,
+        random_state=0,
+        diagnostic_warnings="never",
+        thread_count=1,
+    ).fit(X, y)
+
+    assert model.refit_ is True
+    assert model.sigma_calibration_ == "scalar"
+    assert model.sigma_scale_ > 0.0
+    assert model.sigma_scale_source_ == "selection_validation"
+    _, raw_sigma = model.model_.predict_dist(X[:12])
+    _, public_sigma = model.predict_dist(X[:12])
+    np.testing.assert_allclose(
+        public_sigma, raw_sigma * model.sigma_scale_, rtol=0.0, atol=0.0
+    )
+
+    path = tmp_path / "calibrated_gaussian.npz"
+    model.save_model(path)
+    loaded = ChimeraBoostRegressor.load_model(path)
+    assert loaded.sigma_calibration_ == "scalar"
+    assert loaded.sigma_scale_ == model.sigma_scale_
+    np.testing.assert_allclose(
+        loaded.predict_dist(X[:12])[1], public_sigma, rtol=0.0, atol=0.0
+    )
+
+
 def test_gaussian_refit_uses_distributional_booster():
     X, y = _make_heteroscedastic(seed=2, n=120)
     model = ChimeraBoostRegressor(
