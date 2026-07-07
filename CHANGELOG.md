@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+* Add native Gaussian distributional regression with
+  `ChimeraBoostRegressor(loss="Gaussian", tree_mode="lightgbm")`, including
+  `predict_dist`, `predict_interval`, `sample`, `.npz` save/load support, and
+  Gaussian-specific guardrails for unsupported v1 training modes.
+* Support Gaussian distributional fits with uniform row subsampling
+  (`subsample < 1`) and column subsampling (`colsample < 1`) in LightGBM mode,
+  including capped sampled-depth-zero retries so an unlucky empty/no-split
+  sample does not stop the whole fit prematurely.
+* Add Gaussian `eval_metric="crps"` validation/early-stopping support while
+  keeping Gaussian NLL as the default validation objective.
+* Enable `ChimeraBoostStepwiseSearchCV` for Gaussian regressors on the
+  LightGBM lane with Gaussian NLL default scoring and Gaussian-safe
+  sampling/regularization suggestions.
+* Add `benchmarks/bench_distributional.py` for Gaussian NLL/CRPS/coverage
+  comparisons against RMSE constant-sigma, quantile-pair, NGBoost, CatBoost
+  uncertainty, and LightGBM twin-model baselines when optional packages are
+  installed.
 * Change sklearn estimator defaults to `l2_leaf_reg="auto"`; the resolver keeps
   CatBoost-mode fits near the historical `3.0` default while preserving the
   task/tree-mode-specific auto-structure metadata in `auto_params_`.

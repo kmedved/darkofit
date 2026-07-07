@@ -29,6 +29,8 @@ def resolve_scorer(estimator, scoring=None, greater_is_better=None):
 
     if isinstance(scoring, str):
         gib = True if greater_is_better is None else bool(greater_is_better)
+        if scoring == "neg_gaussian_nll":
+            return ResolvedScorer(scoring, gib, "default")
         return ResolvedScorer(scoring, gib, "sklearn")
 
     gib = True if greater_is_better is None else bool(greater_is_better)
@@ -46,6 +48,8 @@ def _default_scorer(estimator):
         return ResolvedScorer("neg_log_loss", True, "default")
 
     loss = getattr(estimator, "loss", "RMSE")
+    if loss == "Gaussian":
+        return ResolvedScorer("neg_gaussian_nll", True, "default")
     if loss == "MAE":
         return ResolvedScorer("neg_mean_absolute_error", True, "default")
     if loss == "Quantile":
@@ -57,6 +61,8 @@ def _score_by_kind(resolved, estimator, X, y, sample_weight):
     if resolved.kind == "default":
         if resolved.name == "neg_log_loss":
             return _classifier_neg_log_loss(estimator, X, y, sample_weight)
+        if resolved.name == "neg_gaussian_nll":
+            return _neg_gaussian_nll(estimator, X, y, sample_weight)
         if resolved.name == "neg_mean_absolute_error":
             return _neg_mae(estimator, X, y, sample_weight)
         if resolved.name == "neg_mean_pinball_loss":
@@ -80,6 +86,16 @@ def _neg_rmse(estimator, X, y, sample_weight):
     resid = np.asarray(y, dtype=np.float64) - estimator.predict(X)
     mse = np.average(resid * resid, weights=sample_weight)
     return -float(np.sqrt(mse))
+
+
+def _neg_gaussian_nll(estimator, X, y, sample_weight):
+    mu, sigma = estimator.predict_dist(X)
+    y_arr = np.asarray(y, dtype=np.float64)
+    sigma = np.maximum(np.asarray(sigma, dtype=np.float64), np.exp(-15.0))
+    rho = np.log(sigma)
+    z = np.clip((y_arr - np.asarray(mu, dtype=np.float64)) / sigma, -10.0, 10.0)
+    nll = rho + 0.5 * z * z + 0.5 * np.log(2.0 * np.pi)
+    return -float(np.average(nll, weights=sample_weight))
 
 
 def _neg_mae(estimator, X, y, sample_weight):

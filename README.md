@@ -122,6 +122,45 @@ For compatible LightGBM-mode multiclass fits,
 round. Pass `multiclass_tree_strategy="per_class"` to force the older one-tree-
 per-class route for comparisons.
 
+Distributional regression is available with `loss="Gaussian"`:
+
+```
+reg = ChimeraBoostRegressor(loss="Gaussian", tree_mode="lightgbm")
+reg.fit(X, y)
+mu = reg.predict(X_test)
+mu, sigma = reg.predict_dist(X_test)
+lo, hi = reg.predict_interval(X_test, alpha=0.1)
+draws = reg.sample(X_test, n_samples=100, random_state=0)
+```
+
+This fits a shared two-output leaf-wise tree per boosting round: one head for
+the mean and one for log standard deviation. It is v1-lightweight by design:
+use `tree_mode="lightgbm"` (aliases such as `"leafwise"` are accepted), with
+uniform row subsampling (`subsample < 1`) and column subsampling (`colsample <
+1`) supported. GOSS/MVS sampling, Bayesian bootstrap, ordered boosting, and
+float32 histograms are still rejected for this loss. `predict()` returns the
+mean so existing regression scoring keeps working. `min_child_weight` is
+evaluated on the summed two-head Hessian mass, while `min_child_samples` keeps
+its usual row-count meaning.
+
+Validation and early-stopping use Gaussian NLL by default. Pass
+`eval_metric="crps"` to select the best validation prefix by closed-form
+Gaussian CRPS instead:
+
+```
+reg = ChimeraBoostRegressor(
+    loss="Gaussian",
+    tree_mode="lightgbm",
+    early_stopping=True,
+    eval_metric="crps",
+)
+```
+
+Not implemented for Gaussian distributional regression in v1: CatBoost-style
+per-parameter scalar trees, GOSS/MVS distributional sampling, Bayesian
+bootstrap, additional heads such as Poisson/NegativeBinomial/StudentT or shared
+multi-quantile, and a public custom vector-loss protocol.
+
 Row sampling is selectable with `sampling="uniform"` (default),
 `sampling="goss"` plus `top_rate` / `other_rate`,
 `sampling="weighted_goss"` for a sample-weight-aware GOSS variant, or
@@ -270,6 +309,10 @@ race with Chimeraboost's Numba thread pool.
 The default tuning phases leave `random_strength=0.0` because split-score noise
 currently uses a slower Python split-scoring path; include the explicit
 `"split_noise"` phase when you want to tune that regularizer.
+For `loss="Gaussian"`, the tuner resolves to the LightGBM/leaf-wise lane,
+uses Gaussian NLL as the default objective, and keeps the
+sampling/regularization phase inside the supported uniform row-sampling and
+column-sampling surface.
 
 * **To Do:**
     * Update multi-class classification loss scheme

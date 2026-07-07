@@ -248,3 +248,57 @@ The next serious optimization tracks are:
 
 Start those on a fresh branch with a fresh profile rather than by widening the
 current experimental hooks.
+
+## Distributional Regression Benchmark
+
+Native Gaussian distributional regression is measured with:
+
+```bash
+python benchmarks/bench_distributional.py \
+  --datasets synthetic_100k synthetic_500k \
+  --models chimera_gaussian chimera_rmse_const_sigma chimera_quantile_pair \
+           ngboost catboost_uncertainty lightgbm_twin \
+  --seeds 0 1 2 \
+  --iterations 80 \
+  --learning-rate 0.06 \
+  --num-leaves 31 \
+  --threads 8 \
+  --csv benchmarks/distributional_raw.csv \
+  --markdown benchmarks/distributional_summary.md
+```
+
+The benchmark reports validation NLL, Gaussian CRPS, empirical 90% interval
+coverage, mean interval width, fit time, and prediction time on warm
+ChimeraBoost kernels. Optional
+competitors are soft imports: NGBoost, CatBoost `RMSEWithUncertainty`, and the
+LightGBM twin-model variance baseline print explicit skip rows when their
+packages are unavailable.
+
+Full local promotion run after installing `ngboost==0.5.11`,
+`catboost==1.2.10`, and `lightgbm==4.6.0`: all comparison lanes ran
+successfully. Raw per-seed rows are in
+`benchmarks/distributional_raw.csv`; the generated table is in
+`benchmarks/distributional_summary.md`.
+
+| dataset | model | fit_s | nll | crps | cov90 | width90 |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| synthetic_100k | chimera_gaussian | 1.444 | 1.04395 | 0.40490 | 0.918 | 2.487 |
+| synthetic_100k | chimera_rmse_const_sigma | 1.238 | 1.10794 | 0.40356 | 0.897 | 2.385 |
+| synthetic_100k | chimera_quantile_pair | 3.111 | - | - | 0.906 | 2.530 |
+| synthetic_100k | ngboost | 28.630 | 1.01390 | 0.39712 | 0.904 | 2.332 |
+| synthetic_100k | catboost_uncertainty | 0.315 | 1.05816 | 0.41034 | 0.908 | 2.458 |
+| synthetic_100k | lightgbm_twin | 3.432 | 1.64377 | 0.41959 | 0.618 | 1.211 |
+| synthetic_500k | chimera_gaussian | 3.809 | 1.04370 | 0.40426 | 0.921 | 2.508 |
+| synthetic_500k | chimera_rmse_const_sigma | 2.726 | 1.10681 | 0.40316 | 0.899 | 2.403 |
+| synthetic_500k | chimera_quantile_pair | 8.822 | - | - | 0.910 | 2.527 |
+| synthetic_500k | ngboost | 150.039 | 1.00773 | 0.39523 | 0.905 | 2.329 |
+| synthetic_500k | catboost_uncertainty | 1.045 | 1.05592 | 0.40944 | 0.909 | 2.457 |
+| synthetic_500k | lightgbm_twin | 4.603 | 1.63048 | 0.41888 | 0.619 | 1.209 |
+
+Promotion-gate read: Chimera Gaussian is 1.40x the 500k RMSE constant-sigma fit
+time, comfortably below the <=2.5x gate, and 39.4x faster than NGBoost at the
+same row count and round budget. It has better NLL than CatBoost uncertainty
+and the LightGBM twin-model baseline on both sizes. NGBoost still has the best
+NLL/CRPS on this synthetic generator, but at much higher fit cost. The
+LightGBM twin model has strong point RMSE and sharply under-covers, with only
+about 62% empirical coverage for nominal 90% intervals.

@@ -37,6 +37,7 @@ _LR_COEFS = {
 _FALLBACK_LOSS = {
     "MAE": ("RMSE", 1.5),
     "Quantile": ("RMSE", 1.5),
+    "Gaussian": ("RMSE", 1.0),
 }
 
 
@@ -144,7 +145,7 @@ def auto_learning_rate_details(
         else float(max(float(p_model), 0.0) / max(float(n_eff), 1.0))
     )
     feature_multiplier = feature_count_learning_rate_multiplier(n_eff, p_model)
-    return {
+    details = {
         "resolved": round(clipped, 6),
         "raw_auto": raw,
         "p_model": None if p_model is None else int(p_model),
@@ -156,6 +157,9 @@ def auto_learning_rate_details(
         "clip_min": AUTO_LR_MIN,
         "clip_max": AUTO_LR_MAX,
     }
+    if loss_name == "Gaussian":
+        details["loss_coefficient_source"] = "rmse_coefs_for_gaussian"
+    return details
 
 
 def auto_learning_rate(

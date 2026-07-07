@@ -27,7 +27,7 @@ from pathlib import Path
 import numpy as np
 
 from .binning import Binner, DEFAULT_BIN_SAMPLE_COUNT
-from .losses import LOSSES, MultiSoftmax
+from .losses import LOSSES, MultiSoftmax, VECTOR_LOSSES
 from .preprocessing import FeaturePreprocessor
 from .target_encoding import OrderedTargetEncoder, _MISSING_CATEGORY
 from .tree import (
@@ -854,7 +854,11 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
     under the ``wrapper`` header key and ``wrapper__*`` array keys.
     """
     from . import __version__
-    from .booster import GradientBoosting, MulticlassBoosting
+    from .booster import (
+        DistributionalBoosting,
+        GradientBoosting,
+        MulticlassBoosting,
+    )
 
     if not hasattr(booster, "trees_"):
         raise ValueError("cannot save an unfitted model")
@@ -921,6 +925,11 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
             vals, kinds = _encode_categories(booster.classes_)
             arrays["classes"] = vals
             arrays["classes_kinds"] = kinds
+    elif isinstance(booster, DistributionalBoosting):
+        header["init"] = [float(v) for v in booster.init_]
+        header["n_outputs"] = int(booster.n_outputs_)
+        header["loss_name"] = booster.loss_name
+        header["loss_kwargs"] = _jsonify(booster.loss_kwargs)
     elif isinstance(booster, GradientBoosting):
         header["init"] = float(booster.init_)
         header["loss_name"] = booster.loss_name
@@ -931,7 +940,7 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
     param_names = (
         "iterations", "learning_rate", "depth", "l2_leaf_reg",
         "max_bins", "subsample", "colsample", "cat_smoothing",
-        "early_stopping_rounds", "early_stopping_min_delta",
+        "early_stopping_rounds", "early_stopping_min_delta", "eval_metric",
         "min_child_weight", "min_child_samples", "min_gain_to_split",
         "num_leaves", "thread_count", "random_state", "ordered_boosting",
         "tree_mode", "sampling", "top_rate", "other_rate",
@@ -1034,7 +1043,12 @@ def load_booster(path, return_wrapper_payload=False):
     ``(booster, wrapper_header, wrapper_arrays)`` so the sklearn wrappers can
     restore their own state.
     """
-    from .booster import GradientBoosting, MulticlassBoosting
+    from .booster import (
+        DistributionalBoosting,
+        GradientBoosting,
+        MulticlassBoosting,
+        _normalize_eval_metric,
+    )
 
     wrapper_header = {}
     wrapper_arrays = {}
@@ -1078,6 +1092,16 @@ def load_booster(path, return_wrapper_payload=False):
                     name="multiclass classes",
                 )
             booster.classes_ = classes
+        elif model_class == "DistributionalBoosting":
+            booster = DistributionalBoosting(
+                loss=header["loss_name"], loss_kwargs=header["loss_kwargs"],
+                **params
+            )
+            booster.init_ = np.array(header["init"], dtype=np.float64)
+            booster.n_outputs_ = int(header["n_outputs"])
+            booster.loss_ = VECTOR_LOSSES[header["loss_name"]](
+                **header["loss_kwargs"]
+            )
         else:
             raise ValueError(f"unknown model class {model_class!r}")
 
@@ -1085,6 +1109,19 @@ def load_booster(path, return_wrapper_payload=False):
         booster.best_iteration_ = header["best_iteration"]
         booster.best_score_ = header["best_score"]
         booster.auto_params_ = header.get("auto_params", {})
+        if isinstance(booster, DistributionalBoosting):
+            metric = (
+                booster.auto_params_
+                .get("distributional", {})
+                .get("eval_metric")
+            )
+            booster.eval_metric_ = (
+                metric
+                if metric is not None
+                else _normalize_eval_metric(
+                    params.get("eval_metric"), booster.loss_name
+                )
+            )
         booster.timing_ = header.get("timing")
         booster.train_history_ = list(header.get("train_history", []))
         booster.valid_history_ = list(header.get("valid_history", []))
@@ -1139,9 +1176,13 @@ def load_booster(path, return_wrapper_payload=False):
         elif kind.startswith("levelwise"):
             trees = _unpack_levelwise(data, n_bins)
         elif kind == "multi":
+            if "n_outputs" in header:
+                value_width = int(header["n_outputs"])
+            else:
+                value_width = int(header["n_classes"])
             trees = _unpack_nonoblivious(
                 data, MultiNonObliviousTree, n_bins,
-                expected_value_width=header["n_classes"],
+                expected_value_width=value_width,
             )
         else:
             trees = _unpack_nonoblivious(data, NonObliviousTree, n_bins)

@@ -1,8 +1,9 @@
 """The gradient boosting core: builds the full additive model.
 
-Two boosters share the same machinery (FeaturePreprocessor, oblivious trees):
+Boosters share the same machinery (FeaturePreprocessor, oblivious trees):
   * GradientBoosting     -> scalar output (regression, binary classification)
   * MulticlassBoosting   -> K simultaneous outputs (softmax multiclass)
+  * DistributionalBoosting -> vector regression heads (Gaussian NLL)
 """
 
 import copy
@@ -37,7 +38,7 @@ from .flat_model import (
     build_flat_multiclass_ensemble,
     flat_predict_preferred,
 )
-from .losses import LOSSES, MultiSoftmax
+from .losses import LOSSES, GaussianNLL, MultiSoftmax, VECTOR_LOSSES
 from .preprocessing import FeaturePreprocessor, _normalize_target_ordered_cat_codes
 from .tree import (
     _build_multiclass_histograms_counts_into,
@@ -147,6 +148,24 @@ def _normalize_tree_mode(tree_mode):
         "tree_mode must be one of 'catboost', 'oblivious', "
         "'lightgbm', experimental 'hybrid', or experimental 'depthwise'"
     )
+
+
+def _normalize_eval_metric(eval_metric, loss_name):
+    if eval_metric is None or eval_metric == "auto":
+        return "nll" if loss_name == "Gaussian" else "loss"
+    metric = str(eval_metric).lower().replace("-", "_")
+    if loss_name == "Gaussian":
+        if metric in {"loss", "nll", "gaussian_nll", "negative_log_likelihood"}:
+            return "nll"
+        if metric == "crps":
+            return "crps"
+        raise ValueError(
+            "eval_metric for loss='Gaussian' must be one of None, 'nll', "
+            "'gaussian_nll', or 'crps'"
+        )
+    if metric != "loss":
+        raise ValueError("eval_metric is only configurable for loss='Gaussian'")
+    return "loss"
 
 
 def _normalize_sampling(sampling):
@@ -428,7 +447,7 @@ class _BaseBooster:
                  mvs_reg=1.0, random_strength=0.0,
                  diagnostic_warnings="once", histogram_dtype="float64",
                  leaf_dtype="int64", ts_permutations=1,
-                 target_ordered_cat_codes="off"):
+                 target_ordered_cat_codes="off", eval_metric=None):
         self.iterations = int(iterations)
         self.learning_rate = learning_rate
         self._depth_input = depth
@@ -495,6 +514,8 @@ class _BaseBooster:
         self.target_ordered_cat_codes = _normalize_target_ordered_cat_codes(
             target_ordered_cat_codes
         )
+        self.eval_metric = eval_metric
+        self.eval_metric_ = None
         if self.bagging_temperature < 0.0:
             raise ValueError("bagging_temperature must be nonnegative")
         if self.mvs_reg < 0.0:
@@ -644,7 +665,7 @@ class _BaseBooster:
                     smoothing *= np.sqrt(1.0 / max(n_eff_fraction, 1e-12))
                 if (
                     self.tree_mode_ in {"lightgbm", "hybrid"}
-                    and loss_name == "RMSE"
+                    and loss_name in {"RMSE", "Gaussian"}
                     and self._include_cat_codes()
                 ):
                     smoothing = max(smoothing, 3.0)
@@ -988,7 +1009,7 @@ class _BaseBooster:
         lightgbm_multiplier = None
         if lightgbm_unweighted_damping:
             base_loss = getattr(self, "loss_name", "MultiClass")
-            if base_loss in {"MAE", "Quantile"}:
+            if base_loss in {"MAE", "Quantile", "Gaussian"}:
                 base_loss = "RMSE"
             lightgbm_multiplier = LIGHTGBM_UNWEIGHTED_LR_MULTIPLIERS.get(base_loss, 0.4)
         weighted_rmse_catboost_uplift = (
@@ -1030,6 +1051,9 @@ class _BaseBooster:
                 "source": learning_rate_details.get("source", "explicit"),
                 "input": learning_rate_details.get("input"),
                 "rule": learning_rate_details.get("rule", "explicit"),
+                "loss_coefficient_source": learning_rate_details.get(
+                    "loss_coefficient_source"
+                ),
                 "raw_auto": learning_rate_details.get("raw_auto"),
                 "p_model": learning_rate_details.get("p_model"),
                 "feature_ratio": learning_rate_details.get("feature_ratio"),
@@ -1362,7 +1386,7 @@ class _BaseBooster:
         cat_smoothing = self.cat_smoothing
         if (
             self.tree_mode_ in {"lightgbm", "hybrid"}
-            and getattr(self, "loss_name", None) == "RMSE"
+            and getattr(self, "loss_name", None) in {"RMSE", "Gaussian"}
             and cat_smoothing == 1.0
             and self._include_cat_codes()
         ):
@@ -2725,4 +2749,337 @@ class MulticlassBoosting(_BaseBooster):
             else:
                 for k in range(self.n_classes_):
                     round_trees[k].add_predict(X_binned, F[k])
+            yield F.T.copy()
+
+
+class DistributionalBoosting(_BaseBooster):
+    """Vector-output regression booster for distributional losses."""
+
+    def __init__(self, loss="Gaussian", loss_kwargs=None, **kw):
+        super().__init__(**kw)
+        self.loss_name = loss
+        self.loss_kwargs = dict(loss_kwargs or {})
+
+    def fit(self, X, y, cat_features=None, eval_set=None, sample_weight=None,
+            eval_sample_weight=None):
+        """Fit a shared-vector distributional regression model."""
+        n_features = n_features_from_array_like(X)
+        cat_features = normalize_cat_features(cat_features, n_features)
+        X = (array_like_to_numpy(X, object) if cat_features
+             else array_like_to_numpy(X, np.float64))
+        n_samples = X.shape[0]
+        y = validate_target_vector(y, n_samples, dtype=np.float64)
+        _reject_eval_sample_weight_without_eval_set(eval_sample_weight, eval_set)
+        self.n_features_in_ = int(X.shape[1])
+
+        self.tree_mode_ = _normalize_tree_mode(self.tree_mode)
+        fit_random_state = normalize_random_state_seed(self.random_state)
+        self._fit_random_state_seed_ = fit_random_state
+        self.n_threads_ = _fit_thread_count(
+            self.thread_count, self.tree_mode_, n_samples
+        )
+        self.histogram_dtype_ = _normalize_histogram_dtype(self.histogram_dtype)
+        self.leaf_dtype_ = _normalize_leaf_dtype_name(self.leaf_dtype)
+        self._validate_sampling_config()
+        self.ordered_boosting_ = self._resolve_ordered_boosting()
+        w = _validate_sample_weight(sample_weight, n_samples)
+        try:
+            self.loss_ = VECTOR_LOSSES[self.loss_name](**self.loss_kwargs)
+        except KeyError as exc:
+            raise ValueError(
+                "loss='Gaussian' is the only distributional v1 loss"
+            ) from exc
+        self.eval_metric_ = _normalize_eval_metric(
+            self.eval_metric, self.loss_name
+        )
+        self._resolve_auto_structure_params(
+            loss_name="Gaussian",
+            n_samples=n_samples,
+            sample_weight=w,
+            X=X,
+            cat_features=cat_features,
+        )
+        self.l2_leaf_reg_ = float(self.l2_leaf_reg)
+
+        if self.tree_mode_ != "lightgbm":
+            raise ValueError(
+                "loss='Gaussian' requires tree_mode='lightgbm' "
+                f"(shared vector trees); got {self.tree_mode!r}"
+            )
+        if self.sampling_ in {"goss", "weighted_goss"} or self._mvs_active():
+            raise ValueError(
+                "loss='Gaussian' supports only sampling='uniform' in v1.1; "
+                "GOSS and MVS sampling are not supported yet"
+            )
+        if self._bayesian_bootstrap_active():
+            raise ValueError(
+                "loss='Gaussian' does not support Bayesian bootstrap in v1; "
+                "leave bootstrap_type='none' or bagging_temperature=0.0"
+            )
+        if self.ordered_boosting_:
+            raise ValueError(
+                "loss='Gaussian' does not support ordered_boosting=True in v1"
+            )
+        if self.histogram_dtype_ != "float64":
+            raise ValueError(
+                "histogram_dtype='float32' is not supported for "
+                "loss='Gaussian'; shared vector trees are float64-only"
+            )
+
+        timing = _new_timing(self.verbose_timing)
+        self.timing_ = timing
+        phase = _start_timing(timing)
+        X_binned = self._fit_transform_preprocessor(
+            X, [y], cat_features, w,
+            eval_set=eval_set,
+            eval_sample_weight=eval_sample_weight,
+        )
+        X_route_binned = np.asfortranarray(X_binned)
+        X_hist_binned = (
+            X_route_binned if self.n_threads_ > 1 else X_binned
+        )
+        n_bins = self.prep_.n_bins_
+        self._resolve_fit_auto_params(
+            loss_name="Gaussian",
+            n_samples=n_samples,
+            sample_weight=w,
+            eval_set_present=eval_set is not None,
+            p_model=X_binned.shape[1],
+        )
+        K = int(self.loss_.n_outputs)
+        self.n_outputs_ = K
+        hist_buffers = self._alloc_multiclass_hist_buffers(
+            K, X_binned.shape[1], n_bins
+        )
+        self._importance = np.zeros(self.prep_.n_input_features_)
+
+        Xv_binned = yv = Fv = wv = None
+        if eval_set is not None:
+            Xv, yv = eval_set
+            eval_n_features = n_features_from_array_like(
+                Xv, name="eval_set[0]"
+            )
+            if eval_n_features != self.n_features_in_:
+                raise ValueError(
+                    f"eval_set[0] has {eval_n_features} features, but X has "
+                    f"{self.n_features_in_} features"
+                )
+            Xv = (array_like_to_numpy(Xv, object) if cat_features
+                  else array_like_to_numpy(Xv, np.float64))
+            yv = validate_target_vector(
+                yv, Xv.shape[0], name="eval_set[1]", dtype=np.float64
+            )
+            wv = _validate_sample_weight(
+                eval_sample_weight, len(yv), name="eval_sample_weight"
+            )
+            Xv_binned = self.prep_.transform(Xv)
+        _add_timing(timing, "preprocess", phase)
+
+        self.init_ = self.loss_.init_class_major(y, w)
+        self._record_scalar_target_stats(y, w)
+        F = np.tile(self.init_[:, None], (1, n_samples))
+        grad_buffer = np.empty_like(F)
+        hess_buffer = np.empty_like(F)
+        grad_row_major = np.empty((n_samples, K), dtype=np.float64)
+        hess_row_major = np.empty((n_samples, K), dtype=np.float64)
+        if yv is not None:
+            Fv = np.tile(self.init_[:, None], (1, len(yv)))
+        baseline_loss = (
+            self._eval_metric_class_major(yv, Fv, wv)
+            if Fv is not None
+            else self._eval_metric_class_major(y, F, w)
+        )
+        self._finalize_early_stopping_min_delta(baseline_loss, "Gaussian")
+        self.auto_params_ = self._resolved_auto_params(
+            n_samples=n_samples,
+            n_raw_features=X.shape[1],
+            X_binned=X_binned,
+            n_bins=n_bins,
+            sample_weight=w,
+            eval_set_present=eval_set is not None,
+            eval_n_samples=0 if yv is None else len(yv),
+            eval_sample_weight=wv,
+            rowpar_buffers=None,
+            extra={
+                "distributional": {
+                    "n_outputs": int(K),
+                    "hessian_mode": self.loss_.hessian_mode,
+                    "eval_metric": self.eval_metric_,
+                }
+            },
+        )
+        self._emit_auto_param_warnings()
+        self._reset_stochastic_diagnostics()
+
+        rng = np.random.default_rng(fit_random_state)
+        self._initialize_split_seed(rng, fit_random_state)
+        self.trees_ = []
+        self._flat_cache_ = None
+        self.train_history_, self.valid_history_ = [], []
+        eval_train = self.eval_train_loss or bool(self.verbose)
+        patience_score, patience_iter = np.inf, 0
+        best_prefix_score, best_prefix_iter = np.inf, 0
+        sampled_depth0_retries = 0
+        t0 = time.time()
+
+        for m in range(self.iterations_):
+            phase = _start_timing(timing)
+            self.loss_.grad_hess_class_major_into(
+                y, F, w, grad_buffer, hess_buffer
+            )
+            fmask, findices = self._feature_selection(X_binned.shape[1], rng)
+            if self.subsample >= 1.0:
+                row_indices_round = None
+                grad_for_round = grad_buffer
+                hess_for_round = hess_buffer
+                self._record_sampling_diagnostic(None, n_samples)
+            else:
+                mask = rng.random(n_samples) < self.subsample
+                if not np.any(mask):
+                    importance = (
+                        np.sum(np.abs(grad_buffer), axis=0)
+                        + np.sum(np.maximum(hess_buffer, 0.0), axis=0)
+                    )
+                    if (
+                        not np.any(np.isfinite(importance))
+                        or float(np.sum(importance)) <= 0.0
+                    ):
+                        chosen = int(rng.integers(0, n_samples))
+                    else:
+                        chosen = int(np.nanargmax(importance))
+                    mask[chosen] = True
+                row_indices_round = np.flatnonzero(mask).astype(np.int64)
+                self._record_sampling_diagnostic(row_indices_round, n_samples)
+                row_mask = np.zeros(n_samples, dtype=bool)
+                row_mask[row_indices_round] = True
+                grad_for_round = np.where(row_mask[None, :], grad_buffer, 0.0)
+                hess_for_round = np.where(row_mask[None, :], hess_buffer, 0.0)
+            grad_row_major[:, :] = grad_for_round.T
+            hess_row_major[:, :] = hess_for_round.T
+            _add_timing(timing, "grad_hess", phase)
+
+            phase = _start_timing(timing)
+            tree, leaf, leaf_G, leaf_H = build_leafwise_multiclass_tree(
+                X_binned, grad_for_round, hess_for_round, n_bins,
+                self._max_tree_depth(), self.l2_leaf_reg_, self.lr_,
+                feature_mask=fmask,
+                min_child_weight=self.min_child_weight,
+                hist_buffers=hist_buffers,
+                return_training_state=True,
+                X_hist_binned=X_hist_binned,
+                X_route_binned=X_route_binned,
+                max_leaves=self._max_tree_leaves(),
+                min_child_samples=self.min_child_samples,
+                min_gain_to_split=self.min_gain_to_split,
+                random_strength=self.random_strength,
+                split_seed=int(getattr(self, "_split_seed_", 0)),
+                tree_iteration=m,
+                grad_row_major=grad_row_major,
+                hess_row_major=hess_row_major,
+                leaf_dtype=self.leaf_dtype_,
+            )
+            _add_timing(timing, "tree_build", phase)
+            if tree.depth == 0:
+                if (
+                    (row_indices_round is not None or fmask is not None)
+                    and m + 1 < self.iterations_
+                    and sampled_depth0_retries
+                    < _MAX_CONSECUTIVE_SAMPLED_DEPTH0_RETRIES
+                ):
+                    sampled_depth0_retries += 1
+                    if self.verbose:
+                        print(
+                            f"No split at sampled iteration {m}; retrying "
+                            "with a new sample."
+                        )
+                    continue
+                if self.verbose:
+                    print(f"No further splits at iteration {m}; stopping.")
+                break
+            sampled_depth0_retries = 0
+
+            phase = _start_timing(timing)
+            self.trees_.append(tree)
+            self._accumulate_importance(tree)
+            add_multiclass_leaf_values_inplace(leaf, tree.values, F)
+            _add_timing(timing, "train_update", phase)
+
+            if eval_train:
+                phase = _start_timing(timing)
+                self.train_history_.append(
+                    self._eval_metric_class_major(y, F, w)
+                )
+                _add_timing(timing, "loss_eval", phase)
+
+            if Fv is not None:
+                phase = _start_timing(timing)
+                tree.add_predict_class_major(Xv_binned, Fv)
+                _add_timing(timing, "validation_predict", phase)
+                phase = _start_timing(timing)
+                val = self._eval_metric_class_major(yv, Fv, wv)
+                _add_timing(timing, "loss_eval", phase)
+                self.valid_history_.append(val)
+                successful_iter = len(self.trees_) - 1
+                if val < best_prefix_score:
+                    best_prefix_score, best_prefix_iter = val, successful_iter
+                if patience_score - val > self.early_stopping_min_delta_:
+                    patience_score, patience_iter = val, successful_iter
+                elif (self.early_stopping_rounds_ and
+                      successful_iter - patience_iter >= self.early_stopping_rounds_):
+                    if self.verbose:
+                        print(f"Early stop at {m} (best {best_prefix_iter})")
+                    break
+
+            if self.verbose and (m % max(1, self.iterations_ // 10) == 0):
+                msg = f"[{m}] train {self.train_history_[-1]:.5f}"
+                if Fv is not None:
+                    msg += f"  val {self.valid_history_[-1]:.5f}"
+                print(msg)
+
+        self.fit_time_ = time.time() - t0
+        self._truncate_to_best_model(best_prefix_iter, self.valid_history_)
+        self._refresh_stochastic_auto_params(n_samples)
+        self.best_iteration_ = len(self.trees_)
+        if self.valid_history_:
+            self.best_score_ = best_prefix_score
+        elif Fv is not None:
+            self.best_score_ = self._eval_metric_class_major(yv, Fv, wv)
+        elif self.train_history_:
+            self.best_score_ = self.train_history_[-1]
+        else:
+            self.best_score_ = self._eval_metric_class_major(y, F, w)
+        return self
+
+    def _eval_metric_class_major(self, y, F, sample_weight=None):
+        if getattr(self, "eval_metric_", None) == "crps":
+            return self.loss_.crps_class_major(y, F, sample_weight)
+        return self.loss_.eval_class_major(y, F, sample_weight)
+
+    def _build_flat_ensemble(self):
+        return build_flat_multiclass_ensemble(self.trees_, self.n_outputs_)
+
+    def predict_raw(self, X):
+        """Return sample-major raw scores ``[mu, log_sigma]``."""
+        X = self._coerce_predict_X(X)
+        X_binned = self.prep_.transform(X)
+        F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
+        flat = self._flat_ensemble()
+        if flat is not None and flat_predict_preferred(flat):
+            flat.add_predict_class_major(X_binned, F)
+        else:
+            for tree in self.trees_:
+                tree.add_predict_class_major(X_binned, F)
+        return F.T
+
+    def predict_dist(self, X):
+        raw = self.predict_raw(X)
+        return GaussianNLL.mean_and_sigma(raw)
+
+    def staged_predict_raw(self, X):
+        """Yield sample-major raw scores after each vector-tree round."""
+        X = self._coerce_predict_X(X)
+        X_binned = self.prep_.transform(X)
+        F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
+        for tree in self.trees_:
+            tree.add_predict_class_major(X_binned, F)
             yield F.T.copy()

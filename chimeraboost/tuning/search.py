@@ -16,6 +16,7 @@ from sklearn.base import BaseEstimator, clone, is_classifier
 from sklearn.utils.validation import check_is_fitted
 
 from ..auto_params import effective_sample_size
+from ..booster import _normalize_tree_mode
 from .._validation import (
     n_features_from_array_like,
     n_samples_from_array_like,
@@ -124,6 +125,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
 
     def fit(self, X, y, *, cat_features=None, groups=None, sample_weight=None,
             eval_set=None, eval_sample_weight=None):
+        gaussian = getattr(self.estimator, "loss", None) == "Gaussian"
         optuna = import_optuna()
         if self.n_trials is None and self.timeout is None:
             raise ValueError("at least one of n_trials or timeout must be set")
@@ -214,15 +216,21 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
             self.cv_splits_ = [(np.arange(y_arr.shape[0]), None)]
         self.n_splits_ = len(self.cv_splits_)
 
+        requested_tree_modes = _coerce_search_tree_modes(self.tree_modes)
+        self.tree_modes_requested_ = requested_tree_modes
+        search_tree_modes = _resolve_search_tree_modes(
+            requested_tree_modes, gaussian=gaussian
+        )
+        self.tree_modes_ = search_tree_modes
         context = SpaceContext(
             estimator_params=self.estimator.get_params(),
             has_categoricals=bool(cat_features_normalized),
             classifier=classifier,
-            tree_modes=tuple(self.tree_modes),
+            tree_modes=search_tree_modes,
         )
         lane_states = {
             mode: LaneState(mode, fixed_params={"tree_mode": mode})
-            for mode in self.tree_modes
+            for mode in search_tree_modes
         }
         self.strategy_ = _resolve_strategy(
             self.strategy, self.n_trials, self.phases
@@ -232,7 +240,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
             n_trials=self.n_trials,
             timeout=self.timeout,
             phases=self.phases_,
-            tree_modes=tuple(self.tree_modes),
+            tree_modes=search_tree_modes,
             strategy=self.strategy_,
         )
         self.budget_plan_requested_ = list(planned_blocks)
@@ -251,7 +259,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
             if _study_stop_requested(self.study_):
                 break
             execution_blocks = _execution_blocks(
-                planned_block, tuple(self.tree_modes), lane_states
+                planned_block, search_tree_modes, lane_states
             )
             for block in execution_blocks:
                 if _study_stop_requested(self.study_):
@@ -301,7 +309,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
                         study_name=self.study_name_,
                     )
                 if block.phase == "joint_compact":
-                    for mode in self.tree_modes:
+                    for mode in search_tree_modes:
                         lane_states[mode] = _updated_lane_state(
                             self.study_, mode
                     )
@@ -332,7 +340,9 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
         self.best_loss_ = float(self.best_trial_.value)
         self.best_score_ = float(self.best_trial_.user_attrs["mean_score"])
         self.tuning_metadata_ = {
-            "tree_modes": list(self.tree_modes),
+            "tree_modes": list(search_tree_modes),
+            "tree_modes_requested": list(requested_tree_modes),
+            "tree_modes_resolved": list(search_tree_modes),
             "phases": list(self.phases_),
             "strategy": self.strategy_,
             "budget_plan_requested": [
@@ -820,6 +830,32 @@ def _resolve_strategy(strategy, n_trials, phases):
     if n_trials is None:
         return "joint"
     return "joint" if int(n_trials) <= 50 else "stepwise"
+
+
+def _coerce_search_tree_modes(tree_modes):
+    if isinstance(tree_modes, str):
+        return (tree_modes,)
+    return tuple(tree_modes)
+
+
+def _resolve_search_tree_modes(tree_modes, *, gaussian):
+    requested = _coerce_search_tree_modes(tree_modes)
+    if not requested:
+        raise ValueError("tree_modes must contain at least one tree mode")
+    if not gaussian:
+        return requested
+
+    resolved = []
+    for mode in requested:
+        normalized = _normalize_tree_mode(mode)
+        if normalized == "lightgbm" and normalized not in resolved:
+            resolved.append(normalized)
+    if not resolved:
+        raise ValueError(
+            "loss='Gaussian' tuning supports only tree_mode='lightgbm'; "
+            "include 'lightgbm' or a leafwise alias in tree_modes"
+        )
+    return tuple(resolved)
 
 
 def _is_usable_trial(trial):

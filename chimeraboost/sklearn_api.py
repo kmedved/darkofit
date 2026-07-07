@@ -9,7 +9,13 @@ from ._validation import (
     normalize_cat_features,
     validate_target_vector,
 )
-from .booster import GradientBoosting, MulticlassBoosting, _apply_thread_count
+from .booster import (
+    DistributionalBoosting,
+    GradientBoosting,
+    MulticlassBoosting,
+    _apply_thread_count,
+    _normalize_tree_mode,
+)
 from .auto_params import (
     effective_sample_size,
     is_auto_learning_rate,
@@ -846,8 +852,9 @@ class _RefitParamsMixin:
 class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
     """Gradient boosted oblivious trees for regression.
 
-    loss: "RMSE" (default), "MAE", or "Quantile". For "Quantile" pass the level
-    via `alpha` (e.g. alpha=0.9 for the 90th-percentile predictor).
+    loss: "RMSE" (default), "MAE", "Quantile", or "Gaussian". For "Quantile"
+    pass the level via `alpha` (e.g. alpha=0.9 for the 90th-percentile
+    predictor). "Gaussian" fits a mean/std distributional regression model.
 
     early_stopping : bool, default False
         Whether to use early stopping to terminate training when the validation
@@ -864,7 +871,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                  l2_leaf_reg="auto", max_bins=254, subsample=1.0, colsample=1.0,
                  cat_smoothing=1.0, early_stopping_rounds=None,
                  early_stopping_min_delta=None,
-                 loss="RMSE", alpha=0.5, min_child_weight=1.0,
+                 eval_metric=None, loss="RMSE", alpha=0.5, min_child_weight=1.0,
                  min_child_samples=20, min_gain_to_split=0.0, num_leaves=None,
                  thread_count=None, random_state=None, verbose=False,
                  ordered_boosting="auto",
@@ -895,6 +902,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self.cat_smoothing = cat_smoothing
         self.early_stopping_rounds = early_stopping_rounds
         self.early_stopping_min_delta = early_stopping_min_delta
+        self.eval_metric = eval_metric
         self.loss = loss
         self.alpha = alpha
         self.min_child_weight = min_child_weight
@@ -981,6 +989,24 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
 
         self._clear_refit_selection_metadata()
         tree_mode_auto = _is_auto_tree_mode(self.tree_mode)
+        if (
+            self.loss != "Gaussian"
+            and self.eval_metric not in {None, "auto", "loss"}
+        ):
+            raise ValueError(
+                "eval_metric is only configurable for loss='Gaussian'"
+            )
+        if self.loss == "Gaussian":
+            if self.alpha != 0.5:
+                raise ValueError(
+                    "alpha is only used with loss='Quantile'; leave alpha=0.5 "
+                    "for loss='Gaussian'"
+                )
+            if tree_mode_auto:
+                raise ValueError(
+                    "loss='Gaussian' requires tree_mode='lightgbm'; "
+                    "tree_mode='auto' is not supported in v1"
+                )
         self._validate_tree_mode_selection_request()
         if self.refit:
             self._refit_strategy_exponent(self.refit_strategy)
@@ -1040,9 +1066,21 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         )
 
         def make_model(model_kw):
-            model = GradientBoosting(
-                loss=self.loss, loss_kwargs=loss_kwargs, **model_kw
-            )
+            if self.loss == "Gaussian":
+                tree_mode = model_kw.get("tree_mode", self.tree_mode)
+                if _normalize_tree_mode(tree_mode) != "lightgbm":
+                    raise ValueError(
+                        "loss='Gaussian' requires tree_mode='lightgbm'; got "
+                        f"tree_mode={tree_mode!r}. Distributional regression "
+                        "uses shared vector-valued leaf-wise trees."
+                    )
+                model = DistributionalBoosting(
+                    loss="Gaussian", loss_kwargs={}, **model_kw
+                )
+            else:
+                model = GradientBoosting(
+                    loss=self.loss, loss_kwargs=loss_kwargs, **model_kw
+                )
             if preprocessing_cache is not None:
                 model._preprocessing_cache = preprocessing_cache
             return model
@@ -1113,9 +1151,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
 
         if self.refit and selection_active:
             refit_kw = self._refit_params_for_booster(self.refit_strategy)
-            refit_model = GradientBoosting(
-                loss=self.loss, loss_kwargs=loss_kwargs, **refit_kw
-            )
+            refit_model = make_model(refit_kw)
             refit_model.fit(
                 X_full, y_full, cat_features=cat_features,
                 sample_weight=sample_weight_full,
@@ -1144,12 +1180,56 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
 
     def predict(self, X):
         X = _check_predict_input(self, X)
-        return self.model_.predict_raw(X)
+        raw = self.model_.predict_raw(X)
+        if self.loss == "Gaussian":
+            return raw[:, 0]
+        return raw
 
     def staged_predict(self, X):
         """Yield the prediction after each successive tree."""
         X = _check_predict_input(self, X)
-        yield from self.model_.staged_predict_raw(X)
+        if self.loss == "Gaussian":
+            for raw in self.model_.staged_predict_raw(X):
+                yield raw[:, 0].copy()
+        else:
+            yield from self.model_.staged_predict_raw(X)
+
+    def _require_gaussian(self, method_name):
+        if self.loss != "Gaussian":
+            raise ValueError(
+                f"{method_name}() requires loss='Gaussian'; this model was "
+                f"fit with loss={self.loss!r}"
+            )
+
+    def _predict_dist_checked(self, X, method_name):
+        X = _check_predict_input(self, X)
+        self._require_gaussian(method_name)
+        return self.model_.predict_dist(X)
+
+    def predict_dist(self, X):
+        """Return ``(mu, sigma)`` for a fitted Gaussian regression model."""
+        return self._predict_dist_checked(X, "predict_dist")
+
+    def predict_interval(self, X, alpha=0.1):
+        """Return central Gaussian prediction interval bounds."""
+        alpha = float(alpha)
+        if not 0.0 < alpha < 1.0:
+            raise ValueError("alpha must be in (0, 1)")
+        mu, sigma = self._predict_dist_checked(X, "predict_interval")
+        from statistics import NormalDist
+        zq = NormalDist().inv_cdf(1.0 - alpha / 2.0)
+        return mu - zq * sigma, mu + zq * sigma
+
+    def sample(self, X, n_samples=1, random_state=None):
+        """Draw samples from the fitted Gaussian predictive distribution."""
+        n_samples = int(n_samples)
+        if n_samples < 1:
+            raise ValueError("n_samples must be at least 1")
+        mu, sigma = self._predict_dist_checked(X, "sample")
+        rng = np.random.default_rng(random_state)
+        return rng.normal(
+            mu[:, None], sigma[:, None], size=(mu.shape[0], n_samples)
+        )
 
     def save_model(self, path):
         """Serialize the fitted model to a single ``.npz`` file."""
@@ -1181,9 +1261,18 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             )
         est = cls()
         params = wrapper_header.get("params") or {}
+        if isinstance(booster, DistributionalBoosting):
+            saved_loss = params.get("loss")
+            if saved_loss is not None and saved_loss != booster.loss_name:
+                raise ValueError(
+                    "invalid ChimeraBoost model: wrapper loss does not match "
+                    "the loaded distributional booster"
+                )
         known = est.get_params()
         est.set_params(**{k: v for k, v in params.items() if k in known})
         est.model_ = booster
+        if isinstance(booster, DistributionalBoosting):
+            est.loss = booster.loss_name
         est._restore_wrapper_state(wrapper_header.get("state", {}))
         return est
 

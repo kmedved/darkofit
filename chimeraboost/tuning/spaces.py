@@ -176,6 +176,24 @@ def suggest_structure(trial, context, state):
 
 def suggest_sampling_regularization(trial, context, state):
     prefix = f"{state.tree_mode}_sampling"
+    if context.estimator_params.get("loss") == "Gaussian":
+        return {
+            "tree_mode": state.tree_mode,
+            "sampling": "uniform",
+            "bootstrap_type": "none",
+            "bagging_temperature": 0.0,
+            "mvs_reg": 1.0,
+            "random_strength": 0.0,
+            "subsample": trial.suggest_float(
+                f"{prefix}_subsample", 0.6, 1.0
+            ),
+            "colsample": trial.suggest_float(
+                f"{prefix}_colsample", 0.5, 1.0
+            ),
+            "l2_leaf_reg": trial.suggest_float(
+                f"{prefix}_l2_leaf_reg", 0.1, 30.0, log=True
+            ),
+        }
     sampling = trial.suggest_categorical(
         f"{prefix}_sampling", ["uniform", "goss", "mvs"]
     )

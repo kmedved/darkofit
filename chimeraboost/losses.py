@@ -10,6 +10,8 @@ For regression the raw score is the prediction itself; for binary
 classification it is the log-odds, turned into a probability by a sigmoid.
 """
 
+import math
+
 import numpy as np
 from numba import njit, prange
 
@@ -262,6 +264,165 @@ def _softmax_class_major(F):
     return ez / ez.sum(axis=0, keepdims=True)
 
 
+_GAUSS_RHO_MIN = -15.0
+_GAUSS_RHO_MAX = 15.0
+_GAUSS_Z_CLIP = 10.0
+_GAUSS_INIT_RHO_MIN = -10.0
+_GAUSS_INIT_RHO_MAX = 10.0
+_HALF_LOG_2PI = 0.5 * np.log(2.0 * np.pi)
+_SQRT2 = math.sqrt(2.0)
+_INV_SQRT_2PI = 1.0 / math.sqrt(2.0 * math.pi)
+_INV_SQRT_PI = 1.0 / math.sqrt(math.pi)
+
+
+@njit(cache=True, parallel=True)
+def _gaussian_nll_grad_hess_into(y, F, sample_weight, grad_out, hess_out):
+    n = F.shape[1]
+    for i in prange(n):
+        if sample_weight is None:
+            w = 1.0
+        else:
+            w = sample_weight[i]
+            if w <= 0.0:
+                grad_out[0, i] = 0.0
+                grad_out[1, i] = 0.0
+                hess_out[0, i] = 0.0
+                hess_out[1, i] = 0.0
+                continue
+
+        r = F[1, i]
+        if r < _GAUSS_RHO_MIN:
+            r = _GAUSS_RHO_MIN
+        elif r > _GAUSS_RHO_MAX:
+            r = _GAUSS_RHO_MAX
+        sigma = np.exp(r)
+        inv_var = 1.0 / (sigma * sigma)
+        z = (y[i] - F[0, i]) / sigma
+        if z < -_GAUSS_Z_CLIP:
+            z = -_GAUSS_Z_CLIP
+        elif z > _GAUSS_Z_CLIP:
+            z = _GAUSS_Z_CLIP
+
+        grad_out[0, i] = w * (-(z / sigma))
+        hess_out[0, i] = w * inv_var
+        grad_out[1, i] = w * (1.0 - z * z)
+        hess_out[1, i] = w * 2.0
+
+
+@njit(cache=True)
+def _gaussian_nll_eval(y, F, sample_weight):
+    n = F.shape[1]
+    total = 0.0
+    weight_total = 0.0
+    for i in range(n):
+        if sample_weight is None:
+            w = 1.0
+        else:
+            w = sample_weight[i]
+            if w <= 0.0:
+                continue
+
+        r = F[1, i]
+        if r < _GAUSS_RHO_MIN:
+            r = _GAUSS_RHO_MIN
+        elif r > _GAUSS_RHO_MAX:
+            r = _GAUSS_RHO_MAX
+        sigma = np.exp(r)
+        z = (y[i] - F[0, i]) / sigma
+        if z < -_GAUSS_Z_CLIP:
+            z = -_GAUSS_Z_CLIP
+        elif z > _GAUSS_Z_CLIP:
+            z = _GAUSS_Z_CLIP
+        total += w * (_HALF_LOG_2PI + r + 0.5 * z * z)
+        weight_total += w
+    return total / weight_total
+
+
+@njit(cache=True)
+def _gaussian_crps(y, F, sample_weight):
+    n = F.shape[1]
+    total = 0.0
+    weight_total = 0.0
+    for i in range(n):
+        if sample_weight is None:
+            w = 1.0
+        else:
+            w = sample_weight[i]
+            if w <= 0.0:
+                continue
+
+        r = F[1, i]
+        if r < _GAUSS_RHO_MIN:
+            r = _GAUSS_RHO_MIN
+        elif r > _GAUSS_RHO_MAX:
+            r = _GAUSS_RHO_MAX
+        sigma = np.exp(r)
+        z = (y[i] - F[0, i]) / sigma
+        if z < -_GAUSS_Z_CLIP:
+            z = -_GAUSS_Z_CLIP
+        elif z > _GAUSS_Z_CLIP:
+            z = _GAUSS_Z_CLIP
+        phi = math.exp(-0.5 * z * z) * _INV_SQRT_2PI
+        cdf = 0.5 * (1.0 + math.erf(z / _SQRT2))
+        crps = sigma * (z * (2.0 * cdf - 1.0) + 2.0 * phi - _INV_SQRT_PI)
+        total += w * crps
+        weight_total += w
+    return total / weight_total
+
+
+class GaussianNLL:
+    """Heteroscedastic Gaussian negative log-likelihood.
+
+    Raw scores are class-major during training: row 0 is the mean and row 1 is
+    log standard deviation. Hessians are the Fisher diagonal, so vector-tree
+    Newton leaf values are natural-gradient steps.
+    """
+
+    name = "Gaussian"
+    is_classification = False
+    adjusts_leaves = False
+    constant_hessian = False
+    n_outputs = 2
+
+    def __init__(self, hessian_mode="natural"):
+        if hessian_mode != "natural":
+            raise ValueError("hessian_mode='natural' is the only supported mode")
+        self.hessian_mode = hessian_mode
+
+    def init_class_major(self, y, sample_weight=None):
+        y = np.asarray(y, dtype=np.float64)
+        weights = sample_weight
+        if weights is not None:
+            weights = np.asarray(weights, dtype=np.float64)
+            positive = weights > 0.0
+            if not np.any(positive):
+                raise ValueError("sample_weight must have positive total weight")
+            y = y[positive]
+            weights = weights[positive]
+        mu0 = float(np.average(y, weights=weights))
+        var0 = float(np.average((y - mu0) ** 2, weights=weights))
+        rho0 = 0.5 * np.log(max(var0, 1e-12))
+        rho0 = float(np.clip(rho0, _GAUSS_INIT_RHO_MIN, _GAUSS_INIT_RHO_MAX))
+        return np.array([mu0, rho0], dtype=np.float64)
+
+    def grad_hess_class_major_into(self, y, F, sample_weight, grad_out, hess_out):
+        _gaussian_nll_grad_hess_into(y, F, sample_weight, grad_out, hess_out)
+
+    def eval_class_major(self, y, F, sample_weight=None):
+        return float(_gaussian_nll_eval(y, F, sample_weight))
+
+    def crps_class_major(self, y, F, sample_weight=None):
+        return float(_gaussian_crps(y, F, sample_weight))
+
+    @staticmethod
+    def mean_and_sigma(raw):
+        rho = np.clip(raw[:, 1], _GAUSS_RHO_MIN, _GAUSS_RHO_MAX)
+        return raw[:, 0], np.exp(rho)
+
+    def transform(self, raw):
+        return raw
+
+
 @njit(cache=True, parallel=True)
 def _softmax_class_major_grad_hess_into(Y, F, sample_weight, grad_out, hess_out):
     K, n = F.shape
@@ -413,3 +574,4 @@ class MultiSoftmax:
 
 
 LOSSES = {"RMSE": RMSE, "Logloss": Logloss, "MAE": MAE, "Quantile": Quantile}
+VECTOR_LOSSES = {"Gaussian": GaussianNLL}
