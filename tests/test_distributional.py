@@ -1,4 +1,5 @@
 import json
+import warnings
 
 import numpy as np
 import pytest
@@ -383,6 +384,70 @@ def test_gaussian_scalar_sigma_calibration_scales_public_distribution_only():
         for warning in model.model_.auto_params_["diagnostics"]["warnings"]
     }
     assert "small_sigma_calibration_fold" in warning_codes
+
+
+def test_gaussian_small_sigma_calibration_warning_respects_reset():
+    import chimeraboost.booster as booster_mod
+
+    X, y = _make_heteroscedastic(seed=16, n=160)
+    params = _gaussian_test_params(
+        iterations=2,
+        learning_rate=0.08,
+        sigma_calibration="scalar",
+        diagnostic_warnings="once",
+    )
+
+    def fit_and_messages():
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            ChimeraBoostRegressor(**params).fit(
+                X[:120], y[:120], eval_set=(X[120:], y[120:])
+            )
+        return [str(warning.message) for warning in caught]
+
+    booster_mod.reset_diagnostic_warning_registry()
+    try:
+        assert any(
+            "sigma_calibration='scalar'" in msg for msg in fit_and_messages()
+        )
+        assert not any(
+            "sigma_calibration='scalar'" in msg for msg in fit_and_messages()
+        )
+        booster_mod.reset_diagnostic_warning_registry()
+        assert any(
+            "sigma_calibration='scalar'" in msg for msg in fit_and_messages()
+        )
+    finally:
+        booster_mod.reset_diagnostic_warning_registry()
+
+
+def test_gaussian_refit_emits_small_calibration_warning_once():
+    X, y = _make_heteroscedastic(seed=17, n=160)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        model = ChimeraBoostRegressor(
+            **_gaussian_test_params(
+                iterations=4,
+                learning_rate=0.08,
+                early_stopping=True,
+                early_stopping_rounds=2,
+                validation_fraction=0.25,
+                refit=True,
+                sigma_calibration="scalar",
+                diagnostic_warnings="always",
+            )
+        ).fit(X, y)
+
+    sigma_messages = [
+        str(warning.message)
+        for warning in caught
+        if "sigma_calibration='scalar'" in str(warning.message)
+    ]
+    assert len(sigma_messages) == 1
+    emitted = model.model_.auto_params_["diagnostics"][
+        "runtime_warnings_emitted"
+    ]
+    assert emitted.count("small_sigma_calibration_fold") == 1
 
 
 def test_gaussian_sigma_calibration_requires_validation_and_survives_refit_load(

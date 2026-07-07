@@ -15,6 +15,7 @@ from .booster import (
     DistributionalBoosting,
     GradientBoosting,
     MulticlassBoosting,
+    _EMITTED_DIAGNOSTIC_WARNING_CODES,
     _apply_thread_count,
     _normalize_diagnostic_warnings,
     _normalize_tree_mode,
@@ -46,7 +47,6 @@ _REFIT_STRATEGY_EXPONENT = {
 
 _AUTO_TREE_MODE_CANDIDATES = ("catboost", "lightgbm", "hybrid")
 _SIGMA_CALIBRATION_MIN_EFFECTIVE_N = 200.0
-_EMITTED_WRAPPER_DIAGNOSTIC_WARNING_CODES = set()
 
 
 def _normalize_tree_mode_token(tree_mode):
@@ -703,7 +703,7 @@ class _RefitParamsMixin:
             self.sigma_calibration_ = state.get("sigma_calibration")
             self.sigma_scale_source_ = state.get("sigma_scale_source")
 
-    def _attach_sigma_calibration_metadata(self):
+    def _attach_sigma_calibration_metadata(self, *, emit_warning=True):
         if not hasattr(self, "sigma_scale_"):
             return
         model = getattr(self, "model_", None)
@@ -739,7 +739,10 @@ class _RefitParamsMixin:
             }
             if warning_record["code"] not in warning_codes:
                 diagnostics["warnings"].append(warning_record)
-            self._emit_wrapper_diagnostic_warning(diagnostics, warning_record)
+            if emit_warning:
+                self._emit_wrapper_diagnostic_warning(
+                    diagnostics, warning_record
+                )
 
     def _emit_wrapper_diagnostic_warning(self, diagnostics, warning_record):
         policy = _normalize_diagnostic_warnings(
@@ -752,14 +755,14 @@ class _RefitParamsMixin:
         code = warning_record.get("code")
         if (
             policy == "once"
-            and code in _EMITTED_WRAPPER_DIAGNOSTIC_WARNING_CODES
+            and code in _EMITTED_DIAGNOSTIC_WARNING_CODES
         ):
             return
         warnings.warn(warning_record["message"], RuntimeWarning, stacklevel=3)
         if code is not None:
             emitted.append(code)
             if policy == "once":
-                _EMITTED_WRAPPER_DIAGNOSTIC_WARNING_CODES.add(code)
+                _EMITTED_DIAGNOSTIC_WARNING_CODES.add(code)
 
     def _refit_params_for_booster(self, strategy):
         params = self.get_refit_params(strategy=strategy)
@@ -1321,7 +1324,9 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                         len(y_cal), eval_sample_weight
                     )
                 )
-            self._attach_sigma_calibration_metadata()
+            self._attach_sigma_calibration_metadata(
+                emit_warning=not (self.refit and selection_active)
+            )
 
         if self.refit and selection_active:
             refit_kw = self._refit_params_for_booster(self.refit_strategy)
