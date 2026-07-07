@@ -17,6 +17,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      # Numba reads NUMBA_CACHE_DIR literally (os.path.join, no ~ expansion),
+      # so resolve $HOME in a step instead of putting a tilde in the env block.
+      - name: Set Numba cache dir
+        run: echo "NUMBA_CACHE_DIR=$HOME/.cache/numba" >> "$GITHUB_ENV"
+      - name: Cache Numba kernels
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/numba
+          key: ${{ runner.os }}-numba-py311-${{ hashFiles('chimeraboost/**/*.py', 'pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-numba-py311-
       - name: Install package
         run: |
           python -m pip install --upgrade pip

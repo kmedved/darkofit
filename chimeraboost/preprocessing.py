@@ -28,6 +28,22 @@ from .target_encoding import (
 )
 
 
+def _normalize_target_ordered_cat_codes(value):
+    if value is None or value is False:
+        return "off"
+    if value is True:
+        raise ValueError(
+            "target_ordered_cat_codes=True is ambiguous; use "
+            "'leaky_full' to opt in to full-target raw-code ordering"
+        )
+    mode = str(value).lower().replace("-", "_")
+    if mode in {"off", "none", "false"}:
+        return "off"
+    if mode == "leaky_full":
+        return "leaky_full"
+    raise ValueError("target_ordered_cat_codes must be 'off' or 'leaky_full'")
+
+
 class FeaturePreprocessor:
     """Converts raw mixed-type input into integer bins for the tree builder.
 
@@ -44,6 +60,8 @@ class FeaturePreprocessor:
     def __init__(self, max_bins=254, cat_smoothing=1.0, random_state=None,
                  include_cat_codes=False, target_encoding_mode="ordered",
                  target_encoding_folds=20,
+                 ts_permutations=1,
+                 target_ordered_cat_codes="off",
                  bin_sample_count=DEFAULT_BIN_SAMPLE_COUNT):
         self.max_bins = int(max_bins)
         self.cat_smoothing = float(cat_smoothing)
@@ -51,6 +69,12 @@ class FeaturePreprocessor:
         self.include_cat_codes = bool(include_cat_codes)
         self.target_encoding_mode = target_encoding_mode
         self.target_encoding_folds = int(target_encoding_folds)
+        self.ts_permutations = int(ts_permutations)
+        if self.ts_permutations < 1:
+            raise ValueError("ts_permutations must be at least 1")
+        self.target_ordered_cat_codes = _normalize_target_ordered_cat_codes(
+            target_ordered_cat_codes
+        )
         self.bin_sample_count = bin_sample_count
 
     # ---- helpers -------------------------------------------------------------
@@ -154,6 +178,51 @@ class FeaturePreprocessor:
         except Exception:
             return None
 
+    def _fit_target_ordered_code_remaps(self, codes, target, sample_weight):
+        target = np.asarray(target, dtype=np.float64)
+        weight = (
+            None if sample_weight is None
+            else np.asarray(sample_weight, dtype=np.float64)
+        )
+        prior = (
+            float(np.mean(target)) if weight is None
+            else float(np.average(target, weights=weight))
+        )
+        remaps = []
+        for j in range(codes.shape[1]):
+            col = np.ascontiguousarray(codes[:, j])
+            n_cat = int(col.max()) + 1 if col.size else 1
+            sums = np.zeros(n_cat, dtype=np.float64)
+            counts = np.zeros(n_cat, dtype=np.float64)
+            if weight is None:
+                np.add.at(sums, col, target)
+                np.add.at(counts, col, 1.0)
+            else:
+                np.add.at(sums, col, weight * target)
+                np.add.at(counts, col, weight)
+            means = (
+                sums + prior * self.cat_smoothing
+            ) / (counts + self.cat_smoothing)
+            order = np.lexsort((np.arange(n_cat, dtype=np.int64), means))
+            remap = np.empty(n_cat, dtype=np.int64)
+            remap[order] = np.arange(n_cat, dtype=np.int64)
+            remaps.append(remap)
+        return remaps
+
+    def _raw_code_block(self, codes):
+        if self.target_ordered_cat_codes != "leaky_full":
+            raw_codes = codes.astype(np.float64)
+            raw_codes[raw_codes < 0] = np.nan
+            return raw_codes
+
+        remaps = getattr(self, "cat_code_remaps_", [])
+        out = np.full(codes.shape, np.nan, dtype=np.float64)
+        for j, remap in enumerate(remaps):
+            col = codes[:, j]
+            valid = (col >= 0) & (col < len(remap))
+            out[valid, j] = remap[col[valid]]
+        return out
+
     # ---- fit / transform -----------------------------------------------------
     def fit_transform(self, X, encode_targets, cat_features, sample_weight=None):
         """encode_targets: list of 1D arrays used for ordered TS (len T)."""
@@ -162,15 +231,28 @@ class FeaturePreprocessor:
         encoded_blocks = []
         code_blocks = []
         self.encoders_ = []
+        self.cat_code_remaps_ = []
         if codes.shape[1]:
             if self.include_cat_codes:
-                code_blocks.append(codes.astype(np.float64))
+                if self.target_ordered_cat_codes == "leaky_full":
+                    if len(encode_targets) != 1:
+                        raise ValueError(
+                            "target_ordered_cat_codes='leaky_full' is "
+                            "currently scalar-only"
+                        )
+                    self.cat_code_remaps_ = (
+                        self._fit_target_ordered_code_remaps(
+                            codes, encode_targets[0], sample_weight
+                        )
+                    )
+                code_blocks.append(self._raw_code_block(codes))
             for t, target in enumerate(encode_targets):
                 enc = OrderedTargetEncoder(
                     self.cat_smoothing,
                     None if self.random_state is None else self.random_state + t,
                     mode=self.target_encoding_mode,
                     n_folds=self.target_encoding_folds,
+                    ts_permutations=self.ts_permutations,
                 )
                 encoded_blocks.append(
                     enc.fit_transform(codes, target, sample_weight=sample_weight)
@@ -209,9 +291,7 @@ class FeaturePreprocessor:
         if self.cat_features_:
             codes = self._codes_for_transform(X)
             if self.include_cat_codes:
-                raw_codes = codes.astype(np.float64)
-                raw_codes[raw_codes < 0] = np.nan
-                code_blocks.append(raw_codes)
+                code_blocks.append(self._raw_code_block(codes))
             for enc in self.encoders_:
                 encoded_blocks.append(enc.transform(codes))
         return self.binner_.transform_blocks(

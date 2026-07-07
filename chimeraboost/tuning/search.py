@@ -143,6 +143,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
             None if cat_features is None else list(cat_features_normalized)
         )
         self.n_workers_ = max(1, int(self.n_workers))
+        _reject_custom_sampler_multiprocessing(self.sampler, self.n_workers_)
         self.trial_thread_count_ = _resolve_trial_thread_count(
             self.trial_thread_count, self.n_workers_
         )
@@ -391,6 +392,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
 
         if self.storage_config_.storage is None:
             raise ValueError("multiprocessing requires shared Optuna storage")
+        _reject_custom_sampler_multiprocessing(self.sampler, self.n_workers_)
         quotas = _split_quota(n_trials, self.n_workers_)
         if hasattr(self, "random_state_"):
             sampler_seed_base = self.random_state_
@@ -630,6 +632,16 @@ def _error_score_is_nan(error_score):
         return False
 
 
+def _reject_custom_sampler_multiprocessing(sampler, n_workers):
+    if sampler is not None and int(n_workers) > 1:
+        raise ValueError(
+            "n_workers > 1 with a custom Optuna sampler is not supported; "
+            "arbitrary sampler instances cannot be cloned with deterministic "
+            "per-worker seeds. Set n_workers=1 or leave sampler=None so "
+            "ChimeraBoost can create seeded worker samplers."
+        )
+
+
 @dataclass
 class _WorkerPayload:
     objective_payload: object
@@ -665,8 +677,6 @@ class _WorkerPayload:
 def _optimize_worker(args):
     (objective_payload, storage_url, study_name, resume, sampler, pruner,
      n_trials, sampler_seed, timeout, callbacks) = args
-    if sampler is not None and hasattr(sampler, "reseed_rng"):
-        sampler.reseed_rng()
     storage_config = make_storage(
         storage_url, n_workers=1, study_name=study_name, resume=resume
     )
@@ -1037,7 +1047,7 @@ def _make_optuna_callbacks(callbacks, study_stopper, patience, min_trials,
         else:
             out.append(callbacks)
     if study_stopper is not None:
-        out.append(study_stopper)
+        out.append(_SharedStopCallback(study_stopper))
     if patience is not None:
         out.append(_NoImprovementStopper(
             patience=int(patience),
@@ -1045,6 +1055,19 @@ def _make_optuna_callbacks(callbacks, study_stopper, patience, min_trials,
             min_delta=float(min_delta),
         ))
     return out or None
+
+
+@dataclass
+class _SharedStopCallback:
+    callback: object
+
+    def __call__(self, study, trial):
+        if study.user_attrs.get("_chimeraboost_stop"):
+            study.stop()
+            return
+        self.callback(study, trial)
+        if getattr(study, "_stop_flag", False):
+            study.set_user_attr("_chimeraboost_stop", True)
 
 
 @dataclass

@@ -1,5 +1,6 @@
 """Test suite for ChimeraBoost. Run with: pytest -q"""
 
+import inspect
 import warnings
 
 import numpy as np
@@ -63,7 +64,7 @@ def test_binning_transform_matches_searchsorted_reference():
 
 
 def test_feature_borders_match_full_unique_reference():
-    from chimeraboost.binning import _feature_borders
+    from chimeraboost.binning import _feature_borders, _unique_if_at_most
 
     def reference(col, max_bins):
         finite = col[np.isfinite(col)]
@@ -80,6 +81,39 @@ def test_feature_borders_match_full_unique_reference():
 
     assert np.array_equal(_feature_borders(low_card, 8), reference(low_card, 8))
     assert np.array_equal(_feature_borders(high_card, 16), reference(high_card, 16))
+
+    def old_unique_reference(values, max_unique):
+        seen = set()
+        for value in values:
+            seen.add(float(value))
+            if len(seen) > max_unique:
+                return None
+        return np.array(sorted(seen), dtype=np.float64)
+
+    cases = [
+        (np.array([], dtype=np.float64), 4),
+        (np.ones(12, dtype=np.float64), 4),
+        (np.array([3.0, 1.0, 3.0, 2.0], dtype=np.float64), 4),
+        (np.arange(20, dtype=np.float64), 8),
+        (np.arange(5000, dtype=np.float64), 64),
+        (np.r_[np.tile([0.0, 1.0], 2048), np.arange(2.0, 80.0)], 8),
+        (np.tile([1.0, 2.0, 3.0], 2500), 4),
+        (np.array([-0.0, 0.0, 1.0, -0.0], dtype=np.float64), 4),
+    ]
+    for values, max_unique in cases:
+        got = _unique_if_at_most(values, max_unique)
+        expected = old_unique_reference(values, max_unique)
+        if expected is None:
+            assert got is None
+        else:
+            assert got.dtype == np.float64
+            assert np.array_equal(got, expected)
+
+    signed_zero = np.array([-0.0, 0.0, 1.0, 1.0, np.nan, np.inf])
+    assert np.array_equal(
+        _feature_borders(signed_zero, 8),
+        reference(signed_zero, 8),
+    )
 
 
 def test_loss_grad_hess_into_matches_allocating_paths():
@@ -591,6 +625,449 @@ def test_multiclass_preprocessor_receives_class_major_target_views(monkeypatch):
 
     assert seen
     assert all(contiguous and not owns_data for contiguous, owns_data in seen[0])
+
+
+def test_preprocessing_cache_reduces_auto_probe_fit_transform_count(monkeypatch):
+    import chimeraboost.booster as booster_mod
+
+    calls = []
+    original = booster_mod.FeaturePreprocessor.fit_transform
+
+    def wrapped_fit_transform(self, X, encode_targets, cat_features,
+                              sample_weight=None):
+        calls.append((
+            self.target_encoding_mode,
+            bool(self.include_cat_codes),
+            tuple([] if cat_features is None else cat_features),
+            len(encode_targets),
+        ))
+        return original(
+            self, X, encode_targets, cat_features, sample_weight=sample_weight
+        )
+
+    monkeypatch.setattr(
+        booster_mod.FeaturePreprocessor, "fit_transform", wrapped_fit_transform
+    )
+    rng = np.random.default_rng(20260709)
+    X = np.column_stack([
+        rng.choice(np.array(["red", "blue", "green"], dtype=object), size=90),
+        rng.normal(size=90),
+    ]).astype(object)
+    y = np.asarray(X[:, 1], dtype=np.float64) + rng.normal(0.0, 0.1, size=90)
+
+    model = ChimeraBoostRegressor(
+        iterations=6,
+        tree_mode="auto",
+        early_stopping=True,
+        validation_fraction=0.25,
+        auto_learning_rate_probe=True,
+        auto_learning_rate_probe_iterations=2,
+        random_state=0,
+    ).fit(X, y, cat_features=[0])
+
+    assert np.all(np.isfinite(model.predict(X[:5])))
+    assert sorted(calls) == [
+        ("kfold", True, (0,), 1),
+        ("ordered", False, (0,), 1),
+    ]
+
+
+def test_preprocessing_cache_key_separates_data_targets_weights_and_eval(monkeypatch):
+    import chimeraboost.booster as booster_mod
+
+    calls = 0
+    original = booster_mod.FeaturePreprocessor.fit_transform
+
+    def wrapped_fit_transform(self, X, encode_targets, cat_features,
+                              sample_weight=None):
+        nonlocal calls
+        calls += 1
+        return original(
+            self, X, encode_targets, cat_features, sample_weight=sample_weight
+        )
+
+    monkeypatch.setattr(
+        booster_mod.FeaturePreprocessor, "fit_transform", wrapped_fit_transform
+    )
+
+    cache = {}
+    X = np.array([
+        ["a", 0.0], ["b", 1.0], ["a", 2.0], ["c", 3.0],
+        ["b", 4.0], ["c", 5.0], ["a", 6.0], ["b", 7.0],
+    ], dtype=object)
+    y = np.linspace(0.0, 1.0, X.shape[0])
+    eval_X = X[:3].copy()
+    eval_y = y[:3].copy()
+
+    def fit_cached(X_fit, y_fit, *, weights=None, eval_pair=(eval_X, eval_y)):
+        model = booster_mod.GradientBoosting(
+            iterations=0, tree_mode="lightgbm", random_state=0
+        )
+        model._preprocessing_cache = cache
+        model.fit(
+            X_fit, y_fit, cat_features=[0],
+            sample_weight=weights,
+            eval_set=eval_pair,
+        )
+        return model
+
+    first = fit_cached(X, y)
+    second = fit_cached(X.copy(), y.copy())
+    assert calls == 1
+    assert np.array_equal(first.predict_raw(X), second.predict_raw(X))
+    unseen = np.array([["new-category", 1.5]], dtype=object)
+    assert np.all(np.isfinite(second.predict_raw(unseen)))
+
+    X_changed = X.copy()
+    X_changed[0, 0] = "z"
+    fit_cached(X_changed, y)
+    assert calls == 2
+
+    fit_cached(X, y + 0.5)
+    assert calls == 3
+
+    fit_cached(X, y, weights=np.linspace(0.5, 1.5, X.shape[0]))
+    assert calls == 4
+
+    eval_changed = eval_X.copy()
+    eval_changed[0, 0] = "unseen"
+    fit_cached(X, y, eval_pair=(eval_changed, eval_y))
+    assert calls == 5
+
+
+def test_preprocessing_cache_does_not_share_scalar_and_multiclass(monkeypatch):
+    import chimeraboost.booster as booster_mod
+
+    calls = 0
+    original = booster_mod.FeaturePreprocessor.fit_transform
+
+    def wrapped_fit_transform(self, X, encode_targets, cat_features,
+                              sample_weight=None):
+        nonlocal calls
+        calls += 1
+        return original(
+            self, X, encode_targets, cat_features, sample_weight=sample_weight
+        )
+
+    monkeypatch.setattr(
+        booster_mod.FeaturePreprocessor, "fit_transform", wrapped_fit_transform
+    )
+    cache = {}
+    X = np.array([
+        ["a", 0.0], ["b", 1.0], ["c", 2.0], ["a", 3.0],
+        ["b", 4.0], ["c", 5.0], ["a", 6.0], ["b", 7.0],
+        ["c", 8.0],
+    ], dtype=object)
+    y_binary = np.array([0, 1, 0, 1, 0, 1, 0, 1, 0], dtype=np.float64)
+    y_multi = np.array(["x", "y", "z"] * 3, dtype=object)
+
+    scalar = booster_mod.GradientBoosting(
+        iterations=0, loss="Logloss", tree_mode="lightgbm", random_state=0
+    )
+    scalar._preprocessing_cache = cache
+    scalar.fit(X, y_binary, cat_features=[0])
+    multiclass = booster_mod.MulticlassBoosting(
+        iterations=0, tree_mode="lightgbm", random_state=0
+    )
+    multiclass._preprocessing_cache = cache
+    multiclass.fit(X, y_multi, cat_features=[0])
+
+    assert calls == 2
+    assert (
+        scalar.prep_.feature_map_.shape[0]
+        != multiclass.prep_.feature_map_.shape[0]
+    )
+
+
+def test_wrapper_new_options_preserve_existing_positional_tail():
+    for estimator in (ChimeraBoostRegressor, ChimeraBoostClassifier):
+        params = list(inspect.signature(estimator.__init__).parameters)
+        auto_idx = params.index("auto_learning_rate_probe")
+        assert auto_idx < params.index("histogram_dtype")
+        assert auto_idx < params.index("leaf_dtype")
+        assert auto_idx < params.index("ts_permutations")
+        assert auto_idx < params.index("target_ordered_cat_codes")
+
+
+def test_histogram_dtype_validation_and_multiclass_scope():
+    import chimeraboost.booster as booster_mod
+
+    assert booster_mod.GradientBoosting(
+        histogram_dtype=np.float32
+    ).histogram_dtype == "float32"
+    with pytest.raises(ValueError, match="histogram_dtype"):
+        booster_mod.GradientBoosting(histogram_dtype="float16")
+
+    X = np.arange(18, dtype=np.float64).reshape(9, 2)
+    y = np.array([0, 1, 2] * 3)
+    with pytest.raises(ValueError, match="scalar GradientBoosting"):
+        booster_mod.MulticlassBoosting(
+            iterations=1, histogram_dtype="float32", random_state=0
+        ).fit(X, y)
+
+
+def test_float32_histogram_streams_preserve_sampler_inputs(monkeypatch):
+    import chimeraboost.booster as booster_mod
+
+    rng = np.random.default_rng(20260710)
+    X = rng.normal(size=(220, 4))
+    y = 3.0 * X[:, 0] - 2.0 * X[:, 1] + rng.normal(0.0, 0.2, size=220)
+    original = booster_mod.GradientBoosting._maybe_subsample
+    captured = {}
+
+    def wrapped_maybe_subsample(self, grad, hess, rng_):
+        assert grad.dtype == np.float64
+        assert hess.dtype == np.float64
+        g, h, row_indices = original(self, grad, hess, rng_)
+        captured.setdefault(self.histogram_dtype_, []).append(
+            None if row_indices is None else row_indices.copy()
+        )
+        return g, h, row_indices
+
+    monkeypatch.setattr(
+        booster_mod.GradientBoosting, "_maybe_subsample", wrapped_maybe_subsample
+    )
+
+    for dtype in ("float64", "float32"):
+        model = booster_mod.GradientBoosting(
+            iterations=1,
+            tree_mode="lightgbm",
+            sampling="mvs",
+            subsample=0.45,
+            histogram_dtype=dtype,
+            random_state=17,
+        )
+        model.fit(X, y)
+
+    assert len(captured["float64"]) == len(captured["float32"]) == 1
+    assert np.array_equal(captured["float64"][0], captured["float32"][0])
+
+
+def test_float32_histogram_streams_keep_well_separated_splits_structural():
+    import chimeraboost.booster as booster_mod
+
+    rng = np.random.default_rng(20260711)
+    X = rng.normal(size=(260, 5))
+    X[:, 0] = np.r_[np.full(130, -3.0), np.full(130, 3.0)]
+    y = np.r_[np.full(130, -8.0), np.full(130, 8.0)]
+
+    def fit(dtype, mode):
+        model = booster_mod.GradientBoosting(
+            iterations=1,
+            depth=2,
+            tree_mode=mode,
+            min_child_samples=1,
+            min_child_weight=0.0,
+            histogram_dtype=dtype,
+            random_state=0,
+        )
+        model.fit(X, y)
+        return model.trees_[0], model.predict_raw(X)
+
+    for mode in ("catboost", "lightgbm", "hybrid"):
+        tree64, pred64 = fit("float64", mode)
+        tree32, pred32 = fit("float32", mode)
+        assert tree64.depth == tree32.depth
+        for attr in (
+            "splits_feat", "splits_thr", "gains", "features", "thresholds",
+            "left_child", "right_child",
+        ):
+            if hasattr(tree64, attr):
+                assert np.array_equal(getattr(tree64, attr), getattr(tree32, attr))
+        assert np.allclose(pred64, pred32, rtol=0.0, atol=1e-6)
+
+
+def test_float32_histogram_streams_are_deterministic_for_same_seed():
+    rng = np.random.default_rng(20260712)
+    X = rng.normal(size=(180, 6))
+    y = X[:, 0] * 2.0 - X[:, 2] + rng.normal(0.0, 0.15, size=180)
+
+    def fit_once():
+        model = ChimeraBoostRegressor(
+            iterations=12,
+            learning_rate=0.08,
+            depth=3,
+            tree_mode="lightgbm",
+            histogram_dtype="float32",
+            thread_count=2,
+            random_state=7,
+        ).fit(X, y)
+        return model
+
+    first = fit_once()
+    second = fit_once()
+
+    assert np.array_equal(first.predict(X), second.predict(X))
+    assert np.array_equal(first.model_.train_history_, second.model_.train_history_)
+
+
+def test_float32_histogram_streams_real_data_metric_parity():
+    X, y = load_diabetes(return_X_y=True)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.30, random_state=20260712
+    )
+
+    def fit(dtype):
+        model = ChimeraBoostRegressor(
+            iterations=35,
+            learning_rate=0.07,
+            depth=3,
+            tree_mode="lightgbm",
+            histogram_dtype=dtype,
+            random_state=3,
+        )
+        model.fit(X_train, y_train)
+        return model.predict(X_test)
+
+    pred64 = fit("float64")
+    pred32 = fit("float32")
+    rmse64 = np.sqrt(mean_squared_error(y_test, pred64))
+    rmse32 = np.sqrt(mean_squared_error(y_test, pred32))
+
+    assert abs(rmse32 - rmse64) <= 0.02
+    assert np.max(np.abs(pred32 - pred64)) <= 0.25
+
+
+def test_float32_histogram_dtype_persists_through_save_load(tmp_path):
+    X, y = load_diabetes(return_X_y=True)
+    model = ChimeraBoostRegressor(
+        iterations=5,
+        tree_mode="lightgbm",
+        histogram_dtype="float32",
+        random_state=0,
+    ).fit(X[:80], y[:80])
+
+    path = tmp_path / "float32_histogram_streams.npz"
+    model.save_model(path)
+    loaded = ChimeraBoostRegressor.load_model(path)
+
+    assert loaded.model_.histogram_dtype == "float32"
+    assert loaded.model_.histogram_dtype_ == "float32"
+    assert np.array_equal(model.predict(X[:10]), loaded.predict(X[:10]))
+
+
+def _assert_tree_structure_equal(a, b):
+    for attr in (
+        "splits_feat", "splits_thr", "gains", "features", "thresholds",
+        "left_child", "right_child", "leaf_index", "node_features",
+        "node_thresholds", "splits_feat", "splits_thr", "values",
+    ):
+        if hasattr(a, attr):
+            assert np.array_equal(getattr(a, attr), getattr(b, attr)), attr
+    assert a.depth == b.depth
+
+
+@pytest.mark.parametrize(
+    "builder_name,kwargs",
+    [
+        ("build_oblivious_tree", {}),
+        ("build_levelwise_tree", {}),
+        ("build_leafwise_tree", {"max_leaves": 7}),
+        ("build_hybrid_tree", {"max_leaves": 7}),
+    ],
+)
+def test_uint32_leaf_dtype_matches_int64_scalar_builders(builder_name, kwargs):
+    import chimeraboost.tree as tree_mod
+
+    rng = np.random.default_rng(20260717)
+    X_binned = rng.integers(0, 31, size=(360, 6), dtype=np.uint8)
+    grad = rng.normal(size=X_binned.shape[0])
+    hess = rng.uniform(0.1, 2.0, size=X_binned.shape[0])
+    n_bins = np.full(X_binned.shape[1], 31, dtype=np.int64)
+    builder = getattr(tree_mod, builder_name)
+    builder_kwargs = dict(kwargs)
+    if builder_name in {"build_leafwise_tree", "build_hybrid_tree"}:
+        builder_kwargs["min_child_samples"] = 3
+
+    int_tree, int_leaf, int_G, int_H = builder(
+        X_binned, grad, hess, n_bins, 3, 1.5, 0.08,
+        return_training_state=True,
+        min_child_weight=0.05,
+        leaf_dtype="int64",
+        **builder_kwargs,
+    )
+    uint_tree, uint_leaf, uint_G, uint_H = builder(
+        X_binned, grad, hess, n_bins, 3, 1.5, 0.08,
+        return_training_state=True,
+        min_child_weight=0.05,
+        leaf_dtype=np.uint32,
+        **builder_kwargs,
+    )
+
+    assert uint_leaf.dtype == np.uint32
+    _assert_tree_structure_equal(int_tree, uint_tree)
+    assert np.array_equal(int_leaf, uint_leaf)
+    assert np.array_equal(int_G, uint_G)
+    assert np.array_equal(int_H, uint_H)
+    assert np.array_equal(int_tree.predict(X_binned), uint_tree.predict(X_binned))
+    assert np.array_equal(
+        uint_G, np.bincount(uint_leaf, weights=grad, minlength=len(uint_tree.values))
+    )
+
+
+def test_uint32_leaf_dtype_matches_int64_multiclass_builder():
+    from chimeraboost.tree import build_leafwise_multiclass_tree
+
+    rng = np.random.default_rng(20260718)
+    X_binned = rng.integers(0, 23, size=(280, 5), dtype=np.uint8)
+    grad = rng.normal(size=(4, X_binned.shape[0]))
+    hess = rng.uniform(0.1, 1.6, size=grad.shape)
+    n_bins = np.full(X_binned.shape[1], 23, dtype=np.int64)
+
+    int_tree, int_leaf, int_G, int_H = build_leafwise_multiclass_tree(
+        X_binned, grad, hess, n_bins, 4, 1.2, 0.1,
+        max_leaves=8, min_child_samples=3, min_child_weight=0.1,
+        return_training_state=True, leaf_dtype="int64",
+    )
+    uint_tree, uint_leaf, uint_G, uint_H = build_leafwise_multiclass_tree(
+        X_binned, grad, hess, n_bins, 4, 1.2, 0.1,
+        max_leaves=8, min_child_samples=3, min_child_weight=0.1,
+        return_training_state=True, leaf_dtype="uint32",
+    )
+
+    assert uint_leaf.dtype == np.uint32
+    _assert_tree_structure_equal(int_tree, uint_tree)
+    assert np.array_equal(int_leaf, uint_leaf)
+    assert np.array_equal(int_G, uint_G)
+    assert np.array_equal(int_H, uint_H)
+    int_pred = np.zeros_like(grad)
+    uint_pred = np.zeros_like(grad)
+    int_tree.add_predict_class_major(X_binned, int_pred)
+    uint_tree.add_predict_class_major(X_binned, uint_pred)
+    assert np.array_equal(int_pred, uint_pred)
+
+
+def test_uint32_leaf_dtype_public_fit_and_save_load(tmp_path):
+    import chimeraboost.booster as booster_mod
+
+    with pytest.raises(ValueError, match="leaf_dtype"):
+        booster_mod.GradientBoosting(leaf_dtype="uint16")
+
+    X, y = load_diabetes(return_X_y=True)
+    model = ChimeraBoostRegressor(
+        iterations=8,
+        tree_mode="lightgbm",
+        histogram_dtype="float32",
+        leaf_dtype="uint32",
+        random_state=0,
+    ).fit(X[:120], y[:120])
+
+    path = tmp_path / "uint32_leaf_dtype.npz"
+    model.save_model(path)
+    loaded = ChimeraBoostRegressor.load_model(path)
+    assert loaded.model_.leaf_dtype == "uint32"
+    assert loaded.model_.leaf_dtype_ == "uint32"
+    assert np.array_equal(model.predict(X[:12]), loaded.predict(X[:12]))
+
+    Xc, yc = load_breast_cancer(return_X_y=True)
+    ordered = ChimeraBoostClassifier(
+        iterations=3,
+        tree_mode="catboost",
+        ordered_boosting=True,
+        leaf_dtype="uint32",
+        random_state=1,
+    ).fit(Xc[:80], yc[:80])
+    assert np.all(np.isfinite(ordered.predict_proba(Xc[:10])))
 
 
 def test_multiclass_eval_set_uses_label_indices_without_one_hot(monkeypatch):
@@ -1331,6 +1808,72 @@ def test_multiclass_refill_subtract_matches_two_step():
     )
     ref_hg[:, :, right_leaf] = parent_hg - ref_hg[:, :, left_leaf]
     ref_hh[:, :, right_leaf] = parent_hh - ref_hh[:, :, left_leaf]
+    ref_hc[:, right_leaf] = parent_hc - ref_hc[:, left_leaf]
+    assert np.array_equal(fused_hg, ref_hg)
+    assert np.array_equal(fused_hh, ref_hh)
+    assert np.array_equal(fused_hc, ref_hc)
+
+
+def test_multiclass_class_minor_refill_subtract_matches_two_step():
+    from chimeraboost.tree import (
+        _refill_multiclass_leaf_segment_histograms_counts_class_minor_into,
+        _refill_multiclass_left_subtract_right_counts_class_minor_into,
+        _refill_multiclass_right_subtract_left_counts_class_minor_into,
+    )
+
+    rng = np.random.default_rng(20260715)
+    X_binned = rng.integers(0, 23, size=(128, 9), dtype=np.uint8)
+    grad = rng.normal(size=(X_binned.shape[0], 4))
+    hess = rng.uniform(0.05, 1.5, size=grad.shape)
+    row_order = np.arange(X_binned.shape[0], dtype=np.int64)
+    leaf_start = np.array([0, 37, 88, 128], dtype=np.int64)
+    left_leaf = 1
+    right_leaf = 2
+
+    base_hg = rng.normal(size=(X_binned.shape[1], 3, 23, 4))
+    base_hh = rng.uniform(0.0, 5.0, size=base_hg.shape)
+    base_hc = rng.uniform(0.0, 5.0, size=(X_binned.shape[1], 3, 23))
+
+    fused_hg = base_hg.copy()
+    fused_hh = base_hh.copy()
+    fused_hc = base_hc.copy()
+    ref_hg = base_hg.copy()
+    ref_hh = base_hh.copy()
+    ref_hc = base_hc.copy()
+    _refill_multiclass_right_subtract_left_counts_class_minor_into(
+        X_binned, grad, hess, row_order, leaf_start, left_leaf, right_leaf,
+        fused_hg, fused_hh, fused_hc
+    )
+    _refill_multiclass_leaf_segment_histograms_counts_class_minor_into(
+        X_binned, grad, hess, row_order, leaf_start,
+        np.array([right_leaf], dtype=np.int64), 1, ref_hg, ref_hh, ref_hc
+    )
+    ref_hg[:, left_leaf] -= ref_hg[:, right_leaf]
+    ref_hh[:, left_leaf] -= ref_hh[:, right_leaf]
+    ref_hc[:, left_leaf] -= ref_hc[:, right_leaf]
+    assert np.array_equal(fused_hg, ref_hg)
+    assert np.array_equal(fused_hh, ref_hh)
+    assert np.array_equal(fused_hc, ref_hc)
+
+    fused_hg = base_hg.copy()
+    fused_hh = base_hh.copy()
+    fused_hc = base_hc.copy()
+    ref_hg = base_hg.copy()
+    ref_hh = base_hh.copy()
+    ref_hc = base_hc.copy()
+    parent_hg = ref_hg[:, left_leaf].copy()
+    parent_hh = ref_hh[:, left_leaf].copy()
+    parent_hc = ref_hc[:, left_leaf].copy()
+    _refill_multiclass_left_subtract_right_counts_class_minor_into(
+        X_binned, grad, hess, row_order, leaf_start, left_leaf, right_leaf,
+        fused_hg, fused_hh, fused_hc
+    )
+    _refill_multiclass_leaf_segment_histograms_counts_class_minor_into(
+        X_binned, grad, hess, row_order, leaf_start,
+        np.array([left_leaf], dtype=np.int64), 1, ref_hg, ref_hh, ref_hc
+    )
+    ref_hg[:, right_leaf] = parent_hg - ref_hg[:, left_leaf]
+    ref_hh[:, right_leaf] = parent_hh - ref_hh[:, left_leaf]
     ref_hc[:, right_leaf] = parent_hc - ref_hc[:, left_leaf]
     assert np.array_equal(fused_hg, ref_hg)
     assert np.array_equal(fused_hh, ref_hh)
@@ -2265,9 +2808,96 @@ def test_multiclass_count_histogram_counts_any_positive_class_hessian():
     assert np.array_equal(hc[0, 0], np.array([2.0, 1.0]))
 
 
+def test_multiclass_class_minor_histograms_match_class_major_reference():
+    from chimeraboost.tree import (
+        _build_multiclass_histograms_counts_class_minor_into,
+        _build_multiclass_histograms_counts_into,
+        _class_major_views_from_class_minor_histograms,
+    )
+
+    rng = np.random.default_rng(20260713)
+    n_samples, n_features, n_classes, n_leaves, max_bins = 96, 6, 4, 3, 11
+    X_binned = rng.integers(
+        0, max_bins, size=(n_samples, n_features), dtype=np.uint8
+    )
+    leaf = rng.integers(0, n_leaves, size=n_samples, dtype=np.int64)
+    grad = rng.normal(size=(n_classes, n_samples))
+    hess = rng.uniform(0.0, 1.5, size=grad.shape)
+
+    ref_hg = np.zeros((n_classes, n_features, n_leaves, max_bins))
+    ref_hh = np.zeros_like(ref_hg)
+    ref_hc = np.zeros((n_features, n_leaves, max_bins))
+    _build_multiclass_histograms_counts_into(
+        X_binned, grad, hess, leaf, n_leaves, ref_hg, ref_hh, ref_hc
+    )
+
+    grad_row = np.ascontiguousarray(grad.T)
+    hess_row = np.ascontiguousarray(hess.T)
+    got_hg = np.zeros((n_features, n_leaves, max_bins, n_classes))
+    got_hh = np.zeros_like(got_hg)
+    got_hc = np.zeros_like(ref_hc)
+    _build_multiclass_histograms_counts_class_minor_into(
+        X_binned, grad_row, hess_row, leaf, n_leaves, got_hg, got_hh, got_hc
+    )
+    got_hg_view, got_hh_view = _class_major_views_from_class_minor_histograms(
+        got_hg, got_hh
+    )
+
+    assert got_hg.shape == (n_features, n_leaves, max_bins, n_classes)
+    assert np.array_equal(got_hg_view, ref_hg)
+    assert np.array_equal(got_hh_view, ref_hh)
+    assert np.array_equal(got_hc, ref_hc)
+
+
+def test_leafwise_multiclass_accepts_class_minor_hist_buffers():
+    from chimeraboost.tree import build_leafwise_multiclass_tree
+
+    rng = np.random.default_rng(20260714)
+    X_binned = rng.integers(0, 19, size=(400, 7), dtype=np.uint8)
+    grad = rng.normal(size=(4, X_binned.shape[0]))
+    hess = rng.uniform(0.05, 1.25, size=grad.shape)
+    n_bins = np.full(X_binned.shape[1], 19, dtype=np.int64)
+    max_leaves = 9
+
+    base = build_leafwise_multiclass_tree(
+        X_binned, grad, hess, n_bins, 5, 1.3, 0.08,
+        max_leaves=max_leaves, min_child_samples=4, min_child_weight=0.1,
+        min_gain_to_split=0.0, return_training_state=True,
+    )
+    buffers = (
+        np.zeros((X_binned.shape[1], max_leaves, int(n_bins.max()), grad.shape[0])),
+        np.zeros((X_binned.shape[1], max_leaves, int(n_bins.max()), grad.shape[0])),
+        np.zeros((X_binned.shape[1], max_leaves, int(n_bins.max()))),
+    )
+    supplied = build_leafwise_multiclass_tree(
+        X_binned, grad, hess, n_bins, 5, 1.3, 0.08,
+        max_leaves=max_leaves, min_child_samples=4, min_child_weight=0.1,
+        min_gain_to_split=0.0, return_training_state=True,
+        hist_buffers=buffers,
+        grad_row_major=np.ascontiguousarray(grad.T),
+        hess_row_major=np.ascontiguousarray(hess.T),
+    )
+
+    base_tree, base_leaf, base_G, base_H = base
+    supplied_tree, supplied_leaf, supplied_G, supplied_H = supplied
+    for attr in (
+        "features", "thresholds", "left_child", "right_child",
+        "leaf_index", "splits_feat", "splits_thr", "gains", "values",
+    ):
+        assert np.array_equal(
+            getattr(base_tree, attr), getattr(supplied_tree, attr)
+        ), attr
+    assert base_tree.depth == supplied_tree.depth
+    assert np.array_equal(base_leaf, supplied_leaf)
+    assert np.array_equal(base_G, supplied_G)
+    assert np.array_equal(base_H, supplied_H)
+
+
 def test_multiclass_shared_split_allows_empty_class_hessian():
     from chimeraboost.tree import (
+        _best_multiclass_splits_counts_for_leaf_ids_with_noise_class_minor_py,
         _best_multiclass_splits_counts_for_leaf_ids_with_noise_py,
+        _best_multiclass_splits_for_leaf_ids_counts_class_minor,
         _best_multiclass_splits_for_leaf_ids_counts,
     )
 
@@ -2294,6 +2924,7 @@ def test_multiclass_shared_split_allows_empty_class_hessian():
     assert out_feat[0] == 0
     assert out_thr[0] == 0
     assert out_gain[0] > 0.0
+    expected_gain = out_gain[0]
 
     out_feat[:] = -1
     out_thr[:] = -1
@@ -2307,6 +2938,34 @@ def test_multiclass_shared_split_allows_empty_class_hessian():
     assert out_feat[0] == 0
     assert out_thr[0] == 0
     assert out_gain[0] > 0.0
+    assert out_gain[0] == expected_gain
+
+    hg_cm = np.moveaxis(hg, 0, 3).copy()
+    hh_cm = np.moveaxis(hh, 0, 3).copy()
+    out_feat[:] = -1
+    out_thr[:] = -1
+    out_gain[:] = -np.inf
+    _best_multiclass_splits_for_leaf_ids_counts_class_minor(
+        hg_cm, hh_cm, hc, n_bins, 1.0, feat_mask, 1.0, 1.0,
+        leaf_ids, 1, out_feat, out_thr, out_gain
+    )
+
+    assert out_feat[0] == 0
+    assert out_thr[0] == 0
+    assert out_gain[0] == expected_gain
+
+    out_feat[:] = -1
+    out_thr[:] = -1
+    out_gain[:] = -np.inf
+    _best_multiclass_splits_counts_for_leaf_ids_with_noise_class_minor_py(
+        hg_cm, hh_cm, hc, n_bins, 1.0, feat_mask, 1.0, 1.0,
+        leaf_ids, 1, out_feat, out_thr, out_gain,
+        0.0, 0, 0, 0, 0.0,
+    )
+
+    assert out_feat[0] == 0
+    assert out_thr[0] == 0
+    assert out_gain[0] == expected_gain
 
 
 def test_inactive_stochastic_settings_preserve_shared_vector_multiclass_lightgbm():
@@ -2834,7 +3493,9 @@ def test_leafwise_histogram_subtraction_matches_full_refill():
         assert np.allclose(reused_H, full_H)
 
 
-def test_leafwise_segmented_row_layout_matches_prefix_layout():
+@pytest.mark.parametrize("thread_count", [1, 2, 4])
+def test_leafwise_segmented_row_layout_matches_prefix_layout(thread_count):
+    numba = pytest.importorskip("numba")
     from chimeraboost.tree import build_leafwise_tree
 
     rng = np.random.default_rng(63)
@@ -2848,39 +3509,44 @@ def test_leafwise_segmented_row_layout_matches_prefix_layout():
         (False, hess, False),
         (False, hess, True),
     ]
-    for constant_hessian, h, hessian_always_positive in cases:
-        prefix = build_leafwise_tree(
-            Xb, grad, h, n_bins, 6, 1.0, 0.1,
-            max_leaves=16, min_child_samples=5, min_child_weight=0.1,
-            min_gain_to_split=0.0, return_training_state=True,
-            constant_hessian=constant_hessian,
-            hessian_always_positive=hessian_always_positive,
-            leafwise_row_layout="prefix",
-        )
-        segmented = build_leafwise_tree(
-            Xb, grad, h, n_bins, 6, 1.0, 0.1,
-            max_leaves=16, min_child_samples=5, min_child_weight=0.1,
-            min_gain_to_split=0.0, return_training_state=True,
-            constant_hessian=constant_hessian,
-            hessian_always_positive=hessian_always_positive,
-            leafwise_row_layout="segmented",
-        )
+    original_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(thread_count)
+        for constant_hessian, h, hessian_always_positive in cases:
+            prefix = build_leafwise_tree(
+                Xb, grad, h, n_bins, 6, 1.0, 0.1,
+                max_leaves=16, min_child_samples=5, min_child_weight=0.1,
+                min_gain_to_split=0.0, return_training_state=True,
+                constant_hessian=constant_hessian,
+                hessian_always_positive=hessian_always_positive,
+                leafwise_row_layout="prefix",
+            )
+            segmented = build_leafwise_tree(
+                Xb, grad, h, n_bins, 6, 1.0, 0.1,
+                max_leaves=16, min_child_samples=5, min_child_weight=0.1,
+                min_gain_to_split=0.0, return_training_state=True,
+                constant_hessian=constant_hessian,
+                hessian_always_positive=hessian_always_positive,
+                leafwise_row_layout="segmented",
+            )
 
-        prefix_tree, prefix_leaf, prefix_G, prefix_H = prefix
-        segmented_tree, segmented_leaf, segmented_G, segmented_H = segmented
-        assert np.array_equal(segmented_tree.features, prefix_tree.features)
-        assert np.array_equal(segmented_tree.thresholds, prefix_tree.thresholds)
-        assert np.array_equal(segmented_tree.left_child, prefix_tree.left_child)
-        assert np.array_equal(segmented_tree.right_child, prefix_tree.right_child)
-        assert np.array_equal(segmented_tree.leaf_index, prefix_tree.leaf_index)
-        assert np.array_equal(segmented_tree.splits_feat, prefix_tree.splits_feat)
-        assert np.array_equal(segmented_tree.splits_thr, prefix_tree.splits_thr)
-        assert np.allclose(segmented_tree.gains, prefix_tree.gains)
-        assert np.array_equal(segmented_leaf, prefix_leaf)
-        assert np.allclose(segmented_tree.values, prefix_tree.values)
-        assert np.allclose(segmented_G, prefix_G)
-        assert np.allclose(segmented_H, prefix_H)
-        assert np.array_equal(segmented_tree.predict(Xb), prefix_tree.predict(Xb))
+            prefix_tree, prefix_leaf, prefix_G, prefix_H = prefix
+            segmented_tree, segmented_leaf, segmented_G, segmented_H = segmented
+            assert np.array_equal(segmented_tree.features, prefix_tree.features)
+            assert np.array_equal(segmented_tree.thresholds, prefix_tree.thresholds)
+            assert np.array_equal(segmented_tree.left_child, prefix_tree.left_child)
+            assert np.array_equal(segmented_tree.right_child, prefix_tree.right_child)
+            assert np.array_equal(segmented_tree.leaf_index, prefix_tree.leaf_index)
+            assert np.array_equal(segmented_tree.splits_feat, prefix_tree.splits_feat)
+            assert np.array_equal(segmented_tree.splits_thr, prefix_tree.splits_thr)
+            assert np.array_equal(segmented_tree.gains, prefix_tree.gains)
+            assert np.array_equal(segmented_leaf, prefix_leaf)
+            assert np.array_equal(segmented_tree.values, prefix_tree.values)
+            assert np.array_equal(segmented_G, prefix_G)
+            assert np.array_equal(segmented_H, prefix_H)
+            assert np.array_equal(segmented_tree.predict(Xb), prefix_tree.predict(Xb))
+    finally:
+        numba.set_num_threads(original_threads)
 
 
 def test_leafwise_segmented_row_layout_guard_and_auto_fallback():
@@ -3341,6 +4007,7 @@ def test_lightgbm_scalar_routes_fused_changed_leaf_scoring_only_when_eligible():
             hist_buffers=None,
             split_buffers=None,
             X_hist_binned=None,
+            X_route_binned=None,
             use_constant_hessian=False,
             hessian_always_positive=True,
             rowpar_buffers=None,
@@ -5163,6 +5830,38 @@ def test_sampled_depth_zero_tree_retries_next_row_sample():
     assert model.trees_[0].depth > 0
 
 
+def test_sampled_depth_zero_retries_are_capped_on_no_signal_data():
+    from chimeraboost.booster import _MAX_CONSECUTIVE_SAMPLED_DEPTH0_RETRIES
+
+    X = np.zeros((80, 2), dtype=np.float64)
+    y = np.zeros(80, dtype=np.float64)
+    model = ChimeraBoostRegressor(
+        iterations=1000,
+        subsample=0.5,
+        random_state=0,
+    ).fit(X, y)
+
+    meta = model.model_.auto_params_["stochastic_regularization"]
+    assert model.best_iteration_ == 0
+    assert meta["sampling_rounds"] == _MAX_CONSECUTIVE_SAMPLED_DEPTH0_RETRIES + 1
+
+
+def test_multiclass_sampled_depth_zero_retries_are_capped_on_no_signal_data():
+    from chimeraboost.booster import _MAX_CONSECUTIVE_SAMPLED_DEPTH0_RETRIES
+
+    X = np.zeros((90, 2), dtype=np.float64)
+    y = np.tile([0, 1, 2], 30)
+    model = ChimeraBoostClassifier(
+        iterations=1000,
+        subsample=0.5,
+        random_state=0,
+    ).fit(X, y)
+
+    meta = model.model_.auto_params_["stochastic_regularization"]
+    assert model.best_iteration_ == 0
+    assert meta["sampling_rounds"] == _MAX_CONSECUTIVE_SAMPLED_DEPTH0_RETRIES + 1
+
+
 def test_sampled_retry_best_model_uses_successful_prefix_index():
     from chimeraboost.booster import GradientBoosting
 
@@ -6039,6 +6738,315 @@ def test_preprocessor_blocks_match_stacked_reference():
     assert Xb.shape == Xb_t.shape
 
 
+def test_ts_permutations_one_matches_default_ordered_statistics():
+    from chimeraboost.preprocessing import FeaturePreprocessor
+    from chimeraboost.target_encoding import OrderedTargetEncoder
+
+    rng = np.random.default_rng(411)
+    codes = rng.integers(0, 5, size=(180, 2), dtype=np.int64)
+    y = rng.normal(size=180)
+    weights = rng.uniform(0.1, 2.0, size=180)
+
+    default = OrderedTargetEncoder(1.7, 19, mode="ordered")
+    explicit = OrderedTargetEncoder(1.7, 19, mode="ordered", ts_permutations=1)
+    default_out = default.fit_transform(codes, y, sample_weight=weights)
+    explicit_out = explicit.fit_transform(codes, y, sample_weight=weights)
+
+    assert np.array_equal(default_out, explicit_out)
+    for got, want in zip(explicit.sums_, default.sums_):
+        assert np.array_equal(got, want)
+    for got, want in zip(explicit.counts_, default.counts_):
+        assert np.array_equal(got, want)
+
+    X = np.empty((180, 3), dtype=object)
+    X[:, 0] = rng.normal(size=180)
+    X[:, 1] = rng.choice(["a", "b", "c", "d"], size=180)
+    X[:, 2] = rng.choice(["x", "y"], size=180)
+    prep_default = FeaturePreprocessor(32, 1.0, 7)
+    prep_p1 = FeaturePreprocessor(32, 1.0, 7, ts_permutations=1)
+    Xb_default = prep_default.fit_transform(X, [y], cat_features=[1, 2])
+    Xb_p1 = prep_p1.fit_transform(X, [y], cat_features=[1, 2])
+
+    assert np.array_equal(Xb_default, Xb_p1)
+    assert np.array_equal(
+        prep_default.encoders_[0].transform(prep_default._codes_for_transform(X)),
+        prep_p1.encoders_[0].transform(prep_p1._codes_for_transform(X)),
+    )
+
+
+def test_multi_permutation_ordered_statistics_exclude_own_label():
+    from chimeraboost.target_encoding import OrderedTargetEncoder
+
+    y = np.linspace(-3.0, 4.0, 40)
+    codes = np.arange(y.shape[0], dtype=np.int64).reshape(-1, 1)
+    weights = np.linspace(0.5, 2.0, y.shape[0])
+
+    for p in (2, 5):
+        enc = OrderedTargetEncoder(0.75, 3, ts_permutations=p)
+        got = enc.fit_transform(codes, y)
+        assert np.array_equal(got[:, 0], np.full(y.shape[0], np.mean(y)))
+
+        weighted = OrderedTargetEncoder(0.75, 3, ts_permutations=p)
+        got_weighted = weighted.fit_transform(codes, y, sample_weight=weights)
+        prior = np.average(y, weights=weights)
+        assert np.array_equal(got_weighted[:, 0], np.full(y.shape[0], prior))
+
+
+def test_multi_permutation_ordered_statistics_shrink_early_variance():
+    from chimeraboost.target_encoding import OrderedTargetEncoder
+
+    n = 240
+    seed = 123
+    rng = np.random.default_rng(42)
+    y = rng.normal(size=n)
+    codes = np.zeros((n, 1), dtype=np.int64)
+
+    one = OrderedTargetEncoder(1.0, seed, ts_permutations=1)
+    many = OrderedTargetEncoder(1.0, seed, ts_permutations=8)
+    enc_one = one.fit_transform(codes, y)[:, 0]
+    enc_many = many.fit_transform(codes, y)[:, 0]
+    early = np.random.default_rng(seed).permutation(n)[:40]
+
+    assert np.var(enc_many[early]) < 0.25 * np.var(enc_one[early])
+
+
+def test_ts_permutations_round_trips_and_refit_params(tmp_path):
+    X, y = _cat_dataset(n=180, seed=31)
+    model = ChimeraBoostRegressor(
+        iterations=8,
+        random_state=0,
+        ts_permutations=3,
+        auto_learning_rate_probe=True,
+        auto_learning_rate_probe_values=[0.03, 0.1],
+        auto_learning_rate_probe_iterations=3,
+    )
+    model.fit(X, y, cat_features=[1])
+
+    assert model.model_.prep_.ts_permutations == 3
+    assert model.model_.prep_.encoders_[0].ts_permutations == 3
+    assert model.get_refit_params()["ts_permutations"] == 3
+
+    path = tmp_path / "ts_permutations.npz"
+    model.save_model(path)
+    loaded = ChimeraBoostRegressor.load_model(path)
+
+    assert loaded.get_params()["ts_permutations"] == 3
+    assert loaded.model_.prep_.ts_permutations == 3
+    assert loaded.model_.prep_.encoders_[0].ts_permutations == 3
+    assert np.array_equal(model.predict(X[:30]), loaded.predict(X[:30]))
+
+
+def test_target_ordered_raw_codes_are_monotone_and_do_not_remap_encoders():
+    from chimeraboost.preprocessing import FeaturePreprocessor
+
+    cats = np.array([
+        "low", "low", "low", "mid", "mid", "mid",
+        "high", "high", "high", "high",
+    ], dtype=object)
+    y = np.array([0.0, 0.1, 0.2, 0.4, 0.5, 0.6, 1.0, 1.1, 1.2, 1.3])
+    X = cats.reshape(-1, 1)
+
+    prep = FeaturePreprocessor(
+        8,
+        1.0,
+        0,
+        include_cat_codes=True,
+        target_ordered_cat_codes="leaky_full",
+        bin_sample_count=None,
+    )
+    prep.fit_transform(X, [y], cat_features=[0])
+
+    cat_map = prep.cat_maps_[0]
+    remap = prep.cat_code_remaps_[0]
+    assert remap[cat_map["low"]] < remap[cat_map["mid"]] < remap[cat_map["high"]]
+
+    codes = prep._codes_for_transform(X)
+    raw = prep._raw_code_block(codes)[:, 0]
+    assert raw[cats == "low"].max() < raw[cats == "mid"].min()
+    assert raw[cats == "mid"].max() < raw[cats == "high"].min()
+
+    # Encoder totals remain indexed by original factorization codes. The raw
+    # code remap must not mutate the shared codes consumed by target statistics.
+    enc = prep.encoders_[0]
+    assert enc.counts_[0][cat_map["low"]] == 3.0
+    assert enc.counts_[0][cat_map["mid"]] == 3.0
+    assert enc.counts_[0][cat_map["high"]] == 4.0
+
+
+def test_target_ordered_raw_code_ties_use_category_code_order():
+    from chimeraboost.preprocessing import FeaturePreprocessor
+
+    X = np.array(["b", "a", "c", "b", "a", "c"], dtype=object).reshape(-1, 1)
+    y = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0])
+
+    prep = FeaturePreprocessor(
+        8,
+        1.0,
+        0,
+        include_cat_codes=True,
+        target_ordered_cat_codes="leaky_full",
+    )
+    prep.fit_transform(X, [y], cat_features=[0])
+    cat_map = prep.cat_maps_[0]
+    remap = prep.cat_code_remaps_[0]
+
+    assert cat_map["b"] == 0
+    assert cat_map["a"] == 1
+    assert remap[cat_map["b"]] < remap[cat_map["a"]] < remap[cat_map["c"]]
+
+
+def test_target_ordered_raw_codes_are_explicit_leaky_opt_in():
+    from chimeraboost.preprocessing import FeaturePreprocessor
+
+    with pytest.raises(ValueError, match="leaky_full"):
+        FeaturePreprocessor(target_ordered_cat_codes=True)
+
+    X = np.array(["solo", "pair", "pair"], dtype=object).reshape(-1, 1)
+    y = np.array([10.0, 0.0, 1.0])
+    prep = FeaturePreprocessor(
+        8,
+        10.0,
+        0,
+        include_cat_codes=True,
+        target_ordered_cat_codes="leaky_full",
+    )
+    prep.fit_transform(X, [y], cat_features=[0])
+    assert prep.target_ordered_cat_codes == "leaky_full"
+    assert len(prep.cat_code_remaps_) == 1
+
+
+def test_target_ordered_cat_codes_leave_catboost_mode_unchanged():
+    X, y = _cat_dataset(n=220, seed=41)
+    off = ChimeraBoostRegressor(
+        iterations=8,
+        random_state=0,
+        tree_mode="catboost",
+        target_ordered_cat_codes="off",
+    ).fit(X, y, cat_features=[1])
+    leaky = ChimeraBoostRegressor(
+        iterations=8,
+        random_state=0,
+        tree_mode="catboost",
+        target_ordered_cat_codes="leaky_full",
+    ).fit(X, y, cat_features=[1])
+
+    assert not off.model_.prep_.include_cat_codes
+    assert not leaky.model_.prep_.include_cat_codes
+    assert np.array_equal(off.predict(X[:60]), leaky.predict(X[:60]))
+
+
+def test_target_ordered_cat_codes_are_scalar_only_for_raw_code_block():
+    X = np.empty((90, 2), dtype=object)
+    X[:, 0] = np.tile(["a", "b", "c"], 30)
+    X[:, 1] = np.linspace(-1.0, 1.0, 90)
+    y = np.tile([0, 1, 2], 30)
+
+    model = ChimeraBoostClassifier(
+        iterations=2,
+        random_state=0,
+        tree_mode="lightgbm",
+        target_ordered_cat_codes="leaky_full",
+    )
+    with pytest.raises(ValueError, match="scalar-only"):
+        model.fit(X, y, cat_features=[0])
+
+
+def test_target_ordered_cat_codes_round_trip_v3_with_unseen(tmp_path):
+    import json
+
+    X, y = _cat_dataset(n=260, seed=43)
+    model = ChimeraBoostRegressor(
+        iterations=10,
+        random_state=0,
+        tree_mode="lightgbm",
+        target_ordered_cat_codes="leaky_full",
+        max_bins=16,
+    ).fit(X, y, cat_features=[1])
+
+    path = tmp_path / "target-ordered-codes.npz"
+    model.save_model(path)
+    arrays = _read_archive_arrays(path)
+    header = json.loads(str(arrays["header"]))
+
+    assert header["format_version"] == 3
+    assert header["prep"]["target_ordered_cat_codes"] == "leaky_full"
+    assert header["prep"]["target_ordered_cat_code_policy"] == (
+        "full_target_smoothed_leaky_opt_in"
+    )
+    assert "cat0__code_remap" in arrays
+
+    loaded = ChimeraBoostRegressor.load_model(path)
+    assert loaded.get_params()["target_ordered_cat_codes"] == "leaky_full"
+    assert np.array_equal(
+        loaded.model_.prep_.cat_code_remaps_[0],
+        model.model_.prep_.cat_code_remaps_[0],
+    )
+
+    X_new = X[:50].copy()
+    X_new[0, 1] = "brand-new"
+    X_new[1, 1] = None
+    assert np.array_equal(model.predict(X_new), loaded.predict(X_new))
+
+
+def test_target_ordered_cat_code_archive_corruption_rejected(tmp_path):
+    import json
+
+    X, y = _cat_dataset(n=180, seed=44)
+    model = ChimeraBoostRegressor(
+        iterations=4,
+        random_state=0,
+        tree_mode="lightgbm",
+        target_ordered_cat_codes="leaky_full",
+    ).fit(X, y, cat_features=[1])
+    path = tmp_path / "target-ordered-corrupt.npz"
+    model.save_model(path)
+    arrays = _read_archive_arrays(path)
+
+    missing = dict(arrays)
+    missing.pop("cat0__code_remap")
+    missing_path = _write_archive(tmp_path / "missing-remap.npz", missing)
+    with pytest.raises(ValueError, match="missing categorical code remap"):
+        ChimeraBoostRegressor.load_model(missing_path)
+
+    downgraded = dict(arrays)
+    header = json.loads(str(downgraded["header"]))
+    header["format_version"] = 2
+    downgraded["header"] = np.array(json.dumps(header))
+    downgraded_path = _write_archive(tmp_path / "downgraded-remap.npz", downgraded)
+    with pytest.raises(ValueError, match="format version 3"):
+        ChimeraBoostRegressor.load_model(downgraded_path)
+
+
+def test_target_ordered_raw_codes_match_pandas_and_dict_lookup_paths():
+    from chimeraboost.preprocessing import FeaturePreprocessor
+
+    pytest.importorskip("pandas")
+
+    X = np.empty((80, 2), dtype=object)
+    X[:, 0] = np.tile(["a", "b", "c", None], 20)
+    X[:, 1] = np.linspace(-2.0, 2.0, 80)
+    y = np.where(X[:, 0] == "c", 1.0, 0.0)
+    prep = FeaturePreprocessor(
+        8,
+        1.0,
+        0,
+        include_cat_codes=True,
+        target_ordered_cat_codes="leaky_full",
+    )
+    prep.fit_transform(X, [y], cat_features=[0])
+    X_new = X[:20].copy()
+    X_new[0, 0] = "unseen"
+    X_new[1, 0] = np.nan
+
+    fast = prep._raw_code_block(prep._codes_for_transform(X_new))
+    prep._pandas_codes_for_column = lambda pd, col, j: None
+    slow = prep._raw_code_block(prep._codes_for_transform(X_new))
+
+    assert np.array_equal(fast, slow, equal_nan=True)
+    assert np.isnan(fast[0, 0])
+    assert np.isfinite(fast[1, 0])
+
+
 def test_codes_for_transform_pandas_path_matches_dict_path():
     from chimeraboost.preprocessing import FeaturePreprocessor
 
@@ -6518,11 +7526,22 @@ def _cat_dataset(n=1500, seed=0, with_nan=True):
     return X, y
 
 
+def _read_archive_arrays(path):
+    with np.load(path, allow_pickle=False) as data:
+        return {key: data[key] for key in data.files}
+
+
+def _write_archive(path, arrays):
+    np.savez_compressed(path, **arrays)
+    return path
+
+
 def test_save_load_regressor_round_trip(tmp_path):
     X, y = _cat_dataset()
     path = str(tmp_path / "reg.npz")
 
     for kw in ({}, {"tree_mode": "lightgbm"}, {"tree_mode": "hybrid"},
+               {"tree_mode": "depthwise"},
                {"loss": "Quantile", "alpha": 0.8}):
         m = ChimeraBoostRegressor(iterations=40, random_state=0, **kw)
         m.fit(X, y, cat_features=[1])
@@ -6571,7 +7590,8 @@ def test_load_legacy_v1_missing_category_archive(tmp_path):
     with np.load(path, allow_pickle=False) as data:
         arrays = {key: data[key] for key in data.files}
     header = json.loads(str(arrays["header"]))
-    assert header["format_version"] == FORMAT_VERSION == 2
+    assert FORMAT_VERSION == 3
+    assert header["format_version"] == 2
 
     kinds = arrays["cat0__kinds"].copy()
     missing_pos = np.flatnonzero(kinds == _KIND_MISSING)
@@ -6617,6 +7637,97 @@ def test_load_legacy_v1_missing_category_archive(tmp_path):
     )
 
 
+def test_load_rejects_corrupt_category_and_class_payloads(tmp_path):
+    from chimeraboost.booster import MulticlassBoosting
+    from chimeraboost.serialization import _KIND_BOOL
+    from sklearn.datasets import load_wine
+
+    X, y = _cat_dataset(n=160, seed=11)
+    cat_path = tmp_path / "cat.npz"
+    ChimeraBoostRegressor(iterations=3, random_state=0).fit(
+        X, y, cat_features=[1]
+    ).save_model(cat_path)
+
+    arrays = _read_archive_arrays(cat_path)
+    arrays["cat0__kinds"] = arrays["cat0__kinds"][:-1]
+    with pytest.raises(ValueError, match="values and kinds length mismatch"):
+        ChimeraBoostRegressor.load_model(
+            _write_archive(tmp_path / "cat-kind-short.npz", arrays)
+        )
+
+    arrays = _read_archive_arrays(cat_path)
+    arrays["cat0__values"] = arrays["cat0__values"].reshape(1, -1)
+    with pytest.raises(ValueError, match="values must be 1-dimensional"):
+        ChimeraBoostRegressor.load_model(
+            _write_archive(tmp_path / "cat-values-2d.npz", arrays)
+        )
+
+    X_bool = X.copy()
+    X_bool[:, 1] = np.arange(X_bool.shape[0]) % 2 == 0
+    bool_path = tmp_path / "bool-cat.npz"
+    ChimeraBoostRegressor(iterations=3, random_state=0).fit(
+        X_bool, y, cat_features=[1]
+    ).save_model(bool_path)
+    arrays = _read_archive_arrays(bool_path)
+    bool_pos = np.flatnonzero(arrays["cat0__kinds"] == _KIND_BOOL)
+    assert bool_pos.size
+    values = arrays["cat0__values"].astype("<U16")
+    values[bool_pos[0]] = "not-bool"
+    arrays["cat0__values"] = values
+    with pytest.raises(ValueError, match="bool payload"):
+        ChimeraBoostRegressor.load_model(
+            _write_archive(tmp_path / "cat-bad-bool.npz", arrays)
+        )
+
+    Xw, yw_num = load_wine(return_X_y=True)
+    yw = np.array(["low", "mid", "high"], dtype=object)[yw_num]
+    core_path = tmp_path / "core-multiclass.npz"
+    MulticlassBoosting(iterations=3, random_state=0).fit(Xw, yw).save_model(
+        core_path
+    )
+    arrays = _read_archive_arrays(core_path)
+    arrays["classes_kinds"] = arrays["classes_kinds"][:-1]
+    with pytest.raises(ValueError, match="values and kinds length mismatch"):
+        MulticlassBoosting.load_model(
+            _write_archive(tmp_path / "core-class-kind-short.npz", arrays)
+        )
+
+    arrays = _read_archive_arrays(core_path)
+    values = arrays["classes"].astype("<U16")
+    values[0] = "not-bool"
+    arrays["classes"] = values
+    arrays["classes_kinds"] = arrays["classes_kinds"].copy()
+    arrays["classes_kinds"][0] = _KIND_BOOL
+    with pytest.raises(ValueError, match="bool payload"):
+        MulticlassBoosting.load_model(
+            _write_archive(tmp_path / "core-class-bad-bool.npz", arrays)
+        )
+
+    wrapper_path = tmp_path / "wrapper-binary.npz"
+    yb = np.where(y[:120] > np.median(y[:120]), "yes", "no").astype(object)
+    ChimeraBoostClassifier(iterations=3, random_state=0).fit(
+        np.asarray(X[:120, [0, 2]], dtype=np.float64), yb
+    ).save_model(wrapper_path)
+
+    arrays = _read_archive_arrays(wrapper_path)
+    arrays["wrapper__classes_kinds"] = arrays["wrapper__classes_kinds"][:-1]
+    with pytest.raises(ValueError, match="values and kinds length mismatch"):
+        ChimeraBoostClassifier.load_model(
+            _write_archive(tmp_path / "wrapper-class-kind-short.npz", arrays)
+        )
+
+    arrays = _read_archive_arrays(wrapper_path)
+    values = arrays["wrapper__classes"].astype("<U16")
+    values[0] = "not-bool"
+    arrays["wrapper__classes"] = values
+    arrays["wrapper__classes_kinds"] = arrays["wrapper__classes_kinds"].copy()
+    arrays["wrapper__classes_kinds"][0] = _KIND_BOOL
+    with pytest.raises(ValueError, match="bool payload"):
+        ChimeraBoostClassifier.load_model(
+            _write_archive(tmp_path / "wrapper-class-bad-bool.npz", arrays)
+        )
+
+
 def test_save_load_classifier_round_trip(tmp_path):
     from sklearn.datasets import load_breast_cancer, load_wine
 
@@ -6624,17 +7735,23 @@ def test_save_load_classifier_round_trip(tmp_path):
 
     # Binary with numeric labels.
     Xb, yb = load_breast_cancer(return_X_y=True)
-    binary = ChimeraBoostClassifier(iterations=30, random_state=0).fit(Xb, yb)
-    binary.save_model(path)
-    loaded = ChimeraBoostClassifier.load_model(path)
-    assert np.array_equal(binary.predict_proba(Xb), loaded.predict_proba(Xb))
-    assert np.array_equal(binary.classes_, loaded.classes_)
-    assert loaded.n_features_in_ == Xb.shape[1]
+    for kw in ({}, {"tree_mode": "depthwise"}):
+        binary = ChimeraBoostClassifier(
+            iterations=30, random_state=0, **kw
+        ).fit(Xb, yb)
+        binary.save_model(path)
+        loaded = ChimeraBoostClassifier.load_model(path)
+        assert np.array_equal(
+            binary.predict_proba(Xb), loaded.predict_proba(Xb)
+        ), kw
+        assert np.array_equal(binary.classes_, loaded.classes_)
+        assert loaded.n_features_in_ == Xb.shape[1]
 
     # Multiclass with string labels, both tree strategies.
     Xw, yw_num = load_wine(return_X_y=True)
     yw = np.array(["lo", "mid", "hi"])[yw_num]
     for kw in ({}, {"tree_mode": "lightgbm"}, {"tree_mode": "hybrid"},
+               {"tree_mode": "depthwise"},
                {"tree_mode": "lightgbm",
                 "multiclass_tree_strategy": "shared_vector"}):
         mc = ChimeraBoostClassifier(iterations=15, random_state=0, **kw)
@@ -6702,10 +7819,72 @@ def test_save_load_booster_level_and_errors(tmp_path):
     with pytest.raises(ValueError):
         GradientBoosting(iterations=2).save_model(path)  # unfitted
 
-    depthwise = GradientBoosting(iterations=3, tree_mode="depthwise",
-                                 depth=3, random_state=0).fit(X, y)
-    with pytest.raises(ValueError):
-        depthwise.save_model(path)
+    empty = GradientBoosting(
+        iterations=5, tree_mode="depthwise", random_state=0
+    ).fit(np.zeros((40, 2), dtype=np.float64), np.zeros(40, dtype=np.float64))
+    assert empty.best_iteration_ == 0
+    assert empty.trees_ == []
+    empty.save_model(path)
+    empty_loaded = GradientBoosting.load_model(path)
+    assert empty_loaded.trees_ == []
+    assert empty_loaded.best_iteration_ == 0
+    assert np.array_equal(
+        empty.predict_raw(np.zeros((3, 2), dtype=np.float64)),
+        empty_loaded.predict_raw(np.zeros((3, 2), dtype=np.float64)),
+    )
+
+    depthwise = GradientBoosting(
+        iterations=3, tree_mode="depthwise", depth=3, random_state=0
+    ).fit(X, y)
+    depthwise_loop = _loop_predict_raw(depthwise, X)
+    depthwise.save_model(path)
+    depthwise_loaded = GradientBoosting.load_model(path)
+    assert np.array_equal(depthwise.predict_raw(X), depthwise_loaded.predict_raw(X))
+    assert np.array_equal(depthwise_loop, depthwise_loaded.predict_raw(X))
+    for before, after in zip(depthwise.trees_, depthwise_loaded.trees_):
+        assert np.array_equal(before.node_features, after.node_features)
+        assert np.array_equal(before.node_thresholds, after.node_thresholds)
+        assert np.array_equal(before.values, after.values)
+        assert np.array_equal(before.splits_feat, after.splits_feat)
+        assert np.array_equal(before.splits_thr, after.splits_thr)
+        assert np.array_equal(before.gains, after.gains)
+    flat = depthwise_loaded._flat_ensemble()
+    assert flat is not None
+    Xb_depthwise = depthwise_loaded.prep_.transform(np.asarray(X, dtype=np.float64))
+    flat_pred = np.full(Xb_depthwise.shape[0], depthwise_loaded.init_)
+    flat.add_predict(Xb_depthwise, flat_pred)
+    assert np.array_equal(flat_pred, depthwise_loop)
+
+    arrays = _read_archive_arrays(path)
+    arrays["trees__node_thresholds_flat"] = (
+        arrays["trees__node_thresholds_flat"][:-1]
+    )
+    bad_level_nodes = tmp_path / "bad-level-node-sibling.npz"
+    np.savez_compressed(bad_level_nodes, **arrays)
+    with pytest.raises(ValueError, match="offsets do not match array length"):
+        GradientBoosting.load_model(bad_level_nodes)
+
+    arrays = _read_archive_arrays(path)
+    arrays["trees__node_widths"] = arrays["trees__node_widths"].copy()
+    arrays["trees__node_widths"][0] += 1
+    bad_level_shape = tmp_path / "bad-level-node-shape.npz"
+    np.savez_compressed(bad_level_shape, **arrays)
+    with pytest.raises(ValueError, match="node payload"):
+        GradientBoosting.load_model(bad_level_shape)
+
+    arrays = _read_archive_arrays(path)
+    arrays["trees__values_flat"] = arrays["trees__values_flat"][:-1]
+    bad_level_values = tmp_path / "bad-level-values.npz"
+    np.savez_compressed(bad_level_values, **arrays)
+    with pytest.raises(ValueError, match="offsets do not match array length"):
+        GradientBoosting.load_model(bad_level_values)
+
+    arrays = _read_archive_arrays(path)
+    arrays["trees__splits_thr_flat"] = arrays["trees__splits_thr_flat"][:-1]
+    bad_level_splits = tmp_path / "bad-level-splits.npz"
+    np.savez_compressed(bad_level_splits, **arrays)
+    with pytest.raises(ValueError, match="offsets do not match array length"):
+        GradientBoosting.load_model(bad_level_splits)
 
     Xw, yw = load_wine(return_X_y=True)
     mc = MulticlassBoosting(iterations=10, random_state=0).fit(Xw, yw)
@@ -6713,6 +7892,17 @@ def test_save_load_booster_level_and_errors(tmp_path):
     mc_loaded = MulticlassBoosting.load_model(path)
     assert np.array_equal(mc.predict_raw(Xw), mc_loaded.predict_raw(Xw))
     assert np.array_equal(mc.classes_, mc_loaded.classes_)
+
+    mc_depthwise = MulticlassBoosting(
+        iterations=5, tree_mode="depthwise", depth=3, random_state=0
+    ).fit(Xw, yw)
+    mc_depthwise.save_model(path)
+    mc_depthwise_loaded = MulticlassBoosting.load_model(path)
+    assert np.array_equal(
+        mc_depthwise.predict_raw(Xw),
+        mc_depthwise_loaded.predict_raw(Xw),
+    )
+    assert np.array_equal(mc_depthwise.classes_, mc_depthwise_loaded.classes_)
 
 
 def test_core_booster_save_accepts_random_state_objects(tmp_path):
@@ -6800,6 +7990,42 @@ def test_load_rejects_mismatched_tree_and_encoder_flat_arrays(tmp_path):
 
     with np.load(path, allow_pickle=False) as data:
         arrays = {key: data[key] for key in data.files}
+    arrays["bin__border_offsets"] = arrays["bin__border_offsets"][:-1]
+    bad_binner_offsets = tmp_path / "bad-binner-offsets.npz"
+    np.savez_compressed(bad_binner_offsets, **arrays)
+    with pytest.raises(ValueError, match="offsets length"):
+        GradientBoosting.load_model(bad_binner_offsets)
+
+    with np.load(path, allow_pickle=False) as data:
+        arrays = {key: data[key] for key in data.files}
+    arrays["bin__n_bins"] = arrays["bin__n_bins"].copy()
+    arrays["bin__n_bins"][0] += 1
+    bad_n_bins = tmp_path / "bad-binner-n-bins.npz"
+    np.savez_compressed(bad_n_bins, **arrays)
+    with pytest.raises(ValueError, match="n_bins do not match"):
+        GradientBoosting.load_model(bad_n_bins)
+
+    with np.load(path, allow_pickle=False) as data:
+        arrays = {key: data[key] for key in data.files}
+    header = json.loads(str(arrays["header"]))
+    arrays["prep__feature_map"] = arrays["prep__feature_map"].copy()
+    arrays["prep__feature_map"][0] = header["n_input_features"]
+    bad_feature_map = tmp_path / "bad-feature-map.npz"
+    np.savez_compressed(bad_feature_map, **arrays)
+    with pytest.raises(ValueError, match="feature_map contains out-of-range"):
+        GradientBoosting.load_model(bad_feature_map)
+
+    with np.load(path, allow_pickle=False) as data:
+        arrays = {key: data[key] for key in data.files}
+    arrays["bin__block_widths"] = arrays["bin__block_widths"].copy()
+    arrays["bin__block_widths"][0] += 1
+    bad_block_widths = tmp_path / "bad-binner-block-widths.npz"
+    np.savez_compressed(bad_block_widths, **arrays)
+    with pytest.raises(ValueError, match="block_widths"):
+        GradientBoosting.load_model(bad_block_widths)
+
+    with np.load(path, allow_pickle=False) as data:
+        arrays = {key: data[key] for key in data.files}
     arrays["cat0__kinds"] = arrays["cat0__kinds"].copy()
     arrays["cat0__kinds"][0] = 99
     bad_kind = tmp_path / "bad-category-kind.npz"
@@ -6816,6 +8042,40 @@ def test_load_rejects_mismatched_tree_and_encoder_flat_arrays(tmp_path):
     np.savez_compressed(bad_tree_kind, **arrays)
     with pytest.raises(ValueError, match="unknown tree kind"):
         GradientBoosting.load_model(bad_tree_kind)
+
+    scalar_path = tmp_path / "scalar-oblivious.npz"
+    scalar = GradientBoosting(iterations=4, random_state=0).fit(
+        np.asarray(X[:, [0, 2]], dtype=np.float64), y
+    )
+    scalar.save_model(scalar_path)
+    with np.load(scalar_path, allow_pickle=False) as data:
+        arrays = {key: data[key] for key in data.files}
+    keep = len(arrays["trees__depths"]) - 1
+    assert keep > 0
+    split_end = arrays["trees__split_offsets"][keep]
+    value_end = arrays["trees__value_offsets"][keep]
+    arrays["trees__depths"] = arrays["trees__depths"][:keep]
+    arrays["trees__feats_flat"] = arrays["trees__feats_flat"][:split_end]
+    arrays["trees__thrs_flat"] = arrays["trees__thrs_flat"][:split_end]
+    arrays["trees__gains_flat"] = arrays["trees__gains_flat"][:split_end]
+    arrays["trees__values_flat"] = arrays["trees__values_flat"][:value_end]
+    arrays["trees__split_offsets"] = arrays["trees__split_offsets"][:keep + 1]
+    arrays["trees__value_offsets"] = arrays["trees__value_offsets"][:keep + 1]
+    bad_scalar_count = tmp_path / "bad-scalar-tree-count.npz"
+    np.savez_compressed(bad_scalar_count, **arrays)
+    with pytest.raises(ValueError, match="tree count"):
+        GradientBoosting.load_model(bad_scalar_count)
+
+    with np.load(scalar_path, allow_pickle=False) as data:
+        arrays = {key: data[key] for key in data.files}
+    header = json.loads(str(arrays["header"]))
+    assert header["best_iteration"] > 0
+    header["tree_kind"] = "empty"
+    arrays["header"] = np.array(json.dumps(header))
+    bad_empty = tmp_path / "bad-empty-tree-kind.npz"
+    np.savez_compressed(bad_empty, **arrays)
+    with pytest.raises(ValueError, match="empty tree kind"):
+        GradientBoosting.load_model(bad_empty)
 
     Xw, yw = load_wine(return_X_y=True)
     per_class = ChimeraBoostClassifier(iterations=3, random_state=0).fit(Xw, yw)
@@ -6855,6 +8115,16 @@ def test_load_rejects_mismatched_tree_and_encoder_flat_arrays(tmp_path):
     np.savez_compressed(bad_value_width, **arrays)
     with pytest.raises(ValueError, match="value width"):
         ChimeraBoostClassifier.load_model(bad_value_width)
+
+    with np.load(shared_path, allow_pickle=False) as data:
+        arrays = {key: data[key] for key in data.files}
+    header = json.loads(str(arrays["header"]))
+    header["best_iteration"] += 1
+    arrays["header"] = np.array(json.dumps(header))
+    bad_shared_count = tmp_path / "bad-shared-tree-count.npz"
+    np.savez_compressed(bad_shared_count, **arrays)
+    with pytest.raises(ValueError, match="tree count"):
+        ChimeraBoostClassifier.load_model(bad_shared_count)
 
 
 def test_save_load_weighted_fit_round_trip(tmp_path):
@@ -7225,6 +8495,161 @@ def test_mvs_sampling_diagnostics_and_full_fraction_parity():
     assert sampled.model_.auto_params_["sampling"]["mvs_reg"] == 2.0
 
 
+def _old_mvs_probabilities_reference(importance, target):
+    importance = np.asarray(importance, dtype=np.float64)
+    n_samples = importance.shape[0]
+    if target <= 0.0:
+        return np.zeros(n_samples, dtype=np.float64)
+    if (
+        not np.all(np.isfinite(importance))
+        or float(np.sum(importance)) <= 0.0
+        or np.all(importance <= 0.0)
+    ):
+        return np.full(n_samples, target / n_samples, dtype=np.float64)
+    lo = 0.0
+    hi = float(np.max(importance)) * n_samples / max(target, 1.0)
+    if hi <= 0.0:
+        return np.full(n_samples, target / n_samples, dtype=np.float64)
+    for _ in range(48):
+        mid = (lo + hi) * 0.5
+        if mid <= 0.0:
+            lo = mid
+            continue
+        expected = np.minimum(1.0, importance / mid).sum()
+        if expected > target:
+            lo = mid
+        else:
+            hi = mid
+    probs = np.minimum(1.0, importance / max(hi, 1e-300))
+    probs *= target / max(float(probs.sum()), 1e-300)
+    return np.minimum(1.0, probs)
+
+
+def _old_weighted_goss_probabilities_reference(mass, target_mass):
+    mass = np.asarray(mass, dtype=np.float64)
+    if (
+        mass.size == 0
+        or target_mass <= 0.0
+        or not np.all(np.isfinite(mass))
+        or float(np.sum(mass)) <= 0.0
+    ):
+        return None
+    target_mass = min(float(target_mass), float(np.sum(mass)))
+    lo = 0.0
+    hi = 1.0 / max(float(np.max(mass)), 1e-300)
+    while np.sum(np.minimum(1.0, hi * mass) * mass) < target_mass:
+        hi *= 2.0
+    for _ in range(48):
+        mid = (lo + hi) * 0.5
+        expected_mass = np.sum(np.minimum(1.0, mid * mass) * mass)
+        if expected_mass < target_mass:
+            lo = mid
+        else:
+            hi = mid
+    return np.minimum(1.0, hi * mass)
+
+
+def test_exact_mvs_probabilities_match_bisection_reference():
+    from chimeraboost.booster import GradientBoosting
+
+    booster = GradientBoosting(iterations=1, sampling="mvs", subsample=0.4)
+    cases = [
+        np.array([1.0, 1.0, 1.0, 1.0]),
+        np.array([0.0, 0.0, 3.0, 9.0]),
+        np.array([1e-12, 1e-9, 1.0, 5.0, 20.0]),
+        np.array([0.2, 4.0]),
+        np.linspace(0.1, 3.0, 17),
+    ]
+    for importance in cases:
+        target = booster.subsample * importance.shape[0]
+        got = booster._mvs_probabilities(importance)
+        expected = _old_mvs_probabilities_reference(importance, target)
+        assert np.allclose(got, expected, rtol=1e-12, atol=1e-12)
+        assert np.all((0.0 <= got) & (got <= 1.0))
+
+    assert booster._mvs_probabilities(np.arange(4.0)) is not None
+    full = GradientBoosting(iterations=1, sampling="mvs", subsample=1.0)
+    assert full._mvs_probabilities(np.arange(4.0)) is None
+
+    invalid = np.array([np.nan, 1.0, 2.0])
+    assert np.allclose(
+        booster._mvs_probabilities(invalid),
+        _old_mvs_probabilities_reference(invalid, booster.subsample * 3),
+        rtol=0.0,
+        atol=0.0,
+    )
+    zeros = np.zeros(5)
+    assert np.allclose(
+        booster._mvs_probabilities(zeros),
+        _old_mvs_probabilities_reference(zeros, booster.subsample * 5),
+        rtol=0.0,
+        atol=0.0,
+    )
+
+
+def test_exact_weighted_goss_probabilities_match_bisection_reference():
+    from chimeraboost.booster import GradientBoosting
+
+    booster = GradientBoosting(
+        iterations=1, sampling="weighted_goss", top_rate=0.25, other_rate=0.35
+    )
+    cases = [
+        (np.array([1.0, 1.0, 1.0, 1.0]), 1.4),
+        (np.array([0.0, 0.5, 2.0, 8.0]), 2.5),
+        (np.array([1e-12, 1e-6, 0.25, 4.0, 9.0]), 3.0),
+        (np.array([0.2]), 1.0),
+        (np.linspace(0.2, 2.0, 19), 5.5),
+    ]
+    for mass, target_mass in cases:
+        got = booster._weighted_goss_probabilities(mass, target_mass)
+        expected = _old_weighted_goss_probabilities_reference(mass, target_mass)
+        assert np.allclose(got, expected, rtol=1e-12, atol=1e-12)
+        assert np.all((0.0 <= got) & (got <= 1.0))
+
+    assert booster._weighted_goss_probabilities(np.array([]), 1.0) is None
+    assert booster._weighted_goss_probabilities(np.array([np.nan, 1.0]), 1.0) is None
+    assert booster._weighted_goss_probabilities(np.zeros(3), 1.0) is None
+
+
+def test_mvs_realized_sample_count_matches_probability_mass():
+    from chimeraboost.booster import GradientBoosting
+
+    rng = np.random.default_rng(20260707)
+    importance = rng.lognormal(size=200)
+    booster = GradientBoosting(iterations=1, sampling="mvs", subsample=0.37)
+    probs = booster._mvs_probabilities(importance)
+    expected = float(np.sum(probs))
+    draws = []
+    for seed in range(600):
+        mask = np.random.default_rng(seed).random(probs.shape[0]) < probs
+        draws.append(float(np.sum(mask)))
+    realized = float(np.mean(draws))
+    std_err = float(np.sqrt(np.sum(probs * (1.0 - probs)) / len(draws)))
+    assert abs(realized - expected) <= 4.0 * std_err
+
+
+def test_weighted_goss_realized_sample_mass_matches_probability_mass():
+    from chimeraboost.booster import GradientBoosting
+
+    rng = np.random.default_rng(20260708)
+    mass = rng.lognormal(mean=-0.1, sigma=0.7, size=180)
+    target_mass = 0.35 * float(np.sum(mass))
+    booster = GradientBoosting(
+        iterations=1, sampling="weighted_goss",
+        top_rate=0.2, other_rate=0.35,
+    )
+    probs = booster._weighted_goss_probabilities(mass, target_mass)
+    expected = float(np.sum(probs * mass))
+    draws = []
+    for seed in range(600):
+        mask = np.random.default_rng(seed).random(probs.shape[0]) < probs
+        draws.append(float(np.sum(mass[mask])))
+    realized = float(np.mean(draws))
+    variance = float(np.sum(probs * (1.0 - probs) * mass * mass))
+    std_err = float(np.sqrt(variance / len(draws)))
+    assert abs(realized - expected) <= 4.0 * std_err
+
+
 def test_multiclass_mvs_sampling_diagnostics_once_per_round():
     from sklearn.datasets import load_wine
 
@@ -7352,6 +8777,65 @@ def test_weighted_goss_nonuniform_top_mass_avoids_full_score_sort(monkeypatch):
     assert set(top_idx).issubset(set(row_indices.tolist()))
     assert np.array_equal(g[top_idx], grad[top_idx])
     assert np.array_equal(h[top_idx], hess[top_idx])
+
+
+def test_weighted_goss_nonuniform_final_scaling_and_multiclass_shared_rows():
+    from chimeraboost.booster import GradientBoosting
+
+    class FixedRng:
+        def __init__(self, values):
+            self.values = np.asarray(values, dtype=np.float64)
+
+        def random(self, size):
+            assert size <= self.values.shape[0]
+            return self.values[:size]
+
+    grad = np.array([-2.0, -0.5, 0.25, 1.5, 0.75, -1.25])
+    hess = np.linspace(0.4, 1.4, grad.shape[0])
+    score = np.abs(grad)
+    mass = np.array([0.5, 1.5, 0.25, 3.0, 0.75, 2.0])
+    booster = GradientBoosting(
+        iterations=1, sampling="weighted_goss",
+        top_rate=0.3, other_rate=0.4,
+    )
+
+    top_idx = booster._weighted_goss_top_indices(
+        score, mass, booster.top_rate * float(np.sum(mass))
+    )
+    remaining_mask = np.ones(grad.shape[0], dtype=bool)
+    remaining_mask[top_idx] = False
+    remaining_idx = np.flatnonzero(remaining_mask)
+    probs = booster._weighted_goss_probabilities(
+        mass[remaining_idx], booster.other_rate * float(np.sum(mass))
+    )
+    draws = np.array([0.0, 0.95, 0.15, 0.85, 0.35])[:remaining_idx.shape[0]]
+    other_idx = remaining_idx[draws < probs]
+
+    g, h, row_indices = booster._weighted_goss_subsample_from_score(
+        grad, hess, score, mass, FixedRng(draws)
+    )
+    assert np.array_equal(row_indices, np.sort(np.concatenate((top_idx, other_idx))))
+    assert np.array_equal(g[top_idx], grad[top_idx])
+    assert np.array_equal(h[top_idx], hess[top_idx])
+    for row in other_idx:
+        pos = int(np.flatnonzero(remaining_idx == row)[0])
+        assert g[row] == grad[row] / probs[pos]
+        assert h[row] == hess[row] / probs[pos]
+    unsampled = np.ones(grad.shape[0], dtype=bool)
+    unsampled[row_indices] = False
+    assert np.all(g[unsampled] == 0.0)
+    assert np.all(h[unsampled] == 0.0)
+
+    grad_mc = np.vstack([grad, -0.25 * grad, 0.5 * grad])
+    hess_mc = np.vstack([hess, hess + 0.1, hess + 0.2])
+    g_mc, h_mc, row_indices_mc = booster._weighted_goss_subsample_from_score(
+        grad_mc, hess_mc, score, mass, FixedRng(draws)
+    )
+    assert np.array_equal(row_indices_mc, row_indices)
+    assert np.all(g_mc[:, unsampled] == 0.0)
+    assert np.all(h_mc[:, unsampled] == 0.0)
+    assert np.array_equal(g_mc[:, top_idx], grad_mc[:, top_idx])
+    assert np.array_equal(h_mc[:, top_idx], hess_mc[:, top_idx])
 
 
 def test_weighted_goss_empty_other_draw_does_not_force_biased_row():

@@ -4,7 +4,7 @@ The format is a compressed numpy archive holding only plain (non-object)
 arrays plus one JSON header string, so it loads with ``allow_pickle=False``
 and is robust to library-version drift in a way pickled objects are not.
 
-Layout (format_version 2):
+Layout (format_version 2/3):
   header                 JSON: format/library versions, model class, params,
                          loss, fitted scalars, preprocessor settings
   classes                class labels (numeric or unicode), multiclass only
@@ -13,11 +13,12 @@ Layout (format_version 2):
   cat{j}__values/kinds   per-categorical-column category values, stringified,
                          with a parallel kind code (0=str, 1=float, 2=int) so
                          exact key types are rebuilt for dict lookups
+  cat{j}__code_remap     format v3 only, optional raw-code target-order remap
   enc{t}__*              per-target encoder category sums/counts
   trees__*               concatenated per-tree arrays with offsets
 
 Categories must be str, float, int, or bool; anything else raises at save
-time. The experimental level-wise tree mode is not serializable.
+time.
 """
 
 import json
@@ -25,19 +26,32 @@ from pathlib import Path
 
 import numpy as np
 
-from .binning import Binner
+from .binning import Binner, DEFAULT_BIN_SAMPLE_COUNT
 from .losses import LOSSES, MultiSoftmax
 from .preprocessing import FeaturePreprocessor
 from .target_encoding import OrderedTargetEncoder, _MISSING_CATEGORY
-from .tree import MultiNonObliviousTree, NonObliviousTree, ObliviousTree
+from .tree import (
+    LevelwiseTree,
+    MultiNonObliviousTree,
+    NonObliviousTree,
+    ObliviousTree,
+)
 
-FORMAT_VERSION = 2
+FORMAT_VERSION = 3
+BASE_FORMAT_VERSION = 2
 
 _KIND_STR = 0
 _KIND_FLOAT = 1
 _KIND_INT = 2
 _KIND_BOOL = 3
 _KIND_MISSING = 4
+_KNOWN_CATEGORY_KINDS = frozenset({
+    _KIND_STR,
+    _KIND_FLOAT,
+    _KIND_INT,
+    _KIND_BOOL,
+    _KIND_MISSING,
+})
 
 
 def _jsonify(value):
@@ -51,6 +65,16 @@ def _jsonify(value):
     if isinstance(value, (list, tuple)):
         return [_jsonify(v) for v in value]
     return value
+
+
+def _archive_format_version(prep):
+    if (
+        getattr(prep, "target_ordered_cat_codes", "off") == "leaky_full"
+        and getattr(prep, "include_cat_codes", False)
+        and len(getattr(prep, "cat_code_remaps_", [])) > 0
+    ):
+        return 3
+    return BASE_FORMAT_VERSION
 
 
 def _validate_plain_arrays(arrays):
@@ -129,6 +153,28 @@ def _require_integer_array(name, array, ndim=1):
     return array.astype(np.int64, copy=False)
 
 
+def _require_unique_feature_indices(name, values, n_input_features):
+    if len(values) and (
+        np.any(values < 0) or np.any(values >= int(n_input_features))
+    ):
+        _invalid_model(f"{name} contains out-of-range feature indices")
+    if np.unique(values).size != values.size:
+        _invalid_model(f"{name} contains duplicate feature indices")
+
+
+def _require_category_payload(name, values, kinds):
+    values = _require_array_ndim(f"{name} values", values, 1)
+    kinds = _require_integer_array(f"{name} kinds", kinds)
+    if len(values) != len(kinds):
+        _invalid_model(f"{name} values and kinds length mismatch")
+    if len(kinds):
+        valid = np.isin(kinds, list(_KNOWN_CATEGORY_KINDS))
+        if not np.all(valid):
+            bad = int(kinds[np.flatnonzero(~valid)[0]])
+            _invalid_model(f"unknown category kind {bad}")
+    return values, kinds
+
+
 def _encode_categories(cats):
     """Stringify one column's category values with per-value kind codes."""
     values = []
@@ -158,9 +204,18 @@ def _encode_categories(cats):
             np.array(kinds, dtype=np.int8))
 
 
-def _decode_categories(values, kinds, *, legacy_missing_sentinel=False):
+def _decode_categories(
+    values,
+    kinds,
+    *,
+    legacy_missing_sentinel=False,
+    name="category payload",
+):
+    values, kinds = _require_category_payload(name, values, kinds)
     out = np.empty(len(values), dtype=object)
-    for i, (s, k) in enumerate(zip(values, kinds)):
+    for i in range(len(values)):
+        s = values[i]
+        k = int(kinds[i])
         if k == _KIND_STR:
             value = str(s)
             out[i] = (
@@ -169,17 +224,28 @@ def _decode_categories(values, kinds, *, legacy_missing_sentinel=False):
                 else value
             )
         elif k == _KIND_FLOAT:
-            out[i] = float(s)
+            try:
+                out[i] = float(s)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"invalid ChimeraBoost model: {name} float payload is invalid"
+                ) from exc
         elif k == _KIND_INT:
-            out[i] = int(s)
+            try:
+                out[i] = int(s)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"invalid ChimeraBoost model: {name} int payload is invalid"
+                ) from exc
         elif k == _KIND_BOOL:
-            out[i] = s == "True"
+            value = str(s)
+            if value not in {"True", "False"}:
+                _invalid_model(
+                    f"{name} bool payload must be exactly 'True' or 'False'"
+                )
+            out[i] = value == "True"
         elif k == _KIND_MISSING:
             out[i] = _MISSING_CATEGORY
-        else:
-            raise ValueError(
-                f"invalid ChimeraBoost model: unknown category kind {int(k)}"
-            )
     return out
 
 
@@ -206,16 +272,19 @@ def _tree_kind(trees_):
             return "oblivious_per_class"
         if type(inner) is NonObliviousTree:
             return "nonoblivious_per_class"
+        if type(inner) is LevelwiseTree:
+            return "levelwise_per_class"
         first = inner  # report the per-class tree type in the error
     elif type(first) is ObliviousTree:
         return "oblivious"
     elif type(first) is NonObliviousTree:
         return "nonoblivious"
+    elif type(first) is LevelwiseTree:
+        return "levelwise"
     elif type(first) is MultiNonObliviousTree:
         return "multi"
     raise ValueError(
-        f"cannot serialize trees of type {type(first).__name__}; the "
-        "experimental level-wise mode has no save format"
+        f"cannot serialize trees of type {type(first).__name__}"
     )
 
 
@@ -235,7 +304,86 @@ def _pack_oblivious(trees, arrays):
     )
 
 
-def _unpack_oblivious(data):
+def _require_split_bounds(name, feats, thrs, n_bins, allow_inactive=False):
+    """Reject split feature/threshold payloads outside the fitted bin space.
+
+    Prediction kernels index ``X_binned[i, f]`` without bounds checks, and a
+    legal split threshold for feature ``f`` lies in ``[0, n_bins[f] - 2]``
+    (the top bin holds NaN/unseen values and always routes right), so any
+    payload outside those ranges is corruption, not a valid model.
+    """
+    feats = np.asarray(feats)
+    thrs = np.asarray(thrs)
+    inactive = feats == -1
+    if not allow_inactive and bool(np.any(inactive)):
+        _invalid_model(f"{name} split features must be nonnegative")
+    active = ~inactive
+    active_feats = feats[active]
+    if active_feats.size:
+        if np.any((active_feats < 0) | (active_feats >= len(n_bins))):
+            _invalid_model(f"{name} split features are out of range")
+        active_thrs = thrs[active]
+        if np.any(
+            (active_thrs < 0) | (active_thrs > n_bins[active_feats] - 2)
+        ):
+            _invalid_model(f"{name} split thresholds are out of range")
+
+
+def _require_nonoblivious_structure(features, thresholds, left, right,
+                                    leaf_index, leaf_count, n_bins):
+    """Reject node payloads that are not a single well-formed binary tree.
+
+    The prediction walk (`while left_child[node] >= 0`) terminates and lands
+    on a valid leaf only when every node is strictly internal or terminal,
+    children descend forward from their parents (which rules out cycles and
+    self-loops), every non-root node is referenced exactly once, and the leaf
+    indexes are a permutation of ``range(leaf_count)``. Anything looser can
+    hang prediction, wrap negative indexes, or silently misroute rows.
+    """
+    node_len = features.shape[0]
+    internal = left >= 0
+    if not np.array_equal(internal, right >= 0):
+        _invalid_model(
+            "nonoblivious nodes must have both children or neither"
+        )
+    if np.any(internal & (leaf_index != -1)):
+        _invalid_model(
+            "nonoblivious internal nodes must not carry leaf indexes"
+        )
+    leaf_mask = ~internal
+    if int(np.count_nonzero(leaf_mask)) != int(leaf_count):
+        _invalid_model(
+            "nonoblivious terminal node count does not match leaves"
+        )
+    if not np.array_equal(
+        np.sort(leaf_index[leaf_mask]),
+        np.arange(leaf_count, dtype=np.int64),
+    ):
+        _invalid_model(
+            "nonoblivious leaf indexes must be a permutation of the leaves"
+        )
+    parents = np.arange(node_len, dtype=np.int64)
+    if np.any(internal & ((left <= parents) | (right <= parents))):
+        _invalid_model(
+            "nonoblivious child nodes must descend forward from their parent"
+        )
+    children = np.concatenate((left[internal], right[internal]))
+    if not np.array_equal(
+        np.sort(children), np.arange(1, node_len, dtype=np.int64)
+    ):
+        _invalid_model(
+            "nonoblivious nodes must form a single tree from the root"
+        )
+    if np.any(features[leaf_mask] != -1):
+        _invalid_model(
+            "nonoblivious terminal nodes must not carry split features"
+        )
+    _require_split_bounds(
+        "nonoblivious node", features[internal], thresholds[internal], n_bins
+    )
+
+
+def _unpack_oblivious(data, n_bins):
     depths = _require_integer_array("oblivious depths", data["trees__depths"])
     feats = _require_integer_array("oblivious features", data["trees__feats_flat"])
     thrs = _require_integer_array("oblivious thresholds", data["trees__thrs_flat"])
@@ -261,6 +409,7 @@ def _unpack_oblivious(data):
             _invalid_model("oblivious split payload does not match depth")
         if value_len != (1 << depth):
             _invalid_model("oblivious value payload does not match depth")
+        _require_split_bounds("oblivious", feats[s0:s1], thrs[s0:s1], n_bins)
         trees.append(ObliviousTree(
             feats[s0:s1].copy(), thrs[s0:s1].copy(),
             values[vo[t]:vo[t + 1]].copy(), gains[s0:s1].copy()
@@ -301,7 +450,7 @@ def _pack_nonoblivious(trees, arrays, vector_values=False):
                                          dtype=np.int64)
 
 
-def _unpack_nonoblivious(data, cls, expected_value_width=None):
+def _unpack_nonoblivious(data, cls, n_bins, expected_value_width=None):
     depths = _require_integer_array("nonoblivious depths", data["trees__depths"])
     n_leaves = _require_integer_array(
         "nonoblivious n_leaves", data["trees__n_leaves"]
@@ -389,6 +538,13 @@ def _unpack_nonoblivious(data, cls, expected_value_width=None):
         child_slice = np.concatenate((left_child[n0:n1], right_child[n0:n1]))
         if np.any((child_slice >= node_len) | (child_slice < -1)):
             _invalid_model("nonoblivious child indexes are out of range")
+        _require_nonoblivious_structure(
+            features[n0:n1], thresholds[n0:n1], left_child[n0:n1],
+            right_child[n0:n1], leaf_slice, leaf_count, n_bins,
+        )
+        _require_split_bounds(
+            "nonoblivious", splits_feat[s0:s1], splits_thr[s0:s1], n_bins
+        )
         trees.append(cls(
             features[n0:n1].copy(),
             thresholds[n0:n1].copy(),
@@ -403,6 +559,291 @@ def _unpack_nonoblivious(data, cls, expected_value_width=None):
             leaf_count,
         ))
     return trees
+
+
+def _pack_levelwise(trees, arrays):
+    n_trees = len(trees)
+    depths = np.empty(n_trees, dtype=np.int64)
+    node_widths = np.empty(n_trees, dtype=np.int64)
+    node_offsets = np.zeros(n_trees + 1, dtype=np.int64)
+    node_features = []
+    node_thresholds = []
+    total_nodes = 0
+
+    for i, tree in enumerate(trees):
+        features = np.asarray(tree.node_features, dtype=np.int64)
+        thresholds = np.asarray(tree.node_thresholds, dtype=np.int64)
+        if features.ndim != 2 or thresholds.ndim != 2:
+            raise ValueError("levelwise node arrays must be 2-dimensional")
+        if features.shape != thresholds.shape:
+            raise ValueError("levelwise node feature/threshold shape mismatch")
+        depth = int(tree.depth)
+        if depth != features.shape[0]:
+            raise ValueError("levelwise node rows do not match tree depth")
+        values = np.asarray(tree.values)
+        splits_feat = np.asarray(tree.splits_feat)
+        splits_thr = np.asarray(tree.splits_thr)
+        gains = np.asarray(tree.gains)
+        if values.ndim != 1:
+            raise ValueError("levelwise values must be 1-dimensional")
+        if values.shape[0] != (1 << depth):
+            raise ValueError("levelwise values do not match tree depth")
+        if not (
+            splits_feat.ndim == splits_thr.ndim == gains.ndim == 1
+            and len(splits_feat) == len(splits_thr) == len(gains)
+        ):
+            raise ValueError("levelwise split arrays must have matching length")
+        if len(splits_feat) > ((1 << depth) - 1):
+            raise ValueError("levelwise split arrays exceed tree depth")
+        depths[i] = depth
+        node_widths[i] = features.shape[1]
+        total_nodes += features.size
+        node_offsets[i + 1] = total_nodes
+        node_features.append(features.ravel())
+        node_thresholds.append(thresholds.ravel())
+
+    arrays["trees__depths"] = depths
+    arrays["trees__node_widths"] = node_widths
+    arrays["trees__node_offsets"] = node_offsets
+    arrays["trees__node_features_flat"] = (
+        np.concatenate(node_features) if total_nodes
+        else np.empty(0, dtype=np.int64)
+    )
+    arrays["trees__node_thresholds_flat"] = (
+        np.concatenate(node_thresholds) if total_nodes
+        else np.empty(0, dtype=np.int64)
+    )
+    arrays["trees__values_flat"], arrays["trees__value_offsets"] = (
+        _concat_with_offsets([t.values for t in trees])
+    )
+    arrays["trees__splits_feat_flat"], arrays["trees__split_offsets"] = (
+        _concat_with_offsets([t.splits_feat for t in trees], dtype=np.int64)
+    )
+    arrays["trees__splits_thr_flat"], _ = _concat_with_offsets(
+        [t.splits_thr for t in trees], dtype=np.int64
+    )
+    arrays["trees__gains_flat"], _ = _concat_with_offsets(
+        [t.gains for t in trees]
+    )
+
+
+def _unpack_levelwise(data, n_bins):
+    depths = _require_integer_array("levelwise depths", data["trees__depths"])
+    node_widths = _require_integer_array(
+        "levelwise node_widths", data["trees__node_widths"]
+    )
+    if len(node_widths) != len(depths):
+        _invalid_model("levelwise node_widths length does not match depths")
+    node_features = _require_integer_array(
+        "levelwise node features", data["trees__node_features_flat"]
+    )
+    node_thresholds = _require_integer_array(
+        "levelwise node thresholds", data["trees__node_thresholds_flat"]
+    )
+    values = _require_array_ndim("levelwise values", data["trees__values_flat"], 1)
+    splits_feat = _require_integer_array(
+        "levelwise split features", data["trees__splits_feat_flat"]
+    )
+    splits_thr = _require_integer_array(
+        "levelwise split thresholds", data["trees__splits_thr_flat"]
+    )
+    gains = _require_array_ndim("levelwise gains", data["trees__gains_flat"], 1)
+    no = _require_same_offsets(
+        "levelwise node",
+        data["trees__node_offsets"],
+        (("features", node_features), ("thresholds", node_thresholds)),
+        expected_count=len(depths) + 1,
+    )
+    vo = _require_offsets(
+        "levelwise value",
+        data["trees__value_offsets"],
+        len(values),
+        expected_count=len(depths) + 1,
+    )
+    so = _require_same_offsets(
+        "levelwise split",
+        data["trees__split_offsets"],
+        (("features", splits_feat), ("thresholds", splits_thr), ("gains", gains)),
+        expected_count=len(depths) + 1,
+    )
+
+    trees = []
+    for t in range(len(depths)):
+        depth = int(depths[t])
+        width = int(node_widths[t])
+        if depth < 0:
+            _invalid_model("levelwise tree depth is negative")
+        if width < 0:
+            _invalid_model("levelwise node width is negative")
+        if depth > 0 and width < (1 << (depth - 1)):
+            _invalid_model("levelwise node width does not match depth")
+        n0, n1 = no[t], no[t + 1]
+        s0, s1 = so[t], so[t + 1]
+        node_len = int(n1 - n0)
+        split_len = int(s1 - s0)
+        value_len = int(vo[t + 1] - vo[t])
+        if node_len != depth * width:
+            _invalid_model("levelwise node payload does not match depth/width")
+        if value_len != (1 << depth):
+            _invalid_model("levelwise value payload does not match depth")
+        if split_len > ((1 << depth) - 1):
+            _invalid_model("levelwise split payload exceeds depth")
+        if depth == 0 and split_len:
+            _invalid_model("levelwise depth-zero tree has split payload")
+        features = node_features[n0:n1].reshape(depth, width).copy()
+        thresholds = node_thresholds[n0:n1].reshape(depth, width).copy()
+        # Inactive node-table slots hold -1 and are skipped by the predict
+        # kernels; active slots must index real binned features/thresholds.
+        _require_split_bounds(
+            "levelwise node", features.ravel(), thresholds.ravel(), n_bins,
+            allow_inactive=True,
+        )
+        _require_split_bounds(
+            "levelwise", splits_feat[s0:s1], splits_thr[s0:s1], n_bins
+        )
+        trees.append(LevelwiseTree(
+            features,
+            thresholds,
+            values[vo[t]:vo[t + 1]].copy(),
+            splits_feat[s0:s1].copy(),
+            splits_thr[s0:s1].copy(),
+            gains[s0:s1].copy(),
+        ))
+    return trees
+
+
+def _validate_boosting_round_count(kind, trees, header):
+    best_iteration = int(header["best_iteration"])
+    if best_iteration < 0:
+        _invalid_model("best_iteration must be nonnegative")
+    if kind == "empty":
+        if best_iteration != 0:
+            _invalid_model("empty tree kind does not match best_iteration")
+        return
+    if kind in {
+        "oblivious_per_class",
+        "nonoblivious_per_class",
+        "levelwise_per_class",
+    }:
+        n_rounds = int(header["n_rounds"])
+        if n_rounds != best_iteration:
+            _invalid_model(
+                "per-class tree count n_rounds does not match best_iteration"
+            )
+        loaded_rounds = n_rounds
+    else:
+        loaded_rounds = len(trees)
+    if loaded_rounds != best_iteration:
+        _invalid_model("tree count does not match best_iteration")
+
+
+def _validate_preprocessor_payload(data, prep_cfg, n_input_features):
+    n_input_features = int(n_input_features)
+    if n_input_features <= 0:
+        _invalid_model("n_input_features must be positive")
+    num_features = _require_integer_array(
+        "preprocessor numeric features", data["prep__num_features"]
+    )
+    cat_features = _require_integer_array(
+        "preprocessor categorical features", data["prep__cat_features"]
+    )
+    feature_map = _require_integer_array(
+        "preprocessor feature_map", data["prep__feature_map"]
+    )
+    _require_unique_feature_indices(
+        "preprocessor numeric features", num_features, n_input_features
+    )
+    _require_unique_feature_indices(
+        "preprocessor categorical features", cat_features, n_input_features
+    )
+    if np.intersect1d(num_features, cat_features).size:
+        _invalid_model("preprocessor numeric and categorical features overlap")
+    combined = np.sort(np.concatenate((num_features, cat_features)))
+    if not np.array_equal(combined, np.arange(n_input_features, dtype=np.int64)):
+        _invalid_model("preprocessor feature lists do not cover input features")
+    if len(feature_map) and (
+        np.any(feature_map < 0) or np.any(feature_map >= n_input_features)
+    ):
+        _invalid_model("preprocessor feature_map contains out-of-range features")
+
+    n_encoders = int(prep_cfg["n_encoders"])
+    if n_encoders < 0:
+        _invalid_model("preprocessor encoder count must be nonnegative")
+    for key in ("encoder_priors", "encoder_smoothings", "encoder_modes"):
+        if len(prep_cfg[key]) != n_encoders:
+            _invalid_model(f"preprocessor {key} length does not match n_encoders")
+    if "encoder_ts_permutations" in prep_cfg:
+        if len(prep_cfg["encoder_ts_permutations"]) != n_encoders:
+            _invalid_model(
+                "preprocessor encoder_ts_permutations length does not "
+                "match n_encoders"
+            )
+    legacy_aliases = prep_cfg.get("legacy_missing_aliases")
+    if legacy_aliases is not None and len(legacy_aliases) != len(cat_features):
+        _invalid_model(
+            "preprocessor legacy_missing_aliases length does not match categories"
+        )
+    if len(cat_features) == 0 and n_encoders != 0:
+        _invalid_model("preprocessor encoders require categorical features")
+
+    borders = _require_array_ndim("binner borders", data["bin__borders_flat"], 1)
+    if not np.issubdtype(borders.dtype, np.number):
+        _invalid_model("binner borders must be numeric")
+    borders = borders.astype(np.float64, copy=False)
+    if not np.all(np.isfinite(borders)):
+        _invalid_model("binner borders must be finite")
+    n_bins = _require_integer_array("binner n_bins", data["bin__n_bins"])
+    block_widths = _require_integer_array(
+        "binner block_widths", data["bin__block_widths"]
+    )
+    if len(n_bins) != len(feature_map):
+        _invalid_model("binner n_bins length does not match feature_map")
+    if np.any(n_bins < 2):
+        _invalid_model("binner n_bins must be at least 2")
+    offsets = _require_offsets(
+        "binner border",
+        data["bin__border_offsets"],
+        len(borders),
+        expected_count=len(n_bins) + 1,
+    )
+    border_lengths = np.diff(offsets)
+    if not np.array_equal(n_bins, border_lengths + 2):
+        _invalid_model("binner n_bins do not match border payload")
+    for start, stop in zip(offsets[:-1], offsets[1:]):
+        if stop - start > 1 and np.any(np.diff(borders[start:stop]) <= 0.0):
+            _invalid_model("binner borders must be strictly increasing")
+
+    expected_widths = [len(num_features)]
+    if len(cat_features):
+        if prep_cfg["include_cat_codes"]:
+            expected_widths.append(len(cat_features))
+        expected_widths.extend([len(cat_features)] * n_encoders)
+    expected_widths = np.asarray(expected_widths, dtype=np.int64)
+    if not np.array_equal(block_widths, expected_widths):
+        _invalid_model("binner block_widths do not match preprocessor layout")
+    if int(np.sum(block_widths)) != len(n_bins):
+        _invalid_model("binner block_widths do not sum to n_bins")
+
+    expected_feature_map = list(num_features)
+    if len(cat_features):
+        if prep_cfg["include_cat_codes"]:
+            expected_feature_map.extend(cat_features)
+        for _ in range(n_encoders):
+            expected_feature_map.extend(cat_features)
+    expected_feature_map = np.asarray(expected_feature_map, dtype=np.int64)
+    if not np.array_equal(feature_map, expected_feature_map):
+        _invalid_model("preprocessor feature_map does not match fitted layout")
+
+    binner = Binner(prep_cfg["max_bins"])
+    binner._borders_flat_ = borders
+    binner._border_offsets_ = offsets
+    binner.n_bins_ = n_bins
+    binner._block_widths_ = block_widths.tolist()
+    binner.borders_ = [
+        borders[offsets[f]:offsets[f + 1]].copy()
+        for f in range(len(n_bins))
+    ]
+    return num_features.tolist(), cat_features.tolist(), feature_map, binner
 
 
 def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
@@ -420,7 +861,7 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
     prep = booster.prep_
     arrays = {}
     header = {
-        "format_version": FORMAT_VERSION,
+        "format_version": _archive_format_version(prep),
         "library_version": __version__,
         "model_class": type(booster).__name__,
         "lr": float(booster.lr_),
@@ -438,6 +879,14 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
             "include_cat_codes": prep.include_cat_codes,
             "target_encoding_mode": prep.target_encoding_mode,
             "target_encoding_folds": prep.target_encoding_folds,
+            "ts_permutations": prep.ts_permutations,
+            "target_ordered_cat_codes": prep.target_ordered_cat_codes,
+            "target_ordered_cat_code_policy": (
+                "full_target_smoothed_leaky_opt_in"
+                if prep.target_ordered_cat_codes == "leaky_full"
+                else "off"
+            ),
+            "bin_sample_count": prep.bin_sample_count,
             "n_encoders": len(getattr(prep, "encoders_", [])),
             "encoder_priors": [
                 float(e.prior_) for e in getattr(prep, "encoders_", [])
@@ -447,6 +896,9 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
             ],
             "encoder_modes": [
                 e.mode for e in getattr(prep, "encoders_", [])
+            ],
+            "encoder_ts_permutations": [
+                int(e.ts_permutations) for e in getattr(prep, "encoders_", [])
             ],
             "legacy_missing_aliases": [
                 (
@@ -486,7 +938,8 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
         "multiclass_tree_strategy", "eval_train_loss", "bin_sample_count",
         "histogram_parallelism", "use_best_model", "bootstrap_type",
         "bagging_temperature", "mvs_reg", "random_strength",
-        "diagnostic_warnings",
+        "diagnostic_warnings", "histogram_dtype", "leaf_dtype",
+        "ts_permutations", "target_ordered_cat_codes",
     )
     constructor_inputs = {
         "depth": "_depth_input",
@@ -513,7 +966,11 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
     # ---- trees -------------------------------------------------------------
     kind = _tree_kind(booster.trees_)
     header["tree_kind"] = kind
-    if kind in {"oblivious_per_class", "nonoblivious_per_class"}:
+    if kind in {
+        "oblivious_per_class",
+        "nonoblivious_per_class",
+        "levelwise_per_class",
+    }:
         header["n_rounds"] = len(booster.trees_)
         flat_trees = [t for round_trees in booster.trees_
                       for t in round_trees]
@@ -521,6 +978,8 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
         flat_trees = list(booster.trees_)
     if kind.startswith("oblivious"):
         _pack_oblivious(flat_trees, arrays)
+    elif kind.startswith("levelwise"):
+        _pack_levelwise(flat_trees, arrays)
     elif kind != "empty":
         _pack_nonoblivious(flat_trees, arrays, vector_values=(kind == "multi"))
 
@@ -541,6 +1000,15 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
         vals, kinds = _encode_categories(cats)
         arrays[f"cat{j}__values"] = vals
         arrays[f"cat{j}__kinds"] = kinds
+    if prep.target_ordered_cat_codes == "leaky_full" and prep.include_cat_codes:
+        remaps = list(getattr(prep, "cat_code_remaps_", []))
+        if len(remaps) != len(getattr(prep, "cat_categories_", [])):
+            raise ValueError(
+                "target-ordered raw category code remaps do not match "
+                "categorical feature count"
+            )
+        for j, remap in enumerate(remaps):
+            arrays[f"cat{j}__code_remap"] = np.asarray(remap, dtype=np.int64)
     for t, enc in enumerate(getattr(prep, "encoders_", [])):
         sums_flat, offsets = _concat_with_offsets(enc.sums_)
         counts_flat, _ = _concat_with_offsets(enc.counts_)
@@ -605,7 +1073,10 @@ def load_booster(path, return_wrapper_payload=False):
             booster.loss_ = MultiSoftmax(booster.n_classes_)
             classes = data["classes"]
             if "classes_kinds" in data:
-                classes = _decode_categories(classes, data["classes_kinds"])
+                classes = _decode_categories(
+                    classes, data["classes_kinds"],
+                    name="multiclass classes",
+                )
             booster.classes_ = classes
         else:
             raise ValueError(f"unknown model class {model_class!r}")
@@ -630,6 +1101,22 @@ def load_booster(path, return_wrapper_payload=False):
                 booster.n_threads_ = max(1, min(int(requested_threads), max_threads))
         booster._importance = data["importance"]
 
+        # ---- preprocessor payload -------------------------------------------
+        # Validated before the trees so tree split feature ids and thresholds
+        # can be bounds-checked against the fitted binner; the prediction
+        # kernels index X_binned without bounds checks, so out-of-range
+        # payloads must be rejected here, not discovered at inference time.
+        prep_cfg = header["prep"]
+        (
+            num_features,
+            cat_features,
+            feature_map,
+            binner,
+        ) = _validate_preprocessor_payload(
+            data, prep_cfg, header["n_input_features"]
+        )
+        n_bins = np.asarray(binner.n_bins_, dtype=np.int64)
+
         # ---- trees ----------------------------------------------------------
         kind = header["tree_kind"]
         if kind not in {
@@ -639,20 +1126,31 @@ def load_booster(path, return_wrapper_payload=False):
             "multi",
             "oblivious_per_class",
             "nonoblivious_per_class",
+            "levelwise",
+            "levelwise_per_class",
         }:
             _invalid_model(f"unknown tree kind {kind!r}")
         if kind == "empty":
+            if any(key.startswith("trees__") for key in data.files):
+                _invalid_model("empty tree kind has tree payload")
             trees = []
         elif kind.startswith("oblivious"):
-            trees = _unpack_oblivious(data)
+            trees = _unpack_oblivious(data, n_bins)
+        elif kind.startswith("levelwise"):
+            trees = _unpack_levelwise(data, n_bins)
         elif kind == "multi":
             trees = _unpack_nonoblivious(
-                data, MultiNonObliviousTree,
+                data, MultiNonObliviousTree, n_bins,
                 expected_value_width=header["n_classes"],
             )
         else:
-            trees = _unpack_nonoblivious(data, NonObliviousTree)
-        if kind in {"oblivious_per_class", "nonoblivious_per_class"}:
+            trees = _unpack_nonoblivious(data, NonObliviousTree, n_bins)
+        _validate_boosting_round_count(kind, trees, header)
+        if kind in {
+            "oblivious_per_class",
+            "nonoblivious_per_class",
+            "levelwise_per_class",
+        }:
             K = header["n_classes"]
             n_rounds = int(header["n_rounds"])
             expected_tree_count = n_rounds * int(K)
@@ -668,26 +1166,34 @@ def load_booster(path, return_wrapper_payload=False):
             booster.trees_ = trees
 
         # ---- preprocessor ----------------------------------------------------
-        prep_cfg = header["prep"]
         prep = FeaturePreprocessor(
             prep_cfg["max_bins"], prep_cfg["cat_smoothing"],
             params.get("random_state"),
             include_cat_codes=prep_cfg["include_cat_codes"],
             target_encoding_mode=prep_cfg["target_encoding_mode"],
             target_encoding_folds=prep_cfg["target_encoding_folds"],
+            ts_permutations=prep_cfg.get("ts_permutations", 1),
+            target_ordered_cat_codes=prep_cfg.get(
+                "target_ordered_cat_codes", "off"
+            ),
+            bin_sample_count=prep_cfg.get(
+                "bin_sample_count", DEFAULT_BIN_SAMPLE_COUNT
+            ),
         )
-        prep.num_features_ = data["prep__num_features"].tolist()
-        prep.cat_features_ = data["prep__cat_features"].tolist()
-        prep.feature_map_ = data["prep__feature_map"]
+        prep.num_features_ = num_features
+        prep.cat_features_ = cat_features
+        prep.feature_map_ = feature_map
         prep.n_input_features_ = header["n_input_features"]
         prep._cat_indexes_ = {}
         prep.cat_categories_ = []
         prep.cat_maps_ = []
+        prep.cat_code_remaps_ = []
         legacy_aliases = prep_cfg.get("legacy_missing_aliases", [])
         for j in range(len(prep.cat_features_)):
             cats = _decode_categories(
                 data[f"cat{j}__values"], data[f"cat{j}__kinds"],
                 legacy_missing_sentinel=(format_version <= 1),
+                name=f"categorical feature {j}",
             )
             prep.cat_categories_.append(cats)
             cat_map = {v: i for i, v in enumerate(cats)}
@@ -700,11 +1206,40 @@ def load_booster(path, return_wrapper_payload=False):
             ):
                 cat_map.setdefault("__nan__", cat_map[_MISSING_CATEGORY])
             prep.cat_maps_.append(cat_map)
+            if (
+                prep.target_ordered_cat_codes == "leaky_full"
+                and prep.include_cat_codes
+            ):
+                if format_version < 3:
+                    _invalid_model(
+                        "target-ordered raw category codes require "
+                        "format version 3"
+                    )
+                remap_key = f"cat{j}__code_remap"
+                if remap_key not in data.files:
+                    _invalid_model("missing categorical code remap payload")
+                remap = _require_integer_array(
+                    f"categorical feature {j} code remap",
+                    data[remap_key],
+                )
+                if remap.ndim != 1 or len(remap) != len(cats):
+                    _invalid_model(
+                        "categorical code remap length does not match "
+                        "category count"
+                    )
+                if not np.array_equal(
+                    np.sort(remap), np.arange(len(cats), dtype=np.int64)
+                ):
+                    _invalid_model("categorical code remap must be a permutation")
+                prep.cat_code_remaps_.append(remap.copy())
         prep.encoders_ = []
         for t in range(prep_cfg["n_encoders"]):
             enc = OrderedTargetEncoder(
                 prep_cfg["encoder_smoothings"][t],
                 mode=prep_cfg["encoder_modes"][t],
+                ts_permutations=prep_cfg.get(
+                    "encoder_ts_permutations", [1] * prep_cfg["n_encoders"]
+                )[t],
             )
             enc.prior_ = prep_cfg["encoder_priors"][t]
             sums_flat = data[f"enc{t}__sums_flat"]
@@ -723,20 +1258,18 @@ def load_booster(path, return_wrapper_payload=False):
                 counts_flat[offsets[j]:offsets[j + 1]].copy()
                 for j in range(len(offsets) - 1)
             ]
+            # A self-consistent but truncated encoder payload would otherwise
+            # load cleanly and silently prior-encode known categories whose
+            # codes fall at or beyond the truncated n_cat_ at predict time.
+            for j in range(len(prep.cat_features_)):
+                if len(enc.sums_[j]) != len(prep.cat_categories_[j]):
+                    _invalid_model(
+                        f"encoder {t} statistics do not match the "
+                        "categorical payload"
+                    )
             enc.n_cat_ = [len(s) for s in enc.sums_]
             prep.encoders_.append(enc)
 
-        binner = Binner(prep_cfg["max_bins"])
-        binner._borders_flat_ = data["bin__borders_flat"]
-        binner._border_offsets_ = data["bin__border_offsets"]
-        binner.n_bins_ = data["bin__n_bins"]
-        binner._block_widths_ = data["bin__block_widths"].tolist()
-        binner.borders_ = [
-            binner._borders_flat_[
-                binner._border_offsets_[f]:binner._border_offsets_[f + 1]
-            ]
-            for f in range(len(binner.n_bins_))
-        ]
         prep.binner_ = binner
         prep.n_bins_ = binner.n_bins_
         booster.prep_ = prep

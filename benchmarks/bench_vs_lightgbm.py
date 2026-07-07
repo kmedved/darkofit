@@ -71,6 +71,53 @@ DEFAULT_SIZES = ("tiny", "small", "medium")
 MAX_ITERS = 1_500
 PATIENCE = 50
 
+_PROFILE_DEFAULTS = {
+    "matched": {
+        "learning_rate": 0.1,
+        "lightgbm_learning_rate": 0.1,
+        "chimera_max_bins": 254,
+        "lightgbm_max_bin": 255,
+        "lightgbm_num_leaves": 64,
+        "chimera_l2_leaf_reg": 3.0,
+        "lightgbm_lambda_l2": 3.0,
+        "chimera_min_child_samples": 20,
+        "lightgbm_min_child_samples": 20,
+        "chimera_min_child_weight": 1.0,
+        "lightgbm_min_sum_hessian_in_leaf": 1.0,
+        "match_lightgbm_leaves": True,
+    },
+    "native": {
+        "learning_rate": None,
+        "lightgbm_learning_rate": 0.1,
+        "chimera_max_bins": 254,
+        "lightgbm_max_bin": 255,
+        "lightgbm_num_leaves": 31,
+        "chimera_l2_leaf_reg": 3.0,
+        "lightgbm_lambda_l2": 0.0,
+        "chimera_min_child_samples": 20,
+        "lightgbm_min_child_samples": 20,
+        "chimera_min_child_weight": 1.0,
+        "lightgbm_min_sum_hessian_in_leaf": 1e-3,
+        "match_lightgbm_leaves": False,
+    },
+}
+
+_PROFILE_OPTION_DESTS = {
+    "--learning-rate": "learning_rate",
+    "--lightgbm-learning-rate": "lightgbm_learning_rate",
+    "--lightgbm-num-leaves": "lightgbm_num_leaves",
+    "--chimera-max-bins": "chimera_max_bins",
+    "--lightgbm-max-bin": "lightgbm_max_bin",
+    "--chimera-l2-leaf-reg": "chimera_l2_leaf_reg",
+    "--lightgbm-lambda-l2": "lightgbm_lambda_l2",
+    "--chimera-min-child-samples": "chimera_min_child_samples",
+    "--lightgbm-min-child-samples": "lightgbm_min_child_samples",
+    "--chimera-min-child-weight": "chimera_min_child_weight",
+    "--lightgbm-min-sum-hessian-in-leaf": "lightgbm_min_sum_hessian_in_leaf",
+    "--match-lightgbm-leaves": "match_lightgbm_leaves",
+    "--no-match-lightgbm-leaves": "match_lightgbm_leaves",
+}
+
 
 @dataclass(frozen=True)
 class DatasetSpec:
@@ -96,6 +143,20 @@ class Result:
     lightgbm_num_leaves: int | None
     primary_metric: str
     primary_value: float
+    profile: str = ""
+    chimera_requested_tree_mode: str = ""
+    benchmark_threads: int | None = None
+    chimera_max_bins: int | None = None
+    lightgbm_max_bin: int | None = None
+    chimera_learning_rate: float | None = None
+    lightgbm_learning_rate: float | None = None
+    chimera_l2_leaf_reg: float | None = None
+    lightgbm_lambda_l2: float | None = None
+    chimera_min_child_samples: int | None = None
+    lightgbm_min_child_samples: int | None = None
+    chimera_min_child_weight: float | None = None
+    lightgbm_min_sum_hessian_in_leaf: float | None = None
+    match_lightgbm_leaves: bool | None = None
     chimera_fitted_tree_mode: str = ""
     chimera_resolved_num_leaves: int | None = None
     sampling: str = ""
@@ -350,6 +411,76 @@ def _regression_metrics(y_true, pred):
     }
 
 
+def _chimera_model_kwargs(spec, args, seed):
+    sampling = args.chimera_sampling
+    if spec.task == "multiclass" and sampling == "goss":
+        sampling = "uniform"
+    model_kwargs = dict(
+        iterations=args.iterations,
+        early_stopping_rounds=args.patience,
+        learning_rate=args.learning_rate,
+        depth=args.depth,
+        l2_leaf_reg=args.chimera_l2_leaf_reg,
+        max_bins=args.chimera_max_bins,
+        num_leaves=args.chimera_num_leaves,
+        subsample=args.chimera_subsample,
+        colsample=args.chimera_colsample,
+        min_child_samples=args.chimera_min_child_samples,
+        min_gain_to_split=args.chimera_min_gain_to_split,
+        min_child_weight=args.chimera_min_child_weight,
+        thread_count=args.threads,
+        random_state=seed,
+        ordered_boosting=False if args.no_ordered_boosting else "auto",
+        tree_mode=args.tree_mode,
+        sampling=sampling,
+        top_rate=args.chimera_top_rate,
+        other_rate=args.chimera_other_rate,
+    )
+    if spec.task != "regression":
+        model_kwargs["multiclass_tree_strategy"] = (
+            args.chimera_multiclass_tree_strategy
+        )
+    return model_kwargs
+
+
+def _lightgbm_model_kwargs(args, objective, seed):
+    return dict(
+        n_estimators=args.iterations,
+        learning_rate=args.lightgbm_learning_rate,
+        num_leaves=args.lightgbm_num_leaves,
+        max_bin=args.lightgbm_max_bin,
+        min_child_samples=args.lightgbm_min_child_samples,
+        min_sum_hessian_in_leaf=args.lightgbm_min_sum_hessian_in_leaf,
+        min_gain_to_split=args.lightgbm_min_gain_to_split,
+        reg_lambda=args.lightgbm_lambda_l2,
+        objective=objective,
+        n_jobs=args.threads or -1,
+        random_state=seed,
+        verbosity=-1,
+    )
+
+
+def _resolved_result_config(args):
+    if args is None:
+        return {}
+    return {
+        "profile": args.profile,
+        "chimera_requested_tree_mode": args.tree_mode,
+        "benchmark_threads": args.threads,
+        "chimera_max_bins": args.chimera_max_bins,
+        "lightgbm_max_bin": args.lightgbm_max_bin,
+        "chimera_learning_rate": args.learning_rate,
+        "lightgbm_learning_rate": args.lightgbm_learning_rate,
+        "chimera_l2_leaf_reg": args.chimera_l2_leaf_reg,
+        "lightgbm_lambda_l2": args.lightgbm_lambda_l2,
+        "chimera_min_child_samples": args.chimera_min_child_samples,
+        "lightgbm_min_child_samples": args.lightgbm_min_child_samples,
+        "chimera_min_child_weight": args.chimera_min_child_weight,
+        "lightgbm_min_sum_hessian_in_leaf": args.lightgbm_min_sum_hessian_in_leaf,
+        "match_lightgbm_leaves": args.match_lightgbm_leaves,
+    }
+
+
 def _run_chimera(spec, X_train, y_train, X_test, y_test, cat_features, args, seed):
     X_fit, X_val, y_fit, y_val = _validation_split(X_train, y_train, spec.task, seed)
     estimator_cls = (
@@ -357,34 +488,7 @@ def _run_chimera(spec, X_train, y_train, X_test, y_test, cat_features, args, see
     )
 
     def fit_once():
-        sampling = args.chimera_sampling
-        if spec.task == "multiclass" and sampling == "goss":
-            sampling = "uniform"
-        model_kwargs = dict(
-            iterations=args.iterations,
-            early_stopping_rounds=args.patience,
-            learning_rate=args.learning_rate,
-            depth=args.depth,
-            l2_leaf_reg=args.chimera_l2_leaf_reg,
-            max_bins=args.chimera_max_bins,
-            num_leaves=args.chimera_num_leaves,
-            subsample=args.chimera_subsample,
-            colsample=args.chimera_colsample,
-            min_child_samples=args.chimera_min_child_samples,
-            min_gain_to_split=args.chimera_min_gain_to_split,
-            min_child_weight=args.chimera_min_child_weight,
-            thread_count=args.threads,
-            random_state=seed,
-            ordered_boosting=False if args.no_ordered_boosting else "auto",
-            tree_mode=args.tree_mode,
-            sampling=sampling,
-            top_rate=args.chimera_top_rate,
-            other_rate=args.chimera_other_rate,
-        )
-        if spec.task != "regression":
-            model_kwargs["multiclass_tree_strategy"] = (
-                args.chimera_multiclass_tree_strategy
-            )
+        model_kwargs = _chimera_model_kwargs(spec, args, seed)
         model = estimator_cls(**model_kwargs)
         start = time.perf_counter()
         model.fit(X_fit, y_fit, cat_features=cat_features, eval_set=(X_val, y_val))
@@ -433,18 +537,7 @@ def _run_lightgbm(spec, X_train, y_train, X_test, y_test, cat_features, args, se
             X_val,
             cat_features,
         )
-        model = estimator_cls(
-            n_estimators=args.iterations,
-            learning_rate=args.lightgbm_learning_rate,
-            num_leaves=args.lightgbm_num_leaves,
-            min_child_samples=args.lightgbm_min_child_samples,
-            min_sum_hessian_in_leaf=args.lightgbm_min_sum_hessian_in_leaf,
-            min_gain_to_split=args.lightgbm_min_gain_to_split,
-            objective=objective,
-            n_jobs=args.threads or -1,
-            random_state=seed,
-            verbosity=-1,
-        )
+        model = estimator_cls(**_lightgbm_model_kwargs(args, objective, seed))
         model.fit(
             X_fit_lgb,
             y_fit,
@@ -496,6 +589,7 @@ def _result_from_prediction(
     n_features,
     chimera_effective_num_leaves,
     lightgbm_num_leaves,
+    args=None,
 ):
     best_iter = getattr(model, "best_iteration_", None)
     if best_iter is None:
@@ -531,6 +625,7 @@ def _result_from_prediction(
         chimera_resolved_num_leaves=chimera_resolved_num_leaves,
         lightgbm_num_leaves=lightgbm_num_leaves,
     )
+    common.update(_resolved_result_config(args))
     if spec.task == "regression":
         metrics = _regression_metrics(y_test, pred)
         return Result(
@@ -688,7 +783,18 @@ def _print_summary(results):
 
 
 def parse_args(argv):
+    argv = list(argv or [])
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--profile",
+        choices=sorted(_PROFILE_DEFAULTS),
+        default="matched",
+        help=(
+            "Benchmark comparison profile. 'matched' resolves comparable "
+            "bins/lr/leaves/regularization where possible; 'native' preserves "
+            "each library's own defaults."
+        ),
+    )
     parser.add_argument("--sizes", nargs="+", choices=SIZE_SAMPLES, default=list(DEFAULT_SIZES))
     parser.add_argument("--seeds", type=int, default=3)
     parser.add_argument(
@@ -713,9 +819,11 @@ def parse_args(argv):
     parser.add_argument("--learning-rate", type=float, default=None)
     parser.add_argument("--lightgbm-learning-rate", type=float, default=0.1)
     parser.add_argument("--lightgbm-num-leaves", type=int, default=64)
+    parser.add_argument("--lightgbm-max-bin", type=int, default=255)
     parser.add_argument("--lightgbm-min-child-samples", type=int, default=20)
     parser.add_argument("--lightgbm-min-sum-hessian-in-leaf", type=float, default=1e-3)
     parser.add_argument("--lightgbm-min-gain-to-split", type=float, default=0.0)
+    parser.add_argument("--lightgbm-lambda-l2", type=float, default=0.0)
     parser.add_argument("--chimera-l2-leaf-reg", type=float, default=3.0)
     parser.add_argument("--chimera-max-bins", type=int, default=128)
     parser.add_argument("--chimera-num-leaves", type=int, default=None)
@@ -803,7 +911,33 @@ def parse_args(argv):
         default=Path("benchmarks/lightgbm_oneoff_results.csv"),
         help="CSV path for per-seed raw results.",
     )
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    args._explicit_profile_options = _explicit_profile_options(argv)
+    return args
+
+
+def _explicit_profile_options(argv):
+    explicit = set()
+    for token in argv:
+        option = token.split("=", 1)[0]
+        dest = _PROFILE_OPTION_DESTS.get(option)
+        if dest is not None:
+            explicit.add(dest)
+    return explicit
+
+
+def _resolve_profile(args):
+    explicit = getattr(args, "_explicit_profile_options", set())
+    for dest, value in _PROFILE_DEFAULTS[args.profile].items():
+        if dest not in explicit:
+            setattr(args, dest, value)
+    return args
+
+
+def _normalize_threads(args):
+    if args.threads == 0:
+        args.threads = None
+    return args
 
 
 def _resolve_default_depth(args):
@@ -842,8 +976,11 @@ def _resolve_benchmark_capacity(args):
 
 
 def main(argv=None):
+    args = _normalize_threads(
+        _resolve_profile(parse_args(argv or sys.argv[1:]))
+    )
     args = _resolve_benchmark_capacity(
-        _resolve_default_depth(parse_args(argv or sys.argv[1:]))
+        _resolve_default_depth(args)
     )
     selected = list(DATASETS)
     if args.datasets:
@@ -858,7 +995,7 @@ def main(argv=None):
     print(
         f"sizes={args.sizes} seeds={args.seeds} threads={args.threads or 'all'} "
         f"iterations={args.iterations} patience={args.patience} "
-        f"tree_mode={args.tree_mode} depth={args.depth}"
+        f"profile={args.profile} tree_mode={args.tree_mode} depth={args.depth}"
     )
     print(f"writing raw rows to {args.csv}")
     if not args.no_warmup and not args.skip_chimera:
@@ -928,6 +1065,7 @@ def main(argv=None):
                     n_features,
                     args.chimera_effective_num_leaves,
                     args.lightgbm_num_leaves,
+                    args=args,
                 )
                 results.append(result)
                 writer.writerow({field: getattr(result, field) for field in fields})

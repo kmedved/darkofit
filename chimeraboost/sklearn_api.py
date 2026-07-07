@@ -877,9 +877,14 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                  histogram_parallelism="auto", use_best_model=True,
                  bootstrap_type="none", bagging_temperature=0.0,
                  mvs_reg=1.0, random_strength=0.0,
-                 diagnostic_warnings="once", auto_learning_rate_probe=False,
+                 diagnostic_warnings="once",
+                 auto_learning_rate_probe=False,
                  auto_learning_rate_probe_values=None,
-                 auto_learning_rate_probe_iterations=80):
+                 auto_learning_rate_probe_iterations=80,
+                 histogram_dtype="float64",
+                 leaf_dtype="int64",
+                 ts_permutations=1,
+                 target_ordered_cat_codes="off"):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -919,6 +924,10 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self.mvs_reg = mvs_reg
         self.random_strength = random_strength
         self.diagnostic_warnings = diagnostic_warnings
+        self.histogram_dtype = histogram_dtype
+        self.leaf_dtype = leaf_dtype
+        self.ts_permutations = ts_permutations
+        self.target_ordered_cat_codes = target_ordered_cat_codes
         self.auto_learning_rate_probe = auto_learning_rate_probe
         self.auto_learning_rate_probe_values = auto_learning_rate_probe_values
         self.auto_learning_rate_probe_iterations = auto_learning_rate_probe_iterations
@@ -1026,9 +1035,18 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
               if k not in {"loss", "alpha"} | _SKLEARN_ONLY}
         kw["early_stopping_rounds"] = es_rounds
         kw["random_state"] = fit_random_state
-        make_model = lambda model_kw: GradientBoosting(
-            loss=self.loss, loss_kwargs=loss_kwargs, **model_kw
+        preprocessing_cache = (
+            {} if (tree_mode_auto or self.auto_learning_rate_probe) else None
         )
+
+        def make_model(model_kw):
+            model = GradientBoosting(
+                loss=self.loss, loss_kwargs=loss_kwargs, **model_kw
+            )
+            if preprocessing_cache is not None:
+                model._preprocessing_cache = preprocessing_cache
+            return model
+
         tree_mode_selection_metadata = None
         if tree_mode_auto:
             model, probe_metadata, tree_mode_selection_metadata = (
@@ -1224,7 +1242,11 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                  random_strength=0.0, diagnostic_warnings="once",
                  auto_learning_rate_probe=False,
                  auto_learning_rate_probe_values=None,
-                 auto_learning_rate_probe_iterations=80):
+                 auto_learning_rate_probe_iterations=80,
+                 histogram_dtype="float64",
+                 leaf_dtype="int64",
+                 ts_permutations=1,
+                 target_ordered_cat_codes="off"):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -1263,6 +1285,10 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         self.mvs_reg = mvs_reg
         self.random_strength = random_strength
         self.diagnostic_warnings = diagnostic_warnings
+        self.histogram_dtype = histogram_dtype
+        self.leaf_dtype = leaf_dtype
+        self.ts_permutations = ts_permutations
+        self.target_ordered_cat_codes = target_ordered_cat_codes
         self.auto_learning_rate_probe = auto_learning_rate_probe
         self.auto_learning_rate_probe_values = auto_learning_rate_probe_values
         self.auto_learning_rate_probe_iterations = auto_learning_rate_probe_iterations
@@ -1389,9 +1415,16 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                 if np.any(~np.isin(np.asarray(yv), classes)):
                     raise ValueError("eval_set contains labels not present in training data")
                 eval_set = (Xv, (np.asarray(yv) == classes[1]).astype(np.float64))
-            make_model = lambda model_kw: GradientBoosting(
-                loss="Logloss", **model_kw
+            preprocessing_cache = (
+                {} if (tree_mode_auto or self.auto_learning_rate_probe) else None
             )
+
+            def make_model(model_kw):
+                model = GradientBoosting(loss="Logloss", **model_kw)
+                if preprocessing_cache is not None:
+                    model._preprocessing_cache = preprocessing_cache
+                return model
+
             if tree_mode_auto:
                 model, probe_metadata, tree_mode_selection_metadata = (
                     self._fit_tree_mode_auto(
@@ -1422,7 +1455,16 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                 )
         else:
             multiclass = True
-            make_model = lambda model_kw: MulticlassBoosting(**model_kw)
+            preprocessing_cache = (
+                {} if (tree_mode_auto or self.auto_learning_rate_probe) else None
+            )
+
+            def make_model(model_kw):
+                model = MulticlassBoosting(**model_kw)
+                if preprocessing_cache is not None:
+                    model._preprocessing_cache = preprocessing_cache
+                return model
+
             if tree_mode_auto:
                 model, probe_metadata, tree_mode_selection_metadata = (
                     self._fit_tree_mode_auto(
@@ -1615,7 +1657,9 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
             classes = wrapper_arrays["classes"]
             if "classes_kinds" in wrapper_arrays:
                 classes = _decode_categories(
-                    classes, wrapper_arrays["classes_kinds"]
+                    classes,
+                    wrapper_arrays["classes_kinds"],
+                    name="wrapper classes",
                 )
         elif est._multiclass:
             classes = booster.classes_  # booster-level multiclass save

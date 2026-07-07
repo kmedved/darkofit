@@ -5,6 +5,8 @@ Two boosters share the same machinery (FeaturePreprocessor, oblivious trees):
   * MulticlassBoosting   -> K simultaneous outputs (softmax multiclass)
 """
 
+import copy
+import hashlib
 import time
 import warnings
 import numpy as np
@@ -35,9 +37,11 @@ from .flat_model import (
     flat_predict_preferred,
 )
 from .losses import LOSSES, MultiSoftmax
-from .preprocessing import FeaturePreprocessor
+from .preprocessing import FeaturePreprocessor, _normalize_target_ordered_cat_codes
 from .tree import (
     _build_multiclass_histograms_counts_into,
+    _leaf_values_and_sums,
+    _leaf_values_and_sums_rows,
     add_leaf_values_inplace,
     add_multiclass_leaf_values_inplace,
     build_hybrid_tree,
@@ -50,6 +54,7 @@ from .tree import (
 
 _LEAF_CORRECTION_SORT_MIN_LEAVES = 16
 _LOW_EFFECTIVE_SAMPLE_FRACTION = 0.3
+_MAX_CONSECUTIVE_SAMPLED_DEPTH0_RETRIES = 10
 _EMITTED_DIAGNOSTIC_WARNING_CODES = set()
 
 
@@ -161,6 +166,174 @@ def _normalize_sampling(sampling):
     )
 
 
+def _exact_mvs_probabilities(importance, target):
+    importance = np.asarray(importance, dtype=np.float64)
+    n_samples = importance.shape[0]
+    probs = np.zeros(n_samples, dtype=np.float64)
+    if target <= 0.0 or n_samples == 0:
+        return probs
+
+    positive = np.maximum(importance, 0.0)
+    active = positive > 0.0
+    if not np.any(active):
+        return np.full(n_samples, target / n_samples, dtype=np.float64)
+
+    values = np.sort(positive[active])[::-1]
+    total = float(np.sum(values))
+    active_count = values.shape[0]
+    if target >= active_count:
+        probs[active] = 1.0
+        return probs
+
+    prefix = np.concatenate(([0.0], np.cumsum(values)))
+    theta = None
+    max_saturated = min(active_count - 1, int(np.floor(target)))
+    for saturated in range(max_saturated + 1):
+        denom = target - saturated
+        if denom <= 0.0:
+            break
+        remaining_sum = total - float(prefix[saturated])
+        candidate = remaining_sum / denom
+        if candidate <= 0.0 or not np.isfinite(candidate):
+            continue
+        # Tolerant boundary checks: candidate comes from floating-point
+        # division, so an exact piecewise boundary can land 1 ulp on the
+        # wrong side of a strict comparison and skip the valid segment,
+        # silently falling through to the inexact no-saturation fallback.
+        left_ok = (
+            saturated == 0
+            or values[saturated - 1] >= candidate * (1.0 - 1e-11)
+        )
+        right_ok = (
+            saturated == active_count
+            or candidate >= values[saturated] * (1.0 - 1e-11)
+        )
+        if left_ok and right_ok:
+            theta = candidate
+            break
+
+    if theta is None:
+        theta = total / max(target, 1e-300)
+    probs[active] = np.minimum(1.0, positive[active] / max(theta, 1e-300))
+    prob_sum = float(np.sum(probs))
+    if prob_sum > 0.0:
+        probs *= target / max(prob_sum, 1e-300)
+    return np.minimum(1.0, probs)
+
+
+def _exact_weighted_goss_probabilities(mass, target_mass):
+    mass = np.asarray(mass, dtype=np.float64)
+    probs = np.zeros(mass.shape[0], dtype=np.float64)
+    if mass.size == 0 or target_mass <= 0.0:
+        return probs
+
+    positive = np.maximum(mass, 0.0)
+    active = positive > 0.0
+    if not np.any(active):
+        return probs
+
+    total_mass = float(np.sum(positive))
+    target_mass = min(float(target_mass), total_mass)
+    if target_mass >= total_mass:
+        probs[active] = 1.0
+        return probs
+
+    values = np.sort(positive[active])[::-1]
+    prefix_mass = np.concatenate(([0.0], np.cumsum(values)))
+    prefix_sq = np.concatenate(([0.0], np.cumsum(values * values)))
+    total_sq = float(prefix_sq[-1])
+    active_count = values.shape[0]
+    alpha = None
+
+    for saturated in range(active_count + 1):
+        saturated_mass = float(prefix_mass[saturated])
+        needed = target_mass - saturated_mass
+        if needed <= 0.0:
+            break
+        remaining_sq = total_sq - float(prefix_sq[saturated])
+        if remaining_sq <= 0.0:
+            break
+        candidate = needed / remaining_sq
+        if candidate <= 0.0 or not np.isfinite(candidate):
+            continue
+        # Tolerant boundary checks: see _exact_mvs_probabilities. This path
+        # has no post-rescale, so a strict-comparison miss would materially
+        # undershoot the target mass via the no-saturation fallback.
+        left_ok = (
+            saturated == 0
+            or candidate * values[saturated - 1] >= 1.0 - 1e-11
+        )
+        right_ok = (
+            saturated == active_count
+            or candidate * values[saturated] <= 1.0 + 1e-11
+        )
+        if left_ok and right_ok:
+            alpha = candidate
+            break
+
+    if alpha is None:
+        alpha = target_mass / max(total_sq, 1e-300)
+    probs[active] = np.minimum(1.0, alpha * positive[active])
+    return probs
+
+
+def _array_content_signature(value):
+    if value is None:
+        return None
+    arr = np.asarray(value)
+    h = hashlib.blake2b(digest_size=16)
+    h.update(str(arr.shape).encode("utf-8"))
+    h.update(str(arr.dtype).encode("utf-8"))
+    if arr.dtype == object:
+        # Factorization groups object categories by Python equality/hash
+        # behavior. Repr/hash fingerprints can legally collide for distinct
+        # objects, so include identity; this cache is fit-local and only needs
+        # to reuse the exact same raw object graph safely.
+        for item in arr.ravel(order="C"):
+            h.update(type(item).__name__.encode("utf-8", "surrogatepass"))
+            h.update(b"\0")
+            h.update(repr(item).encode("utf-8", "surrogatepass"))
+            h.update(b"\0")
+            h.update(str(id(item)).encode("utf-8"))
+            h.update(b"\0")
+    else:
+        h.update(np.ascontiguousarray(arr).view(np.uint8))
+    return (tuple(arr.shape), str(arr.dtype), h.hexdigest())
+
+
+def _preprocessing_cache_key(
+    booster, prep, X, encode_targets, cat_features, sample_weight,
+    eval_set, eval_sample_weight
+):
+    eval_sig = None
+    if eval_set is not None:
+        Xv, yv = eval_set
+        eval_sig = (
+            _array_content_signature(Xv),
+            _array_content_signature(yv),
+            _array_content_signature(eval_sample_weight),
+        )
+    return (
+        booster.__class__.__name__,
+        getattr(booster, "loss_name", booster.__class__.__name__),
+        int(prep.max_bins),
+        float(prep.cat_smoothing),
+        prep.random_state,
+        bool(prep.include_cat_codes),
+        prep.target_encoding_mode,
+        int(prep.target_encoding_folds),
+        int(prep.ts_permutations),
+        prep.target_ordered_cat_codes,
+        None if prep.bin_sample_count is None else int(prep.bin_sample_count),
+        tuple([] if cat_features is None else [int(c) for c in cat_features]),
+        int(X.shape[1]),
+        _array_content_signature(X),
+        tuple(_array_content_signature(target) for target in encode_targets),
+        _array_content_signature(sample_weight),
+        eval_sig,
+    )
+
+
 def _normalize_bootstrap_type(bootstrap_type):
     if bootstrap_type is None:
         bootstrap_type = "none"
@@ -212,6 +385,26 @@ def _is_auto_param(value):
     return isinstance(value, str) and value.lower().replace("-", "_") == "auto"
 
 
+def _normalize_histogram_dtype(histogram_dtype):
+    try:
+        dtype = np.dtype(histogram_dtype).name
+    except (TypeError, ValueError):
+        dtype = str(histogram_dtype).lower()
+    if dtype not in {"float64", "float32"}:
+        raise ValueError("histogram_dtype must be 'float64' or 'float32'")
+    return dtype
+
+
+def _normalize_leaf_dtype_name(leaf_dtype):
+    try:
+        dtype = np.dtype(leaf_dtype).name
+    except (TypeError, ValueError):
+        dtype = str(leaf_dtype).lower()
+    if dtype not in {"int64", "uint32"}:
+        raise ValueError("leaf_dtype must be 'int64' or 'uint32'")
+    return dtype
+
+
 class _BaseBooster:
     """Shared machinery for the scalar and multiclass boosters.
 
@@ -235,7 +428,9 @@ class _BaseBooster:
                  histogram_parallelism="auto", use_best_model=True,
                  bootstrap_type="none", bagging_temperature=0.0,
                  mvs_reg=1.0, random_strength=0.0,
-        diagnostic_warnings="once"):
+                 diagnostic_warnings="once", histogram_dtype="float64",
+                 leaf_dtype="int64", ts_permutations=1,
+                 target_ordered_cat_codes="off"):
         self.iterations = int(iterations)
         self.learning_rate = learning_rate
         self._depth_input = depth
@@ -291,6 +486,16 @@ class _BaseBooster:
         self.diagnostic_warnings = diagnostic_warnings
         self.diagnostic_warnings_ = _normalize_diagnostic_warnings(
             diagnostic_warnings
+        )
+        self.histogram_dtype = _normalize_histogram_dtype(histogram_dtype)
+        self.histogram_dtype_ = self.histogram_dtype
+        self.leaf_dtype = _normalize_leaf_dtype_name(leaf_dtype)
+        self.leaf_dtype_ = self.leaf_dtype
+        self.ts_permutations = int(ts_permutations)
+        if self.ts_permutations < 1:
+            raise ValueError("ts_permutations must be at least 1")
+        self.target_ordered_cat_codes = _normalize_target_ordered_cat_codes(
+            target_ordered_cat_codes
         )
         if self.bagging_temperature < 0.0:
             raise ValueError("bagging_temperature must be nonnegative")
@@ -1136,11 +1341,11 @@ class _BaseBooster:
                 else array_like_to_numpy(X, np.float64))
 
     def _alloc_multiclass_hist_buffers(self, n_classes, n_features, n_bins):
-        """Allocate reusable class-major LightGBM-mode histogram buffers."""
+        """Allocate reusable class-minor LightGBM-mode histogram buffers."""
         max_leaves = self._max_tree_leaves()
         max_bins = int(n_bins.max()) if len(n_bins) else 1
-        hg = np.zeros((n_classes, n_features, max_leaves, max_bins))
-        hh = np.zeros((n_classes, n_features, max_leaves, max_bins))
+        hg = np.zeros((n_features, max_leaves, max_bins, n_classes))
+        hh = np.zeros((n_features, max_leaves, max_bins, n_classes))
         hc = np.zeros((n_features, max_leaves, max_bins))
         return hg, hh, hc
 
@@ -1179,8 +1384,46 @@ class _BaseBooster:
                 if self.tree_mode_ in {"lightgbm", "hybrid"}
                 else "ordered"
             ),
+            ts_permutations=self.ts_permutations,
+            target_ordered_cat_codes=self.target_ordered_cat_codes,
             bin_sample_count=self.bin_sample_count,
         )
+
+    def _fit_transform_preprocessor(
+        self, X, encode_targets, cat_features, sample_weight, *,
+        eval_set=None, eval_sample_weight=None
+    ):
+        prep = self._new_preprocessor()
+        cache = getattr(self, "_preprocessing_cache", None)
+        if cache is None:
+            self.prep_ = prep
+            return prep.fit_transform(
+                X, encode_targets, cat_features, sample_weight=sample_weight
+            )
+
+        key = _preprocessing_cache_key(
+            self, prep, X, encode_targets, cat_features, sample_weight,
+            eval_set, eval_sample_weight
+        )
+        cached = cache.get(key)
+        if cached is not None:
+            cached_prep, cached_X_binned = cached
+            self.prep_ = copy.deepcopy(cached_prep)
+            X_binned = np.asarray(cached_X_binned).copy()
+            if X_binned.shape[0] != X.shape[0]:
+                raise ValueError("cached preprocessing row count mismatch")
+            if X_binned.shape[1] != self.prep_.n_bins_.shape[0]:
+                raise ValueError("cached preprocessing feature count mismatch")
+            if not np.array_equal(self.prep_.n_bins_, cached_prep.n_bins_):
+                raise ValueError("cached preprocessing n_bins mismatch")
+            return X_binned
+
+        self.prep_ = prep
+        X_binned = prep.fit_transform(
+            X, encode_targets, cat_features, sample_weight=sample_weight
+        )
+        cache[key] = (copy.deepcopy(prep), np.asarray(X_binned).copy())
+        return X_binned
 
     def _include_cat_codes(self):
         return self.tree_mode_ in {"lightgbm", "hybrid"}
@@ -1246,23 +1489,7 @@ class _BaseBooster:
             or np.all(importance <= 0.0)
         ):
             return np.full(n_samples, target / n_samples, dtype=np.float64)
-        lo = 0.0
-        hi = float(np.max(importance)) * n_samples / max(target, 1.0)
-        if hi <= 0.0:
-            return np.full(n_samples, target / n_samples, dtype=np.float64)
-        for _ in range(48):
-            mid = (lo + hi) * 0.5
-            if mid <= 0.0:
-                lo = mid
-                continue
-            expected = np.minimum(1.0, importance / mid).sum()
-            if expected > target:
-                lo = mid
-            else:
-                hi = mid
-        probs = np.minimum(1.0, importance / max(hi, 1e-300))
-        probs *= target / max(float(probs.sum()), 1e-300)
-        return np.minimum(1.0, probs)
+        return _exact_mvs_probabilities(importance, target)
 
     def _mvs_subsample(self, grad, hess, rng):
         n_samples = grad.shape[0]
@@ -1305,18 +1532,7 @@ class _BaseBooster:
         ):
             return None
         target_mass = min(float(target_mass), float(np.sum(mass)))
-        lo = 0.0
-        hi = 1.0 / max(float(np.max(mass)), 1e-300)
-        while np.sum(np.minimum(1.0, hi * mass) * mass) < target_mass:
-            hi *= 2.0
-        for _ in range(48):
-            mid = (lo + hi) * 0.5
-            expected_mass = np.sum(np.minimum(1.0, mid * mass) * mass)
-            if expected_mass < target_mass:
-                lo = mid
-            else:
-                hi = mid
-        return np.minimum(1.0, hi * mass)
+        return _exact_weighted_goss_probabilities(mass, target_mass)
 
     def _weighted_goss_subsample_from_score(self, grad, hess, score, mass, rng):
         n_samples = score.shape[0]
@@ -1537,6 +1753,7 @@ class _BaseBooster:
 
     def _builder_kwargs(self, fmask, findices, row_indices,
                         hist_buffers, split_buffers, X_hist_binned,
+                        X_route_binned,
                         use_constant_hessian, hessian_always_positive=False,
                         rowpar_buffers=None, tree_iteration=0):
         kwargs = {
@@ -1546,6 +1763,7 @@ class _BaseBooster:
             "split_buffers": split_buffers,
             "return_training_state": True,
             "X_hist_binned": X_hist_binned,
+            "X_route_binned": X_route_binned,
             "feature_indices": findices,
             "row_indices": row_indices,
             "constant_hessian": use_constant_hessian,
@@ -1553,6 +1771,7 @@ class _BaseBooster:
             "random_strength": self.random_strength,
             "split_seed": int(getattr(self, "_split_seed_", 0)),
             "tree_iteration": int(tree_iteration),
+            "leaf_dtype": self.leaf_dtype_,
         }
         if self.tree_mode_ in {"lightgbm", "hybrid"}:
             kwargs.update(
@@ -1572,6 +1791,30 @@ class _BaseBooster:
                 ),
             )
         return kwargs
+
+    def _scalar_histogram_streams(
+        self, grad, hess, grad_stream_buffer, hess_stream_buffer
+    ):
+        if self.histogram_dtype_ == "float64":
+            return grad, hess
+        grad_stream_buffer[:] = grad
+        hess_stream_buffer[:] = hess
+        return grad_stream_buffer, hess_stream_buffer
+
+    def _refresh_scalar_leaf_values_float64(self, tree, leaf, grad, hess,
+                                            row_indices):
+        n_leaves = tree.values.shape[0]
+        if row_indices is None:
+            values, leaf_G, leaf_H = _leaf_values_and_sums(
+                leaf, grad, hess, n_leaves, self.l2_leaf_reg, self.lr_
+            )
+        else:
+            values, leaf_G, leaf_H = _leaf_values_and_sums_rows(
+                leaf, grad, hess, row_indices, n_leaves, self.l2_leaf_reg,
+                self.lr_
+            )
+        tree.values = values
+        return leaf_G, leaf_H
 
     def _accumulate_importance(self, tree):
         """Add this tree's per-split gains to the running importance totals,
@@ -1673,6 +1916,8 @@ class GradientBoosting(_BaseBooster):
         self.n_threads_ = _fit_thread_count(
             self.thread_count, self.tree_mode_, n_samples
         )
+        self.histogram_dtype_ = _normalize_histogram_dtype(self.histogram_dtype)
+        self.leaf_dtype_ = _normalize_leaf_dtype_name(self.leaf_dtype)
         self._validate_sampling_config()
         self.ordered_boosting_ = self._resolve_ordered_boosting()
         w = _validate_sample_weight(sample_weight, n_samples)
@@ -1702,12 +1947,14 @@ class GradientBoosting(_BaseBooster):
         timing = _new_timing(self.verbose_timing)
         self.timing_ = timing
         phase = _start_timing(timing)
-        self.prep_ = self._new_preprocessor()
-        X_binned = self.prep_.fit_transform(
-            X, [y], cat_features, sample_weight=w
+        X_binned = self._fit_transform_preprocessor(
+            X, [y], cat_features, w,
+            eval_set=eval_set,
+            eval_sample_weight=eval_sample_weight,
         )
+        X_route_binned = np.asfortranarray(X_binned)
         X_hist_binned = (
-            np.asfortranarray(X_binned) if self.n_threads_ > 1 else X_binned
+            X_route_binned if self.n_threads_ > 1 else X_binned
         )
         n_bins = self.prep_.n_bins_
         self._resolve_fit_auto_params(
@@ -1754,6 +2001,10 @@ class GradientBoosting(_BaseBooster):
         F = np.full(n_samples, self.init_, dtype=np.float64)
         grad_buffer = np.empty(n_samples, dtype=np.float64)
         hess_buffer = np.empty(n_samples, dtype=np.float64)
+        grad_stream_buffer = hess_stream_buffer = None
+        if self.histogram_dtype_ == "float32":
+            grad_stream_buffer = np.empty(n_samples, dtype=np.float32)
+            hess_stream_buffer = np.empty(n_samples, dtype=np.float32)
         if yv is not None:
             Fv = np.full(len(yv), self.init_)
         baseline_loss = (
@@ -1787,6 +2038,7 @@ class GradientBoosting(_BaseBooster):
         eval_train = self.eval_train_loss or bool(self.verbose)
         patience_score, patience_iter = np.inf, 0
         best_prefix_score, best_prefix_iter = np.inf, 0
+        sampled_depth0_retries = 0
         t0 = time.time()
 
         for m in range(self.iterations_):
@@ -1806,12 +2058,15 @@ class GradientBoosting(_BaseBooster):
             _add_timing(timing, "grad_hess", phase)
 
             phase = _start_timing(timing)
+            build_g, build_h = self._scalar_histogram_streams(
+                g, h, grad_stream_buffer, hess_stream_buffer
+            )
             tree, leaf, leaf_G, leaf_H = self._tree_builder()(
-                X_binned, g, h, n_bins, self._max_tree_depth(),
+                X_binned, build_g, build_h, n_bins, self._max_tree_depth(),
                 self.l2_leaf_reg, self.lr_,
                 **self._builder_kwargs(
                     fmask, findices, row_indices, hist_buffers, split_buffers,
-                    X_hist_binned, use_constant_hessian,
+                    X_hist_binned, X_route_binned, use_constant_hessian,
                     hessian_always_positive=hessian_always_positive,
                     rowpar_buffers=rowpar_buffers,
                     tree_iteration=m,
@@ -1821,7 +2076,13 @@ class GradientBoosting(_BaseBooster):
             # A depth-0 tree found no legal split; subsequent rounds on the same
             # gradients would too, so stop rather than append empty trees.
             if tree.depth == 0:
-                if row_indices is not None and m + 1 < self.iterations_:
+                if (
+                    row_indices is not None
+                    and m + 1 < self.iterations_
+                    and sampled_depth0_retries
+                    < _MAX_CONSECUTIVE_SAMPLED_DEPTH0_RETRIES
+                ):
+                    sampled_depth0_retries += 1
                     if self.verbose:
                         print(
                             f"No split at sampled iteration {m}; retrying "
@@ -1831,6 +2092,11 @@ class GradientBoosting(_BaseBooster):
                 if self.verbose:
                     print(f"No further splits at iteration {m}; stopping.")
                 break
+            sampled_depth0_retries = 0
+            if self.histogram_dtype_ == "float32":
+                leaf_G, leaf_H = self._refresh_scalar_leaf_values_float64(
+                    tree, leaf, g, h, row_indices
+                )
             phase = _start_timing(timing)
             if getattr(self.loss_, "adjusts_leaves", False):
                 correction_weight = self._correction_weight(w, bootstrap_factors)
@@ -1975,6 +2241,14 @@ class MulticlassBoosting(_BaseBooster):
         y = validate_target_vector(y, X.shape[0])
         self.classes_ = np.unique(y)
         K = self.classes_.size
+        self.histogram_dtype_ = _normalize_histogram_dtype(self.histogram_dtype)
+        self.leaf_dtype_ = _normalize_leaf_dtype_name(self.leaf_dtype)
+        if self.histogram_dtype_ != "float64":
+            raise ValueError(
+                "histogram_dtype='float32' is currently only supported for "
+                "scalar GradientBoosting fits; multiclass support lands with "
+                "the R6 shared-vector layout"
+            )
         self.n_classes_ = K
         y_idx = np.searchsorted(self.classes_, y)
         Y_class = _one_hot_class_major(y_idx, K)  # class-major (K, n)
@@ -2023,11 +2297,14 @@ class MulticlassBoosting(_BaseBooster):
         self.timing_ = timing
         phase = _start_timing(timing)
         # One ordered-TS target per class (CatBoost-style per-class statistics).
-        self.prep_ = self._new_preprocessor()
-        X_binned = self.prep_.fit_transform(X, [Y_class[k] for k in range(K)],
-                                            cat_features, sample_weight=w)
+        X_binned = self._fit_transform_preprocessor(
+            X, [Y_class[k] for k in range(K)], cat_features, w,
+            eval_set=eval_set,
+            eval_sample_weight=eval_sample_weight,
+        )
+        X_route_binned = np.asfortranarray(X_binned)
         X_hist_binned = (
-            np.asfortranarray(X_binned) if self.n_threads_ > 1 else X_binned
+            X_route_binned if self.n_threads_ > 1 else X_binned
         )
         n_bins = self.prep_.n_bins_
         self._resolve_fit_auto_params(
@@ -2104,6 +2381,10 @@ class MulticlassBoosting(_BaseBooster):
         F = np.tile(self.init_[:, None], (1, n_samples))  # class-major (K, n)
         grad_buffer = np.empty_like(F)
         hess_buffer = np.empty_like(F)
+        grad_shared_row_major = hess_shared_row_major = None
+        if use_shared_lightgbm_multiclass:
+            grad_shared_row_major = np.empty((n_samples, K), dtype=np.float64)
+            hess_shared_row_major = np.empty((n_samples, K), dtype=np.float64)
         if yv_idx is not None:
             Fv = np.tile(self.init_[:, None], (1, len(yv_idx)))
         baseline_loss = (
@@ -2142,6 +2423,7 @@ class MulticlassBoosting(_BaseBooster):
         eval_train = self.eval_train_loss or bool(self.verbose)
         patience_score, patience_iter = np.inf, 0
         best_prefix_score, best_prefix_iter = np.inf, 0
+        sampled_depth0_retries = 0
         t0 = time.time()
 
         for m in range(self.iterations_):
@@ -2207,6 +2489,8 @@ class MulticlassBoosting(_BaseBooster):
 
             if use_shared_lightgbm_multiclass:
                 phase = _start_timing(timing)
+                grad_shared_row_major[:, :] = grad_for_round.T
+                hess_shared_row_major[:, :] = hess_for_round.T
                 tree, leaf, leaf_G, leaf_H = build_leafwise_multiclass_tree(
                     X_binned, grad_for_round, hess_for_round, n_bins,
                     self._max_tree_depth(),
@@ -2216,16 +2500,26 @@ class MulticlassBoosting(_BaseBooster):
                     hist_buffers=multiclass_hist_buffers,
                     return_training_state=True,
                     X_hist_binned=X_hist_binned,
+                    X_route_binned=X_route_binned,
                     max_leaves=self._max_tree_leaves(),
                     min_child_samples=self.min_child_samples,
                     min_gain_to_split=self.min_gain_to_split,
                     random_strength=self.random_strength,
                     split_seed=int(getattr(self, "_split_seed_", 0)),
                     tree_iteration=m,
+                    grad_row_major=grad_shared_row_major,
+                    hess_row_major=hess_shared_row_major,
+                    leaf_dtype=self.leaf_dtype_,
                 )
                 _add_timing(timing, "tree_build", phase)
                 if tree.depth == 0:
-                    if row_indices_round is not None and m + 1 < self.iterations_:
+                    if (
+                        row_indices_round is not None
+                        and m + 1 < self.iterations_
+                        and sampled_depth0_retries
+                        < _MAX_CONSECUTIVE_SAMPLED_DEPTH0_RETRIES
+                    ):
+                        sampled_depth0_retries += 1
                         if self.verbose:
                             print(
                                 f"No split at sampled iteration {m}; retrying "
@@ -2236,6 +2530,7 @@ class MulticlassBoosting(_BaseBooster):
                         print(f"No further splits at iteration {m}; stopping.")
                     break
 
+                sampled_depth0_retries = 0
                 phase = _start_timing(timing)
                 self.trees_.append(tree)
                 self._accumulate_importance(tree)
@@ -2294,7 +2589,7 @@ class MulticlassBoosting(_BaseBooster):
                 phase = _start_timing(timing)
                 builder_kwargs = self._builder_kwargs(
                     fmask, findices, row_indices_round, hist_buffers,
-                    split_buffers, X_hist_binned, False,
+                    split_buffers, X_hist_binned, X_route_binned, False,
                     hessian_always_positive=(
                         self.tree_mode_ in {"lightgbm", "hybrid"}
                         and w is None
@@ -2334,7 +2629,13 @@ class MulticlassBoosting(_BaseBooster):
             # Stop only if EVERY class exhausted its splits this round; if even
             # one class is still learning, the round was productive.
             if all(t.depth == 0 for t in round_trees):
-                if row_indices_round is not None and m + 1 < self.iterations_:
+                if (
+                    row_indices_round is not None
+                    and m + 1 < self.iterations_
+                    and sampled_depth0_retries
+                    < _MAX_CONSECUTIVE_SAMPLED_DEPTH0_RETRIES
+                ):
+                    sampled_depth0_retries += 1
                     if self.verbose:
                         print(
                             f"No class split at sampled iteration {m}; "
@@ -2345,6 +2646,7 @@ class MulticlassBoosting(_BaseBooster):
                     print(f"No further splits for any class at iteration {m}; "
                           f"stopping.")
                 break
+            sampled_depth0_retries = 0
             self.trees_.append(round_trees)
             if eval_train:
                 phase = _start_timing(timing)

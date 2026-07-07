@@ -38,6 +38,35 @@ run. To get clean timings:
 Treat any single-seed, cold-cache, or `--repeat 1` ChimeraBoost fit-time as
 compile-contaminated.
 
+## 2026-07-07 — R1 `_unique_if_at_most` local microbenchmark
+
+Command: one-off `timeit` comparison between the old Python `set` loop and the
+two-stage `np.unique` implementation, run in the repo checkout on synthetic
+finite float columns.
+
+| case | old | new | result |
+|---|---:|---:|---:|
+| 200k rows, 16 distinct values, `max_unique=64` | 0.009533s | 0.001258s | 7.6× faster |
+| 200k rows, high-cardinality prefix | 0.000003s | 0.000064s | slower, but still ~64µs before quantiles |
+| first 4096 rows low-cardinality, later high-cardinality | 0.000186s | 0.000402s | slower until full `np.unique` rejects |
+
+Decision: keep R1. The intended wide low-cardinality path improves materially.
+High-cardinality columns pay a small absolute probe cost before falling back to
+the existing quantile path; no default or modeling behavior changes.
+
+## 2026-07-07 — R9 benchmark profile provenance
+
+`benchmarks/bench_vs_lightgbm.py` now requires every raw CSV row to carry the
+resolved comparison profile and audit knobs: profile, requested/selected
+Chimera tree mode, threads, bin budgets, learning rates, l2/lambda,
+min-child settings, matched-leaf policy, and leaf budgets.
+
+Use `--profile matched` when comparing implementation speed under aligned
+capacity/regularization assumptions. Use `--profile native` when measuring each
+library as a user would get it from defaults. Future tables in this file should
+label the profile explicitly; old committed LightGBM raw CSV snapshots were
+removed because they used the pre-profile schema.
+
 ## Learning rate: keep the default at 0.1
 
 A clean 3-seed sweep over lr ∈ {0.10, 0.15, 0.20, 0.30} at medium and large.
@@ -169,3 +198,262 @@ numbers as the rigorous anchors; large is the crossover region between them.
 converging, so their `xLGB` and round-gap figures **understate** CB's true cost.
 `round gap` = CB iters / LGB iters; `per-iter` = CB ms-per-iter / LGB ms-per-iter
 (>1 ⇒ CB slower per tree).
+
+## 2026-07-07 — Stage 3 R3 row-layout resolver decision
+
+R3 did not flip `leafwise_row_layout="auto"` to segmented. The implementation now
+routes automatic row-layout selection through `_resolve_leafwise_row_layout`, but
+the resolver deliberately returns `prefix` until the full profile-labeled matrix
+in `ROADMAP.md` is run and a threshold is chosen from measured evidence.
+
+The resolver also keeps automatic selection on prefix whenever segmented
+preconditions fail or a current `not use_segmented_rows` fast lane would be
+disabled (positive-Hessian full-feature scoring, row-parallel segment scans, or
+fused changed-leaf scoring). This avoids turning binary/lightgbm fast-path fits
+into an accidental regression under an `"auto"` performance flag.
+
+Focused acceptance run:
+
+```text
+python -m pytest -q tests/test_lane_equivalence.py \
+  tests/test_chimeraboost.py::test_leafwise_segmented_row_layout_matches_prefix_layout \
+  tests/test_chimeraboost.py::test_leafwise_segmented_row_layout_guard_and_auto_fallback
+24 passed
+```
+
+No small-n/large-n segmented threshold is recorded yet; segmented remains an
+explicit benchmarking opt-in.
+
+## 2026-07-07 — Stage 3 R2 F-order route matrix check
+
+Direct-builder microbenchmark isolating the fixed-column row-routing matrix:
+`build_leafwise_tree` with `n=200000`, `p=32`, `bins=64`, `max_leaves=31`,
+4 Numba threads, F-order `X_hist_binned` held constant, and only
+`X_route_binned` changed between C-order and F-order.
+
+```text
+C-route 0.016412,0.020160,0.017861 best 0.016412 mean 0.018144
+F-route 0.014641,0.014787,0.014722 best 0.014641 mean 0.014716
+speedup_best 1.1210
+speedup_mean 1.2329
+```
+
+Decision: keep R2 enabled. Focused lane tests prove C-order and F-order route
+matrices remain bit-identical for the direct builders covered by
+`tests/test_lane_equivalence.py`.
+
+## 2026-07-07 — Stage 4 R4 exact MVS / weighted-GOSS solve
+
+Replaced the fixed 48-iteration vectorized bisection in `_mvs_probabilities`
+and `_weighted_goss_probabilities` with sort + prefix-sum piecewise-linear
+solves. This is not a bit-identical modeling change: probabilities can move at
+machine precision, which can flip Bernoulli draws.
+
+Focused acceptance:
+
+```text
+python -m pytest -q \
+  tests/test_chimeraboost.py::test_exact_mvs_probabilities_match_bisection_reference \
+  tests/test_chimeraboost.py::test_exact_weighted_goss_probabilities_match_bisection_reference \
+  tests/test_chimeraboost.py::test_mvs_realized_sample_count_matches_probability_mass \
+  tests/test_chimeraboost.py::test_weighted_goss_realized_sample_mass_matches_probability_mass \
+  tests/test_chimeraboost.py::test_weighted_goss_uniform_mass_fast_path_avoids_full_sort \
+  tests/test_chimeraboost.py::test_weighted_goss_nonuniform_top_mass_avoids_full_score_sort \
+  tests/test_chimeraboost.py::test_weighted_goss_nonuniform_final_scaling_and_multiclass_shared_rows \
+  tests/test_chimeraboost.py::test_weighted_goss_empty_other_draw_does_not_force_biased_row \
+  tests/test_chimeraboost.py::test_multiclass_mvs_uses_shared_row_sample_per_round
+9 passed
+```
+
+Sampler end-to-end timing, same process, old bisection monkeypatched back in
+for comparison, synthetic lognormal Hessian masses, `repeat=3`:
+
+| n | MVS old best | MVS exact best | weighted-GOSS old best | weighted-GOSS exact best |
+|---:|---:|---:|---:|---:|
+| 10k | 0.000496s | 0.000465s | 0.000979s | 0.000782s |
+| 200k | 0.011976s | 0.009681s | 0.017893s | 0.016017s |
+| 500k | 0.031337s | 0.023541s | 0.045002s | 0.032435s |
+
+Paired-seed model parity against old bisection methods monkeypatched on
+`_BaseBooster`:
+
+| config | prediction max abs diff | old metric | new metric |
+|---|---:|---:|---:|
+| MVS regression, diabetes, 40 iters | 1.71e-13 | RMSE 36.96661257369858 | RMSE 36.966612573698576 |
+| weighted-GOSS regression, diabetes, 40 iters | 2.27e-13 | RMSE 37.7715373814183 | RMSE 37.7715373814183 |
+| MVS binary, breast-cancer, 30 iters | 1.04e-1 | logloss 0.04854724505928547 | logloss 0.0512779898248578 |
+
+Decision: keep the exact solve for the opt-in MVS/weighted-GOSS samplers. The
+uniform-mass weighted-GOSS fast path remains untouched.
+
+## 2026-07-07 — Stage 5 R7 shared preprocessing cache
+
+Tree-mode auto and learning-rate probe fits now share a private preprocessing
+cache across candidate/probe core boosters. The key is conservative: booster
+class/loss, concrete preprocessor config, categorical feature set, train/eval
+content signatures, target signatures, normalized train/eval sample-weight
+signatures, and eval split content. Refit-on-full-data models do not receive the
+selection/probe cache.
+
+Focused acceptance:
+
+```text
+python -m pytest -q \
+  tests/test_chimeraboost.py::test_preprocessing_cache_reduces_auto_probe_fit_transform_count \
+  tests/test_chimeraboost.py::test_preprocessing_cache_key_separates_data_targets_weights_and_eval \
+  tests/test_chimeraboost.py::test_preprocessing_cache_does_not_share_scalar_and_multiclass \
+  tests/test_chimeraboost.py::test_multiclass_preprocessor_receives_class_major_target_views
+4 passed
+```
+
+The categorical `tree_mode="auto"` + learning-rate-probe path now performs two
+training `FeaturePreprocessor.fit_transform` calls under the monkeypatched
+counter: one ordered target-stat prep for CatBoost, and one shared K-fold + raw
+category-code prep for LightGBM/hybrid.
+
+## 2026-07-07 — Stage 6 R5a opt-in float32 histogram streams
+
+Added explicit `histogram_dtype`, defaulting to `"float64"`. The `"float32"`
+mode is scoped to scalar `GradientBoosting`: losses, fit-loop grad/hess
+buffers, bootstrap, samplers, and final leaf-value computation remain float64;
+only the per-tree histogram builder streams are cast into reused float32
+buffers. Multiclass rejects `"float32"` until the R6 shared-vector layout lands.
+
+Focused acceptance:
+
+```text
+python -m pytest tests/test_chimeraboost.py -q -k \
+  "histogram_dtype or float32_histogram_streams"
+6 passed, 283 deselected, 1 warning
+```
+
+Full-suite acceptance:
+
+```text
+python -m pytest -q
+410 passed, 1 warning
+```
+
+The focused tests cover dtype validation including `np.float32`, fixed-seed
+sampler row-set parity between `"float64"` and `"float32"`, well-separated
+structural split parity, same-seed/thread determinism, real-data metric parity,
+and save/load persistence. The default-regret/default-flip gate remains pending
+because this patch does not change the default policy.
+
+## 2026-07-07 — Stage 6 R6 shared-vector multiclass class-minor layout
+
+Shared-vector multiclass now stores histogram buffers as class-minor
+`(feature, leaf, bin, class)` arrays and refreshes reused row-major
+`(n_samples, n_classes)` grad/hess copies once per boosting round. The
+per-class fused-root path intentionally stays on the old class-major
+`(class, feature, leaf, bin)` buffers and old kernel, so per-class behavior is
+not coupled to the shared-vector layout change.
+
+Focused acceptance:
+
+```text
+python -m pytest tests/test_chimeraboost.py tests/test_lane_equivalence.py -q -k \
+  "class_minor_refill or (multiclass and (histogram or class_minor or shared or leafwise or fused_root or route_binned))"
+19 passed, 293 deselected, 1 warning
+```
+
+Full-suite and A/B acceptance:
+
+```text
+python -m pytest -q
+413 passed, 1 warning
+
+python benchmarks/ab_compare.py . .
+ab_compare clean: 17 cases bit-identical
+```
+
+The direct kernel tests compare class-minor histogram fills against the legacy
+class-major reference after transposition, pin class-minor refill/subtract
+against two-step refill, and check both non-noisy and noisy shared split
+scorers. The A/B suite includes both per-class LightGBM multiclass and
+shared-vector LightGBM multiclass cases.
+
+Kernel phase microbenchmark, 30k rows, 24 features, 64 bins, 7 leaves,
+4 Numba threads, best of 5 after warm-up:
+
+| K | build old best | build class-minor best | build speedup | refill old best | refill class-minor best | refill speedup |
+|---:|---:|---:|---:|---:|---:|---:|
+| 3 | 0.000650s | 0.000619s | 1.050x | 0.000143s | 0.000149s | 0.959x |
+| 10 | 0.002020s | 0.001125s | 1.795x | 0.000276s | 0.000182s | 1.515x |
+
+Decision: keep the class-minor shared-vector layout. The K=3 refill path is
+effectively a wash in this microbenchmark, while the K=10 build/refill phases
+show the intended class-adjacent write benefit.
+
+## 2026-07-07 — Stage 6 R5b opt-in uint32 leaf-id streams
+
+Added explicit `leaf_dtype`, defaulting to `"int64"`. The `"uint32"` option is
+opt-in and changes only the per-row leaf-id arrays used by scalar and
+shared-vector multiclass builders; tree topology arrays, row-order structures,
+split arrays, and serialized tree structures remain signed `int64`.
+
+Focused acceptance:
+
+```text
+python -m pytest tests/test_chimeraboost.py -q -k "uint32_leaf_dtype"
+6 passed, 292 deselected, 1 warning
+```
+
+Full-suite and default-path A/B acceptance:
+
+```text
+python -m pytest -q
+419 passed, 1 warning
+
+python benchmarks/ab_compare.py . .
+ab_compare clean: 17 cases bit-identical
+```
+
+The focused tests compare direct int64 and uint32 training-state leaves across
+oblivious, levelwise, leafwise, hybrid, and shared-vector multiclass builders;
+pin `np.bincount` compatibility on uint32 leaves; exercise ordered scalar
+training updates; and verify save/load persistence of the opt-in setting.
+The default remains `"int64"`, so default-flip regret and large-n gates remain
+pending.
+
+## 2026-07-07 — Stage 7 R10 opt-in categorical encoding upgrades
+
+Added two opt-in categorical modeling controls:
+
+- `ts_permutations`, default `1`, averages ordered target statistics over
+  multiple independent permutations when set above 1. The P=1 path still calls
+  the original single-permutation kernels directly to preserve the exact seed
+  sequence and output.
+- `target_ordered_cat_codes`, default `"off"`, with explicit
+  `"leaky_full"` opt-in for full-target smoothed raw-code ordering in
+  LightGBM/hybrid scalar raw-code blocks. The remap is applied only to the
+  raw-code block; target-stat encoders continue to consume the original
+  factorized codes.
+
+Focused acceptance:
+
+```text
+python -m pytest tests/test_chimeraboost.py -q -k \
+  "target_ordered or ts_permutations or multi_permutation_ordered_statistics or load_legacy_v1_missing_category_archive"
+13 passed, 297 deselected, 1 warning
+```
+
+Full-suite and default-path A/B acceptance:
+
+```text
+python -m pytest -q
+431 passed, 1 warning
+
+python benchmarks/ab_compare.py . .
+ab_compare clean: 17 cases bit-identical
+```
+
+The tests cover P=1 compatibility, own-label exclusion for P>1, early-row
+variance shrinkage, save/load and refit-param persistence, deterministic
+target-mean tie ordering by category code, CatBoost-mode non-effect,
+scalar-only enforcement for raw-code remaps, v3 archive round-trips with
+unseen/missing categories, pandas/dict lookup parity, and corrupt/mis-versioned
+remap payload rejection.
+
+Decision: keep both features opt-in. No default flip occurs until categorical
+regret/quality reports and LightGBM/hybrid benchmark gates show a durable win.
