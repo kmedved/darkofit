@@ -368,11 +368,21 @@ def test_gaussian_scalar_sigma_calibration_scales_public_distribution_only():
         public_sigma, raw_sigma * model.sigma_scale_, rtol=0.0, atol=0.0
     )
     np.testing.assert_allclose(model.predict(Xv), raw_mu, rtol=0.0, atol=0.0)
-    assert model.model_.auto_params_["sigma_calibration"] == {
-        "method": "scalar",
-        "sigma_scale": model.sigma_scale_,
-        "source": "selection_validation",
+    calibration_meta = model.model_.auto_params_["sigma_calibration"]
+    assert calibration_meta["method"] == "scalar"
+    assert calibration_meta["sigma_scale"] == model.sigma_scale_
+    assert calibration_meta["source"] == "selection_validation"
+    assert calibration_meta["validation_n_samples"] == yv_cal.shape[0]
+    assert calibration_meta["validation_positive_weight_n"] == positive.sum()
+    assert calibration_meta["validation_effective_n"] == pytest.approx(
+        float(positive.sum())
+    )
+    assert calibration_meta["small_fold_warning"] is True
+    warning_codes = {
+        warning["code"]
+        for warning in model.model_.auto_params_["diagnostics"]["warnings"]
     }
+    assert "small_sigma_calibration_fold" in warning_codes
 
 
 def test_gaussian_sigma_calibration_requires_validation_and_survives_refit_load(
@@ -425,6 +435,11 @@ def test_gaussian_sigma_calibration_requires_validation_and_survives_refit_load(
 
     path = tmp_path / "calibrated_gaussian.npz"
     model.save_model(path)
+    with np.load(path, allow_pickle=False) as data:
+        header = json.loads(str(data["header"]))
+    state = header["wrapper"]["state"]
+    assert state["sigma_calibration"] == "scalar"
+    assert state["sigma_scale"] == model.sigma_scale_
     loaded = ChimeraBoostRegressor.load_model(path)
     assert loaded.sigma_calibration_ == "scalar"
     assert loaded.sigma_scale_ == model.sigma_scale_
@@ -662,6 +677,7 @@ def test_gaussian_serialization_roundtrip(tmp_path):
     assert header["model_class"] == "DistributionalBoosting"
     assert header["n_outputs"] == 2
     assert "n_classes" not in header
+    assert "sigma_scale" not in header["wrapper"]["state"]
     np.testing.assert_allclose(loaded.predict(X[:20]), model.predict(X[:20]))
 
 

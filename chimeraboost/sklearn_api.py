@@ -1,5 +1,7 @@
 """Scikit-learn flavored estimators: fit / predict / predict_proba."""
 
+import warnings
+
 import numpy as np
 from ._validation import (
     array_like_to_numpy,
@@ -14,6 +16,7 @@ from .booster import (
     GradientBoosting,
     MulticlassBoosting,
     _apply_thread_count,
+    _normalize_diagnostic_warnings,
     _normalize_tree_mode,
 )
 from .auto_params import (
@@ -42,6 +45,8 @@ _REFIT_STRATEGY_EXPONENT = {
 }
 
 _AUTO_TREE_MODE_CANDIDATES = ("catboost", "lightgbm", "hybrid")
+_SIGMA_CALIBRATION_MIN_EFFECTIVE_N = 200.0
+_EMITTED_WRAPPER_DIAGNOSTIC_WARNING_CODES = set()
 
 
 def _normalize_tree_mode_token(tree_mode):
@@ -101,6 +106,34 @@ def _fit_scalar_sigma_scale(model, X_val, y_val, sample_weight=None):
         z2 = ((y_val - mu) / sigma) ** 2
         scale2 = float(np.average(z2, weights=w[positive]))
     return float(np.sqrt(max(scale2, 1e-12)))
+
+
+def _sigma_calibration_fold_stats(n_samples, sample_weight=None):
+    n_samples = int(n_samples)
+    if sample_weight is None:
+        return {
+            "validation_n_samples": n_samples,
+            "validation_positive_weight_n": n_samples,
+            "validation_effective_n": float(n_samples),
+            "small_fold_threshold": _SIGMA_CALIBRATION_MIN_EFFECTIVE_N,
+            "small_fold_warning": (
+                float(n_samples) < _SIGMA_CALIBRATION_MIN_EFFECTIVE_N
+            ),
+        }
+    w = np.asarray(sample_weight, dtype=np.float64)
+    positive = w > 0.0
+    w_pos = w[positive]
+    if w_pos.size == 0:
+        n_eff = 0.0
+    else:
+        n_eff = float((np.sum(w_pos) ** 2) / np.sum(w_pos * w_pos))
+    return {
+        "validation_n_samples": n_samples,
+        "validation_positive_weight_n": int(w_pos.size),
+        "validation_effective_n": n_eff,
+        "small_fold_threshold": _SIGMA_CALIBRATION_MIN_EFFECTIVE_N,
+        "small_fold_warning": n_eff < _SIGMA_CALIBRATION_MIN_EFFECTIVE_N,
+    }
 
 
 def _resolve_validation_fraction(validation_fraction, sample_weight, n_samples):
@@ -425,6 +458,7 @@ class _RefitParamsMixin:
             "refit_strategy_", "tree_mode_selection_",
             "selection_model_persisted_", "sigma_calibration_",
             "sigma_scale_", "sigma_scale_source_",
+            "sigma_calibration_fold_stats_",
         ):
             if hasattr(self, name):
                 delattr(self, name)
@@ -609,7 +643,10 @@ class _RefitParamsMixin:
             state["selection_n_total"] = self._selection_n_total_
         if hasattr(self, "_selection_n_train_"):
             state["selection_n_train"] = self._selection_n_train_
-        if hasattr(self, "sigma_scale_"):
+        if (
+            hasattr(self, "sigma_scale_")
+            and getattr(self, "sigma_calibration_", None) is not None
+        ):
             state["sigma_scale"] = float(self.sigma_scale_)
             state["sigma_calibration"] = getattr(
                 self, "sigma_calibration_", None
@@ -678,9 +715,51 @@ class _RefitParamsMixin:
             "sigma_scale": float(self.sigma_scale_),
             "source": getattr(self, "sigma_scale_source_", None),
         }
+        fold_stats = getattr(self, "sigma_calibration_fold_stats_", None)
+        if fold_stats is not None:
+            metadata.update(fold_stats)
         auto_params["sigma_calibration"] = metadata
         auto_params.setdefault("diagnostics", {})
-        auto_params["diagnostics"]["sigma_calibration"] = metadata
+        diagnostics = auto_params["diagnostics"]
+        diagnostics["sigma_calibration"] = metadata
+        if metadata.get("small_fold_warning"):
+            warning_record = {
+                "code": "small_sigma_calibration_fold",
+                "message": (
+                    "ChimeraBoost sigma_calibration='scalar' was estimated "
+                    "from a small validation fold "
+                    f"(effective n={metadata['validation_effective_n']:.1f} "
+                    f"< {_SIGMA_CALIBRATION_MIN_EFFECTIVE_N:.0f}); the sigma "
+                    "scale may be noisy."
+                ),
+            }
+            warning_codes = {
+                warning.get("code")
+                for warning in diagnostics.setdefault("warnings", [])
+            }
+            if warning_record["code"] not in warning_codes:
+                diagnostics["warnings"].append(warning_record)
+            self._emit_wrapper_diagnostic_warning(diagnostics, warning_record)
+
+    def _emit_wrapper_diagnostic_warning(self, diagnostics, warning_record):
+        policy = _normalize_diagnostic_warnings(
+            getattr(self, "diagnostic_warnings", "once")
+        )
+        diagnostics["runtime_warning_policy"] = policy
+        emitted = diagnostics.setdefault("runtime_warnings_emitted", [])
+        if policy == "never":
+            return
+        code = warning_record.get("code")
+        if (
+            policy == "once"
+            and code in _EMITTED_WRAPPER_DIAGNOSTIC_WARNING_CODES
+        ):
+            return
+        warnings.warn(warning_record["message"], RuntimeWarning, stacklevel=3)
+        if code is not None:
+            emitted.append(code)
+            if policy == "once":
+                _EMITTED_WRAPPER_DIAGNOSTIC_WARNING_CODES.add(code)
 
     def _refit_params_for_booster(self, strategy):
         params = self.get_refit_params(strategy=strategy)
@@ -1237,6 +1316,11 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                     selection_model, X_cal, y_cal, eval_sample_weight
                 )
                 self.sigma_scale_source_ = "selection_validation"
+                self.sigma_calibration_fold_stats_ = (
+                    _sigma_calibration_fold_stats(
+                        len(y_cal), eval_sample_weight
+                    )
+                )
             self._attach_sigma_calibration_metadata()
 
         if self.refit and selection_active:

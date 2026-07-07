@@ -315,3 +315,6 @@ early-stopped coverage from mild undercoverage (0.894-0.885) back to about
 CatBoost uncertainty remains the fastest external uncertainty lane but has
 worse NLL/CRPS. The LightGBM twin model has strong point RMSE and sharply
 under-covers, with only about 62% empirical coverage for nominal 90% intervals.
+Treat the sigma-quality conclusion as synthetic-gate evidence. Before using
+`sigma` downstream as observation noise, run the same lanes on real
+heteroscedastic regression data and the intended domain data.

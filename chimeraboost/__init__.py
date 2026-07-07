@@ -13,7 +13,7 @@ Public API:
 
 # Single source of truth for the package version (pyproject reads this).
 # Defined before submodule imports so they may reference it safely.
-__version__ = "0.5.2"
+__version__ = "0.6.0"
 
 from .sklearn_api import (
     ChimeraBoostRegressor,

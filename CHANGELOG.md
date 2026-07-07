@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 - 2026-07-07
 
 * Add native Gaussian distributional regression with
   `ChimeraBoostRegressor(loss="Gaussian", tree_mode="lightgbm")`, including
@@ -16,7 +16,8 @@
   the wrapper fits a validation-set global sigma scale at the selected best
   prefix, persists it through `.npz` save/load, and applies it to
   `predict_dist`, `predict_interval`, and `sample` without changing raw scores
-  or point predictions.
+  or point predictions. Fits with fewer than 200 effective calibration rows
+  record a `small_sigma_calibration_fold` diagnostic warning.
 * Enable `ChimeraBoostStepwiseSearchCV` for Gaussian regressors on the
   LightGBM lane with Gaussian NLL default scoring and Gaussian-safe
   sampling/regularization suggestions.

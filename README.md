@@ -167,7 +167,28 @@ Gaussian models. It fits the NLL-optimal global scale
 prefix, persists the scale through save/load, and applies it to
 `predict_dist`, `predict_interval`, and `sample`. It does not change
 `predict()` or `predict_raw()`. With `refit=True`, the scale is frozen from the
-selection-phase validation model and then applied to the full-data refit.
+selection-phase validation model and then applied to the full-data refit. The
+calibration fold is the same fold used for early stopping, so the scale has a
+small selection bias; the benchmark below found that negligible, but fits with
+an effective calibration fold below 200 rows record a diagnostic warning
+because the scale estimate can be noisy.
+
+Distributional benchmark, mean over three seeds on the synthetic
+heteroscedastic gate:
+
+| model | NLL 100k | NLL 500k | CRPS 500k | cov90 500k | fit s 500k |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| ChimeraBoost Gaussian, early-stopped + calibrated | **0.990** | **0.983** | **0.390** | 0.900 | 10.5 |
+| NGBoost Normal | 1.014 | 1.008 | 0.396 | 0.905 | 125.9 |
+| CatBoost `RMSEWithUncertainty` | 1.058 | 1.056 | 0.410 | 0.909 | 0.8 |
+| LightGBM twin-model variance hack | 1.644 | 1.630 | 0.419 | 0.619 | 3.5 |
+
+Command and per-seed rows live in
+[BENCHMARK_NOTES.md](BENCHMARK_NOTES.md) and
+[benchmarks/distributional_summary.md](benchmarks/distributional_summary.md).
+Before using predicted `sigma` as downstream observation noise, validate on
+real data with natural heteroscedasticity; the promotion table above is
+synthetic.
 
 Not implemented for Gaussian distributional regression in v1: CatBoost-style
 per-parameter scalar trees, GOSS/MVS distributional sampling, Bayesian

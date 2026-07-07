@@ -42,6 +42,11 @@ Changes adopted from that evidence:
   best-model truncation, persists it through wrapper state, and applies it to
   `predict_dist`, `predict_interval`, and `sample`. It does **not** alter
   `predict_raw` or `predict`.
+- The calibration fold is deliberately the same fold used for early stopping.
+  This introduces a small selection bias because the fold also chose the best
+  prefix, but the full benchmark found the effect negligible. Fits with a
+  scalar calibration effective validation size below 200 record
+  `small_sigma_calibration_fold` in `auto_params_["diagnostics"]["warnings"]`.
 - With `refit=True`, the scalar scale is frozen from the selection-phase model
   because the full-data refit has no validation target left for calibration.
 - OOF calibration, affine `a + b·log σ`, per-head LR/L2/gain knobs, and
@@ -49,6 +54,24 @@ Changes adopted from that evidence:
   tuning surface without evidence yet; affine calibration should only be
   revisited if σ-binned coverage shows dispersion-dependent residual error
   that a scalar cannot fix.
+
+## 0.2 As-built surface beyond the initial draft
+
+The implementation intentionally surpassed the first version of this spec in
+four places, and this document now treats them as part of v1:
+
+- Uniform row subsampling and column subsampling are supported for Gaussian
+  LightGBM-mode fits. Empty sampled draws keep one high-payload row, and
+  sampled/masked depth-0 rounds retry up to the same capped guard used by the
+  shared-vector path.
+- `eval_metric="crps"` is public for Gaussian validation history,
+  early-stopping patience, and best-prefix truncation.
+- `ChimeraBoostStepwiseSearchCV` supports Gaussian regressors on the resolved
+  LightGBM lane with a Gaussian-safe search space.
+- `sigma_calibration="scalar"` is public, opt-in, validation-only calibration.
+
+GOSS/MVS row sampling, Bayesian bootstrap, ordered boosting, non-LightGBM tree
+modes, and float32 vector histograms remain rejected.
 
 ---
 
@@ -717,16 +740,28 @@ finished and best-prefix truncation has run, compute:
 
 ```python
 mu, sigma = selection_model.predict_dist(X_cal)
-z2 = ((y_cal - mu) / np.maximum(sigma, 1e-12)) ** 2
-sigma_scale_ = sqrt(weighted_average(z2, eval_sample_weight))
+if eval_sample_weight is None:
+    z2 = ((y_cal - mu) / np.maximum(sigma, 1e-12)) ** 2
+    sigma_scale_ = sqrt(mean(z2))
+else:
+    positive = eval_sample_weight > 0
+    z2 = (
+        (y_cal[positive] - mu[positive])
+        / np.maximum(sigma[positive], 1e-12)
+    ) ** 2
+    sigma_scale_ = sqrt(weighted_average(z2, eval_sample_weight[positive]))
 ```
 
 Store `sigma_calibration_`, `sigma_scale_`, and `sigma_scale_source_ =
 "selection_validation"` on the wrapper and mirror them into
 `model_.auto_params_["sigma_calibration"]` and
-`model_.auto_params_["diagnostics"]["sigma_calibration"]`. For `refit=True`,
-do not recompute the scale on full data; reattach the same frozen value to the
-refit model metadata.
+`model_.auto_params_["diagnostics"]["sigma_calibration"]`, including raw
+validation row count, positive-weight row count, effective validation row count,
+and a `small_fold_warning` flag. If the effective calibration size is below
+200, append `small_sigma_calibration_fold` to
+`auto_params_["diagnostics"]["warnings"]` and emit it under the existing
+`diagnostic_warnings` policy. For `refit=True`, do not recompute the scale on
+full data; reattach the same frozen value to the refit model metadata.
 
 ### 7.3 LR probe
 
@@ -787,9 +822,10 @@ experiments. `predict()` returns μ and is unchanged by sigma calibration.
 The scalar losses return `(n,)` from `predict_raw` while Gaussian returns `(n, 2)` — the branch above keys on `self.loss`, which is correct for a fitted wrapper but **also make the loaded-model path set `self.loss = "Gaussian"`** (§8) so a wrapper reconstructed from npz dispatches correctly. In `ChimeraBoostRegressor.load_model`, after `booster, wrapper_header, _ = load_booster(...)`, if `isinstance(booster, DistributionalBoosting)`, force `est.loss = booster.loss_name` after restoring wrapper params. If wrapper params exist and say a different loss, raise a model-archive error rather than letting wrapper dispatch diverge from the loaded booster.
 
 Wrapper state must also persist `sigma_scale`, `sigma_calibration`, and
-`sigma_scale_source` when present. A loaded calibrated Gaussian wrapper should
-match pre-save `predict_dist` exactly; an uncalibrated or legacy archive should
-default to scale `1.0`.
+`sigma_scale_source` when calibration is active. A loaded calibrated Gaussian
+wrapper should match pre-save `predict_dist` exactly; an uncalibrated or legacy
+archive should default to scale `1.0` without writing a no-op `sigma_scale=1.0`
+wrapper-state field.
 
 ### 7.6 Diagnostics
 
