@@ -27,6 +27,7 @@ from .auto_params import (
     resolve_learning_rate_details,
 )
 from .losses import VECTOR_LOSSES
+from .linear_residual import WeightedRidgeTrend, validate_linear_residual_loss
 from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin
 from sklearn.utils.multiclass import type_of_target
 from sklearn.utils.validation import check_is_fitted
@@ -37,7 +38,9 @@ _SKLEARN_ONLY = frozenset({
     "refit_strategy", "auto_learning_rate_probe",
     "auto_learning_rate_probe_values", "auto_learning_rate_probe_iterations",
     "dist_calibration", "dist_calibration_feature", "dist_params",
-    "sigma_calibration",
+    "sigma_calibration", "linear_residual", "linear_residual_alpha",
+    "linear_residual_features", "linear_residual_fit_intercept",
+    "linear_residual_standardize",
 })
 
 _REFIT_STRATEGY_EXPONENT = {
@@ -113,6 +116,12 @@ def _normalize_sigma_calibration(calibration):
 
 def _is_distributional_loss(loss):
     return loss in VECTOR_LOSSES
+
+
+def _should_use_linear_residual(setting):
+    if not isinstance(setting, (bool, np.bool_)):
+        raise ValueError("linear_residual must be a bool")
+    return bool(setting)
 
 
 def _normalize_dist_calibration(
@@ -1093,6 +1102,249 @@ class _RefitParamsMixin:
             if hasattr(self, name):
                 delattr(self, name)
 
+    def _clear_linear_residual_state(self):
+        for name in (
+            "linear_residual_enabled_", "linear_residual_active_",
+            "linear_residual_inactive_reason_", "linear_residual_trend_",
+            "linear_residual_alpha_", "linear_residual_fit_intercept_",
+            "linear_residual_standardize_", "linear_residual_feature_indices_",
+            "linear_residual_feature_names_", "linear_residual_dropped_features_",
+            "linear_residual_intercept_", "linear_residual_coef_",
+            "linear_residual_transformed_coef_", "linear_residual_center_",
+            "linear_residual_scale_", "linear_residual_impute_values_",
+            "linear_residual_rank_", "linear_residual_singular_values_",
+            "linear_residual_weight_sum_", "linear_residual_positive_weight_n_",
+            "linear_residual_effective_n_", "linear_residual_target_mean_",
+            "linear_residual_trend_train_mean_",
+            "linear_residual_residual_stats_",
+            "selection_linear_residual_summary_",
+        ):
+            if hasattr(self, name):
+                delattr(self, name)
+
+    def _set_linear_residual_disabled_state(self):
+        self.linear_residual_enabled_ = False
+        self.linear_residual_active_ = False
+        self.linear_residual_inactive_reason_ = "disabled"
+        self.linear_residual_trend_ = None
+        self.linear_residual_alpha_ = float(
+            getattr(self, "linear_residual_alpha", 1.0)
+        )
+        self.linear_residual_fit_intercept_ = bool(
+            getattr(self, "linear_residual_fit_intercept", True)
+        )
+        self.linear_residual_standardize_ = bool(
+            getattr(self, "linear_residual_standardize", True)
+        )
+        self.linear_residual_feature_indices_ = np.empty(0, dtype=np.int64)
+        self.linear_residual_feature_names_ = None
+        self.linear_residual_dropped_features_ = []
+        self.linear_residual_intercept_ = 0.0
+        self.linear_residual_coef_ = np.empty(0, dtype=np.float64)
+        self.linear_residual_transformed_coef_ = np.empty(0, dtype=np.float64)
+        self.linear_residual_center_ = np.empty(0, dtype=np.float64)
+        self.linear_residual_scale_ = np.empty(0, dtype=np.float64)
+        self.linear_residual_impute_values_ = np.empty(0, dtype=np.float64)
+        self.linear_residual_rank_ = 0
+        self.linear_residual_singular_values_ = np.empty(0, dtype=np.float64)
+        self.linear_residual_weight_sum_ = 0.0
+        self.linear_residual_positive_weight_n_ = 0
+        self.linear_residual_effective_n_ = 0.0
+        self.linear_residual_target_mean_ = 0.0
+        self.linear_residual_trend_train_mean_ = 0.0
+        self.linear_residual_residual_stats_ = {}
+
+    def _sync_linear_residual_state(self, trend, *, enabled):
+        self.linear_residual_enabled_ = bool(enabled)
+        self.linear_residual_trend_ = trend
+        self.linear_residual_active_ = bool(getattr(trend, "active_", False))
+        self.linear_residual_inactive_reason_ = getattr(
+            trend, "inactive_reason_", None
+        )
+        self.linear_residual_alpha_ = float(getattr(trend, "alpha_", trend.alpha))
+        self.linear_residual_fit_intercept_ = bool(
+            getattr(trend, "fit_intercept_", trend.fit_intercept)
+        )
+        self.linear_residual_standardize_ = bool(
+            getattr(trend, "standardize_", trend.standardize)
+        )
+        self.linear_residual_feature_indices_ = np.asarray(
+            getattr(trend, "feature_indices_", np.empty(0, dtype=np.int64)),
+            dtype=np.int64,
+        )
+        feature_names = getattr(trend, "feature_names_", None)
+        self.linear_residual_feature_names_ = (
+            None if feature_names is None
+            else np.asarray(feature_names, dtype=object)
+        )
+        self.linear_residual_dropped_features_ = list(
+            getattr(trend, "dropped_features_", [])
+        )
+        self.linear_residual_intercept_ = float(
+            getattr(trend, "intercept_", 0.0)
+        )
+        self.linear_residual_coef_ = np.asarray(
+            getattr(trend, "coef_", np.empty(0, dtype=np.float64)),
+            dtype=np.float64,
+        )
+        self.linear_residual_transformed_coef_ = np.asarray(
+            getattr(trend, "transformed_coef_", np.empty(0, dtype=np.float64)),
+            dtype=np.float64,
+        )
+        self.linear_residual_center_ = np.asarray(
+            getattr(trend, "center_", np.empty(0, dtype=np.float64)),
+            dtype=np.float64,
+        )
+        self.linear_residual_scale_ = np.asarray(
+            getattr(trend, "scale_", np.empty(0, dtype=np.float64)),
+            dtype=np.float64,
+        )
+        self.linear_residual_impute_values_ = np.asarray(
+            getattr(trend, "impute_values_", np.empty(0, dtype=np.float64)),
+            dtype=np.float64,
+        )
+        self.linear_residual_rank_ = int(getattr(trend, "rank_", 0))
+        self.linear_residual_singular_values_ = np.asarray(
+            getattr(trend, "singular_values_", np.empty(0, dtype=np.float64)),
+            dtype=np.float64,
+        )
+        self.linear_residual_weight_sum_ = float(
+            getattr(trend, "weight_sum_", 0.0)
+        )
+        self.linear_residual_positive_weight_n_ = int(
+            getattr(trend, "positive_weight_n_", 0)
+        )
+        self.linear_residual_effective_n_ = float(
+            getattr(trend, "effective_n_", 0.0)
+        )
+        self.linear_residual_target_mean_ = float(
+            getattr(trend, "target_mean_", 0.0)
+        )
+        self.linear_residual_trend_train_mean_ = float(
+            getattr(trend, "trend_train_mean_", 0.0)
+        )
+        self.linear_residual_residual_stats_ = dict(
+            getattr(trend, "residual_stats_", {})
+        )
+
+    def _fit_linear_residual_trend(
+        self, X, y, sample_weight, cat_features, feature_names
+    ):
+        if not _should_use_linear_residual(
+            getattr(self, "linear_residual", False)
+        ):
+            self._set_linear_residual_disabled_state()
+            return y
+        validate_linear_residual_loss(self.loss)
+        trend = WeightedRidgeTrend(
+            alpha=getattr(self, "linear_residual_alpha", 1.0),
+            features=getattr(self, "linear_residual_features", "auto"),
+            fit_intercept=getattr(self, "linear_residual_fit_intercept", True),
+            standardize=getattr(self, "linear_residual_standardize", True),
+        )
+        trend.fit(
+            X, y,
+            sample_weight=sample_weight,
+            cat_features=cat_features,
+            feature_names=feature_names,
+        )
+        self._sync_linear_residual_state(trend, enabled=True)
+        if not getattr(trend, "active_", False):
+            return y
+        return trend.residualize(X, y)
+
+    def _linear_residual_metadata(self):
+        enabled = bool(getattr(self, "linear_residual_enabled_", False))
+        if not enabled:
+            return {
+                "version": 1,
+                "enabled": False,
+                "active": False,
+                "inactive_reason": getattr(
+                    self, "linear_residual_inactive_reason_", "disabled"
+                ),
+                "predictive_variance_policy": "residual_only",
+                "beta_uncertainty_included": False,
+            }
+        trend = getattr(self, "linear_residual_trend_", None)
+        if trend is not None:
+            metadata = trend.summary()
+        else:
+            metadata = {
+                "version": 1,
+                "active": bool(getattr(self, "linear_residual_active_", False)),
+                "inactive_reason": getattr(
+                    self, "linear_residual_inactive_reason_", None
+                ),
+                "alpha": float(getattr(self, "linear_residual_alpha_", 1.0)),
+                "fit_intercept": bool(
+                    getattr(self, "linear_residual_fit_intercept_", True)
+                ),
+                "standardize": bool(
+                    getattr(self, "linear_residual_standardize_", True)
+                ),
+                "n_features": int(
+                    len(getattr(self, "linear_residual_feature_indices_", []))
+                ),
+                "feature_indices": [
+                    int(idx)
+                    for idx in getattr(
+                        self, "linear_residual_feature_indices_", []
+                    )
+                ],
+                "feature_names": (
+                    None
+                    if getattr(self, "linear_residual_feature_names_", None)
+                    is None
+                    else [
+                        str(name)
+                        for name in self.linear_residual_feature_names_
+                    ]
+                ),
+                "dropped_features": list(
+                    getattr(self, "linear_residual_dropped_features_", [])
+                ),
+                "rank": int(getattr(self, "linear_residual_rank_", 0)),
+                "weight_sum": float(
+                    getattr(self, "linear_residual_weight_sum_", 0.0)
+                ),
+                "positive_weight_n": int(
+                    getattr(self, "linear_residual_positive_weight_n_", 0)
+                ),
+                "effective_n": float(
+                    getattr(self, "linear_residual_effective_n_", 0.0)
+                ),
+                "target_mean": float(
+                    getattr(self, "linear_residual_target_mean_", 0.0)
+                ),
+                "trend_train_mean": float(
+                    getattr(self, "linear_residual_trend_train_mean_", 0.0)
+                ),
+                "residual_stats": dict(
+                    getattr(self, "linear_residual_residual_stats_", {})
+                ),
+            }
+        metadata["enabled"] = True
+        metadata["predictive_variance_policy"] = "residual_only"
+        metadata["beta_uncertainty_included"] = False
+        return metadata
+
+    def _attach_linear_residual_metadata(self):
+        model = getattr(self, "model_", None)
+        auto_params = getattr(model, "auto_params_", None)
+        if auto_params is None:
+            return
+        metadata = self._linear_residual_metadata()
+        selection_summary = getattr(
+            self, "selection_linear_residual_summary_", None
+        )
+        if selection_summary is not None:
+            metadata = dict(metadata)
+            metadata["selection_summary"] = selection_summary
+        auto_params["linear_residual"] = metadata
+        auto_params.setdefault("diagnostics", {})
+        auto_params["diagnostics"]["linear_residual"] = metadata
+
     def _record_input_feature_metadata(self, X, n_features):
         self.n_features_in_ = int(n_features)
         feature_names = _feature_names_from_input(X)
@@ -1329,6 +1581,75 @@ class _RefitParamsMixin:
                 state["sigma_group_affine"] = self.dist_group_affine_metadata_
             if fallback_reason is not None:
                 state["sigma_calibration_fallback_reason"] = fallback_reason
+        if hasattr(self, "linear_residual_enabled_"):
+            state["linear_residual_enabled"] = bool(
+                self.linear_residual_enabled_
+            )
+            trend = getattr(self, "linear_residual_trend_", None)
+            if trend is not None:
+                state.update(trend.state_header())
+            else:
+                state.update({
+                    "linear_residual_version": 1,
+                    "linear_residual_active": bool(
+                        getattr(self, "linear_residual_active_", False)
+                    ),
+                    "linear_residual_alpha": float(
+                        getattr(self, "linear_residual_alpha_", 1.0)
+                    ),
+                    "linear_residual_fit_intercept": bool(
+                        getattr(self, "linear_residual_fit_intercept_", True)
+                    ),
+                    "linear_residual_standardize": bool(
+                        getattr(self, "linear_residual_standardize_", True)
+                    ),
+                    "linear_residual_inactive_reason": getattr(
+                        self, "linear_residual_inactive_reason_", None
+                    ),
+                    "linear_residual_feature_names": (
+                        None
+                        if getattr(self, "linear_residual_feature_names_", None)
+                        is None
+                        else [
+                            str(name)
+                            for name in self.linear_residual_feature_names_
+                        ]
+                    ),
+                    "linear_residual_dropped_features": list(
+                        getattr(self, "linear_residual_dropped_features_", [])
+                    ),
+                    "linear_residual_intercept": float(
+                        getattr(self, "linear_residual_intercept_", 0.0)
+                    ),
+                    "linear_residual_rank": int(
+                        getattr(self, "linear_residual_rank_", 0)
+                    ),
+                    "linear_residual_weight_sum": float(
+                        getattr(self, "linear_residual_weight_sum_", 0.0)
+                    ),
+                    "linear_residual_positive_weight_n": int(
+                        getattr(self, "linear_residual_positive_weight_n_", 0)
+                    ),
+                    "linear_residual_effective_n": float(
+                        getattr(self, "linear_residual_effective_n_", 0.0)
+                    ),
+                    "linear_residual_target_mean": float(
+                        getattr(self, "linear_residual_target_mean_", 0.0)
+                    ),
+                    "linear_residual_trend_train_mean": float(
+                        getattr(self, "linear_residual_trend_train_mean_", 0.0)
+                    ),
+                    "linear_residual_residual_stats": dict(
+                        getattr(self, "linear_residual_residual_stats_", {})
+                    ),
+                    "linear_residual_prediction_mode": "additive_location",
+                    "linear_residual_beta_uncertainty_included": False,
+                })
+            selection_summary = getattr(
+                self, "selection_linear_residual_summary_", None
+            )
+            if selection_summary is not None:
+                state["selection_linear_residual_summary"] = selection_summary
         return state
 
     def _wrapper_params_header(self):
@@ -1344,6 +1665,37 @@ class _RefitParamsMixin:
                 else normalize_random_state_seed(random_state)
             )
         return params
+
+    def _wrapper_arrays(self):
+        arrays = {}
+        if not getattr(self, "linear_residual_active_", False):
+            return arrays
+        trend = getattr(self, "linear_residual_trend_", None)
+        if trend is not None:
+            arrays.update(trend.state_arrays())
+            return arrays
+        arrays["linear_residual_feature_indices"] = np.asarray(
+            self.linear_residual_feature_indices_, dtype=np.int64
+        )
+        arrays["linear_residual_coef"] = np.asarray(
+            self.linear_residual_coef_, dtype=np.float64
+        )
+        arrays["linear_residual_transformed_coef"] = np.asarray(
+            self.linear_residual_transformed_coef_, dtype=np.float64
+        )
+        arrays["linear_residual_center"] = np.asarray(
+            self.linear_residual_center_, dtype=np.float64
+        )
+        arrays["linear_residual_scale"] = np.asarray(
+            self.linear_residual_scale_, dtype=np.float64
+        )
+        arrays["linear_residual_impute_values"] = np.asarray(
+            self.linear_residual_impute_values_, dtype=np.float64
+        )
+        arrays["linear_residual_singular_values"] = np.asarray(
+            self.linear_residual_singular_values_, dtype=np.float64
+        )
+        return arrays
 
     def _restore_wrapper_state(self, state):
         state = state or {}
@@ -1454,6 +1806,57 @@ class _RefitParamsMixin:
                 self.dist_mean_calibration_objective_ = str(
                     state["dist_mean_calibration_objective"]
                 )
+
+    def _restore_linear_residual_state(self, state, wrapper_arrays):
+        state = dict(state or {})
+        if (
+            "linear_residual_enabled" not in state
+            and "linear_residual_active" not in state
+        ):
+            self._set_linear_residual_disabled_state()
+            return
+        enabled = bool(
+            state.get(
+                "linear_residual_enabled",
+                state.get("linear_residual_active", False),
+            )
+        )
+        state["linear_residual_enabled"] = enabled
+        active = bool(state.get("linear_residual_active", False))
+        if active and not enabled:
+            raise ValueError(
+                "invalid ChimeraBoost model: active linear residual state "
+                "cannot be disabled"
+            )
+        if active:
+            validate_linear_residual_loss(getattr(self, "loss", "RMSE"))
+        trend = WeightedRidgeTrend.from_payload(
+            state,
+            wrapper_arrays or {},
+            n_features=getattr(self, "n_features_in_", None),
+        )
+        if (
+            active
+            and getattr(trend, "feature_names_", None) is not None
+            and hasattr(self, "feature_names_in_")
+        ):
+            expected = np.asarray(self.feature_names_in_, dtype=object)[
+                trend.feature_indices_
+            ]
+            if not np.array_equal(
+                np.asarray([str(name) for name in expected], dtype=object),
+                trend.feature_names_,
+            ):
+                raise ValueError(
+                    "invalid ChimeraBoost model: linear residual feature names "
+                    "do not match saved feature indices"
+                )
+        self._sync_linear_residual_state(trend, enabled=enabled)
+        if "selection_linear_residual_summary" in state:
+            self.selection_linear_residual_summary_ = state[
+                "selection_linear_residual_summary"
+            ]
+        self._attach_linear_residual_metadata()
 
     def _attach_dist_calibration_metadata(self, *, emit_warning=True):
         if not hasattr(self, "dist_scale_"):
@@ -1876,6 +2279,11 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                  dist_calibration_feature=_GROUP_AFFINE_DEFAULT_FEATURE,
                  dist_params=None,
                  sigma_calibration=None,
+                 linear_residual=False,
+                 linear_residual_alpha=1.0,
+                 linear_residual_features="auto",
+                 linear_residual_fit_intercept=True,
+                 linear_residual_standardize=True,
                  diagnostic_warnings="once",
                  auto_learning_rate_probe=False,
                  auto_learning_rate_probe_values=None,
@@ -1929,6 +2337,11 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self.dist_calibration_feature = dist_calibration_feature
         self.dist_params = dist_params
         self.sigma_calibration = sigma_calibration
+        self.linear_residual = linear_residual
+        self.linear_residual_alpha = linear_residual_alpha
+        self.linear_residual_features = linear_residual_features
+        self.linear_residual_fit_intercept = linear_residual_fit_intercept
+        self.linear_residual_standardize = linear_residual_standardize
         self.diagnostic_warnings = diagnostic_warnings
         self.histogram_dtype = histogram_dtype
         self.leaf_dtype = leaf_dtype
@@ -1964,11 +2377,12 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             Validation weights used when evaluating early stopping.
         """
         X_input = X
+        feature_names = _feature_names_from_input(X_input)
         X, cat_features, n_features = _coerce_fit_X(X, cat_features)
         eval_set = _ensure_dense_eval_set(eval_set)
         eval_set = _validate_eval_set_features(
             eval_set, n_features,
-            expected_feature_names=_feature_names_from_input(X_input),
+            expected_feature_names=feature_names,
         )
         y = validate_target_vector(y, X.shape[0], dtype=np.float64)
         sample_weight = _validate_wrapper_sample_weight(
@@ -1988,8 +2402,14 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         split_eval_n = None
 
         self._clear_refit_selection_metadata()
+        self._clear_linear_residual_state()
         tree_mode_auto = _is_auto_tree_mode(self.tree_mode)
         distributional_loss = _is_distributional_loss(self.loss)
+        linear_residual_enabled = _should_use_linear_residual(
+            self.linear_residual
+        )
+        if linear_residual_enabled:
+            validate_linear_residual_loss(self.loss)
         dist_calibration_ = _normalize_dist_calibration(
             self.dist_calibration,
             self.sigma_calibration,
@@ -2087,6 +2507,16 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             X, y = X[train_idx], y[train_idx]
             if sample_weight is not None:
                 sample_weight = sample_weight[train_idx]
+
+        y = self._fit_linear_residual_trend(
+            X, y, sample_weight, cat_features, feature_names
+        )
+        if eval_set is not None and self.linear_residual_active_:
+            X_eval, y_eval = eval_set
+            eval_set = (
+                X_eval,
+                self.linear_residual_trend_.residualize(X_eval, y_eval),
+            )
 
         if dist_calibration_ is not None and eval_set is None:
             calibration_name = (
@@ -2201,6 +2631,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self._attach_validation_metadata(validation_metadata)
         self._attach_learning_rate_probe_metadata(probe_metadata)
         self._attach_tree_mode_selection_metadata(tree_mode_selection_metadata)
+        self._attach_linear_residual_metadata()
         selection_model = self.model_
         self._record_selection_result(selection_model)
         if distributional_loss:
@@ -2354,13 +2785,25 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             )
 
         if self.refit and selection_active:
+            selection_linear_residual_summary = (
+                self._linear_residual_metadata()
+                if linear_residual_enabled else None
+            )
             refit_kw = self._refit_params_for_booster(self.refit_strategy)
             refit_model = make_model(refit_kw)
+            y_full_refit = self._fit_linear_residual_trend(
+                X_full, y_full, sample_weight_full, cat_features,
+                feature_names,
+            )
             refit_model.fit(
-                X_full, y_full, cat_features=cat_features,
+                X_full, y_full_refit, cat_features=cat_features,
                 sample_weight=sample_weight_full,
             )
             self.model_ = refit_model
+            if selection_linear_residual_summary is not None:
+                self.selection_linear_residual_summary_ = (
+                    selection_linear_residual_summary
+                )
             self._record_refit_result(selection_model, self.refit_strategy)
             refit_validation_metadata = {
                 "source": "refit_full_data",
@@ -2380,62 +2823,119 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             self._attach_selection_validation_metadata(validation_metadata)
             self._attach_learning_rate_probe_metadata(probe_metadata)
             self._attach_tree_mode_selection_metadata(tree_mode_selection_metadata)
+            self._attach_linear_residual_metadata()
             self._attach_dist_calibration_metadata()
         return self
 
+    def _linear_residual_trend(self, X):
+        if not getattr(self, "linear_residual_active_", False):
+            return None
+        return self.linear_residual_trend_.predict(X)
+
+    def _check_fitted_loss_matches_params(self, method_name):
+        model = getattr(self, "model_", None)
+        fitted_loss = getattr(model, "loss_name", None)
+        if fitted_loss is None:
+            return
+        current_loss = getattr(self, "loss", fitted_loss)
+        if current_loss != fitted_loss:
+            raise ValueError(
+                f"{method_name}() cannot be used after changing loss from "
+                f"the fitted loss {fitted_loss!r} to {current_loss!r}; "
+                "refit the estimator after set_params(loss=...)."
+            )
+
+    def _fitted_loss_name(self):
+        return getattr(getattr(self, "model_", None), "loss_name", self.loss)
+
+    def _fitted_distributional(self):
+        return isinstance(getattr(self, "model_", None), DistributionalBoosting)
+
+    def _linear_residual_shift_params(self, params, trend):
+        if trend is None:
+            return params
+        if self._fitted_loss_name() not in {"Gaussian", "StudentT"}:
+            return params
+        shifted = list(params)
+        shifted[0] = np.asarray(shifted[0], dtype=np.float64) + trend
+        return tuple(shifted)
+
+    @staticmethod
+    def _linear_residual_shift_interval(interval, trend):
+        if trend is None:
+            return interval
+        lo, hi = interval
+        return (
+            np.asarray(lo, dtype=np.float64) + trend,
+            np.asarray(hi, dtype=np.float64) + trend,
+        )
+
+    @staticmethod
+    def _linear_residual_shift_samples(samples, trend):
+        if trend is None:
+            return samples
+        return np.asarray(samples, dtype=np.float64) + trend[:, None]
+
     def predict(self, X):
         X = _check_predict_input(self, X)
+        self._check_fitted_loss_matches_params("predict")
+        trend = self._linear_residual_trend(X)
         raw = self.model_.predict_raw(X)
-        if _is_distributional_loss(self.loss):
+        if self._fitted_distributional():
             loss = self.model_.loss_
-            if self._active_dist_calibration() is not None and hasattr(
-                loss, "mean_from_params"
-            ):
-                return loss.mean_from_params(
-                    *self._calibrated_params_from_raw(raw, X)
+            if hasattr(loss, "mean_from_params"):
+                params = self._linear_residual_shift_params(
+                    self._calibrated_params_from_raw(raw, X), trend
                 )
+                return loss.mean_from_params(*params)
             return loss.mean_from_raw(raw)
-        return raw
+        return raw if trend is None else raw + trend
 
     def staged_predict(self, X):
         """Yield the prediction after each successive tree."""
         X = _check_predict_input(self, X)
-        if _is_distributional_loss(self.loss):
+        self._check_fitted_loss_matches_params("staged_predict")
+        trend = self._linear_residual_trend(X)
+        if self._fitted_distributional():
             loss = self.model_.loss_
             for raw in self.model_.staged_predict_raw(X):
-                if self._active_dist_calibration() is not None and hasattr(
-                    loss, "mean_from_params"
-                ):
-                    yield loss.mean_from_params(
-                        *self._calibrated_params_from_raw(raw, X)
+                if hasattr(loss, "mean_from_params"):
+                    params = self._linear_residual_shift_params(
+                        self._calibrated_params_from_raw(raw, X), trend
                     )
+                    yield loss.mean_from_params(*params)
                 else:
                     yield loss.mean_from_raw(raw)
         else:
-            yield from self.model_.staged_predict_raw(X)
+            for raw in self.model_.staged_predict_raw(X):
+                yield raw if trend is None else raw + trend
 
     def _require_distributional(self, method_name, capability=None):
-        if not _is_distributional_loss(self.loss):
+        self._check_fitted_loss_matches_params(method_name)
+        if not self._fitted_distributional():
             raise ValueError(
                 f"{method_name}() requires a distributional loss; this model was "
-                f"fit with loss={self.loss!r}"
+                f"fit with loss={self._fitted_loss_name()!r}"
             )
         loss = getattr(self.model_, "loss_", None)
         if capability == "interval" and not getattr(loss, "interval_support", False):
             raise NotImplementedError(
-                f"{method_name}() is not implemented for loss={self.loss!r}"
+                f"{method_name}() is not implemented for "
+                f"loss={self._fitted_loss_name()!r}"
             )
         if capability == "sample" and not getattr(loss, "sample_support", False):
             raise NotImplementedError(
-                f"{method_name}() is not implemented for loss={self.loss!r}"
+                f"{method_name}() is not implemented for "
+                f"loss={self._fitted_loss_name()!r}"
             )
         return loss
 
     def _require_gaussian(self, method_name):
-        if self.loss != "Gaussian":
+        self._check_fitted_loss_matches_params(method_name)
+        if not self._fitted_distributional() or self._fitted_loss_name() != "Gaussian":
             raise ValueError(
                 f"{method_name}() requires loss='Gaussian'; this model was "
-                f"fit with loss={self.loss!r}"
+                f"fit with loss={self._fitted_loss_name()!r}"
             )
 
     def _group_affine_scale_values(self, scale_values, X):
@@ -2472,7 +2972,10 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
 
     def _calibrated_params_from_raw(self, raw, X=None):
         loss = self.model_.loss_
-        params = list(loss.params_from_raw(raw))
+        if hasattr(self.model_, "params_from_raw"):
+            params = list(self.model_.params_from_raw(raw))
+        else:
+            params = list(loss.params_from_raw(raw))
         method = self._active_dist_calibration()
         if method is None:
             return tuple(params)
@@ -2525,7 +3028,10 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         X = _check_predict_input(self, X)
         self._require_distributional(method_name)
         raw = self.model_.predict_raw(X)
-        return self._calibrated_params_from_raw(raw, X)
+        params = self._calibrated_params_from_raw(raw, X)
+        return self._linear_residual_shift_params(
+            params, self._linear_residual_trend(X)
+        )
 
     def predict_dist(self, X):
         """Return distribution parameters for a fitted distributional model."""
@@ -2537,15 +3043,17 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         loss = self._require_distributional("predict_variance")
         raw = self.model_.predict_raw(X)
         if self._active_dist_calibration() is None:
+            if hasattr(self.model_, "variance_from_raw"):
+                return self.model_.variance_from_raw(raw)
             return loss.variance_from_raw(raw)
         params = self._calibrated_params_from_raw(raw, X)
         if hasattr(loss, "variance_from_params"):
             return loss.variance_from_params(*params)
-        if self.loss == "Gaussian":
+        if self._fitted_loss_name() == "Gaussian":
             return params[1] * params[1]
         raise NotImplementedError(
             f"predict_variance() with calibration is not implemented for "
-            f"loss={self.loss!r}"
+            f"loss={self._fitted_loss_name()!r}"
         )
 
     def predict_interval(self, X, alpha=0.1):
@@ -2557,15 +3065,16 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         loss = self._require_distributional(
             "predict_interval", capability="interval"
         )
+        trend = self._linear_residual_trend(X)
         raw = self.model_.predict_raw(X)
-        if self._active_dist_calibration() is None:
-            return loss.interval_from_raw(raw, alpha)
         params = self._calibrated_params_from_raw(raw, X)
         if hasattr(loss, "interval_from_params"):
-            return loss.interval_from_params(*params, alpha)
+            return self._linear_residual_shift_interval(
+                loss.interval_from_params(*params, alpha), trend
+            )
         raise NotImplementedError(
             f"predict_interval() with calibration is not implemented for "
-            f"loss={self.loss!r}"
+            f"loss={self._fitted_loss_name()!r}"
         )
 
     def sample(self, X, n_samples=1, random_state=None):
@@ -2575,15 +3084,17 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             raise ValueError("n_samples must be at least 1")
         X = _check_predict_input(self, X)
         loss = self._require_distributional("sample", capability="sample")
+        trend = self._linear_residual_trend(X)
         raw = self.model_.predict_raw(X)
         rng = np.random.default_rng(random_state)
-        if self._active_dist_calibration() is None:
-            return loss.sample_from_raw(raw, rng, n_samples)
         params = self._calibrated_params_from_raw(raw, X)
         if hasattr(loss, "sample_from_params"):
-            return loss.sample_from_params(*params, rng, n_samples)
+            return self._linear_residual_shift_samples(
+                loss.sample_from_params(*params, rng, n_samples), trend
+            )
         raise NotImplementedError(
-            f"sample() with calibration is not implemented for loss={self.loss!r}"
+            "sample() with calibration is not implemented for "
+            f"loss={self._fitted_loss_name()!r}"
         )
 
     def save_model(self, path):
@@ -2595,13 +3106,14 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             wrapper_header={"wrapper_class": type(self).__name__,
                             "params": self._wrapper_params_header(),
                             "state": self._wrapper_state_header()},
+            wrapper_arrays=self._wrapper_arrays(),
         )
 
     @classmethod
     def load_model(cls, path):
         """Load a model saved with :meth:`save_model`."""
         from .serialization import load_booster
-        booster, wrapper_header, _ = load_booster(
+        booster, wrapper_header, wrapper_arrays = load_booster(
             path, return_wrapper_payload=True
         )
         saved_class = wrapper_header.get("wrapper_class")
@@ -2628,7 +3140,11 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         est.model_ = booster
         if isinstance(booster, DistributionalBoosting):
             est.loss = booster.loss_name
-        est._restore_wrapper_state(wrapper_header.get("state", {}))
+        elif isinstance(booster, GradientBoosting):
+            est.loss = booster.loss_name
+        state = wrapper_header.get("state", {})
+        est._restore_wrapper_state(state)
+        est._restore_linear_residual_state(state, wrapper_arrays)
         return est
 
     @property
