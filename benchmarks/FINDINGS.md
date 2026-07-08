@@ -523,3 +523,102 @@ win in this auto/probe scenario.
 Decision: keep `histogram_dtype` and `leaf_dtype` opt-in, keep the shared
 preprocessing cache enabled for tree-mode/probe selection, and do not flip any
 defaults from this campaign alone.
+
+## 2026-07-07 — Leaf dtype default-flip gate after hot-path cleanup
+
+Default-flip scope was narrowed to `leaf_dtype="uint32"` only.
+`histogram_dtype="float32"` remains opt-in/experimental and is not part of the
+default campaign because it is scalar-only today, still pays float64-stream
+copy/refresh overhead, and lacks weighted/high-dynamic-range regret coverage.
+
+Implementation cleanup:
+
+- Replaced the hybrid/shared-trunk handoff
+  `np.bincount(leaf[row_order], minlength=n_leaves).astype(np.int64)` with a
+  typed Numba `_count_leaf_rows(...)` helper that writes directly into the
+  existing `leaf_count` buffer. This removes the `leaf[row_order]` temporary and
+  NumPy's uint32-to-index compatibility path while preserving the int64 and
+  uint32 leaf-id contracts.
+- Updated `benchmarks/bench_feature_modes.py` so the default campaign is
+  `default` vs `leaf_uint32`, with histogram configs included only via
+  `--include-hist` or explicit `--configs`.
+- The harness now runs multiple seeds, records median/best/mean fit time and
+  median/best/mean `timing["tree_build"]`, randomizes config order per
+  seed/thread/case, preserves exact prediction/history equality checks, and
+  emits a `leaf_gate` summary.
+
+Focused verification:
+
+```text
+python -m py_compile benchmarks/bench_feature_modes.py chimeraboost/tree.py
+
+python -m pytest tests/test_chimeraboost.py -q -k "uint32_leaf_dtype"
+6 passed, 305 deselected, 1 warning
+
+python -m pytest tests/test_distributional.py -q -k "histogram_dtype or leaf_dtype or shared_vector"
+1 passed, 35 deselected
+
+python -m pytest -q
+487 passed, 2 warnings
+```
+
+Smoke runs covered categorical CatBoost, weighted scalar CatBoost, and
+shared-vector multiclass cases with exact prediction/history parity.
+
+Primary 4-thread gate:
+
+```text
+python benchmarks/bench_feature_modes.py \
+  --seeds 20260707,20260708,20260709,20260710,20260711 \
+  --warmups 1 --repeats 5 --iterations 60 --threads 4 \
+  --json /private/tmp/chimera_leaf_gate_threads4.json
+```
+
+All 90 rows completed. `leaf_uint32` had exact prediction/probability equality,
+equal `train_history_`, and zero metric delta against default in every row.
+
+| case | wall median | wall min | tree-build median | tree-build min | parity |
+|---|---:|---:|---:|---:|---|
+| multiclass shared-vector 120k | 1.0156x | 0.9785x | 1.0216x | 0.9759x | yes |
+| multiclass shared-vector 60k | 1.0282x | 0.8989x | 1.0309x | 0.8895x | yes |
+| scalar CatBoost categorical 100k | 1.0147x | 0.8978x | 1.0214x | 0.9043x | yes |
+| scalar CatBoost numeric 120k | 1.0955x | 1.0530x | 1.1414x | 1.0909x | yes |
+| scalar CatBoost weighted 120k | 1.0460x | 0.9951x | 1.0609x | 1.0355x | yes |
+| scalar hybrid categorical 100k | 1.0439x | 0.9849x | 1.0434x | 0.9861x | yes |
+| scalar hybrid categorical 200k | 1.0270x | 1.0108x | 1.0297x | 1.0135x | yes |
+| scalar LightGBM wide 200k | 1.0108x | 0.8976x | 1.0151x | 0.8702x | yes |
+| scalar LightGBM wide 500k | 1.0399x | 0.9907x | 1.0483x | 0.9855x | yes |
+
+Gate outcome:
+
+- Global `leaf_dtype="uint32"` default: **fail**. Although pooled 4-thread
+  wall-clock median was positive at 1.0282x and all rows were behavior-exact,
+  several cases had median-row wall or tree-build ratios below the pre-set
+  0.99x floor.
+- CatBoost-only `leaf_dtype="auto"` fallback: **fail**. Numeric CatBoost was
+  consistently strong, but scalar CatBoost categorical 100k did not reach the
+  1.03x tree-build median bar and had sub-0.99 rows.
+
+Thread spot check:
+
+```text
+python benchmarks/bench_feature_modes.py \
+  --cases scalar_catboost_numeric_120k,scalar_catboost_categorical_100k \
+  --seeds 20260707,20260708,20260709,20260710,20260711 \
+  --warmups 1 --repeats 3 --iterations 60 --threads 1 \
+  --json /private/tmp/chimera_leaf_gate_threads1_spot.json
+```
+
+| case | wall median | wall min | tree-build median | tree-build min | parity |
+|---|---:|---:|---:|---:|---|
+| scalar CatBoost categorical 100k | 1.0291x | 0.9843x | 1.0394x | 0.9884x | yes |
+| scalar CatBoost numeric 120k | 1.0543x | 1.0511x | 1.0658x | 1.0625x | yes |
+
+The 1-thread spot improved the categorical median but still showed a sub-0.99
+minimum, so it does not overturn the 4-thread gate.
+
+Decision: no dtype defaults are changed. Keep `leaf_dtype="uint32"` as an
+opt-in with exact correctness coverage and a measured upside on several cases,
+especially numeric CatBoost, but do not ship it as a global default or
+CatBoost-only auto policy from this evidence. Keep `histogram_dtype="float32"`
+out of default-flip consideration.
