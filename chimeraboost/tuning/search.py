@@ -155,7 +155,7 @@ def _pooled_trial_sigma_calibration(trial):
     }
     if threshold is not None:
         stats["small_fold_threshold"] = threshold
-        stats["small_fold_warning"] = effective_n < threshold
+        stats["small_fold_warning"] = any_small_fold or effective_n < threshold
     else:
         stats["small_fold_warning"] = any_small_fold
     pooled_scale = float(np.sqrt(max(scale2_num / mass_den, 1e-12)))
@@ -676,10 +676,35 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
         params = dict(self.best_params_)
         fold_iterations = self.best_trial_.user_attrs.get("fold_best_iterations") or []
         fold_lrs = self.best_trial_.user_attrs.get("fold_learning_rates") or []
+        estimator_params = self.estimator.get_params()
+        dist_calibration = None
+        if getattr(self.estimator, "loss", None) in VECTOR_LOSSES:
+            dist_calibration = _normalize_dist_calibration(
+                estimator_params.get("dist_calibration"),
+                estimator_params.get("sigma_calibration"),
+            )
+            if dist_calibration is not None:
+                params["dist_calibration"] = None
+                params["sigma_calibration"] = None
+        refit_iterations_source = "preserve"
         if self.refit_rounds == "preserve":
-            pass
+            if dist_calibration is not None:
+                if not fold_iterations:
+                    raise ValueError(
+                        "refit_rounds='preserve' cannot reattach distribution "
+                        "calibration without fold_best_iterations; set "
+                        "refit=False or rerun the search with the current "
+                        "ChimeraBoost version"
+                    )
+                params["iterations"] = max(
+                    1, int(math.ceil(np.median(fold_iterations)))
+                )
+                refit_iterations_source = (
+                    "median_fold_best_for_calibrated_distribution"
+                )
         elif self.refit_rounds == "median_best" and fold_iterations:
             params["iterations"] = max(1, int(math.ceil(np.median(fold_iterations))))
+            refit_iterations_source = "median_best"
         else:
             raise ValueError(
                 "refit_rounds must be 'preserve' or 'median_best'"
@@ -701,16 +726,6 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
         params["early_stopping"] = False
         params["early_stopping_rounds"] = None
         params["refit"] = False
-        estimator_params = self.estimator.get_params()
-        dist_calibration = None
-        if getattr(self.estimator, "loss", None) in VECTOR_LOSSES:
-            dist_calibration = _normalize_dist_calibration(
-                estimator_params.get("dist_calibration"),
-                estimator_params.get("sigma_calibration"),
-            )
-            if dist_calibration is not None:
-                params["dist_calibration"] = None
-                params["sigma_calibration"] = None
         if "thread_count" in estimator_params:
             params["thread_count"] = estimator_params.get("thread_count")
         params = _filter_params(params, self.estimator)
@@ -791,6 +806,11 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
             final._attach_dist_calibration_metadata()
         self.best_estimator_ = final
         self.refit_params_ = params
+        self.refit_iterations_source_ = refit_iterations_source
+        self.tuning_metadata_["refit_iterations_source"] = refit_iterations_source
+        self.tuning_metadata_["refit_iterations"] = int(
+            params.get("iterations", getattr(final, "best_n_estimators_", 0) or 0)
+        )
         self.best_n_estimators_ = getattr(final, "best_n_estimators_", None)
         self.learning_rate_ = getattr(final, "learning_rate_", None)
         if hasattr(final, "classes_"):
