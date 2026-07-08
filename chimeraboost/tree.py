@@ -463,6 +463,15 @@ def _build_histograms_counts_selected_into(X_binned, grad, hess, leaf,
                 hc[f, l, b] += 1.0
 
 
+@njit(cache=True)
+def _count_leaf_rows(leaf, row_order, n_leaves, counts):
+    """Count rows per leaf for either int64 or uint32 leaf-id streams."""
+    for l in range(n_leaves):
+        counts[l] = 0
+    for p in range(row_order.shape[0]):
+        counts[int(leaf[row_order[p]])] += 1
+
+
 @njit(cache=True, parallel=True)
 def _build_histograms_counts_rows_into(X_binned, grad, hess, leaf,
                                        n_leaves, hg, hh, hc, row_indices):
@@ -5294,10 +5303,9 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                 row_order = np.argsort(leaf, kind="stable").astype(np.int64)
             else:
                 row_order = row_order[np.argsort(leaf[row_order], kind="stable")]
-            counts = np.bincount(leaf[row_order], minlength=n_leaves).astype(np.int64)
+            _count_leaf_rows(leaf, row_order, n_leaves, leaf_count)
             leaf_start.fill(0)
-            np.cumsum(counts, out=leaf_start[1:n_leaves + 1])
-            leaf_count[:n_leaves] = counts
+            np.cumsum(leaf_count[:n_leaves], out=leaf_start[1:n_leaves + 1])
             n_changed_leaves = n_leaves
 
     while n_leaves < max_leaves:
