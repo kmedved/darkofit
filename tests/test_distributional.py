@@ -504,6 +504,102 @@ def test_gaussian_affine_sigma_calibration_transforms_public_distribution_only(
     )
 
 
+def test_gaussian_per_metric_affine_calibration_applies_group_maps_and_roundtrips(
+    tmp_path,
+):
+    rng = np.random.default_rng(43)
+    n = 520
+    groups = np.tile([0.0, 1.0], n // 2)
+    x1 = rng.normal(size=n)
+    x2 = rng.normal(size=n)
+    X = np.column_stack([groups, x1, x2])
+    sigma = np.where(
+        groups == 0.0,
+        0.25 + 0.15 * np.abs(x1),
+        0.7 + 0.4 * np.abs(x2),
+    )
+    y = 0.4 * x1 - 0.2 * x2 + rng.normal(scale=sigma)
+
+    model = ChimeraBoostRegressor(
+        **_gaussian_test_params(
+            iterations=5,
+            random_state=7,
+            dist_calibration="per_metric_affine",
+            dist_calibration_feature=0,
+        )
+    ).fit(
+        X[:360],
+        y[:360],
+        cat_features=[0],
+        eval_set=(X[360:], y[360:]),
+    )
+
+    assert model.dist_calibration_ == "per_metric_affine"
+    assert model.dist_calibration_feature_index_ == 0
+    assert sorted(record["group"] for record in model.dist_group_affine_metadata_) == [
+        0.0,
+        1.0,
+    ]
+
+    raw_mu, raw_sigma = model.model_.predict_dist(X[360:390])
+    public_mu, public_sigma = model.predict_dist(X[360:390])
+    np.testing.assert_allclose(public_mu, raw_mu)
+    expected = np.empty_like(public_sigma)
+    for record in model.dist_group_affine_metadata_:
+        mask = X[360:390, 0] == record["group"]
+        expected[mask] = np.exp(
+            record["sigma_affine_a"]
+            + record["sigma_affine_b"] * np.log(raw_sigma[mask])
+        )
+    np.testing.assert_allclose(public_sigma, expected)
+    np.testing.assert_allclose(model.predict_variance(X[360:390]), expected * expected)
+
+    path = tmp_path / "per_metric_affine_gaussian.npz"
+    model.save_model(path)
+    loaded = ChimeraBoostRegressor.load_model(path)
+    assert loaded.dist_calibration_ == "per_metric_affine"
+    assert loaded.dist_calibration_feature_index_ == 0
+    np.testing.assert_allclose(
+        loaded.predict_dist(X[360:390])[1],
+        public_sigma,
+    )
+
+
+def test_gaussian_per_metric_affine_calibration_resolves_pandas_feature_name():
+    pd = pytest.importorskip("pandas")
+    rng = np.random.default_rng(44)
+    n = 260
+    groups = np.tile([0.0, 1.0], n // 2)
+    X = pd.DataFrame({
+        "metric_code": groups,
+        "x1": rng.normal(size=n),
+        "x2": rng.normal(size=n),
+    })
+    y = 0.3 * X["x1"].to_numpy() + rng.normal(
+        scale=0.4 + 0.2 * groups, size=n
+    )
+
+    model = ChimeraBoostRegressor(
+        **_gaussian_test_params(
+            iterations=4,
+            random_state=8,
+            dist_calibration="per_metric_affine",
+        )
+    ).fit(
+        X.iloc[:180],
+        y[:180],
+        cat_features=[0],
+        eval_set=(X.iloc[180:], y[180:]),
+    )
+
+    assert model.dist_calibration_feature_ == "metric_code"
+    assert model.dist_calibration_feature_index_ == 0
+    assert model.dist_calibration_feature_name_ == "metric_code"
+    public = model.predict_dist(X.iloc[180:190])[1]
+    assert np.all(np.isfinite(public))
+    assert np.all(public > 0.0)
+
+
 def test_gaussian_small_sigma_calibration_warning_respects_reset():
     import chimeraboost.booster as booster_mod
 
@@ -1461,6 +1557,53 @@ def test_gaussian_searchcv_refit_freezes_affine_sigma_calibration():
         public_sigma,
         np.exp(final.sigma_affine_a_ + final.sigma_affine_b_ * np.log(raw_sigma)),
     )
+
+
+def test_gaussian_searchcv_refit_freezes_per_metric_affine_sigma_calibration():
+    rng = np.random.default_rng(45)
+    n = 160
+    groups = np.tile([0.0, 1.0], n // 2)
+    X = np.column_stack([groups, rng.normal(size=(n, 3))])
+    y = 0.5 * X[:, 1] + rng.normal(scale=0.35 + 0.25 * groups, size=n)
+    search = ChimeraBoostStepwiseSearchCV(
+        ChimeraBoostRegressor(
+            loss="Gaussian",
+            tree_mode="lightgbm",
+            iterations=4,
+            learning_rate=0.1,
+            min_child_samples=2,
+            num_leaves=3,
+            dist_calibration="per_metric_affine",
+            dist_calibration_feature=0,
+            random_state=0,
+            diagnostic_warnings="never",
+            thread_count=1,
+        ),
+        phases=("probe",),
+        tree_modes=("lightgbm",),
+        n_trials={"probe": 1},
+        cv=2,
+        refit=True,
+        random_state=0,
+        resume=False,
+        trial_thread_count=1,
+    ).fit(X, y, cat_features=[0])
+
+    final = search.best_estimator_
+    assert search.refit_params_["dist_calibration"] is None
+    assert final.dist_calibration_ == "per_metric_affine"
+    assert final.dist_calibration_feature_index_ == 0
+    assert len(final.dist_group_affine_metadata_) == 2
+    _, raw_sigma = final.model_.predict_dist(X[:8])
+    _, public_sigma = final.predict_dist(X[:8])
+    expected = np.empty_like(public_sigma)
+    for record in final.dist_group_affine_metadata_:
+        mask = X[:8, 0] == record["group"]
+        expected[mask] = np.exp(
+            record["sigma_affine_a"]
+            + record["sigma_affine_b"] * np.log(raw_sigma[mask])
+        )
+    np.testing.assert_allclose(public_sigma, expected)
 
 
 def test_negative_binomial_searchcv_refit_freezes_dispersion_calibration():

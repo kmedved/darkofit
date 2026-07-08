@@ -18,6 +18,15 @@
   `predict_dist`, `predict_interval`, and `sample` without changing raw scores
   or point predictions. Fits with fewer than 200 effective calibration rows
   record a `small_sigma_calibration_fold` diagnostic warning.
+* Generalize distributional calibration under `dist_calibration`, including
+  global affine scale calibration and `dist_calibration="per_metric_affine"`
+  for grouped affine scale maps keyed by `dist_calibration_feature` (for
+  example `metric_code`). Grouped calibration is preserved through
+  prediction APIs, SearchCV refits, and `.npz` save/load.
+* Add WNBA DARKO real-data validation artifacts for per-metric affine Gaussian
+  calibration plus a scalar Kalman shadow replay that injects
+  `predict_variance()` as row-level `R_t` against the incumbent
+  `sigma2 / sample_weight` heuristic.
 * Enable `ChimeraBoostStepwiseSearchCV` for Gaussian regressors on the
   LightGBM lane with Gaussian NLL default scoring and Gaussian-safe
   sampling/regularization suggestions.

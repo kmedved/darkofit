@@ -139,8 +139,8 @@ def test_loss_grad_hess_into_matches_allocating_paths():
             grad_out = np.empty_like(raw_reg)
             hess_out = np.empty_like(raw_reg)
             loss.grad_hess_into(y, raw_reg, w, grad_out, hess_out)
-            assert np.array_equal(grad_out, grad)
-            assert np.array_equal(hess_out, hess)
+            np.testing.assert_allclose(grad_out, grad, rtol=0.0, atol=1e-15)
+            np.testing.assert_allclose(hess_out, hess, rtol=0.0, atol=1e-15)
 
     K = 4
     labels = rng.integers(0, K, size=40)

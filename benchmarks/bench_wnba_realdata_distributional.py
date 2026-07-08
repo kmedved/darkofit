@@ -562,8 +562,8 @@ def load_dataset(path):
 
 def fit_gaussian(name, X_train, y_train, w_train, X_val, y_val, w_val,
                  X_test, y_test, w_test, args, *, sigma_calibration,
-                 return_payload=False):
-    model = ChimeraBoostRegressor(
+                 dist_calibration_feature=None, return_payload=False):
+    model_kwargs = dict(
         loss="Gaussian",
         tree_mode="lightgbm",
         iterations=args.iterations,
@@ -581,6 +581,9 @@ def fit_gaussian(name, X_train, y_train, w_train, X_val, y_val, w_val,
         thread_count=args.thread_count,
         diagnostic_warnings="never",
     )
+    if dist_calibration_feature is not None:
+        model_kwargs["dist_calibration_feature"] = dist_calibration_feature
+    model = ChimeraBoostRegressor(**model_kwargs)
     start = time.perf_counter()
     model.fit(
         X_train,
@@ -700,6 +703,30 @@ def _run_affine_split(
         name,
         X_train, y_train, w_train, X_val, y_val, w_val,
         X_test, y_test, w_test, args, sigma_calibration="affine",
+        return_payload=True,
+    )
+    frame = _prediction_frame(
+        df.loc[test_mask].reset_index(drop=True),
+        y_test,
+        payload["mu"],
+        payload["sigma"],
+        w_test,
+    )
+    return result, payload, frame
+
+
+def _run_per_metric_affine_split(
+    df, X, y, w, args, *, train_mask, val_mask, test_mask
+):
+    X_train, y_train, w_train = X[train_mask], y[train_mask], w[train_mask]
+    X_val, y_val, w_val = X[val_mask], y[val_mask], w[val_mask]
+    X_test, y_test, w_test = X[test_mask], y[test_mask], w[test_mask]
+    result, payload = fit_gaussian(
+        "chimera_gaussian_per_metric_affine_calibrated",
+        X_train, y_train, w_train, X_val, y_val, w_val,
+        X_test, y_test, w_test, args,
+        sigma_calibration="per_metric_affine",
+        dist_calibration_feature=0,
         return_payload=True,
     )
     frame = _prediction_frame(
@@ -887,7 +914,10 @@ def write_csv(results, path):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(asdict(results[0]).keys()))
+        writer = csv.DictWriter(
+            handle, fieldnames=list(asdict(results[0]).keys()),
+            lineterminator="\n",
+        )
         writer.writeheader()
         for result in results:
             writer.writerow(asdict(result))
@@ -1014,7 +1044,8 @@ def write_markdown(
             "",
             "## Affine Calibration Diagnostics",
             "",
-            "Diagnostics below use the affine-calibrated Gaussian lane on the "
+            "Diagnostics below use the per-metric affine Gaussian lane when "
+            "available, otherwise the affine-calibrated Gaussian lane, on the "
             "held-out test split.",
             "",
             f"- PIT histogram deciles: {diagnostics['pit_histogram']}",
@@ -1083,10 +1114,18 @@ def write_markdown(
     calibrated = next(
         (
             r for r in results
-            if r.model == "chimera_gaussian_affine_calibrated"
+            if r.model == "chimera_gaussian_per_metric_affine_calibrated"
         ),
         None,
     )
+    if calibrated is None:
+        calibrated = next(
+            (
+                r for r in results
+                if r.model == "chimera_gaussian_affine_calibrated"
+            ),
+            None,
+        )
     verdict = "not evaluated"
     if calibrated is not None:
         if (
@@ -1215,6 +1254,15 @@ def main(argv=None):
         name="chimera_gaussian_affine_calibrated",
     )
     results.append(affine_result)
+    per_metric_result, per_metric_payload, per_metric_frame = (
+        _run_per_metric_affine_split(
+            df, X, y, w, args,
+            train_mask=train_mask,
+            val_mask=val_mask,
+            test_mask=test_mask,
+        )
+    )
+    results.append(per_metric_result)
     tuned_result, tuned_frame, tuning_rows = _run_tuned_affine_split(
         df, X, y, w, args,
         train_mask=train_mask,
@@ -1223,7 +1271,7 @@ def main(argv=None):
     )
     if tuned_result is not None:
         results.append(tuned_result)
-    diagnostics = _diagnostics_from_frame(affine_frame, args.sigma_bins)
+    diagnostics = _diagnostics_from_frame(per_metric_frame, args.sigma_bins)
     tuned_diagnostics = (
         None if tuned_frame is None
         else _diagnostics_from_frame(tuned_frame, args.sigma_bins)

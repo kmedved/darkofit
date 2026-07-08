@@ -36,7 +36,8 @@ _SKLEARN_ONLY = frozenset({
     "early_stopping", "validation_fraction", "validation_strategy", "refit",
     "refit_strategy", "auto_learning_rate_probe",
     "auto_learning_rate_probe_values", "auto_learning_rate_probe_iterations",
-    "dist_calibration", "dist_params", "sigma_calibration",
+    "dist_calibration", "dist_calibration_feature", "dist_params",
+    "sigma_calibration",
 })
 
 _REFIT_STRATEGY_EXPONENT = {
@@ -54,6 +55,7 @@ _SIGMA_CALIBRATION_Z_GUARD = 1000.0
 _SIGMA_CALIBRATION_INFLUENCE_TOP_K = 5
 _SIGMA_CALIBRATION_INFLUENCE_THRESHOLD = 0.5
 _SIGMA_MIN = 1e-12
+_GROUP_AFFINE_DEFAULT_FEATURE = "metric_code"
 
 
 def _normalize_tree_mode_token(tree_mode):
@@ -94,8 +96,18 @@ def _normalize_sigma_calibration(calibration):
         return "scalar"
     if mode in {"affine", "log_affine", "log_sigma_affine"}:
         return "affine"
+    if mode in {
+        "per_metric_affine",
+        "metric_affine",
+        "affine_by_metric",
+        "per_group_affine",
+        "group_affine",
+        "affine_by_group",
+    }:
+        return "per_metric_affine"
     raise ValueError(
-        "sigma_calibration must be None, False, True, 'scalar', or 'affine'"
+        "sigma_calibration must be None, False, True, 'scalar', 'affine', "
+        "or 'per_metric_affine'"
     )
 
 
@@ -115,7 +127,7 @@ def _normalize_dist_calibration(
         else:
             raise ValueError(
                 "dist_calibration must be None, False, True, 'scalar', "
-                "'affine', or 'dispersion'"
+                "'affine', 'per_metric_affine', or 'dispersion'"
             )
     sigma_mode = _normalize_sigma_calibration(sigma_calibration)
     if dist_mode is not None and sigma_mode is not None and dist_mode != sigma_mode:
@@ -134,7 +146,7 @@ def _normalize_dist_calibration(
     return dist_mode
 
 
-def _sigma_calibration_arrays(model, X_val, y_val, sample_weight=None):
+def _sigma_calibration_base_arrays(model, X_val, y_val):
     params = model.predict_dist(X_val)
     loss = getattr(model, "loss_", None)
     y_val = np.asarray(y_val, dtype=np.float64)
@@ -146,6 +158,11 @@ def _sigma_calibration_arrays(model, X_val, y_val, sample_weight=None):
     target = np.asarray(target, dtype=np.float64)
     mu = np.asarray(mu, dtype=np.float64)
     sigma = np.maximum(np.asarray(sigma, dtype=np.float64), _SIGMA_MIN)
+    return target, mu, sigma
+
+
+def _sigma_calibration_arrays(model, X_val, y_val, sample_weight=None):
+    target, mu, sigma = _sigma_calibration_base_arrays(model, X_val, y_val)
     if sample_weight is None:
         return target, mu, sigma, None
     w = np.asarray(sample_weight, dtype=np.float64)
@@ -376,6 +393,65 @@ def _profile_affine_sigma_calibration(residual2, log_sigma, b, sample_weight=Non
     return a, float(objective)
 
 
+def _fit_affine_sigma_calibration_from_arrays(
+    y_val, mu, sigma, sample_weight=None, *, loss=None, fold_stats=None
+):
+    if getattr(loss, "name", None) == "StudentT":
+        return _fit_affine_student_t_scale_calibration_from_arrays(
+            y_val, mu, sigma, loss.nu, sample_weight, fold_stats=fold_stats
+        )
+    scalar_scale = _fit_scalar_sigma_scale_from_arrays(
+        y_val, mu, sigma, sample_weight
+    )
+    fallback = None
+    if fold_stats is not None:
+        effective_n = float(fold_stats.get("validation_effective_n", 0.0))
+    else:
+        effective_n = float(y_val.shape[0]) if sample_weight is None else (
+            _weighted_sum(sample_weight, None) ** 2
+            / max(_weighted_sum(sample_weight * sample_weight, None), _SIGMA_MIN)
+        )
+    a = float(np.log(max(scalar_scale, _SIGMA_MIN)))
+    b = 1.0
+    if effective_n < _SIGMA_CALIBRATION_MIN_EFFECTIVE_N:
+        fallback = "small_fold"
+    else:
+        residual2 = np.maximum((y_val - mu) ** 2, 0.0)
+        log_sigma = np.log(np.maximum(sigma, _SIGMA_MIN))
+
+        def objective(candidate_b):
+            _, value = _profile_affine_sigma_calibration(
+                residual2, log_sigma, candidate_b, sample_weight
+            )
+            return value
+
+        lower, upper = _SIGMA_AFFINE_BOUNDS
+        best_b, best_value = _golden_section_minimize(objective, lower, upper)
+        boundary_eps = 1e-3
+        if (
+            not np.isfinite(best_value)
+            or best_b <= lower + boundary_eps
+            or best_b >= upper - boundary_eps
+        ):
+            fallback = "slope_bound"
+        else:
+            best_a, _ = _profile_affine_sigma_calibration(
+                residual2, log_sigma, best_b, sample_weight
+            )
+            if np.isfinite(best_a):
+                a = float(best_a)
+                b = float(best_b)
+            else:
+                fallback = "non_finite_profile"
+    sigma_scale = float(np.exp(np.clip(a, -700.0, 700.0)))
+    return {
+        "sigma_scale": sigma_scale,
+        "sigma_affine_a": a,
+        "sigma_affine_b": b,
+        "fallback_reason": fallback,
+    }
+
+
 def _golden_section_minimize(func, lower, upper, *, iterations=64, tol=1e-5):
     inv_phi = (np.sqrt(5.0) - 1.0) / 2.0
     inv_phi2 = (3.0 - np.sqrt(5.0)) / 2.0
@@ -418,57 +494,157 @@ def _fit_affine_sigma_calibration(
         model, X_val, y_val, sample_weight
     )
     loss = getattr(model, "loss_", None)
-    if getattr(loss, "name", None) == "StudentT":
-        return _fit_affine_student_t_scale_calibration_from_arrays(
-            y_val, mu, sigma, loss.nu, w, fold_stats=fold_stats
-        )
-    scalar_scale = _fit_scalar_sigma_scale_from_arrays(y_val, mu, sigma, w)
-    fallback = None
-    if fold_stats is not None:
-        effective_n = float(fold_stats.get("validation_effective_n", 0.0))
-    else:
-        effective_n = float(y_val.shape[0]) if w is None else (
-            _weighted_sum(w, None) ** 2 / max(_weighted_sum(w * w, None), _SIGMA_MIN)
-        )
-    a = float(np.log(max(scalar_scale, _SIGMA_MIN)))
-    b = 1.0
-    if effective_n < _SIGMA_CALIBRATION_MIN_EFFECTIVE_N:
-        fallback = "small_fold"
-    else:
-        residual2 = np.maximum((y_val - mu) ** 2, 0.0)
-        log_sigma = np.log(np.maximum(sigma, _SIGMA_MIN))
+    return _fit_affine_sigma_calibration_from_arrays(
+        y_val, mu, sigma, w, loss=loss, fold_stats=fold_stats
+    )
 
-        def objective(candidate_b):
-            _, value = _profile_affine_sigma_calibration(
-                residual2, log_sigma, candidate_b, w
+
+def _calibration_group_key(value):
+    if isinstance(value, np.generic):
+        value = value.item()
+    if isinstance(value, bytes):
+        value = value.decode("utf-8")
+    if isinstance(value, (str, bool)):
+        return value
+    if isinstance(value, (int, np.integer)):
+        return int(value)
+    if isinstance(value, (float, np.floating)):
+        value = float(value)
+        if not np.isfinite(value):
+            raise ValueError("dist_calibration_feature contains non-finite values")
+        return value
+    return str(value)
+
+
+def _normalize_calibration_groups(values):
+    values = np.asarray(values, dtype=object)
+    if values.ndim != 1:
+        raise ValueError("dist_calibration_feature must resolve to one column")
+    return np.asarray([_calibration_group_key(v) for v in values], dtype=object)
+
+
+def _jsonable_group_value(value):
+    value = _calibration_group_key(value)
+    if isinstance(value, (str, bool, int, float)):
+        return value
+    return str(value)
+
+
+def _resolve_dist_calibration_feature(feature, feature_names, n_features):
+    if feature is None:
+        feature = _GROUP_AFFINE_DEFAULT_FEATURE
+    if isinstance(feature, (int, np.integer)):
+        index = int(feature)
+        if index < 0:
+            index += int(n_features)
+        if index < 0 or index >= int(n_features):
+            raise ValueError(
+                "dist_calibration_feature index is out of bounds for X"
             )
-            return value
+        name = None
+        if feature_names is not None:
+            name = str(feature_names[index])
+        return index, name, feature
+    if isinstance(feature, str):
+        if feature_names is None:
+            raise ValueError(
+                "dist_calibration='per_metric_affine' with a string "
+                "dist_calibration_feature requires named input columns; pass "
+                "an integer column index for numpy arrays"
+            )
+        matches = np.flatnonzero(np.asarray(feature_names, dtype=object) == feature)
+        if matches.size != 1:
+            raise ValueError(
+                f"dist_calibration_feature={feature!r} was not found uniquely "
+                "in the fit feature names"
+            )
+        return int(matches[0]), feature, feature
+    raise ValueError("dist_calibration_feature must be a column name or index")
 
-        lower, upper = _SIGMA_AFFINE_BOUNDS
-        best_b, best_value = _golden_section_minimize(objective, lower, upper)
-        boundary_eps = 1e-3
+
+def _extract_feature_column_by_index(X, index):
+    iloc = getattr(X, "iloc", None)
+    if iloc is not None:
+        return np.asarray(iloc[:, int(index)], dtype=object)
+    arr = array_like_to_numpy(X, object)
+    if arr.ndim != 2:
+        raise ValueError("X must be a 2-dimensional array")
+    return np.asarray(arr[:, int(index)], dtype=object)
+
+
+def _fit_grouped_affine_sigma_calibration(
+    model, X_val, y_val, groups, sample_weight=None, *, fold_stats=None
+):
+    target, mu, sigma = _sigma_calibration_base_arrays(model, X_val, y_val)
+    groups = _normalize_calibration_groups(groups)
+    if groups.shape[0] != target.shape[0]:
+        raise ValueError(
+            "dist_calibration_feature column length must match validation rows"
+        )
+    w = None
+    if sample_weight is not None:
+        w_all = np.asarray(sample_weight, dtype=np.float64)
+        positive = w_all > 0.0
+        if not np.any(positive):
+            raise ValueError("eval_sample_weight must have positive total weight")
+        target = target[positive]
+        mu = mu[positive]
+        sigma = sigma[positive]
+        groups = groups[positive]
+        w = w_all[positive]
+
+    loss = getattr(model, "loss_", None)
+    global_calibration = _fit_affine_sigma_calibration_from_arrays(
+        target, mu, sigma, w, loss=loss, fold_stats=fold_stats
+    )
+    records = []
+    seen = []
+    for group in groups:
+        if not any(group == existing for existing in seen):
+            seen.append(group)
+    for group in seen:
+        mask = groups == group
+        group_w = None if w is None else w[mask]
+        group_stats = _sigma_calibration_fold_stats(int(np.sum(mask)), group_w)
+        mass = (
+            float(np.sum(group_w))
+            if group_w is not None
+            else float(np.sum(mask))
+        )
+        fallback_reason = None
         if (
-            not np.isfinite(best_value)
-            or best_b <= lower + boundary_eps
-            or best_b >= upper - boundary_eps
+            group_stats["validation_effective_n"]
+            < _SIGMA_CALIBRATION_MIN_EFFECTIVE_N
         ):
-            fallback = "slope_bound"
+            calibration = global_calibration
+            fallback_reason = "small_group"
         else:
-            best_a, _ = _profile_affine_sigma_calibration(
-                residual2, log_sigma, best_b, w
+            calibration = _fit_affine_sigma_calibration_from_arrays(
+                target[mask], mu[mask], sigma[mask], group_w,
+                loss=loss, fold_stats=group_stats,
             )
-            if np.isfinite(best_a):
-                a = float(best_a)
-                b = float(best_b)
-            else:
-                fallback = "non_finite_profile"
-    sigma_scale = float(np.exp(np.clip(a, -700.0, 700.0)))
-    return {
-        "sigma_scale": sigma_scale,
-        "sigma_affine_a": a,
-        "sigma_affine_b": b,
-        "fallback_reason": fallback,
-    }
+            fallback_reason = calibration.get("fallback_reason")
+        records.append({
+            "group": _jsonable_group_value(group),
+            "sigma_scale": float(calibration["sigma_scale"]),
+            "sigma_affine_a": float(calibration["sigma_affine_a"]),
+            "sigma_affine_b": float(calibration["sigma_affine_b"]),
+            "validation_n_samples": int(group_stats["validation_n_samples"]),
+            "validation_positive_weight_n": int(
+                group_stats["validation_positive_weight_n"]
+            ),
+            "validation_effective_n": float(
+                group_stats["validation_effective_n"]
+            ),
+            "validation_weight_sum": mass,
+            "fallback_reason": fallback_reason,
+        })
+    global_calibration["group_affine"] = records
+    global_calibration["group_count"] = len(records)
+    global_calibration["group_fallback_count"] = sum(
+        1 for record in records if record.get("fallback_reason") is not None
+    )
+    return global_calibration
 
 
 def _fit_affine_student_t_scale_calibration_from_arrays(
@@ -894,6 +1070,10 @@ class _RefitParamsMixin:
             "dist_scale_", "dist_scale_source_",
             "dist_calibration_fold_stats_",
             "dist_affine_a_", "dist_affine_b_",
+            "dist_group_affine_groups_", "dist_group_affine_a_",
+            "dist_group_affine_b_", "dist_group_affine_metadata_",
+            "dist_calibration_feature_", "dist_calibration_feature_index_",
+            "dist_calibration_feature_name_",
             "dist_calibration_fallback_reason_",
             "dist_calibration_influence_stats_",
             "dist_calibration_pooling_",
@@ -904,6 +1084,8 @@ class _RefitParamsMixin:
             "sigma_scale_", "sigma_scale_source_",
             "sigma_calibration_fold_stats_",
             "sigma_affine_a_", "sigma_affine_b_",
+            "sigma_group_affine_groups_", "sigma_group_affine_a_",
+            "sigma_group_affine_b_",
             "sigma_calibration_fallback_reason_",
             "sigma_calibration_influence_stats_",
             "sigma_calibration_pooling_",
@@ -1105,6 +1287,17 @@ class _RefitParamsMixin:
                 state["dist_affine_a"] = float(self.dist_affine_a_)
             if hasattr(self, "dist_affine_b_"):
                 state["dist_affine_b"] = float(self.dist_affine_b_)
+            if hasattr(self, "dist_group_affine_metadata_"):
+                state["dist_group_affine"] = self.dist_group_affine_metadata_
+                state["dist_calibration_feature"] = getattr(
+                    self, "dist_calibration_feature_", None
+                )
+                state["dist_calibration_feature_index"] = int(
+                    self.dist_calibration_feature_index_
+                )
+                state["dist_calibration_feature_name"] = getattr(
+                    self, "dist_calibration_feature_name_", None
+                )
             fallback_reason = getattr(
                 self, "dist_calibration_fallback_reason_", None
             )
@@ -1132,6 +1325,8 @@ class _RefitParamsMixin:
                 state["sigma_affine_a"] = float(self.dist_affine_a_)
             if hasattr(self, "dist_affine_b_"):
                 state["sigma_affine_b"] = float(self.dist_affine_b_)
+            if hasattr(self, "dist_group_affine_metadata_"):
+                state["sigma_group_affine"] = self.dist_group_affine_metadata_
             if fallback_reason is not None:
                 state["sigma_calibration_fallback_reason"] = fallback_reason
         return state
@@ -1202,6 +1397,44 @@ class _RefitParamsMixin:
                     state.get("dist_affine_b", state.get("sigma_affine_b"))
                 )
                 self.sigma_affine_b_ = self.dist_affine_b_
+            group_records = state.get(
+                "dist_group_affine", state.get("sigma_group_affine")
+            )
+            if group_records is not None:
+                self.dist_group_affine_metadata_ = list(group_records)
+                self.dist_group_affine_groups_ = np.asarray(
+                    [
+                        _calibration_group_key(record["group"])
+                        for record in self.dist_group_affine_metadata_
+                    ],
+                    dtype=object,
+                )
+                self.dist_group_affine_a_ = np.asarray(
+                    [
+                        float(record["sigma_affine_a"])
+                        for record in self.dist_group_affine_metadata_
+                    ],
+                    dtype=np.float64,
+                )
+                self.dist_group_affine_b_ = np.asarray(
+                    [
+                        float(record["sigma_affine_b"])
+                        for record in self.dist_group_affine_metadata_
+                    ],
+                    dtype=np.float64,
+                )
+                self.sigma_group_affine_groups_ = self.dist_group_affine_groups_
+                self.sigma_group_affine_a_ = self.dist_group_affine_a_
+                self.sigma_group_affine_b_ = self.dist_group_affine_b_
+                self.dist_calibration_feature_ = state.get(
+                    "dist_calibration_feature", _GROUP_AFFINE_DEFAULT_FEATURE
+                )
+                self.dist_calibration_feature_index_ = int(
+                    state.get("dist_calibration_feature_index", 0)
+                )
+                feature_name = state.get("dist_calibration_feature_name")
+                if feature_name is not None:
+                    self.dist_calibration_feature_name_ = feature_name
             fallback_reason = state.get(
                 "dist_calibration_fallback_reason",
                 state.get("sigma_calibration_fallback_reason"),
@@ -1241,6 +1474,24 @@ class _RefitParamsMixin:
         if hasattr(self, "dist_affine_b_"):
             metadata["dist_affine_b"] = float(self.dist_affine_b_)
             metadata["sigma_affine_b"] = float(self.dist_affine_b_)
+        if hasattr(self, "dist_group_affine_metadata_"):
+            metadata["dist_group_affine"] = self.dist_group_affine_metadata_
+            metadata["sigma_group_affine"] = self.dist_group_affine_metadata_
+            metadata["group_count"] = len(self.dist_group_affine_metadata_)
+            metadata["group_fallback_count"] = sum(
+                1
+                for record in self.dist_group_affine_metadata_
+                if record.get("fallback_reason") is not None
+            )
+            metadata["dist_calibration_feature"] = getattr(
+                self, "dist_calibration_feature_", None
+            )
+            metadata["dist_calibration_feature_index"] = int(
+                self.dist_calibration_feature_index_
+            )
+            feature_name = getattr(self, "dist_calibration_feature_name_", None)
+            if feature_name is not None:
+                metadata["dist_calibration_feature_name"] = feature_name
         if hasattr(self, "dist_mean_calibration_numerator_"):
             metadata["mean_calibration_numerator"] = float(
                 self.dist_mean_calibration_numerator_
@@ -1621,7 +1872,9 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                  histogram_parallelism="auto", use_best_model=True,
                  bootstrap_type="none", bagging_temperature=0.0,
                  mvs_reg=1.0, random_strength=0.0,
-                 dist_calibration=None, dist_params=None,
+                 dist_calibration=None,
+                 dist_calibration_feature=_GROUP_AFFINE_DEFAULT_FEATURE,
+                 dist_params=None,
                  sigma_calibration=None,
                  diagnostic_warnings="once",
                  auto_learning_rate_probe=False,
@@ -1673,6 +1926,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self.mvs_reg = mvs_reg
         self.random_strength = random_strength
         self.dist_calibration = dist_calibration
+        self.dist_calibration_feature = dist_calibration_feature
         self.dist_params = dist_params
         self.sigma_calibration = sigma_calibration
         self.diagnostic_warnings = diagnostic_warnings
@@ -1775,9 +2029,12 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 )
             loss_cls = VECTOR_LOSSES[self.loss]
             targets = tuple(getattr(loss_cls, "calibration_targets", ()))
-            if dist_calibration_ == "affine" and "scale" not in targets:
+            if (
+                dist_calibration_ in {"affine", "per_metric_affine"}
+                and "scale" not in targets
+            ):
                 raise ValueError(
-                    f"dist_calibration='affine' is not supported for "
+                    f"dist_calibration={dist_calibration_!r} is not supported for "
                     f"loss={self.loss!r}"
                 )
             if dist_calibration_ == "scalar" and not targets:
@@ -1999,6 +2256,69 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                             self.sigma_calibration_fallback_reason_ = (
                                 fallback_reason
                             )
+                    elif dist_calibration_ == "per_metric_affine":
+                        feature_names = _feature_names_from_input(X_input)
+                        feature_index, feature_name, feature_spec = (
+                            _resolve_dist_calibration_feature(
+                                self.dist_calibration_feature,
+                                feature_names,
+                                n_features,
+                            )
+                        )
+                        groups = _extract_feature_column_by_index(
+                            X_cal, feature_index
+                        )
+                        calibration = _fit_grouped_affine_sigma_calibration(
+                            selection_model, X_cal, y_cal, groups,
+                            eval_sample_weight,
+                            fold_stats=self.sigma_calibration_fold_stats_,
+                        )
+                        self.dist_scale_ = calibration["sigma_scale"]
+                        self.sigma_scale_ = self.dist_scale_
+                        self.dist_affine_a_ = calibration["sigma_affine_a"]
+                        self.dist_affine_b_ = calibration["sigma_affine_b"]
+                        self.sigma_affine_a_ = self.dist_affine_a_
+                        self.sigma_affine_b_ = self.dist_affine_b_
+                        records = list(calibration["group_affine"])
+                        self.dist_group_affine_metadata_ = records
+                        self.dist_group_affine_groups_ = np.asarray(
+                            [
+                                _calibration_group_key(record["group"])
+                                for record in records
+                            ],
+                            dtype=object,
+                        )
+                        self.dist_group_affine_a_ = np.asarray(
+                            [
+                                float(record["sigma_affine_a"])
+                                for record in records
+                            ],
+                            dtype=np.float64,
+                        )
+                        self.dist_group_affine_b_ = np.asarray(
+                            [
+                                float(record["sigma_affine_b"])
+                                for record in records
+                            ],
+                            dtype=np.float64,
+                        )
+                        self.sigma_group_affine_groups_ = (
+                            self.dist_group_affine_groups_
+                        )
+                        self.sigma_group_affine_a_ = self.dist_group_affine_a_
+                        self.sigma_group_affine_b_ = self.dist_group_affine_b_
+                        self.dist_calibration_feature_ = feature_spec
+                        self.dist_calibration_feature_index_ = int(feature_index)
+                        if feature_name is not None:
+                            self.dist_calibration_feature_name_ = feature_name
+                        fallback_reason = calibration.get("fallback_reason")
+                        if fallback_reason is not None:
+                            self.dist_calibration_fallback_reason_ = (
+                                fallback_reason
+                            )
+                            self.sigma_calibration_fallback_reason_ = (
+                                fallback_reason
+                            )
                 elif (
                     dist_calibration_ == "dispersion"
                     and "dispersion" in selection_targets
@@ -2072,7 +2392,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 loss, "mean_from_params"
             ):
                 return loss.mean_from_params(
-                    *self._calibrated_params_from_raw(raw)
+                    *self._calibrated_params_from_raw(raw, X)
                 )
             return loss.mean_from_raw(raw)
         return raw
@@ -2087,7 +2407,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                     loss, "mean_from_params"
                 ):
                     yield loss.mean_from_params(
-                        *self._calibrated_params_from_raw(raw)
+                        *self._calibrated_params_from_raw(raw, X)
                     )
                 else:
                     yield loss.mean_from_raw(raw)
@@ -2118,7 +2438,39 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 f"fit with loss={self.loss!r}"
             )
 
-    def _calibrated_params_from_raw(self, raw):
+    def _group_affine_scale_values(self, scale_values, X):
+        if X is None:
+            raise ValueError(
+                "dist_calibration='per_metric_affine' requires X so the "
+                "calibration feature can be read"
+            )
+        groups = _normalize_calibration_groups(
+            _extract_feature_column_by_index(
+                X, int(self.dist_calibration_feature_index_)
+            )
+        )
+        if groups.shape[0] != scale_values.shape[0]:
+            raise ValueError(
+                "dist_calibration_feature column length must match prediction rows"
+            )
+        a = float(getattr(self, "dist_affine_a_", 0.0))
+        b = float(getattr(self, "dist_affine_b_", 1.0))
+        log_scale = np.log(np.maximum(scale_values, _SIGMA_MIN))
+        calibrated = np.exp(np.clip(a + b * log_scale, -700.0, 700.0))
+        group_keys = getattr(self, "dist_group_affine_groups_", None)
+        if group_keys is None:
+            return calibrated
+        group_a = np.asarray(self.dist_group_affine_a_, dtype=np.float64)
+        group_b = np.asarray(self.dist_group_affine_b_, dtype=np.float64)
+        for key, key_a, key_b in zip(group_keys, group_a, group_b):
+            mask = groups == key
+            if np.any(mask):
+                calibrated[mask] = np.exp(
+                    np.clip(key_a + key_b * log_scale[mask], -700.0, 700.0)
+                )
+        return calibrated
+
+    def _calibrated_params_from_raw(self, raw, X=None):
         loss = self.model_.loss_
         params = list(loss.params_from_raw(raw))
         method = self._active_dist_calibration()
@@ -2129,7 +2481,9 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         if "scale" in targets:
             idx = int(getattr(loss, "scale_param_index", 1))
             scale_values = np.asarray(params[idx], dtype=np.float64)
-            if method == "affine":
+            if method == "per_metric_affine":
+                params[idx] = self._group_affine_scale_values(scale_values, X)
+            elif method == "affine":
                 a = getattr(
                     self, "dist_affine_a_",
                     getattr(self, "sigma_affine_a_", None),
@@ -2171,7 +2525,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         X = _check_predict_input(self, X)
         self._require_distributional(method_name)
         raw = self.model_.predict_raw(X)
-        return self._calibrated_params_from_raw(raw)
+        return self._calibrated_params_from_raw(raw, X)
 
     def predict_dist(self, X):
         """Return distribution parameters for a fitted distributional model."""
@@ -2184,7 +2538,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         raw = self.model_.predict_raw(X)
         if self._active_dist_calibration() is None:
             return loss.variance_from_raw(raw)
-        params = self._calibrated_params_from_raw(raw)
+        params = self._calibrated_params_from_raw(raw, X)
         if hasattr(loss, "variance_from_params"):
             return loss.variance_from_params(*params)
         if self.loss == "Gaussian":
@@ -2206,7 +2560,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         raw = self.model_.predict_raw(X)
         if self._active_dist_calibration() is None:
             return loss.interval_from_raw(raw, alpha)
-        params = self._calibrated_params_from_raw(raw)
+        params = self._calibrated_params_from_raw(raw, X)
         if hasattr(loss, "interval_from_params"):
             return loss.interval_from_params(*params, alpha)
         raise NotImplementedError(
@@ -2225,7 +2579,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         rng = np.random.default_rng(random_state)
         if self._active_dist_calibration() is None:
             return loss.sample_from_raw(raw, rng, n_samples)
-        params = self._calibrated_params_from_raw(raw)
+        params = self._calibrated_params_from_raw(raw, X)
         if hasattr(loss, "sample_from_params"):
             return loss.sample_from_params(*params, rng, n_samples)
         raise NotImplementedError(

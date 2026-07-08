@@ -6,7 +6,7 @@
 
 > **Rev-2 note.** The two Oracle reviews **contradict each other** on the central issue: review A wants the calibrator moved onto the clipped objective the scorers use; review B wants the clip removed from the scorers (and then, inconsistently, also wants the calibrator clipped). §3/W0 adjudicates this with verified numbers rather than adopting either literally. Everything else material from both reviews is folded into the workstreams; the new-heads plans are condensed in the Appendix.
 
-> **Implementation note.** W0, W1, W2, W3, and W7/M0-M4 are implemented in the current branch. The change was made because the WNBA scalar-calibrated bins showed variance-scale compression (`std-resid RMS 0.824 → 1.127` from low to high σ̂), while the old clipped validation NLL/CRPS could under-penalize large standardized residuals. Validation NLL now uses a `|z| <= 1000` overflow guard, CRPS uses the true closed form without clipping, calibration uses the same overflow guard plus an influence diagnostic, Gaussian `predict()` returns a copied mean buffer, and distributional load rejects `n_outputs`/loss mismatches. The new `dist_calibration="affine"` lane fits `σ' = exp(a + b log σ)` with profiled `a` and golden-section search over `b`; the deprecated `sigma_calibration` alias still works for one release. WNBA diagnostics now include rolling origins, richer causal dispersion features, ρ-head LR, per-head L2, and a source/tuning sweep. The latest base affine WNBA split scores NLL/CRPS `0.409/0.392`, coverage `0.903`, and pooled sigma-bin RMS `0.935/0.932/1.021/1.080/0.962`; per-metric slices still fail G1, so the new-head protocol and LogNormal/StudentT/Poisson/NB-global heads were implemented per `DISTRIBUTIONAL_HEADS_SPEC.md`. W4 downstream Kalman replay remains the only unrun gate because it lives in `wnba_darko` and requires an integration change to inject ChimeraBoost-predicted `R_t`.
+> **Implementation note.** W0, W1, W2, W3, and W7/M0-M4 are implemented in the current branch. The change was made because the WNBA scalar-calibrated bins showed variance-scale compression (`std-resid RMS 0.824 → 1.127` from low to high σ̂), while the old clipped validation NLL/CRPS could under-penalize large standardized residuals. Validation NLL now uses a `|z| <= 1000` overflow guard, CRPS uses the true closed form without clipping, calibration uses the same overflow guard plus an influence diagnostic, Gaussian `predict()` returns a copied mean buffer, and distributional load rejects `n_outputs`/loss mismatches. The new `dist_calibration="affine"` lane fits `σ' = exp(a + b log σ)` with profiled `a` and golden-section search over `b`; `dist_calibration="per_metric_affine"` fits the same map per `metric_code`/group with a global affine fallback; the deprecated `sigma_calibration` alias still works for one release. WNBA diagnostics now include rolling origins, richer causal dispersion features, ρ-head LR, per-head L2, and a source/tuning sweep. The latest per-metric affine WNBA split scores NLL/CRPS `0.404/0.391`, coverage `0.901`, and pooled sigma-bin RMS `1.002/0.934/1.002/1.035/0.989`, but per-metric slices still fail strict G1 at `pf_100`/`pts_100` edges. A scalar game-metric Kalman shadow replay now exists in `benchmarks/bench_wnba_kalman_replay.py`: Chimera `predict_variance()` improves normalized-innovation calibration in 2 of 3 seasons, but loses replay NLL to the incumbent `sigma2 / sample_weight` heuristic, so it is not a production replacement yet.
 
 ---
 
@@ -38,7 +38,7 @@ Framing fact that simplifies everything: **the Kalman filter consumes only secon
 
 ### The adjudication, with verified numbers
 
-The eval/scoring kernels clip the standardized residual at |z| ≤ 10 (`_gaussian_nll_eval`, `_gaussian_crps`, tuner `_neg_gaussian_nll`), while the scalar calibrator uses unclipped z². Review B's degeneracy claim **verifies numerically**: for an outlier row (y−μ = 100), clipped eval NLL *falls monotonically* — 52.9 at σ=e², 50.9 at σ=1, 45.9 at σ=e⁻⁵, 36.9 at σ=e⁻¹⁴ — while true NLL explodes to 7×10¹⁵. The clipped metric literally rewards overconfidence on tail rows, and early stopping / best-model selection / tuner ranking all consume it. Clipped CRPS is similarly distorted: at that outlier it reports 9.4 where true Gaussian CRPS is 99.4 — a 10× underestimate of the tail penalty — despite true CRPS being *linear* in |y−μ| and therefore needing no clip at all.
+Before W0, the eval/scoring kernels clipped the standardized residual at |z| ≤ 10 (`_gaussian_nll_eval`, `_gaussian_crps`, tuner `_neg_gaussian_nll`), while the scalar calibrator used unclipped z². Review B's degeneracy claim **verifies numerically**: for an outlier row (y−μ = 100), clipped eval NLL *falls monotonically* — 52.9 at σ=e², 50.9 at σ=1, 45.9 at σ=e⁻⁵, 36.9 at σ=e⁻¹⁴ — while true NLL explodes to 7×10¹⁵. The clipped metric literally rewards overconfidence on tail rows, and early stopping / best-model selection / tuner ranking all consumed it. Clipped CRPS was similarly distorted: at that outlier it reported 9.4 where true Gaussian CRPS is 99.4 — a 10× underestimate of the tail penalty — despite true CRPS being *linear* in |y−μ| and therefore needing no clip at all.
 
 Review A's opposite fix (clip the calibrator at |z| ≤ 10 for consistency) is rejected for a Kalman-specific reason: winsorizing z² at 100 can only shrink the fitted scale, i.e. push σ̂ *down* in the tail — **the exact direction of our observed high-bin under-coverage**, and a bias against the honest second moments the filter needs. Review B's own secondary suggestion (unclip eval but clip the calibrator) fails the same test and contradicts its primary fix.
 
@@ -82,12 +82,16 @@ Benchmark integrity (synthetic script — both items block re-citing the promoti
 
 Shadow mode: run the filter over 2024–2026 with incumbent heuristic `R` vs `R_t = clip(σ̂'², floor, ceil)` (floor ≈ 0.1², ceil ≈ 3.0² on the standardized scale; log clip events). Compare per-season normalized-innovation-squared mean ≈ 1, innovation whiteness, next-observation predictive log-lik / projection RMSE. Adopt if replay wins ≥ 2 of 3 held-out seasons without degrading projections; keep the heuristic as an automatic fallback path.
 
-**Current status:** blocked in this repo. The one-step WNBA observation-scale
-benchmark is implemented here, but the actual filter replay requires changing
-the external `wnba_darko` Kalman pipeline (or adding a dedicated adapter there)
-so the replay can consume row-level `R_t` from ChimeraBoost. This workspace can
-read that repo but is not configured to write it, so no production Kalman replay
-claim is made by this branch.
+**Current status:** partially run, not passed. `benchmarks/bench_wnba_kalman_replay.py`
+performs a scalar per-metric shadow replay on the WNBA DARKO game-metric
+observation artifact. It injects per-metric-affine Chimera `predict_variance()`
+as row-level `R_t` and compares against a validation-tuned incumbent
+`sigma2 / sample_weight` heuristic. Held-out 2024–2026 results:
+Chimera NIS `0.922`, coverage `0.910`, NLL `0.186`; incumbent NIS `1.088`,
+coverage `0.889`, NLL `0.117`. Chimera is closer to NIS=1 in 2 of 3 seasons,
+but loses NLL in 3 of 3 seasons, so the adoption gate fails. The next replay
+must either improve the `R_t` model or wire this same contract into the full
+production player DARKO filter while retaining the incumbent fallback.
 
 ### W5 — Student-t head — *implemented as a distributional head; Kalman tripwire unchanged*
 

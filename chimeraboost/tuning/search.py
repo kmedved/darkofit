@@ -87,7 +87,9 @@ def _pooled_trial_sigma_calibration(trial):
         if not isinstance(metadata, Mapping):
             return None
         fold_method = metadata.get("method")
-        if fold_method not in {"scalar", "affine", "dispersion"}:
+        if fold_method not in {
+            "scalar", "affine", "per_metric_affine", "dispersion"
+        }:
             return None
         if method is None:
             method = fold_method
@@ -116,7 +118,7 @@ def _pooled_trial_sigma_calibration(trial):
         if metadata.get("mean_calibration_objective") == "negative_binomial_nll":
             mean_log_scale_seen = True
             mean_log_scale_num += mass * math.log(scale)
-        if method == "affine":
+        if method in {"affine", "per_metric_affine"}:
             affine_a = metadata.get("sigma_affine_a")
             affine_b = metadata.get("sigma_affine_b")
             if affine_a is None or affine_b is None:
@@ -187,7 +189,7 @@ def _pooled_trial_sigma_calibration(trial):
         calibration["mean_calibration_objective"] = "poisson_closed_form"
     elif method == "scalar" and mean_log_scale_seen:
         calibration["mean_calibration_objective"] = "negative_binomial_nll"
-    if method == "affine":
+    if method in {"affine", "per_metric_affine"}:
         calibration["sigma_affine_a"] = float(affine_a_num / mass_den)
         calibration["sigma_affine_b"] = float(affine_b_num / mass_den)
         calibration["dist_affine_a"] = calibration["sigma_affine_a"]
@@ -199,6 +201,88 @@ def _pooled_trial_sigma_calibration(trial):
         calibration["pooling"] = "validation_mass_weighted_affine_coefficients"
         if fallback_reasons:
             calibration["fallback_reason"] = ",".join(sorted(fallback_reasons))
+    if method == "per_metric_affine":
+        grouped = {}
+        feature_spec = None
+        feature_name = None
+        feature_index = None
+        for auto_params in fold_auto_params:
+            if not isinstance(auto_params, Mapping):
+                return None
+            metadata = auto_params.get("dist_calibration")
+            if not isinstance(metadata, Mapping):
+                metadata = auto_params.get("sigma_calibration")
+            if not isinstance(metadata, Mapping):
+                return None
+            if feature_spec is None:
+                feature_spec = metadata.get("dist_calibration_feature")
+                feature_name = metadata.get("dist_calibration_feature_name")
+                feature_index = metadata.get("dist_calibration_feature_index")
+            for record in metadata.get("dist_group_affine", ()):
+                group = record.get("group")
+                mass = float(record.get("validation_weight_sum", 0.0) or 0.0)
+                if not np.isfinite(mass) or mass <= 0.0:
+                    continue
+                bucket = grouped.setdefault(
+                    group,
+                    {
+                        "mass": 0.0,
+                        "a": 0.0,
+                        "b": 0.0,
+                        "n": 0,
+                        "positive_n": 0,
+                        "effective_n": 0.0,
+                        "fallback_reasons": set(),
+                    },
+                )
+                bucket["mass"] += mass
+                bucket["a"] += mass * float(record["sigma_affine_a"])
+                bucket["b"] += mass * float(record["sigma_affine_b"])
+                bucket["n"] += int(record.get("validation_n_samples", 0) or 0)
+                bucket["positive_n"] += int(
+                    record.get("validation_positive_weight_n", 0) or 0
+                )
+                bucket["effective_n"] += float(
+                    record.get("validation_effective_n", 0.0) or 0.0
+                )
+                fallback_reason = record.get("fallback_reason")
+                if fallback_reason is not None:
+                    bucket["fallback_reasons"].add(str(fallback_reason))
+        group_records = []
+        for group, bucket in grouped.items():
+            if bucket["mass"] <= 0.0:
+                continue
+            record = {
+                "group": group,
+                "sigma_affine_a": float(bucket["a"] / bucket["mass"]),
+                "sigma_affine_b": float(bucket["b"] / bucket["mass"]),
+                "validation_n_samples": int(bucket["n"]),
+                "validation_positive_weight_n": int(bucket["positive_n"]),
+                "validation_effective_n": float(bucket["effective_n"]),
+                "validation_weight_sum": float(bucket["mass"]),
+            }
+            record["sigma_scale"] = float(
+                np.exp(np.clip(record["sigma_affine_a"], -700.0, 700.0))
+            )
+            if bucket["fallback_reasons"]:
+                record["fallback_reason"] = ",".join(
+                    sorted(bucket["fallback_reasons"])
+                )
+            group_records.append(record)
+        calibration["dist_group_affine"] = group_records
+        calibration["sigma_group_affine"] = group_records
+        calibration["group_count"] = len(group_records)
+        calibration["group_fallback_count"] = sum(
+            1 for record in group_records if record.get("fallback_reason") is not None
+        )
+        calibration["dist_calibration_feature"] = feature_spec
+        if feature_index is not None:
+            calibration["dist_calibration_feature_index"] = int(feature_index)
+        if feature_name is not None:
+            calibration["dist_calibration_feature_name"] = feature_name
+        calibration["pooling"] = (
+            "validation_mass_weighted_group_affine_coefficients"
+        )
     return calibration
 
 
@@ -663,7 +747,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
             final.sigma_scale_source_ = calibration["source"]
             final.sigma_calibration_fold_stats_ = calibration["fold_stats"]
             final.sigma_calibration_pooling_ = calibration.get("pooling")
-            if calibration["method"] == "affine":
+            if calibration["method"] in {"affine", "per_metric_affine"}:
                 final.dist_affine_a_ = float(calibration["dist_affine_a"])
                 final.dist_affine_b_ = float(calibration["dist_affine_b"])
                 final.sigma_affine_a_ = float(calibration["sigma_affine_a"])
@@ -672,6 +756,38 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
                 if fallback_reason is not None:
                     final.dist_calibration_fallback_reason_ = fallback_reason
                     final.sigma_calibration_fallback_reason_ = fallback_reason
+            if calibration["method"] == "per_metric_affine":
+                from ..sklearn_api import _calibration_group_key
+
+                records = list(calibration.get("dist_group_affine", ()))
+                final.dist_group_affine_metadata_ = records
+                final.dist_group_affine_groups_ = np.asarray(
+                    [
+                        _calibration_group_key(record["group"])
+                        for record in records
+                    ],
+                    dtype=object,
+                )
+                final.dist_group_affine_a_ = np.asarray(
+                    [float(record["sigma_affine_a"]) for record in records],
+                    dtype=np.float64,
+                )
+                final.dist_group_affine_b_ = np.asarray(
+                    [float(record["sigma_affine_b"]) for record in records],
+                    dtype=np.float64,
+                )
+                final.sigma_group_affine_groups_ = final.dist_group_affine_groups_
+                final.sigma_group_affine_a_ = final.dist_group_affine_a_
+                final.sigma_group_affine_b_ = final.dist_group_affine_b_
+                final.dist_calibration_feature_ = calibration.get(
+                    "dist_calibration_feature"
+                )
+                final.dist_calibration_feature_index_ = int(
+                    calibration.get("dist_calibration_feature_index", 0)
+                )
+                feature_name = calibration.get("dist_calibration_feature_name")
+                if feature_name is not None:
+                    final.dist_calibration_feature_name_ = feature_name
             final._attach_dist_calibration_metadata()
         self.best_estimator_ = final
         self.refit_params_ = params

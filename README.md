@@ -176,8 +176,12 @@ mean or dispersion multiplier by validation NB-NLL.
 `dist_calibration="affine"` fits the continuous-head map
 `scale' = exp(a + b * log(scale))`,
 which can fix compressed scale ranges where low-scale bins are conservative
-and high-scale bins under-cover. The deprecated `sigma_calibration` alias is
-still accepted for Gaussian for one release. Calibration applies to
+and high-scale bins under-cover. `dist_calibration="per_metric_affine"` fits
+the same map per group, defaulting to the `metric_code` column name or using
+`dist_calibration_feature=<column index/name>`, with the global affine map as
+the fallback for unseen or small validation groups. The deprecated
+`sigma_calibration` alias is still accepted for Gaussian for one release.
+Calibration applies to
 `predict_dist`, `predict_variance`, `predict_interval`, `sample`, and to
 `predict()` when the calibrated parameter changes the predictive mean.
 `predict_raw()` remains the uncalibrated fitted score surface. With
@@ -199,10 +203,14 @@ Command and per-seed rows live in
 [benchmarks/distributional_summary.md](benchmarks/distributional_summary.md).
 A WNBA DARKO real-data observation check is also recorded in
 [benchmarks/wnba_realdata_distributional_summary.md](benchmarks/wnba_realdata_distributional_summary.md):
-affine-calibrated Gaussian passes the held-out 2024-2026 one-step scale check
-(NLL 0.409, CRPS 0.392, coverage 0.903, sigma-bin RMS
-`0.935/0.932/1.021/1.080/0.962`), but production use of predicted `sigma` as
-Kalman observation noise still needs a downstream Kalman replay gate.
+per-metric affine Gaussian improves the held-out 2024-2026 one-step scale
+check (NLL 0.404, CRPS 0.391, coverage 0.901, pooled sigma-bin RMS
+`1.002/0.934/1.002/1.035/0.989`). The companion shadow replay in
+[benchmarks/wnba_kalman_replay_summary.md](benchmarks/wnba_kalman_replay_summary.md)
+injects `predict_variance()` as row-level `R_t`; it improves normalized
+innovation calibration in 2 of 3 seasons but loses replay NLL to the incumbent
+`sigma2 / sample_weight` heuristic, so it is not yet a production replacement
+for DARKO observation noise.
 
 Not implemented for distributional regression in v1: CatBoost-style
 per-parameter scalar trees, GOSS/MVS distributional sampling, Bayesian
