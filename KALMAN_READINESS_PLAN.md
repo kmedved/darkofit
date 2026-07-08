@@ -6,7 +6,7 @@
 
 > **Rev-2 note.** The two Oracle reviews **contradict each other** on the central issue: review A wants the calibrator moved onto the clipped objective the scorers use; review B wants the clip removed from the scorers (and then, inconsistently, also wants the calibrator clipped). §3/W0 adjudicates this with verified numbers rather than adopting either literally. Everything else material from both reviews is folded into the workstreams; the new-heads plans are condensed in the Appendix.
 
-> **Implementation note.** W0, W1, W2, W3, and W7/M0-M4 are implemented in the current branch. The change was made because the WNBA scalar-calibrated bins showed variance-scale compression (`std-resid RMS 0.824 → 1.127` from low to high σ̂), while the old clipped validation NLL/CRPS could under-penalize large standardized residuals. Validation NLL now uses a `|z| <= 1000` overflow guard, CRPS uses the true closed form without clipping, calibration uses the same overflow guard plus an influence diagnostic, Gaussian `predict()` returns a copied mean buffer, and distributional load rejects `n_outputs`/loss mismatches. The new `dist_calibration="affine"` lane fits `σ' = exp(a + b log σ)` with profiled `a` and golden-section search over `b`; `dist_calibration="per_metric_affine"` fits the same map per `metric_code`/group with a global affine fallback; the deprecated `sigma_calibration` alias still works for one release. WNBA diagnostics now include rolling origins, richer causal dispersion features, ρ-head LR, per-head L2, and a source/tuning sweep. The latest per-metric affine WNBA split scores NLL/CRPS `0.404/0.391`, coverage `0.901`, and pooled sigma-bin RMS `1.002/0.934/1.002/1.035/0.989`, but per-metric slices still fail strict G1 at `pf_100`/`pts_100` edges. A scalar game-metric Kalman shadow replay now exists in `benchmarks/bench_wnba_kalman_replay.py`: Chimera `predict_variance()` improves normalized-innovation calibration in 2 of 3 seasons, but loses replay NLL to the incumbent `sigma2 / sample_weight` heuristic, so it is not a production replacement yet.
+> **Implementation note.** W0, W1, W2, W3, and W7/M0-M4 are implemented in the current branch. The change was made because the WNBA scalar-calibrated bins showed variance-scale compression (`std-resid RMS 0.824 → 1.127` from low to high σ̂), while the old clipped validation NLL/CRPS could under-penalize large standardized residuals. Validation NLL now uses a `|z| <= 1000` overflow guard, CRPS uses the true closed form without clipping, calibration uses the same overflow guard plus an influence diagnostic, Gaussian `predict()` returns a copied mean buffer, and distributional load rejects `n_outputs`/loss mismatches. The new `dist_calibration="affine"` lane fits `σ' = exp(a + b log σ)` with profiled `a` and golden-section search over `b`; `dist_calibration="per_metric_affine"` fits the same map per `metric_code`/group with a global affine fallback; the deprecated `sigma_calibration` alias still works for one release. WNBA diagnostics now include rolling origins, richer causal dispersion features, ρ-head LR, per-head L2, and a source/tuning sweep. The latest per-metric affine WNBA split scores NLL/CRPS `0.404/0.391`, coverage `0.901`, and pooled sigma-bin RMS `1.002/0.934/1.002/1.035/0.989`, but per-metric slices still fail strict G1 at `pf_100`/`pts_100` edges. A scalar game-metric Kalman shadow replay now exists in `benchmarks/bench_wnba_kalman_replay.py`: with train-only warmup, per-metric relative `R_t` floors, replay-level scaling/blending, and a fixed-ν StudentT variance lane, the best candidate reaches statistical parity with the incumbent and improves overall second-moment calibration, but it still does not clear the strict season-win replacement gate.
 
 ---
 
@@ -80,17 +80,21 @@ Benchmark integrity (synthetic script — both items block re-citing the promoti
 
 ### W4 — Kalman replay harness (G4) — *the real gate; lives in `wnba_darko`; start once W0+W1 numbers land*
 
-Shadow mode: run the filter over 2024–2026 with incumbent heuristic `R` vs `R_t = clip(σ̂'², floor, ceil)` (floor ≈ 0.1², ceil ≈ 3.0² on the standardized scale; log clip events). Compare per-season normalized-innovation-squared mean ≈ 1, innovation whiteness, next-observation predictive log-lik / projection RMSE. Adopt if replay wins ≥ 2 of 3 held-out seasons without degrading projections; keep the heuristic as an automatic fallback path.
+Shadow mode: run the filter over 2024–2026 with incumbent heuristic `R` vs `R_t = clip(σ̂'², floor, ceil)`. The floor must be metric-relative, not a single absolute constant; the current harness defaults to `0.25 ×` each metric's validation-tuned incumbent train mean `R`, which avoids pinning tiny-variance metrics such as `pace`. Compare per-season normalized-innovation-squared mean ≈ 1, innovation whiteness, next-observation predictive log-lik / projection RMSE. Adopt if replay wins ≥ 2 of 3 held-out seasons without degrading projections, counting within-noise paired-bootstrap differences as ties; keep the heuristic as an automatic fallback path.
 
-**Current status:** partially run, not passed. `benchmarks/bench_wnba_kalman_replay.py`
-performs a scalar per-metric shadow replay on the WNBA DARKO game-metric
-observation artifact. It injects per-metric-affine Chimera `predict_variance()`
-as row-level `R_t` and compares against a validation-tuned incumbent
-`sigma2 / sample_weight` heuristic. Held-out 2024–2026 results:
-Chimera NIS `0.922`, coverage `0.910`, NLL `0.186`; incumbent NIS `1.088`,
-coverage `0.889`, NLL `0.117`. Chimera is closer to NIS=1 in 2 of 3 seasons,
-but loses NLL in 3 of 3 seasons, so the adoption gate fails. The next replay
-must either improve the `R_t` model or wire this same contract into the full
+**Current status:** partially run, statistical parity but strict gate not passed.
+`benchmarks/bench_wnba_kalman_replay.py` performs a scalar per-metric shadow
+replay on the WNBA DARKO game-metric observation artifact. It now compares the
+incumbent `sigma2 / sample_weight` heuristic against distributional
+`predict_variance()` lanes with per-metric relative floors, validation-tuned
+replay scaling, and an incumbent blend. The best held-out 2024–2026 lane is
+StudentT(ν=30) with the incumbent blend: NLL `0.113884` vs incumbent `0.113910`,
+RMSE `0.864423` vs `0.864424`, and NIS `0.994` vs `0.982`. The tiny NLL/RMSE
+advantages are inside the paired-bootstrap noise band, so the honest conclusion
+is statistical parity with better overall second-moment calibration. With the
+bootstrap tie rule, it wins NLL in 0 of 3 seasons with 3 ties, RMSE in 0 of 3
+with 3 ties, and NIS closeness in 1 of 3 with 2 ties, so the strict adoption
+gate still fails. The next replay should wire this same contract into the full
 production player DARKO filter while retaining the incumbent fallback.
 
 ### W5 — Student-t head — *implemented as a distributional head; Kalman tripwire unchanged*

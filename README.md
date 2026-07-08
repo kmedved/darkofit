@@ -207,10 +207,14 @@ per-metric affine Gaussian improves the held-out 2024-2026 one-step scale
 check (NLL 0.404, CRPS 0.391, coverage 0.901, pooled sigma-bin RMS
 `1.002/0.934/1.002/1.035/0.989`). The companion shadow replay in
 [benchmarks/wnba_kalman_replay_summary.md](benchmarks/wnba_kalman_replay_summary.md)
-injects `predict_variance()` as row-level `R_t`; it improves normalized
-innovation calibration in 2 of 3 seasons but loses replay NLL to the incumbent
-`sigma2 / sample_weight` heuristic, so it is not yet a production replacement
-for DARKO observation noise.
+injects `predict_variance()` as row-level `R_t`. The best current shadow lane,
+StudentT(30) with a validation-tuned incumbent blend, reaches statistical
+parity with the incumbent `sigma2 / sample_weight` heuristic (NLL 0.113884 vs
+0.113910, RMSE 0.864423 vs 0.864424) while improving overall innovation
+calibration (NIS 0.994 vs 0.982). The tiny likelihood gap is inside the
+paired-bootstrap noise band and the lane still does not clear the strict
+2-of-3 season replacement gate, so it is not yet a production replacement for
+DARKO observation noise.
 
 Not implemented for distributional regression in v1: CatBoost-style
 per-parameter scalar trees, GOSS/MVS distributional sampling, Bayesian
