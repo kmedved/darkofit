@@ -318,3 +318,46 @@ under-covers, with only about 62% empirical coverage for nominal 90% intervals.
 Treat the sigma-quality conclusion as synthetic-gate evidence. Before using
 `sigma` downstream as observation noise, run the same lanes on real
 heteroscedastic regression data and the intended domain data.
+
+## WNBA Real-Data Distributional Validation
+
+The first domain-data sigma check uses WNBA DARKO game-level metric observations:
+
+```bash
+PYTHONPATH=. /Users/kmedved/.venvs/darko311/bin/python \
+  benchmarks/bench_wnba_realdata_distributional.py
+```
+
+The source is
+`/Users/kmedved/Library/CloudStorage/Dropbox/github/wnba_darko/calculated_data/research/observation_covariance_measurement/game_metric_observations.parq`.
+Rows use source-column `z_observed`, a transformed observation scale for six
+game metrics (`fg_pct`, `fta_100`, `pace`, `pf_100`, `pts_100`, `tov_100`),
+with `sample_weight` observation weights.  The split is time ordered: train on
+2009-2021, early-stop/calibrate on 2022-2023, and test on 2024-2026.  Features
+are date/context fields plus causal prior metric aggregates computed from
+previous dates only.
+
+Generated outputs:
+
+- `benchmarks/wnba_realdata_distributional.csv`
+- `benchmarks/wnba_realdata_distributional_summary.md`
+
+| model | NLL | CRPS | RMSE mu | cov90 | std-resid RMS | mean sigma | affine b |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| unit_normal_observation_baseline | 51.648 | 6.068 | 10.073 | 0.304 | 10.073 | 1.000 | |
+| chimera_rmse_const_sigma | 1.435 | 0.501 | 1.015 | 0.901 | 1.027 | 0.989 | |
+| chimera_gaussian_raw | 0.430 | 0.394 | 1.013 | 0.873 | 1.086 | 0.588 | |
+| chimera_gaussian_scalar_calibrated | 0.423 | 0.393 | 1.013 | 0.893 | 1.014 | 0.630 | |
+| chimera_gaussian_affine_calibrated | **0.407** | **0.392** | 1.013 | 0.900 | 1.009 | 0.695 | 1.104 |
+
+Interpretation: affine-calibrated Gaussian passes this real-data one-step
+scale calibration check and improves the scalar lane on NLL, CRPS, overall
+90% coverage, and standardized-residual RMS.  The fitted affine slope
+(`b=1.104`) matches the expected mild sigma-range stretch: scalar calibration
+left sigma-bin RMS at `0.824/0.856/0.990/1.111/1.127`, while affine moves it
+to `0.967/0.934/1.058/1.084/0.978`; coverage by increasing predicted sigma is
+`0.911/0.926/0.879/0.871/0.915`.  This is enough to retire the "synthetic
+only" caveat for one-step observation scale, but not enough to declare
+production Kalman readiness.  A downstream Kalman replay should still test
+whether injecting `sigma^2` as observation variance improves filtering
+outcomes versus the current covariance schedule.

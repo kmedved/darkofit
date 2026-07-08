@@ -7,6 +7,8 @@ from typing import Any, Callable, Mapping
 
 import numpy as np
 
+from ..losses import VECTOR_LOSSES
+
 
 @dataclass(frozen=True)
 class SpaceContext:
@@ -176,8 +178,8 @@ def suggest_structure(trial, context, state):
 
 def suggest_sampling_regularization(trial, context, state):
     prefix = f"{state.tree_mode}_sampling"
-    if context.estimator_params.get("loss") == "Gaussian":
-        return {
+    if context.estimator_params.get("loss") in VECTOR_LOSSES:
+        params = {
             "tree_mode": state.tree_mode,
             "sampling": "uniform",
             "bootstrap_type": "none",
@@ -194,6 +196,13 @@ def suggest_sampling_regularization(trial, context, state):
                 f"{prefix}_l2_leaf_reg", 0.1, 30.0, log=True
             ),
         }
+        if context.estimator_params.get("loss") == "StudentT":
+            params["dist_params"] = {
+                "nu": trial.suggest_categorical(
+                    f"{prefix}_student_t_nu", [3.0, 4.0, 6.0, 10.0, 30.0]
+                )
+            }
+        return params
     sampling = trial.suggest_categorical(
         f"{prefix}_sampling", ["uniform", "goss", "mvs"]
     )

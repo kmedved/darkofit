@@ -2523,6 +2523,28 @@ def _multiclass_leaf_values_and_sums(leaf, grad, hess, n_leaves, l2, lr):
 
 
 @njit(cache=True)
+def _multiclass_leaf_values_and_sums_l2_by_class(
+    leaf, grad, hess, n_leaves, l2_by_class, lr
+):
+    """Vector leaf values with an independent L2 value per output head."""
+    K = grad.shape[0]
+    G = np.zeros((K, n_leaves))
+    H = np.zeros((K, n_leaves))
+    n = leaf.shape[0]
+    for k in range(K):
+        for i in range(n):
+            l = leaf[i]
+            G[k, l] += grad[k, i]
+            H[k, l] += hess[k, i]
+    values = np.zeros((n_leaves, K))
+    for l in range(n_leaves):
+        for k in range(K):
+            if H[k, l] > 0.0:
+                values[l, k] = -lr * G[k, l] / (H[k, l] + l2_by_class[k])
+    return values, G, H
+
+
+@njit(cache=True)
 def add_leaf_values_inplace(leaf, values, out):
     """Add precomputed scalar leaf values for already-routed training rows."""
     for i in range(leaf.shape[0]):
@@ -3599,9 +3621,10 @@ def _best_multiclass_splits_for_leaf_ids_counts(
                     if Ht[k] <= 0.0:
                         continue
                     HR = Ht[k] - HL[k]
-                    parent_denom = Ht[k] + l2
-                    left_denom = HL[k] + l2
-                    right_denom = HR + l2
+                    l2k = l2[k]
+                    parent_denom = Ht[k] + l2k
+                    left_denom = HL[k] + l2k
+                    right_denom = HR + l2k
                     if (
                         parent_denom <= 0.0
                         or left_denom <= 0.0
@@ -3681,9 +3704,10 @@ def _best_multiclass_splits_for_leaf_ids_counts_class_minor(
                     if Ht[k] <= 0.0:
                         continue
                     HR = Ht[k] - HL[k]
-                    parent_denom = Ht[k] + l2
-                    left_denom = HL[k] + l2
-                    right_denom = HR + l2
+                    l2k = l2[k]
+                    parent_denom = Ht[k] + l2k
+                    left_denom = HL[k] + l2k
+                    right_denom = HR + l2k
                     if (
                         parent_denom <= 0.0
                         or left_denom <= 0.0
@@ -4025,9 +4049,10 @@ def _best_multiclass_splits_counts_for_leaf_ids_with_noise_py(
                     if Ht[k] <= 0.0:
                         continue
                     HR = Ht[k] - HL[k]
-                    parent_denom = Ht[k] + l2
-                    left_denom = HL[k] + l2
-                    right_denom = HR + l2
+                    l2k = l2[k]
+                    parent_denom = Ht[k] + l2k
+                    left_denom = HL[k] + l2k
+                    right_denom = HR + l2k
                     if (
                         parent_denom <= 0.0
                         or left_denom <= 0.0
@@ -4111,9 +4136,10 @@ def _best_multiclass_splits_counts_for_leaf_ids_with_noise_class_minor_py(
                     if Ht[k] <= 0.0:
                         continue
                     HR = Ht[k] - HL[k]
-                    parent_denom = Ht[k] + l2
-                    left_denom = HL[k] + l2
-                    right_denom = HR + l2
+                    l2k = l2[k]
+                    parent_denom = Ht[k] + l2k
+                    left_denom = HL[k] + l2k
+                    right_denom = HR + l2k
                     if (
                         parent_denom <= 0.0
                         or left_denom <= 0.0
@@ -5899,6 +5925,15 @@ def build_leafwise_multiclass_tree(
         raise ValueError("grad and hess must be matching class-major arrays")
 
     K, n_samples = grad.shape
+    l2_arr = np.asarray(l2, dtype=np.float64)
+    if l2_arr.ndim == 0:
+        l2_by_class = np.full(K, float(l2_arr), dtype=np.float64)
+    elif l2_arr.shape == (K,):
+        l2_by_class = np.ascontiguousarray(l2_arr)
+    else:
+        raise ValueError("l2 must be a scalar or have shape (K,)")
+    if not np.all(np.isfinite(l2_by_class)) or np.any(l2_by_class < 0.0):
+        raise ValueError("l2 must contain finite nonnegative values")
     if X_binned.shape[0] != n_samples:
         raise ValueError("X_binned row count must match grad/hess")
     if grad_row_major is None:
@@ -6038,7 +6073,7 @@ def build_leafwise_multiclass_tree(
         if random_strength > 0.0:
             noise_leaf_ids = np.arange(n_leaves, dtype=np.int64)
             _best_multiclass_splits_counts_for_leaf_ids_with_noise_class_minor_py(
-                hg, hh, hc, n_bins_per_feature, l2, feature_mask,
+                hg, hh, hc, n_bins_per_feature, l2_by_class, feature_mask,
                 min_child_weight, min_child_samples, noise_leaf_ids,
                 n_leaves, best_feat, best_thr, best_gain,
                 random_strength, split_seed, tree_iteration, n_nodes,
@@ -6046,7 +6081,7 @@ def build_leafwise_multiclass_tree(
             )
         else:
             _best_multiclass_splits_for_leaf_ids_counts_class_minor(
-                hg, hh, hc, n_bins_per_feature, l2, feature_mask,
+                hg, hh, hc, n_bins_per_feature, l2_by_class, feature_mask,
                 min_child_weight, min_child_samples, changed_leaves,
                 n_changed_leaves, best_feat, best_thr, best_gain
             )
@@ -6105,8 +6140,8 @@ def build_leafwise_multiclass_tree(
         changed_leaves[1] = new_leaf
         n_changed_leaves = 2
 
-    values, leaf_G, leaf_H = _multiclass_leaf_values_and_sums(
-        leaf, grad, hess, n_leaves, l2, lr
+    values, leaf_G, leaf_H = _multiclass_leaf_values_and_sums_l2_by_class(
+        leaf, grad, hess, n_leaves, l2_by_class, lr
     )
     if len(split_features) == 0:
         values[0, :] = 0.0

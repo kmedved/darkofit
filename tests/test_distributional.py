@@ -8,10 +8,19 @@ from chimeraboost import ChimeraBoostClassifier, ChimeraBoostRegressor
 from chimeraboost.booster import DistributionalBoosting, MulticlassBoosting
 from chimeraboost.losses import (
     GaussianNLL,
+    LogNormalNLL,
+    NegativeBinomialNLL,
+    PoissonNLL,
+    StudentTNLL,
+    _GAUSS_EVAL_Z_GUARD,
     _GAUSS_RHO_MAX,
     _GAUSS_RHO_MIN,
     _GAUSS_Z_CLIP,
+    _T_RHO_MIN,
 )
+from chimeraboost.sklearn_api import _fit_affine_sigma_calibration
+from chimeraboost.tuning.scoring import resolve_scorer
+from chimeraboost.tuning.search import _pooled_trial_sigma_calibration
 from chimeraboost.tuning import ChimeraBoostStepwiseSearchCV
 
 
@@ -52,6 +61,16 @@ def _gaussian_test_params(**overrides):
     )
     params.update(overrides)
     return params
+
+
+class _FakeDistModel:
+    def __init__(self, mu, sigma):
+        self._mu = np.asarray(mu, dtype=np.float64)
+        self._sigma = np.asarray(sigma, dtype=np.float64)
+
+    def predict_dist(self, X):
+        n = np.asarray(X).shape[0]
+        return self._mu[:n], self._sigma[:n]
 
 
 def test_gaussian_loss_math_and_zero_weight_safety():
@@ -154,6 +173,30 @@ def test_gaussian_init_constant_target_and_crps_mc():
     )
     assert closed_form == pytest.approx(float(np.mean(mc)), abs=5e-3)
     assert closed_form >= 0.0
+
+
+def test_gaussian_eval_nll_uses_overflow_guard_not_training_clip():
+    loss = GaussianNLL()
+    y = np.array([100.0], dtype=np.float64)
+    F_unit = np.array([[0.0], [0.0]], dtype=np.float64)
+    F_tiny_sigma = np.array([[0.0], [-14.0]], dtype=np.float64)
+
+    unit_nll = loss.eval_class_major(y, F_unit)
+    tiny_sigma_nll = loss.eval_class_major(y, F_tiny_sigma)
+
+    assert tiny_sigma_nll > unit_nll
+    assert tiny_sigma_nll > 0.25 * _GAUSS_EVAL_Z_GUARD ** 2
+
+
+def test_gaussian_crps_uses_unclipped_closed_form_tail():
+    loss = GaussianNLL()
+    y = np.array([100.0], dtype=np.float64)
+    F = np.array([[0.0], [0.0]], dtype=np.float64)
+
+    crps = loss.crps_class_major(y, F)
+    expected = 100.0 - (1.0 / np.sqrt(np.pi))
+
+    assert crps == pytest.approx(expected)
 
 
 def test_gaussian_train_nll_decreases():
@@ -386,6 +429,81 @@ def test_gaussian_scalar_sigma_calibration_scales_public_distribution_only():
     assert "small_sigma_calibration_fold" in warning_codes
 
 
+def test_gaussian_affine_sigma_calibration_recovers_log_sigma_stretch():
+    n = 600
+    raw_sigma = np.exp(np.linspace(-1.5, 1.2, n))
+    true_a = np.log(0.7)
+    true_b = 1.23
+    signs = np.where(np.arange(n) % 2 == 0, 1.0, -1.0)
+    mu = np.linspace(-0.4, 0.4, n)
+    y = mu + signs * np.exp(true_a + true_b * np.log(raw_sigma))
+    weights = np.ones(n, dtype=np.float64)
+    y[0] = 1e100
+    weights[0] = 0.0
+
+    calibration = _fit_affine_sigma_calibration(
+        _FakeDistModel(mu, raw_sigma),
+        np.zeros((n, 1), dtype=np.float64),
+        y,
+        weights,
+        fold_stats={
+            "validation_effective_n": float(n - 1),
+            "small_fold_warning": False,
+        },
+    )
+
+    assert calibration["fallback_reason"] is None
+    assert calibration["sigma_affine_a"] == pytest.approx(true_a, abs=3e-3)
+    assert calibration["sigma_affine_b"] == pytest.approx(true_b, abs=3e-3)
+
+
+def test_gaussian_affine_sigma_calibration_transforms_public_distribution_only(
+    tmp_path,
+):
+    X, y = _make_heteroscedastic(seed=24, n=520)
+    Xtr, Xv = X[:250], X[250:]
+    ytr, yv = y[:250], y[250:]
+
+    model = ChimeraBoostRegressor(
+        **_gaussian_test_params(
+            iterations=12,
+            learning_rate=0.08,
+            sigma_calibration="affine",
+        )
+    ).fit(Xtr, ytr, eval_set=(Xv, yv))
+
+    assert model.sigma_calibration_ == "affine"
+    assert np.isfinite(model.sigma_affine_a_)
+    assert np.isfinite(model.sigma_affine_b_)
+    raw_mu, raw_sigma = model.model_.predict_dist(Xv[:20])
+    public_mu, public_sigma = model.predict_dist(Xv[:20])
+    expected_sigma = np.exp(
+        model.sigma_affine_a_ + model.sigma_affine_b_ * np.log(raw_sigma)
+    )
+    np.testing.assert_allclose(public_mu, raw_mu, rtol=0.0, atol=0.0)
+    np.testing.assert_allclose(public_sigma, expected_sigma)
+    np.testing.assert_allclose(model.predict(Xv[:20]), raw_mu)
+
+    meta = model.model_.auto_params_["sigma_calibration"]
+    assert meta["method"] == "affine"
+    assert meta["sigma_affine_a"] == model.sigma_affine_a_
+    assert meta["sigma_affine_b"] == model.sigma_affine_b_
+
+    path = tmp_path / "affine_calibrated_gaussian.npz"
+    model.save_model(path)
+    with np.load(path, allow_pickle=False) as data:
+        header = json.loads(str(data["header"]))
+    state = header["wrapper"]["state"]
+    assert state["sigma_calibration"] == "affine"
+    assert state["sigma_affine_a"] == model.sigma_affine_a_
+    assert state["sigma_affine_b"] == model.sigma_affine_b_
+    loaded = ChimeraBoostRegressor.load_model(path)
+    assert loaded.sigma_calibration_ == "affine"
+    np.testing.assert_allclose(
+        loaded.predict_dist(Xv[:20])[1], public_sigma, rtol=0.0, atol=0.0
+    )
+
+
 def test_gaussian_small_sigma_calibration_warning_respects_reset():
     import chimeraboost.booster as booster_mod
 
@@ -603,6 +721,14 @@ def test_gaussian_auto_learning_rate_probe_runs():
         ({"ordered_boosting": True}, "ordered_boosting"),
         ({"histogram_dtype": "float32"}, "histogram_dtype='float32'"),
         ({"alpha": 0.9}, "alpha"),
+        (
+            {"rho_learning_rate_multiplier": 0.0},
+            "rho_learning_rate_multiplier",
+        ),
+        (
+            {"rho_l2_leaf_reg_multiplier": 0.0},
+            "rho_l2_leaf_reg_multiplier",
+        ),
         ({"tree_mode": "leaf_wise"}, None),
         ({"subsample": 0.5}, None),
         ({"colsample": 0.5}, None),
@@ -625,6 +751,504 @@ def test_gaussian_guards(kwargs, match):
         return
     with pytest.raises(ValueError, match=match):
         ChimeraBoostRegressor(**params).fit(X, y)
+
+
+def test_gaussian_rho_learning_rate_multiplier_scales_only_sigma_head():
+    X, y = _make_heteroscedastic(seed=21, n=180)
+    params = _gaussian_test_params(
+        iterations=1,
+        learning_rate=0.12,
+        min_child_samples=5,
+        num_leaves=5,
+        random_state=7,
+    )
+    base = ChimeraBoostRegressor(**params).fit(X, y)
+    scaled = ChimeraBoostRegressor(
+        **{**params, "rho_learning_rate_multiplier": 0.5}
+    ).fit(X, y)
+
+    base_values = base.model_.trees_[0].values
+    scaled_values = scaled.model_.trees_[0].values
+    assert np.allclose(scaled_values[:, 0], base_values[:, 0])
+    assert np.allclose(scaled_values[:, 1], 0.5 * base_values[:, 1])
+    assert np.max(np.abs(base_values[:, 1])) > 0.0
+    meta = scaled.model_.auto_params_["distributional"]
+    assert meta["rho_learning_rate_multiplier"] == 0.5
+
+
+def test_gaussian_rho_l2_leaf_reg_multiplier_metadata_and_roundtrip(tmp_path):
+    X, y = _make_heteroscedastic(seed=27, n=160)
+    model = ChimeraBoostRegressor(
+        **_gaussian_test_params(
+            iterations=3,
+            learning_rate=0.1,
+            l2_leaf_reg=2.0,
+            rho_l2_leaf_reg_multiplier=4.0,
+        )
+    ).fit(X, y)
+
+    meta = model.model_.auto_params_["distributional"]
+    assert meta["rho_l2_leaf_reg_multiplier"] == 4.0
+    assert meta["l2_leaf_reg_by_output"] == [2.0, 8.0]
+
+    path = tmp_path / "rho_l2_gaussian.npz"
+    model.save_model(path)
+    loaded = ChimeraBoostRegressor.load_model(path)
+    assert loaded.rho_l2_leaf_reg_multiplier == 4.0
+    np.testing.assert_allclose(
+        loaded.predict_dist(X[:12])[1], model.predict_dist(X[:12])[1]
+    )
+
+
+def test_distributional_protocol_predict_variance_and_dist_calibration_alias():
+    X, y = _make_heteroscedastic(seed=31, n=140)
+    params = _gaussian_test_params(iterations=4, random_state=2)
+    dist = ChimeraBoostRegressor(
+        **params, dist_calibration="scalar"
+    ).fit(X[:100], y[:100], eval_set=(X[100:], y[100:]))
+    with pytest.warns(DeprecationWarning):
+        legacy = ChimeraBoostRegressor(
+            **params, sigma_calibration="scalar"
+        ).fit(X[:100], y[:100], eval_set=(X[100:], y[100:]))
+
+    np.testing.assert_allclose(dist.predict(X[:15]), legacy.predict(X[:15]))
+    for left, right in zip(dist.predict_dist(X[:15]), legacy.predict_dist(X[:15])):
+        np.testing.assert_allclose(left, right)
+    mu, sigma = dist.predict_dist(X[:15])
+    np.testing.assert_allclose(dist.predict_variance(X[:15]), sigma * sigma)
+    assert "dist_calibration" in dist.model_.auto_params_
+    assert "sigma_calibration" in dist.model_.auto_params_
+
+
+def test_legacy_sigma_only_calibration_applies_to_public_distribution_methods():
+    X, y = _make_heteroscedastic(seed=35, n=140)
+    model = ChimeraBoostRegressor(
+        **_gaussian_test_params(
+            iterations=4,
+            random_state=2,
+            sigma_calibration="scalar",
+        )
+    ).fit(X[:100], y[:100], eval_set=(X[100:], y[100:]))
+
+    for name in ("dist_calibration_", "dist_scale_", "dist_scale_source_"):
+        if hasattr(model, name):
+            delattr(model, name)
+
+    raw_mu, raw_sigma = model.model_.predict_dist(X[:10])
+    calibrated_sigma = raw_sigma * model.sigma_scale_
+    public_mu, public_sigma = model.predict_dist(X[:10])
+    np.testing.assert_allclose(public_mu, raw_mu)
+    np.testing.assert_allclose(public_sigma, calibrated_sigma)
+    np.testing.assert_allclose(
+        model.predict_variance(X[:10]), calibrated_sigma * calibrated_sigma
+    )
+
+    lo, hi = model.predict_interval(X[:10], alpha=0.2)
+    assert np.all(lo < raw_mu)
+    assert np.all(hi > raw_mu)
+
+    samples = model.sample(X[:10], n_samples=3, random_state=123)
+    expected = np.random.default_rng(123).normal(
+        raw_mu[:, None], calibrated_sigma[:, None], size=(10, 3)
+    )
+    np.testing.assert_allclose(samples, expected)
+
+
+def test_lognormal_matches_gaussian_on_log_target_and_roundtrips(tmp_path):
+    rng = np.random.default_rng(32)
+    X = rng.normal(size=(160, 4))
+    log_y = 0.6 * X[:, 0] - 0.3 * X[:, 2] + rng.normal(scale=0.25, size=160)
+    y = np.exp(log_y)
+    common = dict(
+        tree_mode="lightgbm",
+        iterations=6,
+        learning_rate=0.08,
+        num_leaves=7,
+        min_child_samples=3,
+        random_state=3,
+        diagnostic_warnings="never",
+        thread_count=1,
+    )
+    gaussian = ChimeraBoostRegressor(loss="Gaussian", **common).fit(X, log_y)
+    lognormal = ChimeraBoostRegressor(loss="LogNormal", **common).fit(X, y)
+
+    np.testing.assert_allclose(
+        lognormal.model_.predict_raw(X[:30]),
+        gaussian.model_.predict_raw(X[:30]),
+        rtol=0.0,
+        atol=1e-12,
+    )
+    m, s = lognormal.predict_dist(X[:20])
+    np.testing.assert_allclose(lognormal.predict(X[:20]), np.exp(m + 0.5 * s * s))
+    np.testing.assert_allclose(
+        lognormal.predict_variance(X[:20]),
+        (np.exp(s * s) - 1.0) * np.exp(2.0 * m + s * s),
+    )
+    extreme_raw = np.array([
+        [1000.0, 15.0],
+        [-1000.0, 15.0],
+        [0.0, -15.0],
+    ])
+    extreme_variance = LogNormalNLL().variance_from_raw(extreme_raw)
+    assert np.all(np.isfinite(extreme_variance))
+    assert np.all(extreme_variance >= 0.0)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        zero_variance = LogNormalNLL().variance_from_params(
+            np.array([0.0]), np.array([0.0])
+        )
+    np.testing.assert_allclose(zero_variance, np.array([0.0]))
+    with pytest.raises(ValueError, match="strictly positive"):
+        ChimeraBoostRegressor(loss="LogNormal", **common).fit(X, np.zeros_like(y))
+
+    path = tmp_path / "lognormal.npz"
+    lognormal.save_model(path)
+    loaded = ChimeraBoostRegressor.load_model(path)
+    assert loaded.loss == "LogNormal"
+    np.testing.assert_allclose(loaded.predict_dist(X[:10])[0], m[:10])
+
+
+def test_lognormal_preprocessor_uses_log_target_for_categorical_encodings(
+    monkeypatch,
+):
+    import chimeraboost.booster as booster_mod
+
+    seen_targets = []
+    original = booster_mod.FeaturePreprocessor.fit_transform
+
+    def wrapped_fit_transform(self, X, encode_targets, cat_features,
+                              sample_weight=None):
+        seen_targets.append(np.asarray(encode_targets[0], dtype=np.float64).copy())
+        return original(
+            self, X, encode_targets, cat_features, sample_weight=sample_weight
+        )
+
+    monkeypatch.setattr(
+        booster_mod.FeaturePreprocessor, "fit_transform", wrapped_fit_transform
+    )
+    rng = np.random.default_rng(37)
+    n = 80
+    cats = rng.choice(np.array(["small", "large"], dtype=object), size=n)
+    numeric = rng.normal(size=n)
+    y = np.exp(
+        np.where(cats == "large", 2.0, 0.1)
+        + 0.2 * numeric
+        + rng.normal(scale=0.15, size=n)
+    )
+    X = np.empty((n, 2), dtype=object)
+    X[:, 0] = cats
+    X[:, 1] = numeric
+
+    ChimeraBoostRegressor(
+        loss="LogNormal",
+        tree_mode="lightgbm",
+        iterations=2,
+        learning_rate=0.08,
+        num_leaves=5,
+        min_child_samples=3,
+        target_ordered_cat_codes="leaky_full",
+        random_state=0,
+        diagnostic_warnings="never",
+        thread_count=1,
+    ).fit(X, y, cat_features=[0])
+
+    assert seen_targets
+    np.testing.assert_allclose(seen_targets[0], np.log(y))
+
+
+def test_student_t_gradient_bounds_and_distribution_api(tmp_path):
+    loss = StudentTNLL(nu=4.0)
+    z = np.array([-1e6, -10.0, -2.0, 0.0, 2.0, 10.0, 1e6])
+    F = np.vstack([np.zeros_like(z), np.zeros_like(z)])
+    y = z.copy()
+    grad = np.empty_like(F)
+    hess = np.empty_like(F)
+    loss.grad_hess_class_major_into(y, F, None, grad, hess)
+    bound = (loss.nu + 1.0) / (2.0 * np.sqrt(loss.nu))
+    assert np.max(np.abs(grad[0])) <= bound + 1e-12
+    assert np.min(grad[1]) >= -loss.nu - 1e-12
+    assert np.max(grad[1]) <= 1.0 + 1e-12
+    assert np.all(hess > 0.0)
+
+    y_extreme = np.array([1e308, -1e308])
+    F_extreme = np.vstack([
+        np.zeros_like(y_extreme),
+        np.full_like(y_extreme, _T_RHO_MIN),
+    ])
+    grad_extreme = np.empty_like(F_extreme)
+    hess_extreme = np.empty_like(F_extreme)
+    loss.grad_hess_class_major_into(
+        y_extreme, F_extreme, None, grad_extreme, hess_extreme
+    )
+    assert np.all(np.isfinite(grad_extreme))
+    assert np.all(np.isfinite(hess_extreme))
+    assert np.max(np.abs(grad_extreme[0])) <= bound + 1e-12
+    assert np.min(grad_extreme[1]) >= -loss.nu - 1e-12
+    assert np.max(grad_extreme[1]) <= 1.0 + 1e-12
+
+    with pytest.raises(ValueError, match="nu > 2"):
+        StudentTNLL(nu=2.0)
+
+    X, y_fit = _make_heteroscedastic(seed=33, n=150)
+    model = ChimeraBoostRegressor(
+        loss="StudentT",
+        dist_params={"nu": 4.0},
+        tree_mode="lightgbm",
+        iterations=5,
+        learning_rate=0.08,
+        num_leaves=7,
+        min_child_samples=3,
+        random_state=4,
+        diagnostic_warnings="never",
+        thread_count=1,
+    ).fit(X, y_fit)
+    mu, scale, nu = model.predict_dist(X[:12])
+    np.testing.assert_allclose(nu, np.full(12, 4.0))
+    np.testing.assert_allclose(
+        model.predict_variance(X[:12]), scale * scale * 4.0 / 2.0
+    )
+    lo, hi = model.predict_interval(X[:12], alpha=0.1)
+    assert np.all(lo < mu)
+    assert np.all(hi > mu)
+    path = tmp_path / "student_t.npz"
+    model.save_model(path)
+    loaded = ChimeraBoostRegressor.load_model(path)
+    assert loaded.dist_params == {"nu": 4.0}
+    np.testing.assert_allclose(loaded.predict_dist(X[:12])[1], scale)
+
+
+def test_poisson_and_negative_binomial_count_heads_roundtrip_and_calibrate(tmp_path):
+    rng = np.random.default_rng(34)
+    X = rng.normal(size=(180, 4))
+    lam = np.exp(np.clip(0.4 * X[:, 0] - 0.2 * X[:, 1], -2.0, 2.0))
+    y_pois = rng.poisson(lam)
+    common = dict(
+        tree_mode="lightgbm",
+        iterations=6,
+        learning_rate=0.08,
+        num_leaves=7,
+        min_child_samples=3,
+        random_state=5,
+        diagnostic_warnings="never",
+        thread_count=1,
+    )
+    poisson = ChimeraBoostRegressor(
+        loss="Poisson", dist_calibration="scalar", **common
+    ).fit(X[:130], y_pois[:130], eval_set=(X[130:], y_pois[130:]))
+    (lam_hat,) = poisson.predict_dist(X[:15])
+    assert np.all(lam_hat > 0.0)
+    np.testing.assert_allclose(poisson.predict_variance(X[:15]), lam_hat)
+    poisson.dist_scale_ = 1.75
+    poisson.sigma_scale_ = 1.75
+    raw_lam = poisson.model_.predict_dist(X[:15])[0]
+    calibrated_lam = poisson.predict_dist(X[:15])[0]
+    np.testing.assert_allclose(calibrated_lam, raw_lam * 1.75)
+    np.testing.assert_allclose(poisson.predict(X[:15]), calibrated_lam)
+    np.testing.assert_allclose(
+        list(poisson.staged_predict(X[:15]))[-1], calibrated_lam
+    )
+    generic_score, _ = resolve_scorer(
+        poisson, "neg_distributional_nll"
+    )(poisson, X[:40], y_pois[:40])
+    poisson_score, _ = resolve_scorer(
+        poisson, "neg_poisson_nll"
+    )(poisson, X[:40], y_pois[:40])
+    assert generic_score == pytest.approx(poisson_score)
+    meta = poisson.model_.auto_params_["dist_calibration"]
+    assert meta["mean_calibration_numerator"] >= 0.0
+    assert meta["mean_calibration_denominator"] > 0.0
+    assert meta["mean_calibration_objective"] == "poisson_closed_form"
+    with pytest.raises(ValueError, match="integer counts"):
+        ChimeraBoostRegressor(loss="Poisson", **common).fit(X, y_pois + 0.25)
+
+    r_true = 5.0
+    y_nb = rng.negative_binomial(r_true, r_true / (r_true + lam))
+    nb = ChimeraBoostRegressor(
+        loss="NegativeBinomial",
+        tree_mode="lightgbm",
+        iterations=8,
+        learning_rate=0.08,
+        num_leaves=7,
+        min_child_samples=3,
+        random_state=6,
+        diagnostic_warnings="never",
+        thread_count=1,
+    ).fit(X, y_nb)
+    mu, alpha = nb.predict_dist(X[:15])
+    assert np.all(mu > 0.0)
+    assert np.all(alpha > 0.0)
+    np.testing.assert_allclose(nb.predict_variance(X[:15]), mu + alpha * mu * mu)
+    assert nb.model_.loss_.state_["r"] > 0.0
+    assert nb.model_.loss_.state_["r_path"]
+    final_train_nll = nb.model_._eval_metric_class_major(
+        y_nb, nb.model_.predict_raw(X).T, None
+    )
+    assert nb.model_.best_score_ == pytest.approx(final_train_nll)
+    assert nb.model_.train_history_[-1] == pytest.approx(final_train_nll)
+
+    path = tmp_path / "nb.npz"
+    nb.save_model(path)
+    loaded = ChimeraBoostRegressor.load_model(path)
+    assert loaded.loss == "NegativeBinomial"
+    assert loaded.model_.loss_.state_["r"] == pytest.approx(nb.model_.loss_.state_["r"])
+    np.testing.assert_allclose(loaded.predict_dist(X[:15])[0], mu)
+    nb.dist_calibration_ = "scalar"
+    nb.sigma_calibration_ = "scalar"
+    nb.dist_scale_ = 1.4
+    nb.sigma_scale_ = 1.4
+    raw_mu = nb.model_.predict_dist(X[:15])[0]
+    calibrated_mu = nb.predict_dist(X[:15])[0]
+    np.testing.assert_allclose(calibrated_mu, raw_mu * 1.4)
+    np.testing.assert_allclose(nb.predict(X[:15]), calibrated_mu)
+
+    nb_cal = ChimeraBoostRegressor(
+        loss="NegativeBinomial", dist_calibration="scalar", **common
+    ).fit(X[:130], y_nb[:130], eval_set=(X[130:], y_nb[130:]))
+    nb_meta = nb_cal.model_.auto_params_["dist_calibration"]
+    assert nb_meta["mean_calibration_objective"] == "negative_binomial_nll"
+    assert "mean_calibration_numerator" not in nb_meta
+    base_scale = nb_cal.dist_scale_
+    nb_score, _ = resolve_scorer(nb_cal, "neg_negative_binomial_nll")(
+        nb_cal, X[130:], y_nb[130:]
+    )
+    base_nll = -nb_score
+    for factor in (np.exp(-0.25), np.exp(0.25)):
+        nb_cal.dist_scale_ = base_scale * factor
+        trial_score, _ = resolve_scorer(nb_cal, "neg_negative_binomial_nll")(
+            nb_cal, X[130:], y_nb[130:]
+        )
+        assert -trial_score >= base_nll - 1e-6
+    nb_cal.dist_scale_ = base_scale
+
+
+def test_negative_binomial_refresh_rescores_validation_history():
+    rng = np.random.default_rng(36)
+    X = rng.normal(size=(180, 4))
+    mu = np.exp(np.clip(0.7 * X[:, 0] - 0.3 * X[:, 1], -2.0, 2.0))
+    r = 3.0
+    y = rng.negative_binomial(r, r / (r + mu))
+    X_train, X_val = X[:130], X[130:]
+    y_train, y_val = y[:130], y[130:]
+
+    model = ChimeraBoostRegressor(
+        loss="NegativeBinomial",
+        tree_mode="lightgbm",
+        iterations=30,
+        learning_rate=0.08,
+        num_leaves=7,
+        min_child_samples=3,
+        early_stopping=False,
+        use_best_model=True,
+        random_state=7,
+        diagnostic_warnings="never",
+        thread_count=1,
+    ).fit(X_train, y_train, eval_set=(X_val, y_val))
+
+    booster = model.model_
+    assert any(
+        item["source"] == "refresh" for item in booster.loss_.state_["r_path"]
+    )
+    rescored = [
+        booster._eval_metric_class_major(y_val, raw.T, None)
+        for raw in booster.staged_predict_raw(X_val)
+    ]
+    np.testing.assert_allclose(
+        booster.valid_history_, rescored, rtol=1e-12, atol=1e-12
+    )
+    assert booster.valid_history_[-1] == pytest.approx(min(rescored))
+    assert booster.best_score_ == pytest.approx(booster.valid_history_[-1])
+
+
+def test_searchcv_mean_calibration_pooling_keeps_positive_floor():
+    class Trial:
+        user_attrs = {
+            "fold_weight_sums": [3.0, 4.0],
+            "fold_auto_params": [
+                {
+                    "dist_calibration": {
+                        "method": "scalar",
+                        "dist_scale": 1e-12,
+                        "mean_calibration_numerator": 0.0,
+                        "mean_calibration_denominator": 5.0,
+                    }
+                },
+                {
+                    "dist_calibration": {
+                        "method": "scalar",
+                        "dist_scale": 1e-12,
+                        "mean_calibration_numerator": 0.0,
+                        "mean_calibration_denominator": 7.0,
+                    }
+                },
+            ],
+        }
+
+    pooled = _pooled_trial_sigma_calibration(Trial())
+    assert pooled["pooling"] == "exact_mean_sufficient_statistics"
+    assert pooled["dist_scale"] == pytest.approx(1e-12)
+    assert pooled["mean_calibration_numerator"] == 0.0
+    assert pooled["mean_calibration_denominator"] == 12.0
+
+
+def test_searchcv_dispersion_calibration_pooling_uses_positive_log_scale():
+    class Trial:
+        user_attrs = {
+            "fold_weight_sums": [2.0, 8.0],
+            "fold_auto_params": [
+                {
+                    "dist_calibration": {
+                        "method": "dispersion",
+                        "dist_scale": 0.5,
+                        "validation_n_samples": 20,
+                    }
+                },
+                {
+                    "dist_calibration": {
+                        "method": "dispersion",
+                        "dist_scale": 2.0,
+                        "validation_n_samples": 80,
+                    }
+                },
+            ],
+        }
+
+    pooled = _pooled_trial_sigma_calibration(Trial())
+    expected = np.exp(np.average(np.log([0.5, 2.0]), weights=[2.0, 8.0]))
+    assert pooled["method"] == "dispersion"
+    assert pooled["pooling"] == "validation_mass_weighted_log_dispersion_scale"
+    assert pooled["dist_scale"] == pytest.approx(expected)
+    assert pooled["sigma_scale"] == pytest.approx(expected)
+    assert pooled["fold_stats"]["validation_n_samples"] == 100
+
+
+def test_searchcv_negative_binomial_mean_calibration_pools_log_scale():
+    class Trial:
+        user_attrs = {
+            "fold_weight_sums": [1.0, 3.0],
+            "fold_auto_params": [
+                {
+                    "dist_calibration": {
+                        "method": "scalar",
+                        "dist_scale": 0.75,
+                        "mean_calibration_objective": "negative_binomial_nll",
+                    }
+                },
+                {
+                    "dist_calibration": {
+                        "method": "scalar",
+                        "dist_scale": 1.5,
+                        "mean_calibration_objective": "negative_binomial_nll",
+                    }
+                },
+            ],
+        }
+
+    pooled = _pooled_trial_sigma_calibration(Trial())
+    expected = np.exp(np.average(np.log([0.75, 1.5]), weights=[1.0, 3.0]))
+    assert pooled["method"] == "scalar"
+    assert pooled["pooling"] == "validation_mass_weighted_log_mean_scale"
+    assert pooled["mean_calibration_objective"] == "negative_binomial_nll"
+    assert pooled["dist_scale"] == pytest.approx(expected)
 
 
 def test_gaussian_uniform_subsample_and_colsample_metadata():
@@ -783,6 +1407,119 @@ def test_gaussian_searchcv_refit_freezes_scalar_sigma_calibration():
     )
 
 
+def test_gaussian_searchcv_refit_freezes_affine_sigma_calibration():
+    X, y = _make_heteroscedastic(seed=25, n=140)
+    search = ChimeraBoostStepwiseSearchCV(
+        ChimeraBoostRegressor(
+            loss="Gaussian",
+            tree_mode="lightgbm",
+            iterations=4,
+            learning_rate=0.1,
+            min_child_samples=2,
+            num_leaves=3,
+            sigma_calibration="affine",
+            random_state=0,
+            diagnostic_warnings="never",
+            thread_count=1,
+        ),
+        phases=("probe",),
+        tree_modes=("lightgbm",),
+        n_trials={"probe": 1},
+        cv=2,
+        refit=True,
+        random_state=0,
+        resume=False,
+        trial_thread_count=1,
+    ).fit(X, y)
+
+    final = search.best_estimator_
+    assert search.refit_params_["sigma_calibration"] is None
+    assert final.sigma_calibration_ == "affine"
+    assert np.isfinite(final.sigma_affine_a_)
+    assert np.isfinite(final.sigma_affine_b_)
+    fold_metas = search.best_trial_.user_attrs["fold_auto_params"]
+    fold_masses = search.best_trial_.user_attrs["fold_weight_sums"]
+    expected_a = np.average(
+        [
+            meta["sigma_calibration"]["sigma_affine_a"]
+            for meta in fold_metas
+        ],
+        weights=fold_masses,
+    )
+    expected_b = np.average(
+        [
+            meta["sigma_calibration"]["sigma_affine_b"]
+            for meta in fold_metas
+        ],
+        weights=fold_masses,
+    )
+    assert final.sigma_affine_a_ == pytest.approx(expected_a)
+    assert final.sigma_affine_b_ == pytest.approx(expected_b)
+    _, raw_sigma = final.model_.predict_dist(X[:8])
+    _, public_sigma = final.predict_dist(X[:8])
+    np.testing.assert_allclose(
+        public_sigma,
+        np.exp(final.sigma_affine_a_ + final.sigma_affine_b_ * np.log(raw_sigma)),
+    )
+
+
+def test_negative_binomial_searchcv_refit_freezes_dispersion_calibration():
+    rng = np.random.default_rng(35)
+    X = rng.normal(size=(140, 4))
+    mu = np.exp(np.clip(0.5 * X[:, 0] - 0.25 * X[:, 1], -2.0, 2.0))
+    r = 4.0
+    y = rng.negative_binomial(r, r / (r + mu))
+
+    search = ChimeraBoostStepwiseSearchCV(
+        ChimeraBoostRegressor(
+            loss="NegativeBinomial",
+            tree_mode="lightgbm",
+            iterations=5,
+            learning_rate=0.08,
+            min_child_samples=3,
+            num_leaves=7,
+            dist_calibration="dispersion",
+            random_state=0,
+            diagnostic_warnings="never",
+            thread_count=1,
+        ),
+        phases=("probe",),
+        tree_modes=("lightgbm",),
+        n_trials={"probe": 1},
+        cv=2,
+        refit=True,
+        random_state=0,
+        resume=False,
+        trial_thread_count=1,
+    ).fit(X, y)
+
+    final = search.best_estimator_
+    assert search.refit_params_["dist_calibration"] is None
+    assert final.dist_calibration_ == "dispersion"
+    assert final.dist_scale_source_ == "search_cv_validation"
+    assert final.dist_calibration_pooling_ == (
+        "validation_mass_weighted_log_dispersion_scale"
+    )
+    fold_metas = search.best_trial_.user_attrs["fold_auto_params"]
+    fold_masses = search.best_trial_.user_attrs["fold_weight_sums"]
+    expected_scale = np.exp(
+        np.average(
+            [
+                np.log(meta["dist_calibration"]["dist_scale"])
+                for meta in fold_metas
+            ],
+            weights=fold_masses,
+        )
+    )
+    assert final.dist_scale_ == pytest.approx(expected_scale)
+    raw_mu, raw_alpha = final.model_.predict_dist(X[:8])
+    public_mu, public_alpha = final.predict_dist(X[:8])
+    np.testing.assert_allclose(public_mu, raw_mu, rtol=0.0, atol=0.0)
+    np.testing.assert_allclose(
+        public_alpha, raw_alpha * final.dist_scale_, rtol=0.0, atol=0.0
+    )
+
+
 def test_gaussian_serialization_roundtrip(tmp_path):
     X, y = _make_heteroscedastic(seed=5, n=120)
     model = ChimeraBoostRegressor(
@@ -819,6 +1556,32 @@ def test_gaussian_serialization_roundtrip(tmp_path):
     assert "n_classes" not in header
     assert "sigma_scale" not in header["wrapper"]["state"]
     np.testing.assert_allclose(loaded.predict(X[:20]), model.predict(X[:20]))
+
+
+def test_distributional_load_rejects_loss_output_width_mismatch(tmp_path):
+    X, y = _make_heteroscedastic(seed=26, n=100)
+    model = ChimeraBoostRegressor(
+        loss="Gaussian",
+        tree_mode="lightgbm",
+        iterations=3,
+        learning_rate=0.12,
+        min_child_samples=3,
+        num_leaves=5,
+        random_state=0,
+    ).fit(X, y)
+
+    path = tmp_path / "gaussian_valid.npz"
+    bad_path = tmp_path / "gaussian_bad_width.npz"
+    model.save_model(path)
+    with np.load(path, allow_pickle=False) as data:
+        arrays = {name: data[name] for name in data.files}
+    header = json.loads(str(arrays["header"]))
+    header["n_outputs"] = 3
+    arrays["header"] = np.array(json.dumps(header))
+    np.savez_compressed(bad_path, **arrays)
+
+    with pytest.raises(ValueError, match="n_outputs"):
+        ChimeraBoostRegressor.load_model(bad_path)
 
 
 def test_multiclass_roundtrip_still_uses_n_classes(tmp_path):

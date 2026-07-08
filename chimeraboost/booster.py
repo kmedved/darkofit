@@ -38,7 +38,7 @@ from .flat_model import (
     build_flat_multiclass_ensemble,
     flat_predict_preferred,
 )
-from .losses import LOSSES, GaussianNLL, MultiSoftmax, VECTOR_LOSSES
+from .losses import LOSSES, MultiSoftmax, VECTOR_LOSSES
 from .preprocessing import FeaturePreprocessor, _normalize_target_ordered_cat_codes
 from .tree import (
     _build_multiclass_histograms_counts_into,
@@ -151,20 +151,46 @@ def _normalize_tree_mode(tree_mode):
 
 
 def _normalize_eval_metric(eval_metric, loss_name):
-    if eval_metric is None or eval_metric == "auto":
-        return "nll" if loss_name == "Gaussian" else "loss"
-    metric = str(eval_metric).lower().replace("-", "_")
-    if loss_name == "Gaussian":
-        if metric in {"loss", "nll", "gaussian_nll", "negative_log_likelihood"}:
-            return "nll"
-        if metric == "crps":
-            return "crps"
+    if loss_name in VECTOR_LOSSES:
+        loss_cls = VECTOR_LOSSES[loss_name]
+        default = getattr(loss_cls, "default_eval_metric", "nll")
+        supported = tuple(getattr(loss_cls, "supported_eval_metrics", ("nll",)))
+        if default not in supported:
+            raise ValueError(
+                f"loss={loss_name!r} default_eval_metric={default!r} is not "
+                "listed in supported_eval_metrics"
+            )
+        if eval_metric is None or eval_metric == "auto":
+            return default
+        metric = str(eval_metric).lower().replace("-", "_")
+        aliases = {
+            "loss": default,
+            "negative_log_likelihood": "nll",
+            f"{str(loss_name).lower()}_nll": "nll",
+        }
+        distribution_name = getattr(loss_cls, "distribution_name", None)
+        if distribution_name:
+            aliases[f"{str(distribution_name).lower()}_nll"] = "nll"
+        metric = aliases.get(metric, metric)
+        if metric in supported:
+            if metric == "crps" and not hasattr(loss_cls, "crps_class_major"):
+                raise ValueError(
+                    f"loss={loss_name!r} lists eval_metric='crps' but does "
+                    "not implement crps_class_major"
+                )
+            return metric
+        allowed = ", ".join(repr(v) for v in supported)
         raise ValueError(
-            "eval_metric for loss='Gaussian' must be one of None, 'nll', "
-            "'gaussian_nll', or 'crps'"
+            f"eval_metric for loss={loss_name!r} must be one of None, "
+            f"'auto', 'loss', or {allowed}"
         )
+    if eval_metric is None or eval_metric == "auto":
+        return "loss"
+    metric = str(eval_metric).lower().replace("-", "_")
     if metric != "loss":
-        raise ValueError("eval_metric is only configurable for loss='Gaussian'")
+        raise ValueError(
+            "eval_metric is only configurable for distributional losses"
+        )
     return "loss"
 
 
@@ -447,7 +473,9 @@ class _BaseBooster:
                  mvs_reg=1.0, random_strength=0.0,
                  diagnostic_warnings="once", histogram_dtype="float64",
                  leaf_dtype="int64", ts_permutations=1,
-                 target_ordered_cat_codes="off", eval_metric=None):
+                 target_ordered_cat_codes="off", eval_metric=None,
+                 rho_learning_rate_multiplier=1.0,
+                 rho_l2_leaf_reg_multiplier=1.0):
         self.iterations = int(iterations)
         self.learning_rate = learning_rate
         self._depth_input = depth
@@ -516,12 +544,28 @@ class _BaseBooster:
         )
         self.eval_metric = eval_metric
         self.eval_metric_ = None
+        self.rho_learning_rate_multiplier = float(rho_learning_rate_multiplier)
+        self.rho_l2_leaf_reg_multiplier = float(rho_l2_leaf_reg_multiplier)
         if self.bagging_temperature < 0.0:
             raise ValueError("bagging_temperature must be nonnegative")
         if self.mvs_reg < 0.0:
             raise ValueError("mvs_reg must be nonnegative")
         if self.random_strength < 0.0:
             raise ValueError("random_strength must be nonnegative")
+        if (
+            not np.isfinite(self.rho_learning_rate_multiplier)
+            or self.rho_learning_rate_multiplier <= 0.0
+        ):
+            raise ValueError(
+                "rho_learning_rate_multiplier must be a positive finite number"
+            )
+        if (
+            not np.isfinite(self.rho_l2_leaf_reg_multiplier)
+            or self.rho_l2_leaf_reg_multiplier <= 0.0
+        ):
+            raise ValueError(
+                "rho_l2_leaf_reg_multiplier must be a positive finite number"
+            )
         if histogram_parallelism not in {"auto", "feature", "row"}:
             raise ValueError(
                 "histogram_parallelism must be 'auto', 'feature', or 'row'"
@@ -665,7 +709,7 @@ class _BaseBooster:
                     smoothing *= np.sqrt(1.0 / max(n_eff_fraction, 1e-12))
                 if (
                     self.tree_mode_ in {"lightgbm", "hybrid"}
-                    and loss_name in {"RMSE", "Gaussian"}
+                    and (loss_name == "RMSE" or loss_name in VECTOR_LOSSES)
                     and self._include_cat_codes()
                 ):
                     smoothing = max(smoothing, 3.0)
@@ -1009,7 +1053,7 @@ class _BaseBooster:
         lightgbm_multiplier = None
         if lightgbm_unweighted_damping:
             base_loss = getattr(self, "loss_name", "MultiClass")
-            if base_loss in {"MAE", "Quantile", "Gaussian"}:
+            if base_loss in {"MAE", "Quantile"} or base_loss in VECTOR_LOSSES:
                 base_loss = "RMSE"
             lightgbm_multiplier = LIGHTGBM_UNWEIGHTED_LR_MULTIPLIERS.get(base_loss, 0.4)
         weighted_rmse_catboost_uplift = (
@@ -1386,7 +1430,10 @@ class _BaseBooster:
         cat_smoothing = self.cat_smoothing
         if (
             self.tree_mode_ in {"lightgbm", "hybrid"}
-            and getattr(self, "loss_name", None) in {"RMSE", "Gaussian"}
+            and (
+                getattr(self, "loss_name", None) == "RMSE"
+                or getattr(self, "loss_name", None) in VECTOR_LOSSES
+            )
             and cat_smoothing == 1.0
             and self._include_cat_codes()
         ):
@@ -1969,8 +2016,11 @@ class GradientBoosting(_BaseBooster):
         timing = _new_timing(self.verbose_timing)
         self.timing_ = timing
         phase = _start_timing(timing)
+        preprocessing_target = y
+        if hasattr(self.loss_, "preprocessing_target"):
+            preprocessing_target = self.loss_.preprocessing_target(y)
         X_binned = self._fit_transform_preprocessor(
-            X, [y], cat_features, w,
+            X, [preprocessing_target], cat_features, w,
             eval_set=eval_set,
             eval_sample_weight=eval_sample_weight,
         )
@@ -2771,6 +2821,15 @@ class DistributionalBoosting(_BaseBooster):
         y = validate_target_vector(y, n_samples, dtype=np.float64)
         _reject_eval_sample_weight_without_eval_set(eval_sample_weight, eval_set)
         self.n_features_in_ = int(X.shape[1])
+        try:
+            self.loss_ = VECTOR_LOSSES[self.loss_name](**self.loss_kwargs)
+        except KeyError as exc:
+            valid = ", ".join(sorted(VECTOR_LOSSES))
+            raise ValueError(
+                f"unknown distributional loss {self.loss_name!r}; valid "
+                f"losses are: {valid}"
+            ) from exc
+        self.loss_.validate_target(y)
 
         self.tree_mode_ = _normalize_tree_mode(self.tree_mode)
         fit_random_state = normalize_random_state_seed(self.random_state)
@@ -2783,17 +2842,11 @@ class DistributionalBoosting(_BaseBooster):
         self._validate_sampling_config()
         self.ordered_boosting_ = self._resolve_ordered_boosting()
         w = _validate_sample_weight(sample_weight, n_samples)
-        try:
-            self.loss_ = VECTOR_LOSSES[self.loss_name](**self.loss_kwargs)
-        except KeyError as exc:
-            raise ValueError(
-                "loss='Gaussian' is the only distributional v1 loss"
-            ) from exc
         self.eval_metric_ = _normalize_eval_metric(
             self.eval_metric, self.loss_name
         )
         self._resolve_auto_structure_params(
-            loss_name="Gaussian",
+            loss_name=self.loss_name,
             n_samples=n_samples,
             sample_weight=w,
             X=X,
@@ -2803,34 +2856,41 @@ class DistributionalBoosting(_BaseBooster):
 
         if self.tree_mode_ != "lightgbm":
             raise ValueError(
-                "loss='Gaussian' requires tree_mode='lightgbm' "
+                f"loss={self.loss_name!r} requires tree_mode='lightgbm' "
                 f"(shared vector trees); got {self.tree_mode!r}"
             )
         if self.sampling_ in {"goss", "weighted_goss"} or self._mvs_active():
             raise ValueError(
-                "loss='Gaussian' supports only sampling='uniform' in v1.1; "
+                f"loss={self.loss_name!r} supports only sampling='uniform' "
+                "in v1.1; "
                 "GOSS and MVS sampling are not supported yet"
             )
         if self._bayesian_bootstrap_active():
             raise ValueError(
-                "loss='Gaussian' does not support Bayesian bootstrap in v1; "
+                f"loss={self.loss_name!r} does not support Bayesian "
+                "bootstrap in v1; "
                 "leave bootstrap_type='none' or bagging_temperature=0.0"
             )
         if self.ordered_boosting_:
             raise ValueError(
-                "loss='Gaussian' does not support ordered_boosting=True in v1"
+                f"loss={self.loss_name!r} does not support "
+                "ordered_boosting=True in v1"
             )
         if self.histogram_dtype_ != "float64":
             raise ValueError(
                 "histogram_dtype='float32' is not supported for "
-                "loss='Gaussian'; shared vector trees are float64-only"
+                f"loss={self.loss_name!r}; shared vector trees are "
+                "float64-only"
             )
 
         timing = _new_timing(self.verbose_timing)
         self.timing_ = timing
         phase = _start_timing(timing)
+        preprocessing_target = y
+        if hasattr(self.loss_, "preprocessing_target"):
+            preprocessing_target = self.loss_.preprocessing_target(y)
         X_binned = self._fit_transform_preprocessor(
-            X, [y], cat_features, w,
+            X, [preprocessing_target], cat_features, w,
             eval_set=eval_set,
             eval_sample_weight=eval_sample_weight,
         )
@@ -2840,7 +2900,7 @@ class DistributionalBoosting(_BaseBooster):
         )
         n_bins = self.prep_.n_bins_
         self._resolve_fit_auto_params(
-            loss_name="Gaussian",
+            loss_name=self.loss_name,
             n_samples=n_samples,
             sample_weight=w,
             eval_set_present=eval_set is not None,
@@ -2848,6 +2908,13 @@ class DistributionalBoosting(_BaseBooster):
         )
         K = int(self.loss_.n_outputs)
         self.n_outputs_ = K
+        self.l2_leaf_reg_by_output_ = np.full(
+            K, self.l2_leaf_reg_, dtype=np.float64
+        )
+        if K >= 2:
+            self.l2_leaf_reg_by_output_[1] = (
+                self.l2_leaf_reg_ * self.rho_l2_leaf_reg_multiplier
+            )
         hist_buffers = self._alloc_multiclass_hist_buffers(
             K, X_binned.shape[1], n_bins
         )
@@ -2869,6 +2936,7 @@ class DistributionalBoosting(_BaseBooster):
             yv = validate_target_vector(
                 yv, Xv.shape[0], name="eval_set[1]", dtype=np.float64
             )
+            self.loss_.validate_target(yv)
             wv = _validate_sample_weight(
                 eval_sample_weight, len(yv), name="eval_sample_weight"
             )
@@ -2889,7 +2957,7 @@ class DistributionalBoosting(_BaseBooster):
             if Fv is not None
             else self._eval_metric_class_major(y, F, w)
         )
-        self._finalize_early_stopping_min_delta(baseline_loss, "Gaussian")
+        self._finalize_early_stopping_min_delta(baseline_loss, self.loss_name)
         self.auto_params_ = self._resolved_auto_params(
             n_samples=n_samples,
             n_raw_features=X.shape[1],
@@ -2902,9 +2970,22 @@ class DistributionalBoosting(_BaseBooster):
             rowpar_buffers=None,
             extra={
                 "distributional": {
+                    "loss_name": self.loss_name,
+                    "distribution_name": getattr(
+                        self.loss_, "distribution_name", self.loss_name
+                    ),
                     "n_outputs": int(K),
-                    "hessian_mode": self.loss_.hessian_mode,
+                    "hessian_mode": getattr(self.loss_, "hessian_mode", None),
                     "eval_metric": self.eval_metric_,
+                    "rho_learning_rate_multiplier": (
+                        float(self.rho_learning_rate_multiplier)
+                    ),
+                    "rho_l2_leaf_reg_multiplier": (
+                        float(self.rho_l2_leaf_reg_multiplier)
+                    ),
+                    "l2_leaf_reg_by_output": [
+                        float(v) for v in self.l2_leaf_reg_by_output_
+                    ],
                 }
             },
         )
@@ -2961,7 +3042,7 @@ class DistributionalBoosting(_BaseBooster):
             phase = _start_timing(timing)
             tree, leaf, leaf_G, leaf_H = build_leafwise_multiclass_tree(
                 X_binned, grad_for_round, hess_for_round, n_bins,
-                self._max_tree_depth(), self.l2_leaf_reg_, self.lr_,
+                self._max_tree_depth(), self.l2_leaf_reg_by_output_, self.lr_,
                 feature_mask=fmask,
                 min_child_weight=self.min_child_weight,
                 hist_buffers=hist_buffers,
@@ -2999,9 +3080,16 @@ class DistributionalBoosting(_BaseBooster):
             sampled_depth0_retries = 0
 
             phase = _start_timing(timing)
+            if self.rho_learning_rate_multiplier != 1.0 and K >= 2:
+                tree.values[:, 1] *= self.rho_learning_rate_multiplier
             self.trees_.append(tree)
             self._accumulate_importance(tree)
             add_multiclass_leaf_values_inplace(leaf, tree.values, F)
+            state_refreshed = False
+            if hasattr(self.loss_, "refresh_state"):
+                state_refreshed = bool(
+                    self.loss_.refresh_state(y, F, w, len(self.trees_))
+                )
             _add_timing(timing, "train_update", phase)
 
             if eval_train:
@@ -3020,9 +3108,25 @@ class DistributionalBoosting(_BaseBooster):
                 _add_timing(timing, "loss_eval", phase)
                 self.valid_history_.append(val)
                 successful_iter = len(self.trees_) - 1
-                if val < best_prefix_score:
+                if state_refreshed:
+                    self.valid_history_ = (
+                        self._rescore_class_major_prefix_history(
+                            Xv_binned, yv, wv
+                        )
+                    )
+                    best_prefix_score, best_prefix_iter = (
+                        self._best_prefix_from_history(self.valid_history_)
+                    )
+                    patience_score, patience_iter = (
+                        self._patience_prefix_from_history(self.valid_history_)
+                    )
+                    val = self.valid_history_[-1]
+                elif val < best_prefix_score:
                     best_prefix_score, best_prefix_iter = val, successful_iter
-                if patience_score - val > self.early_stopping_min_delta_:
+                if (
+                    not state_refreshed
+                    and patience_score - val > self.early_stopping_min_delta_
+                ):
                     patience_score, patience_iter = val, successful_iter
                 elif (self.early_stopping_rounds_ and
                       successful_iter - patience_iter >= self.early_stopping_rounds_):
@@ -3037,10 +3141,50 @@ class DistributionalBoosting(_BaseBooster):
                 print(msg)
 
         self.fit_time_ = time.time() - t0
-        self._truncate_to_best_model(best_prefix_iter, self.valid_history_)
+        stateful_loss = hasattr(self.loss_, "refresh_state")
+        if stateful_loss:
+            F = np.tile(self.init_[:, None], (1, n_samples))
+            for tree in self.trees_:
+                tree.add_predict_class_major(X_binned, F)
+            self.loss_.refresh_state(y, F, w, len(self.trees_), force=True)
+            if Xv_binned is not None and self.valid_history_:
+                self.valid_history_ = self._rescore_class_major_prefix_history(
+                    Xv_binned, yv, wv
+                )
+                best_prefix_score, best_prefix_iter = (
+                    self._best_prefix_from_history(self.valid_history_)
+                )
+            elif Xv_binned is None:
+                best_prefix_score = self._eval_metric_class_major(y, F, w)
+                if self.train_history_:
+                    self.train_history_[-1] = best_prefix_score
+
+        while True:
+            tree_count_before_truncate = len(self.trees_)
+            self._truncate_to_best_model(best_prefix_iter, self.valid_history_)
+            truncated = len(self.trees_) != tree_count_before_truncate
+            if not (stateful_loss and truncated):
+                break
+
+            F = np.tile(self.init_[:, None], (1, n_samples))
+            for tree in self.trees_:
+                tree.add_predict_class_major(X_binned, F)
+            self.loss_.refresh_state(y, F, w, len(self.trees_), force=True)
+            if Xv_binned is not None and self.valid_history_:
+                self.valid_history_ = self._rescore_class_major_prefix_history(
+                    Xv_binned, yv, wv
+                )
+                best_prefix_score, best_prefix_iter = (
+                    self._best_prefix_from_history(self.valid_history_)
+                )
+            else:
+                best_prefix_score = self._eval_metric_class_major(y, F, w)
+                break
         self._refresh_stochastic_auto_params(n_samples)
         self.best_iteration_ = len(self.trees_)
         if self.valid_history_:
+            self.best_score_ = best_prefix_score
+        elif stateful_loss and Xv_binned is None:
             self.best_score_ = best_prefix_score
         elif Fv is not None:
             self.best_score_ = self._eval_metric_class_major(yv, Fv, wv)
@@ -3049,6 +3193,29 @@ class DistributionalBoosting(_BaseBooster):
         else:
             self.best_score_ = self._eval_metric_class_major(y, F, w)
         return self
+
+    def _rescore_class_major_prefix_history(self, X_binned, y, sample_weight):
+        F = np.tile(self.init_[:, None], (1, len(y)))
+        history = []
+        for tree in self.trees_:
+            tree.add_predict_class_major(X_binned, F)
+            history.append(self._eval_metric_class_major(y, F, sample_weight))
+        return history
+
+    @staticmethod
+    def _best_prefix_from_history(history):
+        best_score, best_iter = np.inf, 0
+        for i, val in enumerate(history):
+            if val < best_score:
+                best_score, best_iter = float(val), int(i)
+        return best_score, best_iter
+
+    def _patience_prefix_from_history(self, history):
+        patience_score, patience_iter = np.inf, 0
+        for i, val in enumerate(history):
+            if patience_score - val > self.early_stopping_min_delta_:
+                patience_score, patience_iter = float(val), int(i)
+        return patience_score, patience_iter
 
     def _eval_metric_class_major(self, y, F, sample_weight=None):
         if getattr(self, "eval_metric_", None) == "crps":
@@ -3059,7 +3226,7 @@ class DistributionalBoosting(_BaseBooster):
         return build_flat_multiclass_ensemble(self.trees_, self.n_outputs_)
 
     def predict_raw(self, X):
-        """Return sample-major raw scores ``[mu, log_sigma]``."""
+        """Return sample-major raw scores for the fitted distribution head."""
         X = self._coerce_predict_X(X)
         X_binned = self.prep_.transform(X)
         F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
@@ -3073,7 +3240,11 @@ class DistributionalBoosting(_BaseBooster):
 
     def predict_dist(self, X):
         raw = self.predict_raw(X)
-        return GaussianNLL.mean_and_sigma(raw)
+        return self.loss_.params_from_raw(raw)
+
+    def predict_variance(self, X):
+        raw = self.predict_raw(X)
+        return self.loss_.variance_from_raw(raw)
 
     def staged_predict_raw(self, X):
         """Yield sample-major raw scores after each vector-tree round."""

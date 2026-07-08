@@ -930,6 +930,9 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
         header["n_outputs"] = int(booster.n_outputs_)
         header["loss_name"] = booster.loss_name
         header["loss_kwargs"] = _jsonify(booster.loss_kwargs)
+        loss_state = getattr(getattr(booster, "loss_", None), "state_", None)
+        if loss_state:
+            header["loss_state"] = _jsonify(loss_state)
     elif isinstance(booster, GradientBoosting):
         header["init"] = float(booster.init_)
         header["loss_name"] = booster.loss_name
@@ -949,6 +952,7 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
         "bagging_temperature", "mvs_reg", "random_strength",
         "diagnostic_warnings", "histogram_dtype", "leaf_dtype",
         "ts_permutations", "target_ordered_cat_codes",
+        "rho_learning_rate_multiplier", "rho_l2_leaf_reg_multiplier",
     )
     constructor_inputs = {
         "depth": "_depth_input",
@@ -1102,6 +1106,15 @@ def load_booster(path, return_wrapper_payload=False):
             booster.loss_ = VECTOR_LOSSES[header["loss_name"]](
                 **header["loss_kwargs"]
             )
+            loss_state = header.get("loss_state")
+            if loss_state:
+                booster.loss_.state_ = loss_state
+            expected_outputs = int(getattr(booster.loss_, "n_outputs", 0))
+            if booster.n_outputs_ != expected_outputs:
+                _invalid_model(
+                    "distributional n_outputs does not match loss "
+                    f"{header['loss_name']!r}"
+                )
         else:
             raise ValueError(f"unknown model class {model_class!r}")
 

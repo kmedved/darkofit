@@ -2912,12 +2912,13 @@ def test_multiclass_shared_split_allows_empty_class_hessian():
     n_bins = np.array([2], dtype=np.int64)
     feat_mask = np.array([1], dtype=np.int64)
     leaf_ids = np.array([0], dtype=np.int64)
+    l2_by_class = np.ones(3, dtype=np.float64)
 
     out_feat = np.full(1, -1, dtype=np.int64)
     out_thr = np.full(1, -1, dtype=np.int64)
     out_gain = np.full(1, -np.inf, dtype=np.float64)
     _best_multiclass_splits_for_leaf_ids_counts(
-        hg, hh, hc, n_bins, 1.0, feat_mask, 1.0, 1.0,
+        hg, hh, hc, n_bins, l2_by_class, feat_mask, 1.0, 1.0,
         leaf_ids, 1, out_feat, out_thr, out_gain
     )
 
@@ -2930,7 +2931,7 @@ def test_multiclass_shared_split_allows_empty_class_hessian():
     out_thr[:] = -1
     out_gain[:] = -np.inf
     _best_multiclass_splits_counts_for_leaf_ids_with_noise_py(
-        hg, hh, hc, n_bins, 1.0, feat_mask, 1.0, 1.0,
+        hg, hh, hc, n_bins, l2_by_class, feat_mask, 1.0, 1.0,
         leaf_ids, 1, out_feat, out_thr, out_gain,
         0.0, 0, 0, 0, 0.0,
     )
@@ -2946,7 +2947,7 @@ def test_multiclass_shared_split_allows_empty_class_hessian():
     out_thr[:] = -1
     out_gain[:] = -np.inf
     _best_multiclass_splits_for_leaf_ids_counts_class_minor(
-        hg_cm, hh_cm, hc, n_bins, 1.0, feat_mask, 1.0, 1.0,
+        hg_cm, hh_cm, hc, n_bins, l2_by_class, feat_mask, 1.0, 1.0,
         leaf_ids, 1, out_feat, out_thr, out_gain
     )
 
@@ -2958,7 +2959,7 @@ def test_multiclass_shared_split_allows_empty_class_hessian():
     out_thr[:] = -1
     out_gain[:] = -np.inf
     _best_multiclass_splits_counts_for_leaf_ids_with_noise_class_minor_py(
-        hg_cm, hh_cm, hc, n_bins, 1.0, feat_mask, 1.0, 1.0,
+        hg_cm, hh_cm, hc, n_bins, l2_by_class, feat_mask, 1.0, 1.0,
         leaf_ids, 1, out_feat, out_thr, out_gain,
         0.0, 0, 0, 0, 0.0,
     )

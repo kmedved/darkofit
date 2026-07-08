@@ -49,11 +49,13 @@ DEFAULT_MODELS = (
     "chimera_gaussian",
     "chimera_gaussian_es",
     "chimera_gaussian_es_calibrated",
+    "chimera_student_t",
     "chimera_rmse_const_sigma",
     "chimera_quantile_pair",
     "ngboost",
     "catboost_uncertainty",
     "lightgbm_twin",
+    "lightgbm_twin_calibrated",
 )
 
 OPENML_REGRESSION_DATASETS = {
@@ -67,6 +69,7 @@ OPENML_REGRESSION_DATASETS = {
 class Result:
     dataset: str
     model: str
+    weight_mode: str
     seed: int
     n_train: int
     n_test: int
@@ -85,6 +88,9 @@ class Result:
     sigma_mean: float | None = None
     sigma_min: float | None = None
     sigma_max: float | None = None
+
+
+_LOG_CHI2_1_MEAN = -1.2703628454614782
 
 
 def _has_module(name):
@@ -143,28 +149,68 @@ def _make_dataset(dataset, seed, args):
     raise KeyError(dataset)
 
 
-def _normal_nll(y, mu, sigma):
+def _make_sample_weight(y, mode):
+    y = np.asarray(y, dtype=np.float64)
+    if mode == "none":
+        return None
+    if mode == "uniform":
+        return np.ones(y.shape[0], dtype=np.float64)
+    if mode != "stress":
+        raise ValueError(f"unknown weight mode {mode!r}")
+    order = np.argsort(np.argsort(y))
+    pct = order / max(y.shape[0] - 1, 1)
+    w = 0.5 + 3.0 * pct
+    return w * (len(w) / w.sum())
+
+
+def _weighted_mean(values, sample_weight=None):
+    values = np.asarray(values, dtype=np.float64)
+    if sample_weight is None:
+        return float(np.mean(values))
+    return float(np.average(values, weights=sample_weight))
+
+
+def _weighted_rms(values, sample_weight=None):
+    values = np.asarray(values, dtype=np.float64)
+    return math.sqrt(_weighted_mean(values * values, sample_weight))
+
+
+def _normal_nll(y, mu, sigma, sample_weight=None):
     sigma = np.clip(np.asarray(sigma, dtype=np.float64), 1e-12, None)
     z = (np.asarray(y, dtype=np.float64) - mu) / sigma
-    return float(np.mean(0.5 * np.log(2.0 * np.pi) + np.log(sigma) + 0.5 * z * z))
+    row = 0.5 * np.log(2.0 * np.pi) + np.log(sigma) + 0.5 * z * z
+    return _weighted_mean(row, sample_weight)
 
 
-def _normal_crps(y, mu, sigma):
+def _normal_crps(y, mu, sigma, sample_weight=None):
     y = np.asarray(y, dtype=np.float64)
     mu = np.asarray(mu, dtype=np.float64)
     sigma = np.clip(np.asarray(sigma, dtype=np.float64), 1e-12, None)
     z = (y - mu) / sigma
     phi = np.exp(-0.5 * z * z) / np.sqrt(2.0 * np.pi)
     cdf = 0.5 * (1.0 + np.vectorize(math.erf)(z / np.sqrt(2.0)))
-    return float(
-        np.mean(
-            sigma
-            * (z * (2.0 * cdf - 1.0) + 2.0 * phi - 1.0 / np.sqrt(np.pi))
-        )
+    row = sigma * (
+        z * (2.0 * cdf - 1.0) + 2.0 * phi - 1.0 / np.sqrt(np.pi)
     )
+    return _weighted_mean(row, sample_weight)
 
 
-def _sigma_binned_coverage(y, lo, hi, sigma, n_bins):
+def _student_t_nll(y, mu, scale, nu, sample_weight=None):
+    y = np.asarray(y, dtype=np.float64)
+    mu = np.asarray(mu, dtype=np.float64)
+    scale = np.clip(np.asarray(scale, dtype=np.float64), 1e-12, None)
+    nu = float(nu)
+    z = np.clip((y - mu) / scale, -1e150, 1e150)
+    const = (
+        0.5 * math.log(nu * math.pi)
+        + math.lgamma(nu / 2.0)
+        - math.lgamma((nu + 1.0) / 2.0)
+    )
+    row = np.log(scale) + const + 0.5 * (nu + 1.0) * np.log1p(z * z / nu)
+    return _weighted_mean(row, sample_weight)
+
+
+def _sigma_binned_coverage(y, lo, hi, sigma, sample_weight, n_bins):
     n_bins = int(n_bins)
     if n_bins < 2:
         return None
@@ -173,12 +219,22 @@ def _sigma_binned_coverage(y, lo, hi, sigma, n_bins):
         return None
     order = np.argsort(sigma)
     covered = ((np.asarray(y) >= lo) & (np.asarray(y) <= hi))[order]
-    chunks = [chunk for chunk in np.array_split(covered, n_bins) if chunk.size]
-    return "/".join(f"{float(np.mean(chunk)):.3f}" for chunk in chunks)
+    if sample_weight is None:
+        weights = None
+    else:
+        weights = np.asarray(sample_weight, dtype=np.float64)[order]
+    parts = []
+    for idx in np.array_split(np.arange(covered.shape[0]), n_bins):
+        if idx.size == 0:
+            continue
+        chunk_weights = None if weights is None else weights[idx]
+        parts.append(_weighted_mean(covered[idx].astype(float), chunk_weights))
+    return "/".join(f"{value:.3f}" for value in parts)
 
 
 def _score(dataset, model_name, seed, Xtr, Xte, yte, fit_seconds, predict_seconds,
-           mu, sigma, best_iteration=None, sigma_bins=5):
+           mu, sigma, best_iteration=None, sigma_bins=5,
+           sample_weight=None, weight_mode="none"):
     sigma = np.clip(np.asarray(sigma, dtype=np.float64), 1e-12, None)
     mu = np.asarray(mu, dtype=np.float64)
     lo = mu - 1.6448536269514722 * sigma
@@ -186,6 +242,7 @@ def _score(dataset, model_name, seed, Xtr, Xte, yte, fit_seconds, predict_second
     return Result(
         dataset=dataset,
         model=model_name,
+        weight_mode=weight_mode,
         seed=int(seed),
         n_train=int(Xtr.shape[0]),
         n_test=int(Xte.shape[0]),
@@ -194,28 +251,32 @@ def _score(dataset, model_name, seed, Xtr, Xte, yte, fit_seconds, predict_second
         fit_seconds=float(fit_seconds),
         predict_seconds=float(predict_seconds),
         best_iteration=None if best_iteration is None else int(best_iteration),
-        rmse_mu=float(np.sqrt(np.mean((yte - mu) ** 2))),
-        nll=_normal_nll(yte, mu, sigma),
-        crps=_normal_crps(yte, mu, sigma),
-        interval90_coverage=float(np.mean((yte >= lo) & (yte <= hi))),
-        interval90_width=float(np.mean(hi - lo)),
-        cov90_by_sigma=_sigma_binned_coverage(
-            yte, lo, hi, sigma, sigma_bins
+        rmse_mu=_weighted_rms(yte - mu, sample_weight),
+        nll=_normal_nll(yte, mu, sigma, sample_weight),
+        crps=_normal_crps(yte, mu, sigma, sample_weight),
+        interval90_coverage=_weighted_mean(
+            ((yte >= lo) & (yte <= hi)).astype(float), sample_weight
         ),
-        sigma_mean=float(np.mean(sigma)),
+        interval90_width=_weighted_mean(hi - lo, sample_weight),
+        cov90_by_sigma=_sigma_binned_coverage(
+            yte, lo, hi, sigma, sample_weight, sigma_bins
+        ),
+        sigma_mean=_weighted_mean(sigma, sample_weight),
         sigma_min=float(np.min(sigma)),
         sigma_max=float(np.max(sigma)),
     )
 
 
 def _score_interval_only(dataset, model_name, seed, Xtr, Xte, yte,
-                         fit_seconds, predict_seconds, lo, hi):
+                         fit_seconds, predict_seconds, lo, hi,
+                         sample_weight=None, weight_mode="none"):
     lo = np.asarray(lo, dtype=np.float64)
     hi = np.asarray(hi, dtype=np.float64)
     mu = 0.5 * (lo + hi)
     return Result(
         dataset=dataset,
         model=model_name,
+        weight_mode=weight_mode,
         seed=int(seed),
         n_train=int(Xtr.shape[0]),
         n_test=int(Xte.shape[0]),
@@ -224,16 +285,19 @@ def _score_interval_only(dataset, model_name, seed, Xtr, Xte, yte,
         reason="interval-only baseline",
         fit_seconds=float(fit_seconds),
         predict_seconds=float(predict_seconds),
-        rmse_mu=float(np.sqrt(np.mean((yte - mu) ** 2))),
-        interval90_coverage=float(np.mean((yte >= lo) & (yte <= hi))),
-        interval90_width=float(np.mean(hi - lo)),
+        rmse_mu=_weighted_rms(yte - mu, sample_weight),
+        interval90_coverage=_weighted_mean(
+            ((yte >= lo) & (yte <= hi)).astype(float), sample_weight
+        ),
+        interval90_width=_weighted_mean(hi - lo, sample_weight),
     )
 
 
-def _skip(dataset, model_name, seed, Xtr, Xte, reason):
+def _skip(dataset, model_name, seed, Xtr, Xte, reason, weight_mode="none"):
     return Result(
         dataset=dataset,
         model=model_name,
+        weight_mode=weight_mode,
         seed=int(seed),
         n_train=int(Xtr.shape[0]),
         n_test=int(Xte.shape[0]),
@@ -243,7 +307,7 @@ def _skip(dataset, model_name, seed, Xtr, Xte, reason):
     )
 
 
-def _run_chimera_gaussian(dataset, seed, Xtr, Xte, ytr, yte, args):
+def _run_chimera_gaussian(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
     t0 = time.perf_counter()
     model = ChimeraBoostRegressor(
         loss="Gaussian",
@@ -255,7 +319,7 @@ def _run_chimera_gaussian(dataset, seed, Xtr, Xte, ytr, yte, args):
         thread_count=args.threads,
         random_state=seed,
         diagnostic_warnings="never",
-    ).fit(Xtr, ytr)
+    ).fit(Xtr, ytr, sample_weight=wtr)
     fit_seconds = time.perf_counter() - t0
     t0 = time.perf_counter()
     mu, sigma = model.predict_dist(Xte)
@@ -265,10 +329,12 @@ def _run_chimera_gaussian(dataset, seed, Xtr, Xte, ytr, yte, args):
         fit_seconds, predict_seconds, mu, sigma,
         best_iteration=model.n_estimators_,
         sigma_bins=args.sigma_bins,
+        sample_weight=wte,
+        weight_mode=args.weight_mode,
     )
 
 
-def _run_chimera_gaussian_es(dataset, seed, Xtr, Xte, ytr, yte, args):
+def _run_chimera_gaussian_es(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
     t0 = time.perf_counter()
     model = ChimeraBoostRegressor(
         loss="Gaussian",
@@ -287,7 +353,7 @@ def _run_chimera_gaussian_es(dataset, seed, Xtr, Xte, ytr, yte, args):
         thread_count=args.threads,
         random_state=seed,
         diagnostic_warnings="never",
-    ).fit(Xtr, ytr)
+    ).fit(Xtr, ytr, sample_weight=wtr)
     fit_seconds = time.perf_counter() - t0
     t0 = time.perf_counter()
     mu, sigma = model.predict_dist(Xte)
@@ -297,11 +363,13 @@ def _run_chimera_gaussian_es(dataset, seed, Xtr, Xte, ytr, yte, args):
         fit_seconds, predict_seconds, mu, sigma,
         best_iteration=model.n_estimators_,
         sigma_bins=args.sigma_bins,
+        sample_weight=wte,
+        weight_mode=args.weight_mode,
     )
 
 
 def _run_chimera_gaussian_es_calibrated(dataset, seed, Xtr, Xte, ytr, yte,
-                                        args):
+                                        wtr, wte, args):
     t0 = time.perf_counter()
     model = ChimeraBoostRegressor(
         loss="Gaussian",
@@ -317,11 +385,11 @@ def _run_chimera_gaussian_es_calibrated(dataset, seed, Xtr, Xte, ytr, yte,
         early_stopping=True,
         early_stopping_rounds=args.early_stopping_rounds,
         validation_fraction=args.validation_fraction,
-        sigma_calibration="scalar",
+        dist_calibration=args.chimera_sigma_calibration,
         thread_count=args.threads,
         random_state=seed,
         diagnostic_warnings="never",
-    ).fit(Xtr, ytr)
+    ).fit(Xtr, ytr, sample_weight=wtr)
     fit_seconds = time.perf_counter() - t0
     t0 = time.perf_counter()
     mu, sigma = model.predict_dist(Xte)
@@ -331,10 +399,60 @@ def _run_chimera_gaussian_es_calibrated(dataset, seed, Xtr, Xte, ytr, yte,
         fit_seconds, predict_seconds, mu, sigma,
         best_iteration=model.n_estimators_,
         sigma_bins=args.sigma_bins,
+        sample_weight=wte,
+        weight_mode=args.weight_mode,
     )
 
 
-def _run_chimera_rmse_const_sigma(dataset, seed, Xtr, Xte, ytr, yte, args):
+def _run_chimera_student_t(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
+    t0 = time.perf_counter()
+    model = ChimeraBoostRegressor(
+        loss="StudentT",
+        dist_params={"nu": args.student_t_nu},
+        tree_mode="lightgbm",
+        iterations=args.iterations,
+        learning_rate=args.learning_rate,
+        num_leaves=args.num_leaves,
+        min_child_samples=args.min_child_samples,
+        thread_count=args.threads,
+        random_state=seed,
+        diagnostic_warnings="never",
+    ).fit(Xtr, ytr, sample_weight=wtr)
+    fit_seconds = time.perf_counter() - t0
+    t0 = time.perf_counter()
+    mu, scale, nu = model.predict_dist(Xte)
+    lo, hi = model.predict_interval(Xte, alpha=0.1)
+    sigma = np.sqrt(model.predict_variance(Xte))
+    predict_seconds = time.perf_counter() - t0
+    return Result(
+        dataset=dataset,
+        model="chimera_student_t",
+        weight_mode=args.weight_mode,
+        seed=int(seed),
+        n_train=int(Xtr.shape[0]),
+        n_test=int(Xte.shape[0]),
+        n_features=int(Xtr.shape[1]),
+        status="ok",
+        fit_seconds=float(fit_seconds),
+        predict_seconds=float(predict_seconds),
+        best_iteration=int(model.n_estimators_),
+        rmse_mu=_weighted_rms(yte - mu, wte),
+        nll=_student_t_nll(yte, mu, scale, float(nu[0]), wte),
+        crps=None,
+        interval90_coverage=_weighted_mean(
+            ((yte >= lo) & (yte <= hi)).astype(float), wte
+        ),
+        interval90_width=_weighted_mean(hi - lo, wte),
+        cov90_by_sigma=_sigma_binned_coverage(
+            yte, lo, hi, sigma, wte, args.sigma_bins
+        ),
+        sigma_mean=_weighted_mean(sigma, wte),
+        sigma_min=float(np.min(sigma)),
+        sigma_max=float(np.max(sigma)),
+    )
+
+
+def _run_chimera_rmse_const_sigma(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
     t0 = time.perf_counter()
     model = ChimeraBoostRegressor(
         loss="RMSE",
@@ -346,10 +464,10 @@ def _run_chimera_rmse_const_sigma(dataset, seed, Xtr, Xte, ytr, yte, args):
         thread_count=args.threads,
         random_state=seed,
         diagnostic_warnings="never",
-    ).fit(Xtr, ytr)
+    ).fit(Xtr, ytr, sample_weight=wtr)
     fit_seconds = time.perf_counter() - t0
     train_mu = model.predict(Xtr)
-    sigma_const = float(np.sqrt(np.mean((ytr - train_mu) ** 2)))
+    sigma_const = _weighted_rms(ytr - train_mu, wtr)
     t0 = time.perf_counter()
     mu = model.predict(Xte)
     sigma = np.full_like(mu, sigma_const, dtype=np.float64)
@@ -359,10 +477,12 @@ def _run_chimera_rmse_const_sigma(dataset, seed, Xtr, Xte, ytr, yte, args):
         fit_seconds, predict_seconds, mu, sigma,
         best_iteration=model.n_estimators_,
         sigma_bins=args.sigma_bins,
+        sample_weight=wte,
+        weight_mode=args.weight_mode,
     )
 
 
-def _run_chimera_quantile_pair(dataset, seed, Xtr, Xte, ytr, yte, args):
+def _run_chimera_quantile_pair(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
     t0 = time.perf_counter()
     common = dict(
         tree_mode="lightgbm",
@@ -376,8 +496,8 @@ def _run_chimera_quantile_pair(dataset, seed, Xtr, Xte, ytr, yte, args):
     )
     lo_model = ChimeraBoostRegressor(loss="Quantile", alpha=0.05, **common)
     hi_model = ChimeraBoostRegressor(loss="Quantile", alpha=0.95, **common)
-    lo_model.fit(Xtr, ytr)
-    hi_model.fit(Xtr, ytr)
+    lo_model.fit(Xtr, ytr, sample_weight=wtr)
+    hi_model.fit(Xtr, ytr, sample_weight=wtr)
     fit_seconds = time.perf_counter() - t0
     t0 = time.perf_counter()
     lo = lo_model.predict(Xte)
@@ -386,12 +506,17 @@ def _run_chimera_quantile_pair(dataset, seed, Xtr, Xte, ytr, yte, args):
     return _score_interval_only(
         dataset, "chimera_quantile_pair", seed, Xtr, Xte, yte,
         fit_seconds, predict_seconds, np.minimum(lo, hi), np.maximum(lo, hi),
+        sample_weight=wte,
+        weight_mode=args.weight_mode,
     )
 
 
-def _run_ngboost(dataset, seed, Xtr, Xte, ytr, yte, args):
+def _run_ngboost(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
     if not _has_module("ngboost"):
-        return _skip(dataset, "ngboost", seed, Xtr, Xte, "ngboost is not installed")
+        return _skip(
+            dataset, "ngboost", seed, Xtr, Xte, "ngboost is not installed",
+            args.weight_mode,
+        )
     from ngboost import NGBRegressor
     from ngboost.distns import Normal
     from ngboost.scores import LogScore
@@ -407,7 +532,10 @@ def _run_ngboost(dataset, seed, Xtr, Xte, ytr, yte, args):
         random_state=seed,
         verbose=False,
     )
-    model.fit(Xtr, ytr)
+    if wtr is None:
+        model.fit(Xtr, ytr)
+    else:
+        model.fit(Xtr, ytr, sample_weight=wtr)
     fit_seconds = time.perf_counter() - t0
     t0 = time.perf_counter()
     dist = model.pred_dist(Xte)
@@ -423,14 +551,16 @@ def _run_ngboost(dataset, seed, Xtr, Xte, ytr, yte, args):
         dataset, "ngboost", seed, Xtr, Xte, yte,
         fit_seconds, predict_seconds, mu, sigma,
         sigma_bins=args.sigma_bins,
+        sample_weight=wte,
+        weight_mode=args.weight_mode,
     )
 
 
-def _run_catboost_uncertainty(dataset, seed, Xtr, Xte, ytr, yte, args):
+def _run_catboost_uncertainty(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
     if not _has_module("catboost"):
         return _skip(
             dataset, "catboost_uncertainty", seed, Xtr, Xte,
-            "catboost is not installed"
+            "catboost is not installed", args.weight_mode
         )
     from catboost import CatBoostRegressor
 
@@ -445,7 +575,7 @@ def _run_catboost_uncertainty(dataset, seed, Xtr, Xte, ytr, yte, args):
         verbose=False,
         allow_writing_files=False,
     )
-    model.fit(Xtr, ytr)
+    model.fit(Xtr, ytr, sample_weight=wtr)
     fit_seconds = time.perf_counter() - t0
     t0 = time.perf_counter()
     raw = np.asarray(model.predict(Xte, prediction_type="RawFormulaVal"))
@@ -463,6 +593,8 @@ def _run_catboost_uncertainty(dataset, seed, Xtr, Xte, ytr, yte, args):
         fit_seconds, predict_seconds, mu, sigma,
         best_iteration=getattr(model, "tree_count_", None),
         sigma_bins=args.sigma_bins,
+        sample_weight=wte,
+        weight_mode=args.weight_mode,
     )
 
 
@@ -481,38 +613,103 @@ def _lightgbm_regressor(seed, args):
     )
 
 
-def _run_lightgbm_twin(dataset, seed, Xtr, Xte, ytr, yte, args):
-    if not _has_module("lightgbm"):
-        return _skip(
-            dataset, "lightgbm_twin", seed, Xtr, Xte, "lightgbm is not installed"
-        )
-
-    t0 = time.perf_counter()
+def _fit_lightgbm_twin(seed, Xtr, ytr, wtr, args):
     oof = np.empty_like(ytr, dtype=np.float64)
     splitter = KFold(n_splits=args.lightgbm_oof_folds, shuffle=True,
                      random_state=seed)
     for fold, (fit_idx, val_idx) in enumerate(splitter.split(Xtr)):
         fold_model = _lightgbm_regressor(seed + fold + 1, args)
-        fold_model.fit(Xtr[fit_idx], ytr[fit_idx])
+        fold_weight = None if wtr is None else wtr[fit_idx]
+        fold_model.fit(Xtr[fit_idx], ytr[fit_idx], sample_weight=fold_weight)
         oof[val_idx] = fold_model.predict(Xtr[val_idx])
 
     mean_model = _lightgbm_regressor(seed, args)
-    mean_model.fit(Xtr, ytr)
+    mean_model.fit(Xtr, ytr, sample_weight=wtr)
     log_var_target = np.log((ytr - oof) ** 2 + args.lightgbm_variance_eps)
     var_model = _lightgbm_regressor(seed + 10_000, args)
-    var_model.fit(Xtr, log_var_target)
+    var_model.fit(Xtr, log_var_target, sample_weight=wtr)
+    return mean_model, var_model, oof
+
+
+def _lightgbm_twin_predict(mean_model, var_model, X, *, calibrated=False):
+    mu = mean_model.predict(X)
+    log_var = np.clip(var_model.predict(X), -30.0, 30.0)
+    if calibrated:
+        log_var = log_var - _LOG_CHI2_1_MEAN
+    sigma = np.sqrt(np.exp(log_var))
+    return mu, sigma
+
+
+def _fit_scalar_scale(y, mu, sigma, sample_weight=None):
+    sigma = np.clip(np.asarray(sigma, dtype=np.float64), 1e-12, None)
+    z2 = ((np.asarray(y, dtype=np.float64) - mu) / sigma) ** 2
+    return math.sqrt(max(_weighted_mean(z2, sample_weight), 1e-12))
+
+
+def _run_lightgbm_twin(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
+    if not _has_module("lightgbm"):
+        return _skip(
+            dataset, "lightgbm_twin", seed, Xtr, Xte,
+            "lightgbm is not installed", args.weight_mode
+        )
+
+    t0 = time.perf_counter()
+    mean_model, var_model, _ = _fit_lightgbm_twin(seed, Xtr, ytr, wtr, args)
     fit_seconds = time.perf_counter() - t0
 
     t0 = time.perf_counter()
-    mu = mean_model.predict(Xte)
-    sigma = np.sqrt(
-        np.exp(np.clip(var_model.predict(Xte), -30.0, 30.0))
+    mu, sigma = _lightgbm_twin_predict(
+        mean_model, var_model, Xte, calibrated=True
     )
     predict_seconds = time.perf_counter() - t0
     return _score(
         dataset, "lightgbm_twin", seed, Xtr, Xte, yte,
         fit_seconds, predict_seconds, mu, sigma,
         sigma_bins=args.sigma_bins,
+        sample_weight=wte,
+        weight_mode=args.weight_mode,
+    )
+
+
+def _run_lightgbm_twin_calibrated(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
+    if not _has_module("lightgbm"):
+        return _skip(
+            dataset, "lightgbm_twin_calibrated", seed, Xtr, Xte,
+            "lightgbm is not installed", args.weight_mode
+        )
+
+    if wtr is None:
+        X_fit, X_cal, y_fit, y_cal = train_test_split(
+            Xtr, ytr, test_size=args.validation_fraction, random_state=seed
+        )
+        w_fit = None
+        w_cal = None
+    else:
+        X_fit, X_cal, y_fit, y_cal, w_fit, w_cal = train_test_split(
+            Xtr, ytr, wtr, test_size=args.validation_fraction, random_state=seed
+        )
+    t0 = time.perf_counter()
+    mean_model, var_model, _ = _fit_lightgbm_twin(
+        seed, X_fit, y_fit, w_fit, args
+    )
+    cal_mu, cal_sigma = _lightgbm_twin_predict(
+        mean_model, var_model, X_cal, calibrated=True
+    )
+    scale = _fit_scalar_scale(y_cal, cal_mu, cal_sigma, w_cal)
+    fit_seconds = time.perf_counter() - t0
+
+    t0 = time.perf_counter()
+    mu, sigma = _lightgbm_twin_predict(
+        mean_model, var_model, Xte, calibrated=True
+    )
+    sigma = sigma * scale
+    predict_seconds = time.perf_counter() - t0
+    return _score(
+        dataset, "lightgbm_twin_calibrated", seed, Xtr, Xte, yte,
+        fit_seconds, predict_seconds, mu, sigma,
+        sigma_bins=args.sigma_bins,
+        sample_weight=wte,
+        weight_mode=args.weight_mode,
     )
 
 
@@ -520,11 +717,13 @@ RUNNERS = {
     "chimera_gaussian": _run_chimera_gaussian,
     "chimera_gaussian_es": _run_chimera_gaussian_es,
     "chimera_gaussian_es_calibrated": _run_chimera_gaussian_es_calibrated,
+    "chimera_student_t": _run_chimera_student_t,
     "chimera_rmse_const_sigma": _run_chimera_rmse_const_sigma,
     "chimera_quantile_pair": _run_chimera_quantile_pair,
     "ngboost": _run_ngboost,
     "catboost_uncertainty": _run_catboost_uncertainty,
     "lightgbm_twin": _run_lightgbm_twin,
+    "lightgbm_twin_calibrated": _run_lightgbm_twin_calibrated,
 }
 
 
@@ -540,7 +739,8 @@ def _print_results(rows):
     print("\nDistributional regression benchmark")
     model_width = max([34, *(len(r.model) for r in rows)])
     print(
-        f"{'dataset':18s} {'model':{model_width}s} {'seed':>4s} {'status':>6s} {'fit_s':>8s} "
+        f"{'dataset':18s} {'weights':>7s} {'model':{model_width}s} "
+        f"{'seed':>4s} {'status':>6s} {'fit_s':>8s} "
         f"{'pred_s':>8s} {'rmse_mu':>9s} {'nll':>9s} {'crps':>9s} "
         f"{'cov90':>7s} {'width90':>8s} {'cov90_by_sigma':>29s} "
         f"{'sigma':>20s} reason"
@@ -553,7 +753,8 @@ def _print_results(rows):
                 f"[{r.sigma_min:.4f},{r.sigma_max:.4f}]"
             )
         print(
-            f"{r.dataset:18s} {r.model:{model_width}s} {r.seed:4d} {r.status:>6s} "
+            f"{r.dataset:18s} {r.weight_mode:>7s} "
+            f"{r.model:{model_width}s} {r.seed:4d} {r.status:>6s} "
             f"{_fmt(r.fit_seconds, 3):>8s} {_fmt(r.predict_seconds, 3):>8s} "
             f"{_fmt(r.rmse_mu):>9s} {_fmt(r.nll):>9s} "
             f"{_fmt(r.crps):>9s} {_fmt(r.interval90_coverage, 3):>7s} "
@@ -564,14 +765,21 @@ def _print_results(rows):
     ok_rows = [r for r in rows if r.status == "ok"]
     if ok_rows:
         print("\nAverages over successful runs")
-        for dataset, model in sorted({(r.dataset, r.model) for r in ok_rows}):
+        for dataset, weight_mode, model in sorted(
+            {(r.dataset, r.weight_mode, r.model) for r in ok_rows}
+        ):
             subset = [
-                r for r in ok_rows if r.dataset == dataset and r.model == model
+                r for r in ok_rows
+                if (
+                    r.dataset == dataset
+                    and r.weight_mode == weight_mode
+                    and r.model == model
+                )
             ]
             nll_values = [r.nll for r in subset if r.nll is not None]
             crps_values = [r.crps for r in subset if r.crps is not None]
             print(
-                f"  {dataset:18s} {model:{model_width}s}"
+                f"  {dataset:18s} {weight_mode:7s} {model:{model_width}s}"
                 f" fit={statistics.mean(r.fit_seconds for r in subset):.3f}s"
                 f" nll={_fmt(statistics.mean(nll_values) if nll_values else None)}"
                 f" crps={_fmt(statistics.mean(crps_values) if crps_values else None)}"
@@ -584,8 +792,9 @@ def _print_results(rows):
 
 def _markdown_table(rows):
     headers = [
-        "dataset", "model", "seed", "status", "fit_s", "rmse_mu", "nll",
-        "crps", "cov90", "width90", "cov90_by_sigma", "reason",
+        "dataset", "weight_mode", "model", "seed", "status", "fit_s",
+        "rmse_mu", "nll", "crps", "cov90", "width90", "cov90_by_sigma",
+        "reason",
     ]
     lines = [
         "| " + " | ".join(headers) + " |",
@@ -594,6 +803,7 @@ def _markdown_table(rows):
     for r in rows:
         values = [
             r.dataset,
+            r.weight_mode,
             r.model,
             str(r.seed),
             r.status,
@@ -641,18 +851,31 @@ def _warm_chimera(args):
         )
     warm_args.num_leaves = min(max(3, int(args.num_leaves)), 7)
     warm_args.min_child_samples = min(max(2, int(args.min_child_samples)), 4)
+    warm_args.weight_mode = "none"
+    wtr = None
+    wte = None
     if "chimera_gaussian" in args.models:
-        _run_chimera_gaussian("warmup", 0, Xtr, Xte, ytr, yte, warm_args)
+        _run_chimera_gaussian("warmup", 0, Xtr, Xte, ytr, yte, wtr, wte, warm_args)
     if "chimera_gaussian_es" in args.models:
-        _run_chimera_gaussian_es("warmup", 0, Xtr, Xte, ytr, yte, warm_args)
+        _run_chimera_gaussian_es(
+            "warmup", 0, Xtr, Xte, ytr, yte, wtr, wte, warm_args
+        )
     if "chimera_gaussian_es_calibrated" in args.models:
         _run_chimera_gaussian_es_calibrated(
-            "warmup", 0, Xtr, Xte, ytr, yte, warm_args
+            "warmup", 0, Xtr, Xte, ytr, yte, wtr, wte, warm_args
+        )
+    if "chimera_student_t" in args.models:
+        _run_chimera_student_t(
+            "warmup", 0, Xtr, Xte, ytr, yte, wtr, wte, warm_args
         )
     if "chimera_rmse_const_sigma" in args.models:
-        _run_chimera_rmse_const_sigma("warmup", 0, Xtr, Xte, ytr, yte, warm_args)
+        _run_chimera_rmse_const_sigma(
+            "warmup", 0, Xtr, Xte, ytr, yte, wtr, wte, warm_args
+        )
     if "chimera_quantile_pair" in args.models:
-        _run_chimera_quantile_pair("warmup", 0, Xtr, Xte, ytr, yte, warm_args)
+        _run_chimera_quantile_pair(
+            "warmup", 0, Xtr, Xte, ytr, yte, wtr, wte, warm_args
+        )
 
 
 def parse_args(argv=None):
@@ -666,6 +889,13 @@ def parse_args(argv=None):
     parser.add_argument("--models", nargs="+", choices=sorted(RUNNERS),
                         default=list(DEFAULT_MODELS))
     parser.add_argument("--seeds", nargs="+", type=int, default=[0])
+    parser.add_argument(
+        "--weight-modes",
+        nargs="+",
+        choices=("none", "uniform", "stress"),
+        default=["none"],
+        help="sample-weight regimes for train/test scoring",
+    )
     parser.add_argument("--n-train", type=int, default=1200)
     parser.add_argument("--n-test", type=int, default=500)
     parser.add_argument("--n-features", type=int, default=6)
@@ -677,7 +907,14 @@ def parse_args(argv=None):
     )
     parser.add_argument("--early-stopping-rounds", default="auto")
     parser.add_argument("--validation-fraction", type=float, default=0.1)
+    parser.add_argument(
+        "--chimera-sigma-calibration",
+        choices=("scalar", "affine"),
+        default="affine",
+        help="calibration mode for chimera_gaussian_es_calibrated",
+    )
     parser.add_argument("--learning-rate", type=float, default=0.06)
+    parser.add_argument("--student-t-nu", type=float, default=6.0)
     parser.add_argument("--num-leaves", type=int, default=15)
     parser.add_argument("--min-child-samples", type=int, default=10)
     parser.add_argument("--threads", type=int, default=1)
@@ -706,6 +943,8 @@ def parse_args(argv=None):
             parser.error("--early-stopping-rounds must be positive")
     if args.lightgbm_oof_folds < 2:
         parser.error("--lightgbm-oof-folds must be at least 2")
+    if args.student_t_nu <= 2.0:
+        parser.error("--student-t-nu must be greater than 2")
     return args
 
 
@@ -718,22 +957,30 @@ def main(argv=None):
             try:
                 Xtr, Xte, ytr, yte = _make_dataset(dataset, seed, args)
             except Exception as exc:
-                for model_name in args.models:
-                    rows.append(Result(
-                        dataset=dataset,
-                        model=model_name,
-                        seed=int(seed),
-                        n_train=0,
-                        n_test=0,
-                        n_features=0,
-                        status="skip",
-                        reason=f"dataset load failed: {exc}",
-                    ))
+                for weight_mode in args.weight_modes:
+                    for model_name in args.models:
+                        rows.append(Result(
+                            dataset=dataset,
+                            model=model_name,
+                            weight_mode=weight_mode,
+                            seed=int(seed),
+                            n_train=0,
+                            n_test=0,
+                            n_features=0,
+                            status="skip",
+                            reason=f"dataset load failed: {exc}",
+                        ))
                 continue
-            for model_name in args.models:
-                rows.append(
-                    RUNNERS[model_name](dataset, seed, Xtr, Xte, ytr, yte, args)
-                )
+            for weight_mode in args.weight_modes:
+                args.weight_mode = weight_mode
+                wtr = _make_sample_weight(ytr, weight_mode)
+                wte = _make_sample_weight(yte, weight_mode)
+                for model_name in args.models:
+                    rows.append(
+                        RUNNERS[model_name](
+                            dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args
+                        )
+                    )
     _print_results(rows)
     if args.csv is not None:
         _write_csv(args.csv, rows)

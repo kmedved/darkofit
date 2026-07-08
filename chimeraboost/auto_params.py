@@ -23,6 +23,10 @@ LIGHTGBM_UNWEIGHTED_LR_MULTIPLIERS = {
     "RMSE": 0.370462,
     "Logloss": 0.421916,
     "MultiClass": 0.4,
+    "LogNormal": 0.370462,
+    "StudentT": 0.370462,
+    "Poisson": 0.370462,
+    "NegativeBinomial": 0.370462,
 }
 
 _LR_COEFS = {
@@ -38,6 +42,10 @@ _FALLBACK_LOSS = {
     "MAE": ("RMSE", 1.5),
     "Quantile": ("RMSE", 1.5),
     "Gaussian": ("RMSE", 1.0),
+    "LogNormal": ("RMSE", 1.0),
+    "StudentT": ("RMSE", 1.0),
+    "Poisson": ("RMSE", 1.0),
+    "NegativeBinomial": ("RMSE", 1.0),
 }
 
 
@@ -157,8 +165,10 @@ def auto_learning_rate_details(
         "clip_min": AUTO_LR_MIN,
         "clip_max": AUTO_LR_MAX,
     }
-    if loss_name == "Gaussian":
-        details["loss_coefficient_source"] = "rmse_coefs_for_gaussian"
+    if loss_name in _FALLBACK_LOSS:
+        details["loss_coefficient_source"] = (
+            f"rmse_coefs_for_{str(loss_name).lower()}"
+        )
     return details
 
 
