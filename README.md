@@ -122,6 +122,101 @@ For compatible LightGBM-mode multiclass fits,
 round. Pass `multiclass_tree_strategy="per_class"` to force the older one-tree-
 per-class route for comparisons.
 
+Distributional regression is available with shared vector-valued leaf-wise
+trees. Continuous heads include `loss="Gaussian"`, `loss="LogNormal"`, and
+`loss="StudentT"`; count heads include `loss="Poisson"` and
+`loss="NegativeBinomial"`:
+
+```
+reg = ChimeraBoostRegressor(loss="Gaussian", tree_mode="lightgbm")
+reg.fit(X, y)
+mu = reg.predict(X_test)
+mu, sigma = reg.predict_dist(X_test)
+lo, hi = reg.predict_interval(X_test, alpha=0.1)
+draws = reg.sample(X_test, n_samples=100, random_state=0)
+```
+
+Gaussian and LogNormal return two parameters, StudentT returns
+`(mu, scale, nu)`, Poisson returns `(lambda,)`, and NegativeBinomial returns
+`(mu, alpha)` where `Var = mu + alpha * mu**2`. `predict()` returns the
+predictive mean for every head, and `predict_variance()` returns the variance
+that downstream filters should consume.
+
+Distributional fits use `tree_mode="lightgbm"` (aliases such as `"leafwise"`
+are accepted), with uniform row subsampling (`subsample < 1`) and column
+subsampling (`colsample < 1`) supported. GOSS/MVS sampling, Bayesian bootstrap,
+ordered boosting, and float32 histograms are still rejected. `min_child_weight`
+is evaluated on the summed multi-head Hessian mass, while `min_child_samples`
+keeps its usual row-count meaning.
+
+Validation and early-stopping use each distribution's NLL by default. For
+Gaussian, pass `eval_metric="crps"` to select the best validation prefix by
+closed-form Gaussian CRPS instead:
+
+```
+reg = ChimeraBoostRegressor(
+    loss="Gaussian",
+    tree_mode="lightgbm",
+    early_stopping=True,
+    eval_metric="crps",
+)
+```
+
+For small data, early stopping is especially important for Gaussian fits:
+training too long can make the log-standard-deviation head overfit residuals
+and produce intervals that are too narrow. Use an explicit `eval_set` or
+`early_stopping=True` when interval calibration matters.
+
+`dist_calibration="scalar"` is an opt-in validation-set calibration. For
+Gaussian/LogNormal it fits the NLL-optimal global scale
+`sqrt(weighted_mean(((y - mu) / sigma) ** 2))` on the selected validation
+prefix; for StudentT it fits the scale by validation t-NLL; for Poisson it
+fits the closed-form mean multiplier; and for NegativeBinomial it fits the
+mean or dispersion multiplier by validation NB-NLL.
+`dist_calibration="affine"` fits the continuous-head map
+`scale' = exp(a + b * log(scale))`,
+which can fix compressed scale ranges where low-scale bins are conservative
+and high-scale bins under-cover. `dist_calibration="per_metric_affine"` fits
+the same map per group, defaulting to the `metric_code` column name or using
+`dist_calibration_feature=<column index/name>`, with the global affine map as
+the fallback for unseen or small validation groups. The deprecated
+`sigma_calibration` alias is still accepted for Gaussian for one release.
+Calibration applies to
+`predict_dist`, `predict_variance`, `predict_interval`, `sample`, and to
+`predict()` when the calibrated parameter changes the predictive mean.
+`predict_raw()` remains the uncalibrated fitted score surface. With
+`refit=True`, the calibration is frozen from the selection-phase validation
+model and then applied to the full-data refit.
+
+Distributional benchmark, mean over three seeds on the synthetic
+heteroscedastic gate:
+
+| model | NLL 100k | NLL 500k | CRPS 500k | cov90 500k | fit s 500k |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| ChimeraBoost Gaussian, early-stopped + calibrated | **0.990** | **0.983** | **0.390** | 0.900 | 10.5 |
+| NGBoost Normal | 1.014 | 1.008 | 0.396 | 0.905 | 125.9 |
+| CatBoost `RMSEWithUncertainty` | 1.058 | 1.056 | 0.410 | 0.909 | 0.8 |
+| LightGBM twin-model variance hack | 1.644 | 1.630 | 0.419 | 0.619 | 3.5 |
+
+Command and per-seed rows live in
+[BENCHMARK_NOTES.md](BENCHMARK_NOTES.md) and
+[benchmarks/distributional_summary.md](benchmarks/distributional_summary.md).
+A WNBA DARKO real-data observation check is also recorded in
+[benchmarks/wnba_realdata_distributional_summary.md](benchmarks/wnba_realdata_distributional_summary.md):
+per-metric affine Gaussian improves the held-out 2024-2026 one-step scale
+check (NLL 0.404, CRPS 0.391, coverage 0.901, pooled sigma-bin RMS
+`1.002/0.934/1.002/1.035/0.989`). The companion shadow replay in
+[benchmarks/wnba_kalman_replay_summary.md](benchmarks/wnba_kalman_replay_summary.md)
+injects `predict_variance()` as row-level `R_t`; it improves normalized
+innovation calibration in 2 of 3 seasons but loses replay NLL to the incumbent
+`sigma2 / sample_weight` heuristic, so it is not yet a production replacement
+for DARKO observation noise.
+
+Not implemented for distributional regression in v1: CatBoost-style
+per-parameter scalar trees, GOSS/MVS distributional sampling, Bayesian
+bootstrap, heterodispersion for NegativeBinomial, shared multi-quantile, and a
+public custom vector-loss protocol.
+
 Row sampling is selectable with `sampling="uniform"` (default),
 `sampling="goss"` plus `top_rate` / `other_rate`,
 `sampling="weighted_goss"` for a sample-weight-aware GOSS variant, or
@@ -201,8 +296,11 @@ Other structure defaults remain opt-in: `depth="auto"`, `num_leaves="auto"`,
 `get_refit_params()` returns the frozen parameters for a manual full-data refit:
 it disables early stopping, uses the selected round count, and freezes the
 resolved learning rate and resolved auto-structure/categorical-smoothing
-values. Strategies `"sqrt"` and `"linear"` scale the selected round count by
-the automatic validation split ratio; `"scaled"` aliases `"linear"`.
+values. For distributional models with calibration, the exported refit params
+clear `dist_calibration`/`sigma_calibration` because the frozen map is fitted
+metadata, not something a validation-free refit can recompute. Strategies `"sqrt"` and
+`"linear"` scale the selected round count by the automatic validation split
+ratio; `"scaled"` aliases `"linear"`.
 
 Training loss is evaluated every round by default for diagnostics. Set
 `eval_train_loss=False` to skip that pass when you only care about the fitted
@@ -270,6 +368,10 @@ race with Chimeraboost's Numba thread pool.
 The default tuning phases leave `random_strength=0.0` because split-score noise
 currently uses a slower Python split-scoring path; include the explicit
 `"split_noise"` phase when you want to tune that regularizer.
+For `loss="Gaussian"`, the tuner resolves to the LightGBM/leaf-wise lane,
+uses Gaussian NLL as the default objective, and keeps the
+sampling/regularization phase inside the supported uniform row-sampling and
+column-sampling surface.
 
 * **To Do:**
     * Update multi-class classification loss scheme

@@ -675,6 +675,29 @@ def test_multiprocess_scheduler_uses_spawn_process_workers(monkeypatch, tmp_path
     )
 
 
+def test_multiprocess_search_rejects_custom_sampler_before_workers(tmp_path):
+    X = np.arange(24).reshape(12, 2)
+    y = np.tile([0, 1], 6)
+    search = ChimeraBoostStepwiseSearchCV(
+        RecordingClassifier(iterations=3),
+        phases=("probe",),
+        tree_modes=("catboost",),
+        n_trials={"probe": 2},
+        cv=2,
+        scoring=recording_scorer,
+        refit=False,
+        n_workers=2,
+        storage=f"journal://{tmp_path / 'custom-sampler.log'}",
+        sampler=optuna.samplers.RandomSampler(seed=0),
+        random_state=0,
+        trial_thread_count=1,
+        resume=False,
+    )
+
+    with pytest.raises(ValueError, match="custom Optuna sampler"):
+        search.fit(X, y)
+
+
 def test_worker_calls_optuna_with_single_threaded_jobs(monkeypatch, tmp_path):
     captured = {}
 
@@ -688,9 +711,16 @@ def test_worker_calls_optuna_with_single_threaded_jobs(monkeypatch, tmp_path):
             captured["objective"] = objective
 
     def fake_create_study(**kwargs):
+        captured["create_study_kwargs"] = kwargs
         return FakeStudy()
 
     monkeypatch.setattr(search_mod, "create_study", fake_create_study)
+
+    class ReseedRaisesSampler:
+        def reseed_rng(self):
+            raise AssertionError("worker must not call nondeterministic reseed_rng")
+
+    sampler = ReseedRaisesSampler()
 
     payload = search_mod._ObjectivePayload(
         estimator=RecordingClassifier(iterations=3),
@@ -713,16 +743,18 @@ def test_worker_calls_optuna_with_single_threaded_jobs(monkeypatch, tmp_path):
         f"journal://{tmp_path / 'worker.log'}",
         "worker-contract",
         True,
-        None,
+        sampler,
         None,
         3,
-        None,
+        123,
         None,
         None,
     ))
     assert captured["n_trials"] == 3
     assert captured["n_jobs"] == 1
     assert isinstance(captured["objective"], search_mod._TrialObjective)
+    assert captured["create_study_kwargs"]["sampler"] is sampler
+    assert captured["create_study_kwargs"]["sampler_seed"] == 123
 
 
 class PruneAfterFirstFold(optuna.pruners.BasePruner):
@@ -1305,6 +1337,43 @@ def test_no_improvement_stopper_sets_shared_stop_flag():
     search.fit(X, y)
     assert len(search.study_.trials) < 5
     assert search.study_.user_attrs["_chimeraboost_stop"] is True
+
+
+def test_custom_study_stopper_sets_and_honors_shared_stop_flag():
+    def stopper(study, trial):
+        study.stop()
+
+    callback = search_mod._make_optuna_callbacks(
+        None,
+        stopper,
+        patience=None,
+        min_trials=20,
+        min_delta=0.0,
+    )[0]
+
+    first = optuna.create_study(direction="minimize")
+    first.optimize(lambda trial: 1.0, n_trials=5, callbacks=[callback])
+    assert len(first.trials) == 1
+    assert first.user_attrs["_chimeraboost_stop"] is True
+
+    calls = []
+
+    def should_not_run(study, trial):
+        calls.append("called")
+        study.stop()
+
+    sibling_callback = search_mod._make_optuna_callbacks(
+        None,
+        should_not_run,
+        patience=None,
+        min_trials=20,
+        min_delta=0.0,
+    )[0]
+    sibling = optuna.create_study(direction="minimize")
+    sibling.set_user_attr("_chimeraboost_stop", True)
+    sibling.optimize(lambda trial: 1.0, n_trials=5, callbacks=[sibling_callback])
+    assert len(sibling.trials) == 1
+    assert calls == []
 
 
 def test_classifier_and_regressor_smoke():

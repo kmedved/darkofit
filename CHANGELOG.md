@@ -1,7 +1,40 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 - 2026-07-07
 
+* Add native Gaussian distributional regression with
+  `ChimeraBoostRegressor(loss="Gaussian", tree_mode="lightgbm")`, including
+  `predict_dist`, `predict_interval`, `sample`, `.npz` save/load support, and
+  Gaussian-specific guardrails for unsupported v1 training modes.
+* Support Gaussian distributional fits with uniform row subsampling
+  (`subsample < 1`) and column subsampling (`colsample < 1`) in LightGBM mode,
+  including capped sampled-depth-zero retries so an unlucky empty/no-split
+  sample does not stop the whole fit prematurely.
+* Add Gaussian `eval_metric="crps"` validation/early-stopping support while
+  keeping Gaussian NLL as the default validation objective.
+* Add opt-in Gaussian `sigma_calibration="scalar"` on the sklearn regressor:
+  the wrapper fits a validation-set global sigma scale at the selected best
+  prefix, persists it through `.npz` save/load, and applies it to
+  `predict_dist`, `predict_interval`, and `sample` without changing raw scores
+  or point predictions. Fits with fewer than 200 effective calibration rows
+  record a `small_sigma_calibration_fold` diagnostic warning.
+* Generalize distributional calibration under `dist_calibration`, including
+  global affine scale calibration and `dist_calibration="per_metric_affine"`
+  for grouped affine scale maps keyed by `dist_calibration_feature` (for
+  example `metric_code`). Grouped calibration is preserved through
+  prediction APIs, SearchCV refits, and `.npz` save/load.
+* Add WNBA DARKO real-data validation artifacts for per-metric affine Gaussian
+  calibration plus a scalar Kalman shadow replay that injects
+  `predict_variance()` as row-level `R_t` against the incumbent
+  `sigma2 / sample_weight` heuristic.
+* Enable `ChimeraBoostStepwiseSearchCV` for Gaussian regressors on the
+  LightGBM lane with Gaussian NLL default scoring and Gaussian-safe
+  sampling/regularization suggestions.
+* Add `benchmarks/bench_distributional.py` for Gaussian NLL/CRPS/coverage
+  comparisons against fixed-round and early-stopped Chimera Gaussian lanes,
+  RMSE constant-sigma, quantile-pair, NGBoost, CatBoost uncertainty, and
+  LightGBM twin-model baselines when optional packages are installed, including
+  coverage binned by predicted sigma.
 * Change sklearn estimator defaults to `l2_leaf_reg="auto"`; the resolver keeps
   CatBoost-mode fits near the historical `3.0` default while preserving the
   task/tree-mode-specific auto-structure metadata in `auto_params_`.

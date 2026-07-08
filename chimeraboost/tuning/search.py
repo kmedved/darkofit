@@ -16,6 +16,8 @@ from sklearn.base import BaseEstimator, clone, is_classifier
 from sklearn.utils.validation import check_is_fitted
 
 from ..auto_params import effective_sample_size
+from ..booster import _normalize_tree_mode
+from ..losses import VECTOR_LOSSES
 from .._validation import (
     n_features_from_array_like,
     n_samples_from_array_like,
@@ -34,6 +36,7 @@ from .spaces import (
     phase_names,
 )
 from .validation import make_cv_splits, slice_fit_payload, validation_mass
+from ..sklearn_api import _normalize_dist_calibration
 
 
 def _validate_search_sample_weight(sample_weight, n_samples, name="sample_weight"):
@@ -49,6 +52,238 @@ def _validate_search_sample_weight(sample_weight, n_samples, name="sample_weight
     if float(np.sum(w)) <= 0.0:
         raise ValueError(f"{name} must have positive total weight")
     return w
+
+
+def _pooled_trial_sigma_calibration(trial):
+    fold_auto_params = trial.user_attrs.get("fold_auto_params") or []
+    fold_masses = trial.user_attrs.get("fold_weight_sums") or []
+    if not fold_auto_params or len(fold_auto_params) != len(fold_masses):
+        return None
+
+    method = None
+    scale2_num = 0.0
+    dispersion_log_scale_num = 0.0
+    mean_calibration_num = 0.0
+    mean_calibration_den = 0.0
+    mean_calibration_seen = False
+    mean_log_scale_num = 0.0
+    mean_log_scale_seen = False
+    affine_a_num = 0.0
+    affine_b_num = 0.0
+    mass_den = 0.0
+    n_samples = 0
+    positive_weight_n = 0
+    effective_n = 0.0
+    threshold = None
+    any_small_fold = False
+    fallback_reasons = set()
+
+    for auto_params, mass in zip(fold_auto_params, fold_masses):
+        if not isinstance(auto_params, Mapping):
+            return None
+        metadata = auto_params.get("dist_calibration")
+        if not isinstance(metadata, Mapping):
+            metadata = auto_params.get("sigma_calibration")
+        if not isinstance(metadata, Mapping):
+            return None
+        fold_method = metadata.get("method")
+        if fold_method not in {
+            "scalar", "affine", "per_metric_affine", "dispersion"
+        }:
+            return None
+        if method is None:
+            method = fold_method
+        elif fold_method != method:
+            return None
+        scale = metadata.get("dist_scale", metadata.get("sigma_scale"))
+        if scale is None:
+            return None
+        mass = float(mass)
+        if not np.isfinite(mass) or mass <= 0.0:
+            continue
+        scale = float(scale)
+        if not np.isfinite(scale) or scale <= 0.0:
+            return None
+
+        scale2_num += mass * scale * scale
+        if method == "dispersion":
+            dispersion_log_scale_num += mass * math.log(scale)
+        if (
+            metadata.get("mean_calibration_numerator") is not None
+            and metadata.get("mean_calibration_denominator") is not None
+        ):
+            mean_calibration_seen = True
+            mean_calibration_num += float(metadata["mean_calibration_numerator"])
+            mean_calibration_den += float(metadata["mean_calibration_denominator"])
+        if metadata.get("mean_calibration_objective") == "negative_binomial_nll":
+            mean_log_scale_seen = True
+            mean_log_scale_num += mass * math.log(scale)
+        if method in {"affine", "per_metric_affine"}:
+            affine_a = metadata.get("sigma_affine_a")
+            affine_b = metadata.get("sigma_affine_b")
+            if affine_a is None or affine_b is None:
+                return None
+            affine_a = float(affine_a)
+            affine_b = float(affine_b)
+            if not np.isfinite(affine_a) or not np.isfinite(affine_b):
+                return None
+            affine_a_num += mass * affine_a
+            affine_b_num += mass * affine_b
+            fallback_reason = metadata.get("fallback_reason")
+            if fallback_reason is not None:
+                fallback_reasons.add(str(fallback_reason))
+        mass_den += mass
+        n_samples += int(metadata.get("validation_n_samples", 0) or 0)
+        positive_weight_n += int(
+            metadata.get("validation_positive_weight_n", 0) or 0
+        )
+        effective_n += float(metadata.get("validation_effective_n", 0.0) or 0.0)
+        if threshold is None and metadata.get("small_fold_threshold") is not None:
+            threshold = float(metadata["small_fold_threshold"])
+        any_small_fold = any_small_fold or bool(
+            metadata.get("small_fold_warning", False)
+        )
+
+    if mass_den <= 0.0:
+        return None
+
+    method = method or "scalar"
+    stats = {
+        "validation_n_samples": n_samples,
+        "validation_positive_weight_n": positive_weight_n,
+        "validation_effective_n": effective_n,
+    }
+    if threshold is not None:
+        stats["small_fold_threshold"] = threshold
+        stats["small_fold_warning"] = effective_n < threshold
+    else:
+        stats["small_fold_warning"] = any_small_fold
+    pooled_scale = float(np.sqrt(max(scale2_num / mass_den, 1e-12)))
+    pooling = "validation_mass_weighted_scale2"
+    if method == "dispersion":
+        pooled_scale = float(
+            np.exp(np.clip(dispersion_log_scale_num / mass_den, -10.0, 10.0))
+        )
+        pooling = "validation_mass_weighted_log_dispersion_scale"
+    if method == "scalar" and mean_log_scale_seen:
+        pooled_scale = float(
+            np.exp(np.clip(mean_log_scale_num / mass_den, -10.0, 10.0))
+        )
+        pooling = "validation_mass_weighted_log_mean_scale"
+    if method == "scalar" and mean_calibration_seen:
+        pooled_scale = float(
+            max(mean_calibration_num / max(mean_calibration_den, 1e-12), 1e-12)
+        )
+        pooling = "exact_mean_sufficient_statistics"
+    calibration = {
+        "method": method,
+        "dist_scale": pooled_scale,
+        "sigma_scale": pooled_scale,
+        "source": "search_cv_validation",
+        "fold_stats": stats,
+        "pooling": pooling,
+    }
+    if method == "scalar" and mean_calibration_seen:
+        calibration["mean_calibration_numerator"] = float(mean_calibration_num)
+        calibration["mean_calibration_denominator"] = float(mean_calibration_den)
+        calibration["mean_calibration_objective"] = "poisson_closed_form"
+    elif method == "scalar" and mean_log_scale_seen:
+        calibration["mean_calibration_objective"] = "negative_binomial_nll"
+    if method in {"affine", "per_metric_affine"}:
+        calibration["sigma_affine_a"] = float(affine_a_num / mass_den)
+        calibration["sigma_affine_b"] = float(affine_b_num / mass_den)
+        calibration["dist_affine_a"] = calibration["sigma_affine_a"]
+        calibration["dist_affine_b"] = calibration["sigma_affine_b"]
+        calibration["sigma_scale"] = float(
+            np.exp(np.clip(calibration["sigma_affine_a"], -700.0, 700.0))
+        )
+        calibration["dist_scale"] = calibration["sigma_scale"]
+        calibration["pooling"] = "validation_mass_weighted_affine_coefficients"
+        if fallback_reasons:
+            calibration["fallback_reason"] = ",".join(sorted(fallback_reasons))
+    if method == "per_metric_affine":
+        grouped = {}
+        feature_spec = None
+        feature_name = None
+        feature_index = None
+        for auto_params in fold_auto_params:
+            if not isinstance(auto_params, Mapping):
+                return None
+            metadata = auto_params.get("dist_calibration")
+            if not isinstance(metadata, Mapping):
+                metadata = auto_params.get("sigma_calibration")
+            if not isinstance(metadata, Mapping):
+                return None
+            if feature_spec is None:
+                feature_spec = metadata.get("dist_calibration_feature")
+                feature_name = metadata.get("dist_calibration_feature_name")
+                feature_index = metadata.get("dist_calibration_feature_index")
+            for record in metadata.get("dist_group_affine", ()):
+                group = record.get("group")
+                mass = float(record.get("validation_weight_sum", 0.0) or 0.0)
+                if not np.isfinite(mass) or mass <= 0.0:
+                    continue
+                bucket = grouped.setdefault(
+                    group,
+                    {
+                        "mass": 0.0,
+                        "a": 0.0,
+                        "b": 0.0,
+                        "n": 0,
+                        "positive_n": 0,
+                        "effective_n": 0.0,
+                        "fallback_reasons": set(),
+                    },
+                )
+                bucket["mass"] += mass
+                bucket["a"] += mass * float(record["sigma_affine_a"])
+                bucket["b"] += mass * float(record["sigma_affine_b"])
+                bucket["n"] += int(record.get("validation_n_samples", 0) or 0)
+                bucket["positive_n"] += int(
+                    record.get("validation_positive_weight_n", 0) or 0
+                )
+                bucket["effective_n"] += float(
+                    record.get("validation_effective_n", 0.0) or 0.0
+                )
+                fallback_reason = record.get("fallback_reason")
+                if fallback_reason is not None:
+                    bucket["fallback_reasons"].add(str(fallback_reason))
+        group_records = []
+        for group, bucket in grouped.items():
+            if bucket["mass"] <= 0.0:
+                continue
+            record = {
+                "group": group,
+                "sigma_affine_a": float(bucket["a"] / bucket["mass"]),
+                "sigma_affine_b": float(bucket["b"] / bucket["mass"]),
+                "validation_n_samples": int(bucket["n"]),
+                "validation_positive_weight_n": int(bucket["positive_n"]),
+                "validation_effective_n": float(bucket["effective_n"]),
+                "validation_weight_sum": float(bucket["mass"]),
+            }
+            record["sigma_scale"] = float(
+                np.exp(np.clip(record["sigma_affine_a"], -700.0, 700.0))
+            )
+            if bucket["fallback_reasons"]:
+                record["fallback_reason"] = ",".join(
+                    sorted(bucket["fallback_reasons"])
+                )
+            group_records.append(record)
+        calibration["dist_group_affine"] = group_records
+        calibration["sigma_group_affine"] = group_records
+        calibration["group_count"] = len(group_records)
+        calibration["group_fallback_count"] = sum(
+            1 for record in group_records if record.get("fallback_reason") is not None
+        )
+        calibration["dist_calibration_feature"] = feature_spec
+        if feature_index is not None:
+            calibration["dist_calibration_feature_index"] = int(feature_index)
+        if feature_name is not None:
+            calibration["dist_calibration_feature_name"] = feature_name
+        calibration["pooling"] = (
+            "validation_mass_weighted_group_affine_coefficients"
+        )
+    return calibration
 
 
 class ChimeraBoostStepwiseSearchCV(BaseEstimator):
@@ -124,6 +359,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
 
     def fit(self, X, y, *, cat_features=None, groups=None, sample_weight=None,
             eval_set=None, eval_sample_weight=None):
+        distributional = getattr(self.estimator, "loss", None) in VECTOR_LOSSES
         optuna = import_optuna()
         if self.n_trials is None and self.timeout is None:
             raise ValueError("at least one of n_trials or timeout must be set")
@@ -143,6 +379,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
             None if cat_features is None else list(cat_features_normalized)
         )
         self.n_workers_ = max(1, int(self.n_workers))
+        _reject_custom_sampler_multiprocessing(self.sampler, self.n_workers_)
         self.trial_thread_count_ = _resolve_trial_thread_count(
             self.trial_thread_count, self.n_workers_
         )
@@ -213,15 +450,21 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
             self.cv_splits_ = [(np.arange(y_arr.shape[0]), None)]
         self.n_splits_ = len(self.cv_splits_)
 
+        requested_tree_modes = _coerce_search_tree_modes(self.tree_modes)
+        self.tree_modes_requested_ = requested_tree_modes
+        search_tree_modes = _resolve_search_tree_modes(
+            requested_tree_modes, distributional=distributional
+        )
+        self.tree_modes_ = search_tree_modes
         context = SpaceContext(
             estimator_params=self.estimator.get_params(),
             has_categoricals=bool(cat_features_normalized),
             classifier=classifier,
-            tree_modes=tuple(self.tree_modes),
+            tree_modes=search_tree_modes,
         )
         lane_states = {
             mode: LaneState(mode, fixed_params={"tree_mode": mode})
-            for mode in self.tree_modes
+            for mode in search_tree_modes
         }
         self.strategy_ = _resolve_strategy(
             self.strategy, self.n_trials, self.phases
@@ -231,7 +474,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
             n_trials=self.n_trials,
             timeout=self.timeout,
             phases=self.phases_,
-            tree_modes=tuple(self.tree_modes),
+            tree_modes=search_tree_modes,
             strategy=self.strategy_,
         )
         self.budget_plan_requested_ = list(planned_blocks)
@@ -250,7 +493,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
             if _study_stop_requested(self.study_):
                 break
             execution_blocks = _execution_blocks(
-                planned_block, tuple(self.tree_modes), lane_states
+                planned_block, search_tree_modes, lane_states
             )
             for block in execution_blocks:
                 if _study_stop_requested(self.study_):
@@ -300,7 +543,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
                         study_name=self.study_name_,
                     )
                 if block.phase == "joint_compact":
-                    for mode in self.tree_modes:
+                    for mode in search_tree_modes:
                         lane_states[mode] = _updated_lane_state(
                             self.study_, mode
                     )
@@ -331,7 +574,9 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
         self.best_loss_ = float(self.best_trial_.value)
         self.best_score_ = float(self.best_trial_.user_attrs["mean_score"])
         self.tuning_metadata_ = {
-            "tree_modes": list(self.tree_modes),
+            "tree_modes": list(search_tree_modes),
+            "tree_modes_requested": list(requested_tree_modes),
+            "tree_modes_resolved": list(search_tree_modes),
             "phases": list(self.phases_),
             "strategy": self.strategy_,
             "budget_plan_requested": [
@@ -391,6 +636,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
 
         if self.storage_config_.storage is None:
             raise ValueError("multiprocessing requires shared Optuna storage")
+        _reject_custom_sampler_multiprocessing(self.sampler, self.n_workers_)
         quotas = _split_quota(n_trials, self.n_workers_)
         if hasattr(self, "random_state_"):
             sampler_seed_base = self.random_state_
@@ -456,12 +702,93 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
         params["early_stopping_rounds"] = None
         params["refit"] = False
         estimator_params = self.estimator.get_params()
+        dist_calibration = None
+        if getattr(self.estimator, "loss", None) in VECTOR_LOSSES:
+            dist_calibration = _normalize_dist_calibration(
+                estimator_params.get("dist_calibration"),
+                estimator_params.get("sigma_calibration"),
+            )
+            if dist_calibration is not None:
+                params["dist_calibration"] = None
+                params["sigma_calibration"] = None
         if "thread_count" in estimator_params:
             params["thread_count"] = estimator_params.get("thread_count")
         params = _filter_params(params, self.estimator)
 
         final = clone(self.estimator).set_params(**params)
         final.fit(X, y, cat_features=cat_features, sample_weight=sample_weight)
+        if dist_calibration is not None:
+            calibration = _pooled_trial_sigma_calibration(self.best_trial_)
+            if calibration is None:
+                raise ValueError(
+                    "best trial does not contain distribution calibration metadata; "
+                    "set refit=False or rerun the search with the current "
+                    "ChimeraBoost version"
+                )
+            final.dist_calibration_ = calibration["method"]
+            final.dist_scale_ = float(calibration["dist_scale"])
+            final.dist_scale_source_ = calibration["source"]
+            final.dist_calibration_fold_stats_ = calibration["fold_stats"]
+            final.dist_calibration_pooling_ = calibration.get("pooling")
+            if calibration.get("mean_calibration_numerator") is not None:
+                final.dist_mean_calibration_numerator_ = float(
+                    calibration["mean_calibration_numerator"]
+                )
+            if calibration.get("mean_calibration_denominator") is not None:
+                final.dist_mean_calibration_denominator_ = float(
+                    calibration["mean_calibration_denominator"]
+                )
+            if calibration.get("mean_calibration_objective") is not None:
+                final.dist_mean_calibration_objective_ = str(
+                    calibration["mean_calibration_objective"]
+                )
+            final.sigma_calibration_ = calibration["method"]
+            final.sigma_scale_ = float(calibration["sigma_scale"])
+            final.sigma_scale_source_ = calibration["source"]
+            final.sigma_calibration_fold_stats_ = calibration["fold_stats"]
+            final.sigma_calibration_pooling_ = calibration.get("pooling")
+            if calibration["method"] in {"affine", "per_metric_affine"}:
+                final.dist_affine_a_ = float(calibration["dist_affine_a"])
+                final.dist_affine_b_ = float(calibration["dist_affine_b"])
+                final.sigma_affine_a_ = float(calibration["sigma_affine_a"])
+                final.sigma_affine_b_ = float(calibration["sigma_affine_b"])
+                fallback_reason = calibration.get("fallback_reason")
+                if fallback_reason is not None:
+                    final.dist_calibration_fallback_reason_ = fallback_reason
+                    final.sigma_calibration_fallback_reason_ = fallback_reason
+            if calibration["method"] == "per_metric_affine":
+                from ..sklearn_api import _calibration_group_key
+
+                records = list(calibration.get("dist_group_affine", ()))
+                final.dist_group_affine_metadata_ = records
+                final.dist_group_affine_groups_ = np.asarray(
+                    [
+                        _calibration_group_key(record["group"])
+                        for record in records
+                    ],
+                    dtype=object,
+                )
+                final.dist_group_affine_a_ = np.asarray(
+                    [float(record["sigma_affine_a"]) for record in records],
+                    dtype=np.float64,
+                )
+                final.dist_group_affine_b_ = np.asarray(
+                    [float(record["sigma_affine_b"]) for record in records],
+                    dtype=np.float64,
+                )
+                final.sigma_group_affine_groups_ = final.dist_group_affine_groups_
+                final.sigma_group_affine_a_ = final.dist_group_affine_a_
+                final.sigma_group_affine_b_ = final.dist_group_affine_b_
+                final.dist_calibration_feature_ = calibration.get(
+                    "dist_calibration_feature"
+                )
+                final.dist_calibration_feature_index_ = int(
+                    calibration.get("dist_calibration_feature_index", 0)
+                )
+                feature_name = calibration.get("dist_calibration_feature_name")
+                if feature_name is not None:
+                    final.dist_calibration_feature_name_ = feature_name
+            final._attach_dist_calibration_metadata()
         self.best_estimator_ = final
         self.refit_params_ = params
         self.best_n_estimators_ = getattr(final, "best_n_estimators_", None)
@@ -630,6 +957,16 @@ def _error_score_is_nan(error_score):
         return False
 
 
+def _reject_custom_sampler_multiprocessing(sampler, n_workers):
+    if sampler is not None and int(n_workers) > 1:
+        raise ValueError(
+            "n_workers > 1 with a custom Optuna sampler is not supported; "
+            "arbitrary sampler instances cannot be cloned with deterministic "
+            "per-worker seeds. Set n_workers=1 or leave sampler=None so "
+            "ChimeraBoost can create seeded worker samplers."
+        )
+
+
 @dataclass
 class _WorkerPayload:
     objective_payload: object
@@ -665,8 +1002,6 @@ class _WorkerPayload:
 def _optimize_worker(args):
     (objective_payload, storage_url, study_name, resume, sampler, pruner,
      n_trials, sampler_seed, timeout, callbacks) = args
-    if sampler is not None and hasattr(sampler, "reseed_rng"):
-        sampler.reseed_rng()
     storage_config = make_storage(
         storage_url, n_workers=1, study_name=study_name, resume=resume
     )
@@ -769,7 +1104,15 @@ def _filter_params(params, estimator):
     for key, value in params.items():
         if key not in known:
             continue
-        if value is None and key not in {"num_leaves", "early_stopping_rounds"}:
+        if (
+            value is None
+            and key not in {
+                "num_leaves",
+                "early_stopping_rounds",
+                "dist_calibration",
+                "sigma_calibration",
+            }
+        ):
             continue
         out[key] = value
     return out
@@ -810,6 +1153,32 @@ def _resolve_strategy(strategy, n_trials, phases):
     if n_trials is None:
         return "joint"
     return "joint" if int(n_trials) <= 50 else "stepwise"
+
+
+def _coerce_search_tree_modes(tree_modes):
+    if isinstance(tree_modes, str):
+        return (tree_modes,)
+    return tuple(tree_modes)
+
+
+def _resolve_search_tree_modes(tree_modes, *, distributional):
+    requested = _coerce_search_tree_modes(tree_modes)
+    if not requested:
+        raise ValueError("tree_modes must contain at least one tree mode")
+    if not distributional:
+        return requested
+
+    resolved = []
+    for mode in requested:
+        normalized = _normalize_tree_mode(mode)
+        if normalized == "lightgbm" and normalized not in resolved:
+            resolved.append(normalized)
+    if not resolved:
+        raise ValueError(
+            "distributional tuning supports only tree_mode='lightgbm'; "
+            "include 'lightgbm' or a leafwise alias in tree_modes"
+        )
+    return tuple(resolved)
 
 
 def _is_usable_trial(trial):
@@ -1037,7 +1406,7 @@ def _make_optuna_callbacks(callbacks, study_stopper, patience, min_trials,
         else:
             out.append(callbacks)
     if study_stopper is not None:
-        out.append(study_stopper)
+        out.append(_SharedStopCallback(study_stopper))
     if patience is not None:
         out.append(_NoImprovementStopper(
             patience=int(patience),
@@ -1045,6 +1414,19 @@ def _make_optuna_callbacks(callbacks, study_stopper, patience, min_trials,
             min_delta=float(min_delta),
         ))
     return out or None
+
+
+@dataclass
+class _SharedStopCallback:
+    callback: object
+
+    def __call__(self, study, trial):
+        if study.user_attrs.get("_chimeraboost_stop"):
+            study.stop()
+            return
+        self.callback(study, trial)
+        if getattr(study, "_stop_flag", False):
+            study.set_user_attr("_chimeraboost_stop", True)
 
 
 @dataclass

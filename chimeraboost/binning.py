@@ -26,12 +26,12 @@ DEFAULT_BIN_SAMPLE_COUNT = 200_000
 
 def _unique_if_at_most(values, max_unique):
     """Return sorted uniques only when cardinality is bounded."""
-    seen = set()
-    for value in values:
-        seen.add(float(value))
-        if len(seen) > max_unique:
+    if values.size > 4096:
+        probe = np.unique(values[:4096])
+        if probe.size > max_unique:
             return None
-    return np.array(sorted(seen), dtype=np.float64)
+    uniq = np.unique(values)
+    return uniq.astype(np.float64, copy=False) if uniq.size <= max_unique else None
 
 
 def _bin_dtype_for_n_bins(n_bins):

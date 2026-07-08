@@ -120,6 +120,58 @@ def _ordered_ts_weighted(codes, y, weight, perm, n_cat, prior, a):
     return out, sums, counts
 
 
+@njit(cache=True)
+def _ordered_ts_multi(codes, y, perms, n_cat, prior, a):
+    """Average ordered statistics over multiple independent permutations."""
+    n_samples = codes.shape[0]
+    out = np.zeros(n_samples, dtype=np.float64)
+    sums_total = np.zeros(n_cat)
+    counts_total = np.zeros(n_cat)
+    for p in range(perms.shape[0]):
+        sums = np.zeros(n_cat)
+        counts = np.zeros(n_cat)
+        perm = perms[p]
+        for pos in range(perm.shape[0]):
+            i = perm[pos]
+            c = codes[i]
+            out[i] += (sums[c] + prior * a) / (counts[c] + a)
+            sums[c] += y[i]
+            counts[c] += 1.0
+        if p == 0:
+            for c in range(n_cat):
+                sums_total[c] = sums[c]
+                counts_total[c] = counts[c]
+    out /= perms.shape[0]
+    return out, sums_total, counts_total
+
+
+@njit(cache=True)
+def _ordered_ts_weighted_multi(codes, y, weight, perms, n_cat, prior, a):
+    """Average weighted ordered statistics over independent permutations."""
+    n_samples = codes.shape[0]
+    out = np.zeros(n_samples, dtype=np.float64)
+    sums_total = np.zeros(n_cat)
+    counts_total = np.zeros(n_cat)
+    for p in range(perms.shape[0]):
+        sums = np.zeros(n_cat)
+        counts = np.zeros(n_cat)
+        perm = perms[p]
+        for pos in range(perm.shape[0]):
+            i = perm[pos]
+            c = codes[i]
+            out[i] += (sums[c] + prior * a) / (counts[c] + a)
+            wi = weight[i]
+            if wi > 0.0:
+                sums[c] += wi * y[i]
+                counts[c] += wi
+        if p == 0:
+            for c in range(n_cat):
+                sums_total[c] = sums[c]
+                counts_total[c] = counts[c]
+    out /= perms.shape[0]
+    return out, sums_total, counts_total
+
+
 def _kfold_ts(codes, y, weight, folds, n_cat, prior, a):
     sums = np.zeros(n_cat)
     counts = np.zeros(n_cat)
@@ -157,7 +209,7 @@ class OrderedTargetEncoder:
     """
 
     def __init__(self, smoothing=1.0, random_state=None, mode="ordered",
-                 n_folds=20):
+                 n_folds=20, ts_permutations=1):
         self.smoothing = float(smoothing)
         self.random_state = random_state
         self.mode = str(mode).lower().replace("-", "_")
@@ -166,6 +218,9 @@ class OrderedTargetEncoder:
         self.n_folds = int(n_folds)
         if self.n_folds < 2:
             raise ValueError("n_folds must be at least 2")
+        self.ts_permutations = int(ts_permutations)
+        if self.ts_permutations < 1:
+            raise ValueError("ts_permutations must be at least 1")
         self.prior_ = None
         self.sums_ = None       # list per column
         self.counts_ = None     # list per column
@@ -179,6 +234,12 @@ class OrderedTargetEncoder:
         rng = np.random.default_rng(self.random_state)
         perm = rng.permutation(n_samples)
         folds = np.array_split(perm, min(self.n_folds, max(n_samples, 1)))
+        perms = None
+        if self.mode == "ordered" and self.ts_permutations > 1:
+            perms = np.empty((self.ts_permutations, n_samples), dtype=np.int64)
+            perms[0] = perm
+            for p in range(1, self.ts_permutations):
+                perms[p] = rng.permutation(n_samples)
 
         if sample_weight is None:
             weight = None
@@ -198,13 +259,25 @@ class OrderedTargetEncoder:
                     self.smoothing
                 )
             elif weight is None:
-                enc, sums, counts = _ordered_ts(
-                    codes, y, perm, n_cat, self.prior_, self.smoothing
-                )
+                if self.ts_permutations == 1:
+                    enc, sums, counts = _ordered_ts(
+                        codes, y, perm, n_cat, self.prior_, self.smoothing
+                    )
+                else:
+                    enc, sums, counts = _ordered_ts_multi(
+                        codes, y, perms, n_cat, self.prior_, self.smoothing
+                    )
             else:
-                enc, sums, counts = _ordered_ts_weighted(
-                    codes, y, weight, perm, n_cat, self.prior_, self.smoothing
-                )
+                if self.ts_permutations == 1:
+                    enc, sums, counts = _ordered_ts_weighted(
+                        codes, y, weight, perm, n_cat, self.prior_,
+                        self.smoothing
+                    )
+                else:
+                    enc, sums, counts = _ordered_ts_weighted_multi(
+                        codes, y, weight, perms, n_cat, self.prior_,
+                        self.smoothing
+                    )
             out[:, j] = enc
             self.sums_.append(sums)
             self.counts_.append(counts)

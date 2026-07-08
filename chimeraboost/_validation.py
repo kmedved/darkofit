@@ -31,6 +31,12 @@ def array_like_to_numpy(X, dtype):
             return X.to_numpy(dtype=dtype, na_value=np.nan)
         except TypeError:
             return X.to_numpy(dtype=dtype)
+        except ValueError as exc:
+            if "read-only" not in str(exc):
+                raise
+            if hasattr(X, "where") and hasattr(X, "isna"):
+                return X.where(~X.isna(), np.nan).to_numpy(dtype=dtype)
+            return np.array(X.to_numpy(), dtype=dtype, copy=True)
     return np.asarray(X, dtype=dtype)
 
 
