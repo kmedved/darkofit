@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.7.0 - 2026-07-08
+
+* Add opt-in sklearn-wrapper linear residual boosting for `RMSE`, `MAE`,
+  `Quantile`, `Gaussian`, and `StudentT` regressors. The wrapper fits a
+  weighted ridge trend on raw numeric columns, trains the booster on residuals,
+  adds the trend back to point/location predictions, and persists the trend in
+  the plain-array `.npz` archive format.
+* Intentionally reject `linear_residual=True` for `LogNormal`, `Poisson`, and
+  `NegativeBinomial` until those losses have distribution-specific offset
+  protocols.
+* Standardize Gaussian, StudentT, and LogNormal canonical targets internally
+  during distributional training, then map public raw predictions, intervals,
+  samples, and distribution parameters back to the original target scale. This
+  fixes scale-dependent Newton behavior for raw-unit targets, but it changes
+  numerical results for new Gaussian/StudentT/LogNormal fits and is therefore
+  a minor-version release.
+* Preserve backward compatibility for older distributional archives by loading
+  them with the target transform disabled, and keep wrapperless scalar archives
+  aligned with their saved fitted loss when loaded through
+  `ChimeraBoostRegressor.load_model()`.
+* Update calibrated distributional `SearchCV` refits so
+  `refit_rounds="preserve"` uses the median fold-best horizon when calibration
+  was learned at fold-best prefixes, and aggregate small-fold calibration
+  warnings across all folds.
+* Add a numeric ndarray/DataFrame fast path for the linear residual trend so
+  selected numeric columns are sliced from one float matrix conversion instead
+  of converting the whole design matrix to object dtype once per column.
+* Refresh the public synthetic calibrated-Gaussian Chimera lane after target
+  standardization in
+  `benchmarks/distributional_standardization_check.md`. The private WNBA/DARKO
+  artifacts remain pre-0.7 and should be rerun before production replay or
+  release-performance claims that depend on those exact numbers.
+
 ## 0.6.0 - 2026-07-07
 
 * Add native Gaussian distributional regression with

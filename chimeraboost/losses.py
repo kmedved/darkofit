@@ -391,6 +391,8 @@ class GaussianNLL:
     n_outputs = 2
     default_eval_metric = "nll"
     supported_eval_metrics = ("nll", "crps")
+    target_standardization = True
+    target_standardization_basis = "target"
     calibration_targets = ("scale",)
     scale_param_index = 1
     interval_support = True
@@ -564,6 +566,8 @@ class StudentTNLL:
     n_outputs = 2
     default_eval_metric = "nll"
     supported_eval_metrics = ("nll",)
+    target_standardization = True
+    target_standardization_basis = "target"
     calibration_targets = ("scale",)
     scale_param_index = 1
     interval_support = True
@@ -730,6 +734,8 @@ class LogNormalNLL:
     n_outputs = 2
     default_eval_metric = "nll"
     supported_eval_metrics = ("nll",)
+    target_standardization = True
+    target_standardization_basis = "log_target"
     calibration_targets = ("scale",)
     scale_param_index = 1
     interval_support = True
@@ -747,6 +753,13 @@ class LogNormalNLL:
 
     def preprocessing_target(self, y):
         return np.log(np.asarray(y, dtype=np.float64))
+
+    def standardization_target(self, y):
+        return np.log(np.asarray(y, dtype=np.float64))
+
+    def transform_target(self, y, mean, scale):
+        z = (self.standardization_target(y) - float(mean)) / float(scale)
+        return np.exp(np.clip(z, -700.0, 700.0))
 
     def init_class_major(self, y, sample_weight=None):
         u = np.log(np.asarray(y, dtype=np.float64))

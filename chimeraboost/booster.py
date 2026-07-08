@@ -2810,6 +2810,146 @@ class DistributionalBoosting(_BaseBooster):
         self.loss_name = loss
         self.loss_kwargs = dict(loss_kwargs or {})
 
+    @staticmethod
+    def _disabled_target_transform():
+        return {
+            "enabled": False,
+            "mean": 0.0,
+            "scale": 1.0,
+            "basis": "target",
+        }
+
+    def _standardization_target(self, y):
+        if hasattr(self.loss_, "standardization_target"):
+            values = self.loss_.standardization_target(y)
+        else:
+            values = y
+        values = np.asarray(values, dtype=np.float64)
+        if values.shape != np.asarray(y).shape:
+            raise ValueError(
+                f"loss={self.loss_name!r} standardization target shape "
+                "does not match y"
+            )
+        if not np.all(np.isfinite(values)):
+            raise ValueError(
+                f"loss={self.loss_name!r} standardization target must be finite"
+            )
+        return values
+
+    def _fit_target_transform(self, y, sample_weight):
+        if not bool(getattr(self.loss_, "target_standardization", False)):
+            self.target_transform_ = self._disabled_target_transform()
+            return np.asarray(y, dtype=np.float64)
+
+        values = self._standardization_target(y)
+        if sample_weight is None:
+            mean = float(np.mean(values))
+            variance = float(np.mean((values - mean) ** 2))
+        else:
+            w = np.asarray(sample_weight, dtype=np.float64)
+            positive = w > 0.0
+            if not np.any(positive):
+                raise ValueError("sample_weight must have positive total weight")
+            values_fit = values[positive]
+            weights_fit = w[positive]
+            mean = float(np.average(values_fit, weights=weights_fit))
+            variance = float(
+                np.average((values_fit - mean) ** 2, weights=weights_fit)
+            )
+        scale = float(np.sqrt(max(variance, 1e-12)))
+        if not np.isfinite(scale) or scale <= 0.0:
+            scale = 1.0
+        self.target_transform_ = {
+            "enabled": True,
+            "mean": mean,
+            "scale": scale,
+            "basis": str(
+                getattr(self.loss_, "target_standardization_basis", "target")
+            ),
+        }
+        return self._apply_target_transform(y)
+
+    def _apply_target_transform(self, y):
+        transform = getattr(
+            self, "target_transform_", self._disabled_target_transform()
+        )
+        if not bool(transform.get("enabled", False)):
+            return np.asarray(y, dtype=np.float64)
+        mean = float(transform.get("mean", 0.0))
+        scale = float(transform.get("scale", 1.0))
+        if hasattr(self.loss_, "transform_target"):
+            return np.asarray(
+                self.loss_.transform_target(y, mean, scale),
+                dtype=np.float64,
+            )
+        return (np.asarray(y, dtype=np.float64) - mean) / scale
+
+    def _raw_to_target_scale(self, raw):
+        raw = np.asarray(raw, dtype=np.float64)
+        transform = getattr(
+            self, "target_transform_", self._disabled_target_transform()
+        )
+        if not bool(transform.get("enabled", False)):
+            return raw
+        scale = float(transform.get("scale", 1.0))
+        if not np.isfinite(scale) or scale <= 0.0:
+            scale = 1.0
+        out = raw.copy()
+        if out.shape[1] >= 1:
+            out[:, 0] = float(transform.get("mean", 0.0)) + scale * out[:, 0]
+        if out.shape[1] >= 2:
+            out[:, 1] = out[:, 1] + np.log(scale)
+        return out
+
+    def _raw_to_internal_scale(self, raw):
+        raw = np.asarray(raw, dtype=np.float64)
+        transform = getattr(
+            self, "target_transform_", self._disabled_target_transform()
+        )
+        if not bool(transform.get("enabled", False)):
+            return raw
+        scale = float(transform.get("scale", 1.0))
+        if not np.isfinite(scale) or scale <= 0.0:
+            scale = 1.0
+        out = raw.copy()
+        if out.shape[1] >= 1:
+            out[:, 0] = (out[:, 0] - float(transform.get("mean", 0.0))) / scale
+        if out.shape[1] >= 2:
+            out[:, 1] = out[:, 1] - np.log(scale)
+        return out
+
+    def _params_to_target_scale(self, params):
+        transform = getattr(
+            self, "target_transform_", self._disabled_target_transform()
+        )
+        if not bool(transform.get("enabled", False)):
+            return tuple(params)
+        scale = float(transform.get("scale", 1.0))
+        if not np.isfinite(scale) or scale <= 0.0:
+            scale = 1.0
+        out = list(params)
+        if out:
+            out[0] = (
+                float(transform.get("mean", 0.0))
+                + scale * np.asarray(out[0], dtype=np.float64)
+            )
+        scale_idx = int(getattr(self.loss_, "scale_param_index", 1))
+        if 0 <= scale_idx < len(out):
+            out[scale_idx] = scale * np.asarray(out[scale_idx], dtype=np.float64)
+        return tuple(out)
+
+    def params_from_raw(self, raw):
+        internal_raw = self._raw_to_internal_scale(raw)
+        return self._params_to_target_scale(
+            self.loss_.params_from_raw(internal_raw)
+        )
+
+    def variance_from_raw(self, raw):
+        params = self.params_from_raw(raw)
+        if hasattr(self.loss_, "variance_from_params"):
+            return self.loss_.variance_from_params(*params)
+        return self.loss_.variance_from_raw(self._raw_to_internal_scale(raw))
+
     def fit(self, X, y, cat_features=None, eval_set=None, sample_weight=None,
             eval_sample_weight=None):
         """Fit a shared-vector distributional regression model."""
@@ -2842,6 +2982,7 @@ class DistributionalBoosting(_BaseBooster):
         self._validate_sampling_config()
         self.ordered_boosting_ = self._resolve_ordered_boosting()
         w = _validate_sample_weight(sample_weight, n_samples)
+        y_fit = self._fit_target_transform(y, w)
         self.eval_metric_ = _normalize_eval_metric(
             self.eval_metric, self.loss_name
         )
@@ -2886,9 +3027,9 @@ class DistributionalBoosting(_BaseBooster):
         timing = _new_timing(self.verbose_timing)
         self.timing_ = timing
         phase = _start_timing(timing)
-        preprocessing_target = y
+        preprocessing_target = y_fit
         if hasattr(self.loss_, "preprocessing_target"):
-            preprocessing_target = self.loss_.preprocessing_target(y)
+            preprocessing_target = self.loss_.preprocessing_target(y_fit)
         X_binned = self._fit_transform_preprocessor(
             X, [preprocessing_target], cat_features, w,
             eval_set=eval_set,
@@ -2920,7 +3061,7 @@ class DistributionalBoosting(_BaseBooster):
         )
         self._importance = np.zeros(self.prep_.n_input_features_)
 
-        Xv_binned = yv = Fv = wv = None
+        Xv_binned = yv = yv_fit = Fv = wv = None
         if eval_set is not None:
             Xv, yv = eval_set
             eval_n_features = n_features_from_array_like(
@@ -2937,14 +3078,15 @@ class DistributionalBoosting(_BaseBooster):
                 yv, Xv.shape[0], name="eval_set[1]", dtype=np.float64
             )
             self.loss_.validate_target(yv)
+            yv_fit = self._apply_target_transform(yv)
             wv = _validate_sample_weight(
                 eval_sample_weight, len(yv), name="eval_sample_weight"
             )
             Xv_binned = self.prep_.transform(Xv)
         _add_timing(timing, "preprocess", phase)
 
-        self.init_ = self.loss_.init_class_major(y, w)
         self._record_scalar_target_stats(y, w)
+        self.init_ = self.loss_.init_class_major(y_fit, w)
         F = np.tile(self.init_[:, None], (1, n_samples))
         grad_buffer = np.empty_like(F)
         hess_buffer = np.empty_like(F)
@@ -2953,9 +3095,9 @@ class DistributionalBoosting(_BaseBooster):
         if yv is not None:
             Fv = np.tile(self.init_[:, None], (1, len(yv)))
         baseline_loss = (
-            self._eval_metric_class_major(yv, Fv, wv)
+            self._eval_metric_class_major(yv_fit, Fv, wv)
             if Fv is not None
-            else self._eval_metric_class_major(y, F, w)
+            else self._eval_metric_class_major(y_fit, F, w)
         )
         self._finalize_early_stopping_min_delta(baseline_loss, self.loss_name)
         self.auto_params_ = self._resolved_auto_params(
@@ -2986,6 +3128,7 @@ class DistributionalBoosting(_BaseBooster):
                     "l2_leaf_reg_by_output": [
                         float(v) for v in self.l2_leaf_reg_by_output_
                     ],
+                    "target_transform": dict(self.target_transform_),
                 }
             },
         )
@@ -3006,7 +3149,7 @@ class DistributionalBoosting(_BaseBooster):
         for m in range(self.iterations_):
             phase = _start_timing(timing)
             self.loss_.grad_hess_class_major_into(
-                y, F, w, grad_buffer, hess_buffer
+                y_fit, F, w, grad_buffer, hess_buffer
             )
             fmask, findices = self._feature_selection(X_binned.shape[1], rng)
             if self.subsample >= 1.0:
@@ -3088,14 +3231,14 @@ class DistributionalBoosting(_BaseBooster):
             state_refreshed = False
             if hasattr(self.loss_, "refresh_state"):
                 state_refreshed = bool(
-                    self.loss_.refresh_state(y, F, w, len(self.trees_))
+                    self.loss_.refresh_state(y_fit, F, w, len(self.trees_))
                 )
             _add_timing(timing, "train_update", phase)
 
             if eval_train:
                 phase = _start_timing(timing)
                 self.train_history_.append(
-                    self._eval_metric_class_major(y, F, w)
+                    self._eval_metric_class_major(y_fit, F, w)
                 )
                 _add_timing(timing, "loss_eval", phase)
 
@@ -3104,14 +3247,14 @@ class DistributionalBoosting(_BaseBooster):
                 tree.add_predict_class_major(Xv_binned, Fv)
                 _add_timing(timing, "validation_predict", phase)
                 phase = _start_timing(timing)
-                val = self._eval_metric_class_major(yv, Fv, wv)
+                val = self._eval_metric_class_major(yv_fit, Fv, wv)
                 _add_timing(timing, "loss_eval", phase)
                 self.valid_history_.append(val)
                 successful_iter = len(self.trees_) - 1
                 if state_refreshed:
                     self.valid_history_ = (
                         self._rescore_class_major_prefix_history(
-                            Xv_binned, yv, wv
+                            Xv_binned, yv_fit, wv
                         )
                     )
                     best_prefix_score, best_prefix_iter = (
@@ -3146,16 +3289,16 @@ class DistributionalBoosting(_BaseBooster):
             F = np.tile(self.init_[:, None], (1, n_samples))
             for tree in self.trees_:
                 tree.add_predict_class_major(X_binned, F)
-            self.loss_.refresh_state(y, F, w, len(self.trees_), force=True)
+            self.loss_.refresh_state(y_fit, F, w, len(self.trees_), force=True)
             if Xv_binned is not None and self.valid_history_:
                 self.valid_history_ = self._rescore_class_major_prefix_history(
-                    Xv_binned, yv, wv
+                    Xv_binned, yv_fit, wv
                 )
                 best_prefix_score, best_prefix_iter = (
                     self._best_prefix_from_history(self.valid_history_)
                 )
             elif Xv_binned is None:
-                best_prefix_score = self._eval_metric_class_major(y, F, w)
+                best_prefix_score = self._eval_metric_class_major(y_fit, F, w)
                 if self.train_history_:
                     self.train_history_[-1] = best_prefix_score
 
@@ -3169,16 +3312,16 @@ class DistributionalBoosting(_BaseBooster):
             F = np.tile(self.init_[:, None], (1, n_samples))
             for tree in self.trees_:
                 tree.add_predict_class_major(X_binned, F)
-            self.loss_.refresh_state(y, F, w, len(self.trees_), force=True)
+            self.loss_.refresh_state(y_fit, F, w, len(self.trees_), force=True)
             if Xv_binned is not None and self.valid_history_:
                 self.valid_history_ = self._rescore_class_major_prefix_history(
-                    Xv_binned, yv, wv
+                    Xv_binned, yv_fit, wv
                 )
                 best_prefix_score, best_prefix_iter = (
                     self._best_prefix_from_history(self.valid_history_)
                 )
             else:
-                best_prefix_score = self._eval_metric_class_major(y, F, w)
+                best_prefix_score = self._eval_metric_class_major(y_fit, F, w)
                 break
         self._refresh_stochastic_auto_params(n_samples)
         self.best_iteration_ = len(self.trees_)
@@ -3187,11 +3330,11 @@ class DistributionalBoosting(_BaseBooster):
         elif stateful_loss and Xv_binned is None:
             self.best_score_ = best_prefix_score
         elif Fv is not None:
-            self.best_score_ = self._eval_metric_class_major(yv, Fv, wv)
+            self.best_score_ = self._eval_metric_class_major(yv_fit, Fv, wv)
         elif self.train_history_:
             self.best_score_ = self.train_history_[-1]
         else:
-            self.best_score_ = self._eval_metric_class_major(y, F, w)
+            self.best_score_ = self._eval_metric_class_major(y_fit, F, w)
         return self
 
     def _rescore_class_major_prefix_history(self, X_binned, y, sample_weight):
@@ -3236,15 +3379,15 @@ class DistributionalBoosting(_BaseBooster):
         else:
             for tree in self.trees_:
                 tree.add_predict_class_major(X_binned, F)
-        return F.T
+        return self._raw_to_target_scale(F.T)
 
     def predict_dist(self, X):
         raw = self.predict_raw(X)
-        return self.loss_.params_from_raw(raw)
+        return self.params_from_raw(raw)
 
     def predict_variance(self, X):
         raw = self.predict_raw(X)
-        return self.loss_.variance_from_raw(raw)
+        return self.variance_from_raw(raw)
 
     def staged_predict_raw(self, X):
         """Yield sample-major raw scores after each vector-tree round."""
@@ -3253,4 +3396,4 @@ class DistributionalBoosting(_BaseBooster):
         F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
         for tree in self.trees_:
             tree.add_predict_class_major(X_binned, F)
-            yield F.T.copy()
+            yield self._raw_to_target_scale(F.T).copy()

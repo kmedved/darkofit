@@ -319,6 +319,41 @@ Treat the sigma-quality conclusion as synthetic-gate evidence. Before using
 `sigma` downstream as observation noise, run the same lanes on real
 heteroscedastic regression data and the intended domain data.
 
+### 0.7.0 Target-Standardization Check
+
+After adding internal target standardization for Gaussian, StudentT, and
+LogNormal distributional heads, the calibrated public Chimera Gaussian lane was
+rerun on 2026-07-08:
+
+```bash
+python benchmarks/bench_distributional.py \
+  --datasets synthetic_100k synthetic_500k \
+  --models chimera_gaussian_es_calibrated \
+  --seeds 0 1 2 \
+  --iterations 80 \
+  --early-stop-iterations 400 \
+  --early-stopping-rounds auto \
+  --validation-fraction 0.1 \
+  --learning-rate 0.06 \
+  --num-leaves 31 \
+  --threads 8 \
+  --csv benchmarks/distributional_standardization_check.csv \
+  --markdown benchmarks/distributional_standardization_check.md
+```
+
+Tracked rows are in `benchmarks/distributional_standardization_check.csv`; the
+generated table is in `benchmarks/distributional_standardization_check.md`.
+
+| dataset | model | fit_s | nll | crps | cov90 | width90 |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| synthetic_100k | chimera_gaussian_es_calibrated | 5.809 | 0.99006 | 0.39062 | 0.899 | 2.277 |
+| synthetic_500k | chimera_gaussian_es_calibrated | 15.416 | 0.98260 | 0.38877 | 0.899 | 2.267 |
+
+The result keeps the public calibrated Gaussian quality claim intact after the
+target-scale fix. The external baseline rows in
+`benchmarks/distributional_summary.md` were not rerun in this closeout because
+they do not depend on ChimeraBoost's internal target transform.
+
 ## WNBA Real-Data Distributional Validation
 
 The first domain-data sigma check uses WNBA DARKO game-level metric observations:
@@ -341,6 +376,11 @@ Generated outputs:
 
 - `benchmarks/wnba_realdata_distributional.csv`
 - `benchmarks/wnba_realdata_distributional_summary.md`
+
+These WNBA artifacts were generated before the 0.7.0 internal
+target-standardization change. They remain useful historical calibration
+evidence, but rerun them before using the exact sigma values for production
+DARKO replay gates or release-performance claims.
 
 | model | NLL | CRPS | RMSE mu | cov90 | std-resid RMS | mean sigma | affine b |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |

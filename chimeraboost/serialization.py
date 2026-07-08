@@ -930,6 +930,18 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
         header["n_outputs"] = int(booster.n_outputs_)
         header["loss_name"] = booster.loss_name
         header["loss_kwargs"] = _jsonify(booster.loss_kwargs)
+        header["target_transform"] = _jsonify(
+            getattr(
+                booster,
+                "target_transform_",
+                {
+                    "enabled": False,
+                    "mean": 0.0,
+                    "scale": 1.0,
+                    "basis": "target",
+                },
+            )
+        )
         loss_state = getattr(getattr(booster, "loss_", None), "state_", None)
         if loss_state:
             header["loss_state"] = _jsonify(loss_state)
@@ -1106,6 +1118,27 @@ def load_booster(path, return_wrapper_payload=False):
             booster.loss_ = VECTOR_LOSSES[header["loss_name"]](
                 **header["loss_kwargs"]
             )
+            target_transform = header.get("target_transform") or {
+                "enabled": False,
+                "mean": 0.0,
+                "scale": 1.0,
+                "basis": "target",
+            }
+            if not isinstance(target_transform, dict):
+                _invalid_model("distributional target transform must be an object")
+            enabled = bool(target_transform.get("enabled", False))
+            mean = float(target_transform.get("mean", 0.0))
+            scale = float(target_transform.get("scale", 1.0))
+            if not np.isfinite(mean):
+                _invalid_model("distributional target transform mean is not finite")
+            if not np.isfinite(scale) or scale <= 0.0:
+                _invalid_model("distributional target transform scale must be positive")
+            booster.target_transform_ = {
+                "enabled": enabled,
+                "mean": mean,
+                "scale": scale,
+                "basis": str(target_transform.get("basis", "target")),
+            }
             loss_state = header.get("loss_state")
             if loss_state:
                 booster.loss_.state_ = loss_state

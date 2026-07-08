@@ -199,6 +199,80 @@ def test_gaussian_crps_uses_unclipped_closed_form_tail():
     assert crps == pytest.approx(expected)
 
 
+def test_gaussian_target_standardization_is_scale_invariant_and_roundtrips(tmp_path):
+    X, y = _make_heteroscedastic(seed=120, n=180)
+    params = _gaussian_test_params(
+        iterations=10,
+        learning_rate=0.08,
+        num_leaves=7,
+        min_child_samples=3,
+        random_state=12,
+    )
+    unit = ChimeraBoostRegressor(**params).fit(X, y)
+    factor = 1e8
+    scaled = ChimeraBoostRegressor(**params).fit(X, factor * y)
+
+    assert unit.model_.target_transform_["enabled"] is True
+    assert scaled.model_.target_transform_["enabled"] is True
+    assert scaled.model_.target_transform_["scale"] == pytest.approx(
+        factor * unit.model_.target_transform_["scale"]
+    )
+    assert (
+        scaled.model_.auto_params_["distributional"]["target_transform"]
+        ["enabled"]
+        is True
+    )
+
+    Xu = X[:40]
+    raw_unit = unit.model_.predict_raw(Xu)
+    raw_scaled = scaled.model_.predict_raw(Xu)
+    np.testing.assert_allclose(raw_scaled[:, 0] / factor, raw_unit[:, 0])
+    np.testing.assert_allclose(raw_scaled[:, 1] - np.log(factor), raw_unit[:, 1])
+
+    mu_unit, sigma_unit = unit.predict_dist(Xu)
+    mu_scaled, sigma_scaled = scaled.predict_dist(Xu)
+    np.testing.assert_allclose(mu_scaled / factor, mu_unit)
+    np.testing.assert_allclose(sigma_scaled / factor, sigma_unit)
+    np.testing.assert_allclose(
+        scaled.predict_variance(Xu) / (factor * factor),
+        unit.predict_variance(Xu),
+    )
+    unit_lo, unit_hi = unit.predict_interval(Xu, alpha=0.2)
+    scaled_lo, scaled_hi = scaled.predict_interval(Xu, alpha=0.2)
+    np.testing.assert_allclose(scaled_lo / factor, unit_lo)
+    np.testing.assert_allclose(scaled_hi / factor, unit_hi)
+    np.testing.assert_allclose(
+        scaled.sample(Xu, n_samples=5, random_state=123) / factor,
+        unit.sample(Xu, n_samples=5, random_state=123),
+    )
+
+    path = tmp_path / "gaussian-scaled.npz"
+    scaled.save_model(path)
+    loaded = ChimeraBoostRegressor.load_model(path)
+    assert loaded.model_.target_transform_ == scaled.model_.target_transform_
+    loaded_mu, loaded_sigma = loaded.predict_dist(Xu)
+    np.testing.assert_allclose(loaded_mu, mu_scaled)
+    np.testing.assert_allclose(loaded_sigma, sigma_scaled)
+
+
+def test_regressor_prediction_rejects_post_fit_loss_mismatch():
+    X, y = _make_heteroscedastic(seed=121, n=80)
+    rmse = ChimeraBoostRegressor(
+        iterations=4,
+        learning_rate=0.1,
+        random_state=0,
+        diagnostic_warnings="never",
+    ).fit(X, y)
+    rmse.set_params(loss="Gaussian")
+    with pytest.raises(ValueError, match="fitted loss 'RMSE'.*refit"):
+        rmse.predict(X[:3])
+
+    gaussian = ChimeraBoostRegressor(**_gaussian_test_params(iterations=4)).fit(X, y)
+    gaussian.set_params(loss="RMSE")
+    with pytest.raises(ValueError, match="fitted loss 'Gaussian'.*refit"):
+        gaussian.predict_dist(X[:3])
+
+
 def test_gaussian_train_nll_decreases():
     X, y = _make_heteroscedastic(seed=6, n=800)
     model = ChimeraBoostRegressor(
@@ -361,8 +435,15 @@ def test_gaussian_crps_eval_metric_controls_validation_history():
         )
     ).fit(Xtr, ytr, eval_set=(Xv, yv))
 
-    raw = model.model_.predict_raw(Xv).T
-    expected = model.model_.loss_.crps_class_major(yv, raw)
+    raw_public = model.model_.predict_raw(Xv)
+    transform = model.model_.target_transform_
+    raw_internal = raw_public.copy()
+    raw_internal[:, 0] = (
+        raw_internal[:, 0] - transform["mean"]
+    ) / transform["scale"]
+    raw_internal[:, 1] = raw_internal[:, 1] - np.log(transform["scale"])
+    yv_internal = (yv - transform["mean"]) / transform["scale"]
+    expected = model.model_.loss_.crps_class_major(yv_internal, raw_internal.T)
     assert model.model_.auto_params_["distributional"]["eval_metric"] == "crps"
     assert np.isclose(model.model_.valid_history_[-1], expected)
     assert np.isclose(model.best_score_, expected)
@@ -1049,7 +1130,9 @@ def test_lognormal_preprocessor_uses_log_target_for_categorical_encodings(
     ).fit(X, y, cat_features=[0])
 
     assert seen_targets
-    np.testing.assert_allclose(seen_targets[0], np.log(y))
+    log_y = np.log(y)
+    expected = (log_y - np.mean(log_y)) / np.std(log_y)
+    np.testing.assert_allclose(seen_targets[0], expected)
 
 
 def test_student_t_gradient_bounds_and_distribution_api(tmp_path):
@@ -1317,6 +1400,37 @@ def test_searchcv_dispersion_calibration_pooling_uses_positive_log_scale():
     assert pooled["fold_stats"]["validation_n_samples"] == 100
 
 
+def test_searchcv_pooled_calibration_warns_when_any_fold_is_small():
+    class Trial:
+        user_attrs = {
+            "fold_weight_sums": [1.0, 1.0],
+            "fold_auto_params": [
+                {
+                    "sigma_calibration": {
+                        "method": "scalar",
+                        "sigma_scale": 0.9,
+                        "validation_effective_n": 20.0,
+                        "small_fold_threshold": 200.0,
+                        "small_fold_warning": True,
+                    }
+                },
+                {
+                    "sigma_calibration": {
+                        "method": "scalar",
+                        "sigma_scale": 1.1,
+                        "validation_effective_n": 500.0,
+                        "small_fold_threshold": 200.0,
+                        "small_fold_warning": False,
+                    }
+                },
+            ],
+        }
+
+    pooled = _pooled_trial_sigma_calibration(Trial())
+    assert pooled["fold_stats"]["validation_effective_n"] == pytest.approx(520.0)
+    assert pooled["fold_stats"]["small_fold_warning"] is True
+
+
 def test_searchcv_negative_binomial_mean_calibration_pools_log_scale():
     class Trial:
         user_attrs = {
@@ -1482,6 +1596,15 @@ def test_gaussian_searchcv_refit_freezes_scalar_sigma_calibration():
 
     final = search.best_estimator_
     assert search.refit_params_["sigma_calibration"] is None
+    expected_rounds = max(
+        1, int(np.ceil(np.median(search.best_trial_.user_attrs["fold_best_iterations"])))
+    )
+    assert search.refit_params_["iterations"] == expected_rounds
+    assert (
+        search.refit_iterations_source_
+        == "median_fold_best_for_calibrated_distribution"
+    )
+    assert search.tuning_metadata_["refit_iterations"] == expected_rounds
     assert final.sigma_calibration_ == "scalar"
     assert final.sigma_scale_source_ == "search_cv_validation"
     fold_metas = search.best_trial_.user_attrs["fold_auto_params"]

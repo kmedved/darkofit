@@ -148,6 +148,10 @@ subsampling (`colsample < 1`) supported. GOSS/MVS sampling, Bayesian bootstrap,
 ordered boosting, and float32 histograms are still rejected. `min_child_weight`
 is evaluated on the summed multi-head Hessian mass, while `min_child_samples`
 keeps its usual row-count meaning.
+Gaussian, LogNormal, and StudentT standardize their canonical continuous target
+internally and transform public distribution parameters back to the original
+scale, so raw-unit targets such as prices or volumes do not change the Newton
+regularization regime.
 
 Validation and early-stopping use each distribution's NLL by default. For
 Gaussian, pass `eval_metric="crps"` to select the best validation prefix by
@@ -161,6 +165,10 @@ reg = ChimeraBoostRegressor(
     eval_metric="crps",
 )
 ```
+
+When a tuning run uses `eval_metric="crps"`, early stopping and best-prefix
+selection use CRPS, but trial ranking still uses the configured scorer; the
+default Gaussian scorer remains NLL unless `scoring=` is set explicitly.
 
 For small data, early stopping is especially important for Gaussian fits:
 training too long can make the log-standard-deviation head overfit residuals
@@ -188,19 +196,51 @@ Calibration applies to
 `refit=True`, the calibration is frozen from the selection-phase validation
 model and then applied to the full-data refit.
 
+`ChimeraBoostRegressor` also has opt-in linear residual boosting via
+`linear_residual=True`. Before fitting trees, the wrapper fits a weighted ridge
+trend on selected numeric raw input columns, trains the booster on residuals,
+and adds the deterministic trend back at public prediction time:
+
+```
+reg = ChimeraBoostRegressor(
+    loss="Gaussian",
+    tree_mode="lightgbm",
+    linear_residual=True,
+    linear_residual_alpha=1.0,
+)
+reg.fit(X, y)
+mu, sigma = reg.predict_dist(X_test)
+```
+
+`linear_residual_features="auto"` uses all usable non-categorical numeric raw
+columns, while an explicit list of column indices or names can be supplied.
+The v1 additive-location protocol supports `RMSE`, `MAE`, `Quantile`,
+`Gaussian`, and `StudentT`; it intentionally rejects `LogNormal`, `Poisson`,
+and `NegativeBinomial` until those heads have distribution-specific offset
+protocols. For distributional fits, the trend shifts only the location
+parameter and intervals/samples; `predict_variance()` remains the residual
+distribution variance and does not include ridge coefficient uncertainty.
+Diagnostics are stored under `model_.auto_params_["linear_residual"]`, and the
+plain-array model archive preserves the trend without pickle.
+
 Distributional benchmark, mean over three seeds on the synthetic
-heteroscedastic gate:
+heteroscedastic gate. The calibrated Chimera row was refreshed after the
+0.7.0 target-standardization change; external baselines are retained from the
+same public benchmark matrix because they are not affected by ChimeraBoost's
+internal target transform.
 
 | model | NLL 100k | NLL 500k | CRPS 500k | cov90 500k | fit s 500k |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| ChimeraBoost Gaussian, early-stopped + calibrated | **0.990** | **0.983** | **0.390** | 0.900 | 10.5 |
+| ChimeraBoost Gaussian, early-stopped + calibrated | **0.990** | **0.983** | **0.389** | 0.899 | 15.4 |
 | NGBoost Normal | 1.014 | 1.008 | 0.396 | 0.905 | 125.9 |
 | CatBoost `RMSEWithUncertainty` | 1.058 | 1.056 | 0.410 | 0.909 | 0.8 |
 | LightGBM twin-model variance hack | 1.644 | 1.630 | 0.419 | 0.619 | 3.5 |
 
 Command and per-seed rows live in
 [BENCHMARK_NOTES.md](BENCHMARK_NOTES.md) and
-[benchmarks/distributional_summary.md](benchmarks/distributional_summary.md).
+[benchmarks/distributional_summary.md](benchmarks/distributional_summary.md);
+the post-standardization calibrated Chimera check is in
+[benchmarks/distributional_standardization_check.md](benchmarks/distributional_standardization_check.md).
 A WNBA DARKO real-data observation check is also recorded in
 [benchmarks/wnba_realdata_distributional_summary.md](benchmarks/wnba_realdata_distributional_summary.md):
 per-metric affine Gaussian improves the held-out 2024-2026 one-step scale
@@ -214,7 +254,9 @@ parity with the incumbent `sigma2 / sample_weight` heuristic (NLL 0.113884 vs
 calibration (NIS 0.994 vs 0.982). The tiny likelihood gap is inside the
 paired-bootstrap noise band and the lane still does not clear the strict
 2-of-3 season replacement gate, so it is not yet a production replacement for
-DARKO observation noise.
+DARKO observation noise. The WNBA/DARKO artifacts were generated before the
+0.7.0 target-standardization change and should be rerun before production replay
+or release claims that depend on those exact sigma values.
 
 Not implemented for distributional regression in v1: CatBoost-style
 per-parameter scalar trees, GOSS/MVS distributional sampling, Bayesian
@@ -365,7 +407,11 @@ Use `strategy="joint"` or `strategy="stepwise"` to force either mode. Set
 `study_stopper` callback for study-level stopping. Final refits preserve the
 winning trial's model semantics by default: fold-local automatic learning
 rates are not frozen and median fold round counts are not applied unless
-`refit_learning_rate` or `refit_rounds` explicitly request that behavior.
+`refit_learning_rate` or `refit_rounds` explicitly request that behavior, with
+one calibrated-distribution exception.
+When distributional calibration is reattached from validation folds, the
+default `refit_rounds="preserve"` uses the median fold-best round count so the
+transported calibration is applied to a comparable boosting horizon.
 Parallel search uses separate worker processes sharing Optuna storage; each
 worker calls Optuna with `n_jobs=1` so Optuna thread-level parallelism does not
 race with Chimeraboost's Numba thread pool.
