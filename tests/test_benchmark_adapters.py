@@ -24,6 +24,11 @@ from bench_compare_revisions import (  # noqa: E402
     _effective_sampling,
     _selection_timing_fields,
 )
+from bench_wnba_kalman_replay import (  # noqa: E402
+    paired_bootstrap_summaries,
+    resolve_metric_r_floor,
+    run_replay,
+)
 from weighted_metrics import metric_bundle  # noqa: E402
 
 
@@ -143,6 +148,69 @@ def test_selection_timing_fields_record_auto_overhead_scope():
     )
     assert plain_fields["timing_scope"] == "fit_model"
     assert plain_fields["selection_overhead_seconds"] == ""
+
+
+def test_wnba_kalman_replay_warms_up_from_train_rows_without_future_leakage():
+    dates = np.array(
+        ["2022-01-01", "2022-01-02", "2023-01-01", "2024-01-01"],
+        dtype="datetime64[D]",
+    )
+    game_id = np.arange(4)
+    weights = np.ones(4, dtype=np.float64)
+    R = np.ones(4, dtype=np.float64)
+    train_mask = np.array([True, True, False, False])
+    y = np.array([1.0, 1.0, 2.0, 1000.0], dtype=np.float64)
+    y_future_changed = y.copy()
+    y_future_changed[3] = -1000.0
+
+    replay = run_replay(y, weights, dates, game_id, R, 0.1, train_mask)
+    changed = run_replay(
+        y_future_changed, weights, dates, game_id, R, 0.1, train_mask
+    )
+
+    val_idx = 2
+    assert replay["pred"][val_idx] == pytest.approx(1.0)
+    assert changed["pred"][val_idx] == pytest.approx(replay["pred"][val_idx])
+    assert changed["pred_var"][val_idx] == pytest.approx(
+        replay["pred_var"][val_idx]
+    )
+
+
+def test_wnba_kalman_replay_uses_metric_relative_r_floor_by_default():
+    args = type("Args", (), {"r_floor": None, "r_floor_fraction": 0.25})()
+    heuristic_R = np.array([0.002, 0.004, 2.0], dtype=np.float64)
+    weights = np.ones(3, dtype=np.float64)
+    train_mask = np.array([True, True, False])
+
+    assert resolve_metric_r_floor(args, heuristic_R, weights, train_mask) == (
+        pytest.approx(0.00075)
+    )
+
+    args.r_floor = 0.01
+    assert resolve_metric_r_floor(args, heuristic_R, weights, train_mask) == (
+        pytest.approx(0.01)
+    )
+
+
+def test_wnba_kalman_replay_bootstrap_marks_wins_and_ties():
+    pairwise = {
+        ("candidate", "2024"): {
+            "candidate_nll": [np.zeros(12, dtype=np.float64)],
+            "incumbent_nll": [np.ones(12, dtype=np.float64)],
+            "candidate_se": [np.ones(12, dtype=np.float64)],
+            "incumbent_se": [np.ones(12, dtype=np.float64)],
+            "candidate_z2": [np.ones(12, dtype=np.float64)],
+            "incumbent_z2": [np.full(12, 1.5, dtype=np.float64)],
+        }
+    }
+
+    summary = paired_bootstrap_summaries(pairwise, n_boot=64, seed=0)[
+        ("candidate", "2024")
+    ]
+
+    assert summary["nll"]["result"] == "win"
+    assert summary["rmse"]["result"] == "tie"
+    assert summary["nis_closeness"]["result"] == "win"
 
 
 def test_estimator_kwargs_num_leaves_only_for_leafwise_modes():
