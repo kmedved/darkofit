@@ -4,14 +4,14 @@ import numpy as np
 import pytest
 from sklearn.linear_model import Ridge
 
-import chimeraboost.linear_residual as linear_residual_module
-from chimeraboost import ChimeraBoostRegressor
-from chimeraboost.booster import GradientBoosting
-from chimeraboost.linear_residual import (
+import darkofit.linear_residual as linear_residual_module
+from darkofit import DarkoRegressor
+from darkofit.booster import GradientBoosting
+from darkofit.linear_residual import (
     WeightedRidgeTrend,
     validate_linear_residual_loss,
 )
-from chimeraboost.serialization import save_booster
+from darkofit.serialization import save_booster
 
 
 def test_weighted_ridge_trend_ols_recovers_linear_signal():
@@ -234,7 +234,7 @@ def test_regressor_predict_adds_linear_trend_to_residual_booster():
     X = rng.normal(size=(80, 3))
     y = 1.5 + 2.0 * X[:, 0] - X[:, 1] + 0.25 * np.sin(X[:, 2])
 
-    model = ChimeraBoostRegressor(**_wrapper_params()).fit(X, y)
+    model = DarkoRegressor(**_wrapper_params()).fit(X, y)
     Xq = X[:12]
     trend = model._linear_residual_trend(Xq)
     raw = model.model_.predict_raw(Xq)
@@ -253,7 +253,7 @@ def test_regressor_staged_predict_adds_same_linear_trend_each_stage():
     X = rng.normal(size=(70, 2))
     y = 0.2 + 1.8 * X[:, 0] + np.cos(X[:, 1])
 
-    model = ChimeraBoostRegressor(**_wrapper_params(iterations=5)).fit(X, y)
+    model = DarkoRegressor(**_wrapper_params(iterations=5)).fit(X, y)
     Xq = X[:8]
     trend = model._linear_residual_trend(Xq)
     public_stages = list(model.staged_predict(Xq))
@@ -272,7 +272,7 @@ def test_regressor_explicit_eval_set_does_not_fit_linear_trend():
     yv = -500.0 + 100.0 * Xv[:, 0]
     expected = WeightedRidgeTrend(alpha=0.0).fit(Xtr, ytr)
 
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         **_wrapper_params(
             iterations=4,
             early_stopping=True,
@@ -296,7 +296,7 @@ def test_regressor_rejects_v2_distributional_losses_with_linear_residual():
 
     for loss in ("LogNormal", "Poisson", "NegativeBinomial"):
         with pytest.raises(ValueError, match=loss):
-            ChimeraBoostRegressor(
+            DarkoRegressor(
                 **_wrapper_params(loss=loss, tree_mode="lightgbm")
             ).fit(X, y)
 
@@ -317,7 +317,7 @@ def test_gaussian_linear_residual_shifts_location_not_variance_interval_sample()
     rng = np.random.default_rng(11)
     X = rng.normal(size=(90, 3))
     y = 0.7 + 1.4 * X[:, 0] - 0.3 * X[:, 1] + rng.normal(scale=0.2, size=90)
-    model = ChimeraBoostRegressor(**_distribution_params()).fit(X, y)
+    model = DarkoRegressor(**_distribution_params()).fit(X, y)
     Xq = X[:10]
 
     trend = model._linear_residual_trend(Xq)
@@ -346,7 +346,7 @@ def test_student_t_linear_residual_shifts_only_mu():
     rng = np.random.default_rng(12)
     X = rng.normal(size=(80, 2))
     y = -0.2 + 1.2 * X[:, 0] + rng.standard_t(5.0, size=80) * 0.15
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         **_distribution_params(loss="StudentT", dist_params={"nu": 5.0})
     ).fit(X, y)
     Xq = X[:8]
@@ -373,7 +373,7 @@ def test_refit_uses_full_data_linear_residual_trend_and_keeps_selection_summary(
     y = 0.5 + 0.9 * X[:, 0] - 0.4 * X[:, 2] + 0.1 * rng.normal(size=100)
     expected_full = WeightedRidgeTrend(alpha=0.0).fit(X, y)
 
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         **_wrapper_params(
             iterations=10,
             early_stopping=True,
@@ -398,11 +398,11 @@ def test_linear_residual_save_load_round_trip(tmp_path):
     rng = np.random.default_rng(14)
     X = rng.normal(size=(70, 3))
     y = -1.0 + 1.7 * X[:, 1] + 0.2 * np.sin(X[:, 0])
-    model = ChimeraBoostRegressor(**_wrapper_params(iterations=5)).fit(X, y)
+    model = DarkoRegressor(**_wrapper_params(iterations=5)).fit(X, y)
     path = tmp_path / "linear-residual.npz"
 
     model.save_model(path)
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
 
     assert loaded.linear_residual_enabled_
     assert loaded.linear_residual_active_
@@ -428,7 +428,7 @@ def test_regressor_loads_wrapperless_scalar_archive_with_fitted_loss(tmp_path):
     path = tmp_path / "core-mae.npz"
     save_booster(core, path)
 
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
 
     assert loaded.loss == "MAE"
     np.testing.assert_allclose(loaded.predict(X[:10]), core.predict_raw(X[:10]))
@@ -437,7 +437,7 @@ def test_regressor_loads_wrapperless_scalar_archive_with_fitted_loss(tmp_path):
 def test_linear_residual_archive_corruption_is_rejected(tmp_path):
     X = np.arange(30.0).reshape(15, 2)
     y = 1.0 + 0.2 * X[:, 0]
-    model = ChimeraBoostRegressor(**_wrapper_params(iterations=3)).fit(X, y)
+    model = DarkoRegressor(**_wrapper_params(iterations=3)).fit(X, y)
     path = tmp_path / "linear-residual-corrupt.npz"
     model.save_model(path)
     arrays = _read_archive_arrays(path)
@@ -446,13 +446,13 @@ def test_linear_residual_archive_corruption_is_rejected(tmp_path):
     missing.pop("wrapper__linear_residual_coef")
     missing_path = _write_archive(tmp_path / "missing-linear-coef.npz", missing)
     with pytest.raises(ValueError, match="missing linear residual arrays"):
-        ChimeraBoostRegressor.load_model(missing_path)
+        DarkoRegressor.load_model(missing_path)
 
     bad_index = dict(arrays)
     bad_index["wrapper__linear_residual_feature_indices"] = np.array([99])
     bad_index_path = _write_archive(tmp_path / "bad-linear-index.npz", bad_index)
     with pytest.raises(ValueError, match="out of range"):
-        ChimeraBoostRegressor.load_model(bad_index_path)
+        DarkoRegressor.load_model(bad_index_path)
 
     disabled_active = dict(arrays)
     header = json.loads(str(disabled_active["header"]))
@@ -463,7 +463,7 @@ def test_linear_residual_archive_corruption_is_rejected(tmp_path):
         tmp_path / "disabled-active-linear.npz", disabled_active
     )
     with pytest.raises(ValueError, match="cannot be disabled"):
-        ChimeraBoostRegressor.load_model(disabled_active_path)
+        DarkoRegressor.load_model(disabled_active_path)
 
 
 def test_linear_residual_archive_feature_name_mismatch_is_rejected(tmp_path):
@@ -473,7 +473,7 @@ def test_linear_residual_archive_feature_name_mismatch_is_rejected(tmp_path):
         "b": np.linspace(1.0, 2.0, 20),
     })
     y = 0.3 + 2.0 * X["a"].to_numpy()
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         **_wrapper_params(iterations=3, linear_residual_features=["a"])
     ).fit(X, y)
     path = tmp_path / "linear-residual-names.npz"
@@ -485,4 +485,4 @@ def test_linear_residual_archive_feature_name_mismatch_is_rejected(tmp_path):
 
     bad_path = _write_archive(tmp_path / "bad-linear-name.npz", arrays)
     with pytest.raises(ValueError, match="feature names"):
-        ChimeraBoostRegressor.load_model(bad_path)
+        DarkoRegressor.load_model(bad_path)

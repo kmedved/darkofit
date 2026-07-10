@@ -2,12 +2,12 @@
 
 The lr/bins diagnostic showed the gap is NOT tuning and NOT categorical -- the
 clean gaps (wine_quality, kc1, phoneme) are numeric-only datasets where both
-models build oblivious trees and ChimeraBoost is already converged. That leaves
+models build oblivious trees and DarkoFit is already converged. That leaves
 two explanations, with opposite fixes:
 
-  variance  ChimeraBoost overfits more per tree (similar train fit, worse test).
+  variance  DarkoFit overfits more per tree (similar train fit, worse test).
             -> a regularizer (real permutation ordered boosting) could close it.
-  bias      ChimeraBoost extracts less signal per fit (lower train AND test).
+  bias      DarkoFit extracts less signal per fit (lower train AND test).
             -> ordered boosting won't help; the lever is split/leaf quality.
 
 This fits each model on the SAME per-seed split (same internal val carve as the
@@ -37,7 +37,7 @@ sys.path.insert(0, os.path.dirname(_HERE))
 import run_benchmarks as B  # noqa: E402
 
 from sklearn.model_selection import train_test_split  # noqa: E402
-from chimeraboost import ChimeraBoostRegressor, ChimeraBoostClassifier  # noqa: E402
+from darkofit import DarkoRegressor, DarkoClassifier  # noqa: E402
 
 
 def _hib(task, y_true, model, X):
@@ -46,8 +46,8 @@ def _hib(task, y_true, model, X):
     return B._score(task, y_true, model, X)
 
 
-def _fit_chimera(task, Xf, yf, Xv, yv, cat, threads, mcw=1.0):
-    Est = ChimeraBoostRegressor if task == "regression" else ChimeraBoostClassifier
+def _fit_darkofit(task, Xf, yf, Xv, yv, cat, threads, mcw=1.0):
+    Est = DarkoRegressor if task == "regression" else DarkoClassifier
     t = time.time()
     m = Est(iterations=B.MAX_ITERS, early_stopping_rounds=B.PATIENCE,
             min_child_weight=mcw, ordered_boosting=True,
@@ -85,8 +85,8 @@ def _disp(task, hib_mean):
 def _collect(builder, seeds, threads, have_cb, mcw_pair=None):
     """Return per-seed train/test arrays for each model on shared splits.
 
-    mcw_pair: optional (mcw_a, mcw_b) to run TWO ChimeraBoost configs instead of
-    ChimeraBoost vs CatBoost -- used by --self-check to prove the gap readout
+    mcw_pair: optional (mcw_a, mcw_b) to run TWO DarkoFit configs instead of
+    DarkoFit vs CatBoost -- used by --self-check to prove the gap readout
     distinguishes an overfit model from a regularized one.
     """
     out = {}
@@ -109,11 +109,11 @@ def _collect(builder, seeds, threads, have_cb, mcw_pair=None):
         if mcw_pair is not None:
             for tag, mcw in zip(("mcw=1 (loose)", f"mcw={mcw_pair[1]} (tight)"),
                                 mcw_pair):
-                m, _ = _fit_chimera(task, Xf, yf, Xv, yv, cat, threads, mcw=mcw)
+                m, _ = _fit_darkofit(task, Xf, yf, Xv, yv, cat, threads, mcw=mcw)
                 add(tag, _hib(task, yf, m, Xf), _hib(task, yte, m, Xte))
         else:
-            m, _ = _fit_chimera(task, Xf, yf, Xv, yv, cat, threads)
-            add("ChimeraBoost", _hib(task, yf, m, Xf), _hib(task, yte, m, Xte))
+            m, _ = _fit_darkofit(task, Xf, yf, Xv, yv, cat, threads)
+            add("DarkoFit", _hib(task, yf, m, Xf), _hib(task, yte, m, Xte))
             if have_cb:
                 mc, _ = _fit_catboost(task, Xf, yf, Xv, yv, cat, threads)
                 if mc is not None:
@@ -180,12 +180,12 @@ def main():
                          "on a noisy synthetic; the loose model MUST show the "
                          "wider train-test gap")
     ap.add_argument("--no-warmup", action="store_true",
-                    help="include first-call ChimeraBoost Numba compile time")
+                    help="include first-call DarkoFit Numba compile time")
     args = ap.parse_args()
 
     if not args.no_warmup:
-        print("Warming up ChimeraBoost Numba kernels...")
-        B._warmup_chimera(args.threads)
+        print("Warming up DarkoFit Numba kernels...")
+        B._warmup_darkofit(args.threads)
 
     if args.self_check:
         # A noisy regression where an unconstrained tree can memorize.
@@ -221,7 +221,7 @@ def main():
         args.no_warmup or B._has_competitor("catboost")
     )
     if not have_cb:
-        print("NOTE: CatBoost not available -- reporting ChimeraBoost train/test "
+        print("NOTE: CatBoost not available -- reporting DarkoFit train/test "
               "gap only (no comparison verdict).\n")
     print(f"seeds={args.seeds}  threads={args.threads or 'all'}  "
           f"gap = train - test in higher-is-better space (+ = overfit)\n")
@@ -236,7 +236,7 @@ def main():
         rows = _report(ds, task, data)
         if have_cb and "CatBoost" in rows:
             print("  verdict: " +
-                  _verdict_two_models(task, rows, "ChimeraBoost", "CatBoost"))
+                  _verdict_two_models(task, rows, "DarkoFit", "CatBoost"))
         print()
 
 

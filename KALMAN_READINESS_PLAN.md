@@ -140,7 +140,7 @@ W0 is a half-day (three constants, one calibrator edit, tests); it goes first be
 ## 7. Repo hygiene before the PR
 
 - Commit the WNBA artifacts (script + CSV + summary + notes). The parquet is a private Dropbox path — the script must fail with a clear message without it.
-- Resolve dirty `chimeraboost/tree.py` (`_count_leaf_rows` scalar-builder change): commit separately with an `ab_compare` bit-identity check, or revert. Unreviewed core-tree drift must not ride along.
+- Resolve dirty `darkofit/tree.py` (`_count_leaf_rows` scalar-builder change): commit separately with an `ab_compare` bit-identity check, or revert. Unreviewed core-tree drift must not ride along.
 - Same for the dtype-campaign edits in `benchmarks/bench_feature_modes.py`.
 
 ---

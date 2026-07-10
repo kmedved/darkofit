@@ -1,4 +1,4 @@
-"""Microbenchmark ChimeraBoost's low-level oblivious-tree kernels.
+"""Microbenchmark DarkoFit's low-level oblivious-tree kernels.
 
 This benchmark deliberately bypasses sklearn wrappers and preprocessing. It
 measures the kernels that dominate warmed training and prediction time:
@@ -20,7 +20,7 @@ import numpy as np
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(_HERE))
 
-from chimeraboost.tree import (  # noqa: E402
+from darkofit.tree import (  # noqa: E402
     _best_split,
     _best_split_serial,
     _build_histograms_into,

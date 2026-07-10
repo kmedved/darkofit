@@ -1,6 +1,6 @@
-"""ChimeraBoost benchmark harness.
+"""DarkoFit benchmark harness.
 
-Runs ChimeraBoost against whatever competitors are installed (scikit-learn
+Runs DarkoFit against whatever competitors are installed (scikit-learn
 HistGradientBoosting is always available; CatBoost, XGBoost and LightGBM are
 auto-detected and skipped if absent) across a fixed suite of regression and
 classification tasks, including categorical-heavy ones.
@@ -15,7 +15,7 @@ Usage:
     python benchmarks/run_benchmarks.py --scale 3       # ~3x bigger datasets
     python benchmarks/run_benchmarks.py --seeds 10      # more seeds
     python benchmarks/run_benchmarks.py --only classification
-    python benchmarks/run_benchmarks.py --threads 8     # ChimeraBoost threads
+    python benchmarks/run_benchmarks.py --threads 8     # DarkoFit threads
 """
 
 import argparse
@@ -39,14 +39,14 @@ from sklearn.ensemble import (
     HistGradientBoostingRegressor, HistGradientBoostingClassifier,
 )
 
-from chimeraboost import ChimeraBoostRegressor, ChimeraBoostClassifier
+from darkofit import DarkoRegressor, DarkoClassifier
 
 
 # --------------------------------------------------------------------------
 # Optional competitors: detected lazily, skipped silently if not installed.
 # Importing native OpenMP competitors before Numba initializes its thread pool
 # can segfault at interpreter shutdown on some macOS environments, so keep this
-# lazy and run ChimeraBoost warmup before native competitor imports.
+# lazy and run DarkoFit warmup before native competitor imports.
 # --------------------------------------------------------------------------
 _OPTIONAL_IMPORTS = {
     "catboost": "catboost",
@@ -214,7 +214,7 @@ def _make_openml_builder(spec):
         if cat_idx:
             # Categorical columns: NaN -> "__nan__" string. CatBoost rejects
             # float NaN in cat_features ("must be integer or string"), and
-            # ChimeraBoost already maps the "__nan__" label to its missing bucket
+            # DarkoFit already maps the "__nan__" label to its missing bucket
             # in factorize(), so both see missing the same way.
             cat_cols = set(cat_idx)
             cols = []
@@ -239,7 +239,7 @@ def _add_openml_datasets():
 
 # --------------------------------------------------------------------------
 # Model runners return (score, fit_seconds, best_iteration), with an optional
-# fourth boost_seconds value for ChimeraBoost's post-preprocessing loop. Higher
+# fourth boost_seconds value for DarkoFit's post-preprocessing loop. Higher
 # score = better, so regression returns NEGATIVE rmse. Returns None if the
 # model can't run the task (e.g. competitor without native categoricals).
 # --------------------------------------------------------------------------
@@ -263,26 +263,26 @@ MAX_ITERS = 2000
 PATIENCE = 50
 
 
-def _warmup_chimera(threads=None):
-    """Compile ChimeraBoost's common Numba kernels outside measured timings."""
+def _warmup_darkofit(threads=None):
+    """Compile DarkoFit's common Numba kernels outside measured timings."""
     rng = np.random.default_rng(0)
     X = rng.normal(size=(96, 4))
     y_reg = X[:, 0] - 0.5 * X[:, 1] + rng.normal(0.0, 0.1, size=X.shape[0])
-    ChimeraBoostRegressor(
+    DarkoRegressor(
         iterations=2, depth=2, max_bins=16, thread_count=threads, random_state=0
     ).fit(X, y_reg)
 
     y_bin = (X[:, 0] + X[:, 2] > 0.0).astype(int)
-    ChimeraBoostClassifier(
+    DarkoClassifier(
         iterations=2, depth=2, max_bins=16, thread_count=threads, random_state=0
     ).fit(X, y_bin)
 
 
-def _run_chimera(task, Xtr, ytr, Xte, yte, cat, threads, lr=None,
+def _run_darkofit(task, Xtr, ytr, Xte, yte, cat, threads, lr=None,
                  ordered_boosting=True, depth=6):
     Xf, Xv, yf, yv = _val_split(Xtr, ytr, task, 0)
     t = time.time()
-    Est = ChimeraBoostRegressor if task == "regression" else ChimeraBoostClassifier
+    Est = DarkoRegressor if task == "regression" else DarkoClassifier
     m = Est(iterations=MAX_ITERS, early_stopping_rounds=PATIENCE,
             learning_rate=lr, depth=depth, ordered_boosting=ordered_boosting,
             thread_count=threads, random_state=0)
@@ -369,7 +369,7 @@ def _run_lightgbm(task, Xtr, ytr, Xte, yte, cat, threads):
 
 
 RUNNERS = {
-    "ChimeraBoost": _run_chimera,
+    "DarkoFit": _run_darkofit,
     "sklearn_HGB": _run_sklearn,
     "CatBoost": _run_catboost,
     "XGBoost": _run_xgboost,
@@ -387,8 +387,8 @@ _RUNNER_TO_OPTIONAL = {
 # Main loop
 # --------------------------------------------------------------------------
 def _rel_gap(ours, theirs, task):
-    """Relative gap of ChimeraBoost vs a competitor, as a signed percentage
-    where POSITIVE means ChimeraBoost is better.
+    """Relative gap of DarkoFit vs a competitor, as a signed percentage
+    where POSITIVE means DarkoFit is better.
 
     Regression score is -RMSE (higher=better), classification is F1 macro
     (higher=better), so in both cases higher is better and the formula is the
@@ -410,7 +410,7 @@ def main():
                     help="multiplier for synthetic dataset sizes")
     ap.add_argument("--seeds", type=int, default=3)
     ap.add_argument("--threads", type=int, default=None,
-                    help="ChimeraBoost thread_count (None = all cores)")
+                    help="DarkoFit thread_count (None = all cores)")
     ap.add_argument("--only", choices=["regression", "classification"],
                     default=None)
     ap.add_argument("--openml", action="store_true",
@@ -420,16 +420,16 @@ def main():
     ap.add_argument("--models", nargs="+", default=None,
                     metavar="MODEL",
                     help=("limit to specific runners, e.g. "
-                          "--models ChimeraBoost CatBoost sklearn_HGB. "
+                          "--models DarkoFit CatBoost sklearn_HGB. "
                           f"Available: {list(RUNNERS)}"))
     ap.add_argument("--lr", type=float, default=None,
-                    help=("override ChimeraBoost learning rate (default: auto=0.1 "
+                    help=("override DarkoFit learning rate (default: auto=0.1 "
                           "with early stopping). Try --lr 0.05 to test whether "
                           "smaller steps + more trees improve accuracy on OpenML "
                           "before promoting to a new default."))
-    ap.add_argument("--chimera-depth", type=int, default=6,
-                    help=("override ChimeraBoost tree depth (default: 6). Use "
-                          "--chimera-depth 8 to A/B whether deeper trees close "
+    ap.add_argument("--darkofit-depth", type=int, default=6,
+                    help=("override DarkoFit tree depth (default: 6). Use "
+                          "--darkofit-depth 8 to A/B whether deeper trees close "
                           "the bias gap on numeric-heavy datasets."))
     ap.add_argument("--patience", type=int, default=None,
                     help=("override early stopping patience rounds for ALL models "
@@ -437,10 +437,10 @@ def main():
                           "accumulate before stopping." % PATIENCE))
     ap.add_argument("--no-ordered-boosting", dest="ordered_boosting",
                     action="store_false", default=True,
-                    help=("disable LOO leaf correction in ChimeraBoost "
+                    help=("disable LOO leaf correction in DarkoFit "
                           "(default: on). Use to A/B test the improvement."))
     ap.add_argument("--no-warmup", action="store_true",
-                    help="include first-call ChimeraBoost Numba compile time")
+                    help="include first-call DarkoFit Numba compile time")
     args = ap.parse_args()
 
     if args.openml or args.no_synthetic:
@@ -453,12 +453,12 @@ def main():
     if args.patience is not None:
         PATIENCE = args.patience
 
-    # Build the runner dict; ChimeraBoost gets the lr override if provided.
+    # Build the runner dict; DarkoFit gets the lr override if provided.
     import functools
     active_runners = dict(RUNNERS)
-    active_runners["ChimeraBoost"] = functools.partial(
-        _run_chimera, lr=args.lr, ordered_boosting=args.ordered_boosting,
-        depth=args.chimera_depth,
+    active_runners["DarkoFit"] = functools.partial(
+        _run_darkofit, lr=args.lr, ordered_boosting=args.ordered_boosting,
+        depth=args.darkofit_depth,
     )
     if args.models:
         unknown = set(args.models) - set(active_runners)
@@ -467,16 +467,16 @@ def main():
         active_runners = {k: v for k, v in active_runners.items()
                          if k in args.models}
 
-    if "ChimeraBoost" in active_runners and not args.no_warmup:
-        print("Warming up ChimeraBoost Numba kernels...")
-        _warmup_chimera(args.threads)
+    if "DarkoFit" in active_runners and not args.no_warmup:
+        print("Warming up DarkoFit Numba kernels...")
+        _warmup_darkofit(args.threads)
 
     optional_names = [
         _RUNNER_TO_OPTIONAL[r] for r in active_runners
         if r in _RUNNER_TO_OPTIONAL
     ]
     detect_lazily = (
-        args.no_warmup and "ChimeraBoost" in active_runners and optional_names
+        args.no_warmup and "DarkoFit" in active_runners and optional_names
     )
     if detect_lazily:
         detected_text = "checked lazily"
@@ -492,7 +492,7 @@ def main():
     print(f"scale={args.scale}  seeds={args.seeds}  "
           f"threads={args.threads or 'all'}  "
           f"early stopping: max_iter={MAX_ITERS}, patience={PATIENCE}"
-          + (f"  chimera_lr={args.lr}" if args.lr else "")
+          + (f"  darkofit_lr={args.lr}" if args.lr else "")
           + (f"  ordered_boosting={args.ordered_boosting}")
           + (f"  models={args.models}" if args.models else "")
           + "\n")
@@ -502,9 +502,9 @@ def main():
                    "multiclass": "F1 macro (higher better)"}
 
     # accumulate per-competitor relative gaps + speed ratios across datasets
-    gap_acc = {r: [] for r in active_runners if r != "ChimeraBoost"}
-    speed_acc = {r: [] for r in active_runners if r != "ChimeraBoost"}
-    paired_speed_acc = {r: [] for r in active_runners if r != "ChimeraBoost"}
+    gap_acc = {r: [] for r in active_runners if r != "DarkoFit"}
+    speed_acc = {r: [] for r in active_runners if r != "DarkoFit"}
+    paired_speed_acc = {r: [] for r in active_runners if r != "DarkoFit"}
 
     for ds_name, builder in DATASETS.items():
         _, _, _, task = builder(args.scale, np.random.default_rng(0))
@@ -552,12 +552,12 @@ def main():
                 prep = np.array(prep_times[rname])
                 timing_str = (f"  boost {bt.mean():6.2f}s"
                               f"  prep+setup {prep.mean():6.2f}s")
-            star = " <-- ours" if rname == "ChimeraBoost" else ""
+            star = " <-- ours" if rname == "DarkoFit" else ""
             print(f"  {rname:14s} {disp.mean():8.4f} +/- {disp.std():.4f}"
                   f"   fit {tm.mean():6.2f}s{timing_str}{it_str}{star}")
 
-        if "ChimeraBoost" in results and results["ChimeraBoost"]:
-            our_times = np.array(times["ChimeraBoost"])
+        if "DarkoFit" in results and results["DarkoFit"]:
+            our_times = np.array(times["DarkoFit"])
             for rname in gap_acc:
                 if len(times[rname]) != len(our_times) or not times[rname]:
                     continue
@@ -568,9 +568,9 @@ def main():
                       f" median x{q50:.2f}  IQR {q25:.2f}-{q75:.2f}")
 
         # record relative gaps for the summary
-        if "ChimeraBoost" in results and results["ChimeraBoost"]:
-            our_score = np.mean(results["ChimeraBoost"])
-            our_time = np.mean(times["ChimeraBoost"])
+        if "DarkoFit" in results and results["DarkoFit"]:
+            our_score = np.mean(results["DarkoFit"])
+            our_time = np.mean(times["DarkoFit"])
             for rname in gap_acc:
                 if results[rname]:
                     gap_acc[rname].append(
@@ -581,7 +581,7 @@ def main():
 
     # ---- summary verdict ----
     print("=" * 64)
-    print("SUMMARY (averaged over datasets; + = ChimeraBoost better)")
+    print("SUMMARY (averaged over datasets; + = DarkoFit better)")
     print("=" * 64)
     for rname in gap_acc:
         if not gap_acc[rname]:
@@ -589,7 +589,7 @@ def main():
         g = np.array(gap_acc[rname])
         sp = np.array(speed_acc[rname])
         paired_sp = np.array(paired_speed_acc[rname])
-        # speed ratio >1 means ChimeraBoost is faster
+        # speed ratio >1 means DarkoFit is faster
         wins = int(np.sum(g > 0))
         verdict = _verdict(rname, g.mean())
         if paired_sp.size:

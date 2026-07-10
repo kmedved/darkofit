@@ -18,12 +18,12 @@ This is a time-ordered validation on WNBA DARKO game-level metric observations. 
 | Model | NLL | CRPS | RMSE mu | 90% cov | std-resid RMS | mean sigma | affine b | sigma range | sigma-|resid| corr | fit s | best iter | config |
 |---|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---|
 | unit_normal_observation_baseline | 51.648 | 6.068 | 10.073 | 0.304 | 10.073 | 1.000 |  | 1.000-1.000 | nan | 0.00 |  |  |
-| chimera_rmse_const_sigma | 1.448 | 0.507 | 1.028 | 0.902 | 1.034 | 0.994 |  | 0.994-0.994 | 0.000 | 2.02 | 132 |  |
-| chimera_gaussian_raw | 0.432 | 0.394 | 1.015 | 0.881 | 1.074 | 0.593 |  | 0.057-2.003 | 0.687 | 8.43 | 280 | `lr=0.04, leaves=31, min_child=25, l2=auto, rho_lr=1.0, rho_l2=1.0` |
-| chimera_gaussian_scalar_calibrated | 0.426 | 0.393 | 1.015 | 0.899 | 1.001 | 0.637 |  | 0.061-2.149 | 0.687 | 7.00 | 280 | `lr=0.04, leaves=31, min_child=25, l2=auto, rho_lr=1.0, rho_l2=1.0` |
-| chimera_gaussian_affine_calibrated | 0.409 | 0.392 | 1.015 | 0.903 | 0.994 | 0.705 | 1.107 | 0.050-2.568 | 0.686 | 6.74 | 280 | `lr=0.04, leaves=31, min_child=25, l2=auto, rho_lr=1.0, rho_l2=1.0` |
-| chimera_gaussian_per_metric_affine_calibrated | 0.404 | 0.391 | 1.015 | 0.901 | 0.995 | 0.694 | 1.107 | 0.045-2.423 | 0.687 | 6.91 | 280 | `lr=0.04, leaves=31, min_child=25, l2=auto, rho_lr=1.0, rho_l2=1.0` |
-| chimera_gaussian_affine_tuned | 0.409 | 0.392 | 1.015 | 0.903 | 0.994 | 0.705 | 1.107 | 0.050-2.568 | 0.686 | 6.57 | 280 | `lr=0.04, leaves=31, min_child=25, l2=auto, rho_lr=1.0, rho_l2=1.0` |
+| darkofit_rmse_const_sigma | 1.448 | 0.507 | 1.028 | 0.902 | 1.034 | 0.994 |  | 0.994-0.994 | 0.000 | 2.02 | 132 |  |
+| darkofit_gaussian_raw | 0.432 | 0.394 | 1.015 | 0.881 | 1.074 | 0.593 |  | 0.057-2.003 | 0.687 | 8.43 | 280 | `lr=0.04, leaves=31, min_child=25, l2=auto, rho_lr=1.0, rho_l2=1.0` |
+| darkofit_gaussian_scalar_calibrated | 0.426 | 0.393 | 1.015 | 0.899 | 1.001 | 0.637 |  | 0.061-2.149 | 0.687 | 7.00 | 280 | `lr=0.04, leaves=31, min_child=25, l2=auto, rho_lr=1.0, rho_l2=1.0` |
+| darkofit_gaussian_affine_calibrated | 0.409 | 0.392 | 1.015 | 0.903 | 0.994 | 0.705 | 1.107 | 0.050-2.568 | 0.686 | 6.74 | 280 | `lr=0.04, leaves=31, min_child=25, l2=auto, rho_lr=1.0, rho_l2=1.0` |
+| darkofit_gaussian_per_metric_affine_calibrated | 0.404 | 0.391 | 1.015 | 0.901 | 0.995 | 0.694 | 1.107 | 0.045-2.423 | 0.687 | 6.91 | 280 | `lr=0.04, leaves=31, min_child=25, l2=auto, rho_lr=1.0, rho_l2=1.0` |
+| darkofit_gaussian_affine_tuned | 0.409 | 0.392 | 1.015 | 0.903 | 0.994 | 0.705 | 1.107 | 0.050-2.568 | 0.686 | 6.57 | 280 | `lr=0.04, leaves=31, min_child=25, l2=auto, rho_lr=1.0, rho_l2=1.0` |
 
 ## Sigma-Binned Calibration
 
@@ -32,12 +32,12 @@ Rows are sorted by predicted sigma and split into equal-count bins. Good observa
 | Model | 90% coverage by sigma bin | std-resid RMS by sigma bin | E[z^2] by sigma bin |
 |---|---|---|---|
 | unit_normal_observation_baseline | 0.329/0.283/0.307/0.287/0.313 | 10.100/10.352/10.036/9.872/9.997 | 102.002/107.154/100.730/97.453/99.934 |
-| chimera_rmse_const_sigma | 0.902/0.888/0.899/0.921/0.900 | 0.974/1.194/1.080/0.909/0.987 | 0.948/1.425/1.167/0.827/0.975 |
-| chimera_gaussian_raw | 0.949/0.929/0.896/0.844/0.835 | 0.851/0.916/1.026/1.192/1.194 | 0.725/0.839/1.052/1.421/1.426 |
-| chimera_gaussian_scalar_calibrated | 0.961/0.940/0.916/0.862/0.860 | 0.793/0.854/0.956/1.111/1.113 | 0.629/0.729/0.913/1.234/1.239 |
-| chimera_gaussian_affine_calibrated | 0.925/0.924/0.896/0.868/0.914 | 0.935/0.932/1.021/1.080/0.962 | 0.875/0.868/1.043/1.167/0.925 |
-| chimera_gaussian_per_metric_affine_calibrated | 0.894/0.924/0.899/0.882/0.908 | 1.002/0.934/1.002/1.035/0.989 | 1.004/0.872/1.005/1.071/0.978 |
-| chimera_gaussian_affine_tuned | 0.925/0.924/0.896/0.868/0.914 | 0.935/0.932/1.021/1.080/0.962 | 0.875/0.868/1.043/1.167/0.925 |
+| darkofit_rmse_const_sigma | 0.902/0.888/0.899/0.921/0.900 | 0.974/1.194/1.080/0.909/0.987 | 0.948/1.425/1.167/0.827/0.975 |
+| darkofit_gaussian_raw | 0.949/0.929/0.896/0.844/0.835 | 0.851/0.916/1.026/1.192/1.194 | 0.725/0.839/1.052/1.421/1.426 |
+| darkofit_gaussian_scalar_calibrated | 0.961/0.940/0.916/0.862/0.860 | 0.793/0.854/0.956/1.111/1.113 | 0.629/0.729/0.913/1.234/1.239 |
+| darkofit_gaussian_affine_calibrated | 0.925/0.924/0.896/0.868/0.914 | 0.935/0.932/1.021/1.080/0.962 | 0.875/0.868/1.043/1.167/0.925 |
+| darkofit_gaussian_per_metric_affine_calibrated | 0.894/0.924/0.899/0.882/0.908 | 1.002/0.934/1.002/1.035/0.989 | 1.004/0.872/1.005/1.071/0.978 |
+| darkofit_gaussian_affine_tuned | 0.925/0.924/0.896/0.868/0.914 | 0.935/0.932/1.021/1.080/0.962 | 0.875/0.868/1.043/1.167/0.925 |
 
 ## Affine Calibration Diagnostics
 

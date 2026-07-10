@@ -1,9 +1,9 @@
-"""Data-dependent default policies for ChimeraBoost.
+"""Data-dependent default policies for DarkoFit.
 
 The learning-rate constants are CatBoost CPU auto-learning-rate coefficients
 for boost-from-average losses, transplanted as an initial transparent policy.
-ChimeraBoost uses Kish effective sample size instead of CatBoost's raw row
-count to expose sample-weight concentration. ChimeraBoost's CatBoost-mode RMSE
+DarkoFit uses Kish effective sample size instead of CatBoost's raw row
+count to expose sample-weight concentration. DarkoFit's CatBoost-mode RMSE
 learner also applies a measured LR-only correction for materially weighted
 regression data; all-ones weights keep the unweighted path.
 """

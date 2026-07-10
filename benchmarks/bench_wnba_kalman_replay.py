@@ -1,4 +1,4 @@
-"""WNBA DARKO observation-noise shadow replay with ChimeraBoost variance.
+"""WNBA DARKO observation-noise shadow replay with DarkoFit variance.
 
 This is a research benchmark for the Kalman-readiness gate. It uses the
 game-level WNBA DARKO metric observation artifact, fits the calibrated Gaussian
@@ -6,7 +6,7 @@ distributional head on train/validation seasons, then replays a scalar
 random-walk Kalman filter per metric over held-out seasons with either:
 
 * incumbent heuristic observation variance: ``R_t = sigma2 / sample_weight``;
-* ChimeraBoost distributional observation variance:
+* DarkoFit distributional observation variance:
   ``R_t = predict_variance(X_t)``.
 
 The production DARKO player filter is not modified here; this script is a
@@ -27,16 +27,16 @@ from pathlib import Path
 import numpy as np
 
 from bench_wnba_realdata_distributional import DEFAULT_DATA, load_dataset
-from chimeraboost import ChimeraBoostRegressor
+from darkofit import DarkoRegressor
 
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CSV = ROOT / "benchmarks" / "wnba_kalman_replay.csv"
 DEFAULT_SUMMARY = ROOT / "benchmarks" / "wnba_kalman_replay_summary.md"
 Z90 = 1.6448536269514722
-RAW_CHIMERA_MODEL = "chimera_variance"
-SCALED_CHIMERA_MODEL = "chimera_replay_scaled"
-BLEND_MODEL = "chimera_incumbent_blend"
+RAW_DARKOFIT_MODEL = "darkofit_variance"
+SCALED_DARKOFIT_MODEL = "darkofit_replay_scaled"
+BLEND_MODEL = "darkofit_incumbent_blend"
 INCUMBENT_MODEL = "incumbent_weight_heuristic"
 
 
@@ -87,15 +87,15 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=None,
         help=(
-            "absolute floor for Chimera row-level R_t; by default the floor is "
+            "absolute floor for DarkoFit row-level R_t; by default the floor is "
             "--r-floor-fraction times each metric's incumbent tuned mean R"
         ),
     )
     parser.add_argument("--r-floor-fraction", type=float, default=0.25)
     parser.add_argument("--r-ceil", type=float, default=9.0)
-    parser.add_argument("--chimera-scale-min", type=float, default=0.25)
-    parser.add_argument("--chimera-scale-max", type=float, default=4.0)
-    parser.add_argument("--chimera-scale-steps", type=int, default=25)
+    parser.add_argument("--darkofit-scale-min", type=float, default=0.25)
+    parser.add_argument("--darkofit-scale-max", type=float, default=4.0)
+    parser.add_argument("--darkofit-scale-steps", type=int, default=25)
     parser.add_argument("--hybrid-mix-steps", type=int, default=21)
     return parser.parse_args()
 
@@ -115,7 +115,7 @@ def main() -> None:
 
     loss_name, dist_params = resolve_loss_args(args)
     raw_model, scaled_model, blend_model = distribution_model_names(args)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         loss=loss_name,
         dist_params=dist_params,
         tree_mode="lightgbm",
@@ -143,7 +143,7 @@ def main() -> None:
         sample_weight=w[train_mask],
         eval_sample_weight=w[val_mask],
     )
-    chimera_R_raw = model.predict_variance(X)
+    darkofit_R_raw = model.predict_variance(X)
 
     rows: list[ReplayResult] = []
     pairwise_inputs = {}
@@ -176,18 +176,18 @@ def main() -> None:
         )
         r_floor = resolve_metric_r_floor(args, heuristic_R, w_m, train_m)
         details["r_floor_by_metric"][str(metric)] = float(r_floor)
-        chimera_R_m = np.clip(
-            chimera_R_raw[idx],
+        darkofit_R_m = np.clip(
+            darkofit_R_raw[idx],
             float(r_floor),
             float(args.r_ceil),
         )
-        q_chimera = tune_q(y_m, w_m, dates_m, game_m, chimera_R_m, train_m, val_m)
+        q_darkofit = tune_q(y_m, w_m, dates_m, game_m, darkofit_R_m, train_m, val_m)
         scaled_R, q_scaled, scaled_scale = tune_scaled_r(
             y_m,
             w_m,
             dates_m,
             game_m,
-            chimera_R_raw[idx],
+            darkofit_R_raw[idx],
             train_m,
             val_m,
             r_floor,
@@ -205,19 +205,19 @@ def main() -> None:
             args,
         )
         details["r_tuning_by_metric"][str(metric)] = {
-            "raw_q": float(q_chimera),
+            "raw_q": float(q_darkofit),
             "scaled_q": float(q_scaled),
             "scaled_scale": float(scaled_scale),
             "blend_q": float(q_blend),
-            "blend_chimera_mix": float(blend_mix),
+            "blend_darkofit_mix": float(blend_mix),
             "incumbent_q": float(q_heuristic),
             "incumbent_scale": float(r_scale),
         }
         metric_results = [
             (
                 raw_model,
-                chimera_R_m,
-                q_chimera,
+                darkofit_R_m,
+                q_darkofit,
                 None,
                 None,
             ),
@@ -330,7 +330,7 @@ def distribution_model_names(args):
             f"{prefix}_replay_scaled",
             f"{prefix}_incumbent_blend",
         )
-    return RAW_CHIMERA_MODEL, SCALED_CHIMERA_MODEL, BLEND_MODEL
+    return RAW_DARKOFIT_MODEL, SCALED_DARKOFIT_MODEL, BLEND_MODEL
 
 
 def tune_heuristic_r(y, w, dates, game_id, train_mask, val_mask):
@@ -367,9 +367,9 @@ def positive_log_grid(low, high, steps):
 def tune_scaled_r(y, w, dates, game_id, base_R, train_mask, val_mask, r_floor, args):
     best = None
     for scale in positive_log_grid(
-        args.chimera_scale_min,
-        args.chimera_scale_max,
-        args.chimera_scale_steps,
+        args.darkofit_scale_min,
+        args.darkofit_scale_max,
+        args.darkofit_scale_steps,
     ):
         R = np.clip(base_R * float(scale), float(r_floor), float(args.r_ceil))
         q = tune_q(y, w, dates, game_id, R, train_mask, val_mask)
@@ -386,7 +386,7 @@ def tune_scaled_r(y, w, dates, game_id, base_R, train_mask, val_mask, r_floor, a
     return best["R"], float(best["q"]), float(best["scale"])
 
 
-def tune_blend_r(y, w, dates, game_id, chimera_R, incumbent_R,
+def tune_blend_r(y, w, dates, game_id, darkofit_R, incumbent_R,
                  train_mask, val_mask, args):
     steps = int(args.hybrid_mix_steps)
     if steps <= 1:
@@ -396,7 +396,7 @@ def tune_blend_r(y, w, dates, game_id, chimera_R, incumbent_R,
     best = None
     for mix in mix_grid:
         R = np.clip(
-            float(mix) * chimera_R + (1.0 - float(mix)) * incumbent_R,
+            float(mix) * darkofit_R + (1.0 - float(mix)) * incumbent_R,
             1.0e-12,
             float(args.r_ceil),
         )
@@ -875,7 +875,7 @@ def write_summary(rows, path, args, details, pairwise_inputs, elapsed):
         "# WNBA Kalman Replay",
         "",
         "Scalar per-metric random-walk Kalman replay on the WNBA DARKO "
-        "game-level metric observation artifact. The Chimera lane injects "
+        "game-level metric observation artifact. The DarkoFit lane injects "
         "`predict_variance()` as row-level `R_t`; the incumbent lane uses "
         "`sigma2 / sample_weight` with validation-tuned `sigma2` scale.",
         "",

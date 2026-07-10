@@ -1,13 +1,13 @@
-"""Profile ChimeraBoost fit phases across dataset size and thread count.
+"""Profile DarkoFit fit phases across dataset size and thread count.
 
 This is a diagnostic companion to ``bench_vs_lightgbm.py``. It does not compare
-against LightGBM; it runs short fixed-iteration ChimeraBoost fits with
+against LightGBM; it runs short fixed-iteration DarkoFit fits with
 ``verbose_timing=True`` and writes per-phase timings so we can tell whether
 large-data slowdowns come from tree building, loss/gradient work, ordered
 updates, validation prediction, or preprocessing.
 
 Example:
-    python benchmarks/profile_chimera_phases.py \
+    python benchmarks/profile_darkofit_phases.py \
         --size xlarge \
         --datasets numeric_binary numeric_multiclass categorical_binary wide_numeric_reg \
         --threads 1 2 4 8 \
@@ -30,7 +30,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from chimeraboost import ChimeraBoostClassifier, ChimeraBoostRegressor
+from darkofit import DarkoClassifier, DarkoRegressor
 
 import bench_vs_lightgbm as bench
 
@@ -54,7 +54,7 @@ def _run_fit(spec, size_name, thread_count, args, seed):
         X_train, y_train, spec.task, seed
     )
     estimator_cls = (
-        ChimeraBoostRegressor if spec.task == "regression" else ChimeraBoostClassifier
+        DarkoRegressor if spec.task == "regression" else DarkoClassifier
     )
 
     def fit_once():
@@ -172,7 +172,7 @@ def parse_args(argv):
     parser.add_argument(
         "--csv",
         type=Path,
-        default=Path("benchmarks/chimera_phase_profile.csv"),
+        default=Path("benchmarks/darkofit_phase_profile.csv"),
     )
     return parser.parse_args(argv)
 
@@ -186,16 +186,16 @@ def main(argv=None):
     selected = [known[name] for name in args.datasets]
 
     if not args.no_warmup:
-        print("warming up ChimeraBoost numba kernels...")
+        print("warming up DarkoFit numba kernels...")
         bench._warm_up(
             SimpleNamespace(
                 depth=args.depth,
                 threads=max(args.threads),
                 tree_mode=args.tree_mode,
-                chimera_num_leaves=args.num_leaves,
-                chimera_min_child_samples=args.min_child_samples,
-                chimera_min_gain_to_split=args.min_gain_to_split,
-                chimera_min_child_weight=1.0,
+                darkofit_num_leaves=args.num_leaves,
+                darkofit_min_child_samples=args.min_child_samples,
+                darkofit_min_gain_to_split=args.min_gain_to_split,
+                darkofit_min_child_weight=1.0,
             )
         )
 

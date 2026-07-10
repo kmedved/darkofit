@@ -1,6 +1,6 @@
 """Small Optuna integration layer.
 
-The rest of ChimeraBoost should stay importable without Optuna installed.
+The rest of DarkoFit should stay importable without Optuna installed.
 """
 
 from __future__ import annotations
@@ -17,8 +17,8 @@ def import_optuna():
         import optuna
     except ImportError as exc:  # pragma: no cover - exercised without extra
         raise ImportError(
-            "ChimeraBoost tuning requires Optuna. Install it with "
-            "`pip install chimeraboost[tuning]`."
+            "DarkoFit tuning requires Optuna. Install it with "
+            "`pip install darkofit[tuning]`."
         ) from exc
     return optuna
 
@@ -31,14 +31,14 @@ class StorageConfig:
 
 
 def default_journal_path(study_name):
-    name = study_name or f"chimeraboost-study-{os.getpid()}"
+    name = study_name or f"darkofit-study-{os.getpid()}"
     stem = Path(str(name)).name
     if stem in {"", ".", ".."}:
-        stem = f"chimeraboost-study-{os.getpid()}"
+        stem = f"darkofit-study-{os.getpid()}"
     tempdir = Path(tempfile.gettempdir()).resolve()
     path = (tempdir / f"{stem}.optuna-journal.log").resolve()
     if path.parent != tempdir:
-        path = tempdir / f"chimeraboost-study-{os.getpid()}.optuna-journal.log"
+        path = tempdir / f"darkofit-study-{os.getpid()}.optuna-journal.log"
     return str(path)
 
 

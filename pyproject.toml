@@ -3,16 +3,15 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "chimeraboost"
+name = "darkofit"
 dynamic = ["version"]
-description = "CatBoost-inspired gradient boosting in pure Python with a numba backend"
+description = "Fast, flexible machine learning for tabular data with a Numba backend"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.9",
@@ -28,16 +27,16 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/kmedved/chimeraboost"
-Repository = "https://github.com/kmedved/chimeraboost"
-Issues = "https://github.com/kmedved/chimeraboost/issues"
+Homepage = "https://github.com/kmedved/darkofit"
+Repository = "https://github.com/kmedved/darkofit"
+Issues = "https://github.com/kmedved/darkofit/issues"
 
 [project.optional-dependencies]
 dev = ["pytest", "optuna>=4", "pandas"]
 tuning = ["optuna>=4"]
 
 [tool.setuptools.packages.find]
-include = ["chimeraboost*"]
+include = ["darkofit*"]
 
 [tool.setuptools.dynamic]
-version = {attr = "chimeraboost.__version__"}
+version = {attr = "darkofit.__version__"}

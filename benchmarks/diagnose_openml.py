@@ -1,6 +1,6 @@
 """Is the CatBoost gap a tuning artifact or a capability gap?
 
-For each dataset, run ChimeraBoost at its default config and at a few cheap
+For each dataset, run DarkoFit at its default config and at a few cheap
 tuning variants (lower learning rate -> more trees; finer bins), using the EXACT
 protocol from run_benchmarks.py so the numbers are comparable. Variants are
 compared to the baseline with PAIRED per-seed deltas (same train/test split per
@@ -31,8 +31,8 @@ import time
 
 import numpy as np
 
-# Import the harness and the chimeraboost package regardless of CWD: put both
-# the benchmarks dir (for run_benchmarks) and the repo root (for chimeraboost)
+# Import the harness and the darkofit package regardless of CWD: put both
+# the benchmarks dir (for run_benchmarks) and the repo root (for darkofit)
 # on the path.
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _HERE)
@@ -40,16 +40,16 @@ sys.path.insert(0, os.path.dirname(_HERE))
 import run_benchmarks as B  # noqa: E402
 
 from sklearn.model_selection import train_test_split  # noqa: E402
-from chimeraboost import ChimeraBoostRegressor, ChimeraBoostClassifier  # noqa: E402
+from darkofit import DarkoRegressor, DarkoClassifier  # noqa: E402
 
 
 # --------------------------------------------------------------------------
-# A ChimeraBoost runner that mirrors B._run_chimera but also controls max_bins.
+# A DarkoFit runner that mirrors B._run_darkofit but also controls max_bins.
 # Same internal val split (seed 0), same iterations/patience, same model seed.
 # --------------------------------------------------------------------------
-def _run_chimera_cfg(task, Xtr, ytr, Xte, yte, cat, threads, lr, max_bins):
+def _run_darkofit_cfg(task, Xtr, ytr, Xte, yte, cat, threads, lr, max_bins):
     Xf, Xv, yf, yv = B._val_split(Xtr, ytr, task, 0)
-    Est = ChimeraBoostRegressor if task == "regression" else ChimeraBoostClassifier
+    Est = DarkoRegressor if task == "regression" else DarkoClassifier
     t = time.time()
     m = Est(iterations=B.MAX_ITERS, early_stopping_rounds=B.PATIENCE,
             learning_rate=lr, max_bins=max_bins, ordered_boosting=True,
@@ -99,7 +99,7 @@ def main():
     ap.add_argument("--no-catboost", dest="catboost", action="store_false",
                     default=True, help="skip the CatBoost gap column")
     ap.add_argument("--no-warmup", action="store_true",
-                    help="include first-call ChimeraBoost Numba compile time")
+                    help="include first-call DarkoFit Numba compile time")
     args = ap.parse_args()
 
     # Register oml:* datasets if needed.
@@ -115,8 +115,8 @@ def main():
         ap.error(f"unknown datasets: {unknown}\navailable: {list(B.DATASETS)}")
 
     if not args.no_warmup:
-        print("Warming up ChimeraBoost Numba kernels...")
-        B._warmup_chimera(args.threads)
+        print("Warming up DarkoFit Numba kernels...")
+        B._warmup_darkofit(args.threads)
 
     have_cb = args.catboost and (
         args.no_warmup or B._has_competitor("catboost")
@@ -153,7 +153,7 @@ def main():
             Xtr, Xte, ytr, yte = train_test_split(
                 X, y, test_size=0.25, random_state=s, stratify=strat)
             for label, lr, mb, _lever in configs:
-                sc, _secs, it = _run_chimera_cfg(
+                sc, _secs, it = _run_darkofit_cfg(
                     task, Xtr, ytr, Xte, yte, cat, args.threads, lr, mb)
                 scores[label].append(sc)
                 iters[label].append(it)
@@ -200,13 +200,13 @@ def main():
                 d, se = lever_best[lever]
                 lever_strs.append(f"{lever}={_lever_verdict(d, se)}")
 
-        # CatBoost gap (paired against best ChimeraBoost variant)
+        # CatBoost gap (paired against best DarkoFit variant)
         gap_str = ""
         if have_cb and cb_scores:
             cb_mu = disp(cb_scores)
             print(f"  {'CatBoost':24s} {cb_mu:9.4f} +/- {np.std(cb_scores):.4f}"
                   f"  trees~{int(np.mean(cb_iters))}")
-            # best chimera config by mean score (higher-is-better space)
+            # best darkofit config by mean score (higher-is-better space)
             best_label = max(scores, key=lambda L: np.mean(scores[L]))
             d_cb, se_cb = _paired_stats(scores[best_label], cb_scores)
             # d_cb > 0 means our best beats CatBoost

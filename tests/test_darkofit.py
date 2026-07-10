@@ -1,4 +1,4 @@
-"""Test suite for ChimeraBoost. Run with: pytest -q"""
+"""Test suite for DarkoFit. Run with: pytest -q"""
 
 import inspect
 import warnings
@@ -10,11 +10,11 @@ from sklearn.exceptions import DataConversionWarning
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score, mean_squared_error
 
-from chimeraboost import ChimeraBoostRegressor, ChimeraBoostClassifier
+from darkofit import DarkoRegressor, DarkoClassifier
 
 
 def test_descend_leaves_matches_numpy_reference():
-    from chimeraboost.tree import _descend_leaves
+    from darkofit.tree import _descend_leaves
 
     rng = np.random.default_rng(0)
     for _ in range(300):
@@ -32,7 +32,7 @@ def test_descend_leaves_matches_numpy_reference():
 
 
 def test_binning_transform_matches_searchsorted_reference():
-    from chimeraboost.binning import Binner, _bin_dtype_for_n_bins
+    from darkofit.binning import Binner, _bin_dtype_for_n_bins
 
     def reference(binner, X):
         X = np.asarray(X, dtype=np.float64)
@@ -64,7 +64,7 @@ def test_binning_transform_matches_searchsorted_reference():
 
 
 def test_feature_borders_match_full_unique_reference():
-    from chimeraboost.binning import _feature_borders, _unique_if_at_most
+    from darkofit.binning import _feature_borders, _unique_if_at_most
 
     def reference(col, max_bins):
         finite = col[np.isfinite(col)]
@@ -117,7 +117,7 @@ def test_feature_borders_match_full_unique_reference():
 
 
 def test_loss_grad_hess_into_matches_allocating_paths():
-    from chimeraboost.losses import Logloss, MAE, MultiSoftmax, Quantile, RMSE
+    from darkofit.losses import Logloss, MAE, MultiSoftmax, Quantile, RMSE
 
     rng = np.random.default_rng(30)
     y_reg = rng.normal(size=40)
@@ -162,12 +162,12 @@ def test_loss_grad_hess_into_matches_allocating_paths():
 
 @pytest.mark.parametrize("alpha", [-0.1, 0.0, 1.0, 1.5, np.nan, np.inf])
 def test_quantile_alpha_must_be_finite_probability(alpha):
-    from chimeraboost.losses import Quantile
+    from darkofit.losses import Quantile
 
     with pytest.raises(ValueError, match="alpha"):
         Quantile(alpha=alpha)
     with pytest.raises(ValueError, match="alpha"):
-        ChimeraBoostRegressor(
+        DarkoRegressor(
             iterations=1, loss="Quantile", alpha=alpha
         ).fit(
             np.arange(12, dtype=float).reshape(6, 2),
@@ -177,7 +177,7 @@ def test_quantile_alpha_must_be_finite_probability(alpha):
 
 
 def test_classification_grad_hess_into_extreme_values_match_allocating_paths():
-    from chimeraboost.losses import Logloss, MultiSoftmax
+    from darkofit.losses import Logloss, MultiSoftmax
 
     y = np.array([0.0, 1.0, 0.0, 1.0])
     raw = np.array([-1000.0, -60.0, 60.0, 1000.0])
@@ -218,7 +218,7 @@ def test_classification_grad_hess_into_extreme_values_match_allocating_paths():
 
 
 def test_logloss_eval_matches_clipped_probability_formula():
-    from chimeraboost.losses import Logloss
+    from darkofit.losses import Logloss
 
     y = np.array([0.0, 1.0, 0.0, 1.0, 1.0])
     raw = np.array([-1000.0, -60.0, -1.5, 4.0, 1000.0])
@@ -234,7 +234,7 @@ def test_logloss_eval_matches_clipped_probability_formula():
 
 
 def test_multisoftmax_eval_class_major_matches_clipped_probability_formula():
-    from chimeraboost.losses import MultiSoftmax
+    from darkofit.losses import MultiSoftmax
 
     rng = np.random.default_rng(79)
     K = 4
@@ -264,7 +264,7 @@ def test_multisoftmax_eval_class_major_matches_clipped_probability_formula():
 
 
 def test_binner_uses_smallest_safe_unsigned_dtype():
-    from chimeraboost.binning import Binner
+    from darkofit.binning import Binner
 
     X = np.arange(300.0)[:, None]
     X[::17, 0] = np.nan
@@ -290,7 +290,7 @@ def test_binner_uses_smallest_safe_unsigned_dtype():
 def test_regressor_beats_mean_baseline():
     X, y = load_diabetes(return_X_y=True)
     Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.2, random_state=0)
-    m = ChimeraBoostRegressor(iterations=300, random_state=0).fit(Xtr, ytr)
+    m = DarkoRegressor(iterations=300, random_state=0).fit(Xtr, ytr)
     rmse = np.sqrt(mean_squared_error(yte, m.predict(Xte)))
     baseline = np.sqrt(mean_squared_error(yte, np.full_like(yte, ytr.mean())))
     # diabetes is tiny and noisy; this is a single split, so the bound is loose
@@ -305,7 +305,7 @@ def test_classifier_high_auc():
     Xtr, Xte, ytr, yte = train_test_split(
         X, y, test_size=0.2, random_state=0, stratify=y
     )
-    m = ChimeraBoostClassifier(iterations=300, random_state=0).fit(Xtr, ytr)
+    m = DarkoClassifier(iterations=300, random_state=0).fit(Xtr, ytr)
     auc = roc_auc_score(yte, m.predict_proba(Xte)[:, 1])
     assert auc > 0.97
     proba = m.predict_proba(Xte)
@@ -327,7 +327,7 @@ def test_ordered_ts_resists_leakage():
     Xtr, Xte, ytr, yte = train_test_split(
         X, y, test_size=0.3, random_state=1, stratify=y
     )
-    m = ChimeraBoostClassifier(iterations=200, random_state=1)
+    m = DarkoClassifier(iterations=200, random_state=1)
     m.fit(Xtr, ytr, cat_features=[0])
     tr = roc_auc_score(ytr, m.predict_proba(Xtr)[:, 1])
     te = roc_auc_score(yte, m.predict_proba(Xte)[:, 1])
@@ -340,7 +340,7 @@ def test_early_stopping_trims_trees():
     Xtr, Xte, ytr, yte = train_test_split(
         X, y, test_size=0.3, random_state=0, stratify=y
     )
-    m = ChimeraBoostClassifier(
+    m = DarkoClassifier(
         iterations=1000, early_stopping_rounds=20, random_state=0
     )
     m.fit(Xtr, ytr, eval_set=(Xte, yte))
@@ -356,7 +356,7 @@ def test_handles_nan_and_unseen_categories():
     num[rng.random(n) < 0.1, 0] = np.nan
     X[:, 1:] = num
     y = ((num[:, 1] > 0) | (rng.random(n) < 0.3)).astype(int)
-    m = ChimeraBoostClassifier(iterations=80, random_state=0)
+    m = DarkoClassifier(iterations=80, random_state=0)
     m.fit(X, y, cat_features=[0])
     Xnew = np.array([["c_UNSEEN", np.nan, 0.5], ["c3", 1.0, -0.5]], dtype=object)
     p = m.predict_proba(Xnew)
@@ -365,8 +365,8 @@ def test_handles_nan_and_unseen_categories():
 
 
 def test_categorical_transform_preserves_missing_and_unseen_codes():
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.target_encoding import _MISSING_CATEGORY, factorize
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.target_encoding import _MISSING_CATEGORY, factorize
 
     raw = np.array(["b", "a", "b", None, np.nan, "__nan__"], dtype=object)
     codes, categories = factorize(raw)
@@ -414,7 +414,7 @@ def test_categorical_transform_preserves_missing_and_unseen_codes():
 
 
 def test_factorize_treats_numpy_float_nan_as_missing_without_pandas_fast_path(monkeypatch):
-    import chimeraboost.target_encoding as target_encoding
+    import darkofit.target_encoding as target_encoding
 
     monkeypatch.setitem(target_encoding.sys.modules, "pandas", None)
     raw = np.array([np.float32("nan"), np.float64("nan"), 1.0], dtype=object)
@@ -428,7 +428,7 @@ def test_factorize_treats_numpy_float_nan_as_missing_without_pandas_fast_path(mo
 
 
 def test_preprocessor_can_include_raw_category_code_features():
-    from chimeraboost.preprocessing import FeaturePreprocessor
+    from darkofit.preprocessing import FeaturePreprocessor
 
     X = np.array([
         ["red", "north", 1.0],
@@ -458,7 +458,7 @@ def test_preprocessor_can_include_raw_category_code_features():
 
 
 def test_preprocessor_transform_rejects_truncated_categorical_input():
-    from chimeraboost.preprocessing import FeaturePreprocessor
+    from darkofit.preprocessing import FeaturePreprocessor
 
     X = np.array([
         ["red", 1.0, 2.0, 3.0],
@@ -475,7 +475,7 @@ def test_preprocessor_transform_rejects_truncated_categorical_input():
 
 
 def test_kfold_target_encoding_uses_out_of_fold_totals():
-    from chimeraboost.target_encoding import OrderedTargetEncoder
+    from darkofit.target_encoding import OrderedTargetEncoder
 
     codes = np.array([[0], [1], [2], [2]], dtype=np.int64)
     y = np.array([10.0, -10.0, 1.0, 3.0])
@@ -491,7 +491,7 @@ def test_kfold_target_encoding_uses_out_of_fold_totals():
 
 def test_loaded_pandas_factorize_fast_path_preserves_missing_codes():
     pytest.importorskip("pandas")
-    from chimeraboost.target_encoding import _MISSING_CATEGORY, factorize
+    from darkofit.target_encoding import _MISSING_CATEGORY, factorize
 
     raw = np.array(["b", "a", "b", None, np.nan, "__nan__"], dtype=object)
     codes, categories = factorize(raw)
@@ -507,14 +507,14 @@ def test_loaded_pandas_factorize_fast_path_preserves_missing_codes():
 
 def test_explicit_lr_overrides_auto():
     X, y = load_diabetes(return_X_y=True)
-    m = ChimeraBoostRegressor(iterations=50, learning_rate=0.123).fit(X, y)
+    m = DarkoRegressor(iterations=50, learning_rate=0.123).fit(X, y)
     assert m.model_.lr_ == 0.123
 
 
 def test_verbose_timing_records_regression_fit_phases():
     X, y = load_diabetes(return_X_y=True)
     Xtr, Xv, ytr, yv = train_test_split(X, y, test_size=0.2, random_state=0)
-    m = ChimeraBoostRegressor(
+    m = DarkoRegressor(
         iterations=5, depth=2, early_stopping_rounds=3,
         verbose_timing=True, random_state=0
     ).fit(Xtr, ytr, eval_set=(Xv, yv))
@@ -534,7 +534,7 @@ def test_verbose_timing_records_multiclass_fit_phases():
     from sklearn.datasets import load_wine
 
     X, y = load_wine(return_X_y=True)
-    m = ChimeraBoostClassifier(
+    m = DarkoClassifier(
         iterations=3, depth=2, verbose_timing=True, random_state=0
     ).fit(X, y)
 
@@ -551,7 +551,7 @@ def test_multiclass_accuracy():
         Xtr, Xte, ytr, yte = train_test_split(
             X, y, test_size=0.25, random_state=0, stratify=y
         )
-        m = ChimeraBoostClassifier(iterations=200, random_state=0).fit(Xtr, ytr)
+        m = DarkoClassifier(iterations=200, random_state=0).fit(Xtr, ytr)
         assert m.n_classes_ == 3
         proba = m.predict_proba(Xte)
         assert proba.shape == (len(yte), 3)
@@ -570,7 +570,7 @@ def test_multiclass_preserves_string_labels_and_categoricals():
     X[:, 0] = region
     X[:, 1:] = x
     Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.25, random_state=1)
-    m = ChimeraBoostClassifier(iterations=150, random_state=1)
+    m = DarkoClassifier(iterations=150, random_state=1)
     m.fit(Xtr, ytr, cat_features=[0])
     assert set(m.classes_) == {"low", "mid", "high"}
     assert set(np.unique(m.predict(Xte))).issubset({"low", "mid", "high"})
@@ -578,7 +578,7 @@ def test_multiclass_preserves_string_labels_and_categoricals():
 
 def test_multiclass_tree_builder_receives_class_column_views(monkeypatch):
     """Multiclass gradients should be laid out so per-class slices avoid copies."""
-    import chimeraboost.booster as booster
+    import darkofit.booster as booster
     from sklearn.datasets import load_wine
 
     seen = []
@@ -591,7 +591,7 @@ def test_multiclass_tree_builder_receives_class_column_views(monkeypatch):
 
     monkeypatch.setattr(booster, "build_oblivious_tree", wrapped_build_tree)
     X, y = load_wine(return_X_y=True)
-    ChimeraBoostClassifier(iterations=2, random_state=0).fit(X, y)
+    DarkoClassifier(iterations=2, random_state=0).fit(X, y)
 
     assert seen
     assert all(g_contig and h_contig for g_contig, h_contig, _, _ in seen)
@@ -600,7 +600,7 @@ def test_multiclass_tree_builder_receives_class_column_views(monkeypatch):
 
 def test_multiclass_preprocessor_receives_class_major_target_views(monkeypatch):
     """Per-class target-stat targets should be row views of one class-major Y."""
-    import chimeraboost.booster as booster
+    import darkofit.booster as booster
     from sklearn.datasets import load_wine
 
     seen = []
@@ -621,14 +621,14 @@ def test_multiclass_preprocessor_receives_class_major_target_views(monkeypatch):
         booster.FeaturePreprocessor, "fit_transform", wrapped_fit_transform
     )
     X, y = load_wine(return_X_y=True)
-    ChimeraBoostClassifier(iterations=1, random_state=0).fit(X, y)
+    DarkoClassifier(iterations=1, random_state=0).fit(X, y)
 
     assert seen
     assert all(contiguous and not owns_data for contiguous, owns_data in seen[0])
 
 
 def test_preprocessing_cache_reduces_auto_probe_fit_transform_count(monkeypatch):
-    import chimeraboost.booster as booster_mod
+    import darkofit.booster as booster_mod
 
     calls = []
     original = booster_mod.FeaturePreprocessor.fit_transform
@@ -655,7 +655,7 @@ def test_preprocessing_cache_reduces_auto_probe_fit_transform_count(monkeypatch)
     ]).astype(object)
     y = np.asarray(X[:, 1], dtype=np.float64) + rng.normal(0.0, 0.1, size=90)
 
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=6,
         tree_mode="auto",
         early_stopping=True,
@@ -673,7 +673,7 @@ def test_preprocessing_cache_reduces_auto_probe_fit_transform_count(monkeypatch)
 
 
 def test_preprocessing_cache_key_separates_data_targets_weights_and_eval(monkeypatch):
-    import chimeraboost.booster as booster_mod
+    import darkofit.booster as booster_mod
 
     calls = 0
     original = booster_mod.FeaturePreprocessor.fit_transform
@@ -736,7 +736,7 @@ def test_preprocessing_cache_key_separates_data_targets_weights_and_eval(monkeyp
 
 
 def test_preprocessing_cache_does_not_share_scalar_and_multiclass(monkeypatch):
-    import chimeraboost.booster as booster_mod
+    import darkofit.booster as booster_mod
 
     calls = 0
     original = booster_mod.FeaturePreprocessor.fit_transform
@@ -780,7 +780,7 @@ def test_preprocessing_cache_does_not_share_scalar_and_multiclass(monkeypatch):
 
 
 def test_wrapper_new_options_preserve_existing_positional_tail():
-    for estimator in (ChimeraBoostRegressor, ChimeraBoostClassifier):
+    for estimator in (DarkoRegressor, DarkoClassifier):
         params = list(inspect.signature(estimator.__init__).parameters)
         auto_idx = params.index("auto_learning_rate_probe")
         assert auto_idx < params.index("histogram_dtype")
@@ -790,7 +790,7 @@ def test_wrapper_new_options_preserve_existing_positional_tail():
 
 
 def test_histogram_dtype_validation_and_multiclass_scope():
-    import chimeraboost.booster as booster_mod
+    import darkofit.booster as booster_mod
 
     assert booster_mod.GradientBoosting(
         histogram_dtype=np.float32
@@ -807,7 +807,7 @@ def test_histogram_dtype_validation_and_multiclass_scope():
 
 
 def test_float32_histogram_streams_preserve_sampler_inputs(monkeypatch):
-    import chimeraboost.booster as booster_mod
+    import darkofit.booster as booster_mod
 
     rng = np.random.default_rng(20260710)
     X = rng.normal(size=(220, 4))
@@ -844,7 +844,7 @@ def test_float32_histogram_streams_preserve_sampler_inputs(monkeypatch):
 
 
 def test_float32_histogram_streams_keep_well_separated_splits_structural():
-    import chimeraboost.booster as booster_mod
+    import darkofit.booster as booster_mod
 
     rng = np.random.default_rng(20260711)
     X = rng.normal(size=(260, 5))
@@ -883,7 +883,7 @@ def test_float32_histogram_streams_are_deterministic_for_same_seed():
     y = X[:, 0] * 2.0 - X[:, 2] + rng.normal(0.0, 0.15, size=180)
 
     def fit_once():
-        model = ChimeraBoostRegressor(
+        model = DarkoRegressor(
             iterations=12,
             learning_rate=0.08,
             depth=3,
@@ -908,7 +908,7 @@ def test_float32_histogram_streams_real_data_metric_parity():
     )
 
     def fit(dtype):
-        model = ChimeraBoostRegressor(
+        model = DarkoRegressor(
             iterations=35,
             learning_rate=0.07,
             depth=3,
@@ -930,7 +930,7 @@ def test_float32_histogram_streams_real_data_metric_parity():
 
 def test_float32_histogram_dtype_persists_through_save_load(tmp_path):
     X, y = load_diabetes(return_X_y=True)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=5,
         tree_mode="lightgbm",
         histogram_dtype="float32",
@@ -939,7 +939,7 @@ def test_float32_histogram_dtype_persists_through_save_load(tmp_path):
 
     path = tmp_path / "float32_histogram_streams.npz"
     model.save_model(path)
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
 
     assert loaded.model_.histogram_dtype == "float32"
     assert loaded.model_.histogram_dtype_ == "float32"
@@ -967,7 +967,7 @@ def _assert_tree_structure_equal(a, b):
     ],
 )
 def test_uint32_leaf_dtype_matches_int64_scalar_builders(builder_name, kwargs):
-    import chimeraboost.tree as tree_mod
+    import darkofit.tree as tree_mod
 
     rng = np.random.default_rng(20260717)
     X_binned = rng.integers(0, 31, size=(360, 6), dtype=np.uint8)
@@ -1006,7 +1006,7 @@ def test_uint32_leaf_dtype_matches_int64_scalar_builders(builder_name, kwargs):
 
 
 def test_uint32_leaf_dtype_matches_int64_multiclass_builder():
-    from chimeraboost.tree import build_leafwise_multiclass_tree
+    from darkofit.tree import build_leafwise_multiclass_tree
 
     rng = np.random.default_rng(20260718)
     X_binned = rng.integers(0, 23, size=(280, 5), dtype=np.uint8)
@@ -1038,13 +1038,13 @@ def test_uint32_leaf_dtype_matches_int64_multiclass_builder():
 
 
 def test_uint32_leaf_dtype_public_fit_and_save_load(tmp_path):
-    import chimeraboost.booster as booster_mod
+    import darkofit.booster as booster_mod
 
     with pytest.raises(ValueError, match="leaf_dtype"):
         booster_mod.GradientBoosting(leaf_dtype="uint16")
 
     X, y = load_diabetes(return_X_y=True)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=8,
         tree_mode="lightgbm",
         histogram_dtype="float32",
@@ -1054,13 +1054,13 @@ def test_uint32_leaf_dtype_public_fit_and_save_load(tmp_path):
 
     path = tmp_path / "uint32_leaf_dtype.npz"
     model.save_model(path)
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
     assert loaded.model_.leaf_dtype == "uint32"
     assert loaded.model_.leaf_dtype_ == "uint32"
     assert np.array_equal(model.predict(X[:12]), loaded.predict(X[:12]))
 
     Xc, yc = load_breast_cancer(return_X_y=True)
-    ordered = ChimeraBoostClassifier(
+    ordered = DarkoClassifier(
         iterations=3,
         tree_mode="catboost",
         ordered_boosting=True,
@@ -1072,7 +1072,7 @@ def test_uint32_leaf_dtype_public_fit_and_save_load(tmp_path):
 
 def test_multiclass_eval_set_uses_label_indices_without_one_hot(monkeypatch):
     """Validation loss should not allocate a dense eval one-hot matrix."""
-    import chimeraboost.booster as booster
+    import darkofit.booster as booster
 
     calls = []
     original = booster._one_hot_class_major
@@ -1095,7 +1095,7 @@ def test_multiclass_eval_set_uses_label_indices_without_one_hot(monkeypatch):
     ])
     y = np.array([0, 1, 2, 0, 1, 2, 0, 1, 2])
 
-    ChimeraBoostClassifier(iterations=1, random_state=0).fit(
+    DarkoClassifier(iterations=1, random_state=0).fit(
         X[:6], y[:6], eval_set=(X[6:], y[6:])
     )
 
@@ -1103,7 +1103,7 @@ def test_multiclass_eval_set_uses_label_indices_without_one_hot(monkeypatch):
 
 
 def test_multiclass_class_major_loss_matches_row_major():
-    from chimeraboost.losses import MultiSoftmax
+    from darkofit.losses import MultiSoftmax
 
     rng = np.random.default_rng(11)
     Y = np.eye(4)[rng.integers(0, 4, size=200)]
@@ -1133,7 +1133,7 @@ def test_feature_importances():
     noise = rng.normal(size=(n, 4))
     y = (strong + 0.1 * rng.normal(size=n) > 0).astype(int)
     X = np.column_stack([strong, noise])
-    m = ChimeraBoostClassifier(iterations=100, random_state=0).fit(X, y)
+    m = DarkoClassifier(iterations=100, random_state=0).fit(X, y)
     imp = m.feature_importances_
     assert imp.shape == (5,)
     assert abs(imp.sum() - 1.0) < 1e-6
@@ -1143,7 +1143,7 @@ def test_feature_importances():
 def test_best_model_truncation_rebuilds_feature_importance():
     from types import SimpleNamespace
 
-    from chimeraboost.booster import GradientBoosting, MulticlassBoosting
+    from darkofit.booster import GradientBoosting, MulticlassBoosting
 
     prep = SimpleNamespace(
         feature_map_=np.array([0, 1, 0], dtype=np.int64),
@@ -1196,8 +1196,8 @@ def test_mae_loss_beats_rmse_on_mae_metric():
     from sklearn.metrics import mean_absolute_error
     X, y = load_diabetes(return_X_y=True)
     Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.2, random_state=42)
-    mae = ChimeraBoostRegressor(iterations=300, loss="MAE", random_state=0).fit(Xtr, ytr)
-    rmse = ChimeraBoostRegressor(iterations=300, loss="RMSE", random_state=0).fit(Xtr, ytr)
+    mae = DarkoRegressor(iterations=300, loss="MAE", random_state=0).fit(Xtr, ytr)
+    rmse = DarkoRegressor(iterations=300, loss="RMSE", random_state=0).fit(Xtr, ytr)
     assert (mean_absolute_error(yte, mae.predict(Xte))
             <= mean_absolute_error(yte, rmse.predict(Xte)) + 1.0)
 
@@ -1208,9 +1208,9 @@ def test_mae_loss_beats_rmse_on_mae_metric():
 ])])
 @pytest.mark.parametrize("n_leaves", [8, 32])
 def test_leaf_correction_matches_mask_semantics(loss_name, weights, n_leaves):
-    from chimeraboost.booster import GradientBoosting
-    from chimeraboost.losses import MAE, Quantile
-    from chimeraboost.tree import ObliviousTree
+    from darkofit.booster import GradientBoosting
+    from darkofit.losses import MAE, Quantile
+    from darkofit.tree import ObliviousTree
 
     residuals = np.array([1.2, -0.4, 2.5, 0.0, -1.5, 3.2,
                           -0.7, 1.1, 0.8, -2.0, 4.1, -3.3])
@@ -1247,9 +1247,9 @@ def test_quantile_calibration_on_large_data():
     X = rng.normal(size=(n, 5))
     y = 2 * X[:, 0] + rng.normal(0, 1, n)
     Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.3, random_state=0)
-    qlo = ChimeraBoostRegressor(iterations=300, depth=4, loss="Quantile",
+    qlo = DarkoRegressor(iterations=300, depth=4, loss="Quantile",
                                 alpha=0.1, random_state=0).fit(Xtr, ytr)
-    qhi = ChimeraBoostRegressor(iterations=300, depth=4, loss="Quantile",
+    qhi = DarkoRegressor(iterations=300, depth=4, loss="Quantile",
                                 alpha=0.9, random_state=0).fit(Xtr, ytr)
     cov = np.mean((yte >= qlo.predict(Xte)) & (yte <= qhi.predict(Xte)))
     assert 0.7 < cov < 0.88           # ~0.80 target band
@@ -1259,7 +1259,7 @@ def test_quantile_calibration_on_large_data():
 def test_staged_predict_matches_final():
     X, y = load_diabetes(return_X_y=True)
     Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.2, random_state=0)
-    r = ChimeraBoostRegressor(iterations=50, random_state=0).fit(Xtr, ytr)
+    r = DarkoRegressor(iterations=50, random_state=0).fit(Xtr, ytr)
     stages = list(r.staged_predict(Xte))
     assert len(stages) == r.best_iteration_
     assert np.allclose(stages[-1], r.predict(Xte))
@@ -1270,7 +1270,7 @@ def test_colsample_runs_and_keeps_accuracy():
     Xtr, Xte, ytr, yte = train_test_split(
         X, y, test_size=0.2, random_state=0, stratify=y
     )
-    m = ChimeraBoostClassifier(iterations=150, colsample=0.5,
+    m = DarkoClassifier(iterations=150, colsample=0.5,
                                random_state=0).fit(Xtr, ytr)
     assert roc_auc_score(yte, m.predict_proba(Xte)[:, 1]) > 0.97
 
@@ -1278,19 +1278,19 @@ def test_colsample_runs_and_keeps_accuracy():
 def test_thread_count_records_effective_threads():
     import numba
     X, y = load_breast_cancer(return_X_y=True)
-    m = ChimeraBoostClassifier(iterations=30, thread_count=1, random_state=0).fit(X, y)
+    m = DarkoClassifier(iterations=30, thread_count=1, random_state=0).fit(X, y)
     assert m.model_.n_threads_ == 1
     # None -> all detected cores
-    m2 = ChimeraBoostClassifier(iterations=30, thread_count=None, random_state=0).fit(X, y)
+    m2 = DarkoClassifier(iterations=30, thread_count=None, random_state=0).fit(X, y)
     assert m2.model_.n_threads_ == numba.config.NUMBA_NUM_THREADS
     # over-request is clamped, never exceeds detected cores
-    m3 = ChimeraBoostClassifier(iterations=30, thread_count=9999, random_state=0).fit(X, y)
+    m3 = DarkoClassifier(iterations=30, thread_count=9999, random_state=0).fit(X, y)
     assert m3.model_.n_threads_ <= numba.config.NUMBA_NUM_THREADS
 
 
 def test_lightgbm_small_fit_caps_thread_count_as_maximum():
     X, y = load_breast_cancer(return_X_y=True)
-    m = ChimeraBoostClassifier(
+    m = DarkoClassifier(
         iterations=3, tree_mode="lightgbm", num_leaves=7,
         thread_count=8, random_state=0
     ).fit(X, y)
@@ -1300,22 +1300,22 @@ def test_lightgbm_small_fit_caps_thread_count_as_maximum():
 def test_thread_count_does_not_change_predictions():
     X, y = load_diabetes(return_X_y=True)
     Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.2, random_state=0)
-    a = ChimeraBoostRegressor(iterations=80, thread_count=1, random_state=0).fit(Xtr, ytr)
-    b = ChimeraBoostRegressor(iterations=80, thread_count=None, random_state=0).fit(Xtr, ytr)
+    a = DarkoRegressor(iterations=80, thread_count=1, random_state=0).fit(Xtr, ytr)
+    b = DarkoRegressor(iterations=80, thread_count=None, random_state=0).fit(Xtr, ytr)
     # histogram sums are deterministic regardless of thread count
     assert np.allclose(a.predict(Xte), b.predict(Xte))
 
 
 def test_single_thread_fit_skips_threaded_split_buffers(monkeypatch):
     """Serial split search should not allocate threaded scratch buffers."""
-    import chimeraboost.booster as booster
+    import darkofit.booster as booster
 
     def fail_if_called(self, n_features):
         raise AssertionError("threaded split buffers should not be allocated")
 
     monkeypatch.setattr(booster._BaseBooster, "_alloc_split_buffers", fail_if_called)
     X, y = load_diabetes(return_X_y=True)
-    ChimeraBoostRegressor(
+    DarkoRegressor(
         iterations=3, depth=2, thread_count=1, random_state=0
     ).fit(X[:120], y[:120])
 
@@ -1331,7 +1331,7 @@ def test_min_child_weight_controls_depth_overfitting():
     Xf, Xv, yf, yv = train_test_split(Xtr, ytr, test_size=0.2, random_state=0)
 
     def rmse_at(depth, mcw):
-        m = ChimeraBoostRegressor(iterations=1500, depth=depth,
+        m = DarkoRegressor(iterations=1500, depth=depth,
                                   min_child_weight=mcw, early_stopping_rounds=50,
                                   random_state=0).fit(Xf, yf, eval_set=(Xv, yv))
         return np.sqrt(np.mean((yte - m.predict(Xte)) ** 2))
@@ -1346,7 +1346,7 @@ def test_min_child_weight_controls_depth_overfitting():
 def test_min_child_weight_param_plumbing():
     from sklearn.datasets import load_breast_cancer
     X, y = load_breast_cancer(return_X_y=True)
-    m = ChimeraBoostClassifier(iterations=50, min_child_weight=30,
+    m = DarkoClassifier(iterations=50, min_child_weight=30,
                                random_state=0).fit(X, y)
     assert m.model_.min_child_weight == 30.0
 
@@ -1355,8 +1355,8 @@ def test_shared_histogram_buffers_match_standalone():
     """A tree built with pre-allocated shared buffers must be identical to one
     built with its own freshly-allocated buffers (same math, no realloc)."""
     import numpy as np
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.tree import build_oblivious_tree
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.tree import build_oblivious_tree
     rng = np.random.default_rng(0)
     X = rng.normal(size=(800, 12))
     y = (X[:, 0] + 0.5 * X[:, 1] + rng.normal(0, 0.5, 800)).astype(float)
@@ -1389,8 +1389,8 @@ def test_shared_histogram_buffers_match_standalone():
 def test_shared_split_buffers_match_standalone_threaded():
     """Threaded split-search scratch buffers must be reusable across trees."""
     import numba
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.tree import build_oblivious_tree
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.tree import build_oblivious_tree
 
     if numba.config.NUMBA_NUM_THREADS < 2:
         pytest.skip("requires at least two numba threads")
@@ -1444,8 +1444,8 @@ def test_shared_split_buffers_match_standalone_threaded():
 def test_returned_training_state_matches_tree_apply_and_bincount():
     """The optional training state returned by the tree builder must be exactly
     the same leaf routing and sums that callers would recompute externally."""
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.tree import build_oblivious_tree
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.tree import build_oblivious_tree
     rng = np.random.default_rng(1)
     X = rng.normal(size=(900, 10))
     y = (1.5 * X[:, 0] - 0.7 * X[:, 2] + rng.normal(0, 0.4, 900))
@@ -1469,8 +1469,8 @@ def test_returned_training_state_matches_tree_apply_and_bincount():
 
 def test_row_indices_training_state_uses_only_selected_rows():
     """Direct row-index tree builds should not include unselected row sums."""
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.tree import build_oblivious_tree
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.tree import build_oblivious_tree
 
     rng = np.random.default_rng(11)
     X = rng.normal(size=(700, 9))
@@ -1499,8 +1499,8 @@ def test_row_indices_training_state_uses_only_selected_rows():
 
 def test_add_predict_matches_predict():
     """In-place tree prediction is an allocation-saving equivalent of predict."""
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.tree import build_oblivious_tree
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.tree import build_oblivious_tree
     rng = np.random.default_rng(2)
     X = rng.normal(size=(700, 8))
     y = (X[:, 0] + X[:, 1] ** 2 + rng.normal(0, 0.3, 700))
@@ -1516,8 +1516,8 @@ def test_add_predict_matches_predict():
 
 
 def test_hybrid_tree_uses_shared_prefix_then_nonoblivious_representation():
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.tree import NonObliviousTree, build_hybrid_tree
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.tree import NonObliviousTree, build_hybrid_tree
 
     rng = np.random.default_rng(37)
     X = rng.normal(size=(700, 8))
@@ -1553,7 +1553,7 @@ def test_hybrid_tree_uses_shared_prefix_then_nonoblivious_representation():
 
 
 def test_hybrid_shared_prefix_uses_random_strength_picker(monkeypatch):
-    import chimeraboost.tree as tree_mod
+    import darkofit.tree as tree_mod
 
     calls = []
     original = tree_mod._best_shared_split_counts_with_noise_py
@@ -1587,8 +1587,8 @@ def test_hybrid_shared_prefix_uses_random_strength_picker(monkeypatch):
 
 def test_levelwise_tree_add_predict_matches_predict():
     """The experimental depth-wise tree representation must route predict paths alike."""
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.tree import build_levelwise_tree
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.tree import build_levelwise_tree
 
     rng = np.random.default_rng(2026)
     X = rng.normal(size=(900, 10))
@@ -1677,7 +1677,7 @@ def _reference_leafwise_splits(Xb, grad, hess, n_bins, max_leaves, max_depth,
 
 def test_leafwise_tree_matches_bruteforce_reference():
     """LightGBM mode must grow best-first leaf-wise, not depth-wise."""
-    from chimeraboost.tree import add_leaf_values_inplace, build_leafwise_tree
+    from darkofit.tree import add_leaf_values_inplace, build_leafwise_tree
 
     Xb = np.array([
         [0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2],
@@ -1718,7 +1718,7 @@ def test_leafwise_tree_matches_bruteforce_reference():
 
 def test_leafwise_multiclass_leaf_update_matches_predict():
     """Training leaf ids should be reusable for shared multiclass updates."""
-    from chimeraboost.tree import (
+    from darkofit.tree import (
         add_multiclass_leaf_values_inplace,
         build_leafwise_multiclass_tree,
     )
@@ -1749,7 +1749,7 @@ def test_leafwise_multiclass_leaf_update_matches_predict():
 
 
 def test_multiclass_refill_subtract_matches_two_step():
-    from chimeraboost.tree import (
+    from darkofit.tree import (
         _refill_multiclass_leaf_segment_histograms_counts_into,
         _refill_multiclass_left_subtract_right_counts_into,
         _refill_multiclass_right_subtract_left_counts_into,
@@ -1815,7 +1815,7 @@ def test_multiclass_refill_subtract_matches_two_step():
 
 
 def test_multiclass_class_minor_refill_subtract_matches_two_step():
-    from chimeraboost.tree import (
+    from darkofit.tree import (
         _refill_multiclass_leaf_segment_histograms_counts_class_minor_into,
         _refill_multiclass_left_subtract_right_counts_class_minor_into,
         _refill_multiclass_right_subtract_left_counts_class_minor_into,
@@ -1881,7 +1881,7 @@ def test_multiclass_class_minor_refill_subtract_matches_two_step():
 
 
 def test_leafwise_multiclass_histogram_subtraction_matches_full_refill():
-    from chimeraboost.tree import build_leafwise_multiclass_tree
+    from darkofit.tree import build_leafwise_multiclass_tree
 
     rng = np.random.default_rng(60)
     Xb = rng.integers(0, 48, size=(900, 14), dtype=np.uint8)
@@ -1919,7 +1919,7 @@ def test_leafwise_multiclass_histogram_subtraction_matches_full_refill():
 
 
 def test_leafwise_no_split_tree_predicts_root_value():
-    from chimeraboost.tree import build_leafwise_tree
+    from darkofit.tree import build_leafwise_tree
 
     Xb = np.array([[0], [1], [2]], dtype=np.uint8)
     grad = np.array([1.0, 2.0, 3.0])
@@ -1942,8 +1942,8 @@ def test_leafwise_no_split_tree_predicts_root_value():
 
 def test_leafwise_constant_hessian_reuses_hessian_counts(monkeypatch):
     import numba
-    import chimeraboost.tree as tree_mod
-    from chimeraboost.preprocessing import FeaturePreprocessor
+    import darkofit.tree as tree_mod
+    from darkofit.preprocessing import FeaturePreprocessor
 
     rng = np.random.default_rng(21)
     X = rng.normal(size=(700, 9))
@@ -2000,8 +2000,8 @@ def test_leafwise_constant_hessian_reuses_hessian_counts(monkeypatch):
 
 def test_leafwise_selected_rows_features_match_zeroed_nonconstant_histograms():
     import numba
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.tree import build_leafwise_tree
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.tree import build_leafwise_tree
 
     rng = np.random.default_rng(22)
     X = rng.normal(size=(700, 11))
@@ -2048,8 +2048,8 @@ def test_leafwise_selected_rows_features_match_zeroed_nonconstant_histograms():
 
 def test_leafwise_cached_splits_match_full_rescore():
     import numba
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.tree import build_leafwise_tree
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.tree import build_leafwise_tree
 
     rng = np.random.default_rng(23)
     X = rng.normal(size=(850, 12))
@@ -2150,19 +2150,19 @@ def test_tree_mode_aliases_and_lightgbm_plumbing():
         X, y, test_size=0.2, random_state=0, stratify=y
     )
 
-    catboost = ChimeraBoostClassifier(
+    catboost = DarkoClassifier(
         iterations=12, depth=3, tree_mode="catboost", random_state=0
     ).fit(Xtr, ytr)
-    oblivious = ChimeraBoostClassifier(
+    oblivious = DarkoClassifier(
         iterations=12, depth=3, tree_mode="oblivious", random_state=0
     ).fit(Xtr, ytr)
-    lightgbm = ChimeraBoostClassifier(
+    lightgbm = DarkoClassifier(
         iterations=12, depth=3, tree_mode="lightgbm", random_state=0
     ).fit(Xtr, ytr)
-    hybrid = ChimeraBoostClassifier(
+    hybrid = DarkoClassifier(
         iterations=12, depth=3, tree_mode="hybrid", random_state=0
     ).fit(Xtr, ytr)
-    non_oblivious = ChimeraBoostClassifier(
+    non_oblivious = DarkoClassifier(
         iterations=12, depth=3, tree_mode="non_oblivious", random_state=0
     ).fit(Xtr, ytr)
 
@@ -2186,7 +2186,7 @@ def test_leafwise_modes_reject_ordered_boosting_true():
     X, y = load_breast_cancer(return_X_y=True)
     for tree_mode in ("lightgbm", "hybrid"):
         with pytest.raises(ValueError, match="ordered_boosting=True"):
-            ChimeraBoostClassifier(
+            DarkoClassifier(
                 iterations=2, tree_mode=tree_mode, ordered_boosting=True
             ).fit(X[:80], y[:80])
 
@@ -2198,23 +2198,23 @@ def test_tree_mode_default_depth_resolution():
     )
     Xr, yr = load_diabetes(return_X_y=True)
 
-    catboost = ChimeraBoostClassifier(
+    catboost = DarkoClassifier(
         iterations=2, tree_mode="catboost", random_state=0
     ).fit(Xtr, ytr)
-    depthwise = ChimeraBoostClassifier(
+    depthwise = DarkoClassifier(
         iterations=2, tree_mode="depthwise", random_state=0
     ).fit(Xtr, ytr)
-    lightgbm = ChimeraBoostClassifier(
+    lightgbm = DarkoClassifier(
         iterations=2, tree_mode="lightgbm", num_leaves=64, random_state=0
     ).fit(Xtr, ytr)
-    hybrid = ChimeraBoostClassifier(
+    hybrid = DarkoClassifier(
         iterations=2, tree_mode="hybrid", num_leaves=64, random_state=0
     ).fit(Xtr, ytr)
-    explicit = ChimeraBoostClassifier(
+    explicit = DarkoClassifier(
         iterations=2, tree_mode="lightgbm", depth=3, num_leaves=64,
         random_state=0
     ).fit(Xtr, ytr)
-    depthwise_reg = ChimeraBoostRegressor(
+    depthwise_reg = DarkoRegressor(
         iterations=2, tree_mode="depthwise", random_state=0
     ).fit(Xr, yr)
 
@@ -2244,13 +2244,13 @@ def test_lightgbm_mode_adds_category_code_features_for_scalar_tasks():
     y_reg = np.array([0.0, 1.0, 0.5, 1.5, 1.2, 1.8])
     y_bin = np.array([0, 1, 0, 1, 1, 0])
 
-    catboost = ChimeraBoostRegressor(
+    catboost = DarkoRegressor(
         iterations=1, tree_mode="catboost", random_state=0
     ).fit(X, y_reg, cat_features=[0, 1])
-    lightgbm_reg = ChimeraBoostRegressor(
+    lightgbm_reg = DarkoRegressor(
         iterations=1, tree_mode="lightgbm", num_leaves=3, random_state=0
     ).fit(X, y_reg, cat_features=[0, 1])
-    lightgbm_binary = ChimeraBoostClassifier(
+    lightgbm_binary = DarkoClassifier(
         iterations=1, tree_mode="lightgbm", num_leaves=3, random_state=0
     ).fit(X, y_bin, cat_features=[0, 1])
 
@@ -2284,7 +2284,7 @@ def test_explicit_cat_smoothing_preserved_for_lightgbm_regression():
     ], dtype=object)
     y = np.array([0.0, 1.0, 0.5, 1.5, 1.2, 1.8])
 
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=1,
         tree_mode="lightgbm",
         num_leaves=3,
@@ -2298,11 +2298,11 @@ def test_explicit_cat_smoothing_preserved_for_lightgbm_regression():
 def test_public_api_rejects_unsupported_lightgbm_options():
     X, y = load_breast_cancer(return_X_y=True)
     with pytest.raises(ValueError, match="num_leaves"):
-        ChimeraBoostClassifier(
+        DarkoClassifier(
             iterations=2, tree_mode="catboost", num_leaves=7
         ).fit(X[:80], y[:80])
     with pytest.raises(ValueError, match="depth"):
-        ChimeraBoostClassifier(
+        DarkoClassifier(
             iterations=2, tree_mode="lightgbm", depth=0
         ).fit(X[:80], y[:80])
 
@@ -2317,7 +2317,7 @@ def test_cat_smoothing_must_be_positive():
     y = np.array([0.0, 1.0, 0.5, 1.5])
 
     with pytest.raises(ValueError, match="cat_smoothing must be positive"):
-        ChimeraBoostRegressor(iterations=1, cat_smoothing=0.0).fit(
+        DarkoRegressor(iterations=1, cat_smoothing=0.0).fit(
             X, y, cat_features=[0]
         )
 
@@ -2326,17 +2326,17 @@ def test_sparse_inputs_raise_clear_error():
     sparse = pytest.importorskip("scipy.sparse")
     X, y = load_breast_cancer(return_X_y=True)
     with pytest.raises(ValueError, match="sparse matrices are not supported"):
-        ChimeraBoostClassifier(iterations=2).fit(sparse.csr_matrix(X), y)
+        DarkoClassifier(iterations=2).fit(sparse.csr_matrix(X), y)
 
     Xtr, Xv, ytr, yv = train_test_split(
         X, y, test_size=0.2, random_state=0, stratify=y
     )
     with pytest.raises(ValueError, match="sparse matrices are not supported"):
-        ChimeraBoostClassifier(iterations=2).fit(
+        DarkoClassifier(iterations=2).fit(
             Xtr, ytr, eval_set=(sparse.csr_matrix(Xv), yv)
         )
 
-    clf = ChimeraBoostClassifier(iterations=2, random_state=0).fit(Xtr, ytr)
+    clf = DarkoClassifier(iterations=2, random_state=0).fit(Xtr, ytr)
     with pytest.raises(ValueError, match="sparse matrices are not supported"):
         clf.predict(sparse.csr_matrix(Xv))
     with pytest.raises(ValueError, match="sparse matrices are not supported"):
@@ -2346,7 +2346,7 @@ def test_sparse_inputs_raise_clear_error():
     Xr_tr, Xr_v, yr_tr, _ = train_test_split(
         Xr, yr, test_size=0.2, random_state=0
     )
-    reg = ChimeraBoostRegressor(iterations=2, random_state=0).fit(Xr_tr, yr_tr)
+    reg = DarkoRegressor(iterations=2, random_state=0).fit(Xr_tr, yr_tr)
     with pytest.raises(ValueError, match="sparse matrices are not supported"):
         reg.predict(sparse.csr_matrix(Xr_v))
     with pytest.raises(ValueError, match="sparse matrices are not supported"):
@@ -2354,7 +2354,7 @@ def test_sparse_inputs_raise_clear_error():
 
 
 def test_cat_features_accepts_numpy_arrays_across_public_layers():
-    from chimeraboost.booster import GradientBoosting, MulticlassBoosting
+    from darkofit.booster import GradientBoosting, MulticlassBoosting
 
     X = np.array([
         ["red", 0.0],
@@ -2369,10 +2369,10 @@ def test_cat_features_accepts_numpy_arrays_across_public_layers():
     y_multi = np.array(["a", "b", "c", "a", "b", "c"])
     cat_features = np.array([0], dtype=np.int64)
 
-    reg = ChimeraBoostRegressor(iterations=3, random_state=0).fit(
+    reg = DarkoRegressor(iterations=3, random_state=0).fit(
         X, y_reg, cat_features=cat_features
     )
-    clf = ChimeraBoostClassifier(iterations=3, random_state=0).fit(
+    clf = DarkoClassifier(iterations=3, random_state=0).fit(
         X, y_bin, cat_features=cat_features
     )
     core = GradientBoosting(iterations=3, random_state=0).fit(
@@ -2393,28 +2393,28 @@ def test_cat_features_validation_has_clear_errors():
     y = np.arange(6, dtype=float)
 
     with pytest.raises(ValueError, match="out of bounds"):
-        ChimeraBoostRegressor(iterations=1).fit(
+        DarkoRegressor(iterations=1).fit(
             X, y, cat_features=np.array([2], dtype=np.int64)
         )
     with pytest.raises(ValueError, match="integer column indices"):
-        ChimeraBoostRegressor(iterations=1).fit(
+        DarkoRegressor(iterations=1).fit(
             X, y, cat_features=np.array([0.0])
         )
     with pytest.raises(ValueError, match="integer column indices"):
-        ChimeraBoostRegressor(iterations=1).fit(
+        DarkoRegressor(iterations=1).fit(
             X, y, cat_features=np.array([True])
         )
 
 
 def test_training_targets_must_be_1d_nonempty_and_match_rows():
-    from chimeraboost.booster import GradientBoosting, MulticlassBoosting
+    from darkofit.booster import GradientBoosting, MulticlassBoosting
 
     X = np.arange(12, dtype=float).reshape(6, 2)
     y_reg = np.arange(6, dtype=float)
     y_cls = np.array([0, 1, 0, 1, 0, 1])
 
     estimators = [
-        ChimeraBoostRegressor(iterations=1),
+        DarkoRegressor(iterations=1),
         GradientBoosting(iterations=1),
     ]
     for estimator in estimators:
@@ -2426,7 +2426,7 @@ def test_training_targets_must_be_1d_nonempty_and_match_rows():
             estimator.fit(X[:0], y_reg[:0])
 
     classifiers = [
-        ChimeraBoostClassifier(iterations=1),
+        DarkoClassifier(iterations=1),
         MulticlassBoosting(iterations=1),
     ]
     for estimator in classifiers:
@@ -2439,7 +2439,7 @@ def test_training_targets_must_be_1d_nonempty_and_match_rows():
 
 
 def test_eval_targets_must_be_1d_nonempty_and_match_eval_rows():
-    from chimeraboost.booster import GradientBoosting, MulticlassBoosting
+    from darkofit.booster import GradientBoosting, MulticlassBoosting
 
     X = np.arange(20, dtype=float).reshape(10, 2)
     y_reg = np.arange(10, dtype=float)
@@ -2447,7 +2447,7 @@ def test_eval_targets_must_be_1d_nonempty_and_match_eval_rows():
     Xv = X[:4]
 
     for estimator in [
-        ChimeraBoostRegressor(iterations=1),
+        DarkoRegressor(iterations=1),
         GradientBoosting(iterations=1),
     ]:
         with pytest.raises(ValueError, match=r"eval_set\[1\] must have shape"):
@@ -2456,7 +2456,7 @@ def test_eval_targets_must_be_1d_nonempty_and_match_eval_rows():
             estimator.fit(X, y_reg, eval_set=(Xv, np.arange(4).reshape(-1, 1)))
 
     for estimator in [
-        ChimeraBoostClassifier(iterations=1),
+        DarkoClassifier(iterations=1),
         MulticlassBoosting(iterations=1),
     ]:
         with pytest.raises(ValueError, match=r"eval_set\[1\] must have shape"):
@@ -2471,13 +2471,13 @@ def test_wrappers_accept_column_vector_targets_with_warning():
     y_cls = np.tile([0, 1], 10)
 
     with pytest.warns(DataConversionWarning, match="column-vector y"):
-        reg = ChimeraBoostRegressor(iterations=2, random_state=0).fit(
+        reg = DarkoRegressor(iterations=2, random_state=0).fit(
             X, y_reg.reshape(-1, 1)
         )
     assert reg.predict(X[:2]).shape == (2,)
 
     with pytest.warns(DataConversionWarning, match="column-vector y"):
-        clf = ChimeraBoostClassifier(iterations=2, random_state=0).fit(
+        clf = DarkoClassifier(iterations=2, random_state=0).fit(
             X, y_cls.reshape(-1, 1)
         )
     assert clf.predict_proba(X[:2]).shape == (2, 2)
@@ -2488,12 +2488,12 @@ def test_wrapper_boundaries_reject_bad_learning_rate_and_continuous_labels():
 
     for learning_rate in (0.0, -0.1, np.inf, np.nan):
         with pytest.raises(ValueError, match="learning_rate must be positive"):
-            ChimeraBoostRegressor(
+            DarkoRegressor(
                 iterations=2, learning_rate=learning_rate
             ).fit(X, np.arange(20, dtype=float))
 
     with pytest.raises(ValueError, match="Unknown label type: continuous"):
-        ChimeraBoostClassifier(iterations=2).fit(
+        DarkoClassifier(iterations=2).fit(
             X, np.linspace(0.0, 1.0, 20)
         )
 
@@ -2501,13 +2501,13 @@ def test_wrapper_boundaries_reject_bad_learning_rate_and_continuous_labels():
 def test_wrappers_accept_random_state_objects_and_eval_set_lists():
     X = np.arange(80, dtype=float).reshape(40, 2)
     y = X[:, 0] - X[:, 1]
-    reg = ChimeraBoostRegressor(
+    reg = DarkoRegressor(
         iterations=2, random_state=np.random.RandomState(0)
     ).fit(X[:30], y[:30], eval_set=[(X[30:], y[30:])])
     assert reg.predict(X[:3]).shape == (3,)
 
     labels = np.tile([0, 1], 20)
-    clf = ChimeraBoostClassifier(
+    clf = DarkoClassifier(
         iterations=2, random_state=np.random.default_rng(1)
     ).fit(X[:30], labels[:30], eval_set=[(X[30:], labels[30:])])
     assert clf.predict_proba(X[:3]).shape == (3, 2)
@@ -2516,13 +2516,13 @@ def test_wrappers_accept_random_state_objects_and_eval_set_lists():
 def test_wrapper_save_persists_normalized_random_state_seed(tmp_path):
     X = np.arange(80, dtype=float).reshape(40, 2)
     y = X[:, 0] - X[:, 1]
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=3, random_state=np.random.default_rng(0)
     ).fit(X, y)
     path = tmp_path / "wrapper-rng.npz"
 
     model.save_model(path)
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
 
     assert isinstance(loaded.random_state, int)
     assert loaded.random_state == model.model_._fit_random_state_seed_
@@ -2541,7 +2541,7 @@ def test_pandas_nullable_numeric_eval_set_and_predict_are_coerced():
     X_train, X_eval = X.iloc[:6], X.iloc[6:]
     y_train, y_eval = y[:6], y[6:]
 
-    reg = ChimeraBoostRegressor(iterations=2, random_state=0).fit(
+    reg = DarkoRegressor(iterations=2, random_state=0).fit(
         X_train, y_train, eval_set=(X_eval, y_eval)
     )
     pred = reg.predict(X_eval)
@@ -2554,8 +2554,8 @@ def test_sklearn_wrappers_raise_not_fitted_for_prediction_and_save(tmp_path):
     from sklearn.exceptions import NotFittedError
 
     X = np.arange(12, dtype=float).reshape(6, 2)
-    unfitted_reg = ChimeraBoostRegressor()
-    unfitted_clf = ChimeraBoostClassifier()
+    unfitted_reg = DarkoRegressor()
+    unfitted_clf = DarkoClassifier()
 
     with pytest.raises(NotFittedError):
         unfitted_reg.predict(X)
@@ -2576,7 +2576,7 @@ def test_sklearn_wrappers_raise_not_fitted_for_prediction_and_save(tmp_path):
 
 def test_wrappers_record_and_enforce_feature_count():
     X, y = load_diabetes(return_X_y=True)
-    reg = ChimeraBoostRegressor(iterations=2, random_state=0).fit(X[:80], y[:80])
+    reg = DarkoRegressor(iterations=2, random_state=0).fit(X[:80], y[:80])
     assert reg.n_features_in_ == X.shape[1]
 
     with pytest.raises(ValueError, match="expecting"):
@@ -2584,12 +2584,12 @@ def test_wrappers_record_and_enforce_feature_count():
     with pytest.raises(ValueError, match="expecting"):
         list(reg.staged_predict(X[:5, :-1]))
     with pytest.raises(ValueError, match="eval_set\\[0\\] has"):
-        ChimeraBoostRegressor(iterations=2, random_state=0).fit(
+        DarkoRegressor(iterations=2, random_state=0).fit(
             X[:80], y[:80], eval_set=(X[:10, :-1], y[:10])
         )
 
     Xc, yc = load_breast_cancer(return_X_y=True)
-    clf = ChimeraBoostClassifier(iterations=2, random_state=0).fit(
+    clf = DarkoClassifier(iterations=2, random_state=0).fit(
         Xc[:100], yc[:100]
     )
     assert clf.n_features_in_ == Xc.shape[1]
@@ -2605,7 +2605,7 @@ def test_zero_feature_inputs_raise_clear_value_error():
     y = np.arange(8, dtype=np.float64)
 
     with pytest.raises(ValueError, match="at least one feature"):
-        ChimeraBoostRegressor(iterations=1).fit(X, y)
+        DarkoRegressor(iterations=1).fit(X, y)
 
 
 def test_wrappers_enforce_named_feature_order_when_input_has_names():
@@ -2626,7 +2626,7 @@ def test_wrappers_enforce_named_feature_order_when_input_has_names():
     X_ab = NamedArray(X_data, ["a", "b"])
     X_ba = NamedArray(X_data[:, [1, 0]], ["b", "a"])
 
-    model = ChimeraBoostRegressor(iterations=2, random_state=0).fit(X_ab, y)
+    model = DarkoRegressor(iterations=2, random_state=0).fit(X_ab, y)
     assert model.feature_names_in_.tolist() == ["a", "b"]
 
     with pytest.raises(ValueError, match="feature names"):
@@ -2634,13 +2634,13 @@ def test_wrappers_enforce_named_feature_order_when_input_has_names():
     with pytest.raises(ValueError, match="feature names"):
         list(model.staged_predict(X_ba))
     with pytest.raises(ValueError, match="feature names"):
-        ChimeraBoostRegressor(iterations=1, random_state=0).fit(
+        DarkoRegressor(iterations=1, random_state=0).fit(
             X_ab, y, eval_set=(X_ba, y)
         )
 
 
 def test_core_boosters_validate_prediction_feature_count():
-    from chimeraboost.booster import GradientBoosting, MulticlassBoosting
+    from darkofit.booster import GradientBoosting, MulticlassBoosting
 
     X = np.arange(24, dtype=float).reshape(12, 2)
     y = X[:, 0] - X[:, 1]
@@ -2660,7 +2660,7 @@ def test_core_boosters_validate_prediction_feature_count():
 
 def test_failed_refit_does_not_publish_partial_wrapper_state():
     X, y = load_diabetes(return_X_y=True)
-    reg = ChimeraBoostRegressor(iterations=2, random_state=0).fit(X[:80], y[:80])
+    reg = DarkoRegressor(iterations=2, random_state=0).fit(X[:80], y[:80])
     old_reg_pred = reg.predict(X[:5])
     old_reg_n_features = reg.n_features_in_
 
@@ -2672,7 +2672,7 @@ def test_failed_refit_does_not_publish_partial_wrapper_state():
     assert np.array_equal(reg.predict(X[:5]), old_reg_pred)
 
     Xc, yc = load_breast_cancer(return_X_y=True)
-    clf = ChimeraBoostClassifier(iterations=2, random_state=0).fit(
+    clf = DarkoClassifier(iterations=2, random_state=0).fit(
         Xc[:120], yc[:120]
     )
     old_clf_proba = clf.predict_proba(Xc[:5])
@@ -2689,7 +2689,7 @@ def test_failed_refit_does_not_publish_partial_wrapper_state():
 
 def test_lightgbm_mode_enforces_leaf_constraints():
     X, y = load_diabetes(return_X_y=True)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=3, tree_mode="lightgbm", num_leaves=3, depth=2,
         min_child_samples=30, random_state=0
     ).fit(X, y)
@@ -2701,7 +2701,7 @@ def test_lightgbm_mode_enforces_leaf_constraints():
 
 def test_lightgbm_num_leaves_capped_by_positive_depth():
     X, y = load_diabetes(return_X_y=True)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=2, tree_mode="lightgbm", num_leaves=1000, depth=2,
         min_child_samples=5, random_state=0
     ).fit(X, y)
@@ -2715,7 +2715,7 @@ def test_lightgbm_scalar_no_split_first_tree_keeps_initial_model():
     y = np.array([1.0, 2.0, 3.0, 4.0])
     Xv = np.array([[10.0], [11.0]])
     yv = np.array([10.0, 12.0])
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=5, tree_mode="lightgbm", num_leaves=1, random_state=0
     ).fit(X, y, eval_set=(Xv, yv))
 
@@ -2736,7 +2736,7 @@ def test_lightgbm_multiclass_no_split_first_round_keeps_initial_model():
     y = np.array([0, 1, 2, 0, 1, 2, 0, 1, 2])
     Xv = np.array([[9.0], [10.0], [11.0]])
     yv = np.array([0, 1, 2])
-    model = ChimeraBoostClassifier(
+    model = DarkoClassifier(
         iterations=5, tree_mode="lightgbm", num_leaves=1, random_state=0
     ).fit(X, y, eval_set=(Xv, yv))
 
@@ -2759,14 +2759,14 @@ def test_lightgbm_shared_multiclass_tree_routes_when_auto_compatible():
         [2.1, 2.0],
     ])
     y = np.array([0, 0, 1, 1, 2, 2, 0, 1, 2])
-    numeric = ChimeraBoostClassifier(
+    numeric = DarkoClassifier(
         iterations=2, tree_mode="lightgbm", num_leaves=3,
         min_child_samples=1, min_child_weight=0.0, random_state=0
     ).fit(X_num, y)
     assert numeric.model_.multiclass_tree_strategy_ == "shared_vector"
     assert hasattr(numeric.model_.trees_[0], "add_predict_class_major")
 
-    per_class = ChimeraBoostClassifier(
+    per_class = DarkoClassifier(
         iterations=2, tree_mode="lightgbm", num_leaves=3,
         min_child_samples=1, min_child_weight=0.0,
         multiclass_tree_strategy="per_class", random_state=0
@@ -2779,7 +2779,7 @@ def test_lightgbm_shared_multiclass_tree_routes_when_auto_compatible():
         ["a", "a", "b", "b", "c", "c", "a", "b", "c"], dtype=object
     )
     X_cat[:, 1] = X_num[:, 1]
-    categorical = ChimeraBoostClassifier(
+    categorical = DarkoClassifier(
         iterations=2, tree_mode="lightgbm", num_leaves=3,
         min_child_samples=1, min_child_weight=0.0, random_state=0
     ).fit(X_cat, y, cat_features=[0])
@@ -2787,7 +2787,7 @@ def test_lightgbm_shared_multiclass_tree_routes_when_auto_compatible():
 
 
 def test_multiclass_count_histogram_counts_any_positive_class_hessian():
-    from chimeraboost.tree import _build_multiclass_histograms_counts_into
+    from darkofit.tree import _build_multiclass_histograms_counts_into
 
     X_binned = np.array([[0], [1], [0]], dtype=np.uint8)
     grad = np.zeros((3, 3), dtype=np.float64)
@@ -2809,7 +2809,7 @@ def test_multiclass_count_histogram_counts_any_positive_class_hessian():
 
 
 def test_multiclass_class_minor_histograms_match_class_major_reference():
-    from chimeraboost.tree import (
+    from darkofit.tree import (
         _build_multiclass_histograms_counts_class_minor_into,
         _build_multiclass_histograms_counts_into,
         _class_major_views_from_class_minor_histograms,
@@ -2850,7 +2850,7 @@ def test_multiclass_class_minor_histograms_match_class_major_reference():
 
 
 def test_leafwise_multiclass_accepts_class_minor_hist_buffers():
-    from chimeraboost.tree import build_leafwise_multiclass_tree
+    from darkofit.tree import build_leafwise_multiclass_tree
 
     rng = np.random.default_rng(20260714)
     X_binned = rng.integers(0, 19, size=(400, 7), dtype=np.uint8)
@@ -2894,7 +2894,7 @@ def test_leafwise_multiclass_accepts_class_minor_hist_buffers():
 
 
 def test_multiclass_shared_split_allows_empty_class_hessian():
-    from chimeraboost.tree import (
+    from darkofit.tree import (
         _best_multiclass_splits_counts_for_leaf_ids_with_noise_class_minor_py,
         _best_multiclass_splits_counts_for_leaf_ids_with_noise_py,
         _best_multiclass_splits_for_leaf_ids_counts_class_minor,
@@ -2990,14 +2990,14 @@ def test_inactive_stochastic_settings_preserve_shared_vector_multiclass_lightgbm
         random_state=0,
     )
 
-    base = ChimeraBoostClassifier(**kw).fit(X_cat, y, cat_features=[0])
-    zero_bootstrap = ChimeraBoostClassifier(
+    base = DarkoClassifier(**kw).fit(X_cat, y, cat_features=[0])
+    zero_bootstrap = DarkoClassifier(
         **kw, bootstrap_type="bayesian", bagging_temperature=0.0
     ).fit(X_cat, y, cat_features=[0])
-    full_mvs = ChimeraBoostClassifier(
+    full_mvs = DarkoClassifier(
         **kw, sampling="mvs", subsample=1.0
     ).fit(X_cat, y, cat_features=[0])
-    explicit = ChimeraBoostClassifier(
+    explicit = DarkoClassifier(
         **kw,
         multiclass_tree_strategy="shared_vector",
         bootstrap_type="bayesian",
@@ -3020,7 +3020,7 @@ def test_lightgbm_numeric_multiclass_can_force_shared_vector_tree():
     ])
     y = np.array([0, 0, 1, 1, 2, 2, 0, 1, 2, 0, 1, 2])
 
-    model = ChimeraBoostClassifier(
+    model = DarkoClassifier(
         iterations=2, tree_mode="lightgbm", num_leaves=3,
         min_child_samples=1, min_child_weight=0.0,
         multiclass_tree_strategy="shared_vector", random_state=0
@@ -3043,20 +3043,20 @@ def test_lightgbm_shared_vector_strategy_requires_compatible_training_mode():
     y = np.array([0, 0, 1, 1, 2, 2, 0, 1, 2])
 
     with pytest.raises(ValueError, match="multiclass_tree_strategy"):
-        ChimeraBoostClassifier(
+        DarkoClassifier(
             iterations=1, tree_mode="catboost",
             multiclass_tree_strategy="shared_vector", random_state=0
         ).fit(X, y)
 
     with pytest.raises(ValueError, match="multiclass_tree_strategy"):
-        ChimeraBoostClassifier(
+        DarkoClassifier(
             iterations=1, tree_mode="lightgbm",
             multiclass_tree_strategy="bogus", random_state=0
         ).fit(X, y)
 
 
 def test_lightgbm_zero_weight_rows_do_not_affect_tree_structure():
-    from chimeraboost.tree import build_leafwise_tree
+    from darkofit.tree import build_leafwise_tree
 
     X_active = np.array(
         [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [2, 1]],
@@ -3088,7 +3088,7 @@ def test_lightgbm_zero_weight_rows_do_not_affect_tree_structure():
 
 
 def test_partition_last_leaf_keeps_stable_segments():
-    from chimeraboost.tree import _partition_leaf_rows
+    from darkofit.tree import _partition_leaf_rows
 
     Xb = np.array([[0], [3], [1], [4], [2], [5]], dtype=np.uint8)
     row_order = np.array([4, 5, 0, 1, 2, 3], dtype=np.int64)
@@ -3107,7 +3107,7 @@ def test_partition_last_leaf_keeps_stable_segments():
 
 
 def test_partition_middle_leaf_keeps_stable_segments():
-    from chimeraboost.tree import _partition_leaf_rows
+    from darkofit.tree import _partition_leaf_rows
 
     Xb = np.array([[0], [0], [0], [5], [1], [0], [0], [0], [0], [0]],
                   dtype=np.uint8)
@@ -3127,7 +3127,7 @@ def test_partition_middle_leaf_keeps_stable_segments():
 
 
 def test_unit_hess_histogram_subtraction_matches_generic_hg_hh():
-    from chimeraboost.tree import (
+    from darkofit.tree import (
         _subtract_right_child_histograms_into_left_serial,
         _subtract_right_child_unit_hess_histograms_into_left_serial,
     )
@@ -3155,7 +3155,7 @@ def test_unit_hess_histogram_subtraction_matches_generic_hg_hh():
 
 
 def test_fused_unit_hess_refill_subtract_matches_two_step():
-    from chimeraboost.tree import (
+    from darkofit.tree import (
         _refill_left_subtract_right_unit_hess_into,
         _refill_left_subtract_right_unit_hess_selected_into,
         _refill_leaf_segment_histograms_unit_hess_into,
@@ -3258,7 +3258,7 @@ def test_fused_unit_hess_refill_subtract_matches_two_step():
 
 
 def test_fused_counts_refill_subtract_matches_two_step():
-    from chimeraboost.tree import (
+    from darkofit.tree import (
         _build_histograms_counts_into,
         _build_histograms_counts_positive_into,
         _refill_left_subtract_right_counts_into,
@@ -3411,7 +3411,7 @@ def test_fused_counts_refill_subtract_matches_two_step():
 
 
 def test_positive_hessian_count_histograms_match_generic():
-    from chimeraboost.tree import (
+    from darkofit.tree import (
         _build_histograms_counts_into,
         _build_histograms_counts_positive_into,
         _refill_leaf_segment_histograms_counts_into,
@@ -3460,7 +3460,7 @@ def test_positive_hessian_count_histograms_match_generic():
 
 
 def test_leafwise_histogram_subtraction_matches_full_refill():
-    from chimeraboost.tree import build_leafwise_tree
+    from darkofit.tree import build_leafwise_tree
 
     rng = np.random.default_rng(41)
     Xb = rng.integers(0, 16, size=(512, 9), dtype=np.uint8)
@@ -3497,7 +3497,7 @@ def test_leafwise_histogram_subtraction_matches_full_refill():
 @pytest.mark.parametrize("thread_count", [1, 2, 4])
 def test_leafwise_segmented_row_layout_matches_prefix_layout(thread_count):
     numba = pytest.importorskip("numba")
-    from chimeraboost.tree import build_leafwise_tree
+    from darkofit.tree import build_leafwise_tree
 
     rng = np.random.default_rng(63)
     Xb = rng.integers(0, 48, size=(900, 13), dtype=np.uint8)
@@ -3551,7 +3551,7 @@ def test_leafwise_segmented_row_layout_matches_prefix_layout(thread_count):
 
 
 def test_leafwise_segmented_row_layout_guard_and_auto_fallback():
-    from chimeraboost.tree import build_leafwise_tree
+    from darkofit.tree import build_leafwise_tree
 
     rng = np.random.default_rng(64)
     Xb = rng.integers(0, 16, size=(256, 7), dtype=np.uint8)
@@ -3602,7 +3602,7 @@ def test_leafwise_segmented_row_layout_guard_and_auto_fallback():
 
 
 def test_leafwise_positive_hessian_route_matches_generic_tree():
-    from chimeraboost.tree import build_leafwise_tree
+    from darkofit.tree import build_leafwise_tree
 
     rng = np.random.default_rng(54)
     Xb = rng.integers(0, 64, size=(900, 16), dtype=np.uint8)
@@ -3642,7 +3642,7 @@ def test_leafwise_positive_hessian_route_matches_generic_tree():
 
 def test_leafwise_positive_hessian_no_reuse_matches_generic_tree():
     import numba
-    from chimeraboost.tree import build_leafwise_tree
+    from darkofit.tree import build_leafwise_tree
 
     if numba.config.NUMBA_NUM_THREADS < 2:
         pytest.skip("requires at least two numba threads")
@@ -3692,7 +3692,7 @@ def test_leafwise_positive_hessian_no_reuse_matches_generic_tree():
 
 def test_leafwise_selected_feature_histogram_reuse_threaded():
     import numba
-    from chimeraboost.tree import build_leafwise_tree
+    from darkofit.tree import build_leafwise_tree
 
     if numba.config.NUMBA_NUM_THREADS < 2:
         pytest.skip("requires at least two numba threads")
@@ -3744,7 +3744,7 @@ def test_leafwise_selected_feature_histogram_reuse_threaded():
 
 def test_leafwise_changed_leaf_feature_parallel_split_matches_reference():
     import numba
-    from chimeraboost.tree import (
+    from darkofit.tree import (
         _best_splits_for_leaf_ids_counts,
         _best_splits_for_leaf_ids_counts_feature_parallel,
     )
@@ -3794,7 +3794,7 @@ def test_leafwise_changed_leaf_feature_parallel_split_matches_reference():
 
 
 def test_leafwise_full_feature_positive_split_matches_reference():
-    from chimeraboost.tree import (
+    from darkofit.tree import (
         _best_splits_by_leaf_counts,
         _best_splits_by_leaf_counts_full_features,
         _best_splits_for_leaf_ids_counts,
@@ -3867,7 +3867,7 @@ def test_leafwise_full_feature_positive_split_matches_reference():
 
 def test_leafwise_positive_split_fast_path_matches_generic_tree():
     import numba
-    from chimeraboost.tree import build_leafwise_tree
+    from darkofit.tree import build_leafwise_tree
 
     if numba.config.NUMBA_NUM_THREADS < 2:
         pytest.skip("requires at least two numba threads")
@@ -3918,7 +3918,7 @@ def test_leafwise_positive_split_fast_path_matches_generic_tree():
 
 def test_leafwise_fused_changed_leaf_scoring_matches_default_path():
     import numba
-    from chimeraboost.tree import build_leafwise_tree
+    from darkofit.tree import build_leafwise_tree
 
     if numba.config.NUMBA_NUM_THREADS < 4:
         pytest.skip("requires at least four numba threads")
@@ -3990,7 +3990,7 @@ def test_leafwise_fused_changed_leaf_scoring_matches_default_path():
 
 
 def test_lightgbm_scalar_routes_fused_changed_leaf_scoring_only_when_eligible():
-    from chimeraboost.booster import GradientBoosting
+    from darkofit.booster import GradientBoosting
 
     booster = GradientBoosting(
         tree_mode="lightgbm",
@@ -4034,7 +4034,7 @@ def test_lightgbm_scalar_routes_fused_changed_leaf_scoring_only_when_eligible():
 
 def test_leafwise_threaded_changed_leaf_split_matches_full_rescore():
     import numba
-    from chimeraboost.tree import build_leafwise_tree
+    from darkofit.tree import build_leafwise_tree
 
     if numba.config.NUMBA_NUM_THREADS < 2:
         pytest.skip("requires at least two numba threads")
@@ -4086,11 +4086,11 @@ def test_lightgbm_thread_determinism():
     Xtr, Xte, ytr, _ = train_test_split(
         X, y, test_size=0.25, random_state=2, stratify=y
     )
-    one = ChimeraBoostClassifier(
+    one = DarkoClassifier(
         iterations=8, tree_mode="lightgbm", num_leaves=7, depth=3,
         thread_count=1, random_state=0
     ).fit(Xtr, ytr)
-    two = ChimeraBoostClassifier(
+    two = DarkoClassifier(
         iterations=8, tree_mode="lightgbm", num_leaves=7, depth=3,
         thread_count=2, random_state=0
     ).fit(Xtr, ytr)
@@ -4099,7 +4099,7 @@ def test_lightgbm_thread_determinism():
 
 def test_non_oblivious_parallel_add_predict_matches_serial():
     import numba
-    from chimeraboost.tree import (
+    from darkofit.tree import (
         _predict_non_oblivious_multiclass_tree_add,
         _predict_non_oblivious_multiclass_tree_add_parallel,
         _predict_non_oblivious_tree_add,
@@ -4154,7 +4154,7 @@ def test_classifier_staged_predictions_match_final():
     Xtr, Xte, ytr, _ = train_test_split(
         X, y, test_size=0.25, random_state=1, stratify=y
     )
-    model = ChimeraBoostClassifier(iterations=12, random_state=0).fit(Xtr, ytr)
+    model = DarkoClassifier(iterations=12, random_state=0).fit(Xtr, ytr)
     stages = list(model.staged_predict_proba(Xte))
     assert len(stages) == model.best_iteration_
     assert np.allclose(stages[-1], model.predict_proba(Xte))
@@ -4166,7 +4166,7 @@ def test_multiclass_staged_predictions_match_final():
     Xtr, Xte, ytr, _ = train_test_split(
         X, y, test_size=0.25, random_state=1, stratify=y
     )
-    model = ChimeraBoostClassifier(iterations=8, random_state=0).fit(Xtr, ytr)
+    model = DarkoClassifier(iterations=8, random_state=0).fit(Xtr, ytr)
     stages = list(model.staged_predict_proba(Xte))
     assert len(stages) == model.best_iteration_
     assert np.allclose(stages[-1], model.predict_proba(Xte))
@@ -4180,7 +4180,7 @@ def test_multiclass_predict_labels_use_raw_margin_argmax(monkeypatch):
     Xtr, Xte, ytr, _ = train_test_split(
         X, y, test_size=0.25, random_state=2, stratify=y
     )
-    model = ChimeraBoostClassifier(iterations=8, random_state=0).fit(Xtr, ytr)
+    model = DarkoClassifier(iterations=8, random_state=0).fit(Xtr, ytr)
     expected = model.classes_[np.argmax(model.model_.predict_raw(Xte), axis=1)]
     expected_stages = [
         model.classes_[np.argmax(raw, axis=1)]
@@ -4200,7 +4200,7 @@ def test_multiclass_predict_labels_use_raw_margin_argmax(monkeypatch):
 
 
 def test_multiclass_subsampling_shared_per_round(monkeypatch):
-    import chimeraboost.booster as booster
+    import darkofit.booster as booster
     from sklearn.datasets import load_wine
 
     calls = []
@@ -4217,7 +4217,7 @@ def test_multiclass_subsampling_shared_per_round(monkeypatch):
 
     monkeypatch.setattr(booster, "build_oblivious_tree", wrapped_build_tree)
     X, y = load_wine(return_X_y=True)
-    ChimeraBoostClassifier(
+    DarkoClassifier(
         iterations=1, subsample=0.6, colsample=0.5, random_state=0
     ).fit(X, y)
 
@@ -4231,8 +4231,8 @@ def test_multiclass_subsampling_shared_per_round(monkeypatch):
 
 
 def test_lightgbm_numeric_multiclass_training_update_uses_leaf_ids(monkeypatch):
-    from chimeraboost import ChimeraBoostClassifier
-    from chimeraboost.tree import NonObliviousTree
+    from darkofit import DarkoClassifier
+    from darkofit.tree import NonObliviousTree
 
     rng = np.random.default_rng(58)
     X = rng.normal(size=(120, 6))
@@ -4243,15 +4243,15 @@ def test_lightgbm_numeric_multiclass_training_update_uses_leaf_ids(monkeypatch):
         raise AssertionError("training update should reuse returned leaf ids")
 
     monkeypatch.setattr(NonObliviousTree, "add_predict", fail_add_predict)
-    ChimeraBoostClassifier(
+    DarkoClassifier(
         iterations=2, tree_mode="lightgbm", num_leaves=5, depth=3,
         random_state=0
     ).fit(X[order], y[order])
 
 
 def test_lightgbm_numeric_multiclass_marks_unweighted_hessians_positive(monkeypatch):
-    import chimeraboost.booster as booster
-    from chimeraboost import ChimeraBoostClassifier
+    import darkofit.booster as booster
+    from darkofit import DarkoClassifier
 
     rng = np.random.default_rng(59)
     X = rng.normal(size=(120, 6))
@@ -4265,7 +4265,7 @@ def test_lightgbm_numeric_multiclass_marks_unweighted_hessians_positive(monkeypa
         return original(*args, **kwargs)
 
     monkeypatch.setattr(booster, "build_leafwise_tree", wrapped_build_tree)
-    ChimeraBoostClassifier(
+    DarkoClassifier(
         iterations=1, tree_mode="lightgbm", num_leaves=5, depth=3,
         multiclass_tree_strategy="per_class",
         random_state=0
@@ -4276,8 +4276,8 @@ def test_lightgbm_numeric_multiclass_marks_unweighted_hessians_positive(monkeypa
 
 
 def test_lightgbm_numeric_multiclass_weighted_hessians_use_generic_path(monkeypatch):
-    import chimeraboost.booster as booster
-    from chimeraboost import ChimeraBoostClassifier
+    import darkofit.booster as booster
+    from darkofit import DarkoClassifier
 
     rng = np.random.default_rng(60)
     X = rng.normal(size=(120, 6))
@@ -4293,7 +4293,7 @@ def test_lightgbm_numeric_multiclass_weighted_hessians_use_generic_path(monkeypa
         return original(*args, **kwargs)
 
     monkeypatch.setattr(booster, "build_leafwise_tree", wrapped_build_tree)
-    ChimeraBoostClassifier(
+    DarkoClassifier(
         iterations=1, tree_mode="lightgbm", num_leaves=5, depth=3,
         multiclass_tree_strategy="per_class",
         random_state=0
@@ -4304,21 +4304,21 @@ def test_lightgbm_numeric_multiclass_weighted_hessians_use_generic_path(monkeypa
 
 
 def test_lightgbm_multiclass_uses_task_specific_default_l2():
-    from chimeraboost import ChimeraBoostClassifier
+    from darkofit import DarkoClassifier
 
     rng = np.random.default_rng(61)
     X = rng.normal(size=(90, 5))
     y = np.repeat(np.arange(3), 30)
     order = rng.permutation(len(y))
 
-    lightgbm_default = ChimeraBoostClassifier(
+    lightgbm_default = DarkoClassifier(
         iterations=1, tree_mode="lightgbm", num_leaves=5, depth=3,
         random_state=0
     ).fit(X[order], y[order])
-    catboost_default = ChimeraBoostClassifier(
+    catboost_default = DarkoClassifier(
         iterations=1, tree_mode="catboost", depth=3, random_state=0
     ).fit(X[order], y[order])
-    lightgbm_explicit = ChimeraBoostClassifier(
+    lightgbm_explicit = DarkoClassifier(
         iterations=1, tree_mode="lightgbm", num_leaves=5, depth=3,
         l2_leaf_reg=2.0, random_state=0
     ).fit(X[order], y[order])
@@ -4334,7 +4334,7 @@ def test_lightgbm_multiclass_uses_task_specific_default_l2():
 
 
 def test_goss_subsample_keeps_large_gradients_and_scales_sampled_rows():
-    from chimeraboost.booster import GradientBoosting
+    from darkofit.booster import GradientBoosting
 
     grad = np.array([0.2, -0.3, 0.4, -0.5, 0.6, -0.7, 8.0, -9.0])
     hess = np.ones_like(grad)
@@ -4363,7 +4363,7 @@ def test_goss_subsample_keeps_large_gradients_and_scales_sampled_rows():
 
 
 def test_goss_lightgbm_scalar_fit_uses_sampled_nonconstant_hessians(monkeypatch):
-    import chimeraboost.booster as booster
+    import darkofit.booster as booster
 
     calls = []
     original = booster.build_leafwise_tree
@@ -4377,7 +4377,7 @@ def test_goss_lightgbm_scalar_fit_uses_sampled_nonconstant_hessians(monkeypatch)
 
     monkeypatch.setattr(booster, "build_leafwise_tree", wrapped_build_tree)
     X, y = load_diabetes(return_X_y=True)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=1, tree_mode="lightgbm", num_leaves=7, depth=3,
         sampling="goss", top_rate=0.2, other_rate=0.2, random_state=0
     ).fit(X[:120], y[:120])
@@ -4393,14 +4393,14 @@ def test_goss_rejects_uniform_subsample():
     X, y = load_diabetes(return_X_y=True)
     for subsample in (0.8, 1.2):
         with pytest.raises(ValueError, match="subsample must be 1.0"):
-            ChimeraBoostRegressor(
+            DarkoRegressor(
                 iterations=1, tree_mode="lightgbm", sampling="goss",
                 subsample=subsample, random_state=0
             ).fit(X[:80], y[:80])
 
     for subsample in (0.0, -0.1, 1.1, np.nan):
         with pytest.raises(ValueError, match="subsample must"):
-            ChimeraBoostRegressor(
+            DarkoRegressor(
                 iterations=1, tree_mode="lightgbm", sampling="uniform",
                 subsample=subsample, random_state=0
             ).fit(X[:80], y[:80])
@@ -4408,7 +4408,7 @@ def test_goss_rejects_uniform_subsample():
     # Multiclass GOSS is supported now; it fits without error.
     Xc = np.vstack([X[:30], X[30:60], X[60:90]])
     yc = np.repeat([0, 1, 2], 30)
-    m = ChimeraBoostClassifier(
+    m = DarkoClassifier(
         iterations=3, tree_mode="lightgbm", sampling="goss",
         random_state=0
     ).fit(Xc, yc)
@@ -4416,7 +4416,7 @@ def test_goss_rejects_uniform_subsample():
 
 
 def test_multiclass_no_split_class_tree_is_boosting_noop(monkeypatch):
-    import chimeraboost.booster as booster
+    import darkofit.booster as booster
 
     class FakeTree:
         def __init__(self, depth, value):
@@ -4440,7 +4440,7 @@ def test_multiclass_no_split_class_tree_is_boosting_noop(monkeypatch):
     monkeypatch.setattr(booster, "build_oblivious_tree", fake_build_tree)
     X = np.arange(18, dtype=np.float64).reshape(9, 2)
     y = np.array([0, 1, 2, 0, 1, 2, 0, 1, 2])
-    model = ChimeraBoostClassifier(iterations=1, random_state=0).fit(X, y)
+    model = DarkoClassifier(iterations=1, random_state=0).fit(X, y)
 
     raw = model.model_.predict_raw(X)
     assert calls["n"] == 3
@@ -4456,7 +4456,7 @@ def test_early_stopped_prediction_matches_best_prefix():
     Xtr, Xte, ytr, _ = train_test_split(
         X, y, test_size=0.25, random_state=3, stratify=y
     )
-    model = ChimeraBoostClassifier(
+    model = DarkoClassifier(
         iterations=120, early_stopping=True, early_stopping_rounds=5,
         validation_fraction=0.2, tree_mode="lightgbm", num_leaves=7,
         depth=3, learning_rate=0.2, random_state=0
@@ -4474,13 +4474,13 @@ def test_eval_set_keeps_best_prefix_without_patience():
     )
     kw = dict(iterations=80, learning_rate=0.1, depth=2, random_state=0)
 
-    keep_all = ChimeraBoostRegressor(
+    keep_all = DarkoRegressor(
         **kw, use_best_model=False
     ).fit(Xtr, ytr, eval_set=(Xv, yv))
     best_n = int(np.argmin(keep_all.model_.valid_history_)) + 1
     assert best_n < len(keep_all.model_.trees_)
 
-    best = ChimeraBoostRegressor(**kw).fit(Xtr, ytr, eval_set=(Xv, yv))
+    best = DarkoRegressor(**kw).fit(Xtr, ytr, eval_set=(Xv, yv))
     assert best.best_iteration_ == best_n
     assert len(best.model_.trees_) == best_n
     assert best.best_score_ == min(keep_all.model_.valid_history_)
@@ -4499,7 +4499,7 @@ def test_patience_stop_respects_use_best_model_false():
     Xtr, Xv, ytr, yv = train_test_split(
         X, y, test_size=0.25, random_state=0
     )
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=120,
         learning_rate=0.3,
         depth=2,
@@ -4522,7 +4522,7 @@ def test_refit_uses_best_prefix_selection_without_patience():
     Xtr, Xv, ytr, yv = train_test_split(
         X, y, test_size=0.25, random_state=0
     )
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=80,
         learning_rate=0.1,
         depth=2,
@@ -4542,7 +4542,7 @@ def test_auto_early_stopping_patience_resolves_from_learning_rate():
         X, y, test_size=0.25, random_state=0
     )
 
-    slow = ChimeraBoostRegressor(
+    slow = DarkoRegressor(
         iterations=3,
         learning_rate=0.05,
         early_stopping=True,
@@ -4553,7 +4553,7 @@ def test_auto_early_stopping_patience_resolves_from_learning_rate():
     assert slow_meta["rounds"] == 100
     assert slow_meta["rounds_rule"] == "ceil(5/lr)_clipped_20_200"
 
-    clipped_slow = ChimeraBoostRegressor(
+    clipped_slow = DarkoRegressor(
         iterations=3,
         learning_rate=0.001,
         early_stopping_rounds="auto",
@@ -4561,7 +4561,7 @@ def test_auto_early_stopping_patience_resolves_from_learning_rate():
     ).fit(Xtr, ytr, eval_set=(Xv, yv))
     assert clipped_slow.model_.auto_params_["early_stopping"]["rounds"] == 200
 
-    hot = ChimeraBoostRegressor(
+    hot = DarkoRegressor(
         iterations=3,
         learning_rate=0.5,
         early_stopping_rounds="auto",
@@ -4570,7 +4570,7 @@ def test_auto_early_stopping_patience_resolves_from_learning_rate():
     hot_meta = hot.model_.auto_params_["early_stopping"]
     assert hot_meta["rounds"] == 20
 
-    explicit = ChimeraBoostRegressor(
+    explicit = DarkoRegressor(
         iterations=3,
         learning_rate=0.05,
         early_stopping=True,
@@ -4591,13 +4591,13 @@ def test_multiclass_eval_set_keeps_best_prefix_without_patience():
     )
     kw = dict(iterations=50, learning_rate=0.5, depth=2, random_state=0)
 
-    keep_all = ChimeraBoostClassifier(
+    keep_all = DarkoClassifier(
         **kw, use_best_model=False
     ).fit(Xtr, ytr, eval_set=(Xv, yv))
     best_n = int(np.argmin(keep_all.model_.valid_history_)) + 1
     assert best_n < len(keep_all.model_.trees_)
 
-    best = ChimeraBoostClassifier(**kw).fit(Xtr, ytr, eval_set=(Xv, yv))
+    best = DarkoClassifier(**kw).fit(Xtr, ytr, eval_set=(Xv, yv))
     assert best.best_iteration_ == best_n
     assert len(best.model_.trees_) == best_n
     assert best.best_score_ == min(keep_all.model_.valid_history_)
@@ -4607,7 +4607,7 @@ def test_multiclass_eval_set_keeps_best_prefix_without_patience():
 
 
 def test_auto_learning_rate_catboost_transplant_corridor():
-    from chimeraboost.auto_params import auto_learning_rate
+    from darkofit.auto_params import auto_learning_rate
 
     lr = auto_learning_rate(
         "RMSE", n_eff=20_000, iterations=1000,
@@ -4665,7 +4665,7 @@ def test_auto_learning_rate_catboost_transplant_corridor():
 
 
 def test_auto_learning_rate_uses_bounded_feature_shrinkage():
-    from chimeraboost.auto_params import (
+    from darkofit.auto_params import (
         AUTO_LR_FEATURE_MULTIPLIER_MIN,
         auto_learning_rate_details,
     )
@@ -4690,7 +4690,7 @@ def test_auto_learning_rate_uses_bounded_feature_shrinkage():
 
 
 def test_auto_learning_rate_details_record_clipping_bounds():
-    from chimeraboost.auto_params import (
+    from darkofit.auto_params import (
         AUTO_LR_MAX,
         AUTO_LR_MIN,
         auto_learning_rate_details,
@@ -4720,10 +4720,10 @@ def test_auto_learning_rate_uniform_weights_match_none():
     X = rng.normal(size=(80, 3))
     y = X[:, 0] + rng.normal(0.0, 0.1, size=80)
 
-    no_weight = ChimeraBoostRegressor(
+    no_weight = DarkoRegressor(
         iterations=3, random_state=0, eval_train_loss=False
     ).fit(X, y)
-    ones = ChimeraBoostRegressor(
+    ones = DarkoRegressor(
         iterations=3, random_state=0, eval_train_loss=False
     ).fit(X, y, sample_weight=np.ones(len(y)))
 
@@ -4735,7 +4735,7 @@ def test_auto_learning_rate_uniform_weights_match_none():
 
 
 def test_auto_params_records_warnings_and_diagnostics():
-    import chimeraboost.booster as booster_mod
+    import darkofit.booster as booster_mod
 
     rng = np.random.default_rng(91)
     X = rng.normal(size=(80, 3))
@@ -4746,21 +4746,21 @@ def test_auto_params_records_warnings_and_diagnostics():
     booster_mod.reset_diagnostic_warning_registry()
     with warnings.catch_warnings(record=True) as first_caught:
         warnings.simplefilter("always")
-        model = ChimeraBoostRegressor(
+        model = DarkoRegressor(
             iterations=1,
             random_state=0,
             eval_train_loss=False,
         ).fit(X, y, sample_weight=w)
     with warnings.catch_warnings(record=True) as second_caught:
         warnings.simplefilter("always")
-        ChimeraBoostRegressor(
+        DarkoRegressor(
             iterations=1,
             random_state=1,
             eval_train_loss=False,
         ).fit(X, y, sample_weight=w)
     with warnings.catch_warnings(record=True) as never_caught:
         warnings.simplefilter("always")
-        never = ChimeraBoostRegressor(
+        never = DarkoRegressor(
             iterations=1,
             random_state=2,
             eval_train_loss=False,
@@ -4811,7 +4811,7 @@ def test_auto_params_records_warnings_and_diagnostics():
     booster_mod.reset_diagnostic_warning_registry()
     with warnings.catch_warnings(record=True) as always_caught:
         warnings.simplefilter("always")
-        ChimeraBoostRegressor(
+        DarkoRegressor(
             iterations=1,
             random_state=3,
             eval_train_loss=False,
@@ -4819,7 +4819,7 @@ def test_auto_params_records_warnings_and_diagnostics():
         ).fit(X, y, sample_weight=w)
     with warnings.catch_warnings(record=True) as after_always_caught:
         warnings.simplefilter("always")
-        ChimeraBoostRegressor(
+        DarkoRegressor(
             iterations=1,
             random_state=4,
             eval_train_loss=False,
@@ -4830,7 +4830,7 @@ def test_auto_params_records_warnings_and_diagnostics():
 
 def test_get_refit_params_freezes_learning_rate_and_exact_rounds():
     X, y = load_breast_cancer(return_X_y=True)
-    model = ChimeraBoostClassifier(
+    model = DarkoClassifier(
         iterations=120, early_stopping=True, early_stopping_rounds=5,
         validation_fraction=0.2, random_state=0
     ).fit(X, y)
@@ -4846,7 +4846,7 @@ def test_get_refit_params_freezes_learning_rate_and_exact_rounds():
 
 def test_get_refit_params_scaled_strategies_use_empirical_split():
     X, y = load_breast_cancer(return_X_y=True)
-    model = ChimeraBoostClassifier(
+    model = DarkoClassifier(
         iterations=120, early_stopping=True, early_stopping_rounds=5,
         validation_fraction=0.2, random_state=0
     ).fit(X, y)
@@ -4870,7 +4870,7 @@ def test_get_refit_params_scaled_requires_auto_split():
     Xtr, Xv, ytr, yv = train_test_split(
         X, y, test_size=0.2, random_state=0, stratify=y
     )
-    model = ChimeraBoostClassifier(
+    model = DarkoClassifier(
         iterations=80, early_stopping_rounds=5, random_state=0
     ).fit(Xtr, ytr, eval_set=(Xv, yv))
 
@@ -4883,7 +4883,7 @@ def test_get_refit_params_scaled_requires_auto_split():
 
 def test_get_refit_params_regressor_preserves_loss_params():
     X, y = load_diabetes(return_X_y=True)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=60, loss="Quantile", alpha=0.8,
         early_stopping=True, early_stopping_rounds=5, random_state=0
     ).fit(X, y)
@@ -4898,7 +4898,7 @@ def test_get_refit_params_regressor_preserves_loss_params():
 
 def test_early_stopping_refit_trains_final_model_with_exact_rounds():
     X, y = load_breast_cancer(return_X_y=True)
-    model = ChimeraBoostClassifier(
+    model = DarkoClassifier(
         iterations=120, early_stopping=True, early_stopping_rounds=5,
         validation_fraction=0.2, refit=True, random_state=0
     ).fit(X, y)
@@ -4916,7 +4916,7 @@ def test_early_stopping_refit_trains_final_model_with_exact_rounds():
 
 def test_early_stopping_refit_scaled_rounds_use_empirical_split():
     X, y = load_breast_cancer(return_X_y=True)
-    model = ChimeraBoostClassifier(
+    model = DarkoClassifier(
         iterations=120, early_stopping=True, early_stopping_rounds=5,
         validation_fraction=0.2, refit=True, refit_strategy="sqrt",
         random_state=0
@@ -4935,7 +4935,7 @@ def test_refit_freezes_resolved_auto_structure_across_size_boundary():
     X = rng.normal(size=(5400, 2))
     y = X[:, 0] - 0.5 * X[:, 1] + rng.normal(0.0, 0.2, size=5400)
 
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=3,
         depth="auto",
         early_stopping=True,
@@ -4953,7 +4953,7 @@ def test_refit_freezes_resolved_auto_structure_across_size_boundary():
 
 def test_refit_without_early_stopping_does_not_double_fit():
     X, y = load_diabetes(return_X_y=True)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=8, refit=True, random_state=0
     ).fit(X, y)
 
@@ -4965,7 +4965,7 @@ def test_refit_without_early_stopping_does_not_double_fit():
 
 def test_refit_metadata_round_trips_through_save_load(tmp_path):
     X, y = load_breast_cancer(return_X_y=True)
-    model = ChimeraBoostClassifier(
+    model = DarkoClassifier(
         iterations=120, early_stopping=True, early_stopping_rounds=5,
         validation_fraction=0.2, refit=True, refit_strategy="sqrt",
         random_state=0
@@ -4973,7 +4973,7 @@ def test_refit_metadata_round_trips_through_save_load(tmp_path):
     path = tmp_path / "refit_clf.npz"
 
     model.save_model(path)
-    loaded = ChimeraBoostClassifier.load_model(path)
+    loaded = DarkoClassifier.load_model(path)
 
     assert loaded.refit_ is True
     assert loaded.refit_strategy_ == "sqrt"
@@ -4991,13 +4991,13 @@ def test_refit_metadata_round_trips_through_save_load(tmp_path):
 
 def test_loaded_refit_selection_persistence_flag_is_not_stale(tmp_path):
     X, y = load_breast_cancer(return_X_y=True)
-    model = ChimeraBoostClassifier(
+    model = DarkoClassifier(
         iterations=12, early_stopping=True, early_stopping_rounds=2,
         validation_fraction=0.2, refit=True, random_state=0
     ).fit(X[:120], y[:120])
     path = tmp_path / "refit-flag.npz"
     model.save_model(path)
-    loaded = ChimeraBoostClassifier.load_model(path)
+    loaded = DarkoClassifier.load_model(path)
     assert loaded.selection_model_persisted_ is False
 
     loaded.fit(X[:120], y[:120])
@@ -5009,7 +5009,7 @@ def test_loaded_refit_selection_persistence_flag_is_not_stale(tmp_path):
 
 def test_refit_strategy_errors_before_partial_fit():
     X, y = load_breast_cancer(return_X_y=True)
-    model = ChimeraBoostClassifier(
+    model = DarkoClassifier(
         iterations=20, early_stopping=True, refit=True,
         refit_strategy="bogus", random_state=0
     )
@@ -5021,7 +5021,7 @@ def test_refit_strategy_errors_before_partial_fit():
     Xtr, Xv, ytr, yv = train_test_split(
         X, y, test_size=0.2, random_state=0, stratify=y
     )
-    model = ChimeraBoostClassifier(
+    model = DarkoClassifier(
         iterations=20, early_stopping_rounds=5, refit=True,
         refit_strategy="linear", random_state=0
     )
@@ -5039,7 +5039,7 @@ def test_eval_labels_must_be_training_classes():
     bad_yv = yv.copy()
     bad_yv[0] = 99
     with pytest.raises(ValueError, match="eval_set contains labels"):
-        ChimeraBoostClassifier(iterations=2).fit(Xtr, ytr, eval_set=(Xv, bad_yv))
+        DarkoClassifier(iterations=2).fit(Xtr, ytr, eval_set=(Xv, bad_yv))
 
 
 def test_invalid_sample_weights_raise():
@@ -5051,32 +5051,32 @@ def test_invalid_sample_weights_raise():
         np.zeros(len(y)),
     ]:
         with pytest.raises(ValueError):
-            ChimeraBoostRegressor(iterations=2).fit(X, y, sample_weight=bad)
+            DarkoRegressor(iterations=2).fit(X, y, sample_weight=bad)
 
 
 def test_invalid_numeric_targets_raise():
     X, y = load_diabetes(return_X_y=True)
     for bad in [np.full(len(y), np.nan), np.full(len(y), np.inf)]:
         with pytest.raises(ValueError, match="y must contain only finite values"):
-            ChimeraBoostRegressor(iterations=2).fit(X, bad)
+            DarkoRegressor(iterations=2).fit(X, bad)
 
     y_binary = np.tile([0.0, 1.0], 20)
     y_binary[3] = np.nan
     with pytest.raises(ValueError, match="y must contain only finite values"):
-        ChimeraBoostClassifier(iterations=2).fit(X[:40], y_binary)
+        DarkoClassifier(iterations=2).fit(X[:40], y_binary)
 
 
 def test_invalid_eval_sample_weights_raise():
     X, y = load_diabetes(return_X_y=True)
     Xtr, Xv, ytr, yv = train_test_split(X, y, test_size=0.2, random_state=0)
     with pytest.raises(ValueError, match="eval_sample_weight"):
-        ChimeraBoostRegressor(iterations=2).fit(
+        DarkoRegressor(iterations=2).fit(
             Xtr, ytr, eval_set=(Xv, yv), eval_sample_weight=np.ones(len(yv) + 1)
         )
 
 
 def test_eval_sample_weight_requires_eval_set_for_all_fit_entries():
-    from chimeraboost.booster import GradientBoosting, MulticlassBoosting
+    from darkofit.booster import GradientBoosting, MulticlassBoosting
 
     X = np.arange(80, dtype=np.float64).reshape(40, 2)
     y_reg = np.linspace(-1.0, 1.0, 40)
@@ -5085,12 +5085,12 @@ def test_eval_sample_weight_requires_eval_set_for_all_fit_entries():
     message = "eval_sample_weight requires an explicit eval_set"
 
     with pytest.raises(ValueError, match=message):
-        ChimeraBoostRegressor(
+        DarkoRegressor(
             iterations=2, tree_mode="catboost", early_stopping=False
         ).fit(X, y_reg, eval_sample_weight=weights)
 
     with pytest.raises(ValueError, match=message):
-        ChimeraBoostClassifier(
+        DarkoClassifier(
             iterations=2, tree_mode="catboost", early_stopping=False
         ).fit(X, y_cls, eval_sample_weight=weights)
 
@@ -5120,11 +5120,11 @@ def test_weighted_validation_changes_early_stopping_path():
 
     easy_weight = np.array([50.0, 1.0, 1.0, 1.0])
     hard_weight = np.array([1.0, 1.0, 50.0, 50.0])
-    easy = ChimeraBoostRegressor(
+    easy = DarkoRegressor(
         iterations=80, early_stopping=True, early_stopping_rounds=5,
         learning_rate=0.2, depth=2, random_state=0
     ).fit(Xtr, ytr, eval_set=(Xv, yv), eval_sample_weight=easy_weight)
-    hard = ChimeraBoostRegressor(
+    hard = DarkoRegressor(
         iterations=80, early_stopping=True, early_stopping_rounds=5,
         learning_rate=0.2, depth=2, random_state=0
     ).fit(Xtr, ytr, eval_set=(Xv, yv), eval_sample_weight=hard_weight)
@@ -5134,7 +5134,7 @@ def test_weighted_validation_changes_early_stopping_path():
 
 
 def test_weighted_categorical_target_encoding_changes_stats():
-    from chimeraboost.preprocessing import FeaturePreprocessor
+    from darkofit.preprocessing import FeaturePreprocessor
 
     X = np.array([["a"], ["a"], ["b"], ["b"]], dtype=object)
     y = np.array([0.0, 1.0, 0.0, 10.0])
@@ -5162,7 +5162,7 @@ def test_weighted_categorical_target_encoding_changes_stats():
 def test_l2_zero_illegal_splits_do_not_divide_by_zero():
     """Illegal empty-side split candidates must be discarded before gain math."""
     import numba
-    from chimeraboost.tree import _best_split, _best_split_serial
+    from darkofit.tree import _best_split, _best_split_serial
 
     hg = np.zeros((1, 1, 3))
     hh = np.zeros((1, 1, 3))
@@ -5188,7 +5188,7 @@ def test_l2_zero_illegal_splits_do_not_divide_by_zero():
 def test_best_split_serial_matches_parallel_histogram_search():
     """Parent-gain optimizations must not diverge between split-search paths."""
     import numba
-    from chimeraboost.tree import _best_split, _best_split_serial
+    from darkofit.tree import _best_split, _best_split_serial
 
     rng = np.random.default_rng(12)
     hg = rng.normal(size=(7, 4, 8))
@@ -5214,7 +5214,7 @@ def test_best_split_serial_matches_parallel_histogram_search():
 
 def test_ordered_leaf_update_l2_zero_singleton_is_finite():
     """Leave-one-out ordered updates should remain finite when l2=0."""
-    from chimeraboost.tree import ordered_leaf_update_inplace
+    from darkofit.tree import ordered_leaf_update_inplace
 
     leaf = np.array([0, 1, 1], dtype=np.int64)
     grad = np.array([1.0, 2.0, 3.0])
@@ -5234,8 +5234,8 @@ def test_ordered_leaf_update_l2_zero_singleton_is_finite():
 def test_feature_contiguous_hist_layout_matches_c_order_tree_build():
     """The optional F-order histogram matrix must not change tree structure."""
     import numba
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.tree import build_oblivious_tree
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.tree import build_oblivious_tree
 
     if numba.config.NUMBA_NUM_THREADS < 2:
         pytest.skip("requires at least two numba threads")
@@ -5275,8 +5275,8 @@ def test_feature_contiguous_hist_layout_matches_c_order_tree_build():
 
 def test_selected_feature_histograms_match_masked_full_histograms():
     """Column-subsampled histogram building must match the old mask-only path."""
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.tree import build_oblivious_tree
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.tree import build_oblivious_tree
 
     rng = np.random.default_rng(4)
     X = rng.normal(size=(1200, 16))
@@ -5311,8 +5311,8 @@ def test_selected_feature_histograms_match_masked_full_histograms():
 
 def test_feature_indices_without_mask_self_mask_reused_histograms():
     """Selected histograms must not let stale unselected columns enter splits."""
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.tree import build_oblivious_tree
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.tree import build_oblivious_tree
 
     rng = np.random.default_rng(5)
     X = rng.normal(size=(1000, 8))
@@ -5357,8 +5357,8 @@ def test_feature_indices_without_mask_self_mask_reused_histograms():
 
 def test_feature_indices_must_match_feature_mask():
     """A mismatched selected-column mask would leave stale histograms eligible."""
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.tree import build_oblivious_tree
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.tree import build_oblivious_tree
 
     rng = np.random.default_rng(6)
     X = rng.normal(size=(256, 5))
@@ -5379,8 +5379,8 @@ def test_feature_indices_must_match_feature_mask():
 
 def test_hist_buffers_must_be_large_enough():
     """Reusable histogram buffers should fail before Numba can write past them."""
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.tree import build_oblivious_tree
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.tree import build_oblivious_tree
 
     rng = np.random.default_rng(17)
     X = rng.normal(size=(128, 4))
@@ -5403,8 +5403,8 @@ def test_hist_buffers_must_be_large_enough():
 
 def test_histogram_layout_copy_must_match_training_shape():
     """X_hist_binned is indexed with the same rows/leaves as X_binned."""
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.tree import build_oblivious_tree
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.tree import build_oblivious_tree
 
     rng = np.random.default_rng(18)
     X = rng.normal(size=(128, 4))
@@ -5424,8 +5424,8 @@ def test_histogram_layout_copy_must_match_training_shape():
 def test_row_index_histograms_match_zeroed_subsample():
     """Selected-row histograms must match scanning all rows with zeroed grads."""
     import numba
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.tree import build_oblivious_tree
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.tree import build_oblivious_tree
 
     rng = np.random.default_rng(7)
     X = rng.normal(size=(900, 12))
@@ -5494,8 +5494,8 @@ def test_row_index_histograms_match_zeroed_subsample():
 def test_row_and_feature_index_histograms_match_zeroed_subsample_serial():
     """Selected rows compose with selected features in the single-thread path."""
     import numba
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.tree import build_oblivious_tree
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.tree import build_oblivious_tree
 
     rng = np.random.default_rng(8)
     X = rng.normal(size=(850, 14))
@@ -5541,8 +5541,8 @@ def test_row_and_feature_index_histograms_match_zeroed_subsample_serial():
 def test_constant_hessian_histograms_match_generic_threaded():
     """Unit-Hessian histogram kernels must match generic hess=ones kernels."""
     import numba
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.tree import build_oblivious_tree
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.tree import build_oblivious_tree
 
     if numba.config.NUMBA_NUM_THREADS < 2:
         pytest.skip("requires at least two numba threads")
@@ -5606,8 +5606,8 @@ def test_constant_hessian_histograms_match_generic_threaded():
 def test_constant_hessian_histograms_match_generic_serial():
     """The single-thread unit-Hessian kernels must preserve tree state exactly."""
     import numba
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.tree import build_oblivious_tree
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.tree import build_oblivious_tree
 
     rng = np.random.default_rng(10)
     X = rng.normal(size=(850, 13))
@@ -5673,8 +5673,8 @@ def test_sample_weight_uniform_equals_no_weight_rmse():
     X, y = load_diabetes(return_X_y=True)
     Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.2, random_state=0)
     w = np.ones(len(ytr))
-    m_none = ChimeraBoostRegressor(iterations=80, random_state=0).fit(Xtr, ytr)
-    m_ones = ChimeraBoostRegressor(iterations=80, random_state=0).fit(
+    m_none = DarkoRegressor(iterations=80, random_state=0).fit(Xtr, ytr)
+    m_ones = DarkoRegressor(iterations=80, random_state=0).fit(
         Xtr, ytr, sample_weight=w
     )
     assert np.array_equal(m_none.predict(Xte), m_ones.predict(Xte))
@@ -5687,8 +5687,8 @@ def test_sample_weight_uniform_equals_no_weight_logloss():
         X, y, test_size=0.2, random_state=0, stratify=y
     )
     w = np.ones(len(ytr))
-    m_none = ChimeraBoostClassifier(iterations=80, random_state=0).fit(Xtr, ytr)
-    m_ones = ChimeraBoostClassifier(iterations=80, random_state=0).fit(
+    m_none = DarkoClassifier(iterations=80, random_state=0).fit(Xtr, ytr)
+    m_ones = DarkoClassifier(iterations=80, random_state=0).fit(
         Xtr, ytr, sample_weight=w
     )
     assert np.array_equal(m_none.predict_proba(Xte), m_ones.predict_proba(Xte))
@@ -5702,8 +5702,8 @@ def test_sample_weight_uniform_equals_no_weight_multiclass():
         X, y, test_size=0.25, random_state=0, stratify=y
     )
     w = np.ones(len(ytr))
-    m_none = ChimeraBoostClassifier(iterations=80, random_state=0).fit(Xtr, ytr)
-    m_ones = ChimeraBoostClassifier(iterations=80, random_state=0).fit(
+    m_none = DarkoClassifier(iterations=80, random_state=0).fit(Xtr, ytr)
+    m_ones = DarkoClassifier(iterations=80, random_state=0).fit(
         Xtr, ytr, sample_weight=w
     )
     assert np.array_equal(m_none.predict_proba(Xte), m_ones.predict_proba(Xte))
@@ -5713,12 +5713,12 @@ def test_lightgbm_uniform_weights_equal_no_weights():
     from sklearn.datasets import load_wine
 
     cases = [
-        (ChimeraBoostRegressor, load_diabetes(return_X_y=True), "predict"),
-        (ChimeraBoostClassifier, load_breast_cancer(return_X_y=True), "predict_proba"),
-        (ChimeraBoostClassifier, load_wine(return_X_y=True), "predict_proba"),
+        (DarkoRegressor, load_diabetes(return_X_y=True), "predict"),
+        (DarkoClassifier, load_breast_cancer(return_X_y=True), "predict_proba"),
+        (DarkoClassifier, load_wine(return_X_y=True), "predict_proba"),
     ]
     for estimator_cls, (X, y), predict_name in cases:
-        stratify = None if estimator_cls is ChimeraBoostRegressor else y
+        stratify = None if estimator_cls is DarkoRegressor else y
         Xtr, Xte, ytr, _ = train_test_split(
             X, y, test_size=0.25, random_state=0, stratify=stratify
         )
@@ -5748,11 +5748,11 @@ def test_sample_weight_shifts_predictions():
     w_high = np.where(ytr >= np.median(ytr), 5.0, 1.0)
     w_low  = np.where(ytr <  np.median(ytr), 5.0, 1.0)
 
-    m_base = ChimeraBoostRegressor(iterations=150, random_state=0).fit(Xtr, ytr)
-    m_high = ChimeraBoostRegressor(iterations=150, random_state=0).fit(
+    m_base = DarkoRegressor(iterations=150, random_state=0).fit(Xtr, ytr)
+    m_high = DarkoRegressor(iterations=150, random_state=0).fit(
         Xtr, ytr, sample_weight=w_high
     )
-    m_low  = ChimeraBoostRegressor(iterations=150, random_state=0).fit(
+    m_low  = DarkoRegressor(iterations=150, random_state=0).fit(
         Xtr, ytr, sample_weight=w_low
     )
     mean_base = m_base.predict(Xte).mean()
@@ -5769,7 +5769,7 @@ def test_sample_weight_early_stopping_slices_correctly():
     X, y = load_breast_cancer(return_X_y=True)
     rng = np.random.default_rng(7)
     w = rng.uniform(0.5, 2.0, len(y))
-    m = ChimeraBoostClassifier(
+    m = DarkoClassifier(
         iterations=500, early_stopping=True, validation_fraction=0.15,
         early_stopping_rounds=20, random_state=0
     ).fit(X, y, sample_weight=w)
@@ -5792,13 +5792,13 @@ def test_empty_tree_stops_boosting_early():
     # One informative feature, aggressive min_child_weight -> splits run out fast.
     X = np.array([[0.0]] * 60 + [[1.0]] * 60)
     y = np.array([0.0] * 60 + [1.0] * 60)
-    m = ChimeraBoostRegressor(iterations=1000, min_child_weight=30,
+    m = DarkoRegressor(iterations=1000, min_child_weight=30,
                               random_state=0).fit(X, y)
     assert len(m.model_.trees_) < 1000
 
 
 def test_sampled_depth_zero_tree_retries_next_row_sample():
-    from chimeraboost.booster import GradientBoosting
+    from darkofit.booster import GradientBoosting
 
     class SingletonFirstSampleBoosting(GradientBoosting):
         def _maybe_subsample(self, grad, hess, rng):
@@ -5832,11 +5832,11 @@ def test_sampled_depth_zero_tree_retries_next_row_sample():
 
 
 def test_sampled_depth_zero_retries_are_capped_on_no_signal_data():
-    from chimeraboost.booster import _MAX_CONSECUTIVE_SAMPLED_DEPTH0_RETRIES
+    from darkofit.booster import _MAX_CONSECUTIVE_SAMPLED_DEPTH0_RETRIES
 
     X = np.zeros((80, 2), dtype=np.float64)
     y = np.zeros(80, dtype=np.float64)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=1000,
         subsample=0.5,
         random_state=0,
@@ -5848,11 +5848,11 @@ def test_sampled_depth_zero_retries_are_capped_on_no_signal_data():
 
 
 def test_multiclass_sampled_depth_zero_retries_are_capped_on_no_signal_data():
-    from chimeraboost.booster import _MAX_CONSECUTIVE_SAMPLED_DEPTH0_RETRIES
+    from darkofit.booster import _MAX_CONSECUTIVE_SAMPLED_DEPTH0_RETRIES
 
     X = np.zeros((90, 2), dtype=np.float64)
     y = np.tile([0, 1, 2], 30)
-    model = ChimeraBoostClassifier(
+    model = DarkoClassifier(
         iterations=1000,
         subsample=0.5,
         random_state=0,
@@ -5864,7 +5864,7 @@ def test_multiclass_sampled_depth_zero_retries_are_capped_on_no_signal_data():
 
 
 def test_sampled_retry_best_model_uses_successful_prefix_index():
-    from chimeraboost.booster import GradientBoosting
+    from darkofit.booster import GradientBoosting
 
     class CaptureBestIterBoosting(GradientBoosting):
         def _maybe_subsample(self, grad, hess, rng):
@@ -5908,8 +5908,8 @@ def test_eval_train_loss_false_skips_train_history():
     X, y = load_diabetes(return_X_y=True)
     Xtr, Xv, ytr, yv = train_test_split(X, y, test_size=0.2, random_state=0)
 
-    on = ChimeraBoostRegressor(iterations=40, random_state=0).fit(Xtr, ytr)
-    off = ChimeraBoostRegressor(
+    on = DarkoRegressor(iterations=40, random_state=0).fit(Xtr, ytr)
+    off = DarkoRegressor(
         iterations=40, random_state=0, eval_train_loss=False
     ).fit(Xtr, ytr)
     assert len(on.model_.train_history_) == 40
@@ -5919,10 +5919,10 @@ def test_eval_train_loss_false_skips_train_history():
     assert np.isclose(off.best_score_, on.model_.train_history_[-1])
 
     # With early stopping, the eval-set path is untouched.
-    es_on = ChimeraBoostRegressor(
+    es_on = DarkoRegressor(
         iterations=300, early_stopping_rounds=20, random_state=0
     ).fit(Xtr, ytr, eval_set=(Xv, yv))
-    es_off = ChimeraBoostRegressor(
+    es_off = DarkoRegressor(
         iterations=300, early_stopping_rounds=20, random_state=0,
         eval_train_loss=False
     ).fit(Xtr, ytr, eval_set=(Xv, yv))
@@ -5935,8 +5935,8 @@ def test_eval_train_loss_false_multiclass_and_verbose_override(capsys):
     from sklearn.datasets import load_wine
 
     X, y = load_wine(return_X_y=True)
-    on = ChimeraBoostClassifier(iterations=8, random_state=0).fit(X, y)
-    off = ChimeraBoostClassifier(
+    on = DarkoClassifier(iterations=8, random_state=0).fit(X, y)
+    off = DarkoClassifier(
         iterations=8, random_state=0, eval_train_loss=False
     ).fit(X, y)
     assert len(on.model_.train_history_) == 8
@@ -5945,7 +5945,7 @@ def test_eval_train_loss_false_multiclass_and_verbose_override(capsys):
 
     # verbose needs the train loss for its progress log, so it forces the
     # evaluation back on even when eval_train_loss=False.
-    verbose = ChimeraBoostClassifier(
+    verbose = DarkoClassifier(
         iterations=8, random_state=0, eval_train_loss=False, verbose=True
     ).fit(X, y)
     capsys.readouterr()
@@ -5960,7 +5960,7 @@ def test_auto_params_records_resolved_regression_context(tmp_path):
     w = np.linspace(0.5, 2.0, len(ytr))
     wv = np.linspace(1.0, 3.0, len(yv))
 
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=6,
         learning_rate=0.07,
         depth=3,
@@ -6011,14 +6011,14 @@ def test_auto_params_records_resolved_regression_context(tmp_path):
 
     path = tmp_path / "reg.npz"
     model.save_model(path)
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
     assert loaded.model_.auto_params_["tree"]["max_leaves"] == 8
     assert loaded.model_.auto_params_["learning_rate"]["resolved"] == 0.07
 
 
 def test_auto_params_records_classifier_context():
     X, y = load_breast_cancer(return_X_y=True)
-    model = ChimeraBoostClassifier(
+    model = DarkoClassifier(
         iterations=3,
         tree_mode="lightgbm",
         random_state=0,
@@ -6039,8 +6039,8 @@ def test_auto_params_records_classifier_context():
 
 
 def test_sklearn_default_l2_leaf_reg_is_auto():
-    reg = ChimeraBoostRegressor()
-    clf = ChimeraBoostClassifier()
+    reg = DarkoRegressor()
+    clf = DarkoClassifier()
 
     assert reg.l2_leaf_reg == "auto"
     assert clf.l2_leaf_reg == "auto"
@@ -6050,7 +6050,7 @@ def test_sklearn_default_l2_leaf_reg_is_auto():
 
 def test_explicit_classifier_l2_leaf_reg_is_preserved_in_lightgbm_mode():
     X, y = load_breast_cancer(return_X_y=True)
-    model = ChimeraBoostClassifier(
+    model = DarkoClassifier(
         iterations=2,
         tree_mode="lightgbm",
         l2_leaf_reg=3.0,
@@ -6065,12 +6065,12 @@ def test_early_stopping_rejects_string_values():
     X, y = load_diabetes(return_X_y=True)
 
     with pytest.raises(ValueError, match="early_stopping must be a bool"):
-        ChimeraBoostRegressor(
+        DarkoRegressor(
             iterations=2, early_stopping="auto", random_state=0
         ).fit(X[:40], y[:40])
 
     with pytest.raises(ValueError, match="early_stopping must be a bool"):
-        ChimeraBoostClassifier(
+        DarkoClassifier(
             iterations=2, early_stopping="false", random_state=0
         ).fit(X[:40], (y[:40] > np.median(y[:40])).astype(int))
 
@@ -6081,18 +6081,18 @@ def test_early_stopping_min_delta_records_legacy_explicit_and_auto():
     y = X[:, 0] - 0.25 * X[:, 1] + rng.normal(0.0, 0.05, size=120)
     Xtr, Xv, ytr, yv = train_test_split(X, y, test_size=0.25, random_state=0)
 
-    legacy = ChimeraBoostRegressor(
+    legacy = DarkoRegressor(
         iterations=4,
         early_stopping_rounds=2,
         random_state=0,
     ).fit(Xtr, ytr, eval_set=(Xv, yv))
-    explicit = ChimeraBoostRegressor(
+    explicit = DarkoRegressor(
         iterations=4,
         early_stopping_rounds=2,
         early_stopping_min_delta=0.123,
         random_state=0,
     ).fit(Xtr, ytr, eval_set=(Xv, yv))
-    auto = ChimeraBoostRegressor(
+    auto = DarkoRegressor(
         iterations=4,
         early_stopping_rounds=2,
         early_stopping_min_delta="auto",
@@ -6120,13 +6120,13 @@ def test_early_stopping_min_delta_does_not_gate_best_prefix_argmin():
         random_state=0,
     )
 
-    keep_all = ChimeraBoostRegressor(
+    keep_all = DarkoRegressor(
         **kw, use_best_model=False
     ).fit(Xtr, ytr, eval_set=(Xv, yv))
     best_n = int(np.argmin(keep_all.model_.valid_history_)) + 1
     assert best_n > 1
 
-    best = ChimeraBoostRegressor(**kw).fit(Xtr, ytr, eval_set=(Xv, yv))
+    best = DarkoRegressor(**kw).fit(Xtr, ytr, eval_set=(Xv, yv))
     assert best.best_score_ == min(keep_all.model_.valid_history_)
     assert best.n_estimators_ == best_n
 
@@ -6138,7 +6138,7 @@ def test_validation_fraction_auto_weighted_stratified_and_refit_metadata():
     w = np.ones(96)
     w[:6] = 25.0
 
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=6,
         early_stopping=True,
         validation_fraction="auto",
@@ -6169,7 +6169,7 @@ def test_tree_mode_auto_selects_records_refits_and_round_trips(tmp_path):
     X = rng.normal(size=(120, 5))
     y = X[:, 0] - 0.5 * X[:, 1] + rng.normal(0.0, 0.1, size=120)
 
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=5,
         tree_mode="auto",
         validation_fraction=0.2,
@@ -6199,7 +6199,7 @@ def test_tree_mode_auto_selects_records_refits_and_round_trips(tmp_path):
 
     path = tmp_path / "auto-reg.npz"
     model.save_model(path)
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
     assert loaded.tree_mode_selection_ == model.tree_mode_selection_
     assert loaded.model_.auto_params_["tree_mode_selection"] == selection
     assert np.array_equal(loaded.predict(X), model.predict(X))
@@ -6211,7 +6211,7 @@ def test_tree_mode_auto_classifier_uses_explicit_eval_set():
         X[:180], y[:180], test_size=0.25, random_state=0, stratify=y[:180]
     )
 
-    model = ChimeraBoostClassifier(
+    model = DarkoClassifier(
         iterations=4,
         tree_mode="auto",
         random_state=0,
@@ -6232,7 +6232,7 @@ def test_tree_mode_auto_rejects_ordered_boosting_true():
 
     for ordered_boosting in (True, 1):
         with pytest.raises(ValueError, match="tree_mode='auto'"):
-            ChimeraBoostRegressor(
+            DarkoRegressor(
                 iterations=2,
                 tree_mode="auto",
                 ordered_boosting=ordered_boosting,
@@ -6243,7 +6243,7 @@ def test_tree_mode_auto_rejects_ordered_boosting_true():
 def test_tree_mode_selection_score_uses_retained_model_score():
     from types import SimpleNamespace
 
-    helper = ChimeraBoostRegressor()
+    helper = DarkoRegressor()
     retained = SimpleNamespace(
         valid_history_=[3.0, 1.0, 2.5],
         best_score_=1.0,
@@ -6260,7 +6260,7 @@ def test_tree_mode_selection_score_uses_retained_model_score():
 
 
 def test_tree_mode_auto_restores_selected_model_thread_count(monkeypatch):
-    import chimeraboost.sklearn_api as sklearn_api
+    import darkofit.sklearn_api as sklearn_api
 
     restored = []
 
@@ -6285,7 +6285,7 @@ def test_tree_mode_auto_restores_selected_model_thread_count(monkeypatch):
     monkeypatch.setattr(
         sklearn_api, "_apply_thread_count", fake_apply_thread_count
     )
-    helper = ChimeraBoostRegressor(tree_mode="auto")
+    helper = DarkoRegressor(tree_mode="auto")
     X = np.zeros((6, 2), dtype=np.float64)
     y = np.zeros(6, dtype=np.float64)
 
@@ -6326,7 +6326,7 @@ def test_learning_rate_probe_scores_retained_model_prefix():
         def _max_tree_leaves(self):
             return 8
 
-    helper = ChimeraBoostRegressor(
+    helper = DarkoRegressor(
         iterations=10,
         learning_rate=None,
         auto_learning_rate_probe=True,
@@ -6361,7 +6361,7 @@ def test_auto_validation_rejects_eval_sample_weight_without_eval_set():
     message = "eval_sample_weight requires an explicit eval_set"
 
     with pytest.raises(ValueError, match=message):
-        ChimeraBoostRegressor(
+        DarkoRegressor(
             iterations=2,
             tree_mode="auto",
             validation_fraction=0.2,
@@ -6369,7 +6369,7 @@ def test_auto_validation_rejects_eval_sample_weight_without_eval_set():
         ).fit(X, y_reg, eval_sample_weight=np.ones(12))
 
     with pytest.raises(ValueError, match=message):
-        ChimeraBoostClassifier(
+        DarkoClassifier(
             iterations=2,
             tree_mode="auto",
             validation_fraction=0.2,
@@ -6378,7 +6378,7 @@ def test_auto_validation_rejects_eval_sample_weight_without_eval_set():
 
 
 def test_auto_validation_split_requires_positive_weight_mass_on_both_sides():
-    from chimeraboost.sklearn_api import _make_eval_split
+    from darkofit.sklearn_api import _make_eval_split
 
     X = np.arange(80, dtype=np.float64).reshape(40, 2)
     y = np.linspace(-1.0, 1.0, 40)
@@ -6397,7 +6397,7 @@ def test_weighted_stratified_rejects_silent_noop_split_modes():
     groups = np.repeat(np.arange(20), 2)
 
     with pytest.raises(ValueError, match="ungrouped regression"):
-        ChimeraBoostRegressor(
+        DarkoRegressor(
             iterations=2,
             early_stopping=True,
             validation_strategy="weighted_stratified",
@@ -6405,7 +6405,7 @@ def test_weighted_stratified_rejects_silent_noop_split_modes():
 
     y_cls = np.r_[np.zeros(20), np.ones(20)]
     with pytest.raises(ValueError, match="regression automatic validation"):
-        ChimeraBoostClassifier(
+        DarkoClassifier(
             iterations=2,
             early_stopping=True,
             validation_strategy="weighted_stratified",
@@ -6418,7 +6418,7 @@ def test_weighted_stratified_default_fraction_caps_small_regression_strata():
     y = np.linspace(-2.0, 2.0, 40) + rng.normal(0.0, 0.01, 40)
     w = np.linspace(0.5, 3.0, 40)
 
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=4,
         early_stopping=True,
         validation_fraction=0.1,
@@ -6437,7 +6437,7 @@ def test_wrapper_validates_sample_weight_before_auto_validation_split():
     y = np.linspace(-1.0, 1.0, 20)
 
     with pytest.raises(ValueError, match=r"sample_weight must have shape"):
-        ChimeraBoostRegressor(
+        DarkoRegressor(
             iterations=2,
             early_stopping=True,
             validation_fraction="auto",
@@ -6447,7 +6447,7 @@ def test_wrapper_validates_sample_weight_before_auto_validation_split():
     bad = np.ones(20)
     bad[0] = -1.0
     with pytest.raises(ValueError, match="sample_weight must be nonnegative"):
-        ChimeraBoostRegressor(
+        DarkoRegressor(
             iterations=2,
             early_stopping=True,
             validation_fraction="auto",
@@ -6463,7 +6463,7 @@ def test_auto_structure_and_cat_smoothing_are_opt_in_and_recorded():
     w = np.ones(140)
     w[:8] = 12.0
 
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=3,
         depth="auto",
         l2_leaf_reg="auto",
@@ -6488,13 +6488,13 @@ def test_learning_rate_probe_is_opt_in_and_records_candidates():
     X = rng.normal(size=(110, 4))
     y = X[:, 0] + rng.normal(0.0, 0.1, size=110)
 
-    disabled = ChimeraBoostRegressor(
+    disabled = DarkoRegressor(
         iterations=1000,
         early_stopping=True,
         validation_fraction=0.2,
         random_state=0,
     ).fit(X, y)
-    probed = ChimeraBoostRegressor(
+    probed = DarkoRegressor(
         iterations=1000,
         early_stopping=True,
         validation_fraction=0.2,
@@ -6518,7 +6518,7 @@ def test_learning_rate_probe_is_opt_in_and_records_candidates():
 
 
 def test_ordered_leaf_update_inplace_matches_numpy_formula():
-    from chimeraboost.tree import ordered_leaf_update_inplace
+    from darkofit.tree import ordered_leaf_update_inplace
 
     rng = np.random.default_rng(11)
     n, n_leaves = 500, 8
@@ -6556,7 +6556,7 @@ def test_ordered_leaf_update_inplace_matches_numpy_formula():
 def test_bin_transform_kernel_matches_searchsorted_reference():
     """The numba binning kernel must reproduce the numpy searchsorted path
     bit-for-bit, including NaN/inf routing and low-cardinality columns."""
-    from chimeraboost.binning import Binner
+    from darkofit.binning import Binner
 
     rng = np.random.default_rng(5)
     n = 3000
@@ -6584,7 +6584,7 @@ def test_bin_transform_kernel_matches_searchsorted_reference():
 
 
 def test_binner_sampling_is_deterministic_and_off_for_small_data():
-    from chimeraboost.binning import Binner
+    from darkofit.binning import Binner
 
     rng = np.random.default_rng(8)
     X = rng.normal(size=(5000, 3))
@@ -6609,7 +6609,7 @@ def test_binner_sampling_is_deterministic_and_off_for_small_data():
 
 
 def test_binner_all_ones_weights_match_unweighted_borders():
-    from chimeraboost.binning import Binner
+    from darkofit.binning import Binner
 
     rng = np.random.default_rng(84)
     X = rng.normal(size=(200, 4))
@@ -6626,7 +6626,7 @@ def test_binner_all_ones_weights_match_unweighted_borders():
 
 
 def test_binner_weighted_borders_follow_weighted_mass():
-    from chimeraboost.binning import Binner
+    from darkofit.binning import Binner
 
     X = np.arange(100, dtype=float).reshape(-1, 1)
     weights = np.ones(100)
@@ -6643,7 +6643,7 @@ def test_binner_weighted_borders_follow_weighted_mass():
 
 
 def test_binner_sampled_weighted_borders_use_weights_once():
-    from chimeraboost.binning import Binner
+    from darkofit.binning import Binner
 
     rng = np.random.default_rng(85)
     X = rng.normal(size=(500, 3))
@@ -6669,7 +6669,7 @@ def test_binner_sampled_weighted_borders_use_weights_once():
 
 
 def test_binner_weighted_sampling_uses_positive_weight_support():
-    from chimeraboost.binning import Binner
+    from darkofit.binning import Binner
 
     X = np.arange(500, dtype=np.float64).reshape(-1, 1)
     positive_idx = np.arange(490, 500)
@@ -6691,8 +6691,8 @@ def test_binner_weighted_sampling_uses_positive_weight_support():
 
 def test_preprocessor_blocks_match_stacked_reference():
     """Binning blocks separately must equal binning the hstacked matrix."""
-    from chimeraboost.binning import Binner
-    from chimeraboost.preprocessing import FeaturePreprocessor
+    from darkofit.binning import Binner
+    from darkofit.preprocessing import FeaturePreprocessor
 
     rng = np.random.default_rng(2)
     n = 1500
@@ -6714,7 +6714,7 @@ def test_preprocessor_blocks_match_stacked_reference():
     # Fit-time check: borders must equal those learned from the hstacked
     # matrix the old implementation materialized. The encoder is seeded, so
     # replaying it reproduces the fit-time (out-of-fold) encoded block.
-    from chimeraboost.target_encoding import OrderedTargetEncoder
+    from darkofit.target_encoding import OrderedTargetEncoder
     enc_replay = OrderedTargetEncoder(1.0, 0, mode="kfold", n_folds=20)
     encoded_fit = enc_replay.fit_transform(codes, y)
     stacked_fit = np.hstack([num, codes.astype(np.float64), encoded_fit])
@@ -6740,8 +6740,8 @@ def test_preprocessor_blocks_match_stacked_reference():
 
 
 def test_ts_permutations_one_matches_default_ordered_statistics():
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.target_encoding import OrderedTargetEncoder
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.target_encoding import OrderedTargetEncoder
 
     rng = np.random.default_rng(411)
     codes = rng.integers(0, 5, size=(180, 2), dtype=np.int64)
@@ -6776,7 +6776,7 @@ def test_ts_permutations_one_matches_default_ordered_statistics():
 
 
 def test_multi_permutation_ordered_statistics_exclude_own_label():
-    from chimeraboost.target_encoding import OrderedTargetEncoder
+    from darkofit.target_encoding import OrderedTargetEncoder
 
     y = np.linspace(-3.0, 4.0, 40)
     codes = np.arange(y.shape[0], dtype=np.int64).reshape(-1, 1)
@@ -6794,7 +6794,7 @@ def test_multi_permutation_ordered_statistics_exclude_own_label():
 
 
 def test_multi_permutation_ordered_statistics_shrink_early_variance():
-    from chimeraboost.target_encoding import OrderedTargetEncoder
+    from darkofit.target_encoding import OrderedTargetEncoder
 
     n = 240
     seed = 123
@@ -6813,7 +6813,7 @@ def test_multi_permutation_ordered_statistics_shrink_early_variance():
 
 def test_ts_permutations_round_trips_and_refit_params(tmp_path):
     X, y = _cat_dataset(n=180, seed=31)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=8,
         random_state=0,
         ts_permutations=3,
@@ -6829,7 +6829,7 @@ def test_ts_permutations_round_trips_and_refit_params(tmp_path):
 
     path = tmp_path / "ts_permutations.npz"
     model.save_model(path)
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
 
     assert loaded.get_params()["ts_permutations"] == 3
     assert loaded.model_.prep_.ts_permutations == 3
@@ -6838,7 +6838,7 @@ def test_ts_permutations_round_trips_and_refit_params(tmp_path):
 
 
 def test_target_ordered_raw_codes_are_monotone_and_do_not_remap_encoders():
-    from chimeraboost.preprocessing import FeaturePreprocessor
+    from darkofit.preprocessing import FeaturePreprocessor
 
     cats = np.array([
         "low", "low", "low", "mid", "mid", "mid",
@@ -6875,7 +6875,7 @@ def test_target_ordered_raw_codes_are_monotone_and_do_not_remap_encoders():
 
 
 def test_target_ordered_raw_code_ties_use_category_code_order():
-    from chimeraboost.preprocessing import FeaturePreprocessor
+    from darkofit.preprocessing import FeaturePreprocessor
 
     X = np.array(["b", "a", "c", "b", "a", "c"], dtype=object).reshape(-1, 1)
     y = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0])
@@ -6897,7 +6897,7 @@ def test_target_ordered_raw_code_ties_use_category_code_order():
 
 
 def test_target_ordered_raw_codes_are_explicit_leaky_opt_in():
-    from chimeraboost.preprocessing import FeaturePreprocessor
+    from darkofit.preprocessing import FeaturePreprocessor
 
     with pytest.raises(ValueError, match="leaky_full"):
         FeaturePreprocessor(target_ordered_cat_codes=True)
@@ -6918,13 +6918,13 @@ def test_target_ordered_raw_codes_are_explicit_leaky_opt_in():
 
 def test_target_ordered_cat_codes_leave_catboost_mode_unchanged():
     X, y = _cat_dataset(n=220, seed=41)
-    off = ChimeraBoostRegressor(
+    off = DarkoRegressor(
         iterations=8,
         random_state=0,
         tree_mode="catboost",
         target_ordered_cat_codes="off",
     ).fit(X, y, cat_features=[1])
-    leaky = ChimeraBoostRegressor(
+    leaky = DarkoRegressor(
         iterations=8,
         random_state=0,
         tree_mode="catboost",
@@ -6942,7 +6942,7 @@ def test_target_ordered_cat_codes_are_scalar_only_for_raw_code_block():
     X[:, 1] = np.linspace(-1.0, 1.0, 90)
     y = np.tile([0, 1, 2], 30)
 
-    model = ChimeraBoostClassifier(
+    model = DarkoClassifier(
         iterations=2,
         random_state=0,
         tree_mode="lightgbm",
@@ -6956,7 +6956,7 @@ def test_target_ordered_cat_codes_round_trip_v3_with_unseen(tmp_path):
     import json
 
     X, y = _cat_dataset(n=260, seed=43)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=10,
         random_state=0,
         tree_mode="lightgbm",
@@ -6976,7 +6976,7 @@ def test_target_ordered_cat_codes_round_trip_v3_with_unseen(tmp_path):
     )
     assert "cat0__code_remap" in arrays
 
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
     assert loaded.get_params()["target_ordered_cat_codes"] == "leaky_full"
     assert np.array_equal(
         loaded.model_.prep_.cat_code_remaps_[0],
@@ -6993,7 +6993,7 @@ def test_target_ordered_cat_code_archive_corruption_rejected(tmp_path):
     import json
 
     X, y = _cat_dataset(n=180, seed=44)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=4,
         random_state=0,
         tree_mode="lightgbm",
@@ -7007,7 +7007,7 @@ def test_target_ordered_cat_code_archive_corruption_rejected(tmp_path):
     missing.pop("cat0__code_remap")
     missing_path = _write_archive(tmp_path / "missing-remap.npz", missing)
     with pytest.raises(ValueError, match="missing categorical code remap"):
-        ChimeraBoostRegressor.load_model(missing_path)
+        DarkoRegressor.load_model(missing_path)
 
     downgraded = dict(arrays)
     header = json.loads(str(downgraded["header"]))
@@ -7015,11 +7015,11 @@ def test_target_ordered_cat_code_archive_corruption_rejected(tmp_path):
     downgraded["header"] = np.array(json.dumps(header))
     downgraded_path = _write_archive(tmp_path / "downgraded-remap.npz", downgraded)
     with pytest.raises(ValueError, match="format version 3"):
-        ChimeraBoostRegressor.load_model(downgraded_path)
+        DarkoRegressor.load_model(downgraded_path)
 
 
 def test_target_ordered_raw_codes_match_pandas_and_dict_lookup_paths():
-    from chimeraboost.preprocessing import FeaturePreprocessor
+    from darkofit.preprocessing import FeaturePreprocessor
 
     pytest.importorskip("pandas")
 
@@ -7049,7 +7049,7 @@ def test_target_ordered_raw_codes_match_pandas_and_dict_lookup_paths():
 
 
 def test_codes_for_transform_pandas_path_matches_dict_path():
-    from chimeraboost.preprocessing import FeaturePreprocessor
+    from darkofit.preprocessing import FeaturePreprocessor
 
     pytest.importorskip("pandas")
     rng = np.random.default_rng(4)
@@ -7104,7 +7104,7 @@ def _alloc_test_rowpar(n_feat, leaf_slots, max_bins, n_arrays):
 @pytest.mark.parametrize("constant_hessian", [False, True])
 def test_oblivious_rowpar_matches_feature_parallel(constant_hessian):
     import numba
-    from chimeraboost.tree import build_oblivious_tree
+    from darkofit.tree import build_oblivious_tree
 
     if numba.get_num_threads() < 2:
         pytest.skip("requires multithreaded numba")
@@ -7136,7 +7136,7 @@ def test_oblivious_rowpar_matches_feature_parallel(constant_hessian):
 @pytest.mark.parametrize("case", ["nonconstant", "constant", "positive"])
 def test_leafwise_rowpar_matches_feature_parallel(case):
     import numba
-    from chimeraboost.tree import build_leafwise_tree
+    from darkofit.tree import build_leafwise_tree
 
     if numba.get_num_threads() < 2:
         pytest.skip("requires multithreaded numba")
@@ -7172,7 +7172,7 @@ def test_leafwise_rowpar_with_row_indices_matches():
     """Subsampled rows flow through row_order segments; the rowpar refill
     must agree with the feature-parallel selected-row path exactly."""
     import numba
-    from chimeraboost.tree import build_leafwise_tree
+    from darkofit.tree import build_leafwise_tree
 
     if numba.get_num_threads() < 2:
         pytest.skip("requires multithreaded numba")
@@ -7204,7 +7204,7 @@ def test_leafwise_rowpar_with_row_indices_matches():
 
 
 def test_booster_allocates_rowpar_buffers_by_mode():
-    from chimeraboost.booster import GradientBoosting
+    from darkofit.booster import GradientBoosting
 
     rng = np.random.default_rng(0)
     X = rng.normal(size=(30_000, 6))
@@ -7244,17 +7244,17 @@ def test_histogram_parallelism_row_keeps_quality():
 
     X, y = make_regression(n_samples=30_000, n_features=10, noise=10,
                            random_state=3)
-    base = ChimeraBoostRegressor(iterations=60, random_state=0).fit(X, y)
-    row = ChimeraBoostRegressor(iterations=60, random_state=0,
+    base = DarkoRegressor(iterations=60, random_state=0).fit(X, y)
+    row = DarkoRegressor(iterations=60, random_state=0,
                                 histogram_parallelism="row").fit(X, y)
     rmse_base = np.sqrt(np.mean((y - base.predict(X)) ** 2))
     rmse_row = np.sqrt(np.mean((y - row.predict(X)) ** 2))
     assert abs(rmse_base - rmse_row) < 0.05 * rmse_base
 
-    lgb_base = ChimeraBoostRegressor(
+    lgb_base = DarkoRegressor(
         iterations=60, tree_mode="lightgbm", random_state=0
     ).fit(X, y)
-    lgb_row = ChimeraBoostRegressor(
+    lgb_row = DarkoRegressor(
         iterations=60, tree_mode="lightgbm", random_state=0,
         histogram_parallelism="row"
     ).fit(X, y)
@@ -7265,7 +7265,7 @@ def test_histogram_parallelism_row_keeps_quality():
 
 def test_levelwise_rowpar_matches_feature_parallel():
     import numba
-    from chimeraboost.tree import build_levelwise_tree
+    from darkofit.tree import build_levelwise_tree
 
     if numba.get_num_threads() < 2:
         pytest.skip("requires multithreaded numba")
@@ -7292,11 +7292,11 @@ def test_levelwise_rowpar_matches_feature_parallel():
 def test_interleaved_hist_buffers_bitwise_match_separate(monkeypatch):
     """Low-thread fits use lane views of one interleaved base array; results
     must be bitwise identical to separate buffers (same summation order)."""
-    import chimeraboost.booster as booster_mod
+    import darkofit.booster as booster_mod
 
     X, y = load_breast_cancer(return_X_y=True)
 
-    interleaved = ChimeraBoostClassifier(
+    interleaved = DarkoClassifier(
         iterations=40, thread_count=2, random_state=0
     ).fit(X, y)
     bufs = interleaved.model_._alloc_hist_buffers(
@@ -7311,7 +7311,7 @@ def test_interleaved_hist_buffers_bitwise_match_separate(monkeypatch):
     monkeypatch.setattr(
         booster_mod._BaseBooster, "_HIST_INTERLEAVE_MAX_THREADS", -1
     )
-    separate = ChimeraBoostClassifier(
+    separate = DarkoClassifier(
         iterations=40, thread_count=2, random_state=0
     ).fit(X, y)
     sep_bufs = separate.model_._alloc_hist_buffers(
@@ -7324,16 +7324,16 @@ def test_interleaved_hist_buffers_bitwise_match_separate(monkeypatch):
 
 
 def test_interleaved_hist_buffers_lightgbm_mode_bitwise(monkeypatch):
-    import chimeraboost.booster as booster_mod
+    import darkofit.booster as booster_mod
 
     X, y = load_diabetes(return_X_y=True)
-    a = ChimeraBoostRegressor(
+    a = DarkoRegressor(
         iterations=40, tree_mode="lightgbm", thread_count=2, random_state=0
     ).fit(X, y)
     monkeypatch.setattr(
         booster_mod._BaseBooster, "_HIST_INTERLEAVE_MAX_THREADS", -1
     )
-    b = ChimeraBoostRegressor(
+    b = DarkoRegressor(
         iterations=40, tree_mode="lightgbm", thread_count=2, random_state=0
     ).fit(X, y)
     assert np.array_equal(a.predict(X), b.predict(X))
@@ -7372,25 +7372,25 @@ def test_flat_prediction_matches_tree_loop_bitwise():
     Xc, yc = make_classification(n_samples=3000, n_features=12,
                                  random_state=0)
 
-    cat = ChimeraBoostRegressor(iterations=60, random_state=0).fit(Xr, yr)
+    cat = DarkoRegressor(iterations=60, random_state=0).fit(Xr, yr)
     assert np.array_equal(cat.predict(Xr), _loop_predict_raw(cat.model_, Xr))
 
-    lgb = ChimeraBoostRegressor(iterations=60, tree_mode="lightgbm",
+    lgb = DarkoRegressor(iterations=60, tree_mode="lightgbm",
                                 random_state=0).fit(Xr, yr)
     assert np.array_equal(lgb.predict(Xr), _loop_predict_raw(lgb.model_, Xr))
 
-    hybrid = ChimeraBoostRegressor(iterations=60, tree_mode="hybrid",
+    hybrid = DarkoRegressor(iterations=60, tree_mode="hybrid",
                                    random_state=0).fit(Xr, yr)
     assert np.array_equal(
         hybrid.predict(Xr), _loop_predict_raw(hybrid.model_, Xr)
     )
 
-    binary = ChimeraBoostClassifier(iterations=60, tree_mode="lightgbm",
+    binary = DarkoClassifier(iterations=60, tree_mode="lightgbm",
                                     random_state=0).fit(Xc, yc)
     raw = binary.model_.predict_raw(Xc)
     assert np.array_equal(raw, _loop_predict_raw(binary.model_, Xc))
 
-    depthwise = ChimeraBoostRegressor(
+    depthwise = DarkoRegressor(
         iterations=60, tree_mode="depthwise", random_state=0
     ).fit(Xr, yr)
     assert np.array_equal(
@@ -7411,7 +7411,7 @@ def test_flat_multiclass_prediction_matches_loop_bitwise():
          "multiclass_tree_strategy": "shared_vector"},  # vector leaves
         {"tree_mode": "depthwise"},                    # depthwise per-class
     ):
-        m = ChimeraBoostClassifier(iterations=20, random_state=0, **kw)
+        m = DarkoClassifier(iterations=20, random_state=0, **kw)
         m.fit(X, y)
         got = m.model_.predict_raw(X)
         want = _loop_predict_raw_multiclass(m.model_, X)
@@ -7420,7 +7420,7 @@ def test_flat_multiclass_prediction_matches_loop_bitwise():
 
 def test_flat_prediction_fallback_and_refit_invalidation():
     from sklearn.datasets import make_regression
-    from chimeraboost.booster import GradientBoosting
+    from darkofit.booster import GradientBoosting
 
     X, y = make_regression(n_samples=2000, n_features=8, noise=5,
                            random_state=1)
@@ -7452,14 +7452,14 @@ def test_flat_kernels_direct_parity_all_families():
     (explicit-node trees), since they back model serialization."""
     import numba
     from sklearn.datasets import make_regression, load_wine
-    from chimeraboost.flat_model import (
+    from darkofit.flat_model import (
         FlatLevelwiseEnsemble, FlatNonObliviousEnsemble,
         FlatObliviousEnsemble, flat_predict_preferred
     )
 
     Xr, yr = make_regression(n_samples=2500, n_features=10, noise=5,
                              random_state=0)
-    lgb = ChimeraBoostRegressor(iterations=40, tree_mode="lightgbm",
+    lgb = DarkoRegressor(iterations=40, tree_mode="lightgbm",
                                 random_state=0).fit(Xr, yr)
     flat = lgb.model_._flat_ensemble()
     assert isinstance(flat, FlatNonObliviousEnsemble)
@@ -7472,7 +7472,7 @@ def test_flat_kernels_direct_parity_all_families():
         tree.add_predict(Xb, want)
     assert np.array_equal(got, want)
 
-    depthwise = ChimeraBoostRegressor(
+    depthwise = DarkoRegressor(
         iterations=40, tree_mode="depthwise", random_state=0
     ).fit(Xr, yr)
     flat = depthwise.model_._flat_ensemble()
@@ -7494,7 +7494,7 @@ def test_flat_kernels_direct_parity_all_families():
           "multiclass_tree_strategy": "shared_vector"}, False),
         ({"tree_mode": "depthwise"}, numba.get_num_threads() > 1),
     ):
-        m = ChimeraBoostClassifier(iterations=15, random_state=0, **kw)
+        m = DarkoClassifier(iterations=15, random_state=0, **kw)
         m.fit(Xw, yw)
         flat = m.model_._flat_ensemble()
         assert flat is not None
@@ -7544,10 +7544,10 @@ def test_save_load_regressor_round_trip(tmp_path):
     for kw in ({}, {"tree_mode": "lightgbm"}, {"tree_mode": "hybrid"},
                {"tree_mode": "depthwise"},
                {"loss": "Quantile", "alpha": 0.8}):
-        m = ChimeraBoostRegressor(iterations=40, random_state=0, **kw)
+        m = DarkoRegressor(iterations=40, random_state=0, **kw)
         m.fit(X, y, cat_features=[1])
         m.save_model(path)
-        loaded = ChimeraBoostRegressor.load_model(path)
+        loaded = DarkoRegressor.load_model(path)
 
         # Unseen and missing categories at predict time round-trip too.
         X_new = X[:50].copy()
@@ -7561,11 +7561,11 @@ def test_save_load_regressor_round_trip(tmp_path):
         assert loaded.n_features_in_ == X.shape[1]
 
     no_ext = tmp_path / "reg_no_ext"
-    m = ChimeraBoostRegressor(iterations=5, random_state=0).fit(
+    m = DarkoRegressor(iterations=5, random_state=0).fit(
         X[:80], y[:80], cat_features=[1]
     )
     m.save_model(no_ext)
-    loaded = ChimeraBoostRegressor.load_model(no_ext)
+    loaded = DarkoRegressor.load_model(no_ext)
     assert np.array_equal(m.predict(X[:10]), loaded.predict(X[:10]))
     assert loaded.model_.timing_ == m.model_.timing_
     assert loaded.model_.train_history_ == m.model_.train_history_
@@ -7574,15 +7574,15 @@ def test_save_load_regressor_round_trip(tmp_path):
 def test_load_legacy_v1_missing_category_archive(tmp_path):
     import json
 
-    from chimeraboost.serialization import (
+    from darkofit.serialization import (
         FORMAT_VERSION,
         _KIND_MISSING,
         _KIND_STR,
     )
-    from chimeraboost.target_encoding import _MISSING_CATEGORY
+    from darkofit.target_encoding import _MISSING_CATEGORY
 
     X, y = _cat_dataset(n=180, seed=8)
-    model = ChimeraBoostRegressor(iterations=5, random_state=0).fit(
+    model = DarkoRegressor(iterations=5, random_state=0).fit(
         X, y, cat_features=[1]
     )
     path = tmp_path / "current-missing.npz"
@@ -7608,7 +7608,7 @@ def test_load_legacy_v1_missing_category_archive(tmp_path):
 
     legacy_path = tmp_path / "legacy-v1-missing.npz"
     np.savez_compressed(legacy_path, **arrays)
-    loaded = ChimeraBoostRegressor.load_model(legacy_path)
+    loaded = DarkoRegressor.load_model(legacy_path)
 
     cat_map = loaded.model_.prep_.cat_maps_[0]
     assert _MISSING_CATEGORY in cat_map
@@ -7629,7 +7629,7 @@ def test_load_legacy_v1_missing_category_archive(tmp_path):
 
     upgraded_path = tmp_path / "upgraded-v2-missing.npz"
     loaded.save_model(upgraded_path)
-    reloaded = ChimeraBoostRegressor.load_model(upgraded_path)
+    reloaded = DarkoRegressor.load_model(upgraded_path)
     reloaded_map = reloaded.model_.prep_.cat_maps_[0]
     assert reloaded_map["__nan__"] == reloaded_map[_MISSING_CATEGORY]
     assert np.array_equal(
@@ -7639,34 +7639,34 @@ def test_load_legacy_v1_missing_category_archive(tmp_path):
 
 
 def test_load_rejects_corrupt_category_and_class_payloads(tmp_path):
-    from chimeraboost.booster import MulticlassBoosting
-    from chimeraboost.serialization import _KIND_BOOL
+    from darkofit.booster import MulticlassBoosting
+    from darkofit.serialization import _KIND_BOOL
     from sklearn.datasets import load_wine
 
     X, y = _cat_dataset(n=160, seed=11)
     cat_path = tmp_path / "cat.npz"
-    ChimeraBoostRegressor(iterations=3, random_state=0).fit(
+    DarkoRegressor(iterations=3, random_state=0).fit(
         X, y, cat_features=[1]
     ).save_model(cat_path)
 
     arrays = _read_archive_arrays(cat_path)
     arrays["cat0__kinds"] = arrays["cat0__kinds"][:-1]
     with pytest.raises(ValueError, match="values and kinds length mismatch"):
-        ChimeraBoostRegressor.load_model(
+        DarkoRegressor.load_model(
             _write_archive(tmp_path / "cat-kind-short.npz", arrays)
         )
 
     arrays = _read_archive_arrays(cat_path)
     arrays["cat0__values"] = arrays["cat0__values"].reshape(1, -1)
     with pytest.raises(ValueError, match="values must be 1-dimensional"):
-        ChimeraBoostRegressor.load_model(
+        DarkoRegressor.load_model(
             _write_archive(tmp_path / "cat-values-2d.npz", arrays)
         )
 
     X_bool = X.copy()
     X_bool[:, 1] = np.arange(X_bool.shape[0]) % 2 == 0
     bool_path = tmp_path / "bool-cat.npz"
-    ChimeraBoostRegressor(iterations=3, random_state=0).fit(
+    DarkoRegressor(iterations=3, random_state=0).fit(
         X_bool, y, cat_features=[1]
     ).save_model(bool_path)
     arrays = _read_archive_arrays(bool_path)
@@ -7676,7 +7676,7 @@ def test_load_rejects_corrupt_category_and_class_payloads(tmp_path):
     values[bool_pos[0]] = "not-bool"
     arrays["cat0__values"] = values
     with pytest.raises(ValueError, match="bool payload"):
-        ChimeraBoostRegressor.load_model(
+        DarkoRegressor.load_model(
             _write_archive(tmp_path / "cat-bad-bool.npz", arrays)
         )
 
@@ -7706,14 +7706,14 @@ def test_load_rejects_corrupt_category_and_class_payloads(tmp_path):
 
     wrapper_path = tmp_path / "wrapper-binary.npz"
     yb = np.where(y[:120] > np.median(y[:120]), "yes", "no").astype(object)
-    ChimeraBoostClassifier(iterations=3, random_state=0).fit(
+    DarkoClassifier(iterations=3, random_state=0).fit(
         np.asarray(X[:120, [0, 2]], dtype=np.float64), yb
     ).save_model(wrapper_path)
 
     arrays = _read_archive_arrays(wrapper_path)
     arrays["wrapper__classes_kinds"] = arrays["wrapper__classes_kinds"][:-1]
     with pytest.raises(ValueError, match="values and kinds length mismatch"):
-        ChimeraBoostClassifier.load_model(
+        DarkoClassifier.load_model(
             _write_archive(tmp_path / "wrapper-class-kind-short.npz", arrays)
         )
 
@@ -7724,7 +7724,7 @@ def test_load_rejects_corrupt_category_and_class_payloads(tmp_path):
     arrays["wrapper__classes_kinds"] = arrays["wrapper__classes_kinds"].copy()
     arrays["wrapper__classes_kinds"][0] = _KIND_BOOL
     with pytest.raises(ValueError, match="bool payload"):
-        ChimeraBoostClassifier.load_model(
+        DarkoClassifier.load_model(
             _write_archive(tmp_path / "wrapper-class-bad-bool.npz", arrays)
         )
 
@@ -7737,11 +7737,11 @@ def test_save_load_classifier_round_trip(tmp_path):
     # Binary with numeric labels.
     Xb, yb = load_breast_cancer(return_X_y=True)
     for kw in ({}, {"tree_mode": "depthwise"}):
-        binary = ChimeraBoostClassifier(
+        binary = DarkoClassifier(
             iterations=30, random_state=0, **kw
         ).fit(Xb, yb)
         binary.save_model(path)
-        loaded = ChimeraBoostClassifier.load_model(path)
+        loaded = DarkoClassifier.load_model(path)
         assert np.array_equal(
             binary.predict_proba(Xb), loaded.predict_proba(Xb)
         ), kw
@@ -7755,10 +7755,10 @@ def test_save_load_classifier_round_trip(tmp_path):
                {"tree_mode": "depthwise"},
                {"tree_mode": "lightgbm",
                 "multiclass_tree_strategy": "shared_vector"}):
-        mc = ChimeraBoostClassifier(iterations=15, random_state=0, **kw)
+        mc = DarkoClassifier(iterations=15, random_state=0, **kw)
         mc.fit(Xw, yw)
         mc.save_model(path)
-        loaded = ChimeraBoostClassifier.load_model(path)
+        loaded = DarkoClassifier.load_model(path)
         assert np.array_equal(mc.predict_proba(Xw), loaded.predict_proba(Xw)), kw
         assert list(loaded.classes_) == list(mc.classes_)
         assert np.array_equal(mc.predict(Xw), loaded.predict(Xw))
@@ -7766,8 +7766,8 @@ def test_save_load_classifier_round_trip(tmp_path):
 
 
 def test_save_load_booster_level_and_errors(tmp_path):
-    from chimeraboost.booster import GradientBoosting, MulticlassBoosting
-    from chimeraboost.serialization import save_booster
+    from darkofit.booster import GradientBoosting, MulticlassBoosting
+    from darkofit.serialization import save_booster
     from sklearn.datasets import load_wine
 
     path = str(tmp_path / "booster.npz")
@@ -7907,7 +7907,7 @@ def test_save_load_booster_level_and_errors(tmp_path):
 
 
 def test_core_booster_save_accepts_random_state_objects(tmp_path):
-    from chimeraboost.booster import GradientBoosting
+    from darkofit.booster import GradientBoosting
 
     X, y = load_diabetes(return_X_y=True)
     model = GradientBoosting(
@@ -7924,7 +7924,7 @@ def test_core_booster_save_accepts_random_state_objects(tmp_path):
 
 def test_load_preserves_saved_resolved_threads_without_setting_numba(tmp_path):
     import numba
-    from chimeraboost.booster import GradientBoosting
+    from darkofit.booster import GradientBoosting
 
     X, y = load_diabetes(return_X_y=True)
     model = GradientBoosting(
@@ -7947,7 +7947,7 @@ def test_load_preserves_saved_resolved_threads_without_setting_numba(tmp_path):
 def test_load_rejects_mismatched_tree_and_encoder_flat_arrays(tmp_path):
     import json
 
-    from chimeraboost.booster import GradientBoosting
+    from darkofit.booster import GradientBoosting
     from sklearn.datasets import load_wine
 
     X, y = _cat_dataset(n=180, seed=5)
@@ -8079,7 +8079,7 @@ def test_load_rejects_mismatched_tree_and_encoder_flat_arrays(tmp_path):
         GradientBoosting.load_model(bad_empty)
 
     Xw, yw = load_wine(return_X_y=True)
-    per_class = ChimeraBoostClassifier(iterations=3, random_state=0).fit(Xw, yw)
+    per_class = DarkoClassifier(iterations=3, random_state=0).fit(Xw, yw)
     per_class_path = tmp_path / "per-class.npz"
     per_class.save_model(per_class_path)
     with np.load(per_class_path, allow_pickle=False) as data:
@@ -8090,9 +8090,9 @@ def test_load_rejects_mismatched_tree_and_encoder_flat_arrays(tmp_path):
     bad_round_count = tmp_path / "bad-per-class-round-count.npz"
     np.savez_compressed(bad_round_count, **arrays)
     with pytest.raises(ValueError, match="tree count"):
-        ChimeraBoostClassifier.load_model(bad_round_count)
+        DarkoClassifier.load_model(bad_round_count)
 
-    shared = ChimeraBoostClassifier(
+    shared = DarkoClassifier(
         iterations=3,
         tree_mode="lightgbm",
         multiclass_tree_strategy="shared_vector",
@@ -8107,7 +8107,7 @@ def test_load_rejects_mismatched_tree_and_encoder_flat_arrays(tmp_path):
     bad_value_shape = tmp_path / "bad-multiclass-value-shape.npz"
     np.savez_compressed(bad_value_shape, **arrays)
     with pytest.raises(ValueError, match="must be 2-dimensional"):
-        ChimeraBoostClassifier.load_model(bad_value_shape)
+        DarkoClassifier.load_model(bad_value_shape)
 
     with np.load(shared_path, allow_pickle=False) as data:
         arrays = {key: data[key] for key in data.files}
@@ -8115,7 +8115,7 @@ def test_load_rejects_mismatched_tree_and_encoder_flat_arrays(tmp_path):
     bad_value_width = tmp_path / "bad-multiclass-value-width.npz"
     np.savez_compressed(bad_value_width, **arrays)
     with pytest.raises(ValueError, match="value width"):
-        ChimeraBoostClassifier.load_model(bad_value_width)
+        DarkoClassifier.load_model(bad_value_width)
 
     with np.load(shared_path, allow_pickle=False) as data:
         arrays = {key: data[key] for key in data.files}
@@ -8125,18 +8125,18 @@ def test_load_rejects_mismatched_tree_and_encoder_flat_arrays(tmp_path):
     bad_shared_count = tmp_path / "bad-shared-tree-count.npz"
     np.savez_compressed(bad_shared_count, **arrays)
     with pytest.raises(ValueError, match="tree count"):
-        ChimeraBoostClassifier.load_model(bad_shared_count)
+        DarkoClassifier.load_model(bad_shared_count)
 
 
 def test_save_load_weighted_fit_round_trip(tmp_path):
     X, y = _cat_dataset(seed=4)
     rng = np.random.default_rng(0)
     w = rng.uniform(0.5, 2.0, len(y))
-    m = ChimeraBoostRegressor(iterations=30, random_state=0)
+    m = DarkoRegressor(iterations=30, random_state=0)
     m.fit(X, y, cat_features=[1], sample_weight=w)
     path = str(tmp_path / "weighted.npz")
     m.save_model(path)
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
     assert np.array_equal(m.predict(X), loaded.predict(X))
 
 
@@ -8144,14 +8144,14 @@ def test_pickle_round_trip():
     import pickle
 
     X, y = _cat_dataset(seed=7)
-    m = ChimeraBoostRegressor(iterations=25, random_state=0)
+    m = DarkoRegressor(iterations=25, random_state=0)
     m.fit(X, y, cat_features=[1])
     clone = pickle.loads(pickle.dumps(m))
     assert np.array_equal(m.predict(X), clone.predict(X))
 
     from sklearn.datasets import load_wine
     Xw, yw = load_wine(return_X_y=True)
-    mc = ChimeraBoostClassifier(iterations=10, random_state=0).fit(Xw, yw)
+    mc = DarkoClassifier(iterations=10, random_state=0).fit(Xw, yw)
     clone = pickle.loads(pickle.dumps(mc))
     assert np.array_equal(mc.predict_proba(Xw), clone.predict_proba(Xw))
 
@@ -8163,27 +8163,27 @@ def test_load_model_cross_class_errors(tmp_path):
     X, y = load_diabetes(return_X_y=True)
 
     clf_path = str(tmp_path / "clf.npz")
-    ChimeraBoostClassifier(iterations=5, random_state=0).fit(
+    DarkoClassifier(iterations=5, random_state=0).fit(
         Xw, yw
     ).save_model(clf_path)
     with pytest.raises(TypeError):
-        ChimeraBoostRegressor.load_model(clf_path)
+        DarkoRegressor.load_model(clf_path)
 
     reg_path = str(tmp_path / "reg.npz")
-    ChimeraBoostRegressor(iterations=5, random_state=0).fit(
+    DarkoRegressor(iterations=5, random_state=0).fit(
         X, y
     ).save_model(reg_path)
     with pytest.raises(TypeError):
-        ChimeraBoostClassifier.load_model(reg_path)
+        DarkoClassifier.load_model(reg_path)
 
     # A booster-level multiclass save still loads through the classifier
     # wrapper (class labels live on the booster there).
-    from chimeraboost.booster import MulticlassBoosting
+    from darkofit.booster import MulticlassBoosting
     booster_path = str(tmp_path / "mc.npz")
     MulticlassBoosting(iterations=5, random_state=0).fit(
         Xw, yw
     ).save_model(booster_path)
-    loaded = ChimeraBoostClassifier.load_model(booster_path)
+    loaded = DarkoClassifier.load_model(booster_path)
     assert loaded.n_classes_ == 3
     assert loaded.n_features_in_ == Xw.shape[1]
     assert loaded.predict_proba(Xw).shape == (len(yw), 3)
@@ -8194,7 +8194,7 @@ def test_load_model_cross_class_errors(tmp_path):
 def test_oblivious_level_subtraction_matches_full_rebuild(threads,
                                                           constant_hessian):
     import numba
-    from chimeraboost.tree import build_oblivious_tree
+    from darkofit.tree import build_oblivious_tree
 
     if threads == 0:
         threads = numba.config.NUMBA_NUM_THREADS
@@ -8240,7 +8240,7 @@ def test_oblivious_level_subtraction_matches_full_rebuild(threads,
 
 def test_levelwise_level_subtraction_matches_full_rebuild():
     import numba
-    from chimeraboost.tree import build_levelwise_tree
+    from darkofit.tree import build_levelwise_tree
 
     rng = np.random.default_rng(23)
     n, n_feat, max_bins = 30_000, 6, 16
@@ -8274,8 +8274,8 @@ def test_level_subtraction_float_quality_parity(monkeypatch):
     rounding; fitted-model quality must be unchanged. Both lanes are forced
     explicitly because 'auto' is thread-count dependent."""
     from sklearn.datasets import make_regression
-    import chimeraboost.tree as tree_mod
-    import chimeraboost.booster as booster_mod
+    import darkofit.tree as tree_mod
+    import darkofit.booster as booster_mod
 
     X, y = make_regression(n_samples=20_000, n_features=15, noise=15,
                            random_state=5)
@@ -8288,17 +8288,17 @@ def test_level_subtraction_float_quality_parity(monkeypatch):
         return build
 
     monkeypatch.setattr(booster_mod, "build_oblivious_tree", forced(True))
-    m = ChimeraBoostRegressor(iterations=80, random_state=0).fit(X, y)
+    m = DarkoRegressor(iterations=80, random_state=0).fit(X, y)
     rmse_subtract = np.sqrt(np.mean((y - m.predict(X)) ** 2))
 
     monkeypatch.setattr(booster_mod, "build_oblivious_tree", forced(False))
-    m2 = ChimeraBoostRegressor(iterations=80, random_state=0).fit(X, y)
+    m2 = DarkoRegressor(iterations=80, random_state=0).fit(X, y)
     rmse_full = np.sqrt(np.mean((y - m2.predict(X)) ** 2))
     assert abs(rmse_subtract - rmse_full) < 0.02 * rmse_full
 
 
 def test_level_subtraction_auto_resolution():
-    from chimeraboost.tree import (
+    from darkofit.tree import (
         _LEVEL_SUBTRACTION_MAX_THREADS, _resolve_level_subtraction
     )
     import numba
@@ -8321,12 +8321,12 @@ def test_multiclass_fused_root_histograms_bitwise(tree_mode, monkeypatch):
     """The fused class-major root pass accumulates rows in the same order as
     each per-class root scan, so fits must be bitwise identical with the
     fused pass stripped."""
-    import chimeraboost.booster as booster_mod
+    import darkofit.booster as booster_mod
     from sklearn.datasets import load_wine
 
     X, y = load_wine(return_X_y=True)
     kw = dict(iterations=12, random_state=0, tree_mode=tree_mode)
-    fused = ChimeraBoostClassifier(**kw).fit(X, y)
+    fused = DarkoClassifier(**kw).fit(X, y)
 
     name = ("build_leafwise_tree" if tree_mode == "lightgbm"
             else "build_oblivious_tree")
@@ -8337,13 +8337,13 @@ def test_multiclass_fused_root_histograms_bitwise(tree_mode, monkeypatch):
         return original(*args, **kwargs)
 
     monkeypatch.setattr(booster_mod, name, strip_root)
-    plain = ChimeraBoostClassifier(**kw).fit(X, y)
+    plain = DarkoClassifier(**kw).fit(X, y)
     assert np.array_equal(fused.predict_proba(X), plain.predict_proba(X))
 
 
 def test_leafwise_root_histograms_kwarg_matches_self_scan():
-    from chimeraboost.preprocessing import FeaturePreprocessor
-    from chimeraboost.tree import (
+    from darkofit.preprocessing import FeaturePreprocessor
+    from darkofit.tree import (
         _build_multiclass_histograms_counts_into, build_leafwise_tree
     )
 
@@ -8391,7 +8391,7 @@ def test_multiclass_goss_runs_and_validates():
     Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.25,
                                           random_state=0, stratify=y)
     for tree_mode in ("catboost", "lightgbm"):
-        m = ChimeraBoostClassifier(
+        m = DarkoClassifier(
             iterations=120, random_state=0, sampling="goss",
             top_rate=0.3, other_rate=0.2, tree_mode=tree_mode,
         ).fit(Xtr, ytr)
@@ -8399,12 +8399,12 @@ def test_multiclass_goss_runs_and_validates():
         assert acc > 0.85, (tree_mode, acc)
 
     with pytest.raises(ValueError):
-        ChimeraBoostClassifier(
+        DarkoClassifier(
             iterations=5, sampling="goss", tree_mode="lightgbm",
             multiclass_tree_strategy="shared_vector",
         ).fit(X, y)
     with pytest.raises(ValueError):
-        ChimeraBoostClassifier(
+        DarkoClassifier(
             iterations=5, sampling="goss", subsample=0.8,
         ).fit(X, y)
 
@@ -8413,8 +8413,8 @@ def test_stochastic_regularization_defaults_match_disabled_explicit():
     from sklearn.datasets import load_diabetes
 
     X, y = load_diabetes(return_X_y=True)
-    base = ChimeraBoostRegressor(iterations=20, random_state=0).fit(X, y)
-    explicit = ChimeraBoostRegressor(
+    base = DarkoRegressor(iterations=20, random_state=0).fit(X, y)
+    explicit = DarkoRegressor(
         iterations=20,
         random_state=0,
         bootstrap_type="none",
@@ -8440,10 +8440,10 @@ def test_bayesian_bootstrap_is_seeded_and_all_ones_weight_equivalent():
         bootstrap_type="bayesian",
         bagging_temperature=1.0,
     )
-    a = ChimeraBoostRegressor(**kw).fit(X, y)
-    b = ChimeraBoostRegressor(**kw).fit(X, y)
-    ones = ChimeraBoostRegressor(**kw).fit(X, y, sample_weight=np.ones(len(y)))
-    different_seed = ChimeraBoostRegressor(
+    a = DarkoRegressor(**kw).fit(X, y)
+    b = DarkoRegressor(**kw).fit(X, y)
+    ones = DarkoRegressor(**kw).fit(X, y, sample_weight=np.ones(len(y)))
+    different_seed = DarkoRegressor(
         **{**kw, "random_state": 12}
     ).fit(X, y)
 
@@ -8459,8 +8459,8 @@ def test_bayesian_bootstrap_temperature_zero_matches_no_bootstrap():
     from sklearn.datasets import load_diabetes
 
     X, y = load_diabetes(return_X_y=True)
-    base = ChimeraBoostRegressor(iterations=20, random_state=0).fit(X, y)
-    zero = ChimeraBoostRegressor(
+    base = DarkoRegressor(iterations=20, random_state=0).fit(X, y)
+    zero = DarkoRegressor(
         iterations=20,
         random_state=0,
         bootstrap_type="bayesian",
@@ -8474,13 +8474,13 @@ def test_mvs_sampling_diagnostics_and_full_fraction_parity():
     from sklearn.datasets import load_diabetes
 
     X, y = load_diabetes(return_X_y=True)
-    full_uniform = ChimeraBoostRegressor(
+    full_uniform = DarkoRegressor(
         iterations=20, random_state=0, sampling="uniform", subsample=1.0
     ).fit(X, y)
-    full_mvs = ChimeraBoostRegressor(
+    full_mvs = DarkoRegressor(
         iterations=20, random_state=0, sampling="mvs", subsample=1.0
     ).fit(X, y)
-    sampled = ChimeraBoostRegressor(
+    sampled = DarkoRegressor(
         iterations=10,
         random_state=0,
         sampling="mvs",
@@ -8551,7 +8551,7 @@ def _old_weighted_goss_probabilities_reference(mass, target_mass):
 
 
 def test_exact_mvs_probabilities_match_bisection_reference():
-    from chimeraboost.booster import GradientBoosting
+    from darkofit.booster import GradientBoosting
 
     booster = GradientBoosting(iterations=1, sampling="mvs", subsample=0.4)
     cases = [
@@ -8589,7 +8589,7 @@ def test_exact_mvs_probabilities_match_bisection_reference():
 
 
 def test_exact_weighted_goss_probabilities_match_bisection_reference():
-    from chimeraboost.booster import GradientBoosting
+    from darkofit.booster import GradientBoosting
 
     booster = GradientBoosting(
         iterations=1, sampling="weighted_goss", top_rate=0.25, other_rate=0.35
@@ -8613,7 +8613,7 @@ def test_exact_weighted_goss_probabilities_match_bisection_reference():
 
 
 def test_mvs_realized_sample_count_matches_probability_mass():
-    from chimeraboost.booster import GradientBoosting
+    from darkofit.booster import GradientBoosting
 
     rng = np.random.default_rng(20260707)
     importance = rng.lognormal(size=200)
@@ -8630,7 +8630,7 @@ def test_mvs_realized_sample_count_matches_probability_mass():
 
 
 def test_weighted_goss_realized_sample_mass_matches_probability_mass():
-    from chimeraboost.booster import GradientBoosting
+    from darkofit.booster import GradientBoosting
 
     rng = np.random.default_rng(20260708)
     mass = rng.lognormal(mean=-0.1, sigma=0.7, size=180)
@@ -8655,7 +8655,7 @@ def test_multiclass_mvs_sampling_diagnostics_once_per_round():
     from sklearn.datasets import load_wine
 
     X, y = load_wine(return_X_y=True)
-    model = ChimeraBoostClassifier(
+    model = DarkoClassifier(
         iterations=6,
         sampling="mvs",
         subsample=0.5,
@@ -8673,7 +8673,7 @@ def test_mvs_rejects_invalid_subsample():
     X, y = load_diabetes(return_X_y=True)
     for subsample in (0.0, -0.1, 1.1, np.nan):
         with pytest.raises(ValueError, match="subsample must"):
-            ChimeraBoostRegressor(
+            DarkoRegressor(
                 iterations=1,
                 sampling="mvs",
                 subsample=subsample,
@@ -8687,7 +8687,7 @@ def test_weighted_goss_is_opt_in_and_records_diagnostics():
     w = np.ones(120)
     w[:10] = 15.0
 
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=8,
         random_state=0,
         tree_mode="lightgbm",
@@ -8708,7 +8708,7 @@ def test_weighted_goss_is_opt_in_and_records_diagnostics():
 
 
 def test_weighted_goss_uniform_mass_fast_path_avoids_full_sort(monkeypatch):
-    import chimeraboost.booster as booster_mod
+    import darkofit.booster as booster_mod
 
     def fail_argsort(*args, **kwargs):
         raise AssertionError("uniform-mass weighted GOSS should not full-sort")
@@ -8739,7 +8739,7 @@ def test_weighted_goss_uniform_mass_fast_path_avoids_full_sort(monkeypatch):
 
 
 def test_weighted_goss_nonuniform_top_mass_avoids_full_score_sort(monkeypatch):
-    import chimeraboost.booster as booster_mod
+    import darkofit.booster as booster_mod
 
     original_argsort = booster_mod.np.argsort
     n_samples = 10_000
@@ -8781,7 +8781,7 @@ def test_weighted_goss_nonuniform_top_mass_avoids_full_score_sort(monkeypatch):
 
 
 def test_weighted_goss_nonuniform_final_scaling_and_multiclass_shared_rows():
-    from chimeraboost.booster import GradientBoosting
+    from darkofit.booster import GradientBoosting
 
     class FixedRng:
         def __init__(self, values):
@@ -8840,7 +8840,7 @@ def test_weighted_goss_nonuniform_final_scaling_and_multiclass_shared_rows():
 
 
 def test_weighted_goss_empty_other_draw_does_not_force_biased_row():
-    from chimeraboost.booster import GradientBoosting
+    from darkofit.booster import GradientBoosting
 
     class EmptyDrawRng:
         def random(self, size):
@@ -8883,7 +8883,7 @@ def test_weighted_goss_empty_other_draw_does_not_force_biased_row():
 
 def test_multiclass_mvs_uses_shared_row_sample_per_round(monkeypatch):
     from sklearn.datasets import load_wine
-    import chimeraboost.booster as booster_mod
+    import darkofit.booster as booster_mod
 
     X, y = load_wine(return_X_y=True)
     seen = []
@@ -8895,7 +8895,7 @@ def test_multiclass_mvs_uses_shared_row_sample_per_round(monkeypatch):
         return original(*args, **kwargs)
 
     monkeypatch.setattr(booster_mod, "build_oblivious_tree", capture)
-    model = ChimeraBoostClassifier(
+    model = DarkoClassifier(
         iterations=3,
         random_state=0,
         sampling="mvs",
@@ -8910,7 +8910,7 @@ def test_multiclass_mvs_uses_shared_row_sample_per_round(monkeypatch):
 
 
 def test_random_strength_is_seeded_and_stores_true_gain():
-    from chimeraboost.tree import build_oblivious_tree
+    from darkofit.tree import build_oblivious_tree
 
     Xb = np.array([
         [0, 0],
@@ -8951,7 +8951,7 @@ def test_random_strength_is_seeded_and_stores_true_gain():
 
 
 def test_random_strength_filters_min_gain_before_noisy_argmax():
-    from chimeraboost.tree import _best_split_with_noise_py
+    from darkofit.tree import _best_split_with_noise_py
 
     hg = np.zeros((2, 1, 2), dtype=np.float64)
     hh = np.ones((2, 1, 2), dtype=np.float64)
@@ -8980,7 +8980,7 @@ def test_random_strength_filters_min_gain_before_noisy_argmax():
 
 
 def test_leafwise_random_strength_rescores_all_leaves(monkeypatch):
-    import chimeraboost.tree as tree_mod
+    import darkofit.tree as tree_mod
 
     calls = []
     original = tree_mod._best_splits_counts_for_leaf_ids_with_noise_py
@@ -9027,7 +9027,7 @@ def test_stochastic_regularization_persists_through_save_load(tmp_path):
     from sklearn.datasets import load_diabetes
 
     X, y = load_diabetes(return_X_y=True)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=8,
         random_state=0,
         sampling="mvs",
@@ -9039,7 +9039,7 @@ def test_stochastic_regularization_persists_through_save_load(tmp_path):
     ).fit(X, y)
     path = tmp_path / "stochastic.npz"
     model.save_model(path)
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
 
     assert loaded.model_.sampling == "mvs"
     assert loaded.model_.bootstrap_type == "bayesian"

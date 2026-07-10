@@ -1,8 +1,8 @@
-"""Bitwise A/B comparison harness for ChimeraBoost revisions.
+"""Bitwise A/B comparison harness for DarkoFit revisions.
 
 Run from any checkout with two repo paths:
 
-    python benchmarks/ab_compare.py /tmp/chimera-base /path/to/chimeraboost
+    python benchmarks/ab_compare.py /tmp/darkofit-base /path/to/darkofit
 
 The harness executes each repo in a separate Python subprocess, saves
 predictions and ``model_.train_history_`` for a deterministic case matrix, and
@@ -57,7 +57,7 @@ case_path = Path(sys.argv[2])
 out_path = Path(sys.argv[3])
 sys.path.insert(0, str(repo))
 
-from chimeraboost import ChimeraBoostClassifier, ChimeraBoostRegressor
+from darkofit import DarkoClassifier, DarkoRegressor
 
 case = json.loads(case_path.read_text())
 rng = np.random.default_rng(12345)
@@ -71,19 +71,19 @@ if task == "regression":
         n_samples=900, n_features=10, n_informative=7, noise=4.0,
         random_state=101,
     )
-    Est = ChimeraBoostRegressor
+    Est = DarkoRegressor
 elif task == "binary":
     X, y = make_classification(
         n_samples=900, n_features=12, n_informative=7, n_redundant=2,
         flip_y=0.03, random_state=102,
     )
-    Est = ChimeraBoostClassifier
+    Est = DarkoClassifier
 else:
     X, y = make_classification(
         n_samples=900, n_features=12, n_informative=8, n_redundant=2,
         n_classes=3, n_clusters_per_class=1, flip_y=0.03, random_state=103,
     )
-    Est = ChimeraBoostClassifier
+    Est = DarkoClassifier
 
 stratify = y if task != "regression" else None
 Xtr, Xte, ytr, yte = train_test_split(

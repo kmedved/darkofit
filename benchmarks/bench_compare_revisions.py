@@ -1,14 +1,14 @@
-"""Compare multiple ChimeraBoost revisions in isolated subprocesses.
+"""Compare multiple DarkoFit revisions in isolated subprocesses.
 
 This is the benchmark-first integration harness for the fork/upstream merge
 work. It compares current bbstats upstream, the local fork, and an integration
-candidate without importing two ``chimeraboost`` packages in one Python process.
+candidate without importing two ``darkofit`` packages in one Python process.
 
 Example
 -------
     python benchmarks/bench_compare_revisions.py \
-      --upstream /tmp/chimeraboost-upstream \
-      --fork /tmp/chimeraboost-fork \
+      --upstream /tmp/darkofit-upstream \
+      --fork /tmp/darkofit-fork \
       --candidate . \
       --sizes medium large \
       --datasets numeric_binary numeric_multiclass categorical_binary \
@@ -161,8 +161,8 @@ def _truncate_error(text):
 def _prepare_revision_import(revision_path):
     repo_root = Path(__file__).resolve().parents[1]
     resolved = str(Path(revision_path).resolve())
-    sys.modules.pop("chimeraboost", None)
-    sys.modules.pop("chimeraboost.sklearn_api", None)
+    sys.modules.pop("darkofit", None)
+    sys.modules.pop("darkofit.sklearn_api", None)
     sys.path = [
         p for p in sys.path
         if p and str(Path(p).resolve()) not in {str(repo_root), resolved}
@@ -219,10 +219,10 @@ def _fit_worker(payload):
     data = _load_case(payload["data_path"])
     _prepare_revision_import(variant.path)
 
-    from chimeraboost import ChimeraBoostClassifier, ChimeraBoostRegressor
+    from darkofit import DarkoClassifier, DarkoRegressor
 
     task = payload["task"]
-    estimator_cls = ChimeraBoostRegressor if task == "regression" else ChimeraBoostClassifier
+    estimator_cls = DarkoRegressor if task == "regression" else DarkoClassifier
     kwargs = estimator_kwargs(estimator_cls, config, variant, payload["seed"])
     if "sampling" in kwargs:
         kwargs["sampling"] = _effective_sampling(task, config)
@@ -411,7 +411,7 @@ def parse_args(argv):
         choices=["uniform", "goss"],
         default="uniform",
         help=(
-            "ChimeraBoost row sampling policy. Experimental 'goss' applies "
+            "DarkoFit row sampling policy. Experimental 'goss' applies "
             "to scalar regression/binary rows; multiclass rows stay uniform."
         ),
     )

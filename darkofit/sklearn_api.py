@@ -1825,7 +1825,7 @@ class _RefitParamsMixin:
         active = bool(state.get("linear_residual_active", False))
         if active and not enabled:
             raise ValueError(
-                "invalid ChimeraBoost model: active linear residual state "
+                "invalid DarkoFit model: active linear residual state "
                 "cannot be disabled"
             )
         if active:
@@ -1848,7 +1848,7 @@ class _RefitParamsMixin:
                 trend.feature_names_,
             ):
                 raise ValueError(
-                    "invalid ChimeraBoost model: linear residual feature names "
+                    "invalid DarkoFit model: linear residual feature names "
                     "do not match saved feature indices"
                 )
         self._sync_linear_residual_state(trend, enabled=enabled)
@@ -1938,7 +1938,7 @@ class _RefitParamsMixin:
             warning_record = {
                 "code": "small_sigma_calibration_fold",
                 "message": (
-                    "ChimeraBoost "
+                    "DarkoFit "
                     f"sigma_calibration={metadata.get('method')!r} was "
                     "estimated "
                     "from a small validation fold "
@@ -1958,7 +1958,7 @@ class _RefitParamsMixin:
             warning_record = {
                 "code": "high_influence_sigma_calibration_fold",
                 "message": (
-                    "ChimeraBoost sigma calibration is dominated by the "
+                    "DarkoFit sigma calibration is dominated by the "
                     f"largest {metadata['top_residual_count']} validation "
                     "residual contributions "
                     f"({metadata['top_residual_contribution_fraction']:.1%} "
@@ -2239,7 +2239,7 @@ class _RefitParamsMixin:
         return getattr(self, "_learning_rate_", self.model_.lr_)
 
 
-class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
+class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
     """Gradient boosted oblivious trees for regression.
 
     loss: "RMSE" (default), "MAE", "Quantile", "Gaussian", "LogNormal",
@@ -3124,7 +3124,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         if isinstance(booster, MulticlassBoosting):
             raise TypeError(
                 f"{path!r} contains a multiclass model; "
-                "use ChimeraBoostClassifier.load_model"
+                "use DarkoClassifier.load_model"
             )
         est = cls()
         params = wrapper_header.get("params") or {}
@@ -3132,7 +3132,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             saved_loss = params.get("loss")
             if saved_loss is not None and saved_loss != booster.loss_name:
                 raise ValueError(
-                    "invalid ChimeraBoost model: wrapper loss does not match "
+                    "invalid DarkoFit model: wrapper loss does not match "
                     "the loaded distributional booster"
                 )
         known = est.get_params()
@@ -3167,7 +3167,7 @@ class ChimeraBoostRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         return self.model_.timing_
 
 
-class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
+class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
     """Gradient boosted oblivious trees for classification.
 
     Automatically uses binary logloss for 2 classes and softmax multiclass for
@@ -3626,7 +3626,7 @@ class ChimeraBoostClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         else:
             raise ValueError(
                 f"{path!r} has no class labels; binary classifiers must be "
-                "saved with ChimeraBoostClassifier.save_model"
+                "saved with DarkoClassifier.save_model"
             )
         est.classes_ = classes
         est.n_classes_ = len(classes)

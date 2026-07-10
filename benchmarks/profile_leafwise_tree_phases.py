@@ -1,7 +1,7 @@
 """Profile the internal kernels used by LightGBM-mode leaf-wise trees.
 
-This diagnostic wraps selected functions in ``chimeraboost.tree`` while running
-short warmed fits. It complements ``profile_chimera_phases.py``: that script
+This diagnostic wraps selected functions in ``darkofit.tree`` while running
+short warmed fits. It complements ``profile_darkofit_phases.py``: that script
 shows whether ``tree_build`` dominates, while this one breaks tree building
 into histogram construction/refill, split scoring, row partitioning, leaf-value
 aggregation, and prediction-update helpers.
@@ -27,8 +27,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from chimeraboost import ChimeraBoostClassifier, ChimeraBoostRegressor
-import chimeraboost.tree as tree
+from darkofit import DarkoClassifier, DarkoRegressor
+import darkofit.tree as tree
 
 import bench_vs_lightgbm as bench
 
@@ -151,7 +151,7 @@ def _run_fit(spec, size_name, args, seed):
         X_train, y_train, spec.task, seed
     )
     estimator_cls = (
-        ChimeraBoostRegressor if spec.task == "regression" else ChimeraBoostClassifier
+        DarkoRegressor if spec.task == "regression" else DarkoClassifier
     )
 
     def fit_once():
@@ -256,20 +256,20 @@ def main(argv=None):
     if missing:
         raise SystemExit(f"unknown dataset(s): {sorted(missing)}")
 
-    print("warming up ChimeraBoost numba kernels...")
+    print("warming up DarkoFit numba kernels...")
     warm_args = argparse.Namespace(
         depth=args.depth,
         tree_mode="lightgbm",
         learning_rate=args.learning_rate,
-        chimera_num_leaves=args.num_leaves,
-        chimera_max_bins=args.max_bins,
-        chimera_min_child_samples=args.min_child_samples,
-        chimera_min_gain_to_split=args.min_gain_to_split,
-        chimera_min_child_weight=1.0,
+        darkofit_num_leaves=args.num_leaves,
+        darkofit_max_bins=args.max_bins,
+        darkofit_min_child_samples=args.min_child_samples,
+        darkofit_min_gain_to_split=args.min_gain_to_split,
+        darkofit_min_child_weight=1.0,
         threads=args.threads,
-        chimera_sampling="uniform",
-        chimera_top_rate=0.2,
-        chimera_other_rate=0.1,
+        darkofit_sampling="uniform",
+        darkofit_top_rate=0.2,
+        darkofit_other_rate=0.1,
     )
     bench._warm_up(warm_args)
 

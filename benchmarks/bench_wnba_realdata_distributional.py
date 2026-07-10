@@ -1,7 +1,7 @@
 """WNBA real-data distributional calibration check.
 
 This benchmark uses WNBA DARKO game-level metric observations as a real
-observation-noise validation set for ChimeraBoost's Gaussian head.  The target
+observation-noise validation set for DarkoFit's Gaussian head.  The target
 column is named ``z_observed`` in the source artifact, but it is the transformed
 metric observation scale rather than a globally standard-normal target.  The
 benchmark is offline and read-only with respect to the WNBA repo.
@@ -37,7 +37,7 @@ if str(ROOT) not in sys.path:
 import numpy as np
 import pandas as pd
 
-from chimeraboost import ChimeraBoostRegressor
+from darkofit import DarkoRegressor
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -583,7 +583,7 @@ def fit_gaussian(name, X_train, y_train, w_train, X_val, y_val, w_val,
     )
     if dist_calibration_feature is not None:
         model_kwargs["dist_calibration_feature"] = dist_calibration_feature
-    model = ChimeraBoostRegressor(**model_kwargs)
+    model = DarkoRegressor(**model_kwargs)
     start = time.perf_counter()
     model.fit(
         X_train,
@@ -622,7 +622,7 @@ def fit_gaussian(name, X_train, y_train, w_train, X_val, y_val, w_val,
 
 def fit_rmse_const_sigma(X_train, y_train, w_train, X_val, y_val, w_val,
                          X_test, y_test, w_test, args):
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         loss="RMSE",
         tree_mode="lightgbm",
         iterations=args.iterations,
@@ -653,7 +653,7 @@ def fit_rmse_const_sigma(X_train, y_train, w_train, X_val, y_val, w_val,
     predict_seconds = time.perf_counter() - start
     sigma = np.full_like(mu, max(sigma_const, 1e-12), dtype=np.float64)
     return _score(
-        "chimera_rmse_const_sigma",
+        "darkofit_rmse_const_sigma",
         X_train.shape[0],
         X_val.shape[0],
         X_test,
@@ -722,7 +722,7 @@ def _run_per_metric_affine_split(
     X_val, y_val, w_val = X[val_mask], y[val_mask], w[val_mask]
     X_test, y_test, w_test = X[test_mask], y[test_mask], w[test_mask]
     result, payload = fit_gaussian(
-        "chimera_gaussian_per_metric_affine_calibrated",
+        "darkofit_gaussian_per_metric_affine_calibrated",
         X_train, y_train, w_train, X_val, y_val, w_val,
         X_test, y_test, w_test, args,
         sigma_calibration="per_metric_affine",
@@ -849,7 +849,7 @@ def _run_tuned_affine_split(
     mu, sigma = model.predict_dist(X_test)
     predict_seconds = time.perf_counter() - start
     selected = _score(
-        "chimera_gaussian_affine_tuned",
+        "darkofit_gaussian_affine_tuned",
         X_train.shape[0],
         X_val.shape[0],
         X_test,
@@ -885,7 +885,7 @@ def _run_rolling_origins(df, X, y, w, args, origins):
                 "origin": origin,
                 "test_season": test_season,
                 "result": Result(
-                    model="chimera_gaussian_affine_calibrated",
+                    model="darkofit_gaussian_affine_calibrated",
                     status="skip",
                     reason="empty rolling-origin split",
                     train_rows=int(train_mask.sum()),
@@ -900,7 +900,7 @@ def _run_rolling_origins(df, X, y, w, args, origins):
             train_mask=train_mask,
             val_mask=val_mask,
             test_mask=test_mask,
-            name="chimera_gaussian_affine_calibrated",
+            name="darkofit_gaussian_affine_calibrated",
         )
         rows.append({
             "origin": origin,
@@ -1114,7 +1114,7 @@ def write_markdown(
     calibrated = next(
         (
             r for r in results
-            if r.model == "chimera_gaussian_per_metric_affine_calibrated"
+            if r.model == "darkofit_gaussian_per_metric_affine_calibrated"
         ),
         None,
     )
@@ -1122,7 +1122,7 @@ def write_markdown(
         calibrated = next(
             (
                 r for r in results
-                if r.model == "chimera_gaussian_affine_calibrated"
+                if r.model == "darkofit_gaussian_affine_calibrated"
             ),
             None,
         )
@@ -1236,12 +1236,12 @@ def main(argv=None):
             X_test, y_test, w_test, args,
         ),
         fit_gaussian(
-            "chimera_gaussian_raw",
+            "darkofit_gaussian_raw",
             X_train, y_train, w_train, X_val, y_val, w_val,
             X_test, y_test, w_test, args, sigma_calibration=None,
         ),
         fit_gaussian(
-            "chimera_gaussian_scalar_calibrated",
+            "darkofit_gaussian_scalar_calibrated",
             X_train, y_train, w_train, X_val, y_val, w_val,
             X_test, y_test, w_test, args, sigma_calibration="scalar",
         ),
@@ -1251,7 +1251,7 @@ def main(argv=None):
         train_mask=train_mask,
         val_mask=val_mask,
         test_mask=test_mask,
-        name="chimera_gaussian_affine_calibrated",
+        name="darkofit_gaussian_affine_calibrated",
     )
     results.append(affine_result)
     per_metric_result, per_metric_payload, per_metric_frame = (

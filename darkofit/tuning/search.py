@@ -1,4 +1,4 @@
-"""Laned stepwise Optuna tuning around ChimeraBoost sklearn wrappers."""
+"""Laned stepwise Optuna tuning around DarkoFit sklearn wrappers."""
 
 from __future__ import annotations
 
@@ -286,7 +286,7 @@ def _pooled_trial_sigma_calibration(trial):
     return calibration
 
 
-class ChimeraBoostStepwiseSearchCV(BaseEstimator):
+class DarkoStepwiseSearchCV(BaseEstimator):
     """Stepwise Optuna search with separate CatBoost/LightGBM lanes."""
 
     def __init__(
@@ -390,7 +390,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
             )
         self.study_name_ = (
             self.study_name
-            or f"chimeraboost-stepwise-search-{uuid.uuid4().hex}"
+            or f"darkofit-stepwise-search-{uuid.uuid4().hex}"
         )
         self.storage_config_ = make_storage(
             self.storage,
@@ -533,7 +533,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
                 )
                 if self.verbose:
                     print(
-                        "ChimeraBoostStepwiseSearchCV "
+                        "DarkoStepwiseSearchCV "
                         f"phase={spec.name} lane={state.tree_mode} "
                         f"trials={spec.n_trials}"
                     )
@@ -659,7 +659,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
         )
         # Use process-level parallelism only. Optuna's n_jobs>1 would run
         # trials as threads inside one Python process, racing with Numba's
-        # process-global thread pool that ChimeraBoost configures per fit.
+        # process-global thread pool that DarkoFit configures per fit.
         ctx = get_context("spawn")
         try:
             with ProcessPoolExecutor(
@@ -694,7 +694,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
                         "refit_rounds='preserve' cannot reattach distribution "
                         "calibration without fold_best_iterations; set "
                         "refit=False or rerun the search with the current "
-                        "ChimeraBoost version"
+                        "DarkoFit version"
                     )
                 params["iterations"] = max(
                     1, int(math.ceil(np.median(fold_iterations)))
@@ -738,7 +738,7 @@ class ChimeraBoostStepwiseSearchCV(BaseEstimator):
                 raise ValueError(
                     "best trial does not contain distribution calibration metadata; "
                     "set refit=False or rerun the search with the current "
-                    "ChimeraBoost version"
+                    "DarkoFit version"
                 )
             final.dist_calibration_ = calibration["method"]
             final.dist_scale_ = float(calibration["dist_scale"])
@@ -983,7 +983,7 @@ def _reject_custom_sampler_multiprocessing(sampler, n_workers):
             "n_workers > 1 with a custom Optuna sampler is not supported; "
             "arbitrary sampler instances cannot be cloned with deterministic "
             "per-worker seeds. Set n_workers=1 or leave sampler=None so "
-            "ChimeraBoost can create seeded worker samplers."
+            "DarkoFit can create seeded worker samplers."
         )
 
 
@@ -1033,7 +1033,7 @@ def _optimize_worker(args):
         pruner=pruner,
         sampler_seed=sampler_seed,
     )
-    # One trial thread per worker process: Chimeraboost itself receives a
+    # One trial thread per worker process: DarkoFit itself receives a
     # bounded thread_count, so Optuna must not add thread-level parallelism.
     study.optimize(
         _TrialObjective(objective_payload),
@@ -1213,7 +1213,7 @@ def _is_usable_trial(trial):
 
 def _study_stop_requested(study):
     return bool(
-        getattr(study, "user_attrs", {}).get("_chimeraboost_stop")
+        getattr(study, "user_attrs", {}).get("_darkofit_stop")
         or getattr(study, "_stop_flag", False)
     )
 
@@ -1441,12 +1441,12 @@ class _SharedStopCallback:
     callback: object
 
     def __call__(self, study, trial):
-        if study.user_attrs.get("_chimeraboost_stop"):
+        if study.user_attrs.get("_darkofit_stop"):
             study.stop()
             return
         self.callback(study, trial)
         if getattr(study, "_stop_flag", False):
-            study.set_user_attr("_chimeraboost_stop", True)
+            study.set_user_attr("_darkofit_stop", True)
 
 
 @dataclass
@@ -1456,7 +1456,7 @@ class _NoImprovementStopper:
     min_delta: float = 0.0
 
     def __call__(self, study, trial):
-        if study.user_attrs.get("_chimeraboost_stop"):
+        if study.user_attrs.get("_darkofit_stop"):
             study.stop()
             return
         completed = [
@@ -1474,7 +1474,7 @@ class _NoImprovementStopper:
                 best_value = value
                 best_trial_count = count
         if n_completed - best_trial_count >= self.patience:
-            study.set_user_attr("_chimeraboost_stop", True)
+            study.set_user_attr("_darkofit_stop", True)
             study.stop()
 
 
@@ -1513,4 +1513,4 @@ def _fold_seed(random_state, trial_number, fold_idx):
     return int(random_state) + int(trial_number) * 1009 + int(fold_idx)
 
 
-ChimeraBoostSearchCV = ChimeraBoostStepwiseSearchCV
+DarkoSearchCV = DarkoStepwiseSearchCV

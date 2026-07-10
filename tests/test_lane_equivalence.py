@@ -67,7 +67,7 @@ def _assert_scalar_tree_equal(a, b):
 def test_route_binned_c_and_f_order_are_bit_identical(
     builder_name, kwargs, thread_count
 ):
-    tree_mod = pytest.importorskip("chimeraboost.tree")
+    tree_mod = pytest.importorskip("darkofit.tree")
     builder = getattr(tree_mod, builder_name)
     X, grad, hess, n_bins = _data()
     X_route_f = np.asfortranarray(X)
@@ -96,7 +96,7 @@ def test_route_binned_c_and_f_order_are_bit_identical(
 def test_hist_binned_does_not_drive_leaf_routing_without_route_kwarg():
     import numba
 
-    from chimeraboost.tree import build_oblivious_tree
+    from darkofit.tree import build_oblivious_tree
 
     X, grad, hess, n_bins = _data(seed=19)
     bad = np.zeros_like(X)
@@ -128,7 +128,7 @@ def test_hist_binned_does_not_drive_leaf_routing_without_route_kwarg():
 
 @pytest.mark.parametrize("thread_count", [1, 2, 4])
 def test_multiclass_route_binned_c_and_f_order_are_bit_identical(thread_count):
-    from chimeraboost.tree import build_leafwise_multiclass_tree
+    from darkofit.tree import build_leafwise_multiclass_tree
 
     X, grad1, hess1, n_bins = _data(seed=23, n=700, p=7)
     grad = np.vstack([grad1, -0.5 * grad1, 0.25 * grad1])
@@ -156,7 +156,7 @@ def test_multiclass_route_binned_c_and_f_order_are_bit_identical(thread_count):
 
 
 def test_leafwise_row_layout_resolver_keeps_auto_on_safe_prefix_paths():
-    from chimeraboost.tree import _resolve_leafwise_row_layout
+    from darkofit.tree import _resolve_leafwise_row_layout
 
     feature_mask = np.ones(6, dtype=np.int64)
 

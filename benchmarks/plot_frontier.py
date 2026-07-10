@@ -1,7 +1,7 @@
 """
 Generate a Pareto frontier plot of Training Time vs. Model Quality.
 
-This script traces the performance curve of ChimeraBoost against CatBoost, 
+This script traces the performance curve of DarkoFit against CatBoost,
 LightGBM, and XGBoost by sweeping the learning rate. We set a massive tree limit 
 (10,000) and rely entirely on early_stopping (patience=50). 
 High LR = fast/rough; Low LR = slow/accurate.
@@ -33,9 +33,9 @@ LEARNING_RATES = [0.2, 0.15, 0.10, 0.05, 0.035, 0.02]
 MAX_TREES = 10000
 PATIENCE = 50
 
-MODELS = ["ChimeraBoost", "CatBoost"]#, "LightGBM", "XGBoost"]
+MODELS = ["DarkoFit", "CatBoost"]#, "LightGBM", "XGBoost"]
 COLORS = {
-    "ChimeraBoost": "#2b83ba",  # Blue
+    "DarkoFit": "#2b83ba",  # Blue
     "CatBoost": "#fdae61",      # Orange
     "LightGBM": "#abdda4",      # Green
     "XGBoost": "#d7191c"        # Red
@@ -51,16 +51,16 @@ DEFAULT_DATASETS = [
 ]
 
 def _is_installed(name):
-    if name == "ChimeraBoost": return True
+    if name == "DarkoFit": return True
     return importlib.util.find_spec(name.lower()) is not None
 
 def _fit_evaluate(name, task, Xtr, ytr, Xte, yte, cat, threads, lr):
     Xf, Xv, yf, yv = B._val_split(Xtr, ytr, task, 0)
     t0 = time.time()
     
-    if name == "ChimeraBoost":
-        from chimeraboost import ChimeraBoostRegressor, ChimeraBoostClassifier
-        Est = ChimeraBoostRegressor if task == "regression" else ChimeraBoostClassifier
+    if name == "DarkoFit":
+        from darkofit import DarkoRegressor, DarkoClassifier
+        Est = DarkoRegressor if task == "regression" else DarkoClassifier
         m = Est(iterations=MAX_TREES, learning_rate=lr, early_stopping_rounds=PATIENCE, 
                 thread_count=threads, random_state=0, ordered_boosting=True)
         m.fit(Xf, yf, cat_features=cat, eval_set=(Xv, yv))

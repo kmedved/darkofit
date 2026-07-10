@@ -963,7 +963,7 @@ class _BaseBooster:
             warning_records.append({
                 "code": f"learning_rate_clipped_{bound}",
                 "message": (
-                    "ChimeraBoost automatic learning rate clipped to "
+                    "DarkoFit automatic learning rate clipped to "
                     f"{bound} {limit:g} (raw={raw:.6g})."
                 ),
             })
@@ -976,7 +976,7 @@ class _BaseBooster:
             warning_records.append({
                 "code": "low_effective_sample_size_fraction",
                 "message": (
-                    "ChimeraBoost effective sample size is low "
+                    "DarkoFit effective sample size is low "
                     f"(n_eff/n={n_eff_fraction:.3f} < "
                     f"{_LOW_EFFECTIVE_SAMPLE_FRACTION:.2f}); sample weights "
                     "are highly concentrated."

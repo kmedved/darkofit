@@ -289,7 +289,7 @@ Gate after R10b:
 
 Problem:
 
-`_unique_if_at_most` in `chimeraboost/binning.py` is a Python `set` loop called
+`_unique_if_at_most` in `darkofit/binning.py` is a Python `set` loop called
 from `_feature_borders` for every numeric block column. The early exit is good
 for continuous columns, but low-cardinality columns run to completion in Python.
 Wide dummy/code matrices can spend seconds here.
@@ -693,14 +693,14 @@ Implementation shape:
 - `matched`: same effective bin budget, same fixed learning rate, same leaf
   budget, mapped l2/min-child settings where possible.
 - `native`: each library's true defaults. It must disable the current
-  matched-leaf mutation in `_resolve_benchmark_capacity`, otherwise Chimera
+  matched-leaf mutation in `_resolve_benchmark_capacity`, otherwise DarkoFit
   auto/lightgbm/hybrid modes still inherit LightGBM leaf capacity.
 - Run profile resolution before `_resolve_benchmark_capacity`, and make
   `matched` set explicit resolved knobs for both estimators.
 - Explicit CLI knobs still override profile defaults.
 - Write resolved configs into every result row: profile, bins, learning rate,
-  l2/lambda, leaves, min-child settings, threads, and selected Chimera mode.
-- Normalize `--threads 0` consistently across Chimera and LightGBM.
+  l2/lambda, leaves, min-child settings, threads, and selected DarkoFit mode.
+- Normalize `--threads 0` consistently across DarkoFit and LightGBM.
 
 Acceptance:
 

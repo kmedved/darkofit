@@ -1,6 +1,6 @@
-"""One-off ChimeraBoost vs LightGBM benchmark.
+"""One-off DarkoFit vs LightGBM benchmark.
 
-This script focuses only on ChimeraBoost and LightGBM, and reports both
+This script focuses only on DarkoFit and LightGBM, and reports both
 accuracy and speed over multiple regression/classification datasets and size
 tiers. It uses offline scikit-learn/synthetic data by default so results are
 reproducible without network access.
@@ -11,7 +11,7 @@ Examples
     python benchmarks/bench_vs_lightgbm.py --sizes tiny small --seeds 1
     python benchmarks/bench_vs_lightgbm.py --threads 8 --csv /tmp/cb_lgbm.csv
 
-The benchmark deliberately runs every ChimeraBoost fit before importing
+The benchmark deliberately runs every DarkoFit fit before importing
 LightGBM. In some conda environments, importing LightGBM first and then running
 numba/OpenMP kernels can abort the process when multiple threads are used.
 """
@@ -53,7 +53,7 @@ from sklearn.metrics import (
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OrdinalEncoder
 
-from chimeraboost import ChimeraBoostClassifier, ChimeraBoostRegressor
+from darkofit import DarkoClassifier, DarkoRegressor
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -75,28 +75,28 @@ _PROFILE_DEFAULTS = {
     "matched": {
         "learning_rate": 0.1,
         "lightgbm_learning_rate": 0.1,
-        "chimera_max_bins": 254,
+        "darkofit_max_bins": 254,
         "lightgbm_max_bin": 255,
         "lightgbm_num_leaves": 64,
-        "chimera_l2_leaf_reg": 3.0,
+        "darkofit_l2_leaf_reg": 3.0,
         "lightgbm_lambda_l2": 3.0,
-        "chimera_min_child_samples": 20,
+        "darkofit_min_child_samples": 20,
         "lightgbm_min_child_samples": 20,
-        "chimera_min_child_weight": 1.0,
+        "darkofit_min_child_weight": 1.0,
         "lightgbm_min_sum_hessian_in_leaf": 1.0,
         "match_lightgbm_leaves": True,
     },
     "native": {
         "learning_rate": None,
         "lightgbm_learning_rate": 0.1,
-        "chimera_max_bins": 254,
+        "darkofit_max_bins": 254,
         "lightgbm_max_bin": 255,
         "lightgbm_num_leaves": 31,
-        "chimera_l2_leaf_reg": 3.0,
+        "darkofit_l2_leaf_reg": 3.0,
         "lightgbm_lambda_l2": 0.0,
-        "chimera_min_child_samples": 20,
+        "darkofit_min_child_samples": 20,
         "lightgbm_min_child_samples": 20,
-        "chimera_min_child_weight": 1.0,
+        "darkofit_min_child_weight": 1.0,
         "lightgbm_min_sum_hessian_in_leaf": 1e-3,
         "match_lightgbm_leaves": False,
     },
@@ -106,13 +106,13 @@ _PROFILE_OPTION_DESTS = {
     "--learning-rate": "learning_rate",
     "--lightgbm-learning-rate": "lightgbm_learning_rate",
     "--lightgbm-num-leaves": "lightgbm_num_leaves",
-    "--chimera-max-bins": "chimera_max_bins",
+    "--darkofit-max-bins": "darkofit_max_bins",
     "--lightgbm-max-bin": "lightgbm_max_bin",
-    "--chimera-l2-leaf-reg": "chimera_l2_leaf_reg",
+    "--darkofit-l2-leaf-reg": "darkofit_l2_leaf_reg",
     "--lightgbm-lambda-l2": "lightgbm_lambda_l2",
-    "--chimera-min-child-samples": "chimera_min_child_samples",
+    "--darkofit-min-child-samples": "darkofit_min_child_samples",
     "--lightgbm-min-child-samples": "lightgbm_min_child_samples",
-    "--chimera-min-child-weight": "chimera_min_child_weight",
+    "--darkofit-min-child-weight": "darkofit_min_child_weight",
     "--lightgbm-min-sum-hessian-in-leaf": "lightgbm_min_sum_hessian_in_leaf",
     "--match-lightgbm-leaves": "match_lightgbm_leaves",
     "--no-match-lightgbm-leaves": "match_lightgbm_leaves",
@@ -139,26 +139,26 @@ class Result:
     fit_seconds: float
     predict_seconds: float
     best_iteration: int | None
-    chimera_effective_num_leaves: int | None
+    darkofit_effective_num_leaves: int | None
     lightgbm_num_leaves: int | None
     primary_metric: str
     primary_value: float
     profile: str = ""
-    chimera_requested_tree_mode: str = ""
+    darkofit_requested_tree_mode: str = ""
     benchmark_threads: int | None = None
-    chimera_max_bins: int | None = None
+    darkofit_max_bins: int | None = None
     lightgbm_max_bin: int | None = None
-    chimera_learning_rate: float | None = None
+    darkofit_learning_rate: float | None = None
     lightgbm_learning_rate: float | None = None
-    chimera_l2_leaf_reg: float | None = None
+    darkofit_l2_leaf_reg: float | None = None
     lightgbm_lambda_l2: float | None = None
-    chimera_min_child_samples: int | None = None
+    darkofit_min_child_samples: int | None = None
     lightgbm_min_child_samples: int | None = None
-    chimera_min_child_weight: float | None = None
+    darkofit_min_child_weight: float | None = None
     lightgbm_min_sum_hessian_in_leaf: float | None = None
     match_lightgbm_leaves: bool | None = None
-    chimera_fitted_tree_mode: str = ""
-    chimera_resolved_num_leaves: int | None = None
+    darkofit_fitted_tree_mode: str = ""
+    darkofit_resolved_num_leaves: int | None = None
     sampling: str = ""
     top_rate: float | None = None
     other_rate: float | None = None
@@ -411,8 +411,8 @@ def _regression_metrics(y_true, pred):
     }
 
 
-def _chimera_model_kwargs(spec, args, seed):
-    sampling = args.chimera_sampling
+def _darkofit_model_kwargs(spec, args, seed):
+    sampling = args.darkofit_sampling
     if spec.task == "multiclass" and sampling == "goss":
         sampling = "uniform"
     model_kwargs = dict(
@@ -420,25 +420,25 @@ def _chimera_model_kwargs(spec, args, seed):
         early_stopping_rounds=args.patience,
         learning_rate=args.learning_rate,
         depth=args.depth,
-        l2_leaf_reg=args.chimera_l2_leaf_reg,
-        max_bins=args.chimera_max_bins,
-        num_leaves=args.chimera_num_leaves,
-        subsample=args.chimera_subsample,
-        colsample=args.chimera_colsample,
-        min_child_samples=args.chimera_min_child_samples,
-        min_gain_to_split=args.chimera_min_gain_to_split,
-        min_child_weight=args.chimera_min_child_weight,
+        l2_leaf_reg=args.darkofit_l2_leaf_reg,
+        max_bins=args.darkofit_max_bins,
+        num_leaves=args.darkofit_num_leaves,
+        subsample=args.darkofit_subsample,
+        colsample=args.darkofit_colsample,
+        min_child_samples=args.darkofit_min_child_samples,
+        min_gain_to_split=args.darkofit_min_gain_to_split,
+        min_child_weight=args.darkofit_min_child_weight,
         thread_count=args.threads,
         random_state=seed,
         ordered_boosting=False if args.no_ordered_boosting else "auto",
         tree_mode=args.tree_mode,
         sampling=sampling,
-        top_rate=args.chimera_top_rate,
-        other_rate=args.chimera_other_rate,
+        top_rate=args.darkofit_top_rate,
+        other_rate=args.darkofit_other_rate,
     )
     if spec.task != "regression":
         model_kwargs["multiclass_tree_strategy"] = (
-            args.chimera_multiclass_tree_strategy
+            args.darkofit_multiclass_tree_strategy
         )
     return model_kwargs
 
@@ -465,30 +465,30 @@ def _resolved_result_config(args):
         return {}
     return {
         "profile": args.profile,
-        "chimera_requested_tree_mode": args.tree_mode,
+        "darkofit_requested_tree_mode": args.tree_mode,
         "benchmark_threads": args.threads,
-        "chimera_max_bins": args.chimera_max_bins,
+        "darkofit_max_bins": args.darkofit_max_bins,
         "lightgbm_max_bin": args.lightgbm_max_bin,
-        "chimera_learning_rate": args.learning_rate,
+        "darkofit_learning_rate": args.learning_rate,
         "lightgbm_learning_rate": args.lightgbm_learning_rate,
-        "chimera_l2_leaf_reg": args.chimera_l2_leaf_reg,
+        "darkofit_l2_leaf_reg": args.darkofit_l2_leaf_reg,
         "lightgbm_lambda_l2": args.lightgbm_lambda_l2,
-        "chimera_min_child_samples": args.chimera_min_child_samples,
+        "darkofit_min_child_samples": args.darkofit_min_child_samples,
         "lightgbm_min_child_samples": args.lightgbm_min_child_samples,
-        "chimera_min_child_weight": args.chimera_min_child_weight,
+        "darkofit_min_child_weight": args.darkofit_min_child_weight,
         "lightgbm_min_sum_hessian_in_leaf": args.lightgbm_min_sum_hessian_in_leaf,
         "match_lightgbm_leaves": args.match_lightgbm_leaves,
     }
 
 
-def _run_chimera(spec, X_train, y_train, X_test, y_test, cat_features, args, seed):
+def _run_darkofit(spec, X_train, y_train, X_test, y_test, cat_features, args, seed):
     X_fit, X_val, y_fit, y_val = _validation_split(X_train, y_train, spec.task, seed)
     estimator_cls = (
-        ChimeraBoostRegressor if spec.task == "regression" else ChimeraBoostClassifier
+        DarkoRegressor if spec.task == "regression" else DarkoClassifier
     )
 
     def fit_once():
-        model_kwargs = _chimera_model_kwargs(spec, args, seed)
+        model_kwargs = _darkofit_model_kwargs(spec, args, seed)
         model = estimator_cls(**model_kwargs)
         start = time.perf_counter()
         model.fit(X_fit, y_fit, cat_features=cat_features, eval_set=(X_val, y_val))
@@ -587,7 +587,7 @@ def _result_from_prediction(
     n_train,
     n_test,
     n_features,
-    chimera_effective_num_leaves,
+    darkofit_effective_num_leaves,
     lightgbm_num_leaves,
     args=None,
 ):
@@ -599,11 +599,11 @@ def _result_from_prediction(
     if best_iter is not None:
         best_iter = int(best_iter)
     fitted_core = getattr(model, "model_", model)
-    chimera_fitted_tree_mode = getattr(fitted_core, "tree_mode_", "")
-    chimera_resolved_num_leaves = None
+    darkofit_fitted_tree_mode = getattr(fitted_core, "tree_mode_", "")
+    darkofit_resolved_num_leaves = None
     auto_tree = getattr(fitted_core, "auto_params_", {}).get("tree", {})
     if "max_leaves" in auto_tree:
-        chimera_resolved_num_leaves = int(auto_tree["max_leaves"])
+        darkofit_resolved_num_leaves = int(auto_tree["max_leaves"])
 
     common = dict(
         dataset=spec.name,
@@ -620,9 +620,9 @@ def _result_from_prediction(
         fit_seconds=fit_seconds,
         predict_seconds=predict_seconds,
         best_iteration=best_iter,
-        chimera_effective_num_leaves=chimera_effective_num_leaves,
-        chimera_fitted_tree_mode=chimera_fitted_tree_mode,
-        chimera_resolved_num_leaves=chimera_resolved_num_leaves,
+        darkofit_effective_num_leaves=darkofit_effective_num_leaves,
+        darkofit_fitted_tree_mode=darkofit_fitted_tree_mode,
+        darkofit_resolved_num_leaves=darkofit_resolved_num_leaves,
         lightgbm_num_leaves=lightgbm_num_leaves,
     )
     common.update(_resolved_result_config(args))
@@ -665,34 +665,34 @@ def _warm_up(args):
     Xcm, ycm, cm_cat = _categorical_multiclass(400, rng)
 
     families = (
-        (ChimeraBoostRegressor, Xr, yr, None, "regression"),
-        (ChimeraBoostClassifier, Xnb, ynb, None, "binary"),
-        (ChimeraBoostClassifier, Xnm, ynm, None, "multiclass"),
-        (ChimeraBoostClassifier, Xcb, ycb, cb_cat, "binary"),
-        (ChimeraBoostClassifier, Xcm, ycm, cm_cat, "multiclass"),
+        (DarkoRegressor, Xr, yr, None, "regression"),
+        (DarkoClassifier, Xnb, ynb, None, "binary"),
+        (DarkoClassifier, Xnm, ynm, None, "multiclass"),
+        (DarkoClassifier, Xcb, ycb, cb_cat, "binary"),
+        (DarkoClassifier, Xcm, ycm, cm_cat, "multiclass"),
     )
     for estimator_cls, X, y, cat_features, task in families:
         X_fit, X_val, y_fit, y_val = _validation_split(X, y, task, 0)
-        sampling = getattr(args, "chimera_sampling", "uniform")
+        sampling = getattr(args, "darkofit_sampling", "uniform")
         if task == "multiclass" and sampling == "goss":
             sampling = "uniform"
         model = estimator_cls(
             iterations=5,
             early_stopping_rounds=3,
             depth=depth,
-            max_bins=getattr(args, "chimera_max_bins", 128),
-            num_leaves=getattr(args, "chimera_num_leaves", None),
-            subsample=getattr(args, "chimera_subsample", 1.0),
-            colsample=getattr(args, "chimera_colsample", 1.0),
-            min_child_samples=getattr(args, "chimera_min_child_samples", 20),
-            min_gain_to_split=getattr(args, "chimera_min_gain_to_split", 0.0),
-            min_child_weight=getattr(args, "chimera_min_child_weight", 1.0),
+            max_bins=getattr(args, "darkofit_max_bins", 128),
+            num_leaves=getattr(args, "darkofit_num_leaves", None),
+            subsample=getattr(args, "darkofit_subsample", 1.0),
+            colsample=getattr(args, "darkofit_colsample", 1.0),
+            min_child_samples=getattr(args, "darkofit_min_child_samples", 20),
+            min_gain_to_split=getattr(args, "darkofit_min_gain_to_split", 0.0),
+            min_child_weight=getattr(args, "darkofit_min_child_weight", 1.0),
             thread_count=args.threads,
             random_state=123,
             tree_mode=tree_mode,
             sampling=sampling,
-            top_rate=getattr(args, "chimera_top_rate", 0.2),
-            other_rate=getattr(args, "chimera_other_rate", 0.1),
+            top_rate=getattr(args, "darkofit_top_rate", 0.2),
+            other_rate=getattr(args, "darkofit_other_rate", 0.1),
         )
         model.fit(X_fit, y_fit, cat_features=cat_features, eval_set=(X_val, y_val))
         model.predict(X_val[:16])
@@ -708,41 +708,41 @@ def _stdev(values):
     return statistics.stdev(values) if len(values) > 1 else 0.0
 
 
-def _summarize_pair(chimera_results, lightgbm_results):
-    primary = chimera_results[0].primary_metric
-    chimera_primary = [r.primary_value for r in chimera_results]
+def _summarize_pair(darkofit_results, lightgbm_results):
+    primary = darkofit_results[0].primary_metric
+    darkofit_primary = [r.primary_value for r in darkofit_results]
     lightgbm_primary = [r.primary_value for r in lightgbm_results]
-    chimera_fit = [r.fit_seconds for r in chimera_results]
+    darkofit_fit = [r.fit_seconds for r in darkofit_results]
     lightgbm_fit = [r.fit_seconds for r in lightgbm_results]
-    chimera_pred = [r.predict_seconds for r in chimera_results]
+    darkofit_pred = [r.predict_seconds for r in darkofit_results]
     lightgbm_pred = [r.predict_seconds for r in lightgbm_results]
 
     if primary == "rmse":
-        accuracy_delta = 100.0 * (_mean(lightgbm_primary) - _mean(chimera_primary)) / _mean(
+        accuracy_delta = 100.0 * (_mean(lightgbm_primary) - _mean(darkofit_primary)) / _mean(
             lightgbm_primary
         )
     else:
-        accuracy_delta = 100.0 * (_mean(chimera_primary) - _mean(lightgbm_primary)) / _mean(
+        accuracy_delta = 100.0 * (_mean(darkofit_primary) - _mean(lightgbm_primary)) / _mean(
             lightgbm_primary
         )
-    fit_speed_ratio = _mean(lightgbm_fit) / max(_mean(chimera_fit), 1e-12)
-    predict_speed_ratio = _mean(lightgbm_pred) / max(_mean(chimera_pred), 1e-12)
+    fit_speed_ratio = _mean(lightgbm_fit) / max(_mean(darkofit_fit), 1e-12)
+    predict_speed_ratio = _mean(lightgbm_pred) / max(_mean(darkofit_pred), 1e-12)
     return {
         "primary": primary,
-        "n_train": int(_mean([r.n_train for r in chimera_results])),
-        "n_test": int(_mean([r.n_test for r in chimera_results])),
-        "chimera_primary": _mean(chimera_primary),
-        "chimera_primary_sd": _stdev(chimera_primary),
+        "n_train": int(_mean([r.n_train for r in darkofit_results])),
+        "n_test": int(_mean([r.n_test for r in darkofit_results])),
+        "darkofit_primary": _mean(darkofit_primary),
+        "darkofit_primary_sd": _stdev(darkofit_primary),
         "lightgbm_primary": _mean(lightgbm_primary),
         "lightgbm_primary_sd": _stdev(lightgbm_primary),
         "accuracy_delta": accuracy_delta,
-        "chimera_fit": _mean(chimera_fit),
+        "darkofit_fit": _mean(darkofit_fit),
         "lightgbm_fit": _mean(lightgbm_fit),
         "fit_speed_ratio": fit_speed_ratio,
-        "chimera_predict": _mean(chimera_pred),
+        "darkofit_predict": _mean(darkofit_pred),
         "lightgbm_predict": _mean(lightgbm_pred),
         "predict_speed_ratio": predict_speed_ratio,
-        "chimera_best_iter": _mean([r.best_iteration for r in chimera_results if r.best_iteration]),
+        "darkofit_best_iter": _mean([r.best_iteration for r in darkofit_results if r.best_iteration]),
         "lightgbm_best_iter": _mean([r.best_iteration for r in lightgbm_results if r.best_iteration]),
     }
 
@@ -756,20 +756,20 @@ def _print_summary(results):
     print("CASE SUMMARY")
     print(
         "dataset                 task        size        n metric       "
-        "ChimeraBoost        LightGBM            acc_delta   fit_speed  pred_speed"
+        "DarkoFit        LightGBM            acc_delta   fit_speed  pred_speed"
     )
     print("-" * 126)
     for key in sorted(by_case):
         models = by_case[key]
-        if "ChimeraBoost" not in models or "LightGBM" not in models:
+        if "DarkoFit" not in models or "LightGBM" not in models:
             continue
-        summary = _summarize_pair(models["ChimeraBoost"], models["LightGBM"])
+        summary = _summarize_pair(models["DarkoFit"], models["LightGBM"])
         better_suffix = "lower" if summary["primary"] == "rmse" else "higher"
         print(
             f"{key[0]:23s} {key[1]:11s} {key[2]:9s} "
             f"{summary['n_train'] + summary['n_test']:6d} "
             f"{summary['primary']:8s} "
-            f"{summary['chimera_primary']:9.4f} +/- {summary['chimera_primary_sd']:<7.4f} "
+            f"{summary['darkofit_primary']:9.4f} +/- {summary['darkofit_primary_sd']:<7.4f} "
             f"{summary['lightgbm_primary']:9.4f} +/- {summary['lightgbm_primary_sd']:<7.4f} "
             f"{summary['accuracy_delta']:+8.2f}% "
             f"x{summary['fit_speed_ratio']:<8.2f} "
@@ -778,8 +778,8 @@ def _print_summary(results):
         )
 
     print()
-    print("A positive acc_delta means ChimeraBoost is more accurate.")
-    print("Speed ratios are LightGBM seconds / ChimeraBoost seconds; x>1 means ChimeraBoost is faster.")
+    print("A positive acc_delta means DarkoFit is more accurate.")
+    print("Speed ratios are LightGBM seconds / DarkoFit seconds; x>1 means DarkoFit is faster.")
 
 
 def parse_args(argv):
@@ -810,7 +810,7 @@ def parse_args(argv):
         type=int,
         default=None,
         help=(
-            "ChimeraBoost max tree depth. Default is 6 for CatBoost mode, "
+            "DarkoFit max tree depth. Default is 6 for CatBoost mode, "
             "estimator-resolved for auto/depthwise/levelwise mode, and -1 "
             "(unlimited) for LightGBM/hybrid mode to match the LightGBM "
             "baseline's uncapped leaf-wise growth."
@@ -824,9 +824,9 @@ def parse_args(argv):
     parser.add_argument("--lightgbm-min-sum-hessian-in-leaf", type=float, default=1e-3)
     parser.add_argument("--lightgbm-min-gain-to-split", type=float, default=0.0)
     parser.add_argument("--lightgbm-lambda-l2", type=float, default=0.0)
-    parser.add_argument("--chimera-l2-leaf-reg", type=float, default=3.0)
-    parser.add_argument("--chimera-max-bins", type=int, default=128)
-    parser.add_argument("--chimera-num-leaves", type=int, default=None)
+    parser.add_argument("--darkofit-l2-leaf-reg", type=float, default=3.0)
+    parser.add_argument("--darkofit-max-bins", type=int, default=128)
+    parser.add_argument("--darkofit-num-leaves", type=int, default=None)
     parser.add_argument(
         "--match-lightgbm-leaves",
         dest="match_lightgbm_leaves",
@@ -834,7 +834,7 @@ def parse_args(argv):
         default=True,
         help=(
             "For tree_mode=lightgbm/hybrid/auto, default an unspecified "
-            "ChimeraBoost num_leaves to --lightgbm-num-leaves so benchmark "
+            "DarkoFit num_leaves to --lightgbm-num-leaves so benchmark "
             "comparisons use matched leaf capacity for leaf-wise candidates. "
             "Auto-mode CSV rows record the selected concrete mode and resolved "
             "leaf capacity separately."
@@ -845,32 +845,32 @@ def parse_args(argv):
         dest="match_lightgbm_leaves",
         action="store_false",
         help=(
-            "Leave ChimeraBoost num_leaves unset when --chimera-num-leaves is "
+            "Leave DarkoFit num_leaves unset when --darkofit-num-leaves is "
             "omitted, preserving native leaf-wise or auto-selection defaults."
         ),
     )
-    parser.add_argument("--chimera-subsample", type=float, default=1.0)
-    parser.add_argument("--chimera-colsample", type=float, default=1.0)
-    parser.add_argument("--chimera-min-child-samples", type=int, default=20)
-    parser.add_argument("--chimera-min-child-weight", type=float, default=1.0)
-    parser.add_argument("--chimera-min-gain-to-split", type=float, default=0.0)
+    parser.add_argument("--darkofit-subsample", type=float, default=1.0)
+    parser.add_argument("--darkofit-colsample", type=float, default=1.0)
+    parser.add_argument("--darkofit-min-child-samples", type=int, default=20)
+    parser.add_argument("--darkofit-min-child-weight", type=float, default=1.0)
+    parser.add_argument("--darkofit-min-gain-to-split", type=float, default=0.0)
     parser.add_argument(
-        "--chimera-sampling",
+        "--darkofit-sampling",
         choices=["uniform", "goss"],
         default="uniform",
         help=(
-            "ChimeraBoost row sampling policy. Experimental 'goss' applies "
+            "DarkoFit row sampling policy. Experimental 'goss' applies "
             "to scalar regression/binary rows; multiclass rows stay uniform."
         ),
     )
-    parser.add_argument("--chimera-top-rate", type=float, default=0.2)
-    parser.add_argument("--chimera-other-rate", type=float, default=0.1)
+    parser.add_argument("--darkofit-top-rate", type=float, default=0.2)
+    parser.add_argument("--darkofit-other-rate", type=float, default=0.1)
     parser.add_argument(
-        "--chimera-multiclass-tree-strategy",
+        "--darkofit-multiclass-tree-strategy",
         choices=["auto", "per_class", "shared_vector"],
         default="auto",
         help=(
-            "ChimeraBoost multiclass tree strategy. 'auto' preserves estimator "
+            "DarkoFit multiclass tree strategy. 'auto' preserves estimator "
             "defaults; 'shared_vector' forces one vector-valued LightGBM-mode "
             "tree per multiclass boosting round when supported."
         ),
@@ -883,7 +883,7 @@ def parse_args(argv):
         ],
         default="catboost",
         help=(
-            "ChimeraBoost tree builder: symmetric CatBoost-like, leaf-wise "
+            "DarkoFit tree builder: symmetric CatBoost-like, leaf-wise "
             "LightGBM-like, hybrid shared-prefix/leaf-wise, validation-selected "
             "auto, or experimental depth-wise/level-wise."
         ),
@@ -898,7 +898,7 @@ def parse_args(argv):
         "(warm timing; strips residual JIT/noise).",
     )
     parser.add_argument("--skip-lightgbm", action="store_true")
-    parser.add_argument("--skip-chimera", action="store_true")
+    parser.add_argument("--skip-darkofit", action="store_true")
     parser.add_argument(
         "--datasets",
         nargs="+",
@@ -949,16 +949,16 @@ def _resolve_default_depth(args):
     return args
 
 
-def _chimera_effective_num_leaves(args):
+def _darkofit_effective_num_leaves(args):
     if args.tree_mode not in {"lightgbm", "hybrid"}:
         if args.depth is None or args.depth < 1:
             return None
         return 1 << int(args.depth)
-    if args.chimera_num_leaves is None:
+    if args.darkofit_num_leaves is None:
         if args.depth is None or args.depth < 0:
             return 31
         return min(31, 1 << int(args.depth))
-    max_leaves = int(args.chimera_num_leaves)
+    max_leaves = int(args.darkofit_num_leaves)
     if args.depth is not None and args.depth > 0:
         max_leaves = min(max_leaves, 1 << int(args.depth))
     return max_leaves
@@ -968,10 +968,10 @@ def _resolve_benchmark_capacity(args):
     if (
         args.tree_mode in {"lightgbm", "hybrid", "auto"}
         and args.match_lightgbm_leaves
-        and args.chimera_num_leaves is None
+        and args.darkofit_num_leaves is None
     ):
-        args.chimera_num_leaves = args.lightgbm_num_leaves
-    args.chimera_effective_num_leaves = _chimera_effective_num_leaves(args)
+        args.darkofit_num_leaves = args.lightgbm_num_leaves
+    args.darkofit_effective_num_leaves = _darkofit_effective_num_leaves(args)
     return args
 
 
@@ -991,15 +991,15 @@ def main(argv=None):
             raise SystemExit(f"Unknown dataset(s): {sorted(unknown)}. Known: {sorted(known)}")
         selected = [spec for spec in selected if spec.name in requested]
 
-    print("ChimeraBoost vs LightGBM one-off benchmark")
+    print("DarkoFit vs LightGBM one-off benchmark")
     print(
         f"sizes={args.sizes} seeds={args.seeds} threads={args.threads or 'all'} "
         f"iterations={args.iterations} patience={args.patience} "
         f"profile={args.profile} tree_mode={args.tree_mode} depth={args.depth}"
     )
     print(f"writing raw rows to {args.csv}")
-    if not args.no_warmup and not args.skip_chimera:
-        print("warming up ChimeraBoost numba kernels...")
+    if not args.no_warmup and not args.skip_darkofit:
+        print("warming up DarkoFit numba kernels...")
         _warm_up(args)
 
     cases = []
@@ -1009,8 +1009,8 @@ def main(argv=None):
                 cases.append((size_name, spec, seed))
 
     model_runners = []
-    if not args.skip_chimera:
-        model_runners.append(("ChimeraBoost", _run_chimera))
+    if not args.skip_darkofit:
+        model_runners.append(("DarkoFit", _run_darkofit))
     if not args.skip_lightgbm:
         model_runners.append(("LightGBM", _run_lightgbm))
     if not model_runners:
@@ -1063,7 +1063,7 @@ def main(argv=None):
                     n_train,
                     n_test,
                     n_features,
-                    args.chimera_effective_num_leaves,
+                    args.darkofit_effective_num_leaves,
                     args.lightgbm_num_leaves,
                     args=args,
                 )

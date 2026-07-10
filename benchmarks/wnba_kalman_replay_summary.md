@@ -1,6 +1,6 @@
 # WNBA Kalman Replay
 
-Scalar per-metric random-walk Kalman replay on the WNBA DARKO game-level metric observation artifact. The Chimera lane injects `predict_variance()` as row-level `R_t`; the incumbent lane uses `sigma2 / sample_weight` with validation-tuned `sigma2` scale.
+Scalar per-metric random-walk Kalman replay on the WNBA DARKO game-level metric observation artifact. The DarkoFit lane injects `predict_variance()` as row-level `R_t`; the incumbent lane uses `sigma2 / sample_weight` with validation-tuned `sigma2` scale.
 
 - Data: `/Users/kmedved/Library/CloudStorage/Dropbox/github/wnba_darko/calculated_data/research/observation_covariance_measurement/game_metric_observations.parq`
 - Train through season: 2021
@@ -89,9 +89,9 @@ Scalar per-metric random-walk Kalman replay on the WNBA DARKO game-level metric 
 ```json
 {
   "args": {
-    "chimera_scale_max": 4.0,
-    "chimera_scale_min": 0.25,
-    "chimera_scale_steps": 25,
+    "darkofit_scale_max": 4.0,
+    "darkofit_scale_min": 0.25,
+    "darkofit_scale_steps": 25,
     "data": "/Users/kmedved/Library/CloudStorage/Dropbox/github/wnba_darko/calculated_data/research/observation_covariance_measurement/game_metric_observations.parq",
     "early_stopping_rounds": 40,
     "hybrid_mix_steps": 21,
@@ -101,8 +101,8 @@ Scalar per-metric random-walk Kalman replay on the WNBA DARKO game-level metric 
     "loss": "StudentT",
     "min_child_samples": 25,
     "num_leaves": 31,
-    "output_csv": "/Users/kmedved/Code/GitHub/chimeraboost/benchmarks/wnba_kalman_replay.csv",
-    "output_summary": "/Users/kmedved/Code/GitHub/chimeraboost/benchmarks/wnba_kalman_replay_summary.md",
+    "output_csv": "/Users/kmedved/Code/GitHub/darkofit/benchmarks/wnba_kalman_replay.csv",
+    "output_summary": "/Users/kmedved/Code/GitHub/darkofit/benchmarks/wnba_kalman_replay_summary.md",
     "r_ceil": 9.0,
     "r_floor": null,
     "r_floor_fraction": 0.25,
@@ -387,7 +387,7 @@ Scalar per-metric random-walk Kalman replay on the WNBA DARKO game-level metric 
     "r_floor_fraction": 0.25,
     "r_tuning_by_metric": {
       "fg_pct": {
-        "blend_chimera_mix": 0.55,
+        "blend_darkofit_mix": 0.55,
         "blend_q": 1e-06,
         "incumbent_q": 1e-06,
         "incumbent_scale": 1.0,
@@ -396,7 +396,7 @@ Scalar per-metric random-walk Kalman replay on the WNBA DARKO game-level metric 
         "scaled_scale": 1.0
       },
       "fta_100": {
-        "blend_chimera_mix": 0.15000000000000002,
+        "blend_darkofit_mix": 0.15000000000000002,
         "blend_q": 1.8116091942004134e-05,
         "incumbent_q": 1.8116091942004134e-05,
         "incumbent_scale": 0.8254041852680184,
@@ -405,7 +405,7 @@ Scalar per-metric random-walk Kalman replay on the WNBA DARKO game-level metric 
         "scaled_scale": 1.0
       },
       "pace": {
-        "blend_chimera_mix": 0.0,
+        "blend_darkofit_mix": 0.0,
         "blend_q": 1.620605913741319e-06,
         "incumbent_q": 1.620605913741319e-06,
         "incumbent_scale": 0.5623413251903491,
@@ -414,7 +414,7 @@ Scalar per-metric random-walk Kalman replay on the WNBA DARKO game-level metric 
         "scaled_scale": 0.4454493590701697
       },
       "pf_100": {
-        "blend_chimera_mix": 0.0,
+        "blend_darkofit_mix": 0.0,
         "blend_q": 0.002263803409521449,
         "incumbent_q": 0.002263803409521449,
         "incumbent_scale": 0.8254041852680184,
@@ -423,7 +423,7 @@ Scalar per-metric random-walk Kalman replay on the WNBA DARKO game-level metric 
         "scaled_scale": 0.8908987181403393
       },
       "pts_100": {
-        "blend_chimera_mix": 0.0,
+        "blend_darkofit_mix": 0.0,
         "blend_q": 0.000531871171866456,
         "incumbent_q": 0.000531871171866456,
         "incumbent_scale": 1.0,
@@ -432,7 +432,7 @@ Scalar per-metric random-walk Kalman replay on the WNBA DARKO game-level metric 
         "scaled_scale": 1.0
       },
       "tov_100": {
-        "blend_chimera_mix": 0.9500000000000001,
+        "blend_darkofit_mix": 0.9500000000000001,
         "blend_q": 2.9359045735093353e-05,
         "incumbent_q": 2.9359045735093353e-05,
         "incumbent_scale": 1.0,

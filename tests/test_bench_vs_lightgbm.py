@@ -12,7 +12,7 @@ if str(BENCH_DIR) not in sys.path:
 
 from bench_vs_lightgbm import (  # noqa: E402
     Result,
-    _chimera_model_kwargs,
+    _darkofit_model_kwargs,
     _encode_lightgbm_fit,
     _encode_lightgbm_test,
     _lightgbm_model_kwargs,
@@ -55,29 +55,29 @@ def test_explicit_depth_is_preserved_for_lightgbm_mode():
     assert args.depth == 6
 
 
-def test_chimera_max_bins_arg_is_preserved():
-    args = _resolved_args(["--chimera-max-bins", "64"])
+def test_darkofit_max_bins_arg_is_preserved():
+    args = _resolved_args(["--darkofit-max-bins", "64"])
 
-    assert args.chimera_max_bins == 64
-
-
-def test_chimera_l2_leaf_reg_arg_is_preserved():
-    args = _resolved_args(["--chimera-l2-leaf-reg", "0.5"])
-
-    assert args.chimera_l2_leaf_reg == 0.5
+    assert args.darkofit_max_bins == 64
 
 
-def test_chimera_row_and_column_sampling_args_are_preserved():
-    args = _resolved_args(["--chimera-subsample", "0.8", "--chimera-colsample", "0.7"])
+def test_darkofit_l2_leaf_reg_arg_is_preserved():
+    args = _resolved_args(["--darkofit-l2-leaf-reg", "0.5"])
 
-    assert args.chimera_subsample == 0.8
-    assert args.chimera_colsample == 0.7
+    assert args.darkofit_l2_leaf_reg == 0.5
 
 
-def test_chimera_multiclass_tree_strategy_arg_is_preserved():
-    args = _resolved_args(["--chimera-multiclass-tree-strategy", "shared_vector"])
+def test_darkofit_row_and_column_sampling_args_are_preserved():
+    args = _resolved_args(["--darkofit-subsample", "0.8", "--darkofit-colsample", "0.7"])
 
-    assert args.chimera_multiclass_tree_strategy == "shared_vector"
+    assert args.darkofit_subsample == 0.8
+    assert args.darkofit_colsample == 0.7
+
+
+def test_darkofit_multiclass_tree_strategy_arg_is_preserved():
+    args = _resolved_args(["--darkofit-multiclass-tree-strategy", "shared_vector"])
+
+    assert args.darkofit_multiclass_tree_strategy == "shared_vector"
 
 
 def test_lightgbm_train_and_test_encoding_are_separate():
@@ -100,24 +100,24 @@ def test_lightgbm_mode_matches_leaf_capacity_by_default():
     args = _resolved_args(["--tree-mode", "lightgbm"])
 
     assert args.lightgbm_num_leaves == 64
-    assert args.chimera_num_leaves == 64
-    assert args.chimera_effective_num_leaves == 64
+    assert args.darkofit_num_leaves == 64
+    assert args.darkofit_effective_num_leaves == 64
 
 
 def test_hybrid_mode_matches_leaf_capacity_by_default():
     args = _resolved_args(["--tree-mode", "hybrid"])
 
     assert args.lightgbm_num_leaves == 64
-    assert args.chimera_num_leaves == 64
-    assert args.chimera_effective_num_leaves == 64
+    assert args.darkofit_num_leaves == 64
+    assert args.darkofit_effective_num_leaves == 64
 
 
 def test_auto_mode_passes_leaf_capacity_for_leafwise_candidates():
     args = _resolved_args(["--tree-mode", "auto"])
 
     assert args.lightgbm_num_leaves == 64
-    assert args.chimera_num_leaves == 64
-    assert args.chimera_effective_num_leaves is None
+    assert args.darkofit_num_leaves == 64
+    assert args.darkofit_effective_num_leaves is None
 
 
 def test_result_records_fitted_tree_mode_and_resolved_auto_capacity():
@@ -136,7 +136,7 @@ def test_result_records_fitted_tree_mode_and_resolved_auto_capacity():
         spec=spec,
         size_name="small",
         seed=0,
-        model_name="ChimeraBoost",
+        model_name="DarkoFit",
         model=model,
         y_test=np.array([1.0, 2.0]),
         pred=np.array([1.0, 2.0]),
@@ -146,20 +146,20 @@ def test_result_records_fitted_tree_mode_and_resolved_auto_capacity():
         n_train=10,
         n_test=2,
         n_features=3,
-        chimera_effective_num_leaves=None,
+        darkofit_effective_num_leaves=None,
         lightgbm_num_leaves=64,
         args=args,
     )
 
-    assert result.chimera_fitted_tree_mode == "hybrid"
-    assert result.chimera_resolved_num_leaves == 31
+    assert result.darkofit_fitted_tree_mode == "hybrid"
+    assert result.darkofit_resolved_num_leaves == 31
     assert result.lightgbm_num_leaves == 64
     assert result.profile == "matched"
-    assert result.chimera_requested_tree_mode == "auto"
+    assert result.darkofit_requested_tree_mode == "auto"
     assert result.benchmark_threads is None
-    assert result.chimera_max_bins == 254
+    assert result.darkofit_max_bins == 254
     assert result.lightgbm_max_bin == 255
-    assert result.chimera_learning_rate == 0.1
+    assert result.darkofit_learning_rate == 0.1
     assert result.lightgbm_learning_rate == 0.1
 
 
@@ -168,63 +168,63 @@ def test_csv_schema_includes_resolved_profile_columns():
 
     for field in [
         "profile",
-        "chimera_requested_tree_mode",
+        "darkofit_requested_tree_mode",
         "benchmark_threads",
-        "chimera_max_bins",
+        "darkofit_max_bins",
         "lightgbm_max_bin",
-        "chimera_learning_rate",
+        "darkofit_learning_rate",
         "lightgbm_learning_rate",
-        "chimera_l2_leaf_reg",
+        "darkofit_l2_leaf_reg",
         "lightgbm_lambda_l2",
-        "chimera_min_child_samples",
+        "darkofit_min_child_samples",
         "lightgbm_min_child_samples",
-        "chimera_min_child_weight",
+        "darkofit_min_child_weight",
         "lightgbm_min_sum_hessian_in_leaf",
         "match_lightgbm_leaves",
     ]:
         assert field in fields
 
 
-def test_explicit_chimera_num_leaves_is_preserved():
+def test_explicit_darkofit_num_leaves_is_preserved():
     args = _resolved_args(
         [
             "--tree-mode",
             "lightgbm",
             "--lightgbm-num-leaves",
             "64",
-            "--chimera-num-leaves",
+            "--darkofit-num-leaves",
             "127",
         ]
     )
 
-    assert args.chimera_num_leaves == 127
-    assert args.chimera_effective_num_leaves == 127
+    assert args.darkofit_num_leaves == 127
+    assert args.darkofit_effective_num_leaves == 127
 
 
 def test_leaf_matching_can_be_disabled_for_native_default_probe():
     args = _resolved_args(["--tree-mode", "lightgbm", "--no-match-lightgbm-leaves"])
 
-    assert args.chimera_num_leaves is None
-    assert args.chimera_effective_num_leaves == 31
+    assert args.darkofit_num_leaves is None
+    assert args.darkofit_effective_num_leaves == 31
 
 
 def test_matched_profile_resolves_auditable_estimator_kwargs():
     spec = SimpleNamespace(task="regression")
     args = _resolved_args(["--tree-mode", "lightgbm"])
 
-    chimera_kwargs = _chimera_model_kwargs(spec, args, seed=7)
+    darkofit_kwargs = _darkofit_model_kwargs(spec, args, seed=7)
     lightgbm_kwargs = _lightgbm_model_kwargs(args, objective=None, seed=7)
 
     assert args.profile == "matched"
-    assert chimera_kwargs["learning_rate"] == 0.1
+    assert darkofit_kwargs["learning_rate"] == 0.1
     assert lightgbm_kwargs["learning_rate"] == 0.1
-    assert chimera_kwargs["max_bins"] == 254
+    assert darkofit_kwargs["max_bins"] == 254
     assert lightgbm_kwargs["max_bin"] == 255
-    assert chimera_kwargs["num_leaves"] == 64
+    assert darkofit_kwargs["num_leaves"] == 64
     assert lightgbm_kwargs["num_leaves"] == 64
-    assert chimera_kwargs["l2_leaf_reg"] == 3.0
+    assert darkofit_kwargs["l2_leaf_reg"] == 3.0
     assert lightgbm_kwargs["reg_lambda"] == 3.0
-    assert chimera_kwargs["min_child_weight"] == 1.0
+    assert darkofit_kwargs["min_child_weight"] == 1.0
     assert lightgbm_kwargs["min_sum_hessian_in_leaf"] == 1.0
 
 
@@ -232,20 +232,20 @@ def test_native_profile_uses_native_defaults_and_no_matched_leaf_mutation():
     spec = SimpleNamespace(task="regression")
     args = _resolved_args(["--profile", "native", "--tree-mode", "lightgbm"])
 
-    chimera_kwargs = _chimera_model_kwargs(spec, args, seed=7)
+    darkofit_kwargs = _darkofit_model_kwargs(spec, args, seed=7)
     lightgbm_kwargs = _lightgbm_model_kwargs(args, objective=None, seed=7)
 
     assert args.profile == "native"
     assert args.match_lightgbm_leaves is False
     assert args.lightgbm_num_leaves == 31
-    assert args.chimera_num_leaves is None
-    assert args.chimera_effective_num_leaves == 31
-    assert chimera_kwargs["learning_rate"] is None
+    assert args.darkofit_num_leaves is None
+    assert args.darkofit_effective_num_leaves == 31
+    assert darkofit_kwargs["learning_rate"] is None
     assert lightgbm_kwargs["learning_rate"] == 0.1
-    assert chimera_kwargs["max_bins"] == 254
+    assert darkofit_kwargs["max_bins"] == 254
     assert lightgbm_kwargs["max_bin"] == 255
     assert lightgbm_kwargs["num_leaves"] == 31
-    assert chimera_kwargs["l2_leaf_reg"] == 3.0
+    assert darkofit_kwargs["l2_leaf_reg"] == 3.0
     assert lightgbm_kwargs["reg_lambda"] == 0.0
     assert lightgbm_kwargs["min_sum_hessian_in_leaf"] == 1e-3
 
@@ -260,7 +260,7 @@ def test_explicit_cli_knobs_override_profile_defaults():
             "--match-lightgbm-leaves",
             "--learning-rate",
             "0.2",
-            "--chimera-max-bins",
+            "--darkofit-max-bins",
             "64",
             "--lightgbm-max-bin",
             "64",
@@ -272,9 +272,9 @@ def test_explicit_cli_knobs_override_profile_defaults():
     )
 
     assert args.match_lightgbm_leaves is True
-    assert args.chimera_num_leaves == 47
+    assert args.darkofit_num_leaves == 47
     assert args.learning_rate == 0.2
-    assert args.chimera_max_bins == 64
+    assert args.darkofit_max_bins == 64
     assert args.lightgbm_max_bin == 64
     assert args.lightgbm_num_leaves == 47
     assert args.lightgbm_lambda_l2 == 2.5

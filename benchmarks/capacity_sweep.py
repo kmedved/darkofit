@@ -1,6 +1,6 @@
 """Can more per-tree capacity close the BIAS gap to CatBoost?
 
-bias_variance.py showed the numeric gap is bias: ChimeraBoost fits TRAINING
+bias_variance.py showed the numeric gap is bias: DarkoFit fits TRAINING
 worse than CatBoost with equal trees. Container probes then found the mechanical
 cause -- min_child_weight=1.0 truncates oblivious trees well below the requested
 depth (depth-6 trees averaging ~3-4 achieved levels), capping capacity. This
@@ -35,7 +35,7 @@ sys.path.insert(0, os.path.dirname(_HERE))
 import run_benchmarks as B  # noqa: E402
 
 from sklearn.model_selection import train_test_split  # noqa: E402
-from chimeraboost import ChimeraBoostRegressor, ChimeraBoostClassifier  # noqa: E402
+from darkofit import DarkoRegressor, DarkoClassifier  # noqa: E402
 
 
 # (label, depth, l2, min_child_weight, max_bins, lever)
@@ -63,8 +63,8 @@ def _mean_depth(est):
     return float(np.mean(ds))
 
 
-def _fit_chimera(task, Xf, yf, Xv, yv, cat, threads, depth, l2, mcw, max_bins):
-    Est = ChimeraBoostRegressor if task == "regression" else ChimeraBoostClassifier
+def _fit_darkofit(task, Xf, yf, Xv, yv, cat, threads, depth, l2, mcw, max_bins):
+    Est = DarkoRegressor if task == "regression" else DarkoClassifier
     m = Est(iterations=B.MAX_ITERS, early_stopping_rounds=B.PATIENCE,
             depth=depth, l2_leaf_reg=l2, min_child_weight=mcw, max_bins=max_bins,
             ordered_boosting=True, thread_count=threads, random_state=0)
@@ -103,7 +103,7 @@ def main():
     ap.add_argument("--no-catboost", dest="catboost", action="store_false",
                     default=True)
     ap.add_argument("--no-warmup", action="store_true",
-                    help="include first-call ChimeraBoost Numba compile time")
+                    help="include first-call DarkoFit Numba compile time")
     args = ap.parse_args()
 
     requested = args.datasets
@@ -116,8 +116,8 @@ def main():
         ap.error(f"unknown datasets: {unknown}\navailable: {list(B.DATASETS)}")
 
     if not args.no_warmup:
-        print("Warming up ChimeraBoost Numba kernels...")
-        B._warmup_chimera(args.threads)
+        print("Warming up DarkoFit Numba kernels...")
+        B._warmup_darkofit(args.threads)
 
     have_cb = args.catboost and (
         args.no_warmup or B._has_competitor("catboost")
@@ -144,7 +144,7 @@ def main():
                     X, y, test_size=0.25, random_state=s, stratify=strat)
                 Xf, Xv, yf, yv = B._val_split(Xtr, ytr, task, 0)
                 for label, depth, l2, mcw, max_bins, _lever in CONFIGS:
-                    m = _fit_chimera(task, Xf, yf, Xv, yv, cat, args.threads,
+                    m = _fit_darkofit(task, Xf, yf, Xv, yv, cat, args.threads,
                                      depth, l2, mcw, max_bins)
                     tr[label].append(B._score(task, yf, m, Xf))
                     te[label].append(B._score(task, yte, m, Xte))

@@ -335,7 +335,7 @@ def sample_from_raw(self, raw, rng, n_samples):
 
 ### 2.8 Benchmark
 
-Add a `chimera_student_t` lane (ν grid) to `bench_distributional.py` on a heavy-tailed synthetic + the WNBA script behind a flag. Competitors: Gaussian lane (the relevant comparison), NGBoost `T` distribution if available.
+Add a `darkofit_student_t` lane (ν grid) to `bench_distributional.py` on a heavy-tailed synthetic + the WNBA script behind a flag. Competitors: Gaussian lane (the relevant comparison), NGBoost `T` distribution if available.
 
 ---
 

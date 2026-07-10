@@ -1,4 +1,4 @@
-"""Shared feature preprocessing for every ChimeraBoost estimator.
+"""Shared feature preprocessing for every DarkoFit estimator.
 
 Turns a raw (possibly mixed numeric/categorical, possibly object-dtype) matrix
 into integer bins ready for the tree builder, and remembers everything needed to

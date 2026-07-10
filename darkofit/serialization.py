@@ -82,7 +82,7 @@ def _validate_plain_arrays(arrays):
         arr = np.asarray(value)
         if arr.dtype.hasobject:
             raise ValueError(
-                f"cannot save object-dtype array {key!r}; ChimeraBoost model "
+                f"cannot save object-dtype array {key!r}; DarkoFit model "
                 "archives are loaded with allow_pickle=False"
             )
         arrays[key] = arr
@@ -102,24 +102,24 @@ def _load_path(path):
 def _require_offsets(name, offsets, total_size=None, expected_count=None):
     offsets = np.asarray(offsets)
     if offsets.ndim != 1 or offsets.size == 0:
-        raise ValueError(f"invalid ChimeraBoost model: {name} offsets are empty")
+        raise ValueError(f"invalid DarkoFit model: {name} offsets are empty")
     if not np.issubdtype(offsets.dtype, np.integer):
         raise ValueError(
-            f"invalid ChimeraBoost model: {name} offsets must contain integer values"
+            f"invalid DarkoFit model: {name} offsets must contain integer values"
         )
     offsets = offsets.astype(np.int64, copy=False)
     if expected_count is not None and offsets.size != int(expected_count):
         raise ValueError(
-            f"invalid ChimeraBoost model: {name} offsets length is "
+            f"invalid DarkoFit model: {name} offsets length is "
             f"{offsets.size}, expected {int(expected_count)}"
         )
     if offsets[0] != 0 or np.any(np.diff(offsets) < 0):
         raise ValueError(
-            f"invalid ChimeraBoost model: {name} offsets are not monotonic"
+            f"invalid DarkoFit model: {name} offsets are not monotonic"
         )
     if total_size is not None and offsets[-1] != int(total_size):
         raise ValueError(
-            f"invalid ChimeraBoost model: {name} offsets do not match array length"
+            f"invalid DarkoFit model: {name} offsets do not match array length"
         )
     return offsets
 
@@ -136,7 +136,7 @@ def _require_same_offsets(name, offsets, arrays, expected_count=None):
 
 
 def _invalid_model(message):
-    raise ValueError(f"invalid ChimeraBoost model: {message}")
+    raise ValueError(f"invalid DarkoFit model: {message}")
 
 
 def _require_array_ndim(name, array, ndim):
@@ -228,14 +228,14 @@ def _decode_categories(
                 out[i] = float(s)
             except (TypeError, ValueError) as exc:
                 raise ValueError(
-                    f"invalid ChimeraBoost model: {name} float payload is invalid"
+                    f"invalid DarkoFit model: {name} float payload is invalid"
                 ) from exc
         elif k == _KIND_INT:
             try:
                 out[i] = int(s)
             except (TypeError, ValueError) as exc:
                 raise ValueError(
-                    f"invalid ChimeraBoost model: {name} int payload is invalid"
+                    f"invalid DarkoFit model: {name} int payload is invalid"
                 ) from exc
         elif k == _KIND_BOOL:
             value = str(s)
@@ -1071,13 +1071,13 @@ def load_booster(path, return_wrapper_payload=False):
     try:
         archive = np.load(_load_path(path), allow_pickle=False)
     except (OSError, ValueError, KeyError) as exc:
-        raise ValueError(f"{path!r} is not a ChimeraBoost model archive") from exc
+        raise ValueError(f"{path!r} is not a DarkoFit model archive") from exc
     with archive as data:
         try:
             header = json.loads(str(data["header"]))
         except (KeyError, TypeError, json.JSONDecodeError) as exc:
             raise ValueError(
-                f"{path!r} is not a ChimeraBoost model archive"
+                f"{path!r} is not a DarkoFit model archive"
             ) from exc
         format_version = int(header["format_version"])
         if format_version > FORMAT_VERSION:

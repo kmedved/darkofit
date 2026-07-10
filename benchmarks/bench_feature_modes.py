@@ -1,4 +1,4 @@
-"""Benchmark opt-in ChimeraBoost feature modes against current defaults.
+"""Benchmark opt-in DarkoFit feature modes against current defaults.
 
 The default campaign is intentionally narrow: it tests whether
 ``leaf_dtype="uint32"`` is safe and fast enough to become a default.  Float32
@@ -34,7 +34,7 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import train_test_split
 
-from chimeraboost import ChimeraBoostClassifier, ChimeraBoostRegressor
+from darkofit import DarkoClassifier, DarkoRegressor
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
@@ -277,9 +277,9 @@ def _fit_feature_once(
     kwargs.update(FEATURE_CONFIGS[config_name])
     if case.task == "multiclass":
         kwargs["multiclass_tree_strategy"] = case.multiclass_strategy
-        model = ChimeraBoostClassifier(**kwargs)
+        model = DarkoClassifier(**kwargs)
     else:
-        model = ChimeraBoostRegressor(**kwargs)
+        model = DarkoRegressor(**kwargs)
 
     start = time.perf_counter()
     model.fit(X_train, y_train, cat_features=cat_features, sample_weight=sample_weight)
@@ -441,7 +441,7 @@ def _add_deltas(rows: list[dict]):
 def _environment():
     import numba
     import sklearn
-    import chimeraboost
+    import darkofit
 
     return {
         "python": sys.version.split()[0],
@@ -449,7 +449,7 @@ def _environment():
         "numpy": np.__version__,
         "numba": numba.__version__,
         "sklearn": sklearn.__version__,
-        "chimeraboost": getattr(chimeraboost, "__version__", "unknown"),
+        "darkofit": getattr(darkofit, "__version__", "unknown"),
         "pid": os.getpid(),
     }
 

@@ -29,7 +29,7 @@ def _get_missing_category():
 
 class _MissingCategory:
     def __repr__(self):
-        return "<ChimeraBoost missing category>"
+        return "<DarkoFit missing category>"
 
     def __reduce__(self):
         return (_get_missing_category, ())

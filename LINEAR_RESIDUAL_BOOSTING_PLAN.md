@@ -3,14 +3,14 @@
 **Status:** proposed implementation plan, based on two Oracle feedback rounds
 and current source inspection.
 **Question answered:** how to move the useful `lrboost` idea into
-ChimeraBoost natively, without adding an external dependency or weakening the
+DarkoFit natively, without adding an external dependency or weakening the
 non-pickle model archive contract.
-**Primary implementation surface:** `ChimeraBoostRegressor`.
+**Primary implementation surface:** `DarkoRegressor`.
 
 ## 0. Recommendation
 
 Add linear residual boosting as opt-in wrapper functionality on
-`ChimeraBoostRegressor`, not as a new core tree objective and not as a separate
+`DarkoRegressor`, not as a new core tree objective and not as a separate
 estimator class.
 
 The wrapper should fit a small internal weighted ridge trend on selected raw
@@ -41,8 +41,8 @@ details. This plan adopts the following decisions.
 
 | Topic | Adjudication | Why |
 |---|---|---|
-| Public surface | Params on `ChimeraBoostRegressor`, not a new class | The wrapper already owns validation splits, probes, calibration, refit, and wrapper state. |
-| Helper shape | New `chimeraboost/linear_residual.py` with a `WeightedRidgeTrend` class plus small private functions | The second review's single `_fit_weighted_ridge` function is too thin for persistence, diagnostics, feature names, and load validation. A class keeps state explicit without using pickle. |
+| Public surface | Params on `DarkoRegressor`, not a new class | The wrapper already owns validation splits, probes, calibration, refit, and wrapper state. |
+| Helper shape | New `darkofit/linear_residual.py` with a `WeightedRidgeTrend` class plus small private functions | The second review's single `_fit_weighted_ridge` function is too thin for persistence, diagnostics, feature names, and load validation. A class keeps state explicit without using pickle. |
 | Default feature selector | `linear_residual_features="auto"`; accept `None` as an alias | `"auto"` is self-documenting in `get_params()`. `None` remains convenient and compatible with the second review. |
 | Weight normalization | Normalize positive ridge weights to sum to `n_positive`, and use an average-loss ridge objective, equivalently `alpha_eff = alpha * n_positive` in the weighted-SVD denominator | The core booster normalizes weights internally, but the ridge trend has its own regularization semantics. This choice makes `alpha` invariant to global weight scaling and unaffected by adding zero-weight rows. |
 | Constant columns | Drop in `"auto"` mode; explicit selectors raise only if all explicitly selected columns are unusable | Auto mode should be forgiving; explicit mode should surface user mistakes without rejecting mixed useful/constant selections. |
@@ -73,7 +73,7 @@ details. This plan adopts the following decisions.
 
 ## 2. Public API
 
-Add these constructor params to `ChimeraBoostRegressor.__init__`:
+Add these constructor params to `DarkoRegressor.__init__`:
 
 ```python
 linear_residual=False
@@ -186,9 +186,9 @@ Do not persist `selection_model_` beyond the existing wrapper behavior.
 
 ## 3. Internal Weighted Ridge Helper
 
-Create `chimeraboost/linear_residual.py`. Keep the stateful class small, and
+Create `darkofit/linear_residual.py`. Keep the stateful class small, and
 factor the actual SVD math into private helper functions for testability. Do
-not use `chimeraboost/linear.py`: the more specific filename avoids confusion
+not use `darkofit/linear.py`: the more specific filename avoids confusion
 with future GLM/count-link work.
 
 Suggested public-to-package-private shape:
@@ -240,7 +240,7 @@ Contract:
 
 ### 3.1 Feature Extraction
 
-Use raw input columns, not ChimeraBoost-binned or target-stat features.
+Use raw input columns, not DarkoFit-binned or target-stat features.
 The residual booster still sees original `X` and the original `cat_features`.
 
 For `"auto"`:
@@ -384,7 +384,7 @@ Zero-weight rows:
 
 ## 4. Fit Data Flow
 
-### 4.1 Placement In `ChimeraBoostRegressor.fit`
+### 4.1 Placement In `DarkoRegressor.fit`
 
 The trend is fitted after wrapper input validation and after any automatic
 train/validation split, but before:
@@ -822,7 +822,7 @@ Confirm sample shape from current losses is `(n_rows, n_samples)`.
 Default policy: **residual distribution only**.
 
 The fitted linear trend is treated as deterministic, matching the rest of
-ChimeraBoost where fitted tree parameters do not contribute parameter
+DarkoFit where fitted tree parameters do not contribute parameter
 uncertainty to `predict_variance`.
 
 Record this explicitly:
@@ -915,7 +915,7 @@ archive. `save_booster` already accepts `wrapper_header` and `wrapper_arrays`.
 
 ### 9.1 Save Payload
 
-Extend `ChimeraBoostRegressor.save_model` to pass wrapper arrays:
+Extend `DarkoRegressor.save_model` to pass wrapper arrays:
 
 ```python
 save_booster(
@@ -986,7 +986,7 @@ When disabled, it is acceptable to omit all linear-residual state or store
 ### 9.2 Load Validation
 
 Add `_restore_linear_residual_state(state, wrapper_arrays)` or similar.
-Also update `ChimeraBoostRegressor.load_model` to keep the third return value:
+Also update `DarkoRegressor.load_model` to keep the third return value:
 
 ```python
 booster, wrapper_header, wrapper_arrays = load_booster(
@@ -1006,7 +1006,7 @@ JSON state.
 Rules:
 
 - Existing wrapper-class mismatch behavior remains.
-- `ChimeraBoostClassifier.load_model` must reject any active linear-residual
+- `DarkoClassifier.load_model` must reject any active linear-residual
   state.
 - If `linear_residual_active=True`, all required arrays must exist.
 - Feature indices are 1-D integer, unique, nonnegative, and `< n_features_in_`.
@@ -1094,8 +1094,8 @@ Acceptance:
 
 Files:
 
-- Add `chimeraboost/linear_residual.py`.
-- Add focused tests to `tests/test_chimeraboost.py` or a new
+- Add `darkofit/linear_residual.py`.
+- Add focused tests to `tests/test_darkofit.py` or a new
   `tests/test_linear_residual.py`.
 
 Tasks:
@@ -1118,7 +1118,7 @@ Acceptance:
 
 Files:
 
-- `chimeraboost/sklearn_api.py`.
+- `darkofit/sklearn_api.py`.
 
 Tasks:
 
@@ -1142,7 +1142,7 @@ Acceptance:
 
 Files:
 
-- `chimeraboost/sklearn_api.py`.
+- `darkofit/sklearn_api.py`.
 - Possibly `tests/test_distributional.py`.
 
 Tasks:
@@ -1166,8 +1166,8 @@ Acceptance:
 
 Files:
 
-- `chimeraboost/sklearn_api.py`.
-- `chimeraboost/serialization.py` only if validation helpers are better placed
+- `darkofit/sklearn_api.py`.
+- `darkofit/serialization.py` only if validation helpers are better placed
   there, but prefer wrapper-local restore validation if possible.
 
 Tasks:
@@ -1210,9 +1210,9 @@ Acceptance:
 
 Files:
 
-- `chimeraboost/booster.py`.
-- `chimeraboost/sklearn_api.py`.
-- `chimeraboost/losses.py`.
+- `darkofit/booster.py`.
+- `darkofit/sklearn_api.py`.
+- `darkofit/losses.py`.
 - Tests in `tests/test_distributional.py`.
 
 Tasks:
@@ -1233,8 +1233,8 @@ Acceptance:
 
 Files:
 
-- `chimeraboost/linear_residual.py`.
-- `chimeraboost/sklearn_api.py`.
+- `darkofit/linear_residual.py`.
+- `darkofit/sklearn_api.py`.
 - Persistence tests.
 
 Tasks:
@@ -1331,7 +1331,7 @@ y = 8*x0 - 3*x1 + sin(6*x2) + noise
 
 Compare:
 
-- plain `ChimeraBoostRegressor(loss="RMSE")`;
+- plain `DarkoRegressor(loss="RMSE")`;
 - linear residual RMSE;
 - plain Gaussian;
 - linear residual Gaussian;
@@ -1363,7 +1363,7 @@ README additions:
 - Example:
 
 ```python
-reg = ChimeraBoostRegressor(
+reg = DarkoRegressor(
     loss="Gaussian",
     tree_mode="lightgbm",
     linear_residual=True,

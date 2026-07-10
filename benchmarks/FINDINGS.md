@@ -1,11 +1,11 @@
-# ChimeraBoost vs LightGBM — speed investigation findings
+# DarkoFit vs LightGBM — speed investigation findings
 
 _Last updated: 2026-05-28. Environment: `darko311` (Python 3.11.8, lightgbm 4.6.0,
 numpy 2.2.4, numba 0.63.1). Harness: `benchmarks/bench_vs_lightgbm.py`._
 
 ## TL;DR
 
-- **ChimeraBoost is accuracy-competitive with LightGBM** (often better, especially
+- **DarkoFit is accuracy-competitive with LightGBM** (often better, especially
   regression) at every size tested. The gap is **purely speed**, not quality.
 - The speed gap has **two independent causes**, and which one dominates depends on
   dataset size:
@@ -23,19 +23,19 @@ numpy 2.2.4, numba 0.63.1). Harness: `benchmarks/bench_vs_lightgbm.py`._
 
 ## Trustworthy benchmarking recipe (read this before re-running)
 
-ChimeraBoost fit-times are dominated by one-time **numba JIT compilation** on a cold
+DarkoFit fit-times are dominated by one-time **numba JIT compilation** on a cold
 run. To get clean timings:
 
-1. **Warm the on-disk numba cache** (`chimeraboost/__pycache__/*.nbi,*.nbc`). It is
+1. **Warm the on-disk numba cache** (`darkofit/__pycache__/*.nbi,*.nbc`). It is
    gitignored and self-heals; just run the harness once to populate it.
-2. **Use `--repeat >= 2`** for ChimeraBoost. The harness reports `min` over repeats,
+2. **Use `--repeat >= 2`** for DarkoFit. The harness reports `min` over repeats,
    which strips the one-time compile. `_warm_up()` helps but is **not sufficient on
    its own** — a matching-shape warmup still misses some numba specializations
    (observed: a post-warmup first fit at 13.8s vs 1.7s under `--repeat 2`).
 3. **Use `--seeds >= 3`** for metric stability.
 4. LightGBM has no per-process JIT, so `--repeat 1` is already clean for it.
 
-Treat any single-seed, cold-cache, or `--repeat 1` ChimeraBoost fit-time as
+Treat any single-seed, cold-cache, or `--repeat 1` DarkoFit fit-time as
 compile-contaminated.
 
 ## 2026-07-07 — R1 `_unique_if_at_most` local microbenchmark
@@ -58,7 +58,7 @@ the existing quantile path; no default or modeling behavior changes.
 
 `benchmarks/bench_vs_lightgbm.py` now requires every raw CSV row to carry the
 resolved comparison profile and audit knobs: profile, requested/selected
-Chimera tree mode, threads, bin budgets, learning rates, l2/lambda,
+DarkoFit tree mode, threads, bin budgets, learning rates, l2/lambda,
 min-child settings, matched-leaf policy, and leaf budgets.
 
 Use `--profile matched` when comparing implementation speed under aligned
@@ -216,8 +216,8 @@ Focused acceptance run:
 
 ```text
 python -m pytest -q tests/test_lane_equivalence.py \
-  tests/test_chimeraboost.py::test_leafwise_segmented_row_layout_matches_prefix_layout \
-  tests/test_chimeraboost.py::test_leafwise_segmented_row_layout_guard_and_auto_fallback
+  tests/test_darkofit.py::test_leafwise_segmented_row_layout_matches_prefix_layout \
+  tests/test_darkofit.py::test_leafwise_segmented_row_layout_guard_and_auto_fallback
 24 passed
 ```
 
@@ -253,15 +253,15 @@ Focused acceptance:
 
 ```text
 python -m pytest -q \
-  tests/test_chimeraboost.py::test_exact_mvs_probabilities_match_bisection_reference \
-  tests/test_chimeraboost.py::test_exact_weighted_goss_probabilities_match_bisection_reference \
-  tests/test_chimeraboost.py::test_mvs_realized_sample_count_matches_probability_mass \
-  tests/test_chimeraboost.py::test_weighted_goss_realized_sample_mass_matches_probability_mass \
-  tests/test_chimeraboost.py::test_weighted_goss_uniform_mass_fast_path_avoids_full_sort \
-  tests/test_chimeraboost.py::test_weighted_goss_nonuniform_top_mass_avoids_full_score_sort \
-  tests/test_chimeraboost.py::test_weighted_goss_nonuniform_final_scaling_and_multiclass_shared_rows \
-  tests/test_chimeraboost.py::test_weighted_goss_empty_other_draw_does_not_force_biased_row \
-  tests/test_chimeraboost.py::test_multiclass_mvs_uses_shared_row_sample_per_round
+  tests/test_darkofit.py::test_exact_mvs_probabilities_match_bisection_reference \
+  tests/test_darkofit.py::test_exact_weighted_goss_probabilities_match_bisection_reference \
+  tests/test_darkofit.py::test_mvs_realized_sample_count_matches_probability_mass \
+  tests/test_darkofit.py::test_weighted_goss_realized_sample_mass_matches_probability_mass \
+  tests/test_darkofit.py::test_weighted_goss_uniform_mass_fast_path_avoids_full_sort \
+  tests/test_darkofit.py::test_weighted_goss_nonuniform_top_mass_avoids_full_score_sort \
+  tests/test_darkofit.py::test_weighted_goss_nonuniform_final_scaling_and_multiclass_shared_rows \
+  tests/test_darkofit.py::test_weighted_goss_empty_other_draw_does_not_force_biased_row \
+  tests/test_darkofit.py::test_multiclass_mvs_uses_shared_row_sample_per_round
 9 passed
 ```
 
@@ -299,10 +299,10 @@ Focused acceptance:
 
 ```text
 python -m pytest -q \
-  tests/test_chimeraboost.py::test_preprocessing_cache_reduces_auto_probe_fit_transform_count \
-  tests/test_chimeraboost.py::test_preprocessing_cache_key_separates_data_targets_weights_and_eval \
-  tests/test_chimeraboost.py::test_preprocessing_cache_does_not_share_scalar_and_multiclass \
-  tests/test_chimeraboost.py::test_multiclass_preprocessor_receives_class_major_target_views
+  tests/test_darkofit.py::test_preprocessing_cache_reduces_auto_probe_fit_transform_count \
+  tests/test_darkofit.py::test_preprocessing_cache_key_separates_data_targets_weights_and_eval \
+  tests/test_darkofit.py::test_preprocessing_cache_does_not_share_scalar_and_multiclass \
+  tests/test_darkofit.py::test_multiclass_preprocessor_receives_class_major_target_views
 4 passed
 ```
 
@@ -322,7 +322,7 @@ buffers. Multiclass rejects `"float32"` until the R6 shared-vector layout lands.
 Focused acceptance:
 
 ```text
-python -m pytest tests/test_chimeraboost.py -q -k \
+python -m pytest tests/test_darkofit.py -q -k \
   "histogram_dtype or float32_histogram_streams"
 6 passed, 283 deselected, 1 warning
 ```
@@ -352,7 +352,7 @@ not coupled to the shared-vector layout change.
 Focused acceptance:
 
 ```text
-python -m pytest tests/test_chimeraboost.py tests/test_lane_equivalence.py -q -k \
+python -m pytest tests/test_darkofit.py tests/test_lane_equivalence.py -q -k \
   "class_minor_refill or (multiclass and (histogram or class_minor or shared or leafwise or fused_root or route_binned))"
 19 passed, 293 deselected, 1 warning
 ```
@@ -395,7 +395,7 @@ split arrays, and serialized tree structures remain signed `int64`.
 Focused acceptance:
 
 ```text
-python -m pytest tests/test_chimeraboost.py -q -k "uint32_leaf_dtype"
+python -m pytest tests/test_darkofit.py -q -k "uint32_leaf_dtype"
 6 passed, 292 deselected, 1 warning
 ```
 
@@ -433,7 +433,7 @@ Added two opt-in categorical modeling controls:
 Focused acceptance:
 
 ```text
-python -m pytest tests/test_chimeraboost.py -q -k \
+python -m pytest tests/test_darkofit.py -q -k \
   "target_ordered or ts_permutations or multi_permutation_ordered_statistics or load_legacy_v1_missing_category_archive"
 13 passed, 297 deselected, 1 warning
 ```
@@ -465,10 +465,10 @@ Command:
 ```text
 python benchmarks/bench_feature_modes.py \
   --warmups 1 --repeats 2 --threads 4 --seed 20260707 \
-  --json /private/tmp/chimera_feature_mode_benchmark.json
+  --json /private/tmp/darkofit_feature_mode_benchmark.json
 ```
 
-Environment: macOS-26.5.2 arm64, Python 3.13.13, ChimeraBoost 0.5.2,
+Environment: macOS-26.5.2 arm64, Python 3.13.13, DarkoFit 0.5.2,
 NumPy 2.4.6, Numba 0.66.0, scikit-learn 1.9.0. Each config ran in an isolated
 child process; timings are best-of-2 after one warmup fit, and memory is
 process peak RSS from `resource.getrusage`.
@@ -550,9 +550,9 @@ Implementation cleanup:
 Focused verification:
 
 ```text
-python -m py_compile benchmarks/bench_feature_modes.py chimeraboost/tree.py
+python -m py_compile benchmarks/bench_feature_modes.py darkofit/tree.py
 
-python -m pytest tests/test_chimeraboost.py -q -k "uint32_leaf_dtype"
+python -m pytest tests/test_darkofit.py -q -k "uint32_leaf_dtype"
 6 passed, 305 deselected, 1 warning
 
 python -m pytest tests/test_distributional.py -q -k "histogram_dtype or leaf_dtype or shared_vector"
@@ -571,7 +571,7 @@ Primary 4-thread gate:
 python benchmarks/bench_feature_modes.py \
   --seeds 20260707,20260708,20260709,20260710,20260711 \
   --warmups 1 --repeats 5 --iterations 60 --threads 4 \
-  --json /private/tmp/chimera_leaf_gate_threads4.json
+  --json /private/tmp/darkofit_leaf_gate_threads4.json
 ```
 
 All 90 rows completed. `leaf_uint32` had exact prediction/probability equality,
@@ -606,7 +606,7 @@ python benchmarks/bench_feature_modes.py \
   --cases scalar_catboost_numeric_120k,scalar_catboost_categorical_100k \
   --seeds 20260707,20260708,20260709,20260710,20260711 \
   --warmups 1 --repeats 3 --iterations 60 --threads 1 \
-  --json /private/tmp/chimera_leaf_gate_threads1_spot.json
+  --json /private/tmp/darkofit_leaf_gate_threads1_spot.json
 ```
 
 | case | wall median | wall min | tree-build median | tree-build min | parity |

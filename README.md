@@ -1,10 +1,14 @@
-# chimeraboost
-Full-featured gradient boosting library with a Python/numba backend, inspired by CatBoost.
+# DarkoFit
+
+Fast, flexible machine learning for tabular data with a Python/Numba backend.
+The package is currently centered on a full-featured gradient-boosting engine
+inspired by CatBoost.
 
 <img width="500" height="500" alt="ChatGPT Image May 26, 2026, 05_12_17 PM" src="https://github.com/user-attachments/assets/ee98a4e2-9fa7-4ef1-9e64-e398f398966c" />
 
 * **What?**
-    * GBDT library that only depends on numpy, numba, and scikit-learn
+    * Tabular machine-learning package that currently centers on GBDTs
+    * Only depends on NumPy, Numba, and scikit-learn
     * Accuracy-competitive with CatBoost and LightGBM in the benchmark suite,
       with speed depending strongly on dataset size, tree mode, and whether the
       Numba kernels are warm
@@ -17,10 +21,10 @@ Full-featured gradient boosting library with a Python/numba backend, inspired by
 * **How?**
 
 ```
-# pip install chimeraboost
+# pip install darkofit
 
-from chimeraboost import ChimeraBoostClassifier
-clf = ChimeraBoostClassifier(early_stopping=True)
+from darkofit import DarkoClassifier
+clf = DarkoClassifier(early_stopping=True)
 clf.fit(X, y, sample_weight=w)
 ```
 
@@ -28,7 +32,7 @@ Models can be saved without pickle:
 
 ```
 clf.save_model("model.npz")
-clf2 = ChimeraBoostClassifier.load_model("model.npz")
+clf2 = DarkoClassifier.load_model("model.npz")
 ```
 
 For wrappers fitted with `refit=True`, scalar refit metadata is preserved on
@@ -56,11 +60,11 @@ clf.model_.auto_params_["binning"]
 clf.model_.auto_params_["diagnostics"]
 ```
 
-When `learning_rate=None` or `"auto"`, ChimeraBoost uses a transparent
+When `learning_rate=None` or `"auto"`, DarkoFit uses a transparent
 CatBoost-form rule fitted as `log(lr) ~ log(n) + log(iterations)`, with Kish
 effective sample size replacing raw row count when `sample_weight` is supplied.
 For materially weighted RMSE fits in CatBoost/oblivious-tree mode, the selector
-applies an LR-only ChimeraBoost correction; unweighted and all-ones-weight fits
+applies an LR-only DarkoFit correction; unweighted and all-ones-weight fits
 keep the raw CatBoost-form value.
 The selector also applies a small bounded shrinkage when preprocessing expands
 the model feature count heavily relative to effective sample size; this
@@ -68,7 +72,7 @@ high-dimensional adjustment is capped at a 15% LR reduction and recorded under
 `auto_params_["learning_rate"]`.
 LightGBM-mode unweighted fits apply an additional provisional dampening factor
 because the CatBoost coefficients were fitted on symmetric-tree regularization,
-not ChimeraBoost's leaf-wise stack.
+not DarkoFit's leaf-wise stack.
 Set `auto_learning_rate_probe=True` on the sklearn wrappers to run an opt-in
 short validation probe around the final-budget resolved automatic learning
 rate; the selected explicit rate, candidate scores, full-budget base rate, and
@@ -80,23 +84,23 @@ budget is `max_bins=254`.
 Tree builders are selectable:
 
 ```
-ChimeraBoostClassifier(tree_mode="catboost")  # symmetric/oblivious default
-ChimeraBoostClassifier(tree_mode="lightgbm")  # leaf-wise, non-oblivious
-ChimeraBoostClassifier(tree_mode="hybrid")    # experimental shared-prefix then leaf-wise
-ChimeraBoostClassifier(tree_mode="auto")      # validation-selected tree mode
-ChimeraBoostClassifier(tree_mode="depthwise") # experimental level-wise
+DarkoClassifier(tree_mode="catboost")  # symmetric/oblivious default
+DarkoClassifier(tree_mode="lightgbm")  # leaf-wise, non-oblivious
+DarkoClassifier(tree_mode="hybrid")    # experimental shared-prefix then leaf-wise
+DarkoClassifier(tree_mode="auto")      # validation-selected tree mode
+DarkoClassifier(tree_mode="depthwise") # experimental level-wise
 ```
 
 Tree modes:
 
 * `tree_mode="catboost"` builds symmetric / oblivious trees and supports
   ordered boosting.
-* `tree_mode="lightgbm"` builds ChimeraBoost's LightGBM-like histogram trees:
+* `tree_mode="lightgbm"` builds DarkoFit's LightGBM-like histogram trees:
   non-oblivious, leaf-wise, best-first CART-style trees. This is not model or
   prediction compatibility with Microsoft LightGBM.
 * `tree_mode="hybrid"` uses an experimental non-oblivious tree with a shallow
   shared symmetric prefix followed by best-first leaf-wise expansion. It stores
-  and predicts as a normal ChimeraBoost non-oblivious tree.
+  and predicts as a normal DarkoFit non-oblivious tree.
 * `tree_mode="auto"` is opt-in validation selection across `"catboost"`,
   `"lightgbm"`, and `"hybrid"`. Pair it with `refit=True` to train the selected
   concrete tree mode on all rows after selection.
@@ -110,7 +114,7 @@ In LightGBM and hybrid modes, `num_leaves` is the main tree-size control and
 `depth` is a maximum path-depth cap. `ordered_boosting` defaults to off for
 these modes; setting `ordered_boosting=True` with either mode raises a
 `ValueError`.
-Categorical features still use ChimeraBoost's target-stat preprocessing, not
+Categorical features still use DarkoFit's target-stat preprocessing, not
 native LightGBM category-partition splits. CatBoost/depthwise modes use ordered
 target statistics; LightGBM and hybrid modes use K-fold target statistics and
 include raw category-code features for compatible RMSE/logloss-style scalar and
@@ -128,7 +132,7 @@ trees. Continuous heads include `loss="Gaussian"`, `loss="LogNormal"`, and
 `loss="NegativeBinomial"`:
 
 ```
-reg = ChimeraBoostRegressor(loss="Gaussian", tree_mode="lightgbm")
+reg = DarkoRegressor(loss="Gaussian", tree_mode="lightgbm")
 reg.fit(X, y)
 mu = reg.predict(X_test)
 mu, sigma = reg.predict_dist(X_test)
@@ -158,7 +162,7 @@ Gaussian, pass `eval_metric="crps"` to select the best validation prefix by
 closed-form Gaussian CRPS instead:
 
 ```
-reg = ChimeraBoostRegressor(
+reg = DarkoRegressor(
     loss="Gaussian",
     tree_mode="lightgbm",
     early_stopping=True,
@@ -196,13 +200,13 @@ Calibration applies to
 `refit=True`, the calibration is frozen from the selection-phase validation
 model and then applied to the full-data refit.
 
-`ChimeraBoostRegressor` also has opt-in linear residual boosting via
+`DarkoRegressor` also has opt-in linear residual boosting via
 `linear_residual=True`. Before fitting trees, the wrapper fits a weighted ridge
 trend on selected numeric raw input columns, trains the booster on residuals,
 and adds the deterministic trend back at public prediction time:
 
 ```
-reg = ChimeraBoostRegressor(
+reg = DarkoRegressor(
     loss="Gaussian",
     tree_mode="lightgbm",
     linear_residual=True,
@@ -224,14 +228,14 @@ Diagnostics are stored under `model_.auto_params_["linear_residual"]`, and the
 plain-array model archive preserves the trend without pickle.
 
 Distributional benchmark, mean over three seeds on the synthetic
-heteroscedastic gate. The calibrated Chimera row was refreshed after the
+heteroscedastic gate. The calibrated DarkoFit row was refreshed after the
 0.7.0 target-standardization change; external baselines are retained from the
-same public benchmark matrix because they are not affected by ChimeraBoost's
+same public benchmark matrix because they are not affected by DarkoFit's
 internal target transform.
 
 | model | NLL 100k | NLL 500k | CRPS 500k | cov90 500k | fit s 500k |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| ChimeraBoost Gaussian, early-stopped + calibrated | **0.990** | **0.983** | **0.389** | 0.899 | 15.4 |
+| DarkoFit Gaussian, early-stopped + calibrated | **0.990** | **0.983** | **0.389** | 0.899 | 15.4 |
 | NGBoost Normal | 1.014 | 1.008 | 0.396 | 0.905 | 125.9 |
 | CatBoost `RMSEWithUncertainty` | 1.058 | 1.056 | 0.410 | 0.909 | 0.8 |
 | LightGBM twin-model variance hack | 1.644 | 1.630 | 0.419 | 0.619 | 3.5 |
@@ -239,7 +243,7 @@ internal target transform.
 Command and per-seed rows live in
 [BENCHMARK_NOTES.md](BENCHMARK_NOTES.md) and
 [benchmarks/distributional_summary.md](benchmarks/distributional_summary.md);
-the post-standardization calibrated Chimera check is in
+the post-standardization calibrated DarkoFit check is in
 [benchmarks/distributional_standardization_check.md](benchmarks/distributional_standardization_check.md).
 A WNBA DARKO real-data observation check is also recorded in
 [benchmarks/wnba_realdata_distributional_summary.md](benchmarks/wnba_realdata_distributional_summary.md):
@@ -273,7 +277,7 @@ rows so the histograms stay on the same expected scale.
 CatBoost-like stochastic regularization is opt-in:
 
 ```
-ChimeraBoostClassifier(
+DarkoClassifier(
     bootstrap_type="bayesian",
     bagging_temperature=0.5,
     sampling="mvs",
@@ -297,7 +301,7 @@ When `sample_weight` is supplied, those numeric borders use weighted quantiles;
 Early-stopping selection can optionally be followed by a full-data refit:
 
 ```
-clf = ChimeraBoostClassifier(
+clf = DarkoClassifier(
     early_stopping=True,
     refit=True,
     refit_strategy="exact",
@@ -305,7 +309,7 @@ clf = ChimeraBoostClassifier(
 clf.fit(X, y)
 ```
 
-When an explicit or automatic validation set is present, ChimeraBoost keeps the
+When an explicit or automatic validation set is present, DarkoFit keeps the
 best validation prefix by default (`use_best_model=True`), matching CatBoost's
 package-default behavior. Set `use_best_model=False` when an eval set is only
 for monitoring and you want a patience-stopped model to keep all trees through
@@ -367,27 +371,27 @@ Benchmark notes and fair comparison recipes live in
 [BENCHMARK_NOTES.md](BENCHMARK_NOTES.md).
 
 Optional Optuna-powered stepwise tuning is available through
-`chimeraboost.tuning`:
+`darkofit.tuning`:
 
 ```
-from chimeraboost import ChimeraBoostClassifier
-from chimeraboost.tuning import ChimeraBoostSearchCV
+from darkofit import DarkoClassifier
+from darkofit.tuning import DarkoSearchCV
 
-search = ChimeraBoostSearchCV(
-    ChimeraBoostClassifier(iterations=1000),
+search = DarkoSearchCV(
+    DarkoClassifier(iterations=1000),
     strategy="auto",
     tree_modes=("catboost", "lightgbm"),
     cv=5,
     n_trials=20,
     n_workers=4,
-    storage="journal:///tmp/chimeraboost-study.log",
+    storage="journal:///tmp/darkofit-study.log",
     random_state=0,
 )
 search.fit(X, y, cat_features=[0], groups=groups, sample_weight=w)
 model = search.best_estimator_
 ```
 
-Install the optional dependency with `pip install chimeraboost[tuning]`. The
+Install the optional dependency with `pip install darkofit[tuning]`. The
 tuner owns the CV folds, passes explicit validation sets to the wrappers,
 scores with validation weights, and controls per-trial `thread_count` so
 multi-process tuning does not oversubscribe Numba threads. `n_trials` is a
@@ -414,7 +418,7 @@ default `refit_rounds="preserve"` uses the median fold-best round count so the
 transported calibration is applied to a comparable boosting horizon.
 Parallel search uses separate worker processes sharing Optuna storage; each
 worker calls Optuna with `n_jobs=1` so Optuna thread-level parallelism does not
-race with Chimeraboost's Numba thread pool.
+race with DarkoFit's Numba thread pool.
 The default tuning phases leave `random_strength=0.0` because split-score noise
 currently uses a slower Python split-scoring path; include the explicit
 `"split_noise"` phase when you want to tune that regularizer.

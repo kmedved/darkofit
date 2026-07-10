@@ -4,9 +4,9 @@ import warnings
 import numpy as np
 import pytest
 
-from chimeraboost import ChimeraBoostClassifier, ChimeraBoostRegressor
-from chimeraboost.booster import DistributionalBoosting, MulticlassBoosting
-from chimeraboost.losses import (
+from darkofit import DarkoClassifier, DarkoRegressor
+from darkofit.booster import DistributionalBoosting, MulticlassBoosting
+from darkofit.losses import (
     GaussianNLL,
     LogNormalNLL,
     NegativeBinomialNLL,
@@ -18,10 +18,10 @@ from chimeraboost.losses import (
     _GAUSS_Z_CLIP,
     _T_RHO_MIN,
 )
-from chimeraboost.sklearn_api import _fit_affine_sigma_calibration
-from chimeraboost.tuning.scoring import resolve_scorer
-from chimeraboost.tuning.search import _pooled_trial_sigma_calibration
-from chimeraboost.tuning import ChimeraBoostStepwiseSearchCV
+from darkofit.sklearn_api import _fit_affine_sigma_calibration
+from darkofit.tuning.scoring import resolve_scorer
+from darkofit.tuning.search import _pooled_trial_sigma_calibration
+from darkofit.tuning import DarkoStepwiseSearchCV
 
 
 def _make_heteroscedastic(seed=0, n=160):
@@ -151,7 +151,7 @@ def test_gaussian_init_constant_target_and_crps_mc():
 
     const = np.full(60, 3.25)
     X_const = np.linspace(0.0, 1.0, const.size)[:, None]
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         **_gaussian_test_params(iterations=2, num_leaves=3, min_child_samples=2)
     ).fit(X_const, const)
     mu, sigma = model.predict_dist(X_const[:5])
@@ -208,9 +208,9 @@ def test_gaussian_target_standardization_is_scale_invariant_and_roundtrips(tmp_p
         min_child_samples=3,
         random_state=12,
     )
-    unit = ChimeraBoostRegressor(**params).fit(X, y)
+    unit = DarkoRegressor(**params).fit(X, y)
     factor = 1e8
-    scaled = ChimeraBoostRegressor(**params).fit(X, factor * y)
+    scaled = DarkoRegressor(**params).fit(X, factor * y)
 
     assert unit.model_.target_transform_["enabled"] is True
     assert scaled.model_.target_transform_["enabled"] is True
@@ -248,7 +248,7 @@ def test_gaussian_target_standardization_is_scale_invariant_and_roundtrips(tmp_p
 
     path = tmp_path / "gaussian-scaled.npz"
     scaled.save_model(path)
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
     assert loaded.model_.target_transform_ == scaled.model_.target_transform_
     loaded_mu, loaded_sigma = loaded.predict_dist(Xu)
     np.testing.assert_allclose(loaded_mu, mu_scaled)
@@ -257,7 +257,7 @@ def test_gaussian_target_standardization_is_scale_invariant_and_roundtrips(tmp_p
 
 def test_regressor_prediction_rejects_post_fit_loss_mismatch():
     X, y = _make_heteroscedastic(seed=121, n=80)
-    rmse = ChimeraBoostRegressor(
+    rmse = DarkoRegressor(
         iterations=4,
         learning_rate=0.1,
         random_state=0,
@@ -267,7 +267,7 @@ def test_regressor_prediction_rejects_post_fit_loss_mismatch():
     with pytest.raises(ValueError, match="fitted loss 'RMSE'.*refit"):
         rmse.predict(X[:3])
 
-    gaussian = ChimeraBoostRegressor(**_gaussian_test_params(iterations=4)).fit(X, y)
+    gaussian = DarkoRegressor(**_gaussian_test_params(iterations=4)).fit(X, y)
     gaussian.set_params(loss="RMSE")
     with pytest.raises(ValueError, match="fitted loss 'Gaussian'.*refit"):
         gaussian.predict_dist(X[:3])
@@ -275,7 +275,7 @@ def test_regressor_prediction_rejects_post_fit_loss_mismatch():
 
 def test_gaussian_train_nll_decreases():
     X, y = _make_heteroscedastic(seed=6, n=800)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         **_gaussian_test_params(
             iterations=50,
             learning_rate=0.05,
@@ -301,8 +301,8 @@ def test_gaussian_heteroscedastic_recovery_and_point_quality():
         diagnostic_warnings="never",
         thread_count=1,
     )
-    gaussian = ChimeraBoostRegressor(loss="Gaussian", **params).fit(Xtr, ytr)
-    rmse = ChimeraBoostRegressor(loss="RMSE", **params).fit(Xtr, ytr)
+    gaussian = DarkoRegressor(loss="Gaussian", **params).fit(Xtr, ytr)
+    rmse = DarkoRegressor(loss="RMSE", **params).fit(Xtr, ytr)
 
     mu, sigma_hat = gaussian.predict_dist(Xte)
     corr = float(np.corrcoef(sigma_hat, sigma_true)[0, 1])
@@ -321,7 +321,7 @@ def test_gaussian_homoscedastic_sigma_sanity():
     n_train, n_test = 4_000, 1_000
     X = rng.normal(size=(n_train + n_test, 4))
     y = 0.7 * X[:, 0] - 0.2 * X[:, 2] + 2.0 * rng.normal(size=X.shape[0])
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         **_gaussian_test_params(
             iterations=50,
             learning_rate=0.05,
@@ -340,10 +340,10 @@ def test_gaussian_weight_normalization_invariant():
     weights = np.ones(X.shape[0])
     weights[:2] = 0.0
 
-    base = ChimeraBoostRegressor(
+    base = DarkoRegressor(
         **_gaussian_test_params(iterations=5, min_child_samples=4)
     ).fit(X, y, sample_weight=weights)
-    scaled = ChimeraBoostRegressor(
+    scaled = DarkoRegressor(
         **_gaussian_test_params(iterations=5, min_child_samples=4)
     ).fit(X, y, sample_weight=weights * 17.0)
 
@@ -353,7 +353,7 @@ def test_gaussian_weight_normalization_invariant():
 
 def test_gaussian_regressor_api_alias_and_auto_metadata():
     X, y = _make_heteroscedastic(seed=1)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         loss="Gaussian",
         tree_mode="leafwise",
         iterations=4,
@@ -397,7 +397,7 @@ def test_gaussian_early_stopping_eval_weights_and_refit_params():
     sample_weight = np.linspace(0.8, 1.4, Xtr.shape[0])
     eval_weight = np.linspace(1.3, 0.7, Xv.shape[0])
 
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         **_gaussian_test_params(
             iterations=80,
             learning_rate=0.1,
@@ -428,7 +428,7 @@ def test_gaussian_crps_eval_metric_controls_validation_history():
     Xtr, Xv = X[:100], X[100:]
     ytr, yv = y[:100], y[100:]
 
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         **_gaussian_test_params(
             iterations=1,
             eval_metric="crps",
@@ -449,7 +449,7 @@ def test_gaussian_crps_eval_metric_controls_validation_history():
     assert np.isclose(model.best_score_, expected)
 
     with pytest.raises(ValueError, match="eval_metric"):
-        ChimeraBoostRegressor(
+        DarkoRegressor(
             loss="RMSE",
             eval_metric="crps",
             iterations=1,
@@ -465,7 +465,7 @@ def test_gaussian_scalar_sigma_calibration_scales_public_distribution_only():
     eval_weight = np.ones_like(yv_cal)
     eval_weight[0] = 0.0
 
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         **_gaussian_test_params(
             iterations=10,
             learning_rate=0.08,
@@ -545,7 +545,7 @@ def test_gaussian_affine_sigma_calibration_transforms_public_distribution_only(
     Xtr, Xv = X[:250], X[250:]
     ytr, yv = y[:250], y[250:]
 
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         **_gaussian_test_params(
             iterations=12,
             learning_rate=0.08,
@@ -578,7 +578,7 @@ def test_gaussian_affine_sigma_calibration_transforms_public_distribution_only(
     assert state["sigma_calibration"] == "affine"
     assert state["sigma_affine_a"] == model.sigma_affine_a_
     assert state["sigma_affine_b"] == model.sigma_affine_b_
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
     assert loaded.sigma_calibration_ == "affine"
     np.testing.assert_allclose(
         loaded.predict_dist(Xv[:20])[1], public_sigma, rtol=0.0, atol=0.0
@@ -601,7 +601,7 @@ def test_gaussian_per_metric_affine_calibration_applies_group_maps_and_roundtrip
     )
     y = 0.4 * x1 - 0.2 * x2 + rng.normal(scale=sigma)
 
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         **_gaussian_test_params(
             iterations=5,
             random_state=7,
@@ -637,7 +637,7 @@ def test_gaussian_per_metric_affine_calibration_applies_group_maps_and_roundtrip
 
     path = tmp_path / "per_metric_affine_gaussian.npz"
     model.save_model(path)
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
     assert loaded.dist_calibration_ == "per_metric_affine"
     assert loaded.dist_calibration_feature_index_ == 0
     np.testing.assert_allclose(
@@ -660,7 +660,7 @@ def test_gaussian_per_metric_affine_calibration_resolves_pandas_feature_name():
         scale=0.4 + 0.2 * groups, size=n
     )
 
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         **_gaussian_test_params(
             iterations=4,
             random_state=8,
@@ -682,7 +682,7 @@ def test_gaussian_per_metric_affine_calibration_resolves_pandas_feature_name():
 
 
 def test_gaussian_small_sigma_calibration_warning_respects_reset():
-    import chimeraboost.booster as booster_mod
+    import darkofit.booster as booster_mod
 
     X, y = _make_heteroscedastic(seed=16, n=160)
     params = _gaussian_test_params(
@@ -695,7 +695,7 @@ def test_gaussian_small_sigma_calibration_warning_respects_reset():
     def fit_and_messages():
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
-            ChimeraBoostRegressor(**params).fit(
+            DarkoRegressor(**params).fit(
                 X[:120], y[:120], eval_set=(X[120:], y[120:])
             )
         return [str(warning.message) for warning in caught]
@@ -720,7 +720,7 @@ def test_gaussian_refit_emits_small_calibration_warning_once():
     X, y = _make_heteroscedastic(seed=17, n=160)
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        model = ChimeraBoostRegressor(
+        model = DarkoRegressor(
             **_gaussian_test_params(
                 iterations=4,
                 learning_rate=0.08,
@@ -751,7 +751,7 @@ def test_gaussian_sigma_calibration_requires_validation_and_survives_refit_load(
     X, y = _make_heteroscedastic(seed=15, n=180)
 
     with pytest.raises(ValueError, match="requires a validation set"):
-        ChimeraBoostRegressor(
+        DarkoRegressor(
             loss="Gaussian",
             tree_mode="lightgbm",
             sigma_calibration="scalar",
@@ -760,13 +760,13 @@ def test_gaussian_sigma_calibration_requires_validation_and_survives_refit_load(
             diagnostic_warnings="never",
         ).fit(X, y)
     with pytest.raises(ValueError, match="only supported for loss='Gaussian'"):
-        ChimeraBoostRegressor(
+        DarkoRegressor(
             loss="RMSE",
             sigma_calibration="scalar",
             iterations=2,
         ).fit(X, y, eval_set=(X[:20], y[:20]))
 
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         loss="Gaussian",
         tree_mode="lightgbm",
         iterations=12,
@@ -800,7 +800,7 @@ def test_gaussian_sigma_calibration_requires_validation_and_survives_refit_load(
     state = header["wrapper"]["state"]
     assert state["sigma_calibration"] == "scalar"
     assert state["sigma_scale"] == model.sigma_scale_
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
     assert loaded.sigma_calibration_ == "scalar"
     assert loaded.sigma_scale_ == model.sigma_scale_
     np.testing.assert_allclose(
@@ -810,7 +810,7 @@ def test_gaussian_sigma_calibration_requires_validation_and_survives_refit_load(
 
 def test_gaussian_get_refit_params_clears_scalar_sigma_calibration():
     X, y = _make_heteroscedastic(seed=19, n=160)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         loss="Gaussian",
         tree_mode="lightgbm",
         iterations=8,
@@ -828,7 +828,7 @@ def test_gaussian_get_refit_params_clears_scalar_sigma_calibration():
 
     params = model.get_refit_params()
     assert params["sigma_calibration"] is None
-    refit = ChimeraBoostRegressor(**params).fit(X, y)
+    refit = DarkoRegressor(**params).fit(X, y)
     assert refit.sigma_calibration_ is None
     mu, sigma = refit.predict_dist(X[:8])
     assert mu.shape == sigma.shape == (8,)
@@ -837,7 +837,7 @@ def test_gaussian_get_refit_params_clears_scalar_sigma_calibration():
 
 def test_gaussian_refit_uses_distributional_booster():
     X, y = _make_heteroscedastic(seed=2, n=120)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         loss="Gaussian",
         tree_mode="lightgbm",
         iterations=8,
@@ -859,7 +859,7 @@ def test_gaussian_refit_uses_distributional_booster():
 
 def test_gaussian_auto_learning_rate_probe_runs():
     X, y = _make_heteroscedastic(seed=9, n=180)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         loss="Gaussian",
         tree_mode="lightgbm",
         iterations=5,
@@ -924,10 +924,10 @@ def test_gaussian_guards(kwargs, match):
     )
     params.update(kwargs)
     if match is None:
-        ChimeraBoostRegressor(**params).fit(X, y)
+        DarkoRegressor(**params).fit(X, y)
         return
     with pytest.raises(ValueError, match=match):
-        ChimeraBoostRegressor(**params).fit(X, y)
+        DarkoRegressor(**params).fit(X, y)
 
 
 def test_gaussian_rho_learning_rate_multiplier_scales_only_sigma_head():
@@ -939,8 +939,8 @@ def test_gaussian_rho_learning_rate_multiplier_scales_only_sigma_head():
         num_leaves=5,
         random_state=7,
     )
-    base = ChimeraBoostRegressor(**params).fit(X, y)
-    scaled = ChimeraBoostRegressor(
+    base = DarkoRegressor(**params).fit(X, y)
+    scaled = DarkoRegressor(
         **{**params, "rho_learning_rate_multiplier": 0.5}
     ).fit(X, y)
 
@@ -955,7 +955,7 @@ def test_gaussian_rho_learning_rate_multiplier_scales_only_sigma_head():
 
 def test_gaussian_rho_l2_leaf_reg_multiplier_metadata_and_roundtrip(tmp_path):
     X, y = _make_heteroscedastic(seed=27, n=160)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         **_gaussian_test_params(
             iterations=3,
             learning_rate=0.1,
@@ -970,7 +970,7 @@ def test_gaussian_rho_l2_leaf_reg_multiplier_metadata_and_roundtrip(tmp_path):
 
     path = tmp_path / "rho_l2_gaussian.npz"
     model.save_model(path)
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
     assert loaded.rho_l2_leaf_reg_multiplier == 4.0
     np.testing.assert_allclose(
         loaded.predict_dist(X[:12])[1], model.predict_dist(X[:12])[1]
@@ -980,11 +980,11 @@ def test_gaussian_rho_l2_leaf_reg_multiplier_metadata_and_roundtrip(tmp_path):
 def test_distributional_protocol_predict_variance_and_dist_calibration_alias():
     X, y = _make_heteroscedastic(seed=31, n=140)
     params = _gaussian_test_params(iterations=4, random_state=2)
-    dist = ChimeraBoostRegressor(
+    dist = DarkoRegressor(
         **params, dist_calibration="scalar"
     ).fit(X[:100], y[:100], eval_set=(X[100:], y[100:]))
     with pytest.warns(DeprecationWarning):
-        legacy = ChimeraBoostRegressor(
+        legacy = DarkoRegressor(
             **params, sigma_calibration="scalar"
         ).fit(X[:100], y[:100], eval_set=(X[100:], y[100:]))
 
@@ -999,7 +999,7 @@ def test_distributional_protocol_predict_variance_and_dist_calibration_alias():
 
 def test_legacy_sigma_only_calibration_applies_to_public_distribution_methods():
     X, y = _make_heteroscedastic(seed=35, n=140)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         **_gaussian_test_params(
             iterations=4,
             random_state=2,
@@ -1046,8 +1046,8 @@ def test_lognormal_matches_gaussian_on_log_target_and_roundtrips(tmp_path):
         diagnostic_warnings="never",
         thread_count=1,
     )
-    gaussian = ChimeraBoostRegressor(loss="Gaussian", **common).fit(X, log_y)
-    lognormal = ChimeraBoostRegressor(loss="LogNormal", **common).fit(X, y)
+    gaussian = DarkoRegressor(loss="Gaussian", **common).fit(X, log_y)
+    lognormal = DarkoRegressor(loss="LogNormal", **common).fit(X, y)
 
     np.testing.assert_allclose(
         lognormal.model_.predict_raw(X[:30]),
@@ -1076,11 +1076,11 @@ def test_lognormal_matches_gaussian_on_log_target_and_roundtrips(tmp_path):
         )
     np.testing.assert_allclose(zero_variance, np.array([0.0]))
     with pytest.raises(ValueError, match="strictly positive"):
-        ChimeraBoostRegressor(loss="LogNormal", **common).fit(X, np.zeros_like(y))
+        DarkoRegressor(loss="LogNormal", **common).fit(X, np.zeros_like(y))
 
     path = tmp_path / "lognormal.npz"
     lognormal.save_model(path)
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
     assert loaded.loss == "LogNormal"
     np.testing.assert_allclose(loaded.predict_dist(X[:10])[0], m[:10])
 
@@ -1088,7 +1088,7 @@ def test_lognormal_matches_gaussian_on_log_target_and_roundtrips(tmp_path):
 def test_lognormal_preprocessor_uses_log_target_for_categorical_encodings(
     monkeypatch,
 ):
-    import chimeraboost.booster as booster_mod
+    import darkofit.booster as booster_mod
 
     seen_targets = []
     original = booster_mod.FeaturePreprocessor.fit_transform
@@ -1116,7 +1116,7 @@ def test_lognormal_preprocessor_uses_log_target_for_categorical_encodings(
     X[:, 0] = cats
     X[:, 1] = numeric
 
-    ChimeraBoostRegressor(
+    DarkoRegressor(
         loss="LogNormal",
         tree_mode="lightgbm",
         iterations=2,
@@ -1169,7 +1169,7 @@ def test_student_t_gradient_bounds_and_distribution_api(tmp_path):
         StudentTNLL(nu=2.0)
 
     X, y_fit = _make_heteroscedastic(seed=33, n=150)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         loss="StudentT",
         dist_params={"nu": 4.0},
         tree_mode="lightgbm",
@@ -1191,7 +1191,7 @@ def test_student_t_gradient_bounds_and_distribution_api(tmp_path):
     assert np.all(hi > mu)
     path = tmp_path / "student_t.npz"
     model.save_model(path)
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
     assert loaded.dist_params == {"nu": 4.0}
     np.testing.assert_allclose(loaded.predict_dist(X[:12])[1], scale)
 
@@ -1211,7 +1211,7 @@ def test_poisson_and_negative_binomial_count_heads_roundtrip_and_calibrate(tmp_p
         diagnostic_warnings="never",
         thread_count=1,
     )
-    poisson = ChimeraBoostRegressor(
+    poisson = DarkoRegressor(
         loss="Poisson", dist_calibration="scalar", **common
     ).fit(X[:130], y_pois[:130], eval_set=(X[130:], y_pois[130:]))
     (lam_hat,) = poisson.predict_dist(X[:15])
@@ -1238,11 +1238,11 @@ def test_poisson_and_negative_binomial_count_heads_roundtrip_and_calibrate(tmp_p
     assert meta["mean_calibration_denominator"] > 0.0
     assert meta["mean_calibration_objective"] == "poisson_closed_form"
     with pytest.raises(ValueError, match="integer counts"):
-        ChimeraBoostRegressor(loss="Poisson", **common).fit(X, y_pois + 0.25)
+        DarkoRegressor(loss="Poisson", **common).fit(X, y_pois + 0.25)
 
     r_true = 5.0
     y_nb = rng.negative_binomial(r_true, r_true / (r_true + lam))
-    nb = ChimeraBoostRegressor(
+    nb = DarkoRegressor(
         loss="NegativeBinomial",
         tree_mode="lightgbm",
         iterations=8,
@@ -1267,7 +1267,7 @@ def test_poisson_and_negative_binomial_count_heads_roundtrip_and_calibrate(tmp_p
 
     path = tmp_path / "nb.npz"
     nb.save_model(path)
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
     assert loaded.loss == "NegativeBinomial"
     assert loaded.model_.loss_.state_["r"] == pytest.approx(nb.model_.loss_.state_["r"])
     np.testing.assert_allclose(loaded.predict_dist(X[:15])[0], mu)
@@ -1280,7 +1280,7 @@ def test_poisson_and_negative_binomial_count_heads_roundtrip_and_calibrate(tmp_p
     np.testing.assert_allclose(calibrated_mu, raw_mu * 1.4)
     np.testing.assert_allclose(nb.predict(X[:15]), calibrated_mu)
 
-    nb_cal = ChimeraBoostRegressor(
+    nb_cal = DarkoRegressor(
         loss="NegativeBinomial", dist_calibration="scalar", **common
     ).fit(X[:130], y_nb[:130], eval_set=(X[130:], y_nb[130:]))
     nb_meta = nb_cal.model_.auto_params_["dist_calibration"]
@@ -1309,7 +1309,7 @@ def test_negative_binomial_refresh_rescores_validation_history():
     X_train, X_val = X[:130], X[130:]
     y_train, y_val = y[:130], y[130:]
 
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         loss="NegativeBinomial",
         tree_mode="lightgbm",
         iterations=30,
@@ -1463,7 +1463,7 @@ def test_searchcv_negative_binomial_mean_calibration_pools_log_scale():
 
 def test_gaussian_uniform_subsample_and_colsample_metadata():
     X, y = _make_heteroscedastic(seed=12, n=220)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         loss="Gaussian",
         tree_mode="lightgbm",
         iterations=6,
@@ -1487,11 +1487,11 @@ def test_gaussian_uniform_subsample_and_colsample_metadata():
 
 
 def test_gaussian_sampled_depth_zero_retries_are_capped():
-    from chimeraboost.booster import _MAX_CONSECUTIVE_SAMPLED_DEPTH0_RETRIES
+    from darkofit.booster import _MAX_CONSECUTIVE_SAMPLED_DEPTH0_RETRIES
 
     X = np.zeros((80, 3), dtype=np.float64)
     y = np.zeros(80, dtype=np.float64)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         loss="Gaussian",
         tree_mode="lightgbm",
         iterations=1000,
@@ -1507,7 +1507,7 @@ def test_gaussian_sampled_depth_zero_retries_are_capped():
 
 def test_gaussian_only_methods_and_tuner_lanes():
     X, y = _make_heteroscedastic(seed=4, n=80)
-    rmse = ChimeraBoostRegressor(iterations=1, random_state=0).fit(X, y)
+    rmse = DarkoRegressor(iterations=1, random_state=0).fit(X, y)
     with pytest.raises(ValueError, match="predict_dist"):
         rmse.predict_dist(X[:2])
     with pytest.raises(ValueError, match="predict_interval"):
@@ -1515,8 +1515,8 @@ def test_gaussian_only_methods_and_tuner_lanes():
     with pytest.raises(ValueError, match="sample"):
         rmse.sample(X[:2])
 
-    search = ChimeraBoostStepwiseSearchCV(
-        ChimeraBoostRegressor(
+    search = DarkoStepwiseSearchCV(
+        DarkoRegressor(
             loss="Gaussian",
             tree_mode="lightgbm",
             iterations=4,
@@ -1556,8 +1556,8 @@ def test_gaussian_only_methods_and_tuner_lanes():
     )
 
     with pytest.raises(ValueError, match="tree_mode='lightgbm'"):
-        ChimeraBoostStepwiseSearchCV(
-            ChimeraBoostRegressor(
+        DarkoStepwiseSearchCV(
+            DarkoRegressor(
                 loss="Gaussian",
                 tree_mode="lightgbm",
                 iterations=2,
@@ -1571,8 +1571,8 @@ def test_gaussian_only_methods_and_tuner_lanes():
 
 def test_gaussian_searchcv_refit_freezes_scalar_sigma_calibration():
     X, y = _make_heteroscedastic(seed=18, n=120)
-    search = ChimeraBoostStepwiseSearchCV(
-        ChimeraBoostRegressor(
+    search = DarkoStepwiseSearchCV(
+        DarkoRegressor(
             loss="Gaussian",
             tree_mode="lightgbm",
             iterations=4,
@@ -1628,8 +1628,8 @@ def test_gaussian_searchcv_refit_freezes_scalar_sigma_calibration():
 
 def test_gaussian_searchcv_refit_freezes_affine_sigma_calibration():
     X, y = _make_heteroscedastic(seed=25, n=140)
-    search = ChimeraBoostStepwiseSearchCV(
-        ChimeraBoostRegressor(
+    search = DarkoStepwiseSearchCV(
+        DarkoRegressor(
             loss="Gaussian",
             tree_mode="lightgbm",
             iterations=4,
@@ -1688,8 +1688,8 @@ def test_gaussian_searchcv_refit_freezes_per_metric_affine_sigma_calibration():
     groups = np.tile([0.0, 1.0], n // 2)
     X = np.column_stack([groups, rng.normal(size=(n, 3))])
     y = 0.5 * X[:, 1] + rng.normal(scale=0.35 + 0.25 * groups, size=n)
-    search = ChimeraBoostStepwiseSearchCV(
-        ChimeraBoostRegressor(
+    search = DarkoStepwiseSearchCV(
+        DarkoRegressor(
             loss="Gaussian",
             tree_mode="lightgbm",
             iterations=4,
@@ -1736,8 +1736,8 @@ def test_negative_binomial_searchcv_refit_freezes_dispersion_calibration():
     r = 4.0
     y = rng.negative_binomial(r, r / (r + mu))
 
-    search = ChimeraBoostStepwiseSearchCV(
-        ChimeraBoostRegressor(
+    search = DarkoStepwiseSearchCV(
+        DarkoRegressor(
             loss="NegativeBinomial",
             tree_mode="lightgbm",
             iterations=5,
@@ -1788,7 +1788,7 @@ def test_negative_binomial_searchcv_refit_freezes_dispersion_calibration():
 
 def test_gaussian_serialization_roundtrip(tmp_path):
     X, y = _make_heteroscedastic(seed=5, n=120)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         loss="Gaussian",
         tree_mode="lightgbm",
         iterations=4,
@@ -1801,7 +1801,7 @@ def test_gaussian_serialization_roundtrip(tmp_path):
 
     path = tmp_path / "gaussian.npz"
     model.save_model(path)
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
     assert loaded.loss == "Gaussian"
     assert loaded.eval_metric == "crps"
     assert isinstance(loaded.model_, DistributionalBoosting)
@@ -1826,7 +1826,7 @@ def test_gaussian_serialization_roundtrip(tmp_path):
 
 def test_distributional_load_rejects_loss_output_width_mismatch(tmp_path):
     X, y = _make_heteroscedastic(seed=26, n=100)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         loss="Gaussian",
         tree_mode="lightgbm",
         iterations=3,
@@ -1847,14 +1847,14 @@ def test_distributional_load_rejects_loss_output_width_mismatch(tmp_path):
     np.savez_compressed(bad_path, **arrays)
 
     with pytest.raises(ValueError, match="n_outputs"):
-        ChimeraBoostRegressor.load_model(bad_path)
+        DarkoRegressor.load_model(bad_path)
 
 
 def test_multiclass_roundtrip_still_uses_n_classes(tmp_path):
     rng = np.random.default_rng(10)
     X = rng.normal(size=(120, 4))
     y = np.digitize(X[:, 0] - 0.4 * X[:, 1], [-0.5, 0.4])
-    model = ChimeraBoostClassifier(
+    model = DarkoClassifier(
         iterations=4,
         tree_mode="lightgbm",
         multiclass_tree_strategy="shared_vector",
@@ -1867,7 +1867,7 @@ def test_multiclass_roundtrip_still_uses_n_classes(tmp_path):
 
     path = tmp_path / "multi.npz"
     model.save_model(path)
-    loaded = ChimeraBoostClassifier.load_model(path)
+    loaded = DarkoClassifier.load_model(path)
     np.testing.assert_allclose(
         loaded.predict_proba(X[:20]), model.predict_proba(X[:20])
     )
@@ -1892,7 +1892,7 @@ def test_gaussian_categorical_fit_with_eval_weights():
     X[:, 0] = region
     X[:, 1:] = numeric
 
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         **_gaussian_test_params(iterations=5, min_child_samples=3)
     ).fit(
         X[:120], y[:120],

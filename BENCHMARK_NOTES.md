@@ -1,7 +1,36 @@
 # Benchmark Notes
 
-This file is the current checkpoint for ChimeraBoost benchmark work. For the
+This file is the current checkpoint for DarkoFit benchmark work. For the
 longer historical speed investigation, see [benchmarks/FINDINGS.md](benchmarks/FINDINGS.md).
+
+## TabArena-Lite Three-Dataset Smoke
+
+DarkoFit has a local TabArena adapter in
+`benchmarks/tabarena_adapter.py`. The smoke runner uses the three datasets from
+TabArena's Lite quickstart—`blood-transfusion-service-center`,
+`QSAR_fish_toxicity`, and `anneal`—which cover binary classification,
+regression, and multiclass classification respectively.
+
+Run it from the repository root in an environment containing editable installs
+of DarkoFit and TabArena:
+
+```bash
+python -m benchmarks.run_tabarena_smoke
+```
+
+The default run evaluates DarkoFit's default configuration plus one sampled HPO
+configuration. Use `--n-configs 0` for a default-only integration check. Runs
+are resumable and write local comparison artifacts under
+`.cache/tabarena-smoke/` by default.
+
+The default and one-config HPO smoke completed successfully on 2026-07-09 for
+all three task types. Treat its Elo, rank, and confidence interval as diagnostic
+only: three datasets are far too few for a meaningful leaderboard-quality
+comparison. The adapter uses TabArena's CPU allocation and passes its validation
+split and sample weights through to DarkoFit. DarkoFit does not yet expose a
+wall-clock training callback, so the adapter cannot strictly enforce TabArena's
+per-fit `time_limit`; add that hook before attempting a submission-grade full
+run.
 
 ## Current Default Lanes
 
@@ -9,8 +38,8 @@ longer historical speed investigation, see [benchmarks/FINDINGS.md](benchmarks/F
 "best of both worlds" work was aimed at preserving bbstats v2 behavior while
 keeping exact, gated speed wins from this fork where they were proven.
 
-`tree_mode="lightgbm"` is ChimeraBoost's leaf-wise, non-oblivious tree builder.
-It is not LightGBM model compatibility. It is a native ChimeraBoost training
+`tree_mode="lightgbm"` is DarkoFit's leaf-wise, non-oblivious tree builder.
+It is not LightGBM model compatibility. It is a native DarkoFit training
 mode intended to be compared against LightGBM-style leaf-wise boosting.
 
 `tree_mode="levelwise"` is accepted by the benchmark harness as an alias for
@@ -27,7 +56,7 @@ focused medium-size probe on 2026-06-19 used:
   --iterations 800 \
   --patience 50 \
   --repeat 2 \
-  --csv /tmp/chimeraboost_levelwise_medium.csv
+  --csv /tmp/darkofit_levelwise_medium.csv
 ```
 
 Compared with the same current-main CatBoost-mode run, levelwise reduced the
@@ -149,18 +178,18 @@ For LightGBM-mode comparisons, match leaf capacity explicitly:
   --threads 8 \
   --iterations 800 \
   --patience 50 \
-  --chimera-num-leaves 64 \
+  --darkofit-num-leaves 64 \
   --lightgbm-num-leaves 64 \
   --repeat 2 \
-  --csv /tmp/chimeraboost_lightgbm_mode.csv
+  --csv /tmp/darkofit_lightgbm_mode.csv
 ```
 
 The benchmark harness also has `--match-lightgbm-leaves`, which defaults an
-unspecified ChimeraBoost leaf count to the LightGBM leaf count for
+unspecified DarkoFit leaf count to the LightGBM leaf count for
 `tree_mode="lightgbm"`, `tree_mode="hybrid"`, and leaf-wise auto candidates.
 Passing both values explicitly is still the least ambiguous recipe for reports.
 
-For ChimeraBoost timings, use a warm Numba cache and `--repeat >= 2`.
+For DarkoFit timings, use a warm Numba cache and `--repeat >= 2`.
 Cold-cache or single-repeat timings can include one-time Numba compilation and
 should not be used for speed conclusions.
 
@@ -201,7 +230,7 @@ decision layer; use the raw CSV for drill-down when a worst case needs profiling
 Use the benchmark suite as the gate for any default-facing model, tree-mode, or
 speed claim. A change is eligible for promotion only when all of these hold:
 
-- It is measured on warm Numba caches with `--repeat >= 2` for ChimeraBoost and
+- It is measured on warm Numba caches with `--repeat >= 2` for DarkoFit and
   at least three seeds for quality-sensitive comparisons.
 - It reports package-default, equal-capacity or equal-compute, and explicit-lane
   comparisons when the change affects public defaults.
@@ -256,9 +285,9 @@ Native Gaussian distributional regression is measured with:
 ```bash
 python benchmarks/bench_distributional.py \
   --datasets synthetic_100k synthetic_500k \
-  --models chimera_gaussian chimera_gaussian_es \
-           chimera_gaussian_es_calibrated chimera_rmse_const_sigma \
-           chimera_quantile_pair ngboost catboost_uncertainty lightgbm_twin \
+  --models darkofit_gaussian darkofit_gaussian_es \
+           darkofit_gaussian_es_calibrated darkofit_rmse_const_sigma \
+           darkofit_quantile_pair ngboost catboost_uncertainty lightgbm_twin \
   --seeds 0 1 2 \
   --iterations 80 \
   --early-stop-iterations 400 \
@@ -273,7 +302,7 @@ python benchmarks/bench_distributional.py \
 
 The benchmark reports validation NLL, Gaussian CRPS, empirical 90% interval
 coverage, coverage binned by predicted sigma, mean interval width, fit time,
-and prediction time on warm ChimeraBoost kernels. Optional competitors are
+and prediction time on warm DarkoFit kernels. Optional competitors are
 soft imports: NGBoost, CatBoost `RMSEWithUncertainty`, and the LightGBM
 twin-model variance baseline print explicit skip rows when their packages are
 unavailable.
@@ -286,29 +315,29 @@ successfully. Raw per-seed rows are in
 
 | dataset | model | fit_s | nll | crps | cov90 | width90 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| synthetic_100k | chimera_gaussian | 0.972 | 1.04395 | 0.40490 | 0.918 | 2.487 |
-| synthetic_100k | chimera_gaussian_es | 3.354 | 0.99145 | 0.39060 | 0.885 | 2.197 |
-| synthetic_100k | chimera_gaussian_es_calibrated | 3.343 | 0.98975 | 0.39050 | 0.899 | 2.284 |
-| synthetic_100k | chimera_rmse_const_sigma | 0.792 | 1.10794 | 0.40356 | 0.897 | 2.385 |
-| synthetic_100k | chimera_quantile_pair | 2.028 | - | - | 0.906 | 2.530 |
+| synthetic_100k | darkofit_gaussian | 0.972 | 1.04395 | 0.40490 | 0.918 | 2.487 |
+| synthetic_100k | darkofit_gaussian_es | 3.354 | 0.99145 | 0.39060 | 0.885 | 2.197 |
+| synthetic_100k | darkofit_gaussian_es_calibrated | 3.343 | 0.98975 | 0.39050 | 0.899 | 2.284 |
+| synthetic_100k | darkofit_rmse_const_sigma | 0.792 | 1.10794 | 0.40356 | 0.897 | 2.385 |
+| synthetic_100k | darkofit_quantile_pair | 2.028 | - | - | 0.906 | 2.530 |
 | synthetic_100k | ngboost | 20.203 | 1.01390 | 0.39712 | 0.904 | 2.332 |
 | synthetic_100k | catboost_uncertainty | 0.255 | 1.05816 | 0.41034 | 0.908 | 2.458 |
 | synthetic_100k | lightgbm_twin | 1.841 | 1.64377 | 0.41959 | 0.618 | 1.211 |
-| synthetic_500k | chimera_gaussian | 2.815 | 1.04370 | 0.40426 | 0.921 | 2.508 |
-| synthetic_500k | chimera_gaussian_es | 10.952 | 0.98289 | 0.38881 | 0.894 | 2.237 |
-| synthetic_500k | chimera_gaussian_es_calibrated | 10.469 | 0.98265 | 0.38879 | 0.899 | 2.270 |
-| synthetic_500k | chimera_rmse_const_sigma | 1.966 | 1.10681 | 0.40316 | 0.899 | 2.403 |
-| synthetic_500k | chimera_quantile_pair | 6.247 | - | - | 0.910 | 2.527 |
+| synthetic_500k | darkofit_gaussian | 2.815 | 1.04370 | 0.40426 | 0.921 | 2.508 |
+| synthetic_500k | darkofit_gaussian_es | 10.952 | 0.98289 | 0.38881 | 0.894 | 2.237 |
+| synthetic_500k | darkofit_gaussian_es_calibrated | 10.469 | 0.98265 | 0.38879 | 0.899 | 2.270 |
+| synthetic_500k | darkofit_rmse_const_sigma | 1.966 | 1.10681 | 0.40316 | 0.899 | 2.403 |
+| synthetic_500k | darkofit_quantile_pair | 6.247 | - | - | 0.910 | 2.527 |
 | synthetic_500k | ngboost | 125.871 | 1.00773 | 0.39523 | 0.905 | 2.329 |
 | synthetic_500k | catboost_uncertainty | 0.848 | 1.05592 | 0.40944 | 0.909 | 2.457 |
 | synthetic_500k | lightgbm_twin | 3.463 | 1.63048 | 0.41888 | 0.619 | 1.209 |
 
-Promotion-gate read: fixed-round Chimera Gaussian is 1.43x the 500k RMSE
+Promotion-gate read: fixed-round DarkoFit Gaussian is 1.43x the 500k RMSE
 constant-sigma fit time, comfortably below the <=2.5x equal-round gate, and
 44.7x faster than NGBoost at the same row count and round budget. The
 early-stopped Gaussian lane uses a larger 400-round budget and therefore is not
 the equal-round speed gate, but it materially improves quality: calibrated
-early-stopped Chimera has the best NLL/CRPS on both synthetic sizes and is
+early-stopped DarkoFit has the best NLL/CRPS on both synthetic sizes and is
 12.0x faster than NGBoost at 500k rows. Scalar sigma calibration moves
 early-stopped coverage from mild undercoverage (0.894-0.885) back to about
 0.90, with sigma-bin coverage near flat in the generated per-seed tables.
@@ -322,13 +351,13 @@ heteroscedastic regression data and the intended domain data.
 ### 0.7.0 Target-Standardization Check
 
 After adding internal target standardization for Gaussian, StudentT, and
-LogNormal distributional heads, the calibrated public Chimera Gaussian lane was
+LogNormal distributional heads, the calibrated public DarkoFit Gaussian lane was
 rerun on 2026-07-08:
 
 ```bash
 python benchmarks/bench_distributional.py \
   --datasets synthetic_100k synthetic_500k \
-  --models chimera_gaussian_es_calibrated \
+  --models darkofit_gaussian_es_calibrated \
   --seeds 0 1 2 \
   --iterations 80 \
   --early-stop-iterations 400 \
@@ -346,13 +375,13 @@ generated table is in `benchmarks/distributional_standardization_check.md`.
 
 | dataset | model | fit_s | nll | crps | cov90 | width90 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| synthetic_100k | chimera_gaussian_es_calibrated | 5.809 | 0.99006 | 0.39062 | 0.899 | 2.277 |
-| synthetic_500k | chimera_gaussian_es_calibrated | 15.416 | 0.98260 | 0.38877 | 0.899 | 2.267 |
+| synthetic_100k | darkofit_gaussian_es_calibrated | 5.809 | 0.99006 | 0.39062 | 0.899 | 2.277 |
+| synthetic_500k | darkofit_gaussian_es_calibrated | 15.416 | 0.98260 | 0.38877 | 0.899 | 2.267 |
 
 The result keeps the public calibrated Gaussian quality claim intact after the
 target-scale fix. The external baseline rows in
 `benchmarks/distributional_summary.md` were not rerun in this closeout because
-they do not depend on ChimeraBoost's internal target transform.
+they do not depend on DarkoFit's internal target transform.
 
 ## WNBA Real-Data Distributional Validation
 
@@ -385,10 +414,10 @@ DARKO replay gates or release-performance claims.
 | model | NLL | CRPS | RMSE mu | cov90 | std-resid RMS | mean sigma | affine b |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | unit_normal_observation_baseline | 51.648 | 6.068 | 10.073 | 0.304 | 10.073 | 1.000 | |
-| chimera_rmse_const_sigma | 1.435 | 0.501 | 1.015 | 0.901 | 1.027 | 0.989 | |
-| chimera_gaussian_raw | 0.430 | 0.394 | 1.013 | 0.873 | 1.086 | 0.588 | |
-| chimera_gaussian_scalar_calibrated | 0.423 | 0.393 | 1.013 | 0.893 | 1.014 | 0.630 | |
-| chimera_gaussian_affine_calibrated | **0.407** | **0.392** | 1.013 | 0.900 | 1.009 | 0.695 | 1.104 |
+| darkofit_rmse_const_sigma | 1.435 | 0.501 | 1.015 | 0.901 | 1.027 | 0.989 | |
+| darkofit_gaussian_raw | 0.430 | 0.394 | 1.013 | 0.873 | 1.086 | 0.588 | |
+| darkofit_gaussian_scalar_calibrated | 0.423 | 0.393 | 1.013 | 0.893 | 1.014 | 0.630 | |
+| darkofit_gaussian_affine_calibrated | **0.407** | **0.392** | 1.013 | 0.900 | 1.009 | 0.695 | 1.104 |
 
 Interpretation: affine-calibrated Gaussian passes this real-data one-step
 scale calibration check and improves the scalar lane on NLL, CRPS, overall

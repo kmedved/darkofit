@@ -2,7 +2,7 @@
 
 **Status:** implemented in the current working tree; optional external
 comparison lanes still require installing NGBoost, CatBoost, and LightGBM
-**Target:** ChimeraBoost `main` (line references as of commit `3029388` + current working tree; treat them as anchors, re-locate by symbol name if drifted)
+**Target:** DarkoFit `main` (line references as of commit `3029388` + current working tree; treat them as anchors, re-locate by symbol name if drifted)
 **Audience:** implementing agent (Codex). This document is self-contained: every integration point, buffer layout, and formula needed is specified here. When this spec and the source disagree on a line number, trust the symbol name and the described behavior.
 
 ---
@@ -16,7 +16,7 @@ This revision incorporates three independent Oracle reviews of the first draft. 
 - Wrapper routing now preserves the existing dict-taking `make_model(model_kw)` contract used by tree-mode auto and the learning-rate probe, routes the refit model through the same factory, rejects `tree_mode="auto"` early for Gaussian, respects LightGBM aliases via normalized tree-mode checks, and restores Gaussian dispatch when loading wrapper archives.
 - Serialization now names the required imports and the exact `kind == "multi"` output-width edit. Gaussian archives write `n_outputs`, not fake `n_classes`; multiclass continues to use `n_classes`.
 - Performance language was narrowed: the training loop avoids avoidable per-round transposes/histogram allocations, but the builder still allocates per-tree workspace, and current flat prediction routing does not prefer flattened explicit-node leaf-wise trees.
-- Test guidance changed from duplicate-row weight equivalence to invariants that hold under ChimeraBoost's mean-normalized weight convention.
+- Test guidance changed from duplicate-row weight equivalence to invariants that hold under DarkoFit's mean-normalized weight convention.
 
 One Oracle comment was not adopted as written: `DistributionalBoosting` does not need its own `_include_cat_codes` method for correctness because `_BaseBooster._include_cat_codes` exists in current source and returns true for lightgbm/hybrid. The spec still requires extending the RMSE-specific smoothing gates so Gaussian receives RMSE-style categorical treatment.
 
@@ -31,7 +31,7 @@ production risk is late-stage overconfidence, not intervals being too wide.
 
 Changes adopted from that evidence:
 
-- The benchmark adds a `chimera_gaussian_es` lane with validation NLL early
+- The benchmark adds a `darkofit_gaussian_es` lane with validation NLL early
   stopping, plus coverage binned by predicted σ. This distinguishes underfit,
   well-stopped, and σ-overfit regimes and shows whether miscalibration depends
   on predicted dispersion.
@@ -66,7 +66,7 @@ four places, and this document now treats them as part of v1:
   shared-vector path.
 - `eval_metric="crps"` is public for Gaussian validation history,
   early-stopping patience, and best-prefix truncation.
-- `ChimeraBoostStepwiseSearchCV` supports Gaussian regressors on the resolved
+- `DarkoStepwiseSearchCV` supports Gaussian regressors on the resolved
   LightGBM lane with a Gaussian-safe search space.
 - `sigma_calibration="scalar"` is public, opt-in, validation-only calibration.
 
@@ -77,14 +77,14 @@ modes, and float32 vector histograms remain rejected.
 
 ## 1. Summary
 
-Add a heteroscedastic Gaussian regression head to ChimeraBoost: one model that jointly predicts a per-row mean **μ(x)** and standard deviation **σ(x)** by minimizing Gaussian negative log-likelihood (NLL), trained with **shared vector-valued trees** (two outputs per leaf) using the natural gradient (Fisher preconditioning). This is the same model family as NGBoost / CatBoost `RMSEWithUncertainty` / LightGBMLSS, but implemented natively on ChimeraBoost's existing multiclass shared-vector machinery.
+Add a heteroscedastic Gaussian regression head to DarkoFit: one model that jointly predicts a per-row mean **μ(x)** and standard deviation **σ(x)** by minimizing Gaussian negative log-likelihood (NLL), trained with **shared vector-valued trees** (two outputs per leaf) using the natural gradient (Fisher preconditioning). This is the same model family as NGBoost / CatBoost `RMSEWithUncertainty` / LightGBMLSS, but implemented natively on DarkoFit's existing multiclass shared-vector machinery.
 
 User-facing result:
 
 ```python
-from chimeraboost import ChimeraBoostRegressor
+from darkofit import DarkoRegressor
 
-reg = ChimeraBoostRegressor(loss="Gaussian", tree_mode="lightgbm", early_stopping=True)
+reg = DarkoRegressor(loss="Gaussian", tree_mode="lightgbm", early_stopping=True)
 reg.fit(X, y, sample_weight=w)
 
 mu = reg.predict(X_test)                      # point prediction = mean (unchanged API)
@@ -224,7 +224,7 @@ Zero-weight rows must be skipped before any `sigma`, `z`, `z*z`, NLL, or CRPS ar
 ### 2.7 CRPS (evaluation metric, closed form)
 
 For reporting and benchmarks, and for CRPS-based validation selection when
-`ChimeraBoostRegressor(loss="Gaussian", eval_metric="crps")` is requested:
+`DarkoRegressor(loss="Gaussian", eval_metric="crps")` is requested:
 
 ```
 z      = (y − mu) / sigma
@@ -668,7 +668,7 @@ The auto-structure resolvers (`l2_leaf_reg="auto"`, `num_leaves="auto"`, `min_ch
 
 ### 7.1 Constructor
 
-`ChimeraBoostRegressor.__init__` (sklearn_api.py:846): extend the `loss` docstring to `"RMSE" | "MAE" | "Quantile" | "Gaussian"`. Add `eval_metric=None` as the public distributional metric knob (`None`/`"nll"` selects Gaussian NLL, `"crps"` selects closed-form Gaussian CRPS for validation history, early-stopping patience, and best-prefix truncation). Add `sigma_calibration=None` as a sklearn-wrapper-only Gaussian knob; accept `None`/`False` for off and `True`/`"scalar"` for the scalar validation calibrator. `hessian_mode` is intentionally not exposed. Keep constructor sklearn-clone friendly; reject non-default `alpha` with `loss="Gaussian"` inside `fit`, not `__init__`; reject non-default `eval_metric` or non-off `sigma_calibration` for non-Gaussian losses.
+`DarkoRegressor.__init__` (sklearn_api.py:846): extend the `loss` docstring to `"RMSE" | "MAE" | "Quantile" | "Gaussian"`. Add `eval_metric=None` as the public distributional metric knob (`None`/`"nll"` selects Gaussian NLL, `"crps"` selects closed-form Gaussian CRPS for validation history, early-stopping patience, and best-prefix truncation). Add `sigma_calibration=None` as a sklearn-wrapper-only Gaussian knob; accept `None`/`False` for off and `True`/`"scalar"` for the scalar validation calibrator. `hessian_mode` is intentionally not exposed. Keep constructor sklearn-clone friendly; reject non-default `alpha` with `loss="Gaussian"` inside `fit`, not `__init__`; reject non-default `eval_metric` or non-off `sigma_calibration` for non-Gaussian losses.
 
 ### 7.2 fit() routing
 
@@ -718,7 +718,7 @@ model = make_model(kw)                       # sklearn_api.py:1043 site
 refit_model = make_model(refit_kw)           # sklearn_api.py:1116 site
 ```
 
-This requires importing `DistributionalBoosting` (and `_normalize_tree_mode` if the wrapper performs the alias-aware early check) from `booster.py`. The classifier's twin refit site at sklearn_api.py:1546 stays untouched; `ChimeraBoostClassifier` has no `loss` constructor parameter today, so `ChimeraBoostClassifier(loss="Gaussian")` already fails with Python's unexpected-keyword `TypeError` unless a future API adds such a parameter.
+This requires importing `DistributionalBoosting` (and `_normalize_tree_mode` if the wrapper performs the alias-aware early check) from `booster.py`. The classifier's twin refit site at sklearn_api.py:1546 stays untouched; `DarkoClassifier` has no `loss` constructor parameter today, so `DarkoClassifier(loss="Gaussian")` already fails with Python's unexpected-keyword `TypeError` unless a future API adds such a parameter.
 
 Everything else downstream (eval-split creation via `_make_eval_split` sklearn_api.py:290 — regression path incl. `weighted_stratified`; early-stopping params) flows unchanged because `DistributionalBoosting` mirrors the `GradientBoosting` fit signature and attribute surface. Explicitly verify these three integrations in tests: `validation_fraction`/`eval_set`, `refit=True` + `get_refit_params()` (freezes `lr_` and selected rounds — both exist on the new class; assert the refit model is a `DistributionalBoosting`), and `sample_weight` + `eval_sample_weight`.
 
@@ -819,7 +819,7 @@ experiments. `predict()` returns μ and is unchanged by sigma calibration.
 
 ### 7.5 predict() dispatch caveat
 
-The scalar losses return `(n,)` from `predict_raw` while Gaussian returns `(n, 2)` — the branch above keys on `self.loss`, which is correct for a fitted wrapper but **also make the loaded-model path set `self.loss = "Gaussian"`** (§8) so a wrapper reconstructed from npz dispatches correctly. In `ChimeraBoostRegressor.load_model`, after `booster, wrapper_header, _ = load_booster(...)`, if `isinstance(booster, DistributionalBoosting)`, force `est.loss = booster.loss_name` after restoring wrapper params. If wrapper params exist and say a different loss, raise a model-archive error rather than letting wrapper dispatch diverge from the loaded booster.
+The scalar losses return `(n,)` from `predict_raw` while Gaussian returns `(n, 2)` — the branch above keys on `self.loss`, which is correct for a fitted wrapper but **also make the loaded-model path set `self.loss = "Gaussian"`** (§8) so a wrapper reconstructed from npz dispatches correctly. In `DarkoRegressor.load_model`, after `booster, wrapper_header, _ = load_booster(...)`, if `isinstance(booster, DistributionalBoosting)`, force `est.loss = booster.loss_name` after restoring wrapper params. If wrapper params exist and say a different loss, raise a model-archive error rather than letting wrapper dispatch diverge from the loaded booster.
 
 Wrapper state must also persist `sigma_scale`, `sigma_calibration`, and
 `sigma_scale_source` when calibration is active. A loaded calibrated Gaussian
@@ -833,11 +833,11 @@ Record in `auto_params_` (already handled by booster §5.2); no wrapper change. 
 
 ### 7.7 Exports
 
-`chimeraboost/__init__.py`: no new top-level exports needed (`DistributionalBoosting` stays a core-level class like `GradientBoosting`; users go through the wrapper). Optionally export `GaussianNLL` for power users — skip in v1.
+`darkofit/__init__.py`: no new top-level exports needed (`DistributionalBoosting` stays a core-level class like `GradientBoosting`; users go through the wrapper). Optionally export `GaussianNLL` for power users — skip in v1.
 
 ### 7.8 Tuner
 
-`ChimeraBoostStepwiseSearchCV` (alias `ChimeraBoostSearchCV`) supports Gaussian regressors as of the v1.1 pass:
+`DarkoStepwiseSearchCV` (alias `DarkoSearchCV`) supports Gaussian regressors as of the v1.1 pass:
 
 - Resolve Gaussian searches to the LightGBM/leaf-wise lane only. The public default `tree_modes=("catboost", "lightgbm")` should filter to `("lightgbm",)` instead of failing; explicit `tree_modes` with no LightGBM alias should raise an instructive `ValueError`.
 - Default scoring for `loss="Gaussian"` is `neg_gaussian_nll`, computed from `predict_dist` with the same clipped Gaussian NLL surface as the loss kernels.
@@ -911,7 +911,7 @@ Do **not** write a fake `n_classes` into the distributional header to dodge this
 
 The `*_per_class` reconstruction is multiclass-only and irrelevant here — the `"multi"` kind path above is the one distributional trees take. Do **not** bump format version for this feature. Current source already has `FORMAT_VERSION = 3` and `BASE_FORMAT_VERSION = 2`, and archive compatibility is keyed by `model_class` plus tolerated header fields; distributional support adds a new model class, not a new archive layout primitive.
 
-Wrapper-level `save_model`/`load_model` delegate to these; ensure the reconstructed `ChimeraBoostRegressor` gets `loss="Gaussian"` set from the header so §7.5 dispatch works, and `predict_dist` on a loaded model equals the pre-save model to float64 exactness.
+Wrapper-level `save_model`/`load_model` delegate to these; ensure the reconstructed `DarkoRegressor` gets `loss="Gaussian"` set from the header so §7.5 dispatch works, and `predict_dist` on a loaded model equals the pre-save model to float64 exactness.
 
 ---
 
@@ -961,15 +961,15 @@ API and wiring:
 
 Follow the structure/CLI conventions of `benchmarks/bench_vs_lightgbm.py`. Datasets: the synthetic heteroscedastic generator from test (6) at 100k/500k rows, plus 2–3 OpenML regression sets already used by the existing bench harness. Contenders (each behind a soft import; skip with a printed notice if missing):
 
-- ChimeraBoost `loss="Gaussian"` (this work)
-- ChimeraBoost `loss="Gaussian"` with validation NLL early stopping
-  (`chimera_gaussian_es`)
-- ChimeraBoost `loss="Gaussian"` with validation NLL early stopping plus
-  `sigma_calibration="scalar"` (`chimera_gaussian_es_calibrated`)
+- DarkoFit `loss="Gaussian"` (this work)
+- DarkoFit `loss="Gaussian"` with validation NLL early stopping
+  (`darkofit_gaussian_es`)
+- DarkoFit `loss="Gaussian"` with validation NLL early stopping plus
+  `sigma_calibration="scalar"` (`darkofit_gaussian_es_calibrated`)
 - NGBoost (`Normal` dist), equal rounds
 - CatBoost `loss_function="RMSEWithUncertainty"`
 - LightGBM twin-model baseline: model A = mean (L2); model B = L2 on `log((y−μ̂_oof)² + eps)` via out-of-fold μ̂ — the "practical hack" this feature replaces
-- ChimeraBoost quantile pair (α=0.05, 0.95) — interval-only baseline
+- DarkoFit quantile pair (α=0.05, 0.95) — interval-only baseline
 
 Metrics per contender: validation NLL, CRPS, 90% empirical coverage, mean interval width, σ-binned 90% coverage for every lane that exposes per-row σ, fit wall-time (kernels warmed; respect the existing benchmark-fairness note about timing encoding inside vs outside the timer — encode outside for all contenders). Emit a markdown table; add the result summary to BENCHMARK_NOTES.md. The early-stopped lane should accept a larger max-round budget than the fixed-round lane so the benchmark can separate under-training from late σ overfit.
 
@@ -993,7 +993,7 @@ therefore needs a small public distribution protocol first:
 - every built-in vector loss declares `distribution_name`, `n_outputs`,
   `mean(raw)`, `params(raw)`, optional `interval(raw, alpha)`, optional
   `sample(raw, rng, n_samples)`, and its default validation metric;
-- `ChimeraBoostRegressor.predict_dist` returns the natural parameter tuple for
+- `DarkoRegressor.predict_dist` returns the natural parameter tuple for
   the fitted distribution, not always `(mu, sigma)`;
 - save/load persists the built-in `loss_name` and reconstructed loss instance
   exactly as Gaussian does today; arbitrary user losses remain unsupported until

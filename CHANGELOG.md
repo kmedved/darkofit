@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.0 - 2026-07-09
+
+* Rename the distribution and import package from `chimeraboost` to `darkofit`.
+  This is an intentional hard break while the project has no external users.
+* Rename the public sklearn estimators to `DarkoRegressor` and
+  `DarkoClassifier`, and the tuning helpers to `DarkoSearchCV` and
+  `DarkoStepwiseSearchCV`.
+* Point package metadata at the canonical DarkoFit repository and issue
+  tracker.
+* Reframe the package around tabular machine learning, with gradient boosting
+  as its current core rather than a permanent package boundary.
+
 ## 0.7.0 - 2026-07-08
 
 * Add opt-in sklearn-wrapper linear residual boosting for `RMSE`, `MAE`,

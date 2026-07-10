@@ -242,19 +242,19 @@ def _drop_record(index, feature_names, reason, *, explicit):
 def _as_float_array(name, value, *, ndim=1, length=None, positive=False):
     arr = np.asarray(value, dtype=np.float64)
     if arr.ndim != int(ndim):
-        raise ValueError(f"invalid ChimeraBoost model: {name} must be {ndim}D")
+        raise ValueError(f"invalid DarkoFit model: {name} must be {ndim}D")
     if length is not None and arr.shape[0] != int(length):
         raise ValueError(
-            f"invalid ChimeraBoost model: {name} length does not match "
+            f"invalid DarkoFit model: {name} length does not match "
             "linear residual feature count"
         )
     if not np.all(np.isfinite(arr)):
         raise ValueError(
-            f"invalid ChimeraBoost model: {name} must contain finite values"
+            f"invalid DarkoFit model: {name} must contain finite values"
         )
     if positive and np.any(arr <= 0.0):
         raise ValueError(
-            f"invalid ChimeraBoost model: {name} must contain positive values"
+            f"invalid DarkoFit model: {name} must contain positive values"
         )
     return arr.astype(np.float64, copy=True)
 
@@ -679,7 +679,7 @@ class WeightedRidgeTrend:
         version = int(state.get("linear_residual_version", 0))
         if version != 1:
             raise ValueError(
-                "invalid ChimeraBoost model: unsupported linear residual "
+                "invalid DarkoFit model: unsupported linear residual "
                 f"version {version}"
             )
         required = (
@@ -694,7 +694,7 @@ class WeightedRidgeTrend:
         missing = [name for name in required if name not in arrays]
         if missing:
             raise ValueError(
-                "invalid ChimeraBoost model: missing linear residual arrays "
+                "invalid DarkoFit model: missing linear residual arrays "
                 + ", ".join(missing)
             )
         feature_indices = np.asarray(
@@ -704,13 +704,13 @@ class WeightedRidgeTrend:
             feature_indices.dtype, np.integer
         ):
             raise ValueError(
-                "invalid ChimeraBoost model: linear residual feature indices "
+                "invalid DarkoFit model: linear residual feature indices "
                 "must be a 1D integer array"
             )
         feature_indices = feature_indices.astype(np.int64, copy=True)
         if np.unique(feature_indices).size != feature_indices.size:
             raise ValueError(
-                "invalid ChimeraBoost model: linear residual feature indices "
+                "invalid DarkoFit model: linear residual feature indices "
                 "contain duplicates"
             )
         if n_features is not None and feature_indices.size:
@@ -719,13 +719,13 @@ class WeightedRidgeTrend:
                 or np.any(feature_indices >= int(n_features))
             ):
                 raise ValueError(
-                    "invalid ChimeraBoost model: linear residual feature "
+                    "invalid DarkoFit model: linear residual feature "
                     "indices are out of range"
                 )
         p = int(feature_indices.size)
         if p == 0:
             raise ValueError(
-                "invalid ChimeraBoost model: active linear residual has no "
+                "invalid DarkoFit model: active linear residual has no "
                 "features"
             )
         trend.feature_indices_ = feature_indices
@@ -757,7 +757,7 @@ class WeightedRidgeTrend:
         )
         if np.any(trend.singular_values_ < 0.0):
             raise ValueError(
-                "invalid ChimeraBoost model: linear residual singular values "
+                "invalid DarkoFit model: linear residual singular values "
                 "must be nonnegative"
             )
         feature_names = state.get("linear_residual_feature_names")
@@ -767,7 +767,7 @@ class WeightedRidgeTrend:
         )
         if trend.feature_names_ is not None and trend.feature_names_.shape != (p,):
             raise ValueError(
-                "invalid ChimeraBoost model: linear residual feature names "
+                "invalid DarkoFit model: linear residual feature names "
                 "length does not match feature indices"
             )
         trend.dropped_features_ = list(
@@ -776,12 +776,12 @@ class WeightedRidgeTrend:
         trend.intercept_ = float(state.get("linear_residual_intercept", 0.0))
         if not np.isfinite(trend.intercept_):
             raise ValueError(
-                "invalid ChimeraBoost model: linear residual intercept must be finite"
+                "invalid DarkoFit model: linear residual intercept must be finite"
             )
         trend.rank_ = int(state.get("linear_residual_rank", 0))
         if trend.rank_ < 0 or trend.rank_ > p:
             raise ValueError(
-                "invalid ChimeraBoost model: linear residual rank is invalid"
+                "invalid DarkoFit model: linear residual rank is invalid"
             )
         trend.weight_sum_ = float(state.get("linear_residual_weight_sum", 0.0))
         trend.positive_weight_n_ = int(

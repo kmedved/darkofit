@@ -1,6 +1,6 @@
-"""Adapters for comparing divergent ChimeraBoost revisions.
+"""Adapters for comparing divergent DarkoFit revisions.
 
-This module deliberately avoids importing ``chimeraboost`` at module import time.
+This module deliberately avoids importing ``darkofit`` at module import time.
 The revision benchmark runs each candidate in a subprocess with that revision's
 path at the front of ``sys.path``; importing the package here would defeat that
 isolation.

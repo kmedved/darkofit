@@ -1,4 +1,4 @@
-"""Stepwise search spaces for ChimeraBoost tuning."""
+"""Stepwise search spaces for DarkoFit tuning."""
 
 from __future__ import annotations
 

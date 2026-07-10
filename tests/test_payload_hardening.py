@@ -4,13 +4,13 @@ class-minor buffer contracts, exact-solver boundaries, and prep round-trip."""
 import numpy as np
 import pytest
 
-from chimeraboost import ChimeraBoostClassifier, ChimeraBoostRegressor
-from chimeraboost.booster import (
+from darkofit import DarkoClassifier, DarkoRegressor
+from darkofit.booster import (
     _array_content_signature,
     _exact_mvs_probabilities,
     _exact_weighted_goss_probabilities,
 )
-from chimeraboost.tree import build_leafwise_multiclass_tree
+from darkofit.tree import build_leafwise_multiclass_tree
 
 
 def _make_regression(n=400, f=6, seed=0):
@@ -31,7 +31,7 @@ def _mutated_archive(src, dst, **updates):
 
 def _fit_and_save(tmp_path, tree_mode, name):
     X, y = _make_regression()
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=12, tree_mode=tree_mode, learning_rate=0.3,
         random_state=0, early_stopping=False,
     )
@@ -43,7 +43,7 @@ def _fit_and_save(tmp_path, tree_mode, name):
 
 def _assert_load_rejected(path, match):
     with pytest.raises(ValueError, match=match):
-        ChimeraBoostRegressor.load_model(path)
+        DarkoRegressor.load_model(path)
 
 
 # ---------------------------------------------------------------------------
@@ -68,7 +68,7 @@ def test_load_rejects_nonoblivious_child_self_loop(tmp_path):
         path, str(tmp_path / "self_loop.npz"),
         trees__left_child_flat=corrupt,
     )
-    _assert_load_rejected(bad, "invalid ChimeraBoost model")
+    _assert_load_rejected(bad, "invalid DarkoFit model")
 
 
 def test_load_rejects_nonoblivious_internal_node_with_one_child(tmp_path):
@@ -86,7 +86,7 @@ def test_load_rejects_nonoblivious_internal_node_with_one_child(tmp_path):
         path, str(tmp_path / "one_child.npz"),
         trees__right_child_flat=corrupt,
     )
-    _assert_load_rejected(bad, "invalid ChimeraBoost model")
+    _assert_load_rejected(bad, "invalid DarkoFit model")
 
 
 def test_load_rejects_nonoblivious_terminal_without_leaf_index(tmp_path):
@@ -102,7 +102,7 @@ def test_load_rejects_nonoblivious_terminal_without_leaf_index(tmp_path):
         path, str(tmp_path / "leafless.npz"),
         trees__leaf_index_flat=corrupt,
     )
-    _assert_load_rejected(bad, "invalid ChimeraBoost model")
+    _assert_load_rejected(bad, "invalid DarkoFit model")
 
 
 def test_load_rejects_nonoblivious_out_of_range_feature(tmp_path):
@@ -199,7 +199,7 @@ def test_load_rejects_truncated_encoder_statistics(tmp_path):
         rng.integers(0, 4, size=n)
     ]
     y = rng.normal(size=n)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=8, random_state=0, early_stopping=False
     )
     model.fit(X, y, cat_features=[1])
@@ -318,14 +318,14 @@ def test_object_cache_signature_separates_repr_hash_collisions():
 @pytest.mark.parametrize("bin_sample_count", [1234, None])
 def test_bin_sample_count_round_trips(tmp_path, bin_sample_count):
     X, y = _make_regression(n=250)
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         iterations=6, random_state=0, early_stopping=False,
         bin_sample_count=bin_sample_count,
     )
     model.fit(X, y)
     path = str(tmp_path / "bsc.npz")
     model.save_model(path)
-    loaded = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
     assert loaded.model_.prep_.bin_sample_count == bin_sample_count
     assert np.array_equal(model.predict(X), loaded.predict(X))
 
@@ -339,8 +339,8 @@ def test_bin_sample_count_round_trips(tmp_path, bin_sample_count):
                                        "depthwise"])
 def test_hardened_load_accepts_valid_models(tmp_path, tree_mode):
     X, _, path = _fit_and_save(tmp_path, tree_mode, f"{tree_mode}.npz")
-    loaded = ChimeraBoostRegressor.load_model(path)
-    reference = ChimeraBoostRegressor.load_model(path)
+    loaded = DarkoRegressor.load_model(path)
+    reference = DarkoRegressor.load_model(path)
     assert np.array_equal(loaded.predict(X), reference.predict(X))
 
 
@@ -349,12 +349,12 @@ def test_hardened_load_accepts_valid_multiclass_models(tmp_path):
     X = rng.normal(size=(300, 5))
     y = rng.integers(0, 3, size=300)
     for strategy in ("shared_vector", "per_class"):
-        model = ChimeraBoostClassifier(
+        model = DarkoClassifier(
             iterations=8, tree_mode="lightgbm", random_state=0,
             early_stopping=False, multiclass_tree_strategy=strategy,
         )
         model.fit(X, y)
         path = str(tmp_path / f"mc_{strategy}.npz")
         model.save_model(path)
-        loaded = ChimeraBoostClassifier.load_model(path)
+        loaded = DarkoClassifier.load_model(path)
         assert np.array_equal(model.predict_proba(X), loaded.predict_proba(X))

@@ -1,4 +1,4 @@
-"""Loss functions for ChimeraBoost.
+"""Loss functions for DarkoFit.
 
 Each scalar loss provides:
   init(y)            -> scalar raw score to start every prediction from

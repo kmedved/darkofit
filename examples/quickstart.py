@@ -1,17 +1,17 @@
-"""Quickstart for ChimeraBoost. Run: python examples/quickstart.py"""
+"""Quickstart for DarkoFit. Run: python examples/quickstart.py"""
 
 import numpy as np
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
 
-from chimeraboost import ChimeraBoostClassifier
+from darkofit import DarkoClassifier
 
 # --- numeric-only classification ------------------------------------------
 X, y = load_breast_cancer(return_X_y=True)
 Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.2, random_state=0, stratify=y)
 
-clf = ChimeraBoostClassifier(
+clf = DarkoClassifier(
     iterations=1000,
     early_stopping_rounds=50,
     random_state=0,
@@ -42,7 +42,7 @@ X[:, 2] = age
 X[:, 3] = usage
 Xtr, Xte, ytr, yte = train_test_split(X, churn, test_size=0.25, random_state=1)
 
-clf = ChimeraBoostClassifier(iterations=400, random_state=1)
+clf = DarkoClassifier(iterations=400, random_state=1)
 clf.fit(Xtr, ytr, cat_features=[0, 1])   # columns 0 and 1 are categorical
 auc = roc_auc_score(yte, clf.predict_proba(Xte)[:, 1])
 print(f"mixed cat+num  AUC={auc:.4f}")

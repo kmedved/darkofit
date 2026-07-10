@@ -1,4 +1,4 @@
-"""Tests for the ChimeraBoost phase profiler helper."""
+"""Tests for the DarkoFit phase profiler helper."""
 
 import sys
 from pathlib import Path
@@ -11,7 +11,7 @@ BENCH_DIR = Path(__file__).resolve().parents[1] / "benchmarks"
 if str(BENCH_DIR) not in sys.path:
     sys.path.insert(0, str(BENCH_DIR))
 
-import profile_chimera_phases as phases  # noqa: E402
+import profile_darkofit_phases as phases  # noqa: E402
 
 
 def test_phase_profiler_rejects_auto_tree_mode():
@@ -31,7 +31,7 @@ def test_phase_profiler_fit_disables_best_model(monkeypatch):
         def fit(self, *args, **kwargs):
             return self
 
-    monkeypatch.setattr(phases, "ChimeraBoostRegressor", FakeRegressor)
+    monkeypatch.setattr(phases, "DarkoRegressor", FakeRegressor)
     monkeypatch.setitem(phases.bench.SIZE_SAMPLES, "tiny", 20)
     monkeypatch.setattr(
         phases.bench,

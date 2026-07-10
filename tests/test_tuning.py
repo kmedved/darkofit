@@ -6,13 +6,13 @@ from sklearn.datasets import load_breast_cancer, load_diabetes
 
 optuna = pytest.importorskip("optuna")
 
-from chimeraboost import ChimeraBoostClassifier, ChimeraBoostRegressor
-import chimeraboost.tuning.search as search_mod
-import chimeraboost.tuning.optuna_backend as optuna_backend_mod
-from chimeraboost.tuning import ChimeraBoostSearchCV, ChimeraBoostStepwiseSearchCV
-from chimeraboost.tuning.optuna_backend import make_storage
-from chimeraboost.tuning.scoring import resolve_scorer
-from chimeraboost.tuning.spaces import (
+from darkofit import DarkoClassifier, DarkoRegressor
+import darkofit.tuning.search as search_mod
+import darkofit.tuning.optuna_backend as optuna_backend_mod
+from darkofit.tuning import DarkoSearchCV, DarkoStepwiseSearchCV
+from darkofit.tuning.optuna_backend import make_storage
+from darkofit.tuning.scoring import resolve_scorer
+from darkofit.tuning.spaces import (
     LaneState,
     make_phase_spec,
     phase_names,
@@ -23,7 +23,7 @@ from chimeraboost.tuning.spaces import (
     suggest_split_noise,
     suggest_structure,
 )
-from chimeraboost.tuning.validation import make_cv_splits, validate_cv_splits
+from darkofit.tuning.validation import make_cv_splits, validate_cv_splits
 
 
 class FakeTrial:
@@ -46,7 +46,7 @@ class HighRandomStrengthTrial(FakeTrial):
 
 def test_search_spaces_emit_legal_mode_specific_params():
     context = SpaceContext(
-        estimator_params=ChimeraBoostClassifier().get_params(),
+        estimator_params=DarkoClassifier().get_params(),
         has_categoricals=False,
         classifier=True,
     )
@@ -69,7 +69,7 @@ class LastChoiceTrial(FakeTrial):
 
 def test_search_spaces_preserve_requested_hybrid_lane():
     context = SpaceContext(
-        estimator_params=ChimeraBoostRegressor().get_params(),
+        estimator_params=DarkoRegressor().get_params(),
         has_categoricals=False,
         classifier=False,
         tree_modes=("catboost", "hybrid"),
@@ -91,7 +91,7 @@ class GossTrial(FakeTrial):
 
 def test_goss_space_forces_full_subsample():
     context = SpaceContext(
-        estimator_params=ChimeraBoostClassifier().get_params(),
+        estimator_params=DarkoClassifier().get_params(),
         has_categoricals=False,
         classifier=True,
     )
@@ -104,7 +104,7 @@ def test_goss_space_forces_full_subsample():
 
 def test_default_sampling_space_does_not_tune_random_strength():
     context = SpaceContext(
-        estimator_params=ChimeraBoostClassifier().get_params(),
+        estimator_params=DarkoClassifier().get_params(),
         has_categoricals=False,
         classifier=True,
     )
@@ -226,15 +226,15 @@ def test_validation_fraction_holdout_mode():
     assert set(np.unique(y[train_idx])) == {0, 1}
 
 
-def test_chimeraboost_classifier_has_classifier_tag():
-    assert is_classifier(ChimeraBoostClassifier())
-    scorer = resolve_scorer(ChimeraBoostClassifier(), None, None)
+def test_darkofit_classifier_has_classifier_tag():
+    assert is_classifier(DarkoClassifier())
+    scorer = resolve_scorer(DarkoClassifier(), None, None)
     assert scorer.name == "neg_log_loss"
-    assert ChimeraBoostSearchCV is ChimeraBoostStepwiseSearchCV
+    assert DarkoSearchCV is DarkoStepwiseSearchCV
 
 
 def test_searchcv_delegates_estimator_type_to_wrapped_estimator():
-    search = ChimeraBoostStepwiseSearchCV(ChimeraBoostClassifier())
+    search = DarkoStepwiseSearchCV(DarkoClassifier())
     assert search._estimator_type == "classifier"
 
 
@@ -314,7 +314,7 @@ def positional_weight_scorer(estimator, X, y, weight):
 def test_validation_fraction_auto_holdout_mode_resolves_before_splitter():
     X = np.arange(80).reshape(40, 2)
     y = np.tile([0, 1], 20)
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         RecordingClassifier(iterations=3),
         phases=("probe",),
         tree_modes=("catboost",),
@@ -394,7 +394,7 @@ def test_search_slices_weights_for_fit_eval_and_scoring():
     y = np.tile([0, 1], 6)
     w = np.arange(1, 13, dtype=float)
 
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         RecordingClassifier(iterations=3),
         phases=("probe",),
         tree_modes=("catboost",),
@@ -421,7 +421,7 @@ def test_search_slices_weights_for_fit_eval_and_scoring():
 def test_search_validates_training_and_eval_payload_shapes():
     X = np.arange(24).reshape(12, 2)
     y = np.tile([0, 1], 6)
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         RecordingClassifier(iterations=3),
         phases=("probe",),
         tree_modes=("catboost",),
@@ -459,7 +459,7 @@ def test_explicit_eval_set_uses_single_validation_payload():
     w = np.arange(1, 13, dtype=float)
     wv = np.arange(1, 7, dtype=float)
 
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         RecordingClassifier(iterations=3),
         phases=("probe",),
         tree_modes=("catboost",),
@@ -538,7 +538,7 @@ def test_resume_reopens_named_journal_study(tmp_path):
     y = np.tile([0, 1], 6)
     storage = f"journal://{tmp_path / 'resume.log'}"
 
-    first = ChimeraBoostStepwiseSearchCV(
+    first = DarkoStepwiseSearchCV(
         RecordingClassifier(iterations=3),
         phases=("probe",),
         tree_modes=("catboost",),
@@ -552,7 +552,7 @@ def test_resume_reopens_named_journal_study(tmp_path):
     ).fit(X, y)
     assert len(first.study_.trials) == 1
 
-    second = ChimeraBoostStepwiseSearchCV(
+    second = DarkoStepwiseSearchCV(
         RecordingClassifier(iterations=3),
         phases=("probe",),
         tree_modes=("catboost",),
@@ -576,7 +576,7 @@ def test_multiprocess_workers_share_journal_study(tmp_path):
 
     X = np.arange(24).reshape(12, 2)
     y = np.tile([0, 1], 6)
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         RecordingClassifier(iterations=3),
         phases=("probe",),
         tree_modes=("catboost",),
@@ -626,7 +626,7 @@ def test_multiprocess_scheduler_uses_spawn_process_workers(monkeypatch, tmp_path
         ),
     )
 
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         RecordingClassifier(iterations=3),
         phases=("probe",),
         tree_modes=("catboost",),
@@ -678,7 +678,7 @@ def test_multiprocess_scheduler_uses_spawn_process_workers(monkeypatch, tmp_path
 def test_multiprocess_search_rejects_custom_sampler_before_workers(tmp_path):
     X = np.arange(24).reshape(12, 2)
     y = np.tile([0, 1], 6)
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         RecordingClassifier(iterations=3),
         phases=("probe",),
         tree_modes=("catboost",),
@@ -766,7 +766,7 @@ def test_fold_boundary_pruning_stops_after_first_fold():
     RecordingClassifier.fit_calls = []
     X = np.arange(24).reshape(12, 2)
     y = np.tile([0, 1], 6)
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         RecordingClassifier(iterations=3),
         phases=("probe",),
         tree_modes=("catboost",),
@@ -787,7 +787,7 @@ def test_pruning_is_not_swallowed_by_finite_error_score():
     RecordingClassifier.fit_calls = []
     X = np.arange(24).reshape(12, 2)
     y = np.tile([0, 1], 6)
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         RecordingClassifier(iterations=3),
         phases=("probe",),
         tree_modes=("catboost",),
@@ -814,7 +814,7 @@ class PruneTrialZero(optuna.pruners.BasePruner):
 def test_best_index_is_cv_results_row_index_after_pruned_trial():
     X = np.arange(24).reshape(12, 2)
     y = np.tile([0, 1], 6)
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         RecordingClassifier(iterations=3),
         phases=("probe",),
         tree_modes=("catboost",),
@@ -835,7 +835,7 @@ def test_best_index_is_cv_results_row_index_after_pruned_trial():
 def test_finite_error_score_trial_remains_visible():
     X = np.arange(24).reshape(12, 2)
     y = np.tile([0, 1], 6)
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         FailingClassifier(iterations=3),
         phases=("probe",),
         tree_modes=("catboost",),
@@ -859,7 +859,7 @@ def test_finite_error_score_trial_remains_visible():
 def test_error_score_raise_propagates_original_fit_exception():
     X = np.arange(24).reshape(12, 2)
     y = np.tile([0, 1], 6)
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         FailingClassifier(iterations=3),
         phases=("probe",),
         tree_modes=("catboost",),
@@ -879,7 +879,7 @@ def test_error_score_raise_propagates_original_fit_exception():
 def test_nan_error_score_records_failed_trial_before_no_completed_error():
     X = np.arange(24).reshape(12, 2)
     y = np.tile([0, 1], 6)
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         FailingClassifier(iterations=3),
         phases=("probe",),
         tree_modes=("catboost",),
@@ -901,7 +901,7 @@ def test_nan_error_score_records_failed_trial_before_no_completed_error():
 def test_journal_storage_user_attrs_sanitize_estimator_random_state_objects(tmp_path):
     X = np.arange(24).reshape(12, 2)
     y = np.tile([0, 1], 6)
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         RecordingClassifier(
             iterations=3, random_state=np.random.default_rng(0)
         ),
@@ -926,7 +926,7 @@ def test_trial_runtime_does_not_force_fixed_patience():
     RecordingClassifier.fit_calls = []
     X = np.arange(24).reshape(12, 2)
     y = np.tile([0, 1], 6)
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         RecordingClassifier(iterations=3),
         phases=("probe",),
         tree_modes=("catboost",),
@@ -943,7 +943,7 @@ def test_trial_runtime_does_not_force_fixed_patience():
 
 def test_learning_rate_phase_does_not_sample_patience():
     context = SpaceContext(
-        estimator_params=ChimeraBoostClassifier().get_params(),
+        estimator_params=DarkoClassifier().get_params(),
         has_categoricals=False,
         classifier=True,
     )
@@ -961,7 +961,7 @@ def test_lane_fixed_params_are_applied_without_suggestor_convention():
 
 
 def test_lane_build_params_drop_leafwise_only_num_leaves_for_catboost():
-    estimator = ChimeraBoostRegressor(tree_mode="lightgbm", num_leaves=31)
+    estimator = DarkoRegressor(tree_mode="lightgbm", num_leaves=31)
 
     catboost_params = search_mod._build_model_params(
         estimator,
@@ -980,8 +980,8 @@ def test_lane_build_params_drop_leafwise_only_num_leaves_for_catboost():
 
 def test_default_refit_preserves_rounds_and_auto_learning_rate():
     X, y = load_breast_cancer(return_X_y=True)
-    search = ChimeraBoostStepwiseSearchCV(
-        ChimeraBoostClassifier(iterations=16, learning_rate=None, random_state=0),
+    search = DarkoStepwiseSearchCV(
+        DarkoClassifier(iterations=16, learning_rate=None, random_state=0),
         phases=("probe",),
         tree_modes=("catboost",),
         n_trials={"probe": 1},
@@ -1001,8 +1001,8 @@ def test_default_refit_preserves_rounds_and_auto_learning_rate():
 
 def test_median_fold_refit_is_opt_in():
     X, y = load_breast_cancer(return_X_y=True)
-    search = ChimeraBoostStepwiseSearchCV(
-        ChimeraBoostClassifier(iterations=16, random_state=0),
+    search = DarkoStepwiseSearchCV(
+        DarkoClassifier(iterations=16, random_state=0),
         phases=("probe",),
         tree_modes=("catboost",),
         n_trials={"probe": 1},
@@ -1021,8 +1021,8 @@ def test_median_fold_refit_is_opt_in():
 
 def test_explicit_refit_learning_rate_freezes_trial_mean_rate():
     X, y = load_breast_cancer(return_X_y=True)
-    search = ChimeraBoostStepwiseSearchCV(
-        ChimeraBoostClassifier(iterations=16, learning_rate=None, random_state=0),
+    search = DarkoStepwiseSearchCV(
+        DarkoClassifier(iterations=16, learning_rate=None, random_state=0),
         phases=("probe",),
         tree_modes=("catboost",),
         n_trials={"probe": 1},
@@ -1042,7 +1042,7 @@ def test_explicit_refit_learning_rate_freezes_trial_mean_rate():
 def test_refit_preserves_estimator_thread_count_not_trial_cap():
     X = np.arange(80).reshape(40, 2)
     y = np.tile([0, 1], 20)
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         RecordingClassifier(iterations=3, thread_count=7),
         phases=("probe",),
         tree_modes=("catboost",),
@@ -1061,7 +1061,7 @@ def test_refit_preserves_estimator_thread_count_not_trial_cap():
 def test_numeric_n_trials_is_global_across_lanes():
     X = np.arange(80).reshape(40, 2)
     y = np.tile([0, 1], 20)
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         RecordingClassifier(iterations=3),
         strategy="stepwise",
         tree_modes=("catboost", "lightgbm"),
@@ -1187,10 +1187,10 @@ def test_fit_recomputes_timeout_for_each_adaptive_execution_block(monkeypatch):
 
     monkeypatch.setattr(search_mod, "_remaining_timeout", fake_remaining_timeout)
     monkeypatch.setattr(
-        ChimeraBoostStepwiseSearchCV, "_run_phase", fake_run_phase
+        DarkoStepwiseSearchCV, "_run_phase", fake_run_phase
     )
 
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         RecordingClassifier(iterations=3),
         phases=("structure",),
         tree_modes=("catboost", "lightgbm"),
@@ -1219,13 +1219,13 @@ def test_shared_stop_flag_breaks_later_adaptive_execution_blocks(monkeypatch):
                        timeout=None, callbacks=None):
         calls.append((payload.phase_spec.name, payload.lane_state.tree_mode))
         _tell_fake_complete_trial(self, payload, value=1.0)
-        self.study_.set_user_attr("_chimeraboost_stop", True)
+        self.study_.set_user_attr("_darkofit_stop", True)
 
     monkeypatch.setattr(
-        ChimeraBoostStepwiseSearchCV, "_run_phase", fake_run_phase
+        DarkoStepwiseSearchCV, "_run_phase", fake_run_phase
     )
 
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         RecordingClassifier(iterations=3),
         phases=("structure",),
         tree_modes=("catboost", "lightgbm"),
@@ -1239,13 +1239,13 @@ def test_shared_stop_flag_breaks_later_adaptive_execution_blocks(monkeypatch):
     search.fit(X, y)
 
     assert calls == [("structure", "catboost")]
-    assert search.study_.user_attrs["_chimeraboost_stop"] is True
+    assert search.study_.user_attrs["_darkofit_stop"] is True
 
 
 def test_auto_small_budget_uses_joint_strategy():
     X = np.arange(80).reshape(40, 2)
     y = np.tile([0, 1], 20)
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         RecordingClassifier(iterations=3),
         tree_modes=("catboost", "lightgbm"),
         n_trials=4,
@@ -1321,7 +1321,7 @@ def test_classifier_cv_rejects_more_folds_than_smallest_class():
 def test_no_improvement_stopper_sets_shared_stop_flag():
     X = np.arange(40).reshape(20, 2)
     y = np.tile([0, 1], 10)
-    search = ChimeraBoostStepwiseSearchCV(
+    search = DarkoStepwiseSearchCV(
         RecordingClassifier(iterations=3),
         strategy="joint",
         tree_modes=("catboost",),
@@ -1336,7 +1336,7 @@ def test_no_improvement_stopper_sets_shared_stop_flag():
     )
     search.fit(X, y)
     assert len(search.study_.trials) < 5
-    assert search.study_.user_attrs["_chimeraboost_stop"] is True
+    assert search.study_.user_attrs["_darkofit_stop"] is True
 
 
 def test_custom_study_stopper_sets_and_honors_shared_stop_flag():
@@ -1354,7 +1354,7 @@ def test_custom_study_stopper_sets_and_honors_shared_stop_flag():
     first = optuna.create_study(direction="minimize")
     first.optimize(lambda trial: 1.0, n_trials=5, callbacks=[callback])
     assert len(first.trials) == 1
-    assert first.user_attrs["_chimeraboost_stop"] is True
+    assert first.user_attrs["_darkofit_stop"] is True
 
     calls = []
 
@@ -1370,7 +1370,7 @@ def test_custom_study_stopper_sets_and_honors_shared_stop_flag():
         min_delta=0.0,
     )[0]
     sibling = optuna.create_study(direction="minimize")
-    sibling.set_user_attr("_chimeraboost_stop", True)
+    sibling.set_user_attr("_darkofit_stop", True)
     sibling.optimize(lambda trial: 1.0, n_trials=5, callbacks=[sibling_callback])
     assert len(sibling.trials) == 1
     assert calls == []
@@ -1378,8 +1378,8 @@ def test_custom_study_stopper_sets_and_honors_shared_stop_flag():
 
 def test_classifier_and_regressor_smoke():
     X, y = load_breast_cancer(return_X_y=True)
-    clf = ChimeraBoostStepwiseSearchCV(
-        ChimeraBoostClassifier(iterations=12, random_state=0),
+    clf = DarkoStepwiseSearchCV(
+        DarkoClassifier(iterations=12, random_state=0),
         phases=("probe", "structure"),
         tree_modes=("catboost", "lightgbm"),
         n_trials={"probe": 1, "structure": 1},
@@ -1393,8 +1393,8 @@ def test_classifier_and_regressor_smoke():
     assert clf.predict_proba(X[:5]).shape == (5, 2)
 
     Xr, yr = load_diabetes(return_X_y=True)
-    reg = ChimeraBoostStepwiseSearchCV(
-        ChimeraBoostRegressor(iterations=10, random_state=0),
+    reg = DarkoStepwiseSearchCV(
+        DarkoRegressor(iterations=10, random_state=0),
         phases=("probe",),
         tree_modes=("catboost",),
         n_trials={"probe": 1},

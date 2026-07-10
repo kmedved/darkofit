@@ -25,7 +25,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/numba
-          key: ${{ runner.os }}-numba-py311-${{ hashFiles('chimeraboost/**/*.py', 'pyproject.toml') }}
+          key: ${{ runner.os }}-numba-py311-${{ hashFiles('darkofit/**/*.py', 'pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-numba-py311-
       - name: Install package

@@ -1,4 +1,4 @@
-"""Distributional regression benchmark for ChimeraBoost.
+"""Distributional regression benchmark for DarkoFit.
 
 The default run is offline and synthetic. Optional competitors are detected at
 runtime and skipped with an explicit reason if their packages are unavailable.
@@ -8,7 +8,7 @@ Examples
     python benchmarks/bench_distributional.py
     python benchmarks/bench_distributional.py --datasets synthetic_100k
     python benchmarks/bench_distributional.py --seeds 0 1 2 --n-train 5000
-    python benchmarks/bench_distributional.py --models chimera_gaussian ngboost
+    python benchmarks/bench_distributional.py --models darkofit_gaussian ngboost
     python benchmarks/bench_distributional.py --csv /tmp/distributional.csv
     python benchmarks/bench_distributional.py --markdown /tmp/distributional.md
 """
@@ -29,7 +29,7 @@ from pathlib import Path
 
 os.environ.setdefault(
     "MPLCONFIGDIR",
-    str(Path(os.environ.get("TMPDIR", "/tmp")) / "chimeraboost-mplconfig"),
+    str(Path(os.environ.get("TMPDIR", "/tmp")) / "darkofit-mplconfig"),
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -39,19 +39,19 @@ if str(ROOT) not in sys.path:
 import numpy as np
 from sklearn.model_selection import KFold, train_test_split
 
-from chimeraboost import ChimeraBoostRegressor
+from darkofit import DarkoRegressor
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 
 DEFAULT_MODELS = (
-    "chimera_gaussian",
-    "chimera_gaussian_es",
-    "chimera_gaussian_es_calibrated",
-    "chimera_student_t",
-    "chimera_rmse_const_sigma",
-    "chimera_quantile_pair",
+    "darkofit_gaussian",
+    "darkofit_gaussian_es",
+    "darkofit_gaussian_es_calibrated",
+    "darkofit_student_t",
+    "darkofit_rmse_const_sigma",
+    "darkofit_quantile_pair",
     "ngboost",
     "catboost_uncertainty",
     "lightgbm_twin",
@@ -307,9 +307,9 @@ def _skip(dataset, model_name, seed, Xtr, Xte, reason, weight_mode="none"):
     )
 
 
-def _run_chimera_gaussian(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
+def _run_darkofit_gaussian(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
     t0 = time.perf_counter()
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         loss="Gaussian",
         tree_mode="lightgbm",
         iterations=args.iterations,
@@ -325,7 +325,7 @@ def _run_chimera_gaussian(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
     mu, sigma = model.predict_dist(Xte)
     predict_seconds = time.perf_counter() - t0
     return _score(
-        dataset, "chimera_gaussian", seed, Xtr, Xte, yte,
+        dataset, "darkofit_gaussian", seed, Xtr, Xte, yte,
         fit_seconds, predict_seconds, mu, sigma,
         best_iteration=model.n_estimators_,
         sigma_bins=args.sigma_bins,
@@ -334,9 +334,9 @@ def _run_chimera_gaussian(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
     )
 
 
-def _run_chimera_gaussian_es(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
+def _run_darkofit_gaussian_es(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
     t0 = time.perf_counter()
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         loss="Gaussian",
         tree_mode="lightgbm",
         iterations=(
@@ -359,7 +359,7 @@ def _run_chimera_gaussian_es(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
     mu, sigma = model.predict_dist(Xte)
     predict_seconds = time.perf_counter() - t0
     return _score(
-        dataset, "chimera_gaussian_es", seed, Xtr, Xte, yte,
+        dataset, "darkofit_gaussian_es", seed, Xtr, Xte, yte,
         fit_seconds, predict_seconds, mu, sigma,
         best_iteration=model.n_estimators_,
         sigma_bins=args.sigma_bins,
@@ -368,10 +368,10 @@ def _run_chimera_gaussian_es(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
     )
 
 
-def _run_chimera_gaussian_es_calibrated(dataset, seed, Xtr, Xte, ytr, yte,
+def _run_darkofit_gaussian_es_calibrated(dataset, seed, Xtr, Xte, ytr, yte,
                                         wtr, wte, args):
     t0 = time.perf_counter()
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         loss="Gaussian",
         tree_mode="lightgbm",
         iterations=(
@@ -385,7 +385,7 @@ def _run_chimera_gaussian_es_calibrated(dataset, seed, Xtr, Xte, ytr, yte,
         early_stopping=True,
         early_stopping_rounds=args.early_stopping_rounds,
         validation_fraction=args.validation_fraction,
-        dist_calibration=args.chimera_sigma_calibration,
+        dist_calibration=args.darkofit_sigma_calibration,
         thread_count=args.threads,
         random_state=seed,
         diagnostic_warnings="never",
@@ -395,7 +395,7 @@ def _run_chimera_gaussian_es_calibrated(dataset, seed, Xtr, Xte, ytr, yte,
     mu, sigma = model.predict_dist(Xte)
     predict_seconds = time.perf_counter() - t0
     return _score(
-        dataset, "chimera_gaussian_es_calibrated", seed, Xtr, Xte, yte,
+        dataset, "darkofit_gaussian_es_calibrated", seed, Xtr, Xte, yte,
         fit_seconds, predict_seconds, mu, sigma,
         best_iteration=model.n_estimators_,
         sigma_bins=args.sigma_bins,
@@ -404,9 +404,9 @@ def _run_chimera_gaussian_es_calibrated(dataset, seed, Xtr, Xte, ytr, yte,
     )
 
 
-def _run_chimera_student_t(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
+def _run_darkofit_student_t(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
     t0 = time.perf_counter()
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         loss="StudentT",
         dist_params={"nu": args.student_t_nu},
         tree_mode="lightgbm",
@@ -426,7 +426,7 @@ def _run_chimera_student_t(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
     predict_seconds = time.perf_counter() - t0
     return Result(
         dataset=dataset,
-        model="chimera_student_t",
+        model="darkofit_student_t",
         weight_mode=args.weight_mode,
         seed=int(seed),
         n_train=int(Xtr.shape[0]),
@@ -452,9 +452,9 @@ def _run_chimera_student_t(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
     )
 
 
-def _run_chimera_rmse_const_sigma(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
+def _run_darkofit_rmse_const_sigma(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
     t0 = time.perf_counter()
-    model = ChimeraBoostRegressor(
+    model = DarkoRegressor(
         loss="RMSE",
         tree_mode="lightgbm",
         iterations=args.iterations,
@@ -473,7 +473,7 @@ def _run_chimera_rmse_const_sigma(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, a
     sigma = np.full_like(mu, sigma_const, dtype=np.float64)
     predict_seconds = time.perf_counter() - t0
     return _score(
-        dataset, "chimera_rmse_const_sigma", seed, Xtr, Xte, yte,
+        dataset, "darkofit_rmse_const_sigma", seed, Xtr, Xte, yte,
         fit_seconds, predict_seconds, mu, sigma,
         best_iteration=model.n_estimators_,
         sigma_bins=args.sigma_bins,
@@ -482,7 +482,7 @@ def _run_chimera_rmse_const_sigma(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, a
     )
 
 
-def _run_chimera_quantile_pair(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
+def _run_darkofit_quantile_pair(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args):
     t0 = time.perf_counter()
     common = dict(
         tree_mode="lightgbm",
@@ -494,8 +494,8 @@ def _run_chimera_quantile_pair(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args
         random_state=seed,
         diagnostic_warnings="never",
     )
-    lo_model = ChimeraBoostRegressor(loss="Quantile", alpha=0.05, **common)
-    hi_model = ChimeraBoostRegressor(loss="Quantile", alpha=0.95, **common)
+    lo_model = DarkoRegressor(loss="Quantile", alpha=0.05, **common)
+    hi_model = DarkoRegressor(loss="Quantile", alpha=0.95, **common)
     lo_model.fit(Xtr, ytr, sample_weight=wtr)
     hi_model.fit(Xtr, ytr, sample_weight=wtr)
     fit_seconds = time.perf_counter() - t0
@@ -504,7 +504,7 @@ def _run_chimera_quantile_pair(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args
     hi = hi_model.predict(Xte)
     predict_seconds = time.perf_counter() - t0
     return _score_interval_only(
-        dataset, "chimera_quantile_pair", seed, Xtr, Xte, yte,
+        dataset, "darkofit_quantile_pair", seed, Xtr, Xte, yte,
         fit_seconds, predict_seconds, np.minimum(lo, hi), np.maximum(lo, hi),
         sample_weight=wte,
         weight_mode=args.weight_mode,
@@ -714,12 +714,12 @@ def _run_lightgbm_twin_calibrated(dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, a
 
 
 RUNNERS = {
-    "chimera_gaussian": _run_chimera_gaussian,
-    "chimera_gaussian_es": _run_chimera_gaussian_es,
-    "chimera_gaussian_es_calibrated": _run_chimera_gaussian_es_calibrated,
-    "chimera_student_t": _run_chimera_student_t,
-    "chimera_rmse_const_sigma": _run_chimera_rmse_const_sigma,
-    "chimera_quantile_pair": _run_chimera_quantile_pair,
+    "darkofit_gaussian": _run_darkofit_gaussian,
+    "darkofit_gaussian_es": _run_darkofit_gaussian_es,
+    "darkofit_gaussian_es_calibrated": _run_darkofit_gaussian_es_calibrated,
+    "darkofit_student_t": _run_darkofit_student_t,
+    "darkofit_rmse_const_sigma": _run_darkofit_rmse_const_sigma,
+    "darkofit_quantile_pair": _run_darkofit_quantile_pair,
     "ngboost": _run_ngboost,
     "catboost_uncertainty": _run_catboost_uncertainty,
     "lightgbm_twin": _run_lightgbm_twin,
@@ -834,7 +834,7 @@ def _write_markdown(path, rows):
     path.write_text(_markdown_table(rows) + "\n", encoding="utf-8")
 
 
-def _warm_chimera(args):
+def _warm_darkofit(args):
     if args.no_warmup:
         return
     Xtr, Xte, ytr, yte = _make_heteroscedastic(
@@ -854,26 +854,26 @@ def _warm_chimera(args):
     warm_args.weight_mode = "none"
     wtr = None
     wte = None
-    if "chimera_gaussian" in args.models:
-        _run_chimera_gaussian("warmup", 0, Xtr, Xte, ytr, yte, wtr, wte, warm_args)
-    if "chimera_gaussian_es" in args.models:
-        _run_chimera_gaussian_es(
+    if "darkofit_gaussian" in args.models:
+        _run_darkofit_gaussian("warmup", 0, Xtr, Xte, ytr, yte, wtr, wte, warm_args)
+    if "darkofit_gaussian_es" in args.models:
+        _run_darkofit_gaussian_es(
             "warmup", 0, Xtr, Xte, ytr, yte, wtr, wte, warm_args
         )
-    if "chimera_gaussian_es_calibrated" in args.models:
-        _run_chimera_gaussian_es_calibrated(
+    if "darkofit_gaussian_es_calibrated" in args.models:
+        _run_darkofit_gaussian_es_calibrated(
             "warmup", 0, Xtr, Xte, ytr, yte, wtr, wte, warm_args
         )
-    if "chimera_student_t" in args.models:
-        _run_chimera_student_t(
+    if "darkofit_student_t" in args.models:
+        _run_darkofit_student_t(
             "warmup", 0, Xtr, Xte, ytr, yte, wtr, wte, warm_args
         )
-    if "chimera_rmse_const_sigma" in args.models:
-        _run_chimera_rmse_const_sigma(
+    if "darkofit_rmse_const_sigma" in args.models:
+        _run_darkofit_rmse_const_sigma(
             "warmup", 0, Xtr, Xte, ytr, yte, wtr, wte, warm_args
         )
-    if "chimera_quantile_pair" in args.models:
-        _run_chimera_quantile_pair(
+    if "darkofit_quantile_pair" in args.models:
+        _run_darkofit_quantile_pair(
             "warmup", 0, Xtr, Xte, ytr, yte, wtr, wte, warm_args
         )
 
@@ -903,15 +903,15 @@ def parse_args(argv=None):
     parser.add_argument(
         "--early-stop-iterations",
         type=int,
-        help="max rounds for chimera_gaussian_es; defaults to --iterations",
+        help="max rounds for darkofit_gaussian_es; defaults to --iterations",
     )
     parser.add_argument("--early-stopping-rounds", default="auto")
     parser.add_argument("--validation-fraction", type=float, default=0.1)
     parser.add_argument(
-        "--chimera-sigma-calibration",
+        "--darkofit-sigma-calibration",
         choices=("scalar", "affine"),
         default="affine",
-        help="calibration mode for chimera_gaussian_es_calibrated",
+        help="calibration mode for darkofit_gaussian_es_calibrated",
     )
     parser.add_argument("--learning-rate", type=float, default=0.06)
     parser.add_argument("--student-t-nu", type=float, default=6.0)
@@ -924,7 +924,7 @@ def parse_args(argv=None):
     parser.add_argument("--csv", type=Path)
     parser.add_argument("--markdown", type=Path)
     parser.add_argument("--no-warmup", action="store_true",
-                        help="include first-call ChimeraBoost JIT time")
+                        help="include first-call DarkoFit JIT time")
     args = parser.parse_args(argv)
     if args.n_features < 6:
         parser.error("--n-features must be at least 6")
@@ -950,7 +950,7 @@ def parse_args(argv=None):
 
 def main(argv=None):
     args = parse_args(argv)
-    _warm_chimera(args)
+    _warm_darkofit(args)
     rows = []
     for dataset in args.datasets:
         for seed in args.seeds:
