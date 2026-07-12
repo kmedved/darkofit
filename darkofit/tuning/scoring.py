@@ -7,6 +7,7 @@ import math
 from dataclasses import dataclass
 
 import numpy as np
+from scipy.special import gammaln
 from sklearn.base import is_classifier
 from sklearn.metrics import get_scorer, log_loss, mean_pinball_loss
 
@@ -180,12 +181,7 @@ def _neg_poisson_nll(estimator, X, y, sample_weight):
     y_arr = np.asarray(y, dtype=np.float64)
     lam = np.maximum(np.asarray(lam, dtype=np.float64), np.exp(-15.0))
     eta = np.log(lam)
-    lgamma = np.fromiter(
-        (math.lgamma(float(v) + 1.0) for v in y_arr),
-        dtype=np.float64,
-        count=y_arr.size,
-    )
-    nll = lam - y_arr * eta + lgamma
+    nll = lam - y_arr * eta + gammaln(y_arr + 1.0)
     return -float(np.average(nll, weights=sample_weight))
 
 
@@ -197,25 +193,10 @@ def _neg_negative_binomial_nll(estimator, X, y, sample_weight):
     r = 1.0 / alpha
     log_r = np.log(r)
     log_r_mu = np.log(r + mu)
-    lgamma_y_r = np.fromiter(
-        (math.lgamma(float(yi + ri)) for yi, ri in zip(y_arr, r)),
-        dtype=np.float64,
-        count=y_arr.size,
-    )
-    lgamma_r = np.fromiter(
-        (math.lgamma(float(ri)) for ri in r),
-        dtype=np.float64,
-        count=y_arr.size,
-    )
-    lgamma_y = np.fromiter(
-        (math.lgamma(float(yi) + 1.0) for yi in y_arr),
-        dtype=np.float64,
-        count=y_arr.size,
-    )
     nll = (
-        -lgamma_y_r
-        + lgamma_r
-        + lgamma_y
+        -gammaln(y_arr + r)
+        + gammaln(r)
+        + gammaln(y_arr + 1.0)
         - r * (log_r - log_r_mu)
         - y_arr * (np.log(mu) - log_r_mu)
     )

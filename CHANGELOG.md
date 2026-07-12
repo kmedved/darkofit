@@ -1,5 +1,75 @@
 # Changelog
 
+## 0.9.0 - 2026-07-12
+
+Behavior-changing default improvements from a full-repo review, plus targeted
+performance and robustness fixes. These are intentional clean cutovers; the
+previous behaviors remain available through explicit parameters.
+
+* Make `ordered_boosting="auto"` task-aware in CatBoost/depthwise modes: the
+  ordered leave-one-out leaf update stays on for classification and turns off
+  for scalar regression. Categorical regression continues to use ordered
+  target-statistic preprocessing to prevent leakage. On the real-data
+  guardrail matrix plain boosting improved three of four numeric case means;
+  weighted Diabetes was effectively neutral. It also improved every Abalone
+  split. On House Prices, ordered boosting was catastrophically unstable on
+  one of three splits (2.6x test RMSE with a healthy-looking validation score)
+  while mildly better on the other two — a tail-risk failure a small
+  validation set cannot catch. The numeric result also closes ~93% of the
+  QSAR TabArena gap in `HANDOFF.md`. `MAE`/`Quantile` recompute leaf values
+  from residual statistics and never applied the ordered update; `"auto"`
+  now resolves off for them and explicit `ordered_boosting=True` raises
+  instead of being silently ignored. The resolved rule is recorded under
+  `auto_params_["tree"]["ordered_boosting_rule"]`.
+* Default `eval_train_loss=False` on the boosters and sklearn wrappers. The
+  per-round training-loss pass is diagnostic-only (early stopping watches the
+  eval set) and cost about 15% of multiclass fit time; `verbose=True` still
+  forces it on, and `train_history_` is empty unless it is enabled.
+* Change `DarkoSearchCV` refit defaults to `refit_rounds="median_best"` and
+  `refit_learning_rate="fold_median"` so the final refit matches the
+  early-stopped configuration CV actually scored, instead of retraining the
+  full nominal iteration budget with early stopping disabled. `"preserve"`
+  recovers the old semantics. Fold round counts of zero (folds with no legal
+  split) participate in the median; missing fold metadata (e.g. resumed
+  pre-0.9 studies) falls back to preserve semantics with a warning. Missing
+  or invalid fold learning-rate metadata does the same, and both fallback
+  sources are recorded in tuning metadata; non-finite fold learning rates are
+  filtered before the median.
+* Allocate small stepwise tuning budgets across phases by largest remainder
+  instead of dumping rounding leftovers into the last (lowest-priority)
+  phase, and warn when requested trials cannot be scheduled by the
+  configured phases.
+* Parallelize the Gaussian/StudentT/LogNormal/Poisson/NegativeBinomial NLL
+  and Gaussian CRPS eval kernels with `prange`, keeping zero-weight rows
+  unevaluated so extreme values cannot poison the metric with `0 * inf`.
+  The multiclass softmax evaluators stay deliberately serial: their inner
+  class loop trips numba's parfor analysis on Python 3.13 + numba 0.66,
+  which is inside the declared support range. The NegativeBinomial
+  dispersion refresh drops the `lgamma(y+1)` constant from its
+  golden-section objective, removing redundant work from the
+  profile-likelihood search.
+* Speed up single-threaded leaf-wise fits: when the left child is smaller,
+  the serial refill lane now scans only that child and derives the sibling
+  by parent subtraction (mirroring the parallel lane) instead of rebuilding
+  both children.
+* Share fitted preprocessing between the selection fit and full-data refit
+  for explicit-eval-set fits: the preprocessing cache key no longer includes
+  the eval set (the cached artifacts never depend on it), `refit=True`
+  enables the cache exactly when the refit trains on the same rows, and the
+  cache is emptied at fit end so retained models no longer pin binned-matrix
+  copies in memory.
+* Avoid converting the whole feature matrix to object dtype on every predict
+  when reading the `per_metric_affine` calibration column from NumPy inputs.
+* Vectorize the Poisson/NegativeBinomial tuning scorers with
+  `scipy.special.gammaln` instead of per-row Python `math.lgamma` loops.
+* Report corrupt model archives with unknown losses or invalid constructor
+  params as `invalid DarkoFit model` `ValueError`s instead of raw
+  `KeyError`/`TypeError`.
+* Remove the unused `_build_counts_into`/`_build_counts_rows_into` kernels
+  and the dead `BIN_DTYPE` constant, and size the multiclass leaf-wise
+  `changed_leaves` buffer to `max_leaves` to eliminate a latent
+  out-of-bounds hazard on future full rescores.
+
 ## 0.8.0 - 2026-07-09
 
 * Rename the distribution and import package from `chimeraboost` to `darkofit`.

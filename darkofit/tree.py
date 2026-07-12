@@ -365,39 +365,6 @@ def _build_histograms_selected_rows_unit_hess_into_serial(
 
 
 @njit(cache=True, parallel=True)
-def _build_counts_into(X_binned, hess, leaf, n_leaves, hc):
-    """Fill per-feature positive-weight row-count histograms."""
-    n_samples, n_features = X_binned.shape
-    max_bins = hc.shape[2]
-    for f in prange(n_features):
-        for l in range(n_leaves):
-            for b in range(max_bins):
-                hc[f, l, b] = 0.0
-        for i in range(n_samples):
-            if hess[i] > 0.0:
-                l = leaf[i]
-                b = X_binned[i, f]
-                hc[f, l, b] += 1.0
-
-
-@njit(cache=True, parallel=True)
-def _build_counts_rows_into(X_binned, hess, leaf, n_leaves, hc, row_indices):
-    """Fill positive-weight row-count histograms from selected rows."""
-    n_features = X_binned.shape[1]
-    max_bins = hc.shape[2]
-    for f in prange(n_features):
-        for l in range(n_leaves):
-            for b in range(max_bins):
-                hc[f, l, b] = 0.0
-        for p in range(row_indices.shape[0]):
-            i = row_indices[p]
-            if hess[i] > 0.0:
-                l = leaf[i]
-                b = X_binned[i, f]
-                hc[f, l, b] += 1.0
-
-
-@njit(cache=True, parallel=True)
 def _build_histograms_counts_into(X_binned, grad, hess, leaf, n_leaves, hg, hh, hc):
     """Fill gradient, hessian, and positive-row-count histograms in one pass."""
     n_samples, n_features = X_binned.shape
@@ -1301,6 +1268,113 @@ def _refill_left_subtract_right_counts_selected_into(
     """Refill selected left-child histograms and derive the right child."""
     max_bins = hg.shape[2]
     for jj in prange(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for b in range(max_bins):
+            hg[f, right_leaf, b] = hg[f, left_leaf, b]
+            hh[f, right_leaf, b] = hh[f, left_leaf, b]
+            hc[f, right_leaf, b] = hc[f, left_leaf, b]
+            hg[f, left_leaf, b] = 0.0
+            hh[f, left_leaf, b] = 0.0
+            hc[f, left_leaf, b] = 0.0
+        for p in range(leaf_start[left_leaf], leaf_start[left_leaf + 1]):
+            i = row_order[p]
+            b = X_binned[i, f]
+            hg[f, left_leaf, b] += grad[i]
+            hi = hess[i]
+            hh[f, left_leaf, b] += hi
+            if hi > 0.0:
+                hc[f, left_leaf, b] += 1.0
+        for b in range(max_bins):
+            hg[f, right_leaf, b] -= hg[f, left_leaf, b]
+            hh[f, right_leaf, b] -= hh[f, left_leaf, b]
+            hc[f, right_leaf, b] -= hc[f, left_leaf, b]
+
+
+@njit(cache=True)
+def _refill_left_subtract_right_unit_hess_into_serial(
+    X_binned, grad, row_order, leaf_start, left_leaf, right_leaf, hg, hh
+):
+    """Serial: refill the left child and derive the right from the parent."""
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[2]
+    for f in range(n_features):
+        for b in range(max_bins):
+            hg[f, right_leaf, b] = hg[f, left_leaf, b]
+            hh[f, right_leaf, b] = hh[f, left_leaf, b]
+            hg[f, left_leaf, b] = 0.0
+            hh[f, left_leaf, b] = 0.0
+        for p in range(leaf_start[left_leaf], leaf_start[left_leaf + 1]):
+            i = row_order[p]
+            b = X_binned[i, f]
+            hg[f, left_leaf, b] += grad[i]
+            hh[f, left_leaf, b] += 1.0
+        for b in range(max_bins):
+            hg[f, right_leaf, b] -= hg[f, left_leaf, b]
+            hh[f, right_leaf, b] -= hh[f, left_leaf, b]
+
+
+@njit(cache=True)
+def _refill_left_subtract_right_unit_hess_selected_into_serial(
+    X_binned, grad, row_order, leaf_start, left_leaf, right_leaf,
+    feature_indices, hg, hh
+):
+    """Serial: refill selected left-child histograms and derive the right."""
+    max_bins = hg.shape[2]
+    for jj in range(feature_indices.shape[0]):
+        f = feature_indices[jj]
+        for b in range(max_bins):
+            hg[f, right_leaf, b] = hg[f, left_leaf, b]
+            hh[f, right_leaf, b] = hh[f, left_leaf, b]
+            hg[f, left_leaf, b] = 0.0
+            hh[f, left_leaf, b] = 0.0
+        for p in range(leaf_start[left_leaf], leaf_start[left_leaf + 1]):
+            i = row_order[p]
+            b = X_binned[i, f]
+            hg[f, left_leaf, b] += grad[i]
+            hh[f, left_leaf, b] += 1.0
+        for b in range(max_bins):
+            hg[f, right_leaf, b] -= hg[f, left_leaf, b]
+            hh[f, right_leaf, b] -= hh[f, left_leaf, b]
+
+
+@njit(cache=True)
+def _refill_left_subtract_right_counts_into_serial(
+    X_binned, grad, hess, row_order, leaf_start, left_leaf, right_leaf,
+    hg, hh, hc
+):
+    """Serial: refill the left child and derive the right from the parent."""
+    n_features = X_binned.shape[1]
+    max_bins = hg.shape[2]
+    for f in range(n_features):
+        for b in range(max_bins):
+            hg[f, right_leaf, b] = hg[f, left_leaf, b]
+            hh[f, right_leaf, b] = hh[f, left_leaf, b]
+            hc[f, right_leaf, b] = hc[f, left_leaf, b]
+            hg[f, left_leaf, b] = 0.0
+            hh[f, left_leaf, b] = 0.0
+            hc[f, left_leaf, b] = 0.0
+        for p in range(leaf_start[left_leaf], leaf_start[left_leaf + 1]):
+            i = row_order[p]
+            b = X_binned[i, f]
+            hg[f, left_leaf, b] += grad[i]
+            hi = hess[i]
+            hh[f, left_leaf, b] += hi
+            if hi > 0.0:
+                hc[f, left_leaf, b] += 1.0
+        for b in range(max_bins):
+            hg[f, right_leaf, b] -= hg[f, left_leaf, b]
+            hh[f, right_leaf, b] -= hh[f, left_leaf, b]
+            hc[f, right_leaf, b] -= hc[f, left_leaf, b]
+
+
+@njit(cache=True)
+def _refill_left_subtract_right_counts_selected_into_serial(
+    X_binned, grad, hess, row_order, leaf_start, left_leaf, right_leaf,
+    feature_indices, hg, hh, hc
+):
+    """Serial: refill selected left-child histograms and derive the right."""
+    max_bins = hg.shape[2]
+    for jj in range(feature_indices.shape[0]):
         f = feature_indices[jj]
         for b in range(max_bins):
             hg[f, right_leaf, b] = hg[f, left_leaf, b]
@@ -5516,27 +5590,30 @@ def build_leafwise_tree(X_binned, grad, hess, n_bins_per_feature,
                             hg, hh, hc
                         )
                 elif use_serial_kernels:
+                    # Scan only the smaller left child and derive the right
+                    # from the cached parent histograms, mirroring the
+                    # parallel _refill_left_subtract_right_* lane.
                     if constant_hessian and feature_indices is None:
-                        _refill_leaf_segment_histograms_unit_hess_into_serial(
+                        _refill_left_subtract_right_unit_hess_into_serial(
                             X_binned, grad, row_order, leaf_start,
-                            changed_leaves, n_changed_leaves, hg, hh
+                            left_child_leaf, right_child_leaf, hg, hh
                         )
                     elif constant_hessian:
-                        _refill_leaf_segment_histograms_unit_hess_selected_into_serial(
+                        _refill_left_subtract_right_unit_hess_selected_into_serial(
                             X_binned, grad, row_order, leaf_start,
-                            changed_leaves, n_changed_leaves, hg, hh,
-                            feature_indices
+                            left_child_leaf, right_child_leaf,
+                            feature_indices, hg, hh
                         )
                     elif feature_indices is None:
-                        _refill_leaf_segment_histograms_counts_into_serial(
+                        _refill_left_subtract_right_counts_into_serial(
                             X_binned, grad, hess, row_order, leaf_start,
-                            changed_leaves, n_changed_leaves, hg, hh, hc
+                            left_child_leaf, right_child_leaf, hg, hh, hc
                         )
                     else:
-                        _refill_leaf_segment_histograms_counts_selected_into_serial(
+                        _refill_left_subtract_right_counts_selected_into_serial(
                             X_binned, grad, hess, row_order, leaf_start,
-                            changed_leaves, n_changed_leaves, hg, hh, hc,
-                            feature_indices
+                            left_child_leaf, right_child_leaf,
+                            feature_indices, hg, hh, hc
                         )
                 elif constant_hessian and feature_indices is None:
                     _refill_left_subtract_right_unit_hess_into(
@@ -6023,7 +6100,9 @@ def build_leafwise_multiclass_tree(
     best_feat = np.empty(max_leaves, dtype=np.int64)
     best_thr = np.empty(max_leaves, dtype=np.int64)
     best_gain = np.empty(max_leaves, dtype=np.float64)
-    changed_leaves = np.empty(2, dtype=np.int64)
+    # Sized to max_leaves (not 2) so a full rescore can list every leaf id;
+    # per-split updates still use only the first two slots.
+    changed_leaves = np.empty(max(2, max_leaves), dtype=np.int64)
     changed_leaves[0] = 0
     n_changed_leaves = 1
     row_order = np.arange(n_samples, dtype=np.int64)
@@ -6066,10 +6145,9 @@ def build_leafwise_multiclass_tree(
         histograms_initialized = True
 
         if n_changed_leaves >= n_leaves:
-            changed_leaves[0] = 0
+            for l in range(n_leaves):
+                changed_leaves[l] = l
             n_changed_leaves = n_leaves
-            # The first iteration has a single leaf; later code never requests
-            # a full multiclass rescore, so the fixed two-slot buffer is enough.
         if random_strength > 0.0:
             noise_leaf_ids = np.arange(n_leaves, dtype=np.int64)
             _best_multiclass_splits_counts_for_leaf_ids_with_noise_class_minor_py(

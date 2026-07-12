@@ -8,6 +8,10 @@ on:
 jobs:
   pytest:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.11", "3.13"]
     env:
       NUMBA_NUM_THREADS: "4"
       OMP_NUM_THREADS: "4"
@@ -16,7 +20,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
       # Numba reads NUMBA_CACHE_DIR literally (os.path.join, no ~ expansion),
       # so resolve $HOME in a step instead of putting a tilde in the env block.
       - name: Set Numba cache dir
@@ -25,9 +29,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/numba
-          key: ${{ runner.os }}-numba-py311-${{ hashFiles('darkofit/**/*.py', 'pyproject.toml') }}
+          key: ${{ runner.os }}-numba-py${{ matrix.python-version }}-${{ hashFiles('darkofit/**/*.py', 'pyproject.toml') }}
           restore-keys: |
-            ${{ runner.os }}-numba-py311-
+            ${{ runner.os }}-numba-py${{ matrix.python-version }}-
       - name: Install package
         run: |
           python -m pip install --upgrade pip

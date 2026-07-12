@@ -358,3 +358,83 @@ def test_hardened_load_accepts_valid_multiclass_models(tmp_path):
         model.save_model(path)
         loaded = DarkoClassifier.load_model(path)
         assert np.array_equal(model.predict_proba(X), loaded.predict_proba(X))
+
+
+# ---------------------------------------------------------------------------
+# Corrupt headers must surface as "invalid DarkoFit model" ValueErrors, not
+# raw KeyError/TypeError from model reconstruction.
+# ---------------------------------------------------------------------------
+
+def _mutated_header(src, dst, mutate):
+    import json
+
+    with np.load(src, allow_pickle=False) as data:
+        arrays = {key: data[key] for key in data.files}
+    header = json.loads(str(arrays["header"]))
+    mutate(header)
+    arrays["header"] = np.array(json.dumps(header))
+    np.savez_compressed(dst, **arrays)
+    return dst
+
+
+def test_load_rejects_unknown_loss_name(tmp_path):
+    _, _, path = _fit_and_save(tmp_path, "catboost", "loss_src.npz")
+    bad = _mutated_header(
+        path, str(tmp_path / "bad_loss.npz"),
+        lambda header: header.update(loss_name="NotALoss"),
+    )
+    _assert_load_rejected(bad, "unknown loss")
+
+
+def test_load_rejects_unhashable_loss_names(tmp_path):
+    X, y = _make_regression(n=120)
+
+    scalar = DarkoRegressor(iterations=2, random_state=0).fit(X, y)
+    scalar_path = str(tmp_path / "scalar_loss_src.npz")
+    scalar.save_model(scalar_path)
+    bad_scalar = _mutated_header(
+        scalar_path, str(tmp_path / "bad_scalar_loss.npz"),
+        lambda header: header.update(loss_name=["RMSE"]),
+    )
+    _assert_load_rejected(bad_scalar, "unknown loss")
+
+    distributional = DarkoRegressor(
+        loss="Gaussian",
+        tree_mode="lightgbm",
+        iterations=2,
+        min_child_samples=3,
+        num_leaves=3,
+        random_state=0,
+        diagnostic_warnings="never",
+    ).fit(X, y)
+    dist_path = str(tmp_path / "dist_loss_src.npz")
+    distributional.save_model(dist_path)
+    bad_dist = _mutated_header(
+        dist_path, str(tmp_path / "bad_dist_loss.npz"),
+        lambda header: header.update(loss_name={"Gaussian": True}),
+    )
+    _assert_load_rejected(bad_dist, "unknown distributional loss")
+
+
+def test_load_rejects_non_object_params_header(tmp_path):
+    _, _, path = _fit_and_save(tmp_path, "catboost", "params_src.npz")
+    bad = _mutated_header(
+        path, str(tmp_path / "bad_params.npz"),
+        lambda header: header.update(params=["not", "a", "dict"]),
+    )
+    _assert_load_rejected(bad, "params header must be an object")
+
+
+def test_load_rejects_unexpected_constructor_param(tmp_path):
+    _, _, path = _fit_and_save(tmp_path, "catboost", "ctor_src.npz")
+    bad = _mutated_header(
+        path, str(tmp_path / "bad_ctor.npz"),
+        lambda header: header["params"].update(definitely_not_a_param=1),
+    )
+    _assert_load_rejected(bad, "invalid booster params")
+
+    overflow = _mutated_header(
+        path, str(tmp_path / "overflow_ctor.npz"),
+        lambda header: header["params"].update(iterations=float("inf")),
+    )
+    _assert_load_rejected(overflow, "invalid booster params")

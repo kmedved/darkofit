@@ -318,59 +318,70 @@ def _gaussian_nll_grad_hess_into(y, F, sample_weight, grad_out, hess_out):
         hess_out[1, i] = w * 2.0
 
 
-@njit(cache=True)
+@njit(cache=True, parallel=True)
 def _gaussian_nll_eval(y, F, sample_weight):
+    # The reduction variables are updated exactly once per iteration,
+    # unconditionally, mirroring _logloss_eval: numba's parfor analysis is
+    # fragile with reductions inside branches. Zero-weight rows must not be
+    # evaluated at all — their per-row loss can overflow to inf on extreme
+    # values and 0 * inf would poison the total with NaN.
     n = F.shape[1]
     total = 0.0
     weight_total = 0.0
-    for i in range(n):
+    for i in prange(n):
         if sample_weight is None:
             w = 1.0
         else:
             w = sample_weight[i]
-            if w <= 0.0:
-                continue
-
-        r = F[1, i]
-        if r < _GAUSS_RHO_MIN:
-            r = _GAUSS_RHO_MIN
-        elif r > _GAUSS_RHO_MAX:
-            r = _GAUSS_RHO_MAX
-        sigma = np.exp(r)
-        z = (y[i] - F[0, i]) / sigma
-        if z < -_GAUSS_EVAL_Z_GUARD:
-            z = -_GAUSS_EVAL_Z_GUARD
-        elif z > _GAUSS_EVAL_Z_GUARD:
-            z = _GAUSS_EVAL_Z_GUARD
-        total += w * (_HALF_LOG_2PI + r + 0.5 * z * z)
+        contrib = 0.0
+        if w > 0.0:
+            r = F[1, i]
+            if r < _GAUSS_RHO_MIN:
+                r = _GAUSS_RHO_MIN
+            elif r > _GAUSS_RHO_MAX:
+                r = _GAUSS_RHO_MAX
+            sigma = np.exp(r)
+            z = (y[i] - F[0, i]) / sigma
+            if z < -_GAUSS_EVAL_Z_GUARD:
+                z = -_GAUSS_EVAL_Z_GUARD
+            elif z > _GAUSS_EVAL_Z_GUARD:
+                z = _GAUSS_EVAL_Z_GUARD
+            contrib = w * (_HALF_LOG_2PI + r + 0.5 * z * z)
+        else:
+            w = 0.0
+        total += contrib
         weight_total += w
     return total / weight_total
 
 
-@njit(cache=True)
+@njit(cache=True, parallel=True)
 def _gaussian_crps(y, F, sample_weight):
+    # Unconditional reductions, zero-weight rows skipped; see
+    # _gaussian_nll_eval.
     n = F.shape[1]
     total = 0.0
     weight_total = 0.0
-    for i in range(n):
+    for i in prange(n):
         if sample_weight is None:
             w = 1.0
         else:
             w = sample_weight[i]
-            if w <= 0.0:
-                continue
-
-        r = F[1, i]
-        if r < _GAUSS_RHO_MIN:
-            r = _GAUSS_RHO_MIN
-        elif r > _GAUSS_RHO_MAX:
-            r = _GAUSS_RHO_MAX
-        sigma = np.exp(r)
-        z = (y[i] - F[0, i]) / sigma
-        phi = math.exp(-0.5 * z * z) * _INV_SQRT_2PI
-        cdf = 0.5 * (1.0 + math.erf(z / _SQRT2))
-        crps = sigma * (z * (2.0 * cdf - 1.0) + 2.0 * phi - _INV_SQRT_PI)
-        total += w * crps
+        contrib = 0.0
+        if w > 0.0:
+            r = F[1, i]
+            if r < _GAUSS_RHO_MIN:
+                r = _GAUSS_RHO_MIN
+            elif r > _GAUSS_RHO_MAX:
+                r = _GAUSS_RHO_MAX
+            sigma = np.exp(r)
+            z = (y[i] - F[0, i]) / sigma
+            phi = math.exp(-0.5 * z * z) * _INV_SQRT_2PI
+            cdf = 0.5 * (1.0 + math.erf(z / _SQRT2))
+            crps = sigma * (z * (2.0 * cdf - 1.0) + 2.0 * phi - _INV_SQRT_PI)
+            contrib = w * crps
+        else:
+            w = 0.0
+        total += contrib
         weight_total += w
     return total / weight_total
 
@@ -526,31 +537,37 @@ def _student_t_nll_grad_hess_into(
         hess_out[1, i] = w * fisher_rho
 
 
-@njit(cache=True)
+@njit(cache=True, parallel=True)
 def _student_t_nll_eval(y, F, sample_weight, nu, nll_const):
+    # Unconditional reductions, zero-weight rows skipped; see
+    # _gaussian_nll_eval.
     n = F.shape[1]
     total = 0.0
     weight_total = 0.0
-    for i in range(n):
+    for i in prange(n):
         if sample_weight is None:
             w = 1.0
         else:
             w = sample_weight[i]
-            if w <= 0.0:
-                continue
-
-        r = F[1, i]
-        if r < _T_RHO_MIN:
-            r = _T_RHO_MIN
-        elif r > _T_RHO_MAX:
-            r = _T_RHO_MAX
-        scale = np.exp(r)
-        z = (y[i] - F[0, i]) / scale
-        if z < -_T_EVAL_Z_GUARD:
-            z = -_T_EVAL_Z_GUARD
-        elif z > _T_EVAL_Z_GUARD:
-            z = _T_EVAL_Z_GUARD
-        total += w * (r + nll_const + 0.5 * (nu + 1.0) * np.log1p(z * z / nu))
+        contrib = 0.0
+        if w > 0.0:
+            r = F[1, i]
+            if r < _T_RHO_MIN:
+                r = _T_RHO_MIN
+            elif r > _T_RHO_MAX:
+                r = _T_RHO_MAX
+            scale = np.exp(r)
+            z = (y[i] - F[0, i]) / scale
+            if z < -_T_EVAL_Z_GUARD:
+                z = -_T_EVAL_Z_GUARD
+            elif z > _T_EVAL_Z_GUARD:
+                z = _T_EVAL_Z_GUARD
+            contrib = w * (
+                r + nll_const + 0.5 * (nu + 1.0) * np.log1p(z * z / nu)
+            )
+        else:
+            w = 0.0
+        total += contrib
         weight_total += w
     return total / weight_total
 
@@ -693,32 +710,36 @@ def _lognormal_nll_grad_hess_into(y, F, sample_weight, grad_out, hess_out):
         hess_out[1, i] = w * 2.0
 
 
-@njit(cache=True)
+@njit(cache=True, parallel=True)
 def _lognormal_nll_eval(y, F, sample_weight):
+    # Unconditional reductions, zero-weight rows skipped; see
+    # _gaussian_nll_eval.
     n = F.shape[1]
     total = 0.0
     weight_total = 0.0
-    for i in range(n):
+    for i in prange(n):
         if sample_weight is None:
             w = 1.0
         else:
             w = sample_weight[i]
-            if w <= 0.0:
-                continue
-
-        u = np.log(y[i])
-        r = F[1, i]
-        if r < _GAUSS_RHO_MIN:
-            r = _GAUSS_RHO_MIN
-        elif r > _GAUSS_RHO_MAX:
-            r = _GAUSS_RHO_MAX
-        sigma = np.exp(r)
-        z = (u - F[0, i]) / sigma
-        if z < -_GAUSS_EVAL_Z_GUARD:
-            z = -_GAUSS_EVAL_Z_GUARD
-        elif z > _GAUSS_EVAL_Z_GUARD:
-            z = _GAUSS_EVAL_Z_GUARD
-        total += w * (_HALF_LOG_2PI + r + 0.5 * z * z + u)
+        contrib = 0.0
+        if w > 0.0:
+            u = np.log(y[i])
+            r = F[1, i]
+            if r < _GAUSS_RHO_MIN:
+                r = _GAUSS_RHO_MIN
+            elif r > _GAUSS_RHO_MAX:
+                r = _GAUSS_RHO_MAX
+            sigma = np.exp(r)
+            z = (u - F[0, i]) / sigma
+            if z < -_GAUSS_EVAL_Z_GUARD:
+                z = -_GAUSS_EVAL_Z_GUARD
+            elif z > _GAUSS_EVAL_Z_GUARD:
+                z = _GAUSS_EVAL_Z_GUARD
+            contrib = w * (_HALF_LOG_2PI + r + 0.5 * z * z + u)
+        else:
+            w = 0.0
+        total += contrib
         weight_total += w
     return total / weight_total
 
@@ -867,25 +888,30 @@ def _poisson_nll_grad_hess_into(y, F, sample_weight, grad_out, hess_out):
         hess_out[0, i] = w * h
 
 
-@njit(cache=True)
+@njit(cache=True, parallel=True)
 def _poisson_nll_eval(y, F, sample_weight):
+    # Unconditional reductions, zero-weight rows skipped; see
+    # _gaussian_nll_eval (lgamma can overflow to inf on extreme counts).
     n = F.shape[1]
     total = 0.0
     weight_total = 0.0
-    for i in range(n):
+    for i in prange(n):
         if sample_weight is None:
             w = 1.0
         else:
             w = sample_weight[i]
-            if w <= 0.0:
-                continue
-        eta = F[0, i]
-        if eta < _POIS_ETA_MIN:
-            eta = _POIS_ETA_MIN
-        elif eta > _POIS_ETA_MAX:
-            eta = _POIS_ETA_MAX
-        lam = np.exp(eta)
-        total += w * (lam - y[i] * eta + math.lgamma(y[i] + 1.0))
+        contrib = 0.0
+        if w > 0.0:
+            eta = F[0, i]
+            if eta < _POIS_ETA_MIN:
+                eta = _POIS_ETA_MIN
+            elif eta > _POIS_ETA_MAX:
+                eta = _POIS_ETA_MAX
+            lam = np.exp(eta)
+            contrib = w * (lam - y[i] * eta + math.lgamma(y[i] + 1.0))
+        else:
+            w = 0.0
+        total += contrib
         weight_total += w
     return total / weight_total
 
@@ -1005,35 +1031,78 @@ def _nb_global_nll_grad_hess_into(y, F, sample_weight, r, grad_out, hess_out):
         hess_out[0, i] = w * h
 
 
-@njit(cache=True)
+@njit(cache=True, parallel=True)
 def _nb_global_nll_eval(y, F, sample_weight, r):
+    # Unconditional reductions, zero-weight rows skipped; see
+    # _gaussian_nll_eval (lgamma can overflow to inf on extreme counts).
     n = F.shape[1]
     total = 0.0
     weight_total = 0.0
     log_r = math.log(r)
     lgamma_r = math.lgamma(r)
-    for i in range(n):
+    for i in prange(n):
         if sample_weight is None:
             w = 1.0
         else:
             w = sample_weight[i]
-            if w <= 0.0:
-                continue
-        eta = F[0, i]
-        if eta < _NB_ETA_MIN:
-            eta = _NB_ETA_MIN
-        elif eta > _NB_ETA_MAX:
-            eta = _NB_ETA_MAX
-        mu = np.exp(eta)
-        log_r_mu = math.log(r + mu)
-        nll = (
-            -math.lgamma(y[i] + r)
-            + lgamma_r
-            + math.lgamma(y[i] + 1.0)
-            - r * (log_r - log_r_mu)
-            - y[i] * (eta - log_r_mu)
-        )
-        total += w * nll
+        contrib = 0.0
+        if w > 0.0:
+            eta = F[0, i]
+            if eta < _NB_ETA_MIN:
+                eta = _NB_ETA_MIN
+            elif eta > _NB_ETA_MAX:
+                eta = _NB_ETA_MAX
+            mu = np.exp(eta)
+            log_r_mu = math.log(r + mu)
+            nll = (
+                -math.lgamma(y[i] + r)
+                + lgamma_r
+                + math.lgamma(y[i] + 1.0)
+                - r * (log_r - log_r_mu)
+                - y[i] * (eta - log_r_mu)
+            )
+            contrib = w * nll
+        else:
+            w = 0.0
+        total += contrib
+        weight_total += w
+    return total / weight_total
+
+
+@njit(cache=True, parallel=True)
+def _nb_profile_nll_eval(y, F, sample_weight, r):
+    # Same objective as _nb_global_nll_eval minus the lgamma(y + 1) term,
+    # which does not depend on r and therefore cannot move the argmin the
+    # golden-section dispersion search is looking for.
+    n = F.shape[1]
+    total = 0.0
+    weight_total = 0.0
+    log_r = math.log(r)
+    lgamma_r = math.lgamma(r)
+    for i in prange(n):
+        if sample_weight is None:
+            w = 1.0
+        else:
+            w = sample_weight[i]
+        contrib = 0.0
+        if w > 0.0:
+            eta = F[0, i]
+            if eta < _NB_ETA_MIN:
+                eta = _NB_ETA_MIN
+            elif eta > _NB_ETA_MAX:
+                eta = _NB_ETA_MAX
+            mu = np.exp(eta)
+            log_r_mu = math.log(r + mu)
+            nll = (
+                -math.lgamma(y[i] + r)
+                + lgamma_r
+                - r * (log_r - log_r_mu)
+                - y[i] * (eta - log_r_mu)
+            )
+            contrib = w * nll
+        else:
+            w = 0.0
+        total += contrib
         weight_total += w
     return total / weight_total
 
@@ -1152,7 +1221,7 @@ class NegativeBinomialNLL:
         upper = min(math.log(_NB_R_MAX), log_current + 6.0)
 
         def objective(log_r):
-            return _nb_global_nll_eval(y, F, sample_weight, math.exp(log_r))
+            return _nb_profile_nll_eval(y, F, sample_weight, math.exp(log_r))
 
         best_log_r, _ = _golden_section_minimize_python(objective, lower, upper)
         r = float(np.clip(math.exp(best_log_r), _NB_R_MIN, _NB_R_MAX))
@@ -1247,6 +1316,10 @@ def _softmax_class_major_grad_hess_into(Y, F, sample_weight, grad_out, hess_out)
 
 @njit(cache=True)
 def _softmax_class_major_eval(Y, F, sample_weight):
+    # Deliberately serial: the inner class loop's conditional true_exp
+    # assignment trips numba's parfor analysis ("unexpected cycle in
+    # lookup()") on Python 3.13 + numba 0.66, which is inside the declared
+    # support range. Do not add parallel=True without testing that matrix.
     K, n = F.shape
     total = 0.0
     weight_total = 0.0
@@ -1282,6 +1355,7 @@ def _softmax_class_major_eval(Y, F, sample_weight):
 
 @njit(cache=True)
 def _softmax_class_major_eval_labels(labels, F, sample_weight):
+    # Deliberately serial; see _softmax_class_major_eval.
     K, n = F.shape
     total = 0.0
     weight_total = 0.0

@@ -575,6 +575,14 @@ def _extract_feature_column_by_index(X, index):
     iloc = getattr(X, "iloc", None)
     if iloc is not None:
         return np.asarray(iloc[:, int(index)], dtype=object)
+    if isinstance(X, np.ndarray):
+        # Slice the one calibration column instead of copying the whole
+        # matrix to object dtype on every predict call. Coerce first so ndarray
+        # subclasses such as np.matrix cannot preserve a two-dimensional
+        # (n, 1) slice here.
+        if X.ndim != 2:
+            raise ValueError("X must be a 2-dimensional array")
+        return np.asarray(X)[:, int(index)].astype(object, copy=False)
     arr = array_like_to_numpy(X, object)
     if arr.ndim != 2:
         raise ValueError("X must be a 2-dimensional array")
@@ -2047,6 +2055,10 @@ class _RefitParamsMixin:
         self, make_model, X, y, *, cat_features, eval_set,
         sample_weight, eval_sample_weight, fit_kwargs
     ):
+        # Known caveat: candidates are scored at the short probe budget
+        # (default 80 rounds) but deployed at the full iteration budget, which
+        # biases selection toward larger rates that lead early. Treat the
+        # probe as a coarse sanity check, not a tuned-rate substitute.
         if not self.auto_learning_rate_probe:
             return None, {"enabled": False, "reason": "disabled"}
         if eval_set is None:
@@ -2271,7 +2283,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                  refit=False, refit_strategy="exact",
                  verbose_timing=False, tree_mode="catboost",
                  sampling="uniform", top_rate=0.2, other_rate=0.1,
-                 eval_train_loss=True, bin_sample_count=200_000,
+                 eval_train_loss=False, bin_sample_count=200_000,
                  histogram_parallelism="auto", use_best_model=True,
                  bootstrap_type="none", bagging_temperature=0.0,
                  mvs_reg=1.0, random_strength=0.0,
@@ -2546,8 +2558,21 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
               if k not in {"loss", "alpha"} | _SKLEARN_ONLY}
         kw["early_stopping_rounds"] = es_rounds
         kw["random_state"] = fit_random_state
+        # Refit can only reuse the selection fit's preprocessing when both
+        # train on the same rows, i.e. with an explicit eval set; automatic
+        # splits refit on different (full) data, where caching would only
+        # add copies.
+        refit_can_reuse_preprocessing = (
+            bool(self.refit) and selection_active and explicit_eval_set
+        )
         preprocessing_cache = (
-            {} if (tree_mode_auto or self.auto_learning_rate_probe) else None
+            {}
+            if (
+                tree_mode_auto
+                or self.auto_learning_rate_probe
+                or refit_can_reuse_preprocessing
+            )
+            else None
         )
 
         def make_model(model_kw):
@@ -2825,6 +2850,10 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             self._attach_tree_mode_selection_metadata(tree_mode_selection_metadata)
             self._attach_linear_residual_metadata()
             self._attach_dist_calibration_metadata()
+        if preprocessing_cache is not None:
+            # Free the binned-matrix copies; fitted models keep a reference
+            # to this dict, so an unemptied cache would pin them in memory.
+            preprocessing_cache.clear()
         return self
 
     def _linear_residual_trend(self, X):
@@ -3195,7 +3224,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                  refit=False, refit_strategy="exact",
                  verbose_timing=False, tree_mode="catboost",
                  sampling="uniform", top_rate=0.2, other_rate=0.1,
-                 multiclass_tree_strategy="auto", eval_train_loss=True,
+                 multiclass_tree_strategy="auto", eval_train_loss=False,
                  bin_sample_count=200_000, histogram_parallelism="auto",
                  use_best_model=True, bootstrap_type="none",
                  bagging_temperature=0.0, mvs_reg=1.0,
@@ -3359,6 +3388,13 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         )
         if self.refit and selection_active:
             self._validate_refit_strategy_for_fit(self.refit_strategy)
+        # Refit can only reuse the selection fit's preprocessing when both
+        # train on the same rows, i.e. with an explicit eval set; automatic
+        # splits refit on different (full) data, where caching would only
+        # add copies.
+        refit_can_reuse_preprocessing = (
+            bool(self.refit) and selection_active and explicit_eval_set
+        )
 
         kw = {k: v for k, v in self.get_params().items()
               if k not in _SKLEARN_ONLY}
@@ -3376,7 +3412,13 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                     raise ValueError("eval_set contains labels not present in training data")
                 eval_set = (Xv, (np.asarray(yv) == classes[1]).astype(np.float64))
             preprocessing_cache = (
-                {} if (tree_mode_auto or self.auto_learning_rate_probe) else None
+                {}
+                if (
+                    tree_mode_auto
+                    or self.auto_learning_rate_probe
+                    or refit_can_reuse_preprocessing
+                )
+                else None
             )
 
             def make_model(model_kw):
@@ -3416,7 +3458,13 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         else:
             multiclass = True
             preprocessing_cache = (
-                {} if (tree_mode_auto or self.auto_learning_rate_probe) else None
+                {}
+                if (
+                    tree_mode_auto
+                    or self.auto_learning_rate_probe
+                    or refit_can_reuse_preprocessing
+                )
+                else None
             )
 
             def make_model(model_kw):
@@ -3496,6 +3544,8 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
             refit_kw = self._refit_params_for_booster(self.refit_strategy)
             if multiclass:
                 refit_model = MulticlassBoosting(**refit_kw)
+                if preprocessing_cache is not None:
+                    refit_model._preprocessing_cache = preprocessing_cache
                 refit_model.fit(
                     X_full, y_full, cat_features=cat_features,
                     sample_weight=sample_weight_full,
@@ -3504,6 +3554,8 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
             else:
                 y01_full = (y_full == classes[1]).astype(np.float64)
                 refit_model = GradientBoosting(loss="Logloss", **refit_kw)
+                if preprocessing_cache is not None:
+                    refit_model._preprocessing_cache = preprocessing_cache
                 refit_model.fit(
                     X_full, y01_full, cat_features=cat_features,
                     sample_weight=sample_weight_full,
@@ -3531,6 +3583,10 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
             self._attach_selection_validation_metadata(validation_metadata)
             self._attach_learning_rate_probe_metadata(probe_metadata)
             self._attach_tree_mode_selection_metadata(tree_mode_selection_metadata)
+        if preprocessing_cache is not None:
+            # Free the binned-matrix copies; fitted models keep a reference
+            # to this dict, so an unemptied cache would pin them in memory.
+            preprocessing_cache.clear()
         return self
 
     def predict_proba(self, X):

@@ -1085,19 +1085,28 @@ def load_booster(path, return_wrapper_payload=False):
                 f"model format {format_version} is newer than this "
                 f"library understands ({FORMAT_VERSION})"
             )
-        model_class = header["model_class"]
-        params = header["params"]
+        model_class = header.get("model_class")
+        params = header.get("params")
+        if not isinstance(params, dict):
+            _invalid_model("params header must be an object")
+        loss_name = header.get("loss_name")
         if model_class == "GradientBoosting":
-            booster = GradientBoosting(
-                loss=header["loss_name"], loss_kwargs=header["loss_kwargs"],
-                **params
-            )
+            if not isinstance(loss_name, str) or loss_name not in LOSSES:
+                _invalid_model(f"unknown loss {loss_name!r}")
+            try:
+                booster = GradientBoosting(
+                    loss=loss_name, loss_kwargs=header["loss_kwargs"],
+                    **params
+                )
+                booster.loss_ = LOSSES[loss_name](**header["loss_kwargs"])
+            except (KeyError, TypeError, ValueError, OverflowError) as exc:
+                _invalid_model(f"invalid booster params: {exc}")
             booster.init_ = header["init"]
-            booster.loss_ = LOSSES[header["loss_name"]](
-                **header["loss_kwargs"]
-            )
         elif model_class == "MulticlassBoosting":
-            booster = MulticlassBoosting(**params)
+            try:
+                booster = MulticlassBoosting(**params)
+            except (TypeError, ValueError, OverflowError) as exc:
+                _invalid_model(f"invalid booster params: {exc}")
             booster.init_ = np.array(header["init"], dtype=np.float64)
             booster.n_classes_ = header["n_classes"]
             booster.loss_ = MultiSoftmax(booster.n_classes_)
@@ -1109,15 +1118,23 @@ def load_booster(path, return_wrapper_payload=False):
                 )
             booster.classes_ = classes
         elif model_class == "DistributionalBoosting":
-            booster = DistributionalBoosting(
-                loss=header["loss_name"], loss_kwargs=header["loss_kwargs"],
-                **params
-            )
+            if (
+                not isinstance(loss_name, str)
+                or loss_name not in VECTOR_LOSSES
+            ):
+                _invalid_model(f"unknown distributional loss {loss_name!r}")
+            try:
+                booster = DistributionalBoosting(
+                    loss=loss_name, loss_kwargs=header["loss_kwargs"],
+                    **params
+                )
+                booster.loss_ = VECTOR_LOSSES[loss_name](
+                    **header["loss_kwargs"]
+                )
+            except (KeyError, TypeError, ValueError, OverflowError) as exc:
+                _invalid_model(f"invalid booster params: {exc}")
             booster.init_ = np.array(header["init"], dtype=np.float64)
             booster.n_outputs_ = int(header["n_outputs"])
-            booster.loss_ = VECTOR_LOSSES[header["loss_name"]](
-                **header["loss_kwargs"]
-            )
             target_transform = header.get("target_transform") or {
                 "enabled": False,
                 "mean": 0.0,

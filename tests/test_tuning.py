@@ -978,7 +978,9 @@ def test_lane_build_params_drop_leafwise_only_num_leaves_for_catboost():
     assert lightgbm_params["num_leaves"] == 31
 
 
-def test_default_refit_preserves_rounds_and_auto_learning_rate():
+def test_default_refit_uses_median_fold_rounds_and_learning_rate():
+    """The default refit matches the early-stopped configuration CV scored:
+    median fold-best rounds and median fold learning rate."""
     X, y = load_breast_cancer(return_X_y=True)
     search = DarkoStepwiseSearchCV(
         DarkoClassifier(iterations=16, learning_rate=None, random_state=0),
@@ -994,29 +996,35 @@ def test_default_refit_preserves_rounds_and_auto_learning_rate():
     search.fit(X[:120], y[:120])
     assert search.refit_params_["early_stopping"] is False
     assert search.refit_params_["early_stopping_rounds"] is None
-    assert search.refit_params_["iterations"] == 16
-    assert "learning_rate" not in search.refit_params_
+    assert search.refit_params_["iterations"] == search.best_n_estimators_
+    assert search.refit_params_["learning_rate"] == search.learning_rate_
+    assert search.refit_iterations_source_ == "median_best"
+    assert search.refit_learning_rate_source_ == "fold_median"
     assert search.predict(X[:3]).shape == (3,)
 
 
-def test_median_fold_refit_is_opt_in():
+def test_preserve_refit_is_opt_in():
+    """refit_rounds/refit_learning_rate='preserve' recovers the full-budget,
+    re-resolved-rate refit semantics."""
     X, y = load_breast_cancer(return_X_y=True)
     search = DarkoStepwiseSearchCV(
-        DarkoClassifier(iterations=16, random_state=0),
+        DarkoClassifier(iterations=16, learning_rate=None, random_state=0),
         phases=("probe",),
         tree_modes=("catboost",),
         n_trials={"probe": 1},
         cv=2,
         refit=True,
-        refit_rounds="median_best",
-        refit_learning_rate="fold_median",
+        refit_rounds="preserve",
+        refit_learning_rate="preserve",
         random_state=0,
         resume=False,
         trial_thread_count=1,
     )
     search.fit(X[:120], y[:120])
-    assert search.refit_params_["iterations"] == search.best_n_estimators_
-    assert search.refit_params_["learning_rate"] == search.learning_rate_
+    assert search.refit_params_["iterations"] == 16
+    assert "learning_rate" not in search.refit_params_
+    assert search.refit_iterations_source_ == "preserve"
+    assert search.refit_learning_rate_source_ == "preserve"
 
 
 def test_explicit_refit_learning_rate_freezes_trial_mean_rate():
@@ -1090,6 +1098,92 @@ def test_twenty_trial_auto_plan_is_optgbm_like_joint_budget():
         search_mod.TrialBlock("probe", "lightgbm", 1),
         search_mod.TrialBlock("joint_compact", None, 18),
     ]
+
+
+def test_median_refit_iterations_preserves_zero_counts():
+    """Genuine zero fold counts participate in the median; only None
+    (missing metadata) is dropped, and no metadata at all returns None."""
+    assert search_mod._median_refit_iterations([0, 10]) == 5
+    assert search_mod._median_refit_iterations([None, 10]) == 10
+    assert search_mod._median_refit_iterations([0, 0]) == 1
+    assert search_mod._median_refit_iterations([3, 4]) == 4
+    assert search_mod._median_refit_iterations([]) is None
+    assert search_mod._median_refit_iterations([None, None]) is None
+    assert search_mod._fold_iteration_summaries([None, 0, 10]) == (5.0, 5.0)
+    assert search_mod._fold_iteration_summaries([None, None]) == (None, None)
+
+
+def test_median_refit_learning_rate_filters_missing_and_invalid_metadata():
+    assert search_mod._median_refit_learning_rate([0.05, 0.15]) == pytest.approx(0.1)
+    assert search_mod._median_refit_learning_rate(
+        [None, np.nan, np.inf, -0.1, 0.0, "bad", 0.2]
+    ) == pytest.approx(0.2)
+    assert search_mod._median_refit_learning_rate([]) is None
+    assert search_mod._median_refit_learning_rate([None, np.nan, 0.0]) is None
+
+
+def test_refit_warns_and_records_missing_fold_learning_rate_metadata():
+    X = np.arange(40, dtype=np.float64).reshape(20, 2)
+    y = np.tile([0, 1], 10)
+    search = DarkoStepwiseSearchCV(
+        RecordingClassifier(iterations=6),
+        refit_rounds="median_best",
+        refit_learning_rate="fold_median",
+    )
+    search.best_params_ = {}
+    search.best_trial_ = type(
+        "Trial", (), {
+            "user_attrs": {
+                "fold_best_iterations": [2, 4],
+                "fold_learning_rates": [None, np.nan, 0.0],
+            }
+        }
+    )()
+    search.tuning_metadata_ = {}
+
+    with pytest.warns(UserWarning, match="fold_learning_rates"):
+        search._refit_best(X, y, sample_weight=None, cat_features=None)
+
+    assert search.refit_params_["iterations"] == 3
+    assert "learning_rate" not in search.refit_params_
+    assert search.refit_learning_rate_source_ == "preserve"
+    assert (
+        search.tuning_metadata_["refit_learning_rate_source"]
+        == "preserve"
+    )
+
+
+def test_small_stepwise_budget_goes_to_highest_weight_phase():
+    """Rounding leftovers land in the heaviest phase (structure), not in
+    whatever phase happens to be listed last."""
+    blocks = search_mod._make_budget_plan(
+        n_trials=3,
+        timeout=None,
+        phases=(
+            "probe",
+            "structure",
+            "sampling_regularization",
+            "learning_rate",
+            "binning_categorical",
+        ),
+        tree_modes=("catboost", "lightgbm"),
+        strategy="stepwise",
+    )
+    assert sum(block.n_trials for block in blocks) == 3
+    tunable = [block for block in blocks if block.phase != "probe"]
+    assert [block.phase for block in tunable] == ["structure"]
+
+
+def test_probe_only_phases_warn_on_unschedulable_trials():
+    with pytest.warns(UserWarning, match="cannot be scheduled"):
+        blocks = search_mod._make_budget_plan(
+            n_trials=10,
+            timeout=None,
+            phases=("probe",),
+            tree_modes=("catboost", "lightgbm"),
+            strategy="stepwise",
+        )
+    assert [block.phase for block in blocks] == ["probe", "probe"]
 
 
 def test_thousand_trial_auto_plan_uses_large_budget_warmup():

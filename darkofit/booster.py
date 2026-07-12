@@ -345,17 +345,11 @@ def _array_content_signature(value):
 
 
 def _preprocessing_cache_key(
-    booster, prep, X, encode_targets, cat_features, sample_weight,
-    eval_set, eval_sample_weight
+    booster, prep, X, encode_targets, cat_features, sample_weight
 ):
-    eval_sig = None
-    if eval_set is not None:
-        Xv, yv = eval_set
-        eval_sig = (
-            _array_content_signature(Xv),
-            _array_content_signature(yv),
-            _array_content_signature(eval_sample_weight),
-        )
+    # The cached artifacts (fitted preprocessor + binned train matrix) never
+    # see the eval set, so the key deliberately excludes it; a selection fit
+    # and a same-data refit without the eval set share one entry.
     return (
         booster.__class__.__name__,
         getattr(booster, "loss_name", booster.__class__.__name__),
@@ -373,7 +367,6 @@ def _preprocessing_cache_key(
         _array_content_signature(X),
         tuple(_array_content_signature(target) for target in encode_targets),
         _array_content_signature(sample_weight),
-        eval_sig,
     )
 
 
@@ -466,7 +459,7 @@ class _BaseBooster:
                  random_state=None, verbose=False, ordered_boosting="auto",
                  verbose_timing=False, tree_mode="catboost",
                  sampling="uniform", top_rate=0.2, other_rate=0.1,
-                 multiclass_tree_strategy="auto", eval_train_loss=True,
+                 multiclass_tree_strategy="auto", eval_train_loss=False,
                  bin_sample_count=DEFAULT_BIN_SAMPLE_COUNT,
                  histogram_parallelism="auto", use_best_model=True,
                  bootstrap_type="none", bagging_temperature=0.0,
@@ -1132,6 +1125,10 @@ class _BaseBooster:
             "tree": {
                 "tree_mode": self.tree_mode_,
                 "ordered_boosting": bool(self.ordered_boosting_),
+                "ordered_boosting_input": self.ordered_boosting,
+                "ordered_boosting_rule": getattr(
+                    self, "ordered_boosting_rule_", None
+                ),
                 "depth": int(self.depth) if self.depth is not None else None,
                 "max_tree_depth": int(self._max_tree_depth()),
                 "max_leaves": int(self._max_tree_leaves()),
@@ -1315,14 +1312,47 @@ class _BaseBooster:
             return -1
         return int(self.depth)
 
-    def _resolve_ordered_boosting(self):
+    # Scalar regression losses where the separate ordered leave-one-out leaf
+    # update creates a train/inference gap. Categorical preprocessing already
+    # uses ordered target statistics to control leakage; real-data guardrails
+    # found the additional leaf update harmful for both numeric and
+    # categorical regression, so "auto" uses plain boosting for all three.
+    _ORDERED_AUTO_OFF_REGRESSION_LOSSES = frozenset(
+        {"RMSE", "MAE", "Quantile"}
+    )
+    # Losses whose leaf values are overwritten by a residual statistic
+    # (adjusts_leaves): the boosting loop never applies the ordered update
+    # for them, so "auto" must resolve off and explicit True is rejected
+    # rather than silently ignored.
+    _ADJUSTED_LEAF_LOSSES = frozenset({"MAE", "Quantile"})
+
+    def _resolve_ordered_boosting(self, loss_name=None):
+        adjusted_leaf_loss = loss_name in self._ADJUSTED_LEAF_LOSSES
         if self.ordered_boosting == "auto":
-            return self.tree_mode_ in {"catboost", "depthwise"}
+            if self.tree_mode_ not in {"catboost", "depthwise"}:
+                self.ordered_boosting_rule_ = "auto_off_leafwise_mode"
+                return False
+            if adjusted_leaf_loss:
+                self.ordered_boosting_rule_ = "auto_off_adjusted_leaf_loss"
+                return False
+            if loss_name in self._ORDERED_AUTO_OFF_REGRESSION_LOSSES:
+                self.ordered_boosting_rule_ = "auto_off_scalar_regression"
+                return False
+            self.ordered_boosting_rule_ = "auto_on_symmetric_mode"
+            return True
         resolved = bool(self.ordered_boosting)
         if self.tree_mode_ in {"lightgbm", "hybrid"} and resolved:
             raise ValueError(
                 "ordered_boosting=True is only supported with tree_mode='catboost'"
             )
+        if resolved and adjusted_leaf_loss:
+            raise ValueError(
+                f"ordered_boosting=True is not supported for loss="
+                f"{loss_name!r}: leaf-adjusted losses recompute leaf values "
+                "from residual statistics, so the ordered leave-one-out "
+                "update never applies"
+            )
+        self.ordered_boosting_rule_ = "explicit"
         return resolved
 
     # Interleaving wins by touching one cache line per (row, feature) instead
@@ -1459,8 +1489,7 @@ class _BaseBooster:
         )
 
     def _fit_transform_preprocessor(
-        self, X, encode_targets, cat_features, sample_weight, *,
-        eval_set=None, eval_sample_weight=None
+        self, X, encode_targets, cat_features, sample_weight
     ):
         prep = self._new_preprocessor()
         cache = getattr(self, "_preprocessing_cache", None)
@@ -1471,8 +1500,7 @@ class _BaseBooster:
             )
 
         key = _preprocessing_cache_key(
-            self, prep, X, encode_targets, cat_features, sample_weight,
-            eval_set, eval_sample_weight
+            self, prep, X, encode_targets, cat_features, sample_weight
         )
         cached = cache.get(key)
         if cached is not None:
@@ -1988,7 +2016,9 @@ class GradientBoosting(_BaseBooster):
         self.histogram_dtype_ = _normalize_histogram_dtype(self.histogram_dtype)
         self.leaf_dtype_ = _normalize_leaf_dtype_name(self.leaf_dtype)
         self._validate_sampling_config()
-        self.ordered_boosting_ = self._resolve_ordered_boosting()
+        self.ordered_boosting_ = self._resolve_ordered_boosting(
+            loss_name=self.loss_name,
+        )
         w = _validate_sample_weight(sample_weight, n_samples)
         self.loss_ = LOSSES[self.loss_name](**self.loss_kwargs)
         self._resolve_auto_structure_params(
@@ -2021,8 +2051,6 @@ class GradientBoosting(_BaseBooster):
             preprocessing_target = self.loss_.preprocessing_target(y)
         X_binned = self._fit_transform_preprocessor(
             X, [preprocessing_target], cat_features, w,
-            eval_set=eval_set,
-            eval_sample_weight=eval_sample_weight,
         )
         X_route_binned = np.asfortranarray(X_binned)
         X_hist_binned = (
@@ -2335,7 +2363,9 @@ class MulticlassBoosting(_BaseBooster):
             self.thread_count, self.tree_mode_, n_samples
         )
         self._validate_sampling_config()
-        self.ordered_boosting_ = self._resolve_ordered_boosting()
+        self.ordered_boosting_ = self._resolve_ordered_boosting(
+            loss_name="MultiClass",
+        )
         w = _validate_sample_weight(sample_weight, n_samples)
         self.loss_ = MultiSoftmax(K)
         self._resolve_auto_structure_params(
@@ -2371,8 +2401,6 @@ class MulticlassBoosting(_BaseBooster):
         # One ordered-TS target per class (CatBoost-style per-class statistics).
         X_binned = self._fit_transform_preprocessor(
             X, [Y_class[k] for k in range(K)], cat_features, w,
-            eval_set=eval_set,
-            eval_sample_weight=eval_sample_weight,
         )
         X_route_binned = np.asfortranarray(X_binned)
         X_hist_binned = (
@@ -2980,7 +3008,9 @@ class DistributionalBoosting(_BaseBooster):
         self.histogram_dtype_ = _normalize_histogram_dtype(self.histogram_dtype)
         self.leaf_dtype_ = _normalize_leaf_dtype_name(self.leaf_dtype)
         self._validate_sampling_config()
-        self.ordered_boosting_ = self._resolve_ordered_boosting()
+        self.ordered_boosting_ = self._resolve_ordered_boosting(
+            loss_name=self.loss_name,
+        )
         w = _validate_sample_weight(sample_weight, n_samples)
         y_fit = self._fit_target_transform(y, w)
         self.eval_metric_ = _normalize_eval_metric(
@@ -3032,8 +3062,6 @@ class DistributionalBoosting(_BaseBooster):
             preprocessing_target = self.loss_.preprocessing_target(y_fit)
         X_binned = self._fit_transform_preprocessor(
             X, [preprocessing_target], cat_features, w,
-            eval_set=eval_set,
-            eval_sample_weight=eval_sample_weight,
         )
         X_route_binned = np.asfortranarray(X_binned)
         X_hist_binned = (

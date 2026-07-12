@@ -19,8 +19,6 @@ The transform itself is a numba kernel parallelized over features.
 import numpy as np
 from numba import njit, prange
 
-BIN_DTYPE = np.uint16
-
 DEFAULT_BIN_SAMPLE_COUNT = 200_000
 
 

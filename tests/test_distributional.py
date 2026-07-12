@@ -644,6 +644,12 @@ def test_gaussian_per_metric_affine_calibration_applies_group_maps_and_roundtrip
         loaded.predict_dist(X[360:390])[1],
         public_sigma,
     )
+    # np.matrix is an ndarray subclass whose column slice is (n, 1); the
+    # calibration feature extractor must normalize it to a 1-D group vector.
+    np.testing.assert_allclose(
+        loaded.predict_dist(np.asmatrix(X[360:390]))[1],
+        public_sigma,
+    )
 
 
 def test_gaussian_per_metric_affine_calibration_resolves_pandas_feature_name():
@@ -1252,6 +1258,7 @@ def test_poisson_and_negative_binomial_count_heads_roundtrip_and_calibrate(tmp_p
         random_state=6,
         diagnostic_warnings="never",
         thread_count=1,
+        eval_train_loss=True,
     ).fit(X, y_nb)
     mu, alpha = nb.predict_dist(X[:15])
     assert np.all(mu > 0.0)
@@ -1600,10 +1607,7 @@ def test_gaussian_searchcv_refit_freezes_scalar_sigma_calibration():
         1, int(np.ceil(np.median(search.best_trial_.user_attrs["fold_best_iterations"])))
     )
     assert search.refit_params_["iterations"] == expected_rounds
-    assert (
-        search.refit_iterations_source_
-        == "median_fold_best_for_calibrated_distribution"
-    )
+    assert search.refit_iterations_source_ == "median_best"
     assert search.tuning_metadata_["refit_iterations"] == expected_rounds
     assert final.sigma_calibration_ == "scalar"
     assert final.sigma_scale_source_ == "search_cv_validation"
@@ -1905,3 +1909,37 @@ def test_gaussian_categorical_fit_with_eval_weights():
     assert mu.shape == sigma.shape == (10,)
     assert np.all(np.isfinite(mu))
     assert np.all(sigma > 0.0)
+
+
+def test_parallel_eval_kernels_skip_zero_weight_rows():
+    """Zero-weight rows must not be evaluated: their per-row loss can
+    overflow to inf on extreme values, and 0 * inf would poison the metric
+    with NaN (regression test for the 0.9.0 prange conversion)."""
+    from darkofit.losses import (
+        _gaussian_crps,
+        _gaussian_nll_eval,
+        _lognormal_nll_eval,
+        _nb_global_nll_eval,
+        _nb_profile_nll_eval,
+        _poisson_nll_eval,
+        _student_t_nll_eval,
+    )
+
+    w = np.array([1.0, 0.0])
+    # lgamma(1e308 + 1) overflows to inf for the count heads.
+    y_count = np.array([3.0, 1e308])
+    F1 = np.array([[1.0, 1.0]])
+    baseline_pois = _poisson_nll_eval(y_count[:1], F1[:, :1], None)
+    assert np.isfinite(_poisson_nll_eval(y_count, F1, w))
+    assert _poisson_nll_eval(y_count, F1, w) == pytest.approx(baseline_pois)
+    assert np.isfinite(_nb_global_nll_eval(y_count, F1, w, 5.0))
+    assert np.isfinite(_nb_profile_nll_eval(y_count, F1, w, 5.0))
+
+    # Extreme residual over a tiny sigma overflows z for CRPS.
+    y_cont = np.array([0.0, 1e308])
+    F2 = np.array([[0.0, 0.0], [-20.0, -20.0]])
+    assert np.isfinite(_gaussian_crps(y_cont, F2, w))
+    assert np.isfinite(_gaussian_nll_eval(y_cont, F2, w))
+    assert np.isfinite(_student_t_nll_eval(y_cont, F2, w, 6.0, 1.0))
+    y_pos = np.array([1.0, 1e308])
+    assert np.isfinite(_lognormal_nll_eval(y_pos, F2, w))

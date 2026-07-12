@@ -672,7 +672,7 @@ def test_preprocessing_cache_reduces_auto_probe_fit_transform_count(monkeypatch)
     ]
 
 
-def test_preprocessing_cache_key_separates_data_targets_weights_and_eval(monkeypatch):
+def test_preprocessing_cache_key_separates_data_targets_and_weights(monkeypatch):
     import darkofit.booster as booster_mod
 
     calls = 0
@@ -729,10 +729,74 @@ def test_preprocessing_cache_key_separates_data_targets_weights_and_eval(monkeyp
     fit_cached(X, y, weights=np.linspace(0.5, 1.5, X.shape[0]))
     assert calls == 4
 
+    # The cached artifacts never depend on the eval set, so a different eval
+    # set (or none at all, as in a same-data refit) reuses the entry.
     eval_changed = eval_X.copy()
     eval_changed[0, 0] = "unseen"
-    fit_cached(X, y, eval_pair=(eval_changed, eval_y))
-    assert calls == 5
+    reused = fit_cached(X, y, eval_pair=(eval_changed, eval_y))
+    assert calls == 4
+    assert np.array_equal(first.predict_raw(X), reused.predict_raw(X))
+    fit_cached(X, y, eval_pair=None)
+    assert calls == 4
+
+
+def test_refit_preprocessing_cache_gating(monkeypatch):
+    """Refit enables the preprocessing cache only when reuse is possible
+    (explicit eval set, same training rows), and empties it after fit."""
+    import darkofit.booster as booster_mod
+
+    calls = 0
+    original = booster_mod.FeaturePreprocessor.fit_transform
+
+    def wrapped_fit_transform(self, X, encode_targets, cat_features,
+                              sample_weight=None):
+        nonlocal calls
+        calls += 1
+        return original(
+            self, X, encode_targets, cat_features, sample_weight=sample_weight
+        )
+
+    monkeypatch.setattr(
+        booster_mod.FeaturePreprocessor, "fit_transform", wrapped_fit_transform
+    )
+
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(400, 5))
+    y = X[:, 0] + rng.normal(size=400)
+    Xv = rng.normal(size=(80, 5))
+    yv = Xv[:, 0] + rng.normal(size=80)
+
+    explicit = DarkoRegressor(
+        iterations=20, early_stopping=True, refit=True, random_state=0
+    ).fit(X, y, eval_set=(Xv, yv))
+    assert calls == 1  # refit reused the selection fit's preprocessing
+    assert explicit.model_._preprocessing_cache == {}  # emptied after fit
+
+    calls = 0
+    auto_split = DarkoRegressor(
+        iterations=20, early_stopping=True, refit=True, random_state=0
+    ).fit(X, y)
+    # Selection trains on a subset and refit on all rows: reuse is
+    # impossible, so no cache is attached and both fits preprocess.
+    assert calls == 2
+    assert getattr(auto_split.model_, "_preprocessing_cache", None) is None
+
+    y_class = (y > np.median(y)).astype(np.int64)
+    yv_class = (yv > np.median(y)).astype(np.int64)
+
+    calls = 0
+    explicit_classifier = DarkoClassifier(
+        iterations=20, early_stopping=True, refit=True, random_state=0
+    ).fit(X, y_class, eval_set=(Xv, yv_class))
+    assert calls == 1
+    assert explicit_classifier.model_._preprocessing_cache == {}
+
+    calls = 0
+    auto_classifier = DarkoClassifier(
+        iterations=20, early_stopping=True, refit=True, random_state=0
+    ).fit(X, y_class)
+    assert calls == 2
+    assert getattr(auto_classifier.model_, "_preprocessing_cache", None) is None
 
 
 def test_preprocessing_cache_does_not_share_scalar_and_multiclass(monkeypatch):
@@ -2180,6 +2244,63 @@ def test_tree_mode_aliases_and_lightgbm_plumbing():
     assert hybrid.predict_proba(Xte).shape == (len(Xte), 2)
     assert abs(lightgbm.feature_importances_.sum() - 1.0) < 1e-6
     assert abs(hybrid.feature_importances_.sum() - 1.0) < 1e-6
+
+
+def test_ordered_boosting_auto_is_task_aware():
+    """auto keeps ordered boosting for classification and disables the
+    separate ordered leaf update for scalar regression."""
+    rng = np.random.default_rng(3)
+    X = rng.normal(size=(120, 4))
+    y = X[:, 0] + rng.normal(scale=0.1, size=120)
+    Xc = np.column_stack([rng.integers(0, 5, size=120), X])
+
+    numeric = DarkoRegressor(iterations=4, random_state=0).fit(X, y)
+    assert numeric.model_.ordered_boosting_ is False
+    tree_meta = numeric.model_.auto_params_["tree"]
+    assert tree_meta["ordered_boosting_rule"] == "auto_off_scalar_regression"
+    assert tree_meta["ordered_boosting_input"] == "auto"
+
+    # Leaf-adjusted losses never apply the ordered update, so auto resolves
+    # off even with categorical features, and explicit True is rejected
+    # instead of being silently ignored.
+    for loss in ("MAE", "Quantile"):
+        m = DarkoRegressor(iterations=4, loss=loss, random_state=0).fit(X, y)
+        assert m.model_.ordered_boosting_ is False
+        mc = DarkoRegressor(iterations=4, loss=loss, random_state=0).fit(
+            Xc, y, cat_features=[0]
+        )
+        assert mc.model_.ordered_boosting_ is False
+        assert (
+            mc.model_.auto_params_["tree"]["ordered_boosting_rule"]
+            == "auto_off_adjusted_leaf_loss"
+        )
+        with pytest.raises(ValueError, match="leaf-adjusted"):
+            DarkoRegressor(
+                iterations=4, loss=loss, ordered_boosting=True, random_state=0
+            ).fit(X, y)
+
+    categorical = DarkoRegressor(iterations=4, random_state=0).fit(
+        Xc, y, cat_features=[0]
+    )
+    assert categorical.model_.ordered_boosting_ is False
+    assert (
+        categorical.model_.auto_params_["tree"]["ordered_boosting_rule"]
+        == "auto_off_scalar_regression"
+    )
+
+    clf = DarkoClassifier(iterations=4, random_state=0).fit(
+        X, (y > 0).astype(int)
+    )
+    assert clf.model_.ordered_boosting_ is True
+
+    explicit = DarkoRegressor(
+        iterations=4, ordered_boosting=True, random_state=0
+    ).fit(X, y)
+    assert explicit.model_.ordered_boosting_ is True
+    assert (
+        explicit.model_.auto_params_["tree"]["ordered_boosting_rule"]
+        == "explicit"
+    )
 
 
 def test_leafwise_modes_reject_ordered_boosting_true():
@@ -5903,15 +6024,16 @@ def test_sampled_retry_best_model_uses_successful_prefix_index():
 
 
 def test_eval_train_loss_false_skips_train_history():
-    """Disabling train-loss evaluation must not change the fitted model, only
-    leave train_history_ empty (train loss never influences tree growth)."""
+    """Train-loss evaluation (opt-in since 0.9.0) must not change the fitted
+    model, only populate train_history_ (train loss never influences tree
+    growth)."""
     X, y = load_diabetes(return_X_y=True)
     Xtr, Xv, ytr, yv = train_test_split(X, y, test_size=0.2, random_state=0)
 
-    on = DarkoRegressor(iterations=40, random_state=0).fit(Xtr, ytr)
-    off = DarkoRegressor(
-        iterations=40, random_state=0, eval_train_loss=False
+    on = DarkoRegressor(
+        iterations=40, random_state=0, eval_train_loss=True
     ).fit(Xtr, ytr)
+    off = DarkoRegressor(iterations=40, random_state=0).fit(Xtr, ytr)
     assert len(on.model_.train_history_) == 40
     assert off.model_.train_history_ == []
     assert np.array_equal(on.predict(Xv), off.predict(Xv))
@@ -5920,7 +6042,8 @@ def test_eval_train_loss_false_skips_train_history():
 
     # With early stopping, the eval-set path is untouched.
     es_on = DarkoRegressor(
-        iterations=300, early_stopping_rounds=20, random_state=0
+        iterations=300, early_stopping_rounds=20, random_state=0,
+        eval_train_loss=True
     ).fit(Xtr, ytr, eval_set=(Xv, yv))
     es_off = DarkoRegressor(
         iterations=300, early_stopping_rounds=20, random_state=0,
@@ -5935,10 +6058,10 @@ def test_eval_train_loss_false_multiclass_and_verbose_override(capsys):
     from sklearn.datasets import load_wine
 
     X, y = load_wine(return_X_y=True)
-    on = DarkoClassifier(iterations=8, random_state=0).fit(X, y)
-    off = DarkoClassifier(
-        iterations=8, random_state=0, eval_train_loss=False
+    on = DarkoClassifier(
+        iterations=8, random_state=0, eval_train_loss=True
     ).fit(X, y)
+    off = DarkoClassifier(iterations=8, random_state=0).fit(X, y)
     assert len(on.model_.train_history_) == 8
     assert off.model_.train_history_ == []
     assert np.array_equal(on.predict_proba(X), off.predict_proba(X))

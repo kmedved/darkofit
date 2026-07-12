@@ -6,6 +6,7 @@ import math
 import os
 import time
 import uuid
+import warnings
 from collections.abc import Mapping
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
@@ -286,8 +287,55 @@ def _pooled_trial_sigma_calibration(trial):
     return calibration
 
 
+def _median_refit_iterations(fold_iterations):
+    """Median fold-best round count for the refit, or None without metadata.
+
+    Genuine zero counts (folds that found no legal split) participate in the
+    median; only None entries (missing metadata, e.g. studies resumed from
+    pre-0.9 DarkoFit) are dropped. The result is floored at one round.
+    """
+    valid = [int(it) for it in fold_iterations if it is not None]
+    if not valid:
+        return None
+    return max(1, int(math.ceil(np.median(valid))))
+
+
+def _fold_iteration_summaries(fold_iterations):
+    """Raw mean/median fold counts, excluding missing metadata sentinels."""
+    valid = [int(it) for it in fold_iterations if it is not None]
+    if not valid:
+        return None, None
+    return float(np.mean(valid)), float(np.median(valid))
+
+
+def _median_refit_learning_rate(fold_learning_rates):
+    """Median positive finite fold learning rate, or None without metadata."""
+    valid = []
+    for value in fold_learning_rates:
+        if value is None:
+            continue
+        try:
+            learning_rate = float(value)
+        except (TypeError, ValueError):
+            continue
+        if np.isfinite(learning_rate) and learning_rate > 0.0:
+            valid.append(learning_rate)
+    if not valid:
+        return None
+    return float(np.median(valid))
+
+
 class DarkoStepwiseSearchCV(BaseEstimator):
-    """Stepwise Optuna search with separate CatBoost/LightGBM lanes."""
+    """Stepwise Optuna search with separate CatBoost/LightGBM lanes.
+
+    Known caveat: when the estimator enables distributional calibration
+    (``dist_calibration``), each fold fits its calibration scale on the same
+    validation split the fold is scored on, so calibrated CV losses are
+    mildly in-sample-optimistic. The bias is nearly uniform across trials
+    (calibration settings are constant), so rankings are generally
+    preserved, but ``best_score_`` should not be read as an unbiased
+    generalization estimate for calibrated models.
+    """
 
     def __init__(
         self,
@@ -308,8 +356,8 @@ class DarkoStepwiseSearchCV(BaseEstimator):
         early_stop_min_trials=20,
         early_stop_min_delta=0.0,
         refit=True,
-        refit_rounds="preserve",
-        refit_learning_rate="preserve",
+        refit_rounds="median_best",
+        refit_learning_rate="fold_median",
         n_workers=1,
         trial_thread_count="auto",
         storage=None,
@@ -686,43 +734,77 @@ class DarkoStepwiseSearchCV(BaseEstimator):
             if dist_calibration is not None:
                 params["dist_calibration"] = None
                 params["sigma_calibration"] = None
-        refit_iterations_source = "preserve"
-        if self.refit_rounds == "preserve":
-            if dist_calibration is not None:
-                if not fold_iterations:
-                    raise ValueError(
-                        "refit_rounds='preserve' cannot reattach distribution "
-                        "calibration without fold_best_iterations; set "
-                        "refit=False or rerun the search with the current "
-                        "DarkoFit version"
-                    )
-                params["iterations"] = max(
-                    1, int(math.ceil(np.median(fold_iterations)))
-                )
-                refit_iterations_source = (
-                    "median_fold_best_for_calibrated_distribution"
-                )
-        elif self.refit_rounds == "median_best" and fold_iterations:
-            params["iterations"] = max(1, int(math.ceil(np.median(fold_iterations))))
-            refit_iterations_source = "median_best"
-        else:
+        if self.refit_rounds not in {"preserve", "median_best"}:
             raise ValueError(
                 "refit_rounds must be 'preserve' or 'median_best'"
             )
-        if self.refit_learning_rate == "preserve":
-            pass
-        elif self.refit_learning_rate == "explicit":
-            lr = self.best_trial_.user_attrs.get("mean_learning_rate")
-            if lr is not None and np.isfinite(float(lr)):
-                params["learning_rate"] = float(lr)
-        elif self.refit_learning_rate == "fold_median":
-            if fold_lrs:
-                params["learning_rate"] = float(np.median(fold_lrs))
-        else:
+        if self.refit_learning_rate not in {
+            "preserve", "explicit", "fold_median"
+        }:
             raise ValueError(
                 "refit_learning_rate must be 'preserve', 'explicit', "
                 "or 'fold_median'"
             )
+        # Trials are scored as early-stopped models truncated to their best
+        # validation prefix; a refit that reruns the full nominal iteration
+        # budget with early stopping disabled would over-boost relative to
+        # the configuration CV actually selected. The default therefore caps
+        # the refit at the median fold-best horizon.
+        refit_iterations_source = "preserve"
+        median_iterations = _median_refit_iterations(fold_iterations)
+        if self.refit_rounds == "median_best" and median_iterations is not None:
+            params["iterations"] = median_iterations
+            refit_iterations_source = "median_best"
+        elif dist_calibration is not None:
+            if median_iterations is None:
+                raise ValueError(
+                    "cannot reattach distribution calibration without "
+                    "fold_best_iterations; set refit=False or rerun the "
+                    "search with the current DarkoFit version"
+                )
+            params["iterations"] = median_iterations
+            refit_iterations_source = (
+                "median_fold_best_for_calibrated_distribution"
+            )
+        elif self.refit_rounds == "median_best":
+            warnings.warn(
+                "refit_rounds='median_best' found no fold_best_iterations "
+                "metadata (e.g. a study resumed from an older DarkoFit); "
+                "falling back to the trial's nominal iteration budget",
+                UserWarning,
+                stacklevel=2,
+            )
+        refit_learning_rate_source = "preserve"
+        if self.refit_learning_rate == "preserve":
+            pass
+        elif self.refit_learning_rate == "explicit":
+            lr = self.best_trial_.user_attrs.get("mean_learning_rate")
+            explicit_learning_rate = _median_refit_learning_rate([lr])
+            if explicit_learning_rate is not None:
+                params["learning_rate"] = explicit_learning_rate
+                refit_learning_rate_source = "explicit_mean"
+            else:
+                warnings.warn(
+                    "refit_learning_rate='explicit' found no finite "
+                    "mean_learning_rate metadata; falling back to the "
+                    "estimator's configured learning-rate behavior",
+                    UserWarning,
+                    stacklevel=2,
+                )
+        elif self.refit_learning_rate == "fold_median":
+            median_learning_rate = _median_refit_learning_rate(fold_lrs)
+            if median_learning_rate is not None:
+                params["learning_rate"] = median_learning_rate
+                refit_learning_rate_source = "fold_median"
+            else:
+                warnings.warn(
+                    "refit_learning_rate='fold_median' found no positive "
+                    "finite fold_learning_rates metadata (e.g. a study "
+                    "resumed from an older DarkoFit); falling back to the "
+                    "estimator's configured learning-rate behavior",
+                    UserWarning,
+                    stacklevel=2,
+                )
         params["early_stopping"] = False
         params["early_stopping_rounds"] = None
         params["refit"] = False
@@ -807,7 +889,11 @@ class DarkoStepwiseSearchCV(BaseEstimator):
         self.best_estimator_ = final
         self.refit_params_ = params
         self.refit_iterations_source_ = refit_iterations_source
+        self.refit_learning_rate_source_ = refit_learning_rate_source
         self.tuning_metadata_["refit_iterations_source"] = refit_iterations_source
+        self.tuning_metadata_["refit_learning_rate_source"] = (
+            refit_learning_rate_source
+        )
         self.tuning_metadata_["refit_iterations"] = int(
             params.get("iterations", getattr(final, "best_n_estimators_", 0) or 0)
         )
@@ -907,7 +993,13 @@ class _TrialObjective:
                 fold_scores.append(score)
                 fold_losses.append(loss)
                 fold_masses.append(mass)
-                fold_best_iterations.append(int(getattr(est, "best_n_estimators_", 0)))
+                # None marks missing metadata; a genuine 0 (a fold that found
+                # no legal split) is a valid count and must survive for
+                # refit_rounds="median_best" median semantics.
+                fold_best = getattr(est, "best_n_estimators_", None)
+                fold_best_iterations.append(
+                    None if fold_best is None else int(fold_best)
+                )
                 fold_learning_rates.append(float(getattr(est, "learning_rate_", np.nan)))
                 auto_params = getattr(getattr(est, "model_", None), "auto_params_", {})
                 fold_auto_params.append(auto_params)
@@ -963,8 +1055,11 @@ class _TrialObjective:
         trial.set_user_attr("std_score", float(np.std(fold_scores)))
         trial.set_user_attr("mean_loss", mean_loss)
         trial.set_user_attr("std_loss", float(np.std(fold_losses)))
-        trial.set_user_attr("mean_best_iteration", float(np.mean(fold_best_iterations)))
-        trial.set_user_attr("median_best_iteration", float(np.median(fold_best_iterations)))
+        mean_best_iteration, median_best_iteration = _fold_iteration_summaries(
+            fold_best_iterations
+        )
+        trial.set_user_attr("mean_best_iteration", mean_best_iteration)
+        trial.set_user_attr("median_best_iteration", median_best_iteration)
         trial.set_user_attr("mean_learning_rate", float(np.mean(fold_learning_rates)))
         trial.set_user_attr("fit_time", float(time.perf_counter() - start))
         return mean_loss
@@ -1312,20 +1407,37 @@ def _stepwise_budget_plan(n_trials, phases, tree_modes):
         phase for phase in phases
         if phase not in {"probe", "joint_compact"}
     ]
-    total_weight = sum(weights.get(phase, 1) for phase in weighted_phases)
-    allocated = 0
-    for idx, phase in enumerate(weighted_phases):
-        if remaining <= allocated:
-            break
-        if idx == len(weighted_phases) - 1:
-            phase_total = remaining - allocated
-        else:
-            phase_total = int(round(
-                remaining * weights.get(phase, 1) / max(1, total_weight)
-            ))
-            phase_total = min(phase_total, remaining - allocated)
-        allocated += phase_total
-        blocks.append(TrialBlock(phase, None, phase_total))
+    if remaining > 0 and not weighted_phases:
+        warnings.warn(
+            f"{remaining} requested trial(s) cannot be scheduled because the "
+            "configured phases contain no tunable phase; only probe/warm-up "
+            "trials will run",
+            UserWarning,
+            stacklevel=2,
+        )
+    if remaining > 0 and weighted_phases:
+        # Largest-remainder allocation so small budgets go to the
+        # highest-weight phases instead of whatever phase happens to be
+        # listed last.
+        total_weight = sum(weights.get(phase, 1) for phase in weighted_phases)
+        quotas = [
+            remaining * weights.get(phase, 1) / max(1, total_weight)
+            for phase in weighted_phases
+        ]
+        counts = [int(math.floor(quota)) for quota in quotas]
+        leftover = remaining - sum(counts)
+        order = sorted(
+            range(len(weighted_phases)),
+            key=lambda i: (
+                quotas[i] - counts[i],
+                weights.get(weighted_phases[i], 1),
+            ),
+            reverse=True,
+        )
+        for i in order[:leftover]:
+            counts[i] += 1
+        for phase, count in zip(weighted_phases, counts):
+            blocks.append(TrialBlock(phase, None, count))
     return [block for block in blocks if block.n_trials is None or block.n_trials > 0]
 
 

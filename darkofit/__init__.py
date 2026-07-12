@@ -13,7 +13,7 @@ Public API:
 
 # Single source of truth for the package version (pyproject reads this).
 # Defined before submodule imports so they may reference it safely.
-__version__ = "0.8.0"
+__version__ = "0.9.0"
 
 from .sklearn_api import (
     DarkoRegressor,

@@ -114,6 +114,18 @@ In LightGBM and hybrid modes, `num_leaves` is the main tree-size control and
 `depth` is a maximum path-depth cap. `ordered_boosting` defaults to off for
 these modes; setting `ordered_boosting=True` with either mode raises a
 `ValueError`.
+
+`ordered_boosting="auto"` (the default) is task-aware in CatBoost/depthwise
+modes: it enables the ordered leave-one-out leaf update for classification
+and disables it for scalar regression. Categorical regression still uses
+ordered target-statistic preprocessing to prevent target leakage; applying
+the additional ordered leaf update creates a train/inference gap and hurt
+both numeric and categorical real-data guardrails. `MAE` and `Quantile` recompute
+leaf values from residual statistics, so the ordered update never applies
+to them: `"auto"` resolves off and explicit `ordered_boosting=True` raises
+a `ValueError` instead of being silently ignored. Explicit values are
+otherwise honored, and the resolved policy is recorded under
+`auto_params_["tree"]["ordered_boosting_rule"]`.
 Categorical features still use DarkoFit's target-stat preprocessing, not
 native LightGBM category-partition splits. CatBoost/depthwise modes use ordered
 target statistics; LightGBM and hybrid modes use K-fold target statistics and
@@ -352,10 +364,12 @@ metadata, not something a validation-free refit can recompute. Strategies `"sqrt
 `"linear"` scale the selected round count by the automatic validation split
 ratio; `"scaled"` aliases `"linear"`.
 
-Training loss is evaluated every round by default for diagnostics. Set
-`eval_train_loss=False` to skip that pass when you only care about the fitted
-model or validation-set early stopping; validation loss and early stopping are
-unchanged.
+Per-round training-loss evaluation is off by default
+(`eval_train_loss=False`) because it is diagnostic-only and costs one full
+O(n) pass per round (about 15% of multiclass fit time); validation loss and
+early stopping are unchanged. Set `eval_train_loss=True` to populate
+`train_history_`, or use `verbose=True`, which forces it on for progress
+logging.
 
 `histogram_parallelism="row"` enables an experimental row-parallel histogram
 builder. The default `"auto"` keeps the measured-best feature-parallel path on
@@ -408,14 +422,17 @@ other lane.
 Use `strategy="joint"` or `strategy="stepwise"` to force either mode. Set
 `timeout=<seconds>` to stop by wall-clock time, including with
 `n_trials=None`; set `early_stop_patience=<completed_trials>` or pass a custom
-`study_stopper` callback for study-level stopping. Final refits preserve the
-winning trial's model semantics by default: fold-local automatic learning
-rates are not frozen and median fold round counts are not applied unless
-`refit_learning_rate` or `refit_rounds` explicitly request that behavior, with
-one calibrated-distribution exception.
+`study_stopper` callback for study-level stopping. Final refits match the
+early-stopped models CV actually scored: the defaults
+`refit_rounds="median_best"` and `refit_learning_rate="fold_median"` cap the
+refit at the median fold-best round count and freeze the median fold learning
+rate, instead of rerunning the full nominal iteration budget with early
+stopping disabled. Pass `refit_rounds="preserve"` and/or
+`refit_learning_rate="preserve"` to recover the previous
+full-budget/re-resolved-rate refit semantics.
 When distributional calibration is reattached from validation folds, the
-default `refit_rounds="preserve"` uses the median fold-best round count so the
-transported calibration is applied to a comparable boosting horizon.
+refit always uses the median fold-best round count so the transported
+calibration is applied to a comparable boosting horizon.
 Parallel search uses separate worker processes sharing Optuna storage; each
 worker calls Optuna with `n_jobs=1` so Optuna thread-level parallelism does not
 race with DarkoFit's Numba thread pool.
