@@ -156,8 +156,12 @@ def test_loss_grad_hess_into_matches_allocating_paths():
         grad_out = np.empty_like(F)
         hess_out = np.empty_like(F)
         loss.grad_hess_class_major_into(Y, F, w, grad_out, hess_out)
-        assert np.array_equal(grad_out, grad)
-        assert np.array_equal(hess_out, hess)
+        # NumPy's vectorized softmax and Numba's scalar-loop kernel can differ
+        # by a final rounding bit across libm/platform combinations. Require
+        # numerical equivalence at machine precision, not cross-backend
+        # bitwise identity.
+        np.testing.assert_allclose(grad_out, grad, rtol=0.0, atol=1e-15)
+        np.testing.assert_allclose(hess_out, hess, rtol=0.0, atol=1e-15)
 
 
 @pytest.mark.parametrize("alpha", [-0.1, 0.0, 1.0, 1.5, np.nan, np.inf])
