@@ -1503,6 +1503,17 @@ class _BaseBooster:
         return (array_like_to_numpy(X, object) if self.prep_.cat_features_
                 else array_like_to_numpy(X, np.float64))
 
+    def _restore_thread_count(self):
+        """Restore this model's fitted Numba thread mask."""
+        fitted_threads = getattr(self, "n_threads_", None)
+        if fitted_threads is not None:
+            _apply_thread_count(fitted_threads)
+
+    def _prepare_predict_X(self, X):
+        """Restore fitted threading and validate prediction input."""
+        self._restore_thread_count()
+        return self._coerce_predict_X(X)
+
     def _alloc_multiclass_hist_buffers(self, n_classes, n_features, n_bins):
         """Allocate reusable class-minor LightGBM-mode histogram buffers."""
         max_leaves = self._max_tree_leaves()
@@ -2392,7 +2403,7 @@ class GradientBoosting(_BaseBooster):
     def predict_raw(self, X):
         """Return raw additive scores (pre-link): the regression prediction, or
         the log-odds for binary classification."""
-        X = self._coerce_predict_X(X)
+        X = self._prepare_predict_X(X)
         X_binned = self.prep_.transform(X)
         F = np.full(X_binned.shape[0], self.init_, dtype=np.float64)
         flat = self._flat_ensemble()
@@ -2405,10 +2416,12 @@ class GradientBoosting(_BaseBooster):
 
     def staged_predict_raw(self, X):
         """Yield the cumulative raw prediction after each tree (1..n_trees)."""
-        X = self._coerce_predict_X(X)
+        X = self._prepare_predict_X(X)
         X_binned = self.prep_.transform(X)
         F = np.full(X_binned.shape[0], self.init_, dtype=np.float64)
-        for tree in self.trees_:
+        for stage, tree in enumerate(self.trees_):
+            if stage:
+                self._restore_thread_count()
             tree.add_predict(X_binned, F)
             yield F.copy()
 
@@ -2910,7 +2923,7 @@ class MulticlassBoosting(_BaseBooster):
     def predict_raw(self, X):
         """Return the (n_samples, n_classes) matrix of raw per-class scores
         (pre-softmax)."""
-        X = self._coerce_predict_X(X)
+        X = self._prepare_predict_X(X)
         X_binned = self.prep_.transform(X)
         F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
         flat = self._flat_ensemble()
@@ -2927,10 +2940,12 @@ class MulticlassBoosting(_BaseBooster):
 
     def staged_predict_raw(self, X):
         """Yield raw scores after each complete multiclass boosting round."""
-        X = self._coerce_predict_X(X)
+        X = self._prepare_predict_X(X)
         X_binned = self.prep_.transform(X)
         F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
-        for round_trees in self.trees_:
+        for stage, round_trees in enumerate(self.trees_):
+            if stage:
+                self._restore_thread_count()
             if hasattr(round_trees, "add_predict_class_major"):
                 round_trees.add_predict_class_major(X_binned, F)
             else:
@@ -3527,7 +3542,7 @@ class DistributionalBoosting(_BaseBooster):
 
     def predict_raw(self, X):
         """Return sample-major raw scores for the fitted distribution head."""
-        X = self._coerce_predict_X(X)
+        X = self._prepare_predict_X(X)
         X_binned = self.prep_.transform(X)
         F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
         flat = self._flat_ensemble()
@@ -3548,9 +3563,11 @@ class DistributionalBoosting(_BaseBooster):
 
     def staged_predict_raw(self, X):
         """Yield sample-major raw scores after each vector-tree round."""
-        X = self._coerce_predict_X(X)
+        X = self._prepare_predict_X(X)
         X_binned = self.prep_.transform(X)
         F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
-        for tree in self.trees_:
+        for stage, tree in enumerate(self.trees_):
+            if stage:
+                self._restore_thread_count()
             tree.add_predict_class_major(X_binned, F)
             yield self._raw_to_target_scale(F.T).copy()

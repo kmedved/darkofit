@@ -1387,6 +1387,42 @@ def test_lightgbm_small_fit_caps_thread_count_as_maximum():
     assert m.model_.n_threads_ <= 2
 
 
+def test_prediction_restores_each_child_fitted_thread_count(monkeypatch):
+    """Mixed-mode bags must not inherit the last fitted child's thread mask."""
+    import darkofit.booster as booster
+
+    X, y = load_diabetes(return_X_y=True)
+    cat = DarkoRegressor(
+        iterations=2, tree_mode="catboost", thread_count=1, random_state=0
+    ).fit(X[:120], y[:120])
+    leafwise = DarkoRegressor(
+        iterations=2, tree_mode="lightgbm", num_leaves=7,
+        thread_count=1, random_state=0,
+    ).fit(X[:120], y[:120])
+    cat.model_.n_threads_ = 4
+    leafwise.model_.n_threads_ = 2
+
+    restored = []
+
+    def record_thread_count(thread_count):
+        restored.append(int(thread_count))
+        return int(thread_count)
+
+    monkeypatch.setattr(booster, "_apply_thread_count", record_thread_count)
+
+    cat.predict(X[:8])
+    leafwise.predict(X[:8])
+    cat.predict(X[:8])
+    cat_stages = cat.staged_predict(X[:8])
+    leafwise_stages = leafwise.staged_predict(X[:8])
+    next(cat_stages)
+    next(leafwise_stages)
+    next(cat_stages)
+    next(leafwise_stages)
+
+    assert restored == [4, 2, 4, 4, 2, 4, 2]
+
+
 def test_thread_count_does_not_change_predictions():
     X, y = load_diabetes(return_X_y=True)
     Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.2, random_state=0)
