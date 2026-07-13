@@ -1,0 +1,165 @@
+{
+  "block_binning": {
+    "border_parity": true,
+    "case": {
+      "avoided_stack_bytes": 80000000,
+      "block_widths": [
+        32,
+        4,
+        4
+      ],
+      "features": 40,
+      "rows": 250000,
+      "sample_count": 200000
+    },
+    "optimized": {
+      "iqr_fraction": 0.004144419083226584,
+      "iqr_seconds": 0.0013630215544253588,
+      "median_seconds": 0.328881207969971,
+      "raw_seconds": [
+        0.3311374590266496,
+        0.328881207969971,
+        0.3284114159177989
+      ]
+    },
+    "output_parity": true,
+    "passed": true,
+    "preferred_speedup_met": false,
+    "reference": {
+      "iqr_fraction": 0.0012630075079868317,
+      "iqr_seconds": 0.00041256245458498597,
+      "median_seconds": 0.32665083301253617,
+      "raw_seconds": [
+        0.3262764581013471,
+        0.32665083301253617,
+        0.32710158301051706
+      ]
+    },
+    "speedup": 0.9932182961404153,
+    "thresholds": {
+      "minimum_non_regression_speedup": 0.9523809523809523,
+      "preferred_speedup": 1.1
+    }
+  },
+  "command_line": [
+    "/Users/kmedved/miniforge3/bin/python3.13",
+    "benchmarks/preflight_hotpaths.py",
+    "--output",
+    ".cache/perf-preflight-remaining9/hotpaths-final.json"
+  ],
+  "elapsed_seconds": 23.61728525161743,
+  "environment": {
+    "cpu_model": "Apple M5 Max",
+    "darkofit": "0.9.0",
+    "darkofit_source": "/Users/kmedved/Code/GitHub/darkofit/darkofit/__init__.py",
+    "numba": "0.66.0",
+    "numpy": "2.4.6",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "python": "3.13.13",
+    "scikit_learn": "1.9.0",
+    "threads": 4
+  },
+  "flat_prediction": {
+    "case": {
+      "depth": 6,
+      "features": 20,
+      "prediction_rows": 100000,
+      "train_rows": 10000,
+      "trees": 300
+    },
+    "max_iqr_fraction": 0.005084698147733361,
+    "optimized": {
+      "iqr_fraction": 0.003225275681617874,
+      "iqr_seconds": 6.179104093462229e-05,
+      "median_seconds": 0.01915837498381734,
+      "raw_seconds": [
+        0.019219042034819722,
+        0.01924074999988079,
+        0.01916808309033513,
+        0.019107084022834897,
+        0.018962541013024747,
+        0.01915645902045071,
+        0.01915837498381734
+      ]
+    },
+    "parity": true,
+    "passed": true,
+    "public_end_to_end_seconds": 0.023692958056926727,
+    "public_prediction_parity": true,
+    "reference": {
+      "iqr_fraction": 0.005084698147733361,
+      "iqr_seconds": 0.00037906254874542356,
+      "median_seconds": 0.07454966602381319,
+      "raw_seconds": [
+        0.07554908306337893,
+        0.07417812501080334,
+        0.07394808309618384,
+        0.07454966602381319,
+        0.07470070803537965,
+        0.074351790943183,
+        0.07458733301609755
+      ]
+    },
+    "reran_for_noise": false,
+    "router_selected": true,
+    "speedup": 3.891231176275841,
+    "thresholds": {
+      "maximum_iqr_fraction": 0.15,
+      "minimum_speedup": 1.25
+    }
+  },
+  "harness_sha256": "ec88ffbf17e0c7d937e9e3dade17f35f4dc1b476cf55307c0446a2819493ae39",
+  "passed": true,
+  "schema_version": 1,
+  "seed": 20260712,
+  "source_commit": "50444273138c7e317ea0cc6c6b816ec16050d371",
+  "source_status": [],
+  "training": {
+    "case": {
+      "classes": 4,
+      "depth": 6,
+      "features": 30,
+      "prediction_rows": 10000,
+      "rounds": 50,
+      "train_rows": 90000
+    },
+    "max_iqr_fraction": 0.0226097585562059,
+    "optimized": {
+      "iqr_fraction": 0.019485574813869276,
+      "iqr_seconds": 0.024925333505962044,
+      "median_seconds": 1.2791684999829158,
+      "raw_seconds": [
+        1.2270269580185413,
+        1.2601423329906538,
+        1.2562851250404492,
+        1.2791684999829158,
+        1.2827407500008121,
+        1.3078871669713408,
+        1.283537375042215
+      ]
+    },
+    "passed": true,
+    "prediction_parity": true,
+    "reference": {
+      "iqr_fraction": 0.0226097585562059,
+      "iqr_seconds": 0.03051260398933664,
+      "median_seconds": 1.3495325000258163,
+      "raw_seconds": [
+        1.318107582977973,
+        1.3166893330635503,
+        1.3405929170548916,
+        1.3495325000258163,
+        1.359123207977973,
+        1.3606025000335649,
+        1.3636267500696704
+      ]
+    },
+    "reran_for_noise": false,
+    "speedup": 1.0550076084924231,
+    "thresholds": {
+      "maximum_iqr_fraction": 0.15,
+      "minimum_speedup": 1.05
+    },
+    "timed_scope": "fit_only"
+  }
+}

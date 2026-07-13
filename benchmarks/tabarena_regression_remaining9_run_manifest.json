@@ -1,0 +1,207 @@
+{
+  "adapter": {
+    "frozen_ref": "224bd46",
+    "git_blob": "361cf266d588907112e5cd7fb8fdeb9e315a1097",
+    "mtime_utc": "2026-07-10T00:01:49.250861+00:00",
+    "path": "/Users/kmedved/Code/GitHub/darkofit/benchmarks/tabarena_adapter.py",
+    "sha256": "b13affcdfb2c1322912faf63a14c36aa7a33d5c654915790194b8c55bb2d0a86",
+    "status": ""
+  },
+  "captured_at_utc": "2026-07-13T04:49:22.960567+00:00",
+  "darkofit": {
+    "declared_source_commit": "224bd4681b348c2d5e6321d8fb772a6670768d05",
+    "library_status": "",
+    "library_tree": "2902a3a20b3ac68fa2cf4e0625ad70fc8e8ad3ce",
+    "repository_head_at_capture": "2cedc3da8f6b460b962048556bd9470a5cf2a170",
+    "repository_path": "/Users/kmedved/Code/GitHub/darkofit"
+  },
+  "environment": {
+    "BLIS_NUM_THREADS": null,
+    "MKL_NUM_THREADS": null,
+    "NUMBA_CACHE_DIR": ".cache/numba-tabarena-remaining9",
+    "NUMBA_CPU_FEATURES": null,
+    "NUMBA_CPU_NAME": null,
+    "NUMBA_DISABLE_JIT": null,
+    "NUMBA_NUM_THREADS": null,
+    "NUMBA_THREADING_LAYER": null,
+    "OMP_NUM_THREADS": null,
+    "OPENBLAS_NUM_THREADS": null,
+    "PYTHONPATH": ".",
+    "VECLIB_MAXIMUM_THREADS": null
+  },
+  "experiments_dir": "/Users/kmedved/Code/GitHub/darkofit/.cache/tabarena-regression-remaining9-0.9.0-20260712/experiments",
+  "kind": "darkofit_remaining9_in_flight_run_manifest",
+  "output_dir": "/Users/kmedved/Code/GitHub/darkofit/.cache/tabarena-regression-remaining9-0.9.0-20260712",
+  "packages": {
+    "autogluon.common": "1.5.1b20260712",
+    "autogluon.core": "1.5.1b20260712",
+    "autogluon.tabular": "1.5.1b20260712",
+    "darkofit": "0.9.0",
+    "llvmlite": "0.48.0",
+    "numba": "0.66.0",
+    "numpy": "2.4.6",
+    "pandas": "2.3.3",
+    "psutil": "7.1.3",
+    "scikit-learn": "1.7.2",
+    "scipy": "1.16.3",
+    "tabarena": "0.0.1"
+  },
+  "process": {
+    "command": "/Users/kmedved/.venvs/tabarena-darko312/bin/python benchmarks/run_tabarena_regression_remaining9.py",
+    "cwd": "/Users/kmedved/Code/GitHub/darkofit",
+    "environment": {
+      "BLIS_NUM_THREADS": null,
+      "MKL_NUM_THREADS": null,
+      "NUMBA_CACHE_DIR": ".cache/numba-tabarena-remaining9",
+      "NUMBA_CPU_FEATURES": null,
+      "NUMBA_CPU_NAME": null,
+      "NUMBA_DISABLE_JIT": null,
+      "NUMBA_NUM_THREADS": null,
+      "NUMBA_THREADING_LAYER": null,
+      "OMP_NUM_THREADS": null,
+      "OPENBLAS_NUM_THREADS": null,
+      "PYTHONPATH": ".",
+      "VECLIB_MAXIMUM_THREADS": null
+    },
+    "parent_pid": 34163,
+    "pid": 43239,
+    "running_at_capture": true,
+    "started": "Sun Jul 12 23:47:18 2026",
+    "started_utc": "2026-07-13T03:47:18+00:00"
+  },
+  "protocol": {
+    "adapter_git_blob": "361cf266d588907112e5cd7fb8fdeb9e315a1097",
+    "bag_folds": 8,
+    "bag_sets": 1,
+    "candidate_user_hyperparameters": {
+      "l2_leaf_reg": 1.0,
+      "learning_rate": 0.1,
+      "max_bins": 128,
+      "ts_permutations": 1
+    },
+    "control_user_hyperparameters": {},
+    "declared_source_commit": "224bd46",
+    "expected_dataset_splits": 165,
+    "expected_jobs": 330,
+    "fold_fitting_strategy": "sequential_local",
+    "model_defaults": {
+      "diagnostic_warnings": "never",
+      "early_stopping": true,
+      "iterations": 1000,
+      "tree_mode": "catboost"
+    },
+    "runner_git_blob": "4620d449ccaf692fec858398e4fbc2e015660897",
+    "seed_policy": "fold-wise",
+    "split_indices": [
+      "r0f0",
+      "r0f1",
+      "r0f2",
+      "r1f0",
+      "r1f1",
+      "r1f2",
+      "r2f0",
+      "r2f1",
+      "r2f2",
+      "r3f0",
+      "r3f1",
+      "r3f2",
+      "r4f0",
+      "r4f1",
+      "r4f2",
+      "r5f0",
+      "r5f1",
+      "r5f2",
+      "r6f0",
+      "r6f1",
+      "r6f2",
+      "r7f0",
+      "r7f1",
+      "r7f2",
+      "r8f0",
+      "r8f1",
+      "r8f2",
+      "r9f0",
+      "r9f1",
+      "r9f2"
+    ],
+    "task_split_counts": {
+      "Another-Dataset-on-used-Fiat-500": {
+        "split_count": 30,
+        "task_id": 363615
+      },
+      "Food_Delivery_Time": {
+        "split_count": 9,
+        "task_id": 363672
+      },
+      "QSAR-TID-11": {
+        "split_count": 9,
+        "task_id": 363697
+      },
+      "QSAR_fish_toxicity": {
+        "split_count": 30,
+        "task_id": 363698
+      },
+      "concrete_compressive_strength": {
+        "split_count": 30,
+        "task_id": 363625
+      },
+      "healthcare_insurance_expenses": {
+        "split_count": 30,
+        "task_id": 363675
+      },
+      "houses": {
+        "split_count": 9,
+        "task_id": 363678
+      },
+      "miami_housing": {
+        "split_count": 9,
+        "task_id": 363686
+      },
+      "wine_quality": {
+        "split_count": 9,
+        "task_id": 363708
+      }
+    },
+    "time_limit_seconds": 3600
+  },
+  "python": {
+    "base_prefix": "/Users/kmedved/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none",
+    "executable": "/Users/kmedved/.venvs/tabarena-darko312/bin/python",
+    "implementation": "CPython",
+    "machine": "arm64",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "prefix": "/Users/kmedved/.venvs/tabarena-darko312",
+    "resolved_executable": "/Users/kmedved/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/bin/python3.12",
+    "version": "3.12.13"
+  },
+  "result_snapshot": {
+    "completed_result_files_at_capture": 250,
+    "earliest_result_mtime_utc": "2026-07-13T03:47:29.888733+00:00",
+    "latest_result_mtime_utc": "2026-07-13T04:49:03.192387+00:00"
+  },
+  "runner": {
+    "frozen_ref": "2f390a7",
+    "git_blob": "4620d449ccaf692fec858398e4fbc2e015660897",
+    "mtime_utc": "2026-07-13T03:47:01.876765+00:00",
+    "path": "/Users/kmedved/Code/GitHub/darkofit/benchmarks/run_tabarena_regression_remaining9.py",
+    "sha256": "800c9a5e157d6b54cfede02e3add348ed221741e4c3750daef95ecf0df069149",
+    "status": ""
+  },
+  "runtime_configuration": {
+    "logical_cpu_count": 18,
+    "numba_cpu_features": null,
+    "numba_cpu_name": null,
+    "numba_default_num_threads": 18,
+    "numba_disable_jit": 0,
+    "numba_num_threads": 18,
+    "numba_threading_layer": "default",
+    "physical_cpu_count": 18
+  },
+  "schema_version": 1,
+  "tabarena": {
+    "module_path": "/Users/kmedved/Code/GitHub/tabarena/packages/tabarena/src/tabarena/__init__.py",
+    "repository_head": "4cd1d2526874962daae048a6f2dcf34aa272f3fa",
+    "repository_path": "/Users/kmedved/Code/GitHub/tabarena",
+    "repository_status": ""
+  }
+}

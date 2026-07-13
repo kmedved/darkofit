@@ -3,7 +3,107 @@
 _The executed matrix was fixed by the runner bytes present before PID 43239
 started on 2026-07-12. The protocol narrative was committed after results had
 begun, so this is not claimed as Git-backed preregistration. The source under
-test is DarkoFit commit `224bd46`; aggregate results remain pending analysis._
+test is DarkoFit commit `224bd46`. Aggregate analysis completed on 2026-07-13
+with the provenance/analyzer hardening at commit `5044427`._
+
+## Final decision
+
+**The frozen candidate does not advance, and DarkoFit's regression defaults do
+not change.** It improved equal-dataset test RMSE by only 0.17%, below the
+required 0.5%, while failing the dataset, split, repeat-stability, and
+validation-direction gates. The conditional same-machine campaign was not run
+because the protocol permits it only after every quality gate passes.
+
+The candidate did show a real speed advantage: equal-dataset training time was
+39.98% lower and batch inference time was 30.15% lower, with effectively flat
+peak memory. That makes these parameters potentially useful as an explicit
+speed-oriented configuration, but the confirmation evidence does not support
+making them an automatic scalar-regression policy.
+
+### Gate results
+
+| Gate | Result | Decision |
+| --- | ---: | --- |
+| 330 successful jobs, 2,640 validated child fits, no imputation/cache substitution | 330/330 | Pass |
+| Equal-dataset test RMSE improvement | 0.17% (required at least 0.5%) | **Fail** |
+| Worst dataset regression | Concrete +0.52% (limit +0.5%) | **Fail** |
+| Worst split regression | Concrete `r7f1` +5.49% (limit +2%) | **Fail** |
+| Common repeat blocks 0, 1, and 2 | -0.16%, -0.10%, -0.04% | Pass |
+| Per-dataset repeat signs | 4/9 datasets passed | **Fail** |
+| Equal-dataset validation RMSE | +0.12% | **Fail** |
+| Training time | -39.98% (limit +20%) | Pass |
+| Batch inference time | -30.15% (limit +10%) | Pass |
+| Peak CPU memory | -0.06% (limit +10%) | Pass |
+
+Negative percentages favor the candidate. It won 91 of 165 test splits, but
+the magnitude and stability gates matter more than the raw win count.
+
+### Per-dataset quality
+
+| Dataset | Candidate/default test RMSE | Validation RMSE | Split wins | Repeat wins | Worst split |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Used Fiat 500 | +0.06% | +0.21% | 15/30 | 5/10 | +1.20% |
+| Concrete strength | **+0.52%** | +0.68% | 13/30 | 3/10 | **+5.49%** |
+| Food delivery | +0.17% | +0.18% | 0/9 | 0/3 | +0.34% |
+| Healthcare expenses | -0.02% | +0.28% | 15/30 | 6/10 | +0.90% |
+| Houses | -0.23% | +0.44% | 7/9 | 3/3 | +0.20% |
+| Miami housing | -0.54% | +0.27% | 7/9 | 3/3 | +0.96% |
+| QSAR-TID-11 | -1.05% | -0.51% | 9/9 | 3/3 | -0.48% |
+| QSAR fish toxicity | -0.05% | -0.23% | 17/30 | 6/10 | +1.61% |
+| Wine quality | -0.42% | -0.23% | 8/9 | 3/3 | +0.04% |
+
+The most important pattern is not the small positive average. Validation moved
+in the opposite direction overall, Food Delivery lost all nine splits, and
+Concrete contained a 5.49% regression. The candidate's strong QSAR-TID-11 and
+speed results do not offset that instability under the frozen decision rule.
+
+### Matched ChimeraBoost quality
+
+On the same 165 registered coordinates, current DarkoFit defaults were 0.177%
+worse than `CHIMERA (default)` in equal-dataset test RMSE. The frozen candidate
+was 0.0037% worse--effectively parity. This is useful evidence that the
+candidate recovers ChimeraBoost-like quality and speed-oriented behavior, but
+it does not override the external-confirmation failures above. Registered
+ChimeraBoost timing came from another machine, so no same-machine speed claim
+is made.
+
+### Current-main preflight
+
+The corrected preflight passed from clean commit `5044427` on an Apple M5 Max
+with Python 3.13.13:
+
+- flattened prediction was bitwise equal, selected by the public router, and
+  3.89x faster than the exact per-tree loop;
+- block binning produced bitwise-identical borders/output, avoided an 80 MB
+  float64 stack, and ran at 0.993x the reference speed, inside the 5%
+  non-regression gate (the informational 1.10x preference was not met);
+- disabling train-loss evaluation produced bitwise-identical probabilities
+  and a 1.055x fit-only speedup across seven alternating repeats, with 2.26%
+  maximum timing IQR/median;
+- the numeric-regression and multiclass phase cases completed all 50 finite
+  rounds with consistent timer accounting.
+
+### Retained evidence
+
+The repository retains the per-split table, machine-readable decision summary,
+raw preflight repeats, phase profile, in-flight manifest, and 330-file live
+completion attestation:
+
+- `tabarena_regression_remaining9_results.csv`
+- `tabarena_regression_remaining9_summary.json`
+- `tabarena_regression_remaining9_preflight.json`
+- `tabarena_regression_remaining9_phase_profile.csv`
+- `tabarena_regression_remaining9_run_manifest.json`
+- `tabarena_regression_remaining9_completion_attestation.json`
+
+The manifest SHA-256 is
+`8cf0e1e24bdc8db03f3bd9a81bc4f9c849d83c4c7685f563c0f264bbee26b96e`;
+the completion attestation SHA-256 is
+`4bc3361e4cf0fe4a4b3513710496055f73cad432f13da1e4611ae3dff04a6b19`.
+The frozen registered ChimeraBoost parquet is
+`02a093f42931b1b53dd4fae7b88d5dd545ee51083b49142136410f28a4232275`,
+and its normalized 165-row selection digest is
+`0a6e0094b679fc086d68fa924d3fe7ba2aabbe32ddc1a0e7197ca2cfbb728784`.
 
 ## Objective and frozen candidate
 

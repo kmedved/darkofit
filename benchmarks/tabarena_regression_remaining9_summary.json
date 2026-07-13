@@ -1,0 +1,1162 @@
+{
+  "candidate": {
+    "l2_leaf_reg": 1.0,
+    "learning_rate": 0.1,
+    "max_bins": 128,
+    "ts_permutations": 1
+  },
+  "common_repeat_aggregates": [
+    {
+      "candidate_default_infer_time": {
+        "log_ratio": -0.3758625032053108,
+        "pct": -31.330325484714695,
+        "ratio": 0.6866967451528531
+      },
+      "candidate_default_peak_memory": {
+        "log_ratio": -0.0032469928268243045,
+        "pct": -0.32417270464744075,
+        "ratio": 0.9967582729535256
+      },
+      "candidate_default_rmse": {
+        "log_ratio": -0.0015634605443693404,
+        "pct": -0.15622389766396516,
+        "ratio": 0.9984377610233603
+      },
+      "candidate_default_train_time": {
+        "log_ratio": -0.4821081362756374,
+        "pct": -38.25197138641111,
+        "ratio": 0.6174802861358889
+      },
+      "candidate_default_val_rmse": {
+        "log_ratio": 0.00082478757188017,
+        "pct": 0.08251278026825126,
+        "ratio": 1.0008251278026825
+      },
+      "repeat": 0,
+      "split_count": 27
+    },
+    {
+      "candidate_default_infer_time": {
+        "log_ratio": -0.343529238152368,
+        "pct": -29.073725669090166,
+        "ratio": 0.7092627433090983
+      },
+      "candidate_default_peak_memory": {
+        "log_ratio": -0.002825486796453289,
+        "pct": -0.28214988654677864,
+        "ratio": 0.9971785011345322
+      },
+      "candidate_default_rmse": {
+        "log_ratio": -0.0009996161094057306,
+        "pct": -0.09991166596557965,
+        "ratio": 0.9990008833403442
+      },
+      "candidate_default_train_time": {
+        "log_ratio": -0.4759046999798915,
+        "pct": -37.86773085089112,
+        "ratio": 0.6213226914910888
+      },
+      "candidate_default_val_rmse": {
+        "log_ratio": 0.0001953949588972711,
+        "pct": 0.019541404973555387,
+        "ratio": 1.0001954140497356
+      },
+      "repeat": 1,
+      "split_count": 27
+    },
+    {
+      "candidate_default_infer_time": {
+        "log_ratio": -0.3372994751314712,
+        "pct": -28.63049260305801,
+        "ratio": 0.7136950739694199
+      },
+      "candidate_default_peak_memory": {
+        "log_ratio": 0.0004005486974160443,
+        "pct": 0.040062892775716286,
+        "ratio": 1.0004006289277572
+      },
+      "candidate_default_rmse": {
+        "log_ratio": -0.0003967669107514056,
+        "pct": -0.03966882091697155,
+        "ratio": 0.9996033117908303
+      },
+      "candidate_default_train_time": {
+        "log_ratio": -0.49406466442387587,
+        "pct": -38.98586726224147,
+        "ratio": 0.6101413273775853
+      },
+      "candidate_default_val_rmse": {
+        "log_ratio": 0.001953347908972076,
+        "pct": 0.19552569357943472,
+        "ratio": 1.0019552569357943
+      },
+      "repeat": 2,
+      "split_count": 27
+    }
+  ],
+  "counts": {
+    "dataset_splits": 165,
+    "datasets": 9,
+    "expected_child_fits": 2640,
+    "local_candidate_rows": 165,
+    "local_default_rows": 165,
+    "registered_chimera_rows": 165,
+    "validated_child_fits": 2640
+  },
+  "datasets": [
+    {
+      "candidate_chimera_rmse_log_ratio": -0.0008965464076034713,
+      "candidate_chimera_rmse_pct": -0.08961446299526887,
+      "candidate_chimera_rmse_ratio": 0.9991038553700473,
+      "candidate_chimera_val_rmse_log_ratio": 0.0029786884444658723,
+      "candidate_chimera_val_rmse_pct": 0.29831291449502473,
+      "candidate_chimera_val_rmse_ratio": 1.0029831291449502,
+      "candidate_default_infer_time_log_ratio": -0.46128555713885827,
+      "candidate_default_infer_time_pct": -36.95273842659466,
+      "candidate_default_infer_time_ratio": 0.6304726157340534,
+      "candidate_default_peak_memory_log_ratio": 0.00012180883193863012,
+      "candidate_default_peak_memory_pct": 0.012181625093554693,
+      "candidate_default_peak_memory_ratio": 1.0001218162509355,
+      "candidate_default_rmse_log_ratio": 0.0006368441932330033,
+      "candidate_default_rmse_pct": 0.06370470215506518,
+      "candidate_default_rmse_ratio": 1.0006370470215507,
+      "candidate_default_train_time_log_ratio": -0.8297578720725717,
+      "candidate_default_train_time_pct": -56.38451211855809,
+      "candidate_default_train_time_ratio": 0.43615487881441906,
+      "candidate_default_val_rmse_log_ratio": 0.002075634370054913,
+      "candidate_default_val_rmse_pct": 0.20777899902424402,
+      "candidate_default_val_rmse_ratio": 1.0020777899902424,
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "default_chimera_rmse_log_ratio": -0.0015333906008364701,
+      "default_chimera_rmse_pct": -0.15322155581456443,
+      "default_chimera_rmse_ratio": 0.9984677844418544,
+      "default_chimera_val_rmse_log_ratio": 0.0009030540744109564,
+      "default_chimera_val_rmse_pct": 0.09034619505103869,
+      "default_chimera_val_rmse_ratio": 1.0009034619505104,
+      "repeat_count": 10,
+      "repeat_losses": 5,
+      "repeat_sign_gate": false,
+      "repeat_ties": 0,
+      "repeat_wins": 5,
+      "required_repeat_wins": 7,
+      "split_count": 30,
+      "split_losses": 15,
+      "split_ties": 0,
+      "split_wins": 15,
+      "worst_split": "r3f0",
+      "worst_split_pct": 1.1994604270316511,
+      "worst_split_ratio": 1.0119946042703165
+    },
+    {
+      "candidate_chimera_rmse_log_ratio": 4.11393434964846e-05,
+      "candidate_chimera_rmse_pct": 0.004114018973089273,
+      "candidate_chimera_rmse_ratio": 1.000041140189731,
+      "candidate_chimera_val_rmse_log_ratio": 0.00013793925016622257,
+      "candidate_chimera_val_rmse_pct": 0.013794876422212887,
+      "candidate_chimera_val_rmse_ratio": 1.0001379487642221,
+      "candidate_default_infer_time_log_ratio": -0.5731462574328563,
+      "candidate_default_infer_time_pct": -43.62510537986287,
+      "candidate_default_infer_time_ratio": 0.5637489462013713,
+      "candidate_default_peak_memory_log_ratio": 0.00044043686420783187,
+      "candidate_default_peak_memory_pct": 0.04405338707647033,
+      "candidate_default_peak_memory_ratio": 1.0004405338707647,
+      "candidate_default_rmse_log_ratio": 0.005171629079245804,
+      "candidate_default_rmse_pct": 0.5185025035929769,
+      "candidate_default_rmse_ratio": 1.0051850250359298,
+      "candidate_default_train_time_log_ratio": -0.6207146484755414,
+      "candidate_default_train_time_pct": -46.24398662401475,
+      "candidate_default_train_time_ratio": 0.5375601337598525,
+      "candidate_default_val_rmse_log_ratio": 0.006744999690938189,
+      "candidate_default_val_rmse_pct": 0.6767798431695171,
+      "candidate_default_val_rmse_ratio": 1.0067677984316952,
+      "dataset": "concrete_compressive_strength",
+      "default_chimera_rmse_log_ratio": -0.005130489735749331,
+      "default_chimera_rmse_pct": -0.511735125184043,
+      "default_chimera_rmse_ratio": 0.9948826487481596,
+      "default_chimera_val_rmse_log_ratio": -0.006607060440771959,
+      "default_chimera_val_rmse_pct": -0.6585281807583443,
+      "default_chimera_val_rmse_ratio": 0.9934147181924166,
+      "repeat_count": 10,
+      "repeat_losses": 7,
+      "repeat_sign_gate": false,
+      "repeat_ties": 0,
+      "repeat_wins": 3,
+      "required_repeat_wins": 7,
+      "split_count": 30,
+      "split_losses": 17,
+      "split_ties": 0,
+      "split_wins": 13,
+      "worst_split": "r7f1",
+      "worst_split_pct": 5.486253788597106,
+      "worst_split_ratio": 1.054862537885971
+    },
+    {
+      "candidate_chimera_rmse_log_ratio": -0.0006288318105338298,
+      "candidate_chimera_rmse_pct": -0.06286341372474524,
+      "candidate_chimera_rmse_ratio": 0.9993713658627525,
+      "candidate_chimera_val_rmse_log_ratio": -0.0012949762718201723,
+      "candidate_chimera_val_rmse_pct": -0.129413815186874,
+      "candidate_chimera_val_rmse_ratio": 0.9987058618481313,
+      "candidate_default_infer_time_log_ratio": -0.22701036323628399,
+      "candidate_default_infer_time_pct": -20.308747634543366,
+      "candidate_default_infer_time_ratio": 0.7969125236545663,
+      "candidate_default_peak_memory_log_ratio": 0.0029641607846547222,
+      "candidate_default_peak_memory_pct": 0.29685582530945,
+      "candidate_default_peak_memory_ratio": 1.0029685582530945,
+      "candidate_default_rmse_log_ratio": 0.0017079796104356607,
+      "candidate_default_rmse_pct": 0.17094390383833868,
+      "candidate_default_rmse_ratio": 1.0017094390383834,
+      "candidate_default_train_time_log_ratio": -0.21137736050763914,
+      "candidate_default_train_time_pct": -19.053145222262746,
+      "candidate_default_train_time_ratio": 0.8094685477773725,
+      "candidate_default_val_rmse_log_ratio": 0.0018297126277249016,
+      "candidate_default_val_rmse_pct": 0.18313875732753893,
+      "candidate_default_val_rmse_ratio": 1.0018313875732754,
+      "dataset": "Food_Delivery_Time",
+      "default_chimera_rmse_log_ratio": -0.0023368114209694904,
+      "default_chimera_rmse_pct": -0.23340832026852443,
+      "default_chimera_rmse_ratio": 0.9976659167973148,
+      "default_chimera_val_rmse_log_ratio": -0.0031246888995450557,
+      "default_chimera_val_rmse_pct": -0.3119812139960154,
+      "default_chimera_val_rmse_ratio": 0.9968801878600398,
+      "repeat_count": 3,
+      "repeat_losses": 3,
+      "repeat_sign_gate": false,
+      "repeat_ties": 0,
+      "repeat_wins": 0,
+      "required_repeat_wins": 2,
+      "split_count": 9,
+      "split_losses": 9,
+      "split_ties": 0,
+      "split_wins": 0,
+      "worst_split": "r0f1",
+      "worst_split_pct": 0.3383603553912762,
+      "worst_split_ratio": 1.0033836035539128
+    },
+    {
+      "candidate_chimera_rmse_log_ratio": -0.00014303338179906774,
+      "candidate_chimera_rmse_pct": -0.014302315301262247,
+      "candidate_chimera_rmse_ratio": 0.9998569768469874,
+      "candidate_chimera_val_rmse_log_ratio": 0.0002858667692512818,
+      "candidate_chimera_val_rmse_pct": 0.028590763304991995,
+      "candidate_chimera_val_rmse_ratio": 1.00028590763305,
+      "candidate_default_infer_time_log_ratio": -0.19818536315659682,
+      "candidate_default_infer_time_pct": -17.978219911484537,
+      "candidate_default_infer_time_ratio": 0.8202178008851546,
+      "candidate_default_peak_memory_log_ratio": 9.419578748128538e-05,
+      "candidate_default_peak_memory_pct": 0.009420022404382777,
+      "candidate_default_peak_memory_ratio": 1.0000942002240438,
+      "candidate_default_rmse_log_ratio": -0.0001812843776417084,
+      "candidate_default_rmse_pct": -0.018126794662187695,
+      "candidate_default_rmse_ratio": 0.9998187320533781,
+      "candidate_default_train_time_log_ratio": -0.7776392210652124,
+      "candidate_default_train_time_pct": -54.05105150220037,
+      "candidate_default_train_time_ratio": 0.45948948497799624,
+      "candidate_default_val_rmse_log_ratio": 0.002814767053688642,
+      "candidate_default_val_rmse_pct": 0.28187322299482176,
+      "candidate_default_val_rmse_ratio": 1.0028187322299482,
+      "dataset": "healthcare_insurance_expenses",
+      "default_chimera_rmse_log_ratio": 3.8250995842643314e-05,
+      "default_chimera_rmse_pct": 0.0038251727421334536,
+      "default_chimera_rmse_ratio": 1.0000382517274213,
+      "default_chimera_val_rmse_log_ratio": -0.0025289002844373644,
+      "default_chimera_val_rmse_pct": -0.2525705309937898,
+      "default_chimera_val_rmse_ratio": 0.9974742946900621,
+      "repeat_count": 10,
+      "repeat_losses": 4,
+      "repeat_sign_gate": false,
+      "repeat_ties": 0,
+      "repeat_wins": 6,
+      "required_repeat_wins": 7,
+      "split_count": 30,
+      "split_losses": 15,
+      "split_ties": 0,
+      "split_wins": 15,
+      "worst_split": "r1f0",
+      "worst_split_pct": 0.8953060786269784,
+      "worst_split_ratio": 1.0089530607862698
+    },
+    {
+      "candidate_chimera_rmse_log_ratio": 0.00120734367567878,
+      "candidate_chimera_rmse_pct": 0.12080728084629122,
+      "candidate_chimera_rmse_ratio": 1.001208072808463,
+      "candidate_chimera_val_rmse_log_ratio": 0.0008482056539821942,
+      "candidate_chimera_val_rmse_pct": 0.08485654821268618,
+      "candidate_chimera_val_rmse_ratio": 1.0008485654821269,
+      "candidate_default_infer_time_log_ratio": -0.23298013149214347,
+      "candidate_default_infer_time_pct": -20.783068740983147,
+      "candidate_default_infer_time_ratio": 0.7921693125901685,
+      "candidate_default_peak_memory_log_ratio": 0.0009666373336864249,
+      "candidate_default_peak_memory_pct": 0.09671046781258852,
+      "candidate_default_peak_memory_ratio": 1.0009671046781259,
+      "candidate_default_rmse_log_ratio": -0.002287689502795272,
+      "candidate_default_rmse_pct": -0.22850747354700163,
+      "candidate_default_rmse_ratio": 0.99771492526453,
+      "candidate_default_train_time_log_ratio": -0.18686038062260943,
+      "candidate_default_train_time_pct": -17.044044911175515,
+      "candidate_default_train_time_ratio": 0.8295595508882448,
+      "candidate_default_val_rmse_log_ratio": 0.004425600503764834,
+      "candidate_default_val_rmse_pct": 0.44354079362629584,
+      "candidate_default_val_rmse_ratio": 1.004435407936263,
+      "dataset": "houses",
+      "default_chimera_rmse_log_ratio": 0.003495033178474041,
+      "default_chimera_rmse_pct": 0.35011479286095604,
+      "default_chimera_rmse_ratio": 1.0035011479286096,
+      "default_chimera_val_rmse_log_ratio": -0.0035773948497826694,
+      "default_chimera_val_rmse_pct": -0.35710035964441333,
+      "default_chimera_val_rmse_ratio": 0.9964289964035559,
+      "repeat_count": 3,
+      "repeat_losses": 0,
+      "repeat_sign_gate": true,
+      "repeat_ties": 0,
+      "repeat_wins": 3,
+      "required_repeat_wins": 2,
+      "split_count": 9,
+      "split_losses": 2,
+      "split_ties": 0,
+      "split_wins": 7,
+      "worst_split": "r1f2",
+      "worst_split_pct": 0.20340545474750726,
+      "worst_split_ratio": 1.002034054547475
+    },
+    {
+      "candidate_chimera_rmse_log_ratio": 0.00012676589570426028,
+      "candidate_chimera_rmse_pct": 0.01267739308399296,
+      "candidate_chimera_rmse_ratio": 1.00012677393084,
+      "candidate_chimera_val_rmse_log_ratio": 0.00013779538448546172,
+      "candidate_chimera_val_rmse_pct": 0.013780487870551639,
+      "candidate_chimera_val_rmse_ratio": 1.0001378048787055,
+      "candidate_default_infer_time_log_ratio": -0.38053906331214055,
+      "candidate_default_infer_time_pct": -31.650713604040238,
+      "candidate_default_infer_time_ratio": 0.6834928639595976,
+      "candidate_default_peak_memory_log_ratio": 0.0011737905207598758,
+      "candidate_default_peak_memory_pct": 0.11744796824706416,
+      "candidate_default_peak_memory_ratio": 1.0011744796824706,
+      "candidate_default_rmse_log_ratio": -0.005394287823082213,
+      "candidate_default_rmse_pct": -0.5379764778085883,
+      "candidate_default_rmse_ratio": 0.9946202352219141,
+      "candidate_default_train_time_log_ratio": -0.3812569906836691,
+      "candidate_default_train_time_pct": -31.699765817498125,
+      "candidate_default_train_time_ratio": 0.6830023418250187,
+      "candidate_default_val_rmse_log_ratio": 0.0027066337658776165,
+      "candidate_default_val_rmse_pct": 0.271030000602579,
+      "candidate_default_val_rmse_ratio": 1.0027103000060258,
+      "dataset": "miami_housing",
+      "default_chimera_rmse_log_ratio": 0.005521053718786463,
+      "default_chimera_rmse_pct": 0.5536322823451512,
+      "default_chimera_rmse_ratio": 1.0055363228234515,
+      "default_chimera_val_rmse_log_ratio": -0.0025688383813921474,
+      "default_chimera_val_rmse_pct": -0.25655417395281654,
+      "default_chimera_val_rmse_ratio": 0.9974344582604718,
+      "repeat_count": 3,
+      "repeat_losses": 0,
+      "repeat_sign_gate": true,
+      "repeat_ties": 0,
+      "repeat_wins": 3,
+      "required_repeat_wins": 2,
+      "split_count": 9,
+      "split_losses": 2,
+      "split_ties": 0,
+      "split_wins": 7,
+      "worst_split": "r2f1",
+      "worst_split_pct": 0.9562305059830134,
+      "worst_split_ratio": 1.0095623050598301
+    },
+    {
+      "candidate_chimera_rmse_log_ratio": 0.0003761631762538495,
+      "candidate_chimera_rmse_pct": 0.037623393449326414,
+      "candidate_chimera_rmse_ratio": 1.0003762339344933,
+      "candidate_chimera_val_rmse_log_ratio": 0.00035037286801311847,
+      "candidate_chimera_val_rmse_pct": 0.03504342557558715,
+      "candidate_chimera_val_rmse_ratio": 1.0003504342557559,
+      "candidate_default_infer_time_log_ratio": -0.1690514629566265,
+      "candidate_default_infer_time_pct": -15.553455642073665,
+      "candidate_default_infer_time_ratio": 0.8444654435792633,
+      "candidate_default_peak_memory_log_ratio": -0.007395976770586107,
+      "candidate_default_peak_memory_pct": -0.736869383713934,
+      "candidate_default_peak_memory_ratio": 0.9926313061628607,
+      "candidate_default_rmse_log_ratio": -0.010576054068077427,
+      "candidate_default_rmse_pct": -1.0520324248478818,
+      "candidate_default_rmse_ratio": 0.9894796757515212,
+      "candidate_default_train_time_log_ratio": -0.24476574452038932,
+      "candidate_default_train_time_pct": -21.71120874537533,
+      "candidate_default_train_time_ratio": 0.7828879125462467,
+      "candidate_default_val_rmse_log_ratio": -0.005093889864283836,
+      "candidate_default_val_rmse_pct": -0.5080938008417024,
+      "candidate_default_val_rmse_ratio": 0.994919061991583,
+      "dataset": "QSAR-TID-11",
+      "default_chimera_rmse_log_ratio": 0.010952217244331229,
+      "default_chimera_rmse_pct": 1.1012412331457,
+      "default_chimera_rmse_ratio": 1.011012412331457,
+      "default_chimera_val_rmse_log_ratio": 0.005444262732297006,
+      "default_chimera_val_rmse_pct": 0.5459109661946293,
+      "default_chimera_val_rmse_ratio": 1.0054591096619463,
+      "repeat_count": 3,
+      "repeat_losses": 0,
+      "repeat_sign_gate": true,
+      "repeat_ties": 0,
+      "repeat_wins": 3,
+      "required_repeat_wins": 2,
+      "split_count": 9,
+      "split_losses": 0,
+      "split_ties": 0,
+      "split_wins": 9,
+      "worst_split": "r0f0",
+      "worst_split_pct": -0.479329732392364,
+      "worst_split_ratio": 0.9952067026760764
+    },
+    {
+      "candidate_chimera_rmse_log_ratio": 2.3103730933092416e-06,
+      "candidate_chimera_rmse_pct": 0.00023103757622600085,
+      "candidate_chimera_rmse_ratio": 1.0000023103757623,
+      "candidate_chimera_val_rmse_log_ratio": 2.517875939080728e-06,
+      "candidate_chimera_val_rmse_pct": 0.00025178791089874863,
+      "candidate_chimera_val_rmse_ratio": 1.000002517879109,
+      "candidate_default_infer_time_log_ratio": -0.5311497849290253,
+      "candidate_default_infer_time_pct": -41.20714105245338,
+      "candidate_default_infer_time_ratio": 0.5879285894754662,
+      "candidate_default_peak_memory_log_ratio": -0.004668093266157561,
+      "candidate_default_peak_memory_pct": -0.46572146528301994,
+      "candidate_default_peak_memory_ratio": 0.9953427853471698,
+      "candidate_default_rmse_log_ratio": -0.0004824064962929888,
+      "candidate_default_rmse_pct": -0.04822901569875304,
+      "candidate_default_rmse_ratio": 0.9995177098430125,
+      "candidate_default_train_time_log_ratio": -0.8611490274155014,
+      "candidate_default_train_time_pct": -57.7323863280163,
+      "candidate_default_train_time_ratio": 0.422676136719837,
+      "candidate_default_val_rmse_log_ratio": -0.002333126534373477,
+      "candidate_default_val_rmse_pct": -0.2330406910147742,
+      "candidate_default_val_rmse_ratio": 0.9976695930898523,
+      "dataset": "QSAR_fish_toxicity",
+      "default_chimera_rmse_log_ratio": 0.00048471686938627385,
+      "default_chimera_rmse_pct": 0.04848343635910357,
+      "default_chimera_rmse_ratio": 1.000484834363591,
+      "default_chimera_val_rmse_log_ratio": 0.0023356444103125695,
+      "default_chimera_val_rmse_pct": 0.23383741525402346,
+      "default_chimera_val_rmse_ratio": 1.0023383741525402,
+      "repeat_count": 10,
+      "repeat_losses": 4,
+      "repeat_sign_gate": false,
+      "repeat_ties": 0,
+      "repeat_wins": 6,
+      "required_repeat_wins": 7,
+      "split_count": 30,
+      "split_losses": 13,
+      "split_ties": 0,
+      "split_wins": 17,
+      "worst_split": "r6f1",
+      "worst_split_pct": 1.6093203640365372,
+      "worst_split_ratio": 1.0160932036403654
+    },
+    {
+      "candidate_chimera_rmse_log_ratio": 0.00024397858916611504,
+      "candidate_chimera_rmse_pct": 0.02440083543626681,
+      "candidate_chimera_rmse_ratio": 1.0002440083543627,
+      "candidate_chimera_val_rmse_log_ratio": 0.00014884892420418658,
+      "candidate_chimera_val_rmse_pct": 0.014886000275504685,
+      "candidate_chimera_val_rmse_ratio": 1.000148860002755,
+      "candidate_default_infer_time_log_ratio": -0.4556851675223721,
+      "candidate_default_infer_time_pct": -36.59865863058138,
+      "candidate_default_infer_time_ratio": 0.6340134136941862,
+      "candidate_default_peak_memory_log_ratio": 0.0004828170761378992,
+      "candidate_default_peak_memory_pct": 0.0482933651063,
+      "candidate_default_peak_memory_ratio": 1.000482933651063,
+      "candidate_default_rmse_log_ratio": -0.004214053990868993,
+      "candidate_default_rmse_pct": -0.42051873245927407,
+      "candidate_default_rmse_ratio": 0.9957948126754073,
+      "candidate_default_train_time_log_ratio": -0.48074890531477377,
+      "candidate_default_train_time_pct": -38.16798448828165,
+      "candidate_default_train_time_ratio": 0.6183201551171835,
+      "candidate_default_val_rmse_log_ratio": -0.0023131987592657503,
+      "candidate_default_val_rmse_pct": -0.23105253767681244,
+      "candidate_default_val_rmse_ratio": 0.9976894746232319,
+      "dataset": "wine_quality",
+      "default_chimera_rmse_log_ratio": 0.004458032580035142,
+      "default_chimera_rmse_pct": 0.44679843902799554,
+      "default_chimera_rmse_ratio": 1.00446798439028,
+      "default_chimera_val_rmse_log_ratio": 0.0024620476834699605,
+      "default_chimera_val_rmse_pct": 0.24650810117565758,
+      "default_chimera_val_rmse_ratio": 1.0024650810117566,
+      "repeat_count": 3,
+      "repeat_losses": 0,
+      "repeat_sign_gate": true,
+      "repeat_ties": 0,
+      "repeat_wins": 3,
+      "required_repeat_wins": 2,
+      "split_count": 9,
+      "split_losses": 1,
+      "split_ties": 0,
+      "split_wins": 8,
+      "worst_split": "r1f2",
+      "worst_split_pct": 0.04371299654091221,
+      "worst_split_ratio": 1.0004371299654091
+    }
+  ],
+  "equal_dataset": {
+    "candidate_default_infer_time": {
+      "log_ratio": -0.35878146124187815,
+      "pct": -30.147301010686668,
+      "ratio": 0.6985269898931333
+    },
+    "candidate_default_peak_memory": {
+      "log_ratio": -0.0006466914264307778,
+      "pct": -0.06464823665984776,
+      "ratio": 0.9993535176334015
+    },
+    "candidate_default_rmse": {
+      "log_ratio": -0.0017354803750937928,
+      "pct": -0.17339752998297708,
+      "ratio": 0.9982660247001702
+    },
+    "candidate_default_train_time": {
+      "log_ratio": -0.5104744611864341,
+      "pct": -39.97892654533881,
+      "ratio": 0.6002107345466119
+    },
+    "candidate_default_val_rmse": {
+      "log_ratio": 0.0012063480949028925,
+      "pct": 0.12070760254490054,
+      "ratio": 1.001207076025449
+    }
+  },
+  "gates": {
+    "advance": false,
+    "common_repeats_0_to_2_all_improve": true,
+    "complete_unique_successful_local_and_non_imputed_chimera": true,
+    "equal_dataset_rmse_improves_at_least_0_5pct": false,
+    "inference_time_regression_within_10pct": true,
+    "no_dataset_regresses_more_than_0_5pct": false,
+    "no_split_regresses_more_than_2pct": false,
+    "peak_memory_regression_within_10pct": true,
+    "per_dataset_repeat_sign_counts_pass": false,
+    "runtime_and_memory_acceptable": true,
+    "train_time_regression_within_20pct": true,
+    "validation_has_no_broad_direction_reversal": false
+  },
+  "matched_chimera": {
+    "equal_dataset": {
+      "candidate_chimera_rmse": {
+        "log_ratio": 3.658771705071442e-05,
+        "pct": 0.00365883863893135,
+        "ratio": 1.0000365883863893
+      },
+      "candidate_chimera_val_rmse": {
+        "log_ratio": 0.00039947321096524957,
+        "pct": 0.0399553011014131,
+        "ratio": 1.0003995530110141
+      },
+      "default_chimera_rmse": {
+        "log_ratio": 0.0017720680921445,
+        "pct": 0.17736391326659273,
+        "ratio": 1.001773639132666
+      },
+      "default_chimera_val_rmse": {
+        "log_ratio": -0.0008068748839376338,
+        "pct": -0.08065494479330138,
+        "ratio": 0.999193450552067
+      }
+    }
+  },
+  "protocol": "remaining-nine frozen candidate confirmation",
+  "provenance": {
+    "adapter": {
+      "frozen_ref": "224bd46",
+      "git_blob": "361cf266d588907112e5cd7fb8fdeb9e315a1097",
+      "mtime_utc": "2026-07-10T00:01:49.250861+00:00",
+      "path": "/Users/kmedved/Code/GitHub/darkofit/benchmarks/tabarena_adapter.py",
+      "sha256": "b13affcdfb2c1322912faf63a14c36aa7a33d5c654915790194b8c55bb2d0a86",
+      "status": ""
+    },
+    "analyzer": {
+      "path": "/Users/kmedved/Code/GitHub/darkofit/benchmarks/analyze_tabarena_regression_remaining9.py",
+      "sha256": "a571f4dc3082f3476b0fdfac8a26c7c6b24fa29a92a145024f810b80f46f5303"
+    },
+    "captured_at_utc": "2026-07-13T04:49:22.960567+00:00",
+    "completion_attestation": {
+      "completed_utc": "2026-07-13T05:02:46.226419+00:00",
+      "expected_results": 330,
+      "observed_results_count": 330,
+      "path": "/Users/kmedved/Code/GitHub/darkofit/.cache/tabarena-regression-remaining9-0.9.0-20260712/completion_attestation.live.json",
+      "run_manifest_sha256": "8cf0e1e24bdc8db03f3bd9a81bc4f9c849d83c4c7685f563c0f264bbee26b96e",
+      "runner_pid": 43239,
+      "sha256": "4bc3361e4cf0fe4a4b3513710496055f73cad432f13da1e4611ae3dff04a6b19",
+      "watch_started_utc": "2026-07-13T04:52:36.893763+00:00"
+    },
+    "darkofit": {
+      "declared_source_commit": "224bd4681b348c2d5e6321d8fb772a6670768d05",
+      "library_status": "",
+      "library_tree": "2902a3a20b3ac68fa2cf4e0625ad70fc8e8ad3ce",
+      "repository_head_at_capture": "2cedc3da8f6b460b962048556bd9470a5cf2a170",
+      "repository_path": "/Users/kmedved/Code/GitHub/darkofit"
+    },
+    "environment": {
+      "BLIS_NUM_THREADS": null,
+      "MKL_NUM_THREADS": null,
+      "NUMBA_CACHE_DIR": ".cache/numba-tabarena-remaining9",
+      "NUMBA_CPU_FEATURES": null,
+      "NUMBA_CPU_NAME": null,
+      "NUMBA_DISABLE_JIT": null,
+      "NUMBA_NUM_THREADS": null,
+      "NUMBA_THREADING_LAYER": null,
+      "OMP_NUM_THREADS": null,
+      "OPENBLAS_NUM_THREADS": null,
+      "PYTHONPATH": ".",
+      "VECLIB_MAXIMUM_THREADS": null
+    },
+    "manifest_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/tabarena-regression-remaining9-0.9.0-20260712/run_manifest.json",
+    "manifest_sha256": "8cf0e1e24bdc8db03f3bd9a81bc4f9c849d83c4c7685f563c0f264bbee26b96e",
+    "packages": {
+      "autogluon.common": "1.5.1b20260712",
+      "autogluon.core": "1.5.1b20260712",
+      "autogluon.tabular": "1.5.1b20260712",
+      "darkofit": "0.9.0",
+      "llvmlite": "0.48.0",
+      "numba": "0.66.0",
+      "numpy": "2.4.6",
+      "pandas": "2.3.3",
+      "psutil": "7.1.3",
+      "scikit-learn": "1.7.2",
+      "scipy": "1.16.3",
+      "tabarena": "0.0.1"
+    },
+    "process": {
+      "command": "/Users/kmedved/.venvs/tabarena-darko312/bin/python benchmarks/run_tabarena_regression_remaining9.py",
+      "cwd": "/Users/kmedved/Code/GitHub/darkofit",
+      "environment": {
+        "BLIS_NUM_THREADS": null,
+        "MKL_NUM_THREADS": null,
+        "NUMBA_CACHE_DIR": ".cache/numba-tabarena-remaining9",
+        "NUMBA_CPU_FEATURES": null,
+        "NUMBA_CPU_NAME": null,
+        "NUMBA_DISABLE_JIT": null,
+        "NUMBA_NUM_THREADS": null,
+        "NUMBA_THREADING_LAYER": null,
+        "OMP_NUM_THREADS": null,
+        "OPENBLAS_NUM_THREADS": null,
+        "PYTHONPATH": ".",
+        "VECLIB_MAXIMUM_THREADS": null
+      },
+      "parent_pid": 34163,
+      "pid": 43239,
+      "running_at_capture": true,
+      "started": "Sun Jul 12 23:47:18 2026",
+      "started_utc": "2026-07-13T03:47:18+00:00"
+    },
+    "provenance_validator": {
+      "attestation_schema_version": 1,
+      "manifest_schema_version": 1,
+      "path": "/Users/kmedved/Code/GitHub/darkofit/benchmarks/remaining9_run_manifest.py",
+      "sha256": "f5991e0d1a80059a6afc378dcf90ec4e42bd239c5ebf44188e265cdbe13640f8"
+    },
+    "python": {
+      "base_prefix": "/Users/kmedved/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none",
+      "executable": "/Users/kmedved/.venvs/tabarena-darko312/bin/python",
+      "implementation": "CPython",
+      "machine": "arm64",
+      "platform": "macOS-26.5.2-arm64-arm-64bit",
+      "prefix": "/Users/kmedved/.venvs/tabarena-darko312",
+      "resolved_executable": "/Users/kmedved/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/bin/python3.12",
+      "version": "3.12.13"
+    },
+    "registered_chimera_artifact": {
+      "method": "ChimeraBoost",
+      "method_type": "config",
+      "mtime_ns": 1783893147911888615,
+      "path": "/Users/kmedved/.cache/tabarena/artifacts/tabarena-2026-06-30/methods/ChimeraBoost/results/hpo_results.parquet",
+      "selected_rows": 165,
+      "selected_rows_sha256": "0a6e0094b679fc086d68fa924d3fe7ba2aabbe32ddc1a0e7197ca2cfbb728784",
+      "sha256": "02a093f42931b1b53dd4fae7b88d5dd545ee51083b49142136410f28a4232275",
+      "size_bytes": 83420
+    },
+    "result_snapshot": {
+      "completed_result_files_at_capture": 250,
+      "earliest_result_mtime_utc": "2026-07-13T03:47:29.888733+00:00",
+      "latest_result_mtime_utc": "2026-07-13T04:49:03.192387+00:00"
+    },
+    "runner": {
+      "frozen_ref": "2f390a7",
+      "git_blob": "4620d449ccaf692fec858398e4fbc2e015660897",
+      "mtime_utc": "2026-07-13T03:47:01.876765+00:00",
+      "path": "/Users/kmedved/Code/GitHub/darkofit/benchmarks/run_tabarena_regression_remaining9.py",
+      "sha256": "800c9a5e157d6b54cfede02e3add348ed221741e4c3750daef95ecf0df069149",
+      "status": ""
+    },
+    "runtime_configuration": {
+      "logical_cpu_count": 18,
+      "numba_cpu_features": null,
+      "numba_cpu_name": null,
+      "numba_default_num_threads": 18,
+      "numba_disable_jit": 0,
+      "numba_num_threads": 18,
+      "numba_threading_layer": "default",
+      "physical_cpu_count": 18
+    },
+    "tabarena": {
+      "module_path": "/Users/kmedved/Code/GitHub/tabarena/packages/tabarena/src/tabarena/__init__.py",
+      "repository_head": "4cd1d2526874962daae048a6f2dcf34aa272f3fa",
+      "repository_path": "/Users/kmedved/Code/GitHub/tabarena",
+      "repository_status": ""
+    }
+  },
+  "repeat_aggregates": [
+    {
+      "candidate_default_rmse_log_ratio": -0.0022957179667568695,
+      "candidate_default_rmse_pct": -0.2293084821637037,
+      "candidate_default_rmse_ratio": 0.997706915178363,
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "repeat": 0,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 2.3561241898970974e-05,
+      "candidate_default_rmse_pct": 0.0023561519467252268,
+      "candidate_default_rmse_ratio": 1.0000235615194673,
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "repeat": 1,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.000640933541060137,
+      "candidate_default_rmse_pct": -0.06407281870332016,
+      "candidate_default_rmse_ratio": 0.9993592718129668,
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "repeat": 2,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.004070565526161323,
+      "candidate_default_rmse_pct": 0.40788615306699416,
+      "candidate_default_rmse_ratio": 1.00407886153067,
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "repeat": 3,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.0009183464134745047,
+      "candidate_default_rmse_pct": -0.09179248624601177,
+      "candidate_default_rmse_ratio": 0.9990820751375399,
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "repeat": 4,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.00552207048655937,
+      "candidate_default_rmse_pct": 0.5537345220898882,
+      "candidate_default_rmse_ratio": 1.0055373452208989,
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "repeat": 5,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.0008081169506890083,
+      "candidate_default_rmse_pct": -0.08077905121254281,
+      "candidate_default_rmse_ratio": 0.9991922094878746,
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "repeat": 6,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.0017554569811963903,
+      "candidate_default_rmse_pct": 0.1756998697809875,
+      "candidate_default_rmse_ratio": 1.0017569986978099,
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "repeat": 7,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.00272906629626515,
+      "candidate_default_rmse_pct": 0.2732793587593596,
+      "candidate_default_rmse_ratio": 1.0027327935875936,
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "repeat": 8,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.003069163727770651,
+      "candidate_default_rmse_pct": -0.3064458659549185,
+      "candidate_default_rmse_ratio": 0.9969355413404508,
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "repeat": 9,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.01731017285365759,
+      "candidate_default_rmse_pct": 1.7460862125861176,
+      "candidate_default_rmse_ratio": 1.0174608621258612,
+      "dataset": "concrete_compressive_strength",
+      "repeat": 0,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.011700506137439113,
+      "candidate_default_rmse_pct": 1.1769224812271828,
+      "candidate_default_rmse_ratio": 1.0117692248122718,
+      "dataset": "concrete_compressive_strength",
+      "repeat": 1,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.0164231748025887,
+      "candidate_default_rmse_pct": 1.6558776457375801,
+      "candidate_default_rmse_ratio": 1.0165587764573758,
+      "dataset": "concrete_compressive_strength",
+      "repeat": 2,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.002019177682170245,
+      "candidate_default_rmse_pct": -0.20171405142794807,
+      "candidate_default_rmse_ratio": 0.9979828594857205,
+      "dataset": "concrete_compressive_strength",
+      "repeat": 3,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.011340210643919796,
+      "candidate_default_rmse_pct": 1.1404754582523768,
+      "candidate_default_rmse_ratio": 1.0114047545825238,
+      "dataset": "concrete_compressive_strength",
+      "repeat": 4,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.002590566689366578,
+      "candidate_default_rmse_pct": 0.2593925106694428,
+      "candidate_default_rmse_ratio": 1.0025939251066944,
+      "dataset": "concrete_compressive_strength",
+      "repeat": 5,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.009175779436722917,
+      "candidate_default_rmse_pct": 0.9218005955782926,
+      "candidate_default_rmse_ratio": 1.009218005955783,
+      "dataset": "concrete_compressive_strength",
+      "repeat": 6,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.015180505787392077,
+      "candidate_default_rmse_pct": 1.5296314937113697,
+      "candidate_default_rmse_ratio": 1.0152963149371137,
+      "dataset": "concrete_compressive_strength",
+      "repeat": 7,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.013743377576201228,
+      "candidate_default_rmse_pct": -1.3649368522689054,
+      "candidate_default_rmse_ratio": 0.986350631477311,
+      "dataset": "concrete_compressive_strength",
+      "repeat": 8,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.016242070300257254,
+      "candidate_default_rmse_pct": -1.611087910893727,
+      "candidate_default_rmse_ratio": 0.9838891208910627,
+      "dataset": "concrete_compressive_strength",
+      "repeat": 9,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.002348967692913118,
+      "candidate_default_rmse_pct": 0.2351728678923415,
+      "candidate_default_rmse_ratio": 1.0023517286789234,
+      "dataset": "Food_Delivery_Time",
+      "repeat": 0,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.0010788422292755523,
+      "candidate_default_rmse_pct": 0.10794243888874178,
+      "candidate_default_rmse_ratio": 1.0010794243888874,
+      "dataset": "Food_Delivery_Time",
+      "repeat": 1,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.001696128909118312,
+      "candidate_default_rmse_pct": 0.16975681493538453,
+      "candidate_default_rmse_ratio": 1.0016975681493538,
+      "dataset": "Food_Delivery_Time",
+      "repeat": 2,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.0039259437769934265,
+      "candidate_default_rmse_pct": -0.39182473349506086,
+      "candidate_default_rmse_ratio": 0.9960817526650494,
+      "dataset": "healthcare_insurance_expenses",
+      "repeat": 0,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.004852440947318016,
+      "candidate_default_rmse_pct": 0.48642331047588083,
+      "candidate_default_rmse_ratio": 1.0048642331047588,
+      "dataset": "healthcare_insurance_expenses",
+      "repeat": 1,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.002259730505258949,
+      "candidate_default_rmse_pct": 0.2262285620498572,
+      "candidate_default_rmse_ratio": 1.0022622856204986,
+      "dataset": "healthcare_insurance_expenses",
+      "repeat": 2,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.0013043616171668874,
+      "candidate_default_rmse_pct": -0.13035113072967786,
+      "candidate_default_rmse_ratio": 0.9986964886927032,
+      "dataset": "healthcare_insurance_expenses",
+      "repeat": 3,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.0010451120773732208,
+      "candidate_default_rmse_pct": 0.10456583973055267,
+      "candidate_default_rmse_ratio": 1.0010456583973055,
+      "dataset": "healthcare_insurance_expenses",
+      "repeat": 4,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.0008261395290728404,
+      "candidate_default_rmse_pct": -0.0825798369766928,
+      "candidate_default_rmse_ratio": 0.9991742016302331,
+      "dataset": "healthcare_insurance_expenses",
+      "repeat": 5,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.001535855609354328,
+      "candidate_default_rmse_pct": -0.15346767867056021,
+      "candidate_default_rmse_ratio": 0.9984653232132944,
+      "dataset": "healthcare_insurance_expenses",
+      "repeat": 6,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.0006239103826259267,
+      "candidate_default_rmse_pct": -0.06237157910145008,
+      "candidate_default_rmse_ratio": 0.9993762842089855,
+      "dataset": "healthcare_insurance_expenses",
+      "repeat": 7,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.00019300999741574598,
+      "candidate_default_rmse_pct": 0.01930286250437785,
+      "candidate_default_rmse_ratio": 1.0001930286250438,
+      "dataset": "healthcare_insurance_expenses",
+      "repeat": 8,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.0019469263885696071,
+      "candidate_default_rmse_pct": -0.19450323567679062,
+      "candidate_default_rmse_ratio": 0.9980549676432321,
+      "dataset": "healthcare_insurance_expenses",
+      "repeat": 9,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.0029079684239136064,
+      "candidate_default_rmse_pct": -0.29037443791912754,
+      "candidate_default_rmse_ratio": 0.9970962556208087,
+      "dataset": "houses",
+      "repeat": 0,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.003069142296971042,
+      "candidate_default_rmse_pct": -0.30644372944231835,
+      "candidate_default_rmse_ratio": 0.9969355627055768,
+      "dataset": "houses",
+      "repeat": 1,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.0008859577875011672,
+      "candidate_default_rmse_pct": -0.08855654427760706,
+      "candidate_default_rmse_ratio": 0.9991144345572239,
+      "dataset": "houses",
+      "repeat": 2,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.011954680998147097,
+      "candidate_default_rmse_pct": -1.188350769961144,
+      "candidate_default_rmse_ratio": 0.9881164923003886,
+      "dataset": "miami_housing",
+      "repeat": 0,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.0035973121787156886,
+      "candidate_default_rmse_pct": -0.35908496028835835,
+      "candidate_default_rmse_ratio": 0.9964091503971164,
+      "dataset": "miami_housing",
+      "repeat": 1,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.0006308702923838516,
+      "candidate_default_rmse_pct": -0.06306713355618276,
+      "candidate_default_rmse_ratio": 0.9993693286644382,
+      "dataset": "miami_housing",
+      "repeat": 2,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.006609368061171394,
+      "candidate_default_rmse_pct": -0.6587574229007243,
+      "candidate_default_rmse_ratio": 0.9934124257709928,
+      "dataset": "QSAR-TID-11",
+      "repeat": 0,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.009848125989798742,
+      "candidate_default_rmse_pct": -0.9799791993599705,
+      "candidate_default_rmse_ratio": 0.9902002080064003,
+      "dataset": "QSAR-TID-11",
+      "repeat": 1,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.015270668153262147,
+      "candidate_default_rmse_pct": -1.5154662744376046,
+      "candidate_default_rmse_ratio": 0.984845337255624,
+      "dataset": "QSAR-TID-11",
+      "repeat": 2,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.00018918099488030395,
+      "candidate_default_rmse_pct": 0.018919889073321094,
+      "candidate_default_rmse_ratio": 1.0001891988907332,
+      "dataset": "QSAR_fish_toxicity",
+      "repeat": 0,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.006588782241357228,
+      "candidate_default_rmse_pct": -0.6567123809315567,
+      "candidate_default_rmse_ratio": 0.9934328761906844,
+      "dataset": "QSAR_fish_toxicity",
+      "repeat": 1,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.0036536647144475385,
+      "candidate_default_rmse_pct": -0.3646998203062024,
+      "candidate_default_rmse_ratio": 0.996353001796938,
+      "dataset": "QSAR_fish_toxicity",
+      "repeat": 2,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.0023396542788780227,
+      "candidate_default_rmse_pct": -0.23369194210953737,
+      "candidate_default_rmse_ratio": 0.9976630805789046,
+      "dataset": "QSAR_fish_toxicity",
+      "repeat": 3,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.0003312923205427666,
+      "candidate_default_rmse_pct": -0.03312374493016357,
+      "candidate_default_rmse_ratio": 0.9996687625506984,
+      "dataset": "QSAR_fish_toxicity",
+      "repeat": 4,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.0029145475001491473,
+      "candidate_default_rmse_pct": -0.2910304329891922,
+      "candidate_default_rmse_ratio": 0.9970896956701081,
+      "dataset": "QSAR_fish_toxicity",
+      "repeat": 5,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.004960432736708409,
+      "candidate_default_rmse_pct": 0.49727560510743896,
+      "candidate_default_rmse_ratio": 1.0049727560510744,
+      "dataset": "QSAR_fish_toxicity",
+      "repeat": 6,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.0010885680874755353,
+      "candidate_default_rmse_pct": 0.10891607927632219,
+      "candidate_default_rmse_ratio": 1.0010891607927632,
+      "dataset": "QSAR_fish_toxicity",
+      "repeat": 7,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.002252645001291785,
+      "candidate_default_rmse_pct": -0.22501097006090154,
+      "candidate_default_rmse_ratio": 0.997749890299391,
+      "dataset": "QSAR_fish_toxicity",
+      "repeat": 8,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": 0.007018339274672352,
+      "candidate_default_rmse_pct": 0.704302553615288,
+      "candidate_default_rmse_ratio": 1.0070430255361529,
+      "dataset": "QSAR_fish_toxicity",
+      "repeat": 9,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.006225787213792684,
+      "candidate_default_rmse_pct": -0.6206447157083961,
+      "candidate_default_rmse_ratio": 0.993793552842916,
+      "dataset": "wine_quality",
+      "repeat": 0,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.0035485328337405276,
+      "candidate_default_rmse_pct": -0.35422442317404323,
+      "candidate_default_rmse_ratio": 0.9964577557682596,
+      "dataset": "wine_quality",
+      "repeat": 1,
+      "split_count": 3
+    },
+    {
+      "candidate_default_rmse_log_ratio": -0.0028678419250737688,
+      "candidate_default_rmse_pct": -0.28637335947059306,
+      "candidate_default_rmse_ratio": 0.9971362664052941,
+      "dataset": "wine_quality",
+      "repeat": 2,
+      "split_count": 3
+    }
+  ],
+  "split_summary": {
+    "count": 165,
+    "losses": 74,
+    "ties": 0,
+    "wins": 91,
+    "worst_dataset": "concrete_compressive_strength",
+    "worst_pct": 5.486253788597106,
+    "worst_ratio": 1.054862537885971,
+    "worst_split": "r7f1"
+  },
+  "thresholds": {
+    "dataset_rmse_ratio_max": 1.005,
+    "equal_dataset_rmse_ratio_max": 0.995,
+    "infer_time_ratio_max": 1.1,
+    "peak_memory_ratio_max": 1.1,
+    "split_rmse_ratio_max": 1.02,
+    "train_time_ratio_max": 1.2,
+    "validation_equal_dataset_ratio_max": 1.0
+  }
+}
