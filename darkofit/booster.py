@@ -9,6 +9,7 @@ Boosters share the same machinery (FeaturePreprocessor, oblivious trees):
 import copy
 import ctypes
 import hashlib
+import operator
 import time
 import warnings
 import numpy as np
@@ -33,6 +34,11 @@ from .auto_params import (
     resolve_learning_rate_details,
 )
 from .binning import DEFAULT_BIN_SAMPLE_COUNT
+from .callbacks import (
+    BoostingProgress,
+    _callback_stop_reason,
+    _normalize_callbacks,
+)
 from .flat_model import (
     build_flat_ensemble,
     build_flat_multiclass_ensemble,
@@ -441,6 +447,19 @@ def _normalize_leaf_dtype_name(leaf_dtype):
     return dtype
 
 
+def _normalize_iterations(iterations):
+    """Return a nonnegative Python integer without truncating user input."""
+    if isinstance(iterations, (bool, np.bool_)):
+        raise TypeError("iterations must be a nonnegative integer")
+    try:
+        value = operator.index(iterations)
+    except TypeError as exc:
+        raise TypeError("iterations must be a nonnegative integer") from exc
+    if value < 0:
+        raise ValueError("iterations must be nonnegative")
+    return int(value)
+
+
 class _BaseBooster:
     """Shared machinery for the scalar and multiclass boosters.
 
@@ -469,7 +488,7 @@ class _BaseBooster:
                  target_ordered_cat_codes="off", eval_metric=None,
                  rho_learning_rate_multiplier=1.0,
                  rho_l2_leaf_reg_multiplier=1.0):
-        self.iterations = int(iterations)
+        self.iterations = _normalize_iterations(iterations)
         self.learning_rate = learning_rate
         self._depth_input = depth
         self._num_leaves_input = num_leaves
@@ -507,7 +526,11 @@ class _BaseBooster:
         self.verbose_timing = bool(verbose_timing)
         self.tree_mode = tree_mode
         self.tree_mode_ = _normalize_tree_mode(tree_mode)
-        self.depth = "auto" if _is_auto_param(depth) else _resolve_default_depth(depth, self.tree_mode_)
+        self.depth = (
+            "auto"
+            if _is_auto_param(depth)
+            else _resolve_default_depth(depth, self.tree_mode_)
+        )
         self.sampling = sampling
         self.top_rate = float(top_rate)
         self.other_rate = float(other_rate)
@@ -1276,6 +1299,47 @@ class _BaseBooster:
             self._flat_cache_ = None
             self._rebuild_importance_from_trees()
 
+    def _callback_stop_reason(self, callbacks, next_iteration,
+                              iterations_attempted):
+        if not callbacks:
+            return None
+        progress = BoostingProgress(
+            next_iteration=int(next_iteration),
+            iterations_attempted=int(iterations_attempted),
+            rounds_completed=len(self.trees_),
+            last_train_score=(
+                None if not self.train_history_ else float(self.train_history_[-1])
+            ),
+            last_validation_score=(
+                None if not self.valid_history_ else float(self.valid_history_[-1])
+            ),
+        )
+        return _callback_stop_reason(callbacks, progress)
+
+    def _finalize_training_metadata(self, *, stop_reason,
+                                    iterations_attempted,
+                                    rounds_completed,
+                                    best_prefix_iter, callbacks):
+        retained = len(self.trees_)
+        metadata = {
+            "stop_reason": str(stop_reason),
+            "iterations_requested": int(self.iterations_),
+            "iterations_attempted": int(iterations_attempted),
+            "rounds_completed": int(rounds_completed),
+            "rounds_retained": int(retained),
+            "best_prefix_round": (
+                int(best_prefix_iter) + 1 if self.valid_history_ else None
+            ),
+            "best_model_truncated": bool(retained != rounds_completed),
+            "stop_check_policy": "before_iteration" if callbacks else "none",
+            "time_limit_is_soft": bool(stop_reason == "time_limit"),
+        }
+        self.stop_reason_ = str(stop_reason)
+        self.iterations_attempted_ = int(iterations_attempted)
+        self.rounds_completed_ = int(rounds_completed)
+        self.training_metadata_ = metadata
+        self.auto_params_["training"] = dict(metadata)
+
     def _catboost_depth(self):
         if self.depth is None or self.depth < 1:
             raise ValueError("depth must be positive for tree_mode='catboost'")
@@ -1989,12 +2053,13 @@ class GradientBoosting(_BaseBooster):
         )
 
     def fit(self, X, y, cat_features=None, eval_set=None, sample_weight=None,
-            eval_sample_weight=None):
+            eval_sample_weight=None, callbacks=None):
         """Fit the additive model. Optionally pass `cat_features` (column indices
         to target-encode) and `eval_set=(X_val, y_val)` for early stopping.
         `sample_weight` is a 1-D array of per-sample weights; None means uniform.
         Weights are normalized to mean 1 internally so the gradient scale stays
         comparable to the no-weight case."""
+        callbacks = _normalize_callbacks(callbacks)
         n_features = n_features_from_array_like(X)
         cat_features = normalize_cat_features(cat_features, n_features)
         X = (array_like_to_numpy(X, object) if cat_features
@@ -2142,9 +2207,18 @@ class GradientBoosting(_BaseBooster):
         patience_score, patience_iter = np.inf, 0
         best_prefix_score, best_prefix_iter = np.inf, 0
         sampled_depth0_retries = 0
-        t0 = time.time()
+        iterations_attempted = 0
+        stop_reason = "iteration_limit"
+        t0 = time.perf_counter()
 
         for m in range(self.iterations_):
+            callback_reason = self._callback_stop_reason(
+                callbacks, m, iterations_attempted
+            )
+            if callback_reason is not None:
+                stop_reason = callback_reason
+                break
+            iterations_attempted = m + 1
             phase = _start_timing(timing)
             if hasattr(self.loss_, "grad_hess_into"):
                 self.loss_.grad_hess_into(y, F, w, grad_buffer, hess_buffer)
@@ -2194,6 +2268,7 @@ class GradientBoosting(_BaseBooster):
                     continue
                 if self.verbose:
                     print(f"No further splits at iteration {m}; stopping.")
+                stop_reason = "no_split"
                 break
             sampled_depth0_retries = 0
             if self.histogram_dtype_ == "float32":
@@ -2245,6 +2320,7 @@ class GradientBoosting(_BaseBooster):
                     if self.verbose:
                         print(f"Early stop at {m} (best {best_prefix_iter}, "
                               f"val {best_prefix_score:.5f})")
+                    stop_reason = "early_stopping"
                     break
 
             if self.verbose and (m % max(1, self.iterations_ // 10) == 0):
@@ -2253,10 +2329,18 @@ class GradientBoosting(_BaseBooster):
                     msg += f"  val {self.valid_history_[-1]:.5f}"
                 print(msg)
 
-        self.fit_time_ = time.time() - t0
+        rounds_completed = len(self.trees_)
+        self.fit_time_ = time.perf_counter() - t0
         self._truncate_to_best_model(best_prefix_iter, self.valid_history_)
         self._refresh_stochastic_auto_params(n_samples)
         self.best_iteration_ = len(self.trees_)
+        self._finalize_training_metadata(
+            stop_reason=stop_reason,
+            iterations_attempted=iterations_attempted,
+            rounds_completed=rounds_completed,
+            best_prefix_iter=best_prefix_iter,
+            callbacks=callbacks,
+        )
         if self.valid_history_:
             self.best_score_ = best_prefix_score
         elif Fv is not None:
@@ -2333,10 +2417,11 @@ class MulticlassBoosting(_BaseBooster):
     """Softmax multiclass booster: fits K trees per round (one per class)."""
 
     def fit(self, X, y, cat_features=None, eval_set=None, sample_weight=None,
-            eval_sample_weight=None):
+            eval_sample_weight=None, callbacks=None):
         """Fit K trees per boosting round (one per class) under softmax loss.
         Same `cat_features` / `eval_set` / `sample_weight` semantics as the
         scalar booster."""
+        callbacks = _normalize_callbacks(callbacks)
         n_features = n_features_from_array_like(X)
         cat_features = normalize_cat_features(cat_features, n_features)
         X = (array_like_to_numpy(X, object) if cat_features
@@ -2527,9 +2612,18 @@ class MulticlassBoosting(_BaseBooster):
         patience_score, patience_iter = np.inf, 0
         best_prefix_score, best_prefix_iter = np.inf, 0
         sampled_depth0_retries = 0
-        t0 = time.time()
+        iterations_attempted = 0
+        stop_reason = "iteration_limit"
+        t0 = time.perf_counter()
 
         for m in range(self.iterations_):
+            callback_reason = self._callback_stop_reason(
+                callbacks, m, iterations_attempted
+            )
+            if callback_reason is not None:
+                stop_reason = callback_reason
+                break
+            iterations_attempted = m + 1
             phase = _start_timing(timing)
             if hasattr(self.loss_, "grad_hess_class_major_into"):
                 self.loss_.grad_hess_class_major_into(
@@ -2631,6 +2725,7 @@ class MulticlassBoosting(_BaseBooster):
                         continue
                     if self.verbose:
                         print(f"No further splits at iteration {m}; stopping.")
+                    stop_reason = "no_split"
                     break
 
                 sampled_depth0_retries = 0
@@ -2664,6 +2759,7 @@ class MulticlassBoosting(_BaseBooster):
                           successful_iter - patience_iter >= self.early_stopping_rounds_):
                         if self.verbose:
                             print(f"Early stop at {m} (best {best_prefix_iter})")
+                        stop_reason = "early_stopping"
                         break
 
                 if self.verbose and (m % max(1, self.iterations_ // 10) == 0):
@@ -2748,6 +2844,7 @@ class MulticlassBoosting(_BaseBooster):
                 if self.verbose:
                     print(f"No further splits for any class at iteration {m}; "
                           f"stopping.")
+                stop_reason = "no_split"
                 break
             sampled_depth0_retries = 0
             self.trees_.append(round_trees)
@@ -2776,6 +2873,7 @@ class MulticlassBoosting(_BaseBooster):
                       successful_iter - patience_iter >= self.early_stopping_rounds_):
                     if self.verbose:
                         print(f"Early stop at {m} (best {best_prefix_iter})")
+                    stop_reason = "early_stopping"
                     break
 
             if self.verbose and (m % max(1, self.iterations_ // 10) == 0):
@@ -2784,10 +2882,18 @@ class MulticlassBoosting(_BaseBooster):
                     msg += f"  val {self.valid_history_[-1]:.5f}"
                 print(msg)
 
-        self.fit_time_ = time.time() - t0
+        rounds_completed = len(self.trees_)
+        self.fit_time_ = time.perf_counter() - t0
         self._truncate_to_best_model(best_prefix_iter, self.valid_history_)
         self._refresh_stochastic_auto_params(n_samples)
         self.best_iteration_ = len(self.trees_)
+        self._finalize_training_metadata(
+            stop_reason=stop_reason,
+            iterations_attempted=iterations_attempted,
+            rounds_completed=rounds_completed,
+            best_prefix_iter=best_prefix_iter,
+            callbacks=callbacks,
+        )
         if self.valid_history_:
             self.best_score_ = best_prefix_score
         elif Fv is not None:
@@ -2982,8 +3088,9 @@ class DistributionalBoosting(_BaseBooster):
         return self.loss_.variance_from_raw(self._raw_to_internal_scale(raw))
 
     def fit(self, X, y, cat_features=None, eval_set=None, sample_weight=None,
-            eval_sample_weight=None):
+            eval_sample_weight=None, callbacks=None):
         """Fit a shared-vector distributional regression model."""
+        callbacks = _normalize_callbacks(callbacks)
         n_features = n_features_from_array_like(X)
         cat_features = normalize_cat_features(cat_features, n_features)
         X = (array_like_to_numpy(X, object) if cat_features
@@ -3175,9 +3282,18 @@ class DistributionalBoosting(_BaseBooster):
         patience_score, patience_iter = np.inf, 0
         best_prefix_score, best_prefix_iter = np.inf, 0
         sampled_depth0_retries = 0
-        t0 = time.time()
+        iterations_attempted = 0
+        stop_reason = "iteration_limit"
+        t0 = time.perf_counter()
 
         for m in range(self.iterations_):
+            callback_reason = self._callback_stop_reason(
+                callbacks, m, iterations_attempted
+            )
+            if callback_reason is not None:
+                stop_reason = callback_reason
+                break
+            iterations_attempted = m + 1
             phase = _start_timing(timing)
             self.loss_.grad_hess_class_major_into(
                 y_fit, F, w, grad_buffer, hess_buffer
@@ -3250,6 +3366,7 @@ class DistributionalBoosting(_BaseBooster):
                     continue
                 if self.verbose:
                     print(f"No further splits at iteration {m}; stopping.")
+                stop_reason = "no_split"
                 break
             sampled_depth0_retries = 0
 
@@ -3306,6 +3423,7 @@ class DistributionalBoosting(_BaseBooster):
                       successful_iter - patience_iter >= self.early_stopping_rounds_):
                     if self.verbose:
                         print(f"Early stop at {m} (best {best_prefix_iter})")
+                    stop_reason = "early_stopping"
                     break
 
             if self.verbose and (m % max(1, self.iterations_ // 10) == 0):
@@ -3314,7 +3432,8 @@ class DistributionalBoosting(_BaseBooster):
                     msg += f"  val {self.valid_history_[-1]:.5f}"
                 print(msg)
 
-        self.fit_time_ = time.time() - t0
+        rounds_completed = len(self.trees_)
+        self.fit_time_ = time.perf_counter() - t0
         stateful_loss = hasattr(self.loss_, "refresh_state")
         if stateful_loss:
             F = np.tile(self.init_[:, None], (1, n_samples))
@@ -3356,6 +3475,13 @@ class DistributionalBoosting(_BaseBooster):
                 break
         self._refresh_stochastic_auto_params(n_samples)
         self.best_iteration_ = len(self.trees_)
+        self._finalize_training_metadata(
+            stop_reason=stop_reason,
+            iterations_attempted=iterations_attempted,
+            rounds_completed=rounds_completed,
+            best_prefix_iter=best_prefix_iter,
+            callbacks=callbacks,
+        )
         if self.valid_history_:
             self.best_score_ = best_prefix_score
         elif stateful_loss and Xv_binned is None:

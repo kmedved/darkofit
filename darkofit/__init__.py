@@ -19,8 +19,11 @@ from .sklearn_api import (
     DarkoRegressor,
     DarkoClassifier,
 )
+from .callbacks import BoostingProgress, WallClockStopper
 
 __all__ = [
     "DarkoRegressor",
     "DarkoClassifier",
+    "BoostingProgress",
+    "WallClockStopper",
 ]

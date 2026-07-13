@@ -26,6 +26,7 @@ from .auto_params import (
     is_auto_learning_rate,
     resolve_learning_rate_details,
 )
+from .callbacks import _normalize_callbacks
 from .losses import VECTOR_LOSSES
 from .linear_residual import WeightedRidgeTrend, validate_linear_residual_loss
 from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin
@@ -2366,7 +2367,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self.auto_learning_rate_probe_iterations = auto_learning_rate_probe_iterations
 
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
-            sample_weight=None, eval_sample_weight=None):
+            sample_weight=None, eval_sample_weight=None, callbacks=None):
         """Fit the model.
 
         Parameters
@@ -2387,7 +2388,14 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             Per-sample weights.  Normalized to mean 1 internally.
         eval_sample_weight : array-like of shape (n_validation_samples,) or None
             Validation weights used when evaluating early stopping.
+        callbacks : callable or iterable of callables, or None
+            Fit-time boosting callbacks. Each callback receives a
+            :class:`darkofit.callbacks.BoostingProgress` snapshot before the
+            next boosting round and may return ``True`` to stop. Callbacks are
+            currently supported only for a single booster fit, not automatic
+            learning-rate probes, automatic tree-mode selection, or refitting.
         """
+        callbacks = _normalize_callbacks(callbacks)
         X_input = X
         feature_names = _feature_names_from_input(X_input)
         X, cat_features, n_features = _coerce_fit_X(X, cat_features)
@@ -2417,6 +2425,18 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self._clear_linear_residual_state()
         tree_mode_auto = _is_auto_tree_mode(self.tree_mode)
         distributional_loss = _is_distributional_loss(self.loss)
+        if callbacks:
+            if self.refit:
+                raise ValueError("callbacks are not supported with refit=True")
+            if tree_mode_auto:
+                raise ValueError(
+                    "callbacks are not supported with tree_mode='auto'"
+                )
+            if self.auto_learning_rate_probe:
+                raise ValueError(
+                    "callbacks are not supported with "
+                    "auto_learning_rate_probe=True"
+                )
         linear_residual_enabled = _should_use_linear_residual(
             self.linear_residual
         )
@@ -2623,6 +2643,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 X, y, cat_features=cat_features, eval_set=eval_set,
                 sample_weight=sample_weight,
                 eval_sample_weight=eval_sample_weight,
+                callbacks=callbacks,
             )
         self.model_ = model
         self._record_input_feature_metadata(X_input, n_features)
@@ -3283,7 +3304,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         self.auto_learning_rate_probe_iterations = auto_learning_rate_probe_iterations
 
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
-            sample_weight=None, eval_sample_weight=None):
+            sample_weight=None, eval_sample_weight=None, callbacks=None):
         """Fit the model.
 
         Parameters
@@ -3303,7 +3324,14 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
             Per-sample weights.  Normalized to mean 1 internally.
         eval_sample_weight : array-like of shape (n_validation_samples,) or None
             Validation weights used when evaluating early stopping.
+        callbacks : callable or iterable of callables, or None
+            Fit-time boosting callbacks. Each callback receives a
+            :class:`darkofit.callbacks.BoostingProgress` snapshot before the
+            next boosting round and may return ``True`` to stop. Callbacks are
+            currently supported only for a single booster fit, not automatic
+            learning-rate probes, automatic tree-mode selection, or refitting.
         """
+        callbacks = _normalize_callbacks(callbacks)
         X_input = X
         X, cat_features, n_features = _coerce_fit_X(X, cat_features)
         eval_set = _ensure_dense_eval_set(eval_set)
@@ -3337,6 +3365,18 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
 
         self._clear_refit_selection_metadata()
         tree_mode_auto = _is_auto_tree_mode(self.tree_mode)
+        if callbacks:
+            if self.refit:
+                raise ValueError("callbacks are not supported with refit=True")
+            if tree_mode_auto:
+                raise ValueError(
+                    "callbacks are not supported with tree_mode='auto'"
+                )
+            if self.auto_learning_rate_probe:
+                raise ValueError(
+                    "callbacks are not supported with "
+                    "auto_learning_rate_probe=True"
+                )
         self._validate_tree_mode_selection_request()
         if self.refit:
             self._refit_strategy_exponent(self.refit_strategy)
@@ -3454,6 +3494,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                     X, y01, cat_features=cat_features, eval_set=eval_set,
                     sample_weight=sample_weight,
                     eval_sample_weight=eval_sample_weight,
+                    callbacks=callbacks,
                 )
         else:
             multiclass = True
@@ -3500,6 +3541,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                     X, y, cat_features=cat_features, eval_set=eval_set,
                     sample_weight=sample_weight,
                     eval_sample_weight=eval_sample_weight,
+                    callbacks=callbacks,
                 )
             classes = model.classes_
         self.model_ = model

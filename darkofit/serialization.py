@@ -737,6 +737,110 @@ def _validate_boosting_round_count(kind, trees, header):
         _invalid_model("tree count does not match best_iteration")
 
 
+def _restore_training_metadata(booster):
+    """Restore fit diagnostics without serializing callbacks or deadlines."""
+    if not isinstance(booster.auto_params_, dict):
+        _invalid_model("auto_params must be an object")
+    training = booster.auto_params_.get("training")
+    if training is None:
+        completed = max(
+            len(booster.trees_),
+            len(getattr(booster, "train_history_", [])),
+            len(getattr(booster, "valid_history_", [])),
+        )
+        booster.stop_reason_ = "legacy_unknown"
+        booster.iterations_attempted_ = None
+        booster.rounds_completed_ = int(completed)
+        booster.training_metadata_ = {
+            "stop_reason": "legacy_unknown",
+            "iterations_attempted": None,
+            "rounds_completed": int(completed),
+            "rounds_retained": int(len(booster.trees_)),
+        }
+        return
+    if not isinstance(training, dict):
+        _invalid_model("training metadata must be an object")
+
+    def nonnegative_int(name):
+        value = training.get(name)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            _invalid_model(
+                f"training metadata {name} must be a nonnegative integer"
+            )
+        return int(value)
+
+    requested = nonnegative_int("iterations_requested")
+    attempted = nonnegative_int("iterations_attempted")
+    completed = nonnegative_int("rounds_completed")
+    retained = nonnegative_int("rounds_retained")
+    if requested != int(booster.iterations):
+        _invalid_model(
+            "training metadata requested rounds do not match booster params"
+        )
+    if attempted > requested:
+        _invalid_model("training metadata attempted rounds exceed requested rounds")
+    if completed > attempted:
+        _invalid_model("training metadata completed rounds exceed attempted rounds")
+    if retained > completed:
+        _invalid_model("training metadata retained rounds exceed completed rounds")
+    if retained != len(booster.trees_):
+        _invalid_model("training metadata retained rounds do not match tree payload")
+
+    reason = training.get("stop_reason")
+    if not isinstance(reason, str) or not reason:
+        _invalid_model("training metadata stop_reason must be a nonempty string")
+    best_prefix = training.get("best_prefix_round")
+    if best_prefix is not None and (
+        isinstance(best_prefix, bool)
+        or not isinstance(best_prefix, int)
+        or best_prefix < 1
+        or best_prefix > completed
+    ):
+        _invalid_model(
+            "training metadata best_prefix_round is outside completed rounds"
+        )
+    for name in ("best_model_truncated", "time_limit_is_soft"):
+        if not isinstance(training.get(name), bool):
+            _invalid_model(f"training metadata {name} must be a boolean")
+    if training["best_model_truncated"] != (retained != completed):
+        _invalid_model("training metadata truncation flag is inconsistent")
+    if training["time_limit_is_soft"] != (reason == "time_limit"):
+        _invalid_model("training metadata time-limit flag is inconsistent")
+    stop_check_policy = training.get("stop_check_policy")
+    if stop_check_policy not in {"none", "before_iteration"}:
+        _invalid_model(
+            "training metadata stop_check_policy must be 'none' or "
+            "'before_iteration'"
+        )
+    if reason == "iteration_limit" and attempted != requested:
+        _invalid_model(
+            "training metadata iteration_limit requires all requested rounds "
+            "to be attempted"
+        )
+    if reason == "time_limit" and attempted >= requested:
+        _invalid_model(
+            "training metadata time_limit requires stopping before the "
+            "iteration limit"
+        )
+    if reason == "time_limit" and stop_check_policy != "before_iteration":
+        _invalid_model(
+            "training metadata time_limit requires before_iteration stop checks"
+        )
+    if reason == "no_split" and attempted <= completed:
+        _invalid_model(
+            "training metadata no_split requires a failed attempted round"
+        )
+    if reason == "early_stopping" and completed == 0:
+        _invalid_model(
+            "training metadata early_stopping requires a completed round"
+        )
+
+    booster.stop_reason_ = reason
+    booster.iterations_attempted_ = attempted
+    booster.rounds_completed_ = completed
+    booster.training_metadata_ = dict(training)
+
+
 def _validate_preprocessor_payload(data, prep_cfg, n_input_features):
     n_input_features = int(n_input_features)
     if n_input_features <= 0:
@@ -1172,6 +1276,8 @@ def load_booster(path, return_wrapper_payload=False):
         booster.best_iteration_ = header["best_iteration"]
         booster.best_score_ = header["best_score"]
         booster.auto_params_ = header.get("auto_params", {})
+        if not isinstance(booster.auto_params_, dict):
+            _invalid_model("auto_params must be an object")
         if isinstance(booster, DistributionalBoosting):
             metric = (
                 booster.auto_params_
@@ -1377,6 +1483,7 @@ def load_booster(path, return_wrapper_payload=False):
         prep.binner_ = binner
         prep.n_bins_ = binner.n_bins_
         booster.prep_ = prep
+        _restore_training_metadata(booster)
 
         wrapper_header = header.get("wrapper", {})
         for key in data.files:

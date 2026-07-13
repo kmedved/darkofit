@@ -40,6 +40,13 @@ previous behaviors remain available through explicit parameters.
   now resolves off for them and explicit `ordered_boosting=True` raises
   instead of being silently ignored. The resolved rule is recorded under
   `auto_params_["tree"]["ordered_boosting_rule"]`.
+* Add public fit-time boosting callbacks, including a monotonic soft
+  `WallClockStopper`, across scalar, multiclass, and distributional boosters.
+  Fitted models now record requested, attempted, completed, retained, and best
+  rounds plus their stop reason; the metadata survives safe `.npz` round trips
+  without serializing callback objects. The TabArena adapter records the same
+  diagnostics for every bag child so cap saturation and deadlines are directly
+  auditable.
 * Default `eval_train_loss=False` on the boosters and sklearn wrappers. The
   per-round training-loss pass is diagnostic-only (early stopping watches the
   eval set) and cost about 15% of multiclass fit time; `verbose=True` still

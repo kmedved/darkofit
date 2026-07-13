@@ -337,6 +337,29 @@ tolerance. Pass a nonnegative number for an explicit tolerance or
 `early_stopping_min_delta="auto"` to scale the tolerance from the baseline
 validation loss.
 
+Fit-time callbacks can observe each boosting prefix and stop between rounds.
+`WallClockStopper` uses a monotonic clock and treats its deadline as soft: a
+tree already being built is allowed to finish before the next check.
+
+```python
+from darkofit import DarkoRegressor, WallClockStopper
+
+model = DarkoRegressor(iterations=10_000).fit(
+    X,
+    y,
+    eval_set=(X_val, y_val),
+    callbacks=WallClockStopper(300, safety_margin=5),
+)
+print(model.model_.training_metadata_)
+```
+
+The fitted metadata records requested, attempted, completed, and retained
+rounds; the best prefix; and the stop reason. Callbacks are supported for a
+single concrete booster fit. They are intentionally rejected with
+`tree_mode="auto"`, automatic learning-rate probes, or `refit=True`, because
+those policies launch multiple fits and do not yet define a shared callback
+budget.
+
 Automatic validation splitting keeps `validation_fraction=0.1` by default.
 Pass `validation_fraction="auto"` to resolve a held-out fraction from Kish
 effective sample size, and for regression pass

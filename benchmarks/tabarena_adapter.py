@@ -56,12 +56,21 @@ class DarkoFitModel(AbstractModel):
     ) -> None:
         """Fit DarkoFit using TabArena's validation split and resources.
 
-        The three-dataset smoke is bounded by the configured iteration cap and
-        early stopping. DarkoFit does not yet expose a wall-clock callback, so
-        ``time_limit`` is recorded but cannot be enforced inside a boosting
-        round; that hook is required before a submission-grade full run.
+        ``time_limit`` is enforced as a soft monotonic deadline between
+        completed boosting rounds. A single tree plus final model bookkeeping
+        may overrun the deadline, so a small safety margin is reserved.
         """
         del num_gpus
+
+        from darkofit.callbacks import WallClockStopper
+
+        deadline = None
+        if time_limit is not None:
+            time_limit = float(time_limit)
+            deadline = WallClockStopper(
+                time_limit,
+                safety_margin=min(5.0, 0.05 * time_limit),
+            )
 
         if self.problem_type == "regression":
             from darkofit import DarkoRegressor
@@ -90,7 +99,71 @@ class DarkoFitModel(AbstractModel):
             eval_set=eval_set,
             sample_weight=sample_weight,
             eval_sample_weight=sample_weight_val,
+            callbacks=deadline,
         )
+
+        core_model = self.model.model_
+        best_iteration = int(self.model.best_n_estimators_)
+        resolved_learning_rate = float(self.model.learning_rate_)
+        selected_tree_mode = str(core_model.tree_mode_)
+        refit_params = self.model.get_refit_params(strategy="exact")
+        refit_params["use_best_model"] = False
+        refit_params["refit"] = False
+        refit_param_names = (
+            "iterations",
+            "learning_rate",
+            "tree_mode",
+            "early_stopping",
+            "early_stopping_rounds",
+            "use_best_model",
+            "refit",
+            "depth",
+            "num_leaves",
+            "l2_leaf_reg",
+            "min_child_samples",
+            "min_child_weight",
+            "cat_smoothing",
+        )
+        self.params_trained.update(
+            {name: refit_params[name] for name in refit_param_names}
+        )
+
+        linear_residual_active = bool(
+            getattr(self.model, "linear_residual_active_", False)
+        )
+        stop_reason = str(core_model.stop_reason_)
+        self._fit_metadata["darkofit_fit"] = {
+            "iterations_requested": int(params["iterations"]),
+            "iterations_attempted": int(core_model.iterations_attempted_),
+            "rounds_completed": int(core_model.rounds_completed_),
+            "rounds_retained": int(core_model.best_iteration_),
+            "best_iteration": best_iteration,
+            "resolved_learning_rate": resolved_learning_rate,
+            "requested_tree_mode": str(params["tree_mode"]),
+            "selected_tree_mode": selected_tree_mode,
+            "selected_lane": (
+                "linear_residual" if linear_residual_active else "boosting"
+            ),
+            "linear_residual_active": linear_residual_active,
+            "early_stopping_rounds": (
+                None
+                if core_model.early_stopping_rounds_ is None
+                else int(core_model.early_stopping_rounds_)
+            ),
+            "stop_reason": stop_reason,
+            "wall_clock_limit_seconds": time_limit,
+            "wall_clock_safety_margin_seconds": (
+                None if deadline is None else float(deadline.safety_margin)
+            ),
+            "wall_clock_effective_seconds": (
+                None if deadline is None else float(deadline.effective_seconds)
+            ),
+            "wall_clock_elapsed_seconds": (
+                None if deadline is None else float(deadline.elapsed_seconds)
+            ),
+            "deadline_hit": stop_reason == "time_limit",
+            "deadline_is_soft": deadline is not None,
+        }
 
     def _set_default_params(self) -> None:
         defaults = {
