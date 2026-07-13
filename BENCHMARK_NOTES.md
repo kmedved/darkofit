@@ -32,6 +32,22 @@ wall-clock training callback, so the adapter cannot strictly enforce TabArena's
 per-fit `time_limit`; add that hook before attempting a submission-grade full
 run.
 
+## TabArena 13-Dataset Regression Check
+
+The follow-up regression matrix found and corrected a shared-split legality bug
+that prematurely stopped symmetric trees when an already-pure leaf had an empty
+child. The actual patched default exactly matched the diagnostic
+`min_child_weight=0` proxy on all thirteen datasets and reduced the
+geometric-mean RMSE gap to the unrelated ChimeraBoost 0.13 default from 5.14%
+to 1.25%.
+
+A controlled fixed-0.1 learning-rate lane improved nine datasets and regressed
+four versus the corrected automatic policy. Its geometric-mean RMSE was 0.40%
+better, but its head-to-head wins against ChimeraBoost fell from five to four.
+The automatic learning-rate default therefore remains in place. See
+[`benchmarks/tabarena_regression_default_check.md`](benchmarks/tabarena_regression_default_check.md)
+for the per-dataset table, methodology, and local artifact locations.
+
 ## Current Default Lanes
 
 `tree_mode="catboost"` remains the default CatBoost-like path. The recent

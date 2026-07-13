@@ -1390,7 +1390,10 @@ class _BaseBooster:
     def _alloc_split_buffers(self, n_features):
         """Allocate reusable per-feature split-search scratch buffers."""
         max_leaves = self._max_tree_leaves()
-        return tuple(np.empty((n_features, max_leaves)) for _ in range(5))
+        return (
+            *(np.empty((n_features, max_leaves)) for _ in range(5)),
+            np.empty((n_features, max_leaves), dtype=np.int64),
+        )
 
     _ROWPAR_MAX_BYTES = 512 * 1024 * 1024
 

@@ -6,6 +6,18 @@ Behavior-changing default improvements from a full-repo review, plus targeted
 performance and robustness fixes. These are intentional clean cutovers; the
 previous behaviors remain available through explicit parameters.
 
+* Fix symmetric/shared split legality so an already-pure leaf's empty child
+  contributes zero gain instead of vetoing a useful split for every other
+  active leaf. Sparse non-empty children still obey `min_child_weight` and the
+  hybrid shared trunk still enforces `min_child_samples`; per-leaf builders
+  remain strict. The correction applies to serial, parallel, noisy, and
+  count-aware shared searches, including `l2_leaf_reg=0`, and tracks the last
+  positive Hessian bin so float32 cancellation cannot disguise a sparse child
+  as structurally empty. On the 13-dataset
+  TabArena regression check it reduced the geometric-mean RMSE gap to the
+  unrelated ChimeraBoost 0.13 default from 5.14% to 1.25%. A fixed learning
+  rate of 0.1 improved the aggregate by a further 0.40% but regressed four
+  datasets, so the automatic learning-rate default is unchanged.
 * Make `ordered_boosting="auto"` task-aware in CatBoost/depthwise modes: the
   ordered leave-one-out leaf update stays on for classification and turns off
   for scalar regression. Categorical regression continues to use ordered

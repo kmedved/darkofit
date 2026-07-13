@@ -1,5 +1,13 @@
 # DarkoFit TabArena Handoff
 
+> **Status: closed on 2026-07-12.** This handoff is retained as historical
+> investigation context. Ordered boosting policy was corrected, and a later
+> 13-dataset run found the remaining dominant issue: shared symmetric splits
+> incorrectly treated an already-pure leaf's empty child as a veto. The fix and
+> final learning-rate decision are recorded in
+> `benchmarks/tabarena_regression_default_check.md`. The automatic learning-rate
+> default was retained.
+
 I want to discuss and possibly work on: fixing DarkoFit's weak numeric-regression default exposed by the TabArena-Lite smoke, then validating the fix broadly enough to decide whether it belongs in the TabArena adapter or DarkoFit's public defaults.
 
 ## Context

@@ -1260,14 +1260,36 @@ def test_best_model_truncation_rebuilds_feature_importance():
     assert np.array_equal(multi._importance, np.array([4.0, 2.0]))
 
 
-def test_mae_loss_beats_rmse_on_mae_metric():
+def test_mae_loss_is_robust_to_training_outliers_on_mae_metric():
     from sklearn.metrics import mean_absolute_error
-    X, y = load_diabetes(return_X_y=True)
-    Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.2, random_state=42)
-    mae = DarkoRegressor(iterations=300, loss="MAE", random_state=0).fit(Xtr, ytr)
-    rmse = DarkoRegressor(iterations=300, loss="RMSE", random_state=0).fit(Xtr, ytr)
-    assert (mean_absolute_error(yte, mae.predict(Xte))
-            <= mean_absolute_error(yte, rmse.predict(Xte)) + 1.0)
+
+    rng = np.random.default_rng(42)
+    X = rng.uniform(-2.0, 2.0, size=(800, 3))
+    y = (
+        3.0 * X[:, 0]
+        - 2.0 * X[:, 1]
+        + 0.5 * X[:, 2]
+        + rng.normal(0.0, 0.2, size=800)
+    )
+    y_train = y[:600].copy()
+    outliers = rng.choice(600, 90, replace=False)
+    y_train[outliers] += (
+        rng.choice(np.array([-1.0, 1.0]), size=outliers.size)
+        * rng.uniform(20.0, 50.0, size=outliers.size)
+    )
+    common = dict(
+        iterations=100,
+        learning_rate=0.05,
+        depth=4,
+        ordered_boosting=False,
+        random_state=0,
+    )
+    mae = DarkoRegressor(loss="MAE", **common).fit(X[:600], y_train)
+    rmse = DarkoRegressor(loss="RMSE", **common).fit(X[:600], y_train)
+
+    mae_error = mean_absolute_error(y[600:], mae.predict(X[600:]))
+    rmse_error = mean_absolute_error(y[600:], rmse.predict(X[600:]))
+    assert mae_error < 0.5 * rmse_error
 
 
 @pytest.mark.parametrize("loss_name", ["MAE", "Quantile"])
@@ -1388,27 +1410,34 @@ def test_single_thread_fit_skips_threaded_split_buffers(monkeypatch):
     ).fit(X[:120], y[:120])
 
 
-def test_min_child_weight_controls_depth_overfitting():
-    """With min_child_weight active, increasing depth should NOT degrade test
-    accuracy (the constraint stops growth before sparse leaves overfit). This is
-    the property that fixes the oblivious-tree depth anomaly."""
+def test_unweighted_rmse_empty_child_fix_matches_zero_weight_proxy():
+    """For unit Hessians, mcw=1 and mcw=0 differ only on empty children."""
     from sklearn.datasets import make_regression
-    X, y = make_regression(n_samples=4000, n_features=30, n_informative=20,
-                           noise=20, random_state=1000)
-    Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.25, random_state=0)
-    Xf, Xv, yf, yv = train_test_split(Xtr, ytr, test_size=0.2, random_state=0)
 
-    def rmse_at(depth, mcw):
-        m = DarkoRegressor(iterations=1500, depth=depth,
-                                  min_child_weight=mcw, early_stopping_rounds=50,
-                                  random_state=0).fit(Xf, yf, eval_set=(Xv, yv))
-        return np.sqrt(np.mean((yte - m.predict(Xte)) ** 2))
+    X, y = make_regression(
+        n_samples=320,
+        n_features=8,
+        n_informative=7,
+        noise=4.0,
+        random_state=19,
+    )
+    common = dict(
+        iterations=80,
+        learning_rate=0.1,
+        depth=6,
+        ordered_boosting=False,
+        random_state=7,
+        thread_count=1,
+    )
+    constrained = DarkoRegressor(min_child_weight=1.0, **common).fit(X, y)
+    proxy = DarkoRegressor(min_child_weight=0.0, **common).fit(X, y)
 
-    # Unconstrained (mcw=1): deeper overfits -> depth 8 clearly worse than depth 4.
-    assert rmse_at(8, 1) > rmse_at(4, 1)
-    # Constrained (mcw=20): depth 8 should be no worse than a small tolerance
-    # above depth 6 -- growth is capped, so extra depth is harmless.
-    assert rmse_at(8, 20) <= rmse_at(6, 20) + 0.5
+    assert np.array_equal(constrained.predict(X), proxy.predict(X))
+    assert len(constrained.model_.trees_) == len(proxy.model_.trees_)
+    for actual, expected in zip(constrained.model_.trees_, proxy.model_.trees_):
+        assert np.array_equal(actual.splits_feat, expected.splits_feat)
+        assert np.array_equal(actual.splits_thr, expected.splits_thr)
+        assert np.array_equal(actual.values, expected.values)
 
 
 def test_min_child_weight_param_plumbing():
@@ -1471,7 +1500,11 @@ def test_shared_split_buffers_match_standalone_threaded():
     grad = y - y.mean()
     hess = np.ones(len(y))
     depth = 5
-    split_buffers = tuple(np.empty((Xb.shape[1], 1 << depth)) for _ in range(5))
+    # Preserve the documented historical five-buffer direct-caller contract;
+    # the optimized estimator-owned path supplies a reusable sixth array.
+    split_buffers = tuple(
+        np.empty((Xb.shape[1], 1 << depth)) for _ in range(5)
+    )
 
     old_threads = numba.get_num_threads()
     try:
@@ -5284,30 +5317,154 @@ def test_weighted_categorical_target_encoding_changes_stats():
     assert weighted_b > unweighted_b
 
 
-def test_l2_zero_illegal_splits_do_not_divide_by_zero():
-    """Illegal empty-side split candidates must be discarded before gain math."""
+def test_shared_split_empty_children_are_zero_gain_with_l2_zero():
+    """A pure leaf must not veto a useful shared split or divide by zero."""
     import numba
     from darkofit.tree import _best_split, _best_split_serial
 
-    hg = np.zeros((1, 1, 3))
-    hh = np.zeros((1, 1, 3))
-    hg[0, 0, 0] = 5.0
-    hh[0, 0, 0] = 10.0
-    n_bins = np.array([3], dtype=np.int64)
+    # Leaf 0 gains 1.0 from the threshold.  Leaf 1 is already pure for that
+    # threshold, so its empty right child contributes zero rather than vetoing
+    # the shared split.  l2=0 proves gain math never divides by that empty side.
+    hg = np.array([[[1.0, -1.0], [0.0, 0.0]]])
+    hh = np.array([[[2.0, 2.0], [4.0, 0.0]]])
+    n_bins = np.array([2], dtype=np.int64)
     feat_mask = np.array([1], dtype=np.int64)
-    scratch = tuple(np.empty((1, 1)) for _ in range(5))
+    scratch = (
+        *(np.empty((1, 2)) for _ in range(5)),
+        np.empty((1, 2), dtype=np.int64),
+    )
 
-    assert _best_split_serial(hg, hh, n_bins, 0.0, feat_mask, 1.0, 1)[1] == -1
+    serial = _best_split_serial(hg, hh, n_bins, 0.0, feat_mask, 1.0, 2)
 
     old_threads = numba.get_num_threads()
     try:
         numba.set_num_threads(min(2, numba.config.NUMBA_NUM_THREADS))
-        assert _best_split(
-            hg, hh, n_bins, 0.0, feat_mask, 1.0, 1,
+        parallel = _best_split(
+            hg, hh, n_bins, 0.0, feat_mask, 1.0, 2,
             scratch[0], scratch[1], scratch[2], scratch[3], scratch[4],
-        )[1] == -1
+            scratch[5],
+        )
     finally:
         numba.set_num_threads(old_threads)
+
+    for result in (serial, parallel):
+        assert result[:2] == (0, 0)
+        assert result[2] == pytest.approx(1.0)
+        assert np.isfinite(result[2])
+
+
+def test_all_shared_split_paths_exempt_only_empty_children():
+    """Keep five shared-search implementations aligned on child legality."""
+    import numba
+    from darkofit.tree import (
+        _best_shared_split_counts,
+        _best_shared_split_counts_with_noise_py,
+        _best_split,
+        _best_split_serial,
+        _best_split_with_noise_py,
+        _best_splits_by_leaf,
+        _best_splits_by_leaf_counts,
+    )
+
+    n_bins = np.array([2], dtype=np.int64)
+    feat_mask = np.array([1], dtype=np.int64)
+
+    def run_all(hg, hh, hc, min_child_weight=1.0, min_child_samples=2):
+        scratch = (
+            *(np.empty((1, 2)) for _ in range(5)),
+            np.empty((1, 2), dtype=np.int64),
+        )
+        old_threads = numba.get_num_threads()
+        try:
+            numba.set_num_threads(min(2, numba.config.NUMBA_NUM_THREADS))
+            parallel = _best_split(
+                hg, hh, n_bins, 1.0, feat_mask, min_child_weight, 2,
+                scratch[0], scratch[1], scratch[2], scratch[3], scratch[4],
+                scratch[5],
+            )
+        finally:
+            numba.set_num_threads(old_threads)
+        return (
+            _best_split_serial(
+                hg, hh, n_bins, 1.0, feat_mask, min_child_weight, 2
+            ),
+            parallel,
+            _best_split_with_noise_py(
+                hg, hh, n_bins, 1.0, feat_mask, min_child_weight, 2,
+                0.0, 0, 0, 0, 0.0,
+            ),
+            _best_shared_split_counts(
+                hg, hh, hc, n_bins, 1.0, feat_mask, min_child_weight,
+                min_child_samples, 2,
+            ),
+            _best_shared_split_counts_with_noise_py(
+                hg, hh, hc, n_bins, 1.0, feat_mask, min_child_weight,
+                min_child_samples, 2, 0.0, 0, 0, 0, 0.0,
+            ),
+        )
+
+    # A useful leaf plus a pure leaf is legal whether the empty child is on
+    # the right or the left.  Its expected total gain is 2 / 3.
+    base_hg = np.array([[[1.0, -1.0], [0.0, 0.0]]])
+    base_hh = np.array([[[2.0, 2.0], [4.0, 0.0]]])
+    base_hc = np.array([[[2.0, 2.0], [4.0, 0.0]]])
+    for hg, hh, hc in (
+        (base_hg, base_hh, base_hc),
+        (base_hg[:, :, ::-1], base_hh[:, :, ::-1], base_hc[:, :, ::-1]),
+    ):
+        for result in run_all(hg, hh, hc):
+            assert result[:2] == (0, 0)
+            assert result[2] == pytest.approx(2.0 / 3.0)
+
+    # A non-empty child below min_child_weight remains illegal everywhere.
+    sparse_hh = np.array([[[2.0, 2.0], [3.5, 0.5]]])
+    sparse_hc = np.array([[[2.0, 2.0], [3.0, 1.0]]])
+    for result in run_all(base_hg, sparse_hh, sparse_hc):
+        assert result[1] == -1
+        assert result[2] == -np.inf
+
+    # A float32 total can round away a small positive right suffix.  Structural
+    # emptiness must not be inferred from that cancelled subtraction result.
+    rounded_hg = base_hg.astype(np.float32)
+    rounded_hh = np.array(
+        [[[2.0, 2.0], [float(1 << 24), 1.0]]], dtype=np.float32
+    )
+    rounded_hc = np.array([[[2.0, 2.0], [2.0, 1.0]]])
+    for result in run_all(
+        rounded_hg,
+        rounded_hh,
+        rounded_hc,
+        min_child_weight=1.5,
+        min_child_samples=1,
+    ):
+        assert result[1] == -1
+        assert result[2] == -np.inf
+
+    # Counts add a separate constraint in the hybrid shared-trunk paths.
+    count_only_hh = np.array([[[2.0, 2.0], [3.0, 1.0]]])
+    results = run_all(base_hg, count_only_hh, sparse_hc)
+    for result in results[:3]:
+        assert result[:2] == (0, 0)
+    for result in results[3:]:
+        assert result[1] == -1
+        assert result[2] == -np.inf
+
+    # Per-leaf builders intentionally keep the strict rule: an empty child
+    # means that particular leaf was not split, rather than a harmless pure
+    # leaf in a split shared with productive siblings.
+    out_feat = np.empty(2, dtype=np.int64)
+    out_thr = np.empty(2, dtype=np.int64)
+    out_gain = np.empty(2, dtype=np.float64)
+    _best_splits_by_leaf(
+        base_hg, base_hh, n_bins, 1.0, feat_mask, 1.0, 2,
+        out_feat, out_thr, out_gain,
+    )
+    assert np.array_equal(out_thr, np.array([0, -1]))
+    _best_splits_by_leaf_counts(
+        base_hg, base_hh, base_hc, n_bins, 1.0, feat_mask, 1.0, 2, 2,
+        out_feat, out_thr, out_gain,
+    )
+    assert np.array_equal(out_thr, np.array([0, -1]))
 
 
 def test_best_split_serial_matches_parallel_histogram_search():
@@ -5320,7 +5477,10 @@ def test_best_split_serial_matches_parallel_histogram_search():
     hh = rng.uniform(0.05, 2.0, size=(7, 4, 8))
     n_bins = np.array([8, 7, 6, 8, 5, 4, 7], dtype=np.int64)
     feat_mask = np.array([1, 1, 0, 1, 1, 0, 1], dtype=np.int64)
-    scratch = tuple(np.empty((hg.shape[0], 4)) for _ in range(5))
+    scratch = (
+        *(np.empty((hg.shape[0], 4)) for _ in range(5)),
+        np.empty((hg.shape[0], 4), dtype=np.int64),
+    )
 
     serial = _best_split_serial(hg, hh, n_bins, 2.0, feat_mask, 0.1, 4)
     old_threads = numba.get_num_threads()
@@ -5329,6 +5489,7 @@ def test_best_split_serial_matches_parallel_histogram_search():
         parallel = _best_split(
             hg, hh, n_bins, 2.0, feat_mask, 0.1, 4,
             scratch[0], scratch[1], scratch[2], scratch[3], scratch[4],
+            scratch[5],
         )
     finally:
         numba.set_num_threads(old_threads)

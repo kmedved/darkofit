@@ -94,7 +94,10 @@ def _make_case(n_samples, n_features, max_bins, depth, layout, rng,
     hh = np.zeros_like(hg)
     hc = np.zeros_like(hg)
     n_bins = np.full(n_features, max_bins, dtype=np.int64)
-    split_scratch = tuple(np.empty((n_features, n_leaves)) for _ in range(5))
+    split_scratch = (
+        *(np.empty((n_features, n_leaves)) for _ in range(5)),
+        np.empty((n_features, n_leaves), dtype=np.int64),
+    )
     row_count = max(1, n_samples // 2)
     row_indices = np.sort(
         rng.choice(n_samples, size=row_count, replace=False)
@@ -223,6 +226,7 @@ def _kernel_calls(case, threaded):
         split = lambda: _best_split(
             hg, hh, n_bins, 3.0, feature_mask, 1.0, n_leaves,
             scratch[0], scratch[1], scratch[2], scratch[3], scratch[4],
+            scratch[5],
         )
     else:
         hist = lambda: _build_histograms_into_serial(

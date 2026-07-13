@@ -2172,7 +2172,7 @@ def _build_counts_rows_into_serial(X_binned, hess, leaf, n_leaves, hc,
 @njit(cache=True, parallel=True)
 def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
                 n_leaves, scratch_Gt, scratch_Ht, scratch_GL, scratch_HL,
-                scratch_parent):
+                scratch_parent, scratch_last_positive):
     """Find the (feature, threshold) with the highest total gain.
 
     hg/hh may be oversized buffers (shape max_leaves); `n_leaves` says how many
@@ -2183,8 +2183,10 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
     feat_mask[f] == 0 are skipped (column subsampling).
     
     Min-child-weight legality: because an oblivious split is applied to every
-    active leaf, a threshold is legal only if it leaves at least
-    `min_child_weight` hessian mass on both sides of every non-empty leaf.
+    active leaf, a threshold is legal only if every *non-empty* child has at
+    least `min_child_weight` hessian mass.  An already-pure leaf may land
+    wholly on one side; its empty child contributes zero gain and does not
+    veto a split that is useful to other leaves.
     """
     n_features = n_bins_per_feature.shape[0]
     max_bins = hg.shape[2]
@@ -2199,9 +2201,12 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
         for l in range(n_leaves):
             scratch_Gt[f, l] = 0.0
             scratch_Ht[f, l] = 0.0
+            scratch_last_positive[f, l] = -1
             for b in range(nb):
                 scratch_Gt[f, l] += hg[f, l, b]
                 scratch_Ht[f, l] += hh[f, l, b]
+                if hh[f, l, b] > 0.0:
+                    scratch_last_positive[f, l] = b
         for l in range(n_leaves):
             scratch_GL[f, l] = 0.0
             scratch_HL[f, l] = 0.0
@@ -2231,12 +2236,22 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
                     any_nonempty = True
                     hl = scratch_HL[f, l]
                     hr = scratch_Ht[f, l] - hl
+                    # This leaf is already pure for the candidate threshold.
+                    # It contributes no gain, but must not veto a split shared
+                    # across the other active leaves.  Continue before forming
+                    # denominators so l2=0 remains safe.
+                    if (
+                        hl <= 0.0
+                        or t >= scratch_last_positive[f, l]
+                    ):
+                        continue
                     left_denom = hl + l2
                     right_denom = hr + l2
                     parent_denom = scratch_Ht[f, l] + l2
                     if (
                         hl < min_child_weight
                         or hr < min_child_weight
+                        or hr <= 0.0
                         or left_denom <= 0.0
                         or right_denom <= 0.0
                         or parent_denom <= 0.0
@@ -2277,6 +2292,7 @@ def _best_split_serial(hg, hh, n_bins_per_feature, l2, feat_mask,
     GL = np.empty(n_leaves)
     HL = np.empty(n_leaves)
     parent_gain = np.empty(n_leaves)
+    last_positive = np.empty(n_leaves, dtype=np.int64)
 
     best_f = 0
     best_t = -1
@@ -2289,11 +2305,15 @@ def _best_split_serial(hg, hh, n_bins_per_feature, l2, feat_mask,
         for l in range(n_leaves):
             gt = 0.0
             ht = 0.0
+            last = -1
             for b in range(nb):
                 gt += hg[f, l, b]
                 ht += hh[f, l, b]
+                if hh[f, l, b] > 0.0:
+                    last = b
             Gt[l] = gt
             Ht[l] = ht
+            last_positive[l] = last
             GL[l] = 0.0
             HL[l] = 0.0
             parent_denom = ht + l2
@@ -2316,12 +2336,15 @@ def _best_split_serial(hg, hh, n_bins_per_feature, l2, feat_mask,
                     any_nonempty = True
                     hl = HL[l]
                     hr = Ht[l] - hl
+                    if hl <= 0.0 or t >= last_positive[l]:
+                        continue
                     left_denom = hl + l2
                     right_denom = hr + l2
                     parent_denom = Ht[l] + l2
                     if (
                         hl < min_child_weight
                         or hr < min_child_weight
+                        or hr <= 0.0
                         or left_denom <= 0.0
                         or right_denom <= 0.0
                         or parent_denom <= 0.0
@@ -2406,11 +2429,15 @@ def _best_shared_split_counts(hg, hh, hc, n_bins_per_feature, l2, feat_mask,
                     hr = Ht[l] - hl
                     cl = CL[l]
                     cr = Ct[l] - cl
+                    if cl <= 0.0 or cr <= 0.0:
+                        continue
                     left_denom = hl + l2
                     right_denom = hr + l2
                     parent_denom = Ht[l] + l2
                     if (
-                        hl < min_child_weight
+                        hl <= 0.0
+                        or hr <= 0.0
+                        or hl < min_child_weight
                         or hr < min_child_weight
                         or cl < min_child_samples
                         or cr < min_child_samples
@@ -3851,8 +3878,15 @@ def _best_split_with_noise_py(hg, hh, n_bins_per_feature, l2, feat_mask,
         if feat_mask[f] == 0:
             continue
         nb = int(n_bins_per_feature[f])
-        Gt = hg[f, :n_leaves, :nb].sum(axis=1)
-        Ht = hh[f, :n_leaves, :nb].sum(axis=1)
+        Gt = np.zeros(n_leaves, dtype=np.float64)
+        Ht = np.zeros(n_leaves, dtype=np.float64)
+        last_positive = np.full(n_leaves, -1, dtype=np.int64)
+        for l in range(n_leaves):
+            for b in range(nb):
+                Gt[l] += hg[f, l, b]
+                Ht[l] += hh[f, l, b]
+                if hh[f, l, b] > 0.0:
+                    last_positive[l] = b
         GL = np.zeros(n_leaves, dtype=np.float64)
         HL = np.zeros(n_leaves, dtype=np.float64)
         parent = np.zeros(n_leaves, dtype=np.float64)
@@ -3869,12 +3903,15 @@ def _best_split_with_noise_py(hg, hh, n_bins_per_feature, l2, feat_mask,
                     continue
                 any_nonempty = True
                 hr = Ht[l] - HL[l]
+                if HL[l] <= 0.0 or t >= last_positive[l]:
+                    continue
                 left_denom = HL[l] + l2
                 right_denom = hr + l2
                 parent_denom = Ht[l] + l2
                 if (
                     HL[l] < min_child_weight
                     or hr < min_child_weight
+                    or hr <= 0.0
                     or left_denom <= 0.0
                     or right_denom <= 0.0
                     or parent_denom <= 0.0
@@ -3911,9 +3948,14 @@ def _best_shared_split_counts_with_noise_py(
         if feat_mask[f] == 0:
             continue
         nb = int(n_bins_per_feature[f])
-        gt = hg[f, :n_leaves, :nb].sum(axis=1)
-        ht = hh[f, :n_leaves, :nb].sum(axis=1)
-        ct = hc[f, :n_leaves, :nb].sum(axis=1)
+        gt = np.zeros(n_leaves, dtype=np.float64)
+        ht = np.zeros(n_leaves, dtype=np.float64)
+        ct = np.zeros(n_leaves, dtype=np.float64)
+        for l in range(n_leaves):
+            for b in range(nb):
+                gt[l] += hg[f, l, b]
+                ht[l] += hh[f, l, b]
+                ct[l] += hc[f, l, b]
         gl = np.zeros(n_leaves, dtype=np.float64)
         hl = np.zeros(n_leaves, dtype=np.float64)
         cl = np.zeros(n_leaves, dtype=np.float64)
@@ -3933,11 +3975,15 @@ def _best_shared_split_counts_with_noise_py(
                 any_nonempty = True
                 hr = ht[l] - hl[l]
                 cr = ct[l] - cl[l]
+                if cl[l] <= 0.0 or cr <= 0.0:
+                    continue
                 left_denom = hl[l] + l2
                 right_denom = hr + l2
                 parent_denom = ht[l] + l2
                 if (
-                    hl[l] < min_child_weight
+                    hl[l] <= 0.0
+                    or hr <= 0.0
+                    or hl[l] < min_child_weight
                     or hr < min_child_weight
                     or cl[l] < min_child_samples
                     or cr < min_child_samples
@@ -4450,8 +4496,10 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     hist_buffers: optional (hg, hh) arrays of shape (n_features, 2**max_depth,
     max_bins) reused across trees to avoid per-level allocation. If None, they
     are allocated here (convenient for one-off calls and tests).
-    split_buffers: optional five-array tuple of shape
-    (n_features, 2**max_depth) reused by the threaded split search.
+    split_buffers: optional five- or six-array tuple of shape
+    (n_features, 2**max_depth) reused by the threaded split search. The
+    historical five-array form remains supported; the sixth integer scratch
+    array is allocated internally when omitted.
     rowpar_buffers: optional (lg, lh) thread-local accumulators of shape
     (n_chunks, n_features, leaf_slots, max_bins). When supplied (and the
     full-row/full-feature lane is active with enough rows per level), the
@@ -4558,14 +4606,21 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
             np.empty((n_features, max_leaves)),
             np.empty((n_features, max_leaves)),
             np.empty((n_features, max_leaves)),
+            np.empty((n_features, max_leaves), dtype=np.int64),
         )
     else:
-        if len(split_buffers) != 5:
-            raise ValueError("split_buffers must contain five scratch arrays")
+        if len(split_buffers) not in {5, 6}:
+            raise ValueError("split_buffers must contain five or six scratch arrays")
         for buf in split_buffers:
             if buf.shape[0] < n_features or buf.shape[1] < max_leaves:
                 raise ValueError("split_buffers are too small")
-        split_scratch = split_buffers
+        if len(split_buffers) == 5:
+            split_scratch = (
+                *split_buffers,
+                np.empty((n_features, max_leaves), dtype=np.int64),
+            )
+        else:
+            split_scratch = split_buffers
 
     subtract_lane = (
         _resolve_level_subtraction(level_histogram_subtraction)
@@ -4726,7 +4781,7 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                     hg, hh, n_bins_per_feature, l2, feature_mask,
                     min_child_weight, n_leaves, split_scratch[0],
                     split_scratch[1], split_scratch[2], split_scratch[3],
-                    split_scratch[4]
+                    split_scratch[4], split_scratch[5]
                 )
         if gain <= min_gain or t < 0:
             break
