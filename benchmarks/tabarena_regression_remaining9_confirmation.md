@@ -210,7 +210,9 @@ from same-machine claims.
 ## Conditional same-machine performance campaign
 
 Only if the quality gates pass, compare three product configurations on the
-same machine:
+same machine. They did not pass, so this campaign was not run and its
+experimental implementation is not shipped; the requirements below are kept
+as the specification for any future attempt:
 
 - corrected DarkoFit default;
 - frozen DarkoFit candidate;
@@ -234,11 +236,12 @@ Report paired, equal-dataset summaries for:
 - AutoGluon all-children and low-memory retained-model sizes;
 - RMSE and validation RMSE so speed cannot conceal a quality change.
 
-Numba warmup is performed and recorded separately from steady-state timed fits.
-The runner warms representative numeric and categorical DarkoFit regression
-fit/predict paths as well as ChimeraBoost, verifies ChimeraBoost's pinned
-2,000-round product-default constructor, and requires a new output directory so
-cached results cannot be relabeled with new provenance.
+Numba warmup must be performed and recorded separately from steady-state timed
+fits, symmetrically covering each product's numeric/categorical regression fit
+and small/large-batch prediction paths. A future runner must verify each pinned
+product default, enforce the same work/time policy, require the retained quality
+summary to have `gates.advance=true`, and use a new output directory so cached
+results cannot be relabeled with new provenance.
 Preprocessing is measured by benchmark-only instrumentation around each
 package's own preprocessor; it must not be inferred by subtracting internal fit
 timers from wall time.

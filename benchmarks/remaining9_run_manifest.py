@@ -45,6 +45,7 @@ except ModuleNotFoundError:  # Direct execution: python benchmarks/remaining9_*.
 SCHEMA_VERSION = 1
 ATTESTATION_SCHEMA_VERSION = 1
 RUNNER_FILENAME = "run_tabarena_regression_remaining9.py"
+RUNNER_MODULE = "benchmarks.run_tabarena_regression_remaining9"
 RUNNER_PATH = Path(__file__).with_name(RUNNER_FILENAME).resolve()
 ADAPTER_PATH = Path(__file__).with_name("tabarena_adapter.py").resolve()
 DEFAULT_OUTPUT_DIR = Path(".cache/tabarena-regression-remaining9-0.9.0-20260712")
@@ -228,7 +229,7 @@ def _process_snapshot(pid: int) -> dict:
         .astimezone(timezone.utc)
         .isoformat()
     )
-    if RUNNER_FILENAME not in command:
+    if not _command_invokes_remaining9_runner(command):
         raise RuntimeError(
             f"PID {pid} command is not the remaining-nine runner: {command!r}"
         )
@@ -258,19 +259,50 @@ def _process_snapshot(pid: int) -> dict:
     }
 
 
+def _command_invokes_remaining9_runner(command: str) -> bool:
+    """Recognize direct, module, flagged, and shell-wrapped runner commands."""
+    try:
+        parts = shlex.split(command)
+    except ValueError:
+        return False
+
+    def invokes(tokens: list[str]) -> bool:
+        python_seen = False
+        for index, token in enumerate(tokens):
+            if Path(token).name.startswith("python"):
+                python_seen = True
+            if python_seen and Path(token).name == RUNNER_FILENAME:
+                return True
+            if (
+                python_seen
+                and token == RUNNER_MODULE
+                and index > 0
+                and tokens[index - 1] == "-m"
+            ):
+                return True
+        for token in tokens:
+            if " " not in token:
+                continue
+            try:
+                nested = shlex.split(token)
+            except ValueError:
+                continue
+            if nested != tokens and invokes(nested):
+                return True
+        return False
+
+    return invokes(parts)
+
+
 def _matching_runner_pids() -> list[int]:
-    """Return processes executing only the frozen runner with default arguments."""
+    """Return all remaining-nine runners, including flagged or wrapped calls."""
     matches = []
     process_rows = _run_command(["ps", "-axo", "pid=,command="])
     for row in process_rows.splitlines():
         fields = row.strip().split(maxsplit=1)
         if len(fields) != 2:
             continue
-        try:
-            parts = shlex.split(fields[1])
-        except ValueError:
-            continue
-        if len(parts) == 2 and Path(parts[1]).name == RUNNER_FILENAME:
+        if _command_invokes_remaining9_runner(fields[1]):
             matches.append(int(fields[0]))
     return sorted(matches)
 

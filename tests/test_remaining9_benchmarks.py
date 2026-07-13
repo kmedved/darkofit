@@ -1,24 +1,17 @@
-import ast
 import hashlib
 import json
 import os
-from pathlib import Path
 
 import pandas as pd
 import pytest
 
 import benchmarks.remaining9_run_manifest as remaining9_provenance
-import benchmarks.run_tabarena_same_machine_performance as performance_runner
 
 from benchmarks.analyze_tabarena_regression_remaining9 import (
     analyze_rows,
     normalized_chimera_rows_sha256,
 )
 from benchmarks.preflight_hotpaths import _speedup, _timing_summary
-from benchmarks.preprocessing_instrumentation import (
-    capture_preprocessing,
-    instrument_feature_preprocessors,
-)
 from benchmarks.remaining9_run_manifest import (
     SCHEMA_VERSION,
     frozen_protocol_identity,
@@ -32,26 +25,6 @@ from benchmarks.run_tabarena_regression_remaining9 import (
     TASK_SPLIT_COUNTS,
     validate_chimera_coverage,
 )
-from benchmarks.run_tabarena_same_machine_performance import (
-    CACHE_POLICY,
-    CHIMERA_REGRESSOR_PRODUCT_DEFAULTS,
-    EXPECTED_JOBS as EXPECTED_PERFORMANCE_JOBS,
-    EXPECTED_REGISTERED_ROWS,
-    FROZEN_CHIMERA_COMMIT,
-    FROZEN_CHIMERA_VERSION,
-    REGISTERED_FOLDS,
-    SPLIT_INDICES as PERFORMANCE_SPLITS,
-    TIME_LIMIT_SECONDS,
-    chimera_regressor_product_defaults,
-    claim_fresh_output_directory,
-    darkofit_source_provenance,
-    resolve_chimera_repo,
-    validate_registered_splits,
-    warmup_chimeraboost_regression,
-    warmup_darkofit_regression,
-)
-
-
 def test_remaining9_frozen_matrix_and_registered_coverage():
     assert EXPECTED_DATASET_SPLITS == 165
     assert EXPECTED_JOBS == 330
@@ -366,6 +339,37 @@ def test_remaining9_completion_attestation_binds_every_final_file(tmp_path):
     os.utime(stale_path, ns=(original_mtime_ns, original_mtime_ns))
 
 
+@pytest.mark.parametrize(
+    "command",
+    [
+        "/venv/bin/python benchmarks/run_tabarena_regression_remaining9.py",
+        (
+            "/venv/bin/python benchmarks/run_tabarena_regression_remaining9.py "
+            "--output-dir /tmp/results --time-limit 10"
+        ),
+        (
+            "/venv/bin/python -m benchmarks.run_tabarena_regression_remaining9 "
+            "--output-dir /tmp/results"
+        ),
+        (
+            "/bin/zsh -c 'PYTHONPATH=. /venv/bin/python "
+            "benchmarks/run_tabarena_regression_remaining9.py --time-limit 10'"
+        ),
+    ],
+)
+def test_remaining9_runner_detector_covers_flagged_and_wrapped_commands(command):
+    assert remaining9_provenance._command_invokes_remaining9_runner(command)
+
+
+def test_remaining9_runner_detector_rejects_non_runner_commands():
+    assert not remaining9_provenance._command_invokes_remaining9_runner(
+        "rg run_tabarena_regression_remaining9.py"
+    )
+    assert not remaining9_provenance._command_invokes_remaining9_runner(
+        "/venv/bin/python benchmarks/other_benchmark.py"
+    )
+
+
 def test_remaining9_versioned_watcher_emits_verifiable_attestation(
     tmp_path,
     monkeypatch,
@@ -425,233 +429,3 @@ def test_remaining9_versioned_watcher_emits_verifiable_attestation(
         input_dir=experiments,
     )
     assert len(verified) == EXPECTED_JOBS
-
-
-def test_same_machine_performance_protocol_is_frozen():
-    assert PERFORMANCE_SPLITS == ["r0f0", "r1f1", "r2f2"]
-    assert REGISTERED_FOLDS == [0, 4, 8]
-    assert TIME_LIMIT_SECONDS == 3600
-    assert EXPECTED_REGISTERED_ROWS == 27
-    assert EXPECTED_PERFORMANCE_JOBS == 81
-    assert FROZEN_CHIMERA_VERSION == "0.14.1"
-    assert FROZEN_CHIMERA_COMMIT == "07995af9e2b6212a41975a49931ee20af8f2cc14"
-    assert CHIMERA_REGRESSOR_PRODUCT_DEFAULTS["n_estimators"] == 2_000
-    assert CACHE_POLICY == "fresh_output_directory_required"
-    adapter = ast.parse(
-        (Path(__file__).parents[1] / "benchmarks/same_machine_performance_adapters.py")
-        .read_text()
-    )
-    local_model = next(
-        node
-        for node in adapter.body
-        if isinstance(node, ast.ClassDef) and node.name == "LocalChimeraBoostModel"
-    )
-    assert all(
-        not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-        or node.name != "_set_default_params"
-        for node in local_model.body
-    )
-
-
-def test_same_machine_verifies_chimera_product_default_signature():
-    class ExpectedRegressor:
-        def __init__(
-            self,
-            n_estimators=2_000,
-            learning_rate=None,
-            depth=None,
-            l2_leaf_reg=1.0,
-            max_bins=128,
-            cat_n_permutations=4,
-            early_stopping=True,
-            ordered_boosting=False,
-            linear_leaves=None,
-        ):
-            pass
-
-    class ChangedRegressor(ExpectedRegressor):
-        def __init__(self, n_estimators=10_000, **kwargs):
-            super().__init__(n_estimators=n_estimators, **kwargs)
-
-    package = type("Package", (), {"ChimeraBoostRegressor": ExpectedRegressor})
-    assert chimera_regressor_product_defaults(package) == (
-        CHIMERA_REGRESSOR_PRODUCT_DEFAULTS
-    )
-    changed = type("Package", (), {"ChimeraBoostRegressor": ChangedRegressor})
-    with pytest.raises(RuntimeError, match="defaults changed"):
-        chimera_regressor_product_defaults(changed)
-
-
-def test_same_machine_claim_requires_fresh_output(tmp_path):
-    output = tmp_path / "fresh"
-    claim = claim_fresh_output_directory(output)
-    payload = json.loads(claim.read_text())
-    assert payload["cache_policy"] == CACHE_POLICY
-
-    with pytest.raises(RuntimeError, match="must not already exist"):
-        claim_fresh_output_directory(output)
-
-    empty = tmp_path / "empty"
-    empty.mkdir()
-    with pytest.raises(RuntimeError, match="must not already exist"):
-        claim_fresh_output_directory(empty)
-
-    dirty = tmp_path / "dirty"
-    dirty.mkdir()
-    (dirty / "results.pkl").write_bytes(b"stale")
-    with pytest.raises(RuntimeError, match="must not already exist"):
-        claim_fresh_output_directory(dirty)
-
-
-def test_same_machine_darkofit_warmup_covers_numeric_and_categorical(monkeypatch):
-    import darkofit
-
-    constructed = []
-
-    class FakeRegressor:
-        def __init__(self, **parameters):
-            self.parameters = parameters
-            self.fit_kwargs = None
-            self.prediction_rows = []
-            constructed.append(self)
-
-        def fit(self, X, y, **kwargs):
-            assert len(X) == len(y)
-            self.fit_kwargs = kwargs
-            return self
-
-        def predict(self, X):
-            self.prediction_rows.append(len(X))
-            return [0.0] * len(X)
-
-    monkeypatch.setattr(darkofit, "DarkoRegressor", FakeRegressor)
-    assert warmup_darkofit_regression(thread_count=3) >= 0.0
-    assert len(constructed) == 2
-    assert "max_bins" not in constructed[0].parameters
-    assert "l2_leaf_reg" not in constructed[0].parameters
-    assert "learning_rate" not in constructed[0].parameters
-    for parameter, value in FROZEN_CANDIDATE.items():
-        assert constructed[1].parameters[parameter] == value
-    assert all(model.parameters["thread_count"] == 3 for model in constructed)
-    assert all(model.prediction_rows == [8, 9_216] for model in constructed)
-    assert constructed[0].fit_kwargs.get("cat_features") is None
-    assert constructed[1].fit_kwargs["cat_features"] == [1]
-
-
-def test_same_machine_chimera_warmup_matches_regression_lanes():
-    constructed = []
-
-    class FakeRegressor:
-        def __init__(self, **parameters):
-            self.parameters = parameters
-            self.fit_kwargs = None
-            self.fit_rows = None
-            self.prediction_rows = []
-            constructed.append(self)
-
-        def fit(self, X, y, **kwargs):
-            assert len(X) == len(y)
-            self.fit_rows = len(X)
-            self.fit_kwargs = kwargs
-            return self
-
-        def predict(self, X):
-            self.prediction_rows.append(len(X))
-            return [0.0] * len(X)
-
-    package = type("Package", (), {"ChimeraBoostRegressor": FakeRegressor})
-    assert warmup_chimeraboost_regression(package, thread_count=3) >= 0.0
-    assert len(constructed) == 2
-    expected_parameters = {
-        "n_estimators": 2,
-        "thread_count": 3,
-        "random_state": 0,
-    }
-    assert all(model.parameters == expected_parameters for model in constructed)
-    assert all(model.fit_rows == 1_024 for model in constructed)
-    assert all(
-        len(model.fit_kwargs["eval_set"][0]) == 128 for model in constructed
-    )
-    assert constructed[0].fit_kwargs.get("cat_features") is None
-    assert constructed[1].fit_kwargs["cat_features"] == [1]
-    assert all(model.prediction_rows == [8, 9_216] for model in constructed)
-
-
-def test_same_machine_darkofit_provenance_requires_local_import(
-    monkeypatch, tmp_path
-):
-    import darkofit
-
-    repo = tmp_path / "darkofit"
-    local_module = repo / "darkofit" / "__init__.py"
-    local_module.parent.mkdir(parents=True)
-    local_module.write_text("")
-
-    def fake_git(_repo, *args):
-        return "a" * 40 if args == ("rev-parse", "HEAD") else ""
-
-    monkeypatch.setattr(performance_runner, "_git", fake_git)
-    monkeypatch.setattr(darkofit, "__file__", str(local_module))
-    provenance = darkofit_source_provenance(repo)
-    assert provenance["darkofit_module_file"] == str(local_module.resolve())
-
-    outside = tmp_path / "site-packages" / "darkofit" / "__init__.py"
-    monkeypatch.setattr(darkofit, "__file__", str(outside))
-    with pytest.raises(RuntimeError, match="outside validated checkout"):
-        darkofit_source_provenance(repo)
-
-
-def test_same_machine_registered_split_validation_is_exact():
-    rows = [
-        {
-            "dataset": dataset,
-            "method": "CHIMERA (default)",
-            "fold": fold,
-            "imputed": False,
-            "problem_type": "regression",
-            "metric": "rmse",
-        }
-        for dataset in TASK_SPLIT_COUNTS
-        for fold in REGISTERED_FOLDS
-    ]
-    validate_registered_splits(rows)
-
-    rows[-1]["imputed"] = True
-    with pytest.raises(RuntimeError, match="imputed"):
-        validate_registered_splits(rows)
-
-
-def test_same_machine_sibling_chimera_discovery(tmp_path):
-    darkofit_repo = tmp_path / "darkofit"
-    chimera_repo = tmp_path / "chimeraboost"
-    darkofit_repo.mkdir()
-    (chimera_repo / "chimeraboost").mkdir(parents=True)
-    (chimera_repo / "chimeraboost" / "__init__.py").write_text("")
-    (chimera_repo / ".git").mkdir()
-
-    assert resolve_chimera_repo(darkofit_repo=darkofit_repo) == chimera_repo
-
-
-def test_preprocessing_instrumentation_accumulates_only_active_package():
-    class DarkPreprocessor:
-        def fit_transform(self, value):
-            return value + 1
-
-    class ChimeraPreprocessor:
-        def fit_transform(self, value):
-            return value * 2
-
-    original_dark = DarkPreprocessor.fit_transform
-    times = iter([0.0, 0.1, 0.1, 0.3, 0.3, 0.7])
-    with instrument_feature_preprocessors(
-        {"darkofit": DarkPreprocessor, "chimeraboost": ChimeraPreprocessor},
-        clock=lambda: next(times),
-    ):
-        with capture_preprocessing("darkofit") as captured:
-            assert DarkPreprocessor().fit_transform(1) == 2
-            assert DarkPreprocessor().fit_transform(2) == 3
-            assert ChimeraPreprocessor().fit_transform(3) == 6
-        assert captured["calls"] == 2
-        assert captured["seconds"] == pytest.approx(0.3)
-
-    assert DarkPreprocessor.fit_transform is original_dark
