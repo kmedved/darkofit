@@ -22,10 +22,13 @@ from benchmarks.run_tabarena_regression_remaining9 import (
     TASK_SPLIT_COUNTS,
 )
 from benchmarks.run_tabarena_same_machine_performance import (
+    CACHE_POLICY,
+    CHIMERA_REGRESSOR_PRODUCT_DEFAULTS,
     FROZEN_CHIMERA_COMMIT,
     FROZEN_CHIMERA_VERSION,
     SPLIT_INDICES,
     TIME_LIMIT_SECONDS,
+    WARMUP_CASES,
 )
 
 
@@ -41,7 +44,14 @@ def _provenance():
         "time_limit_seconds": TIME_LIMIT_SECONDS,
         "split_indices": list(SPLIT_INDICES),
         "candidate": dict(FROZEN_CANDIDATE),
+        "cache_policy": CACHE_POLICY,
+        "chimera_regressor_product_defaults": dict(
+            CHIMERA_REGRESSOR_PRODUCT_DEFAULTS
+        ),
+        "darkofit_warmup_seconds": 0.75,
         "chimeraboost_warmup_seconds": 1.25,
+        "warmup_threads": 16,
+        "warmup_cases": list(WARMUP_CASES),
         "darkofit_repository": "/source/darkofit",
         "darkofit_commit": "a" * 40,
         "darkofit_dirty": False,
@@ -77,6 +87,9 @@ def _payload(config, dataset=None, repeat=0, fold=0, scale=1.0):
                     "benchmark_package": "chimeraboost",
                     "benchmark_package_version": FROZEN_CHIMERA_VERSION,
                     "benchmark_source_commit": FROZEN_CHIMERA_COMMIT,
+                    "benchmark_regressor_product_parameters": dict(
+                        CHIMERA_REGRESSOR_PRODUCT_DEFAULTS
+                    ),
                 }
             )
         children[f"S1F{child_index + 1}"] = child
@@ -174,6 +187,15 @@ def test_same_machine_result_parser_rejects_noncanonical_configuration():
         performance_result_row(payload, source="result.pkl")
 
 
+def test_same_machine_result_parser_rejects_hidden_chimera_default_override():
+    payload = _payload("chimeraboost_default")
+    child = payload["method_metadata"]["info"]["children_info"]["S1F1"]
+    child["benchmark_regressor_product_parameters"]["n_estimators"] = 10_000
+
+    with pytest.raises(RuntimeError, match="child provenance"):
+        performance_result_row(payload, source="result.pkl")
+
+
 def test_same_machine_analyzer_is_complete_paired_and_deterministic():
     rows = _normalized_rows()
 
@@ -219,6 +241,11 @@ def test_same_machine_analyzer_rejects_noncanonical_provenance():
     provenance = _provenance()
     provenance["commit"] = "b" * 40
     with pytest.raises(RuntimeError, match="noncanonical provenance commit"):
+        validate_provenance(provenance)
+
+    provenance = _provenance()
+    provenance["darkofit_module_file"] = "/site-packages/darkofit/__init__.py"
+    with pytest.raises(RuntimeError, match="DarkoFit module is outside"):
         validate_provenance(provenance)
 
 

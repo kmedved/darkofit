@@ -235,6 +235,10 @@ Report paired, equal-dataset summaries for:
 - RMSE and validation RMSE so speed cannot conceal a quality change.
 
 Numba warmup is performed and recorded separately from steady-state timed fits.
+The runner warms representative numeric and categorical DarkoFit regression
+fit/predict paths as well as ChimeraBoost, verifies ChimeraBoost's pinned
+2,000-round product-default constructor, and requires a new output directory so
+cached results cannot be relabeled with new provenance.
 Preprocessing is measured by benchmark-only instrumentation around each
 package's own preprocessor; it must not be inferred by subtracting internal fit
 timers from wall time.

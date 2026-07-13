@@ -16,6 +16,9 @@ from autogluon.core.models import AbstractModel
 
 from benchmarks.tabarena_adapter import DarkoFitModel
 from benchmarks.preprocessing_instrumentation import capture_preprocessing
+from benchmarks.run_tabarena_same_machine_performance import (
+    CHIMERA_REGRESSOR_PRODUCT_DEFAULTS,
+)
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -129,13 +132,6 @@ class LocalChimeraBoostModel(AbstractModel):
             **fit_kwargs,
         )
 
-    def _set_default_params(self) -> None:
-        for parameter, value in {
-            "n_estimators": 10_000,
-            "early_stopping": True,
-        }.items():
-            self._set_default_param_value(parameter, value)
-
     def _get_default_auxiliary_params(self) -> dict:
         auxiliary = super()._get_default_auxiliary_params()
         auxiliary.update({"valid_raw_types": ["int", "float", "category"]})
@@ -157,6 +153,11 @@ class LocalChimeraBoostModel(AbstractModel):
         info["benchmark_source_commit"] = os.environ.get(
             "DARKOFIT_BENCH_CHIMERA_COMMIT"
         )
+        model = getattr(self, "model", None)
+        info["benchmark_regressor_product_parameters"] = {
+            name: getattr(model, name, None)
+            for name in CHIMERA_REGRESSOR_PRODUCT_DEFAULTS
+        }
         return info
 
 

@@ -28,10 +28,13 @@ from benchmarks.run_tabarena_regression_remaining9 import (  # noqa: E402
     TASK_SPLIT_COUNTS,
 )
 from benchmarks.run_tabarena_same_machine_performance import (  # noqa: E402
+    CACHE_POLICY,
+    CHIMERA_REGRESSOR_PRODUCT_DEFAULTS,
     FROZEN_CHIMERA_COMMIT,
     FROZEN_CHIMERA_VERSION,
     SPLIT_INDICES,
     TIME_LIMIT_SECONDS,
+    WARMUP_CASES,
 )
 
 
@@ -148,6 +151,11 @@ def validate_provenance(provenance: Mapping) -> dict:
         "time_limit_seconds": TIME_LIMIT_SECONDS,
         "split_indices": list(SPLIT_INDICES),
         "candidate": dict(FROZEN_CANDIDATE),
+        "cache_policy": CACHE_POLICY,
+        "chimera_regressor_product_defaults": dict(
+            CHIMERA_REGRESSOR_PRODUCT_DEFAULTS
+        ),
+        "warmup_cases": list(WARMUP_CASES),
     }
     for field, expected in required_equal.items():
         if provenance.get(field) != expected:
@@ -164,18 +172,33 @@ def validate_provenance(provenance: Mapping) -> dict:
     ):
         if not isinstance(provenance.get(field), str) or not provenance[field]:
             raise RuntimeError(f"provenance {field} must be a nonempty string")
+    for package, repository_field, module_field in (
+        ("ChimeraBoost", "repository", "module_file"),
+        ("DarkoFit", "darkofit_repository", "darkofit_module_file"),
+    ):
+        try:
+            Path(provenance[module_field]).resolve().relative_to(
+                Path(provenance[repository_field]).resolve()
+            )
+        except ValueError as exc:
+            raise RuntimeError(
+                f"provenance {package} module is outside its repository"
+            ) from exc
     darkofit_commit = provenance.get("darkofit_commit")
     if not isinstance(darkofit_commit, str) or not re.fullmatch(
         r"[0-9a-f]{40}", darkofit_commit
     ):
         raise RuntimeError("provenance darkofit_commit must be a full Git hash")
-    warmup_seconds = _finite(
-        provenance.get("chimeraboost_warmup_seconds"),
-        "chimeraboost_warmup_seconds",
-        positive=False,
-    )
-    if warmup_seconds < 0.0:
-        raise RuntimeError("chimeraboost_warmup_seconds must be nonnegative")
+    for package in ("darkofit", "chimeraboost"):
+        field = f"{package}_warmup_seconds"
+        warmup_seconds = _finite(
+            provenance.get(field),
+            field,
+            positive=False,
+        )
+        if warmup_seconds < 0.0:
+            raise RuntimeError(f"{field} must be nonnegative")
+    _positive_int(provenance.get("warmup_threads"), "warmup_threads")
     runtime = provenance.get("runtime")
     if not isinstance(runtime, Mapping):
         raise RuntimeError("provenance runtime must be a mapping")
@@ -321,6 +344,8 @@ def performance_result_row(record: Mapping, *, source: str) -> dict:
                 or child.get("benchmark_package_version")
                 != FROZEN_CHIMERA_VERSION
                 or child.get("benchmark_source_commit") != FROZEN_CHIMERA_COMMIT
+                or child.get("benchmark_regressor_product_parameters")
+                != CHIMERA_REGRESSOR_PRODUCT_DEFAULTS
             ):
                 raise RuntimeError(
                     f"{source}: noncanonical ChimeraBoost child provenance"
@@ -567,7 +592,8 @@ def analyze_performance_rows(rows: Sequence[Mapping], provenance: Mapping) -> di
         "limitations": [
             "Peak RSS is process-wide and can retain allocations from earlier jobs.",
             "The comparison is between product defaults, not matched hyperparameters.",
-            "ChimeraBoost warmup is recorded separately and excluded from fit times.",
+            "DarkoFit and ChimeraBoost warmups are recorded separately and "
+            "excluded from fit times.",
             "Preprocessing time sums every instrumented child fit_transform lane.",
         ],
     }

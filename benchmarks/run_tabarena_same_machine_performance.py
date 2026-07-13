@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import inspect
 import json
 import os
 import platform
@@ -38,6 +39,19 @@ EXPECTED_REGISTERED_ROWS = len(TASK_IDS) * len(SPLIT_INDICES)
 EXPECTED_JOBS = 3 * EXPECTED_REGISTERED_ROWS
 FROZEN_CHIMERA_VERSION = "0.14.1"
 FROZEN_CHIMERA_COMMIT = "07995af9e2b6212a41975a49931ee20af8f2cc14"
+CHIMERA_REGRESSOR_PRODUCT_DEFAULTS = {
+    "n_estimators": 2_000,
+    "learning_rate": None,
+    "depth": None,
+    "l2_leaf_reg": 1.0,
+    "max_bins": 128,
+    "cat_n_permutations": 4,
+    "early_stopping": True,
+    "ordered_boosting": False,
+    "linear_leaves": None,
+}
+CACHE_POLICY = "fresh_output_directory_required"
+WARMUP_CASES = ["numeric_regression", "categorical_regression"]
 
 
 def resolve_chimera_repo(
@@ -100,13 +114,18 @@ def darkofit_source_provenance(repo: Path) -> dict:
         raise RuntimeError("DarkoFit checkout must be clean for this comparison")
     import darkofit
 
+    module_file = Path(darkofit.__file__).resolve()
+    if not _is_within(module_file, repo):
+        raise RuntimeError(
+            f"darkofit imported from {module_file}, outside validated checkout {repo}"
+        )
     return {
         "darkofit_repository": str(repo),
         "darkofit_commit": commit,
         "darkofit_dirty": False,
         "darkofit_package": "darkofit",
         "darkofit_version_imported": darkofit.__version__,
-        "darkofit_module_file": str(Path(darkofit.__file__).resolve()),
+        "darkofit_module_file": str(module_file),
     }
 
 
@@ -121,6 +140,153 @@ def runtime_provenance() -> dict:
         "processor": platform.processor(),
         "logical_cpu_count": os.cpu_count(),
     }
+
+
+def chimera_regressor_product_defaults(chimeraboost) -> dict:
+    """Verify the pinned regressor signature used by the product-default lane."""
+    parameters = inspect.signature(chimeraboost.ChimeraBoostRegressor).parameters
+    try:
+        actual = {
+            name: parameters[name].default
+            for name in CHIMERA_REGRESSOR_PRODUCT_DEFAULTS
+        }
+    except KeyError as exc:
+        raise RuntimeError(
+            "pinned ChimeraBoost regressor defaults changed: "
+            f"missing constructor parameter {exc.args[0]!r}"
+        ) from exc
+    if actual != CHIMERA_REGRESSOR_PRODUCT_DEFAULTS:
+        raise RuntimeError(
+            "pinned ChimeraBoost regressor defaults changed: "
+            f"{actual!r} != {CHIMERA_REGRESSOR_PRODUCT_DEFAULTS!r}"
+        )
+    return actual
+
+
+def claim_fresh_output_directory(output_dir: Path) -> Path:
+    """Exclusively create a new output directory; cached results are forbidden."""
+    output_dir = output_dir.resolve()
+    try:
+        output_dir.mkdir(parents=True, exist_ok=False)
+    except FileExistsError as exc:
+        raise RuntimeError(
+            f"same-machine output directory must not already exist: {output_dir}"
+        ) from exc
+    claim = output_dir / ".same_machine_run_claim.json"
+    payload = {
+        "cache_policy": CACHE_POLICY,
+        "pid": os.getpid(),
+        "claimed_unix_seconds": time.time(),
+    }
+    try:
+        with claim.open("x") as stream:
+            json.dump(payload, stream, sort_keys=True)
+            stream.write("\n")
+    except FileExistsError as exc:
+        raise RuntimeError(
+            f"same-machine output directory is already claimed: {output_dir}"
+        ) from exc
+    return claim
+
+
+def _regression_warmup_data():
+    """Return deterministic numeric/categorical lanes shared by both packages."""
+    import numpy as np
+    import pandas as pd
+
+    rng = np.random.default_rng(20_260_712)
+    rows = 1_152
+    numeric = rng.normal(size=(rows, 4))
+    target = numeric[:, 0] - 0.5 * numeric[:, 1] + 0.05 * rng.normal(size=rows)
+    categorical = pd.DataFrame(
+        {
+            "numeric": numeric[:, 0],
+            "category": pd.Categorical(rng.integers(0, 5, size=rows)),
+        }
+    )
+    numeric_prediction = np.tile(numeric, (8, 1))
+    categorical_prediction = pd.concat([categorical] * 8, ignore_index=True)
+    return (
+        numeric,
+        categorical,
+        target,
+        numeric_prediction,
+        categorical_prediction,
+    )
+
+
+def warmup_darkofit_regression(thread_count: int) -> float:
+    """Warm the two DarkoFit regression configurations outside timed jobs."""
+    from darkofit import DarkoRegressor
+
+    started = time.perf_counter()
+    (
+        numeric,
+        categorical,
+        target,
+        numeric_prediction,
+        categorical_prediction,
+    ) = _regression_warmup_data()
+    common = {
+        "iterations": 2,
+        "early_stopping": True,
+        "tree_mode": "catboost",
+        "diagnostic_warnings": "never",
+        "thread_count": thread_count,
+        "random_state": 0,
+    }
+    numeric_model = DarkoRegressor(
+        **common,
+    ).fit(numeric[128:], target[128:], eval_set=(numeric[:128], target[:128]))
+    numeric_model.predict(numeric[:8])
+    numeric_model.predict(numeric_prediction)
+
+    categorical_model = DarkoRegressor(
+        **common,
+        **FROZEN_CANDIDATE,
+    ).fit(
+        categorical.iloc[128:],
+        target[128:],
+        cat_features=[1],
+        eval_set=(categorical.iloc[:128], target[:128]),
+    )
+    categorical_model.predict(categorical.iloc[:8])
+    categorical_model.predict(categorical_prediction)
+    return time.perf_counter() - started
+
+
+def warmup_chimeraboost_regression(chimeraboost, thread_count: int) -> float:
+    """Warm matching product-default ChimeraBoost regression paths."""
+    started = time.perf_counter()
+    (
+        numeric,
+        categorical,
+        target,
+        numeric_prediction,
+        categorical_prediction,
+    ) = _regression_warmup_data()
+    common = {
+        "n_estimators": 2,
+        "thread_count": thread_count,
+        "random_state": 0,
+    }
+    numeric_model = chimeraboost.ChimeraBoostRegressor(**common).fit(
+        numeric[128:],
+        target[128:],
+        eval_set=(numeric[:128], target[:128]),
+    )
+    numeric_model.predict(numeric[:8])
+    numeric_model.predict(numeric_prediction)
+
+    categorical_model = chimeraboost.ChimeraBoostRegressor(**common).fit(
+        categorical.iloc[128:],
+        target[128:],
+        cat_features=[1],
+        eval_set=(categorical.iloc[:128], target[:128]),
+    )
+    categorical_model.predict(categorical.iloc[:8])
+    categorical_model.predict(categorical_prediction)
+    return time.perf_counter() - started
 
 
 def _is_within(path: Path, parent: Path) -> bool:
@@ -283,6 +449,11 @@ def main(argv=None) -> int:
             "time_limit_seconds": TIME_LIMIT_SECONDS,
             "split_indices": list(SPLIT_INDICES),
             "candidate": dict(FROZEN_CANDIDATE),
+            "cache_policy": CACHE_POLICY,
+            "chimera_regressor_product_defaults": (
+                chimera_regressor_product_defaults(chimeraboost)
+            ),
+            "warmup_cases": list(WARMUP_CASES),
         }
     )
     os.environ["DARKOFIT_BENCH_CHIMERA_VERSION"] = chimeraboost.__version__
@@ -309,10 +480,19 @@ def main(argv=None) -> int:
         return 0
 
     output_dir = args.output_dir.resolve()
-    output_dir.mkdir(parents=True, exist_ok=True)
-    warmup_started = time.perf_counter()
-    chimeraboost.warmup()
-    provenance["chimeraboost_warmup_seconds"] = time.perf_counter() - warmup_started
+    claim = claim_fresh_output_directory(output_dir)
+    provenance["output_claim_file"] = str(claim)
+    from autogluon.common.utils.resource_utils import ResourceManager
+
+    warmup_threads = ResourceManager.get_cpu_count(only_physical_cores=True)
+    provenance["darkofit_warmup_seconds"] = warmup_darkofit_regression(
+        thread_count=warmup_threads
+    )
+    provenance["warmup_threads"] = warmup_threads
+    provenance["chimeraboost_warmup_seconds"] = warmup_chimeraboost_regression(
+        chimeraboost,
+        thread_count=warmup_threads,
+    )
     (output_dir / "provenance.json").write_text(
         json.dumps(provenance, indent=2, sort_keys=True) + "\n"
     )
