@@ -24,12 +24,76 @@ from bench_compare_revisions import (  # noqa: E402
     _effective_sampling,
     _selection_timing_fields,
 )
+from analyze_tabarena_regression_remaining9 import (  # noqa: E402
+    analyze_rows,
+    geometric_mean_ratio,
+    local_result_row,
+    registered_chimera_rows,
+    validate_local_rows,
+)
 from bench_wnba_kalman_replay import (  # noqa: E402
     paired_bootstrap_summaries,
     resolve_metric_r_floor,
     run_replay,
 )
 from weighted_metrics import metric_bundle  # noqa: E402
+
+
+SMALL_CONFIRMATION_TASKS = {
+    "alpha": (1001, 9),
+    "beta": (1002, 9),
+}
+
+
+def _small_confirmation_rows(candidate_ratio=0.99):
+    local = []
+    chimera = []
+    for dataset_index, (dataset, (task_id, split_count)) in enumerate(
+        SMALL_CONFIRMATION_TASKS.items()
+    ):
+        base = 10.0 + dataset_index
+        for registered_fold in range(split_count):
+            repeat, fold = divmod(registered_fold, 3)
+            common = {
+                "dataset": dataset,
+                "task_id": task_id,
+                "repeat": repeat,
+                "fold": fold,
+                "registered_fold": registered_fold,
+            }
+            local.append(
+                {
+                    **common,
+                    "config": "default",
+                    "rmse": base,
+                    "val_rmse": base + 1.0,
+                    "train_time_s": 2.0,
+                    "infer_time_s": 1.0,
+                    "peak_memory_bytes": 100.0,
+                }
+            )
+            local.append(
+                {
+                    **common,
+                    "config": "candidate",
+                    "rmse": base * candidate_ratio,
+                    "val_rmse": (base + 1.0) * 0.99,
+                    "train_time_s": 1.9,
+                    "infer_time_s": 1.05,
+                    "peak_memory_bytes": 102.0,
+                }
+            )
+            chimera.append(
+                {
+                    "dataset": dataset,
+                    "repeat": repeat,
+                    "fold": fold,
+                    "registered_fold": registered_fold,
+                    "rmse": base * 0.98,
+                    "val_rmse": (base + 1.0) * 0.98,
+                }
+            )
+    return local, chimera
 
 
 class IterationsEstimator:
@@ -329,6 +393,138 @@ def test_estimator_kwargs_default_tree_mode_variant_keeps_native_defaults():
     }
     assert "iterations" not in kwargs
     assert "depth" not in kwargs
+
+
+def test_remaining9_geometric_mean_ratio_is_paired_and_strict():
+    assert geometric_mean_ratio([2.0, 8.0], [1.0, 4.0]) == pytest.approx(2.0)
+    with pytest.raises(RuntimeError, match="different lengths"):
+        geometric_mean_ratio([1.0], [1.0, 2.0])
+    with pytest.raises(RuntimeError, match="positive and finite"):
+        geometric_mean_ratio([0.0], [1.0])
+
+
+def test_remaining9_local_result_row_identifies_only_frozen_configs():
+    def payload(hyperparameters):
+        return {
+            "problem_type": "regression",
+            "metric": "rmse",
+            "metric_error": 2.0,
+            "metric_error_val": 2.1,
+            "time_train_s": 3.0,
+            "time_infer_s": 0.2,
+            "memory_usage": {"peak_mem_cpu": 1000},
+            "framework": "DarkoFit_test_BAG_L1",
+            "task_metadata": {
+                "name": "alpha",
+                "tid": 1001,
+                "repeat": 0,
+                "fold": 1,
+                "split_idx": 1,
+            },
+            "method_metadata": {
+                "model_hyperparameters": {
+                    **hyperparameters,
+                    "ag_args": {"name_suffix": "_test"},
+                    "ag_args_ensemble": {"model_random_seed": 0},
+                },
+                "info": {"is_valid": True, "can_infer": True},
+            },
+        }
+
+    default = local_result_row(
+        payload({}), source="default", task_split_counts=SMALL_CONFIRMATION_TASKS
+    )
+    candidate = local_result_row(
+        payload(
+            {
+                "l2_leaf_reg": 1.0,
+                "max_bins": 128,
+                "learning_rate": 0.1,
+                "ts_permutations": 1,
+            }
+        ),
+        source="candidate",
+        task_split_counts=SMALL_CONFIRMATION_TASKS,
+    )
+
+    assert default["config"] == "default"
+    assert candidate["config"] == "candidate"
+    with pytest.raises(RuntimeError, match="unexpected non-AutoGluon"):
+        local_result_row(
+            payload({"learning_rate": 0.2}),
+            source="unknown",
+            task_split_counts=SMALL_CONFIRMATION_TASKS,
+        )
+
+
+def test_remaining9_validation_rejects_incomplete_and_imputed_panels():
+    local, _ = _small_confirmation_rows()
+    validate_local_rows(local, task_split_counts=SMALL_CONFIRMATION_TASKS)
+    with pytest.raises(RuntimeError, match="expected 18 unique successful candidate"):
+        validate_local_rows(local[:-1], task_split_counts=SMALL_CONFIRMATION_TASKS)
+
+    registered = []
+    for dataset in SMALL_CONFIRMATION_TASKS:
+        for fold in range(9):
+            registered.append(
+                {
+                    "dataset": dataset,
+                    "fold": fold,
+                    "method": "CHIMERA (default)",
+                    "metric_error": 1.0,
+                    "metric_error_val": 1.0,
+                    "metric": "rmse",
+                    "problem_type": "regression",
+                    "imputed": fold == 0 and dataset == "alpha",
+                }
+            )
+    with pytest.raises(RuntimeError, match="imputed"):
+        registered_chimera_rows(
+            registered, task_split_counts=SMALL_CONFIRMATION_TASKS
+        )
+
+
+def test_remaining9_analysis_emits_ratios_and_passes_predeclared_gates():
+    local, chimera = _small_confirmation_rows(candidate_ratio=0.99)
+
+    tidy, summary = analyze_rows(
+        local, chimera, task_split_counts=SMALL_CONFIRMATION_TASKS
+    )
+
+    assert len(tidy) == 18
+    assert tidy[0]["candidate_default_rmse_log_ratio"] == pytest.approx(
+        np.log(0.99)
+    )
+    assert summary["equal_dataset"]["candidate_default_rmse"][
+        "ratio"
+    ] == pytest.approx(0.99)
+    assert len(summary["common_repeat_aggregates"]) == 3
+    assert all(item["repeat_wins"] == 3 for item in summary["datasets"])
+    assert summary["matched_chimera"]["equal_dataset"][
+        "candidate_chimera_rmse"
+    ]["ratio"] == pytest.approx(0.99 / 0.98)
+    assert summary["gates"]["advance"] is True
+
+
+def test_remaining9_analysis_fails_exact_worst_split_gate():
+    local, chimera = _small_confirmation_rows(candidate_ratio=0.98)
+    bad = next(
+        row
+        for row in local
+        if row["config"] == "candidate"
+        and row["dataset"] == "alpha"
+        and row["repeat"] == 0
+        and row["fold"] == 0
+    )
+    bad["rmse"] = 10.0 * 1.021
+
+    _, summary = analyze_rows(
+        local, chimera, task_split_counts=SMALL_CONFIRMATION_TASKS
+    )
+
+    assert summary["gates"]["equal_dataset_rmse_improves_at_least_0_5pct"]
+    assert not summary["gates"]["no_split_regresses_more_than_2pct"]
+    assert not summary["gates"]["advance"]
 
 
 def test_default_revision_specs_expand_expected_labels():
