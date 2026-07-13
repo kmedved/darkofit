@@ -405,6 +405,27 @@ def test_remaining9_geometric_mean_ratio_is_paired_and_strict():
 
 def test_remaining9_local_result_row_identifies_only_frozen_configs():
     def payload(hyperparameters):
+        config_number = 1 if not hyperparameters else 2
+        suffix = f"_c{config_number}_remaining9_confirm"
+        children = {
+            f"S1F{seed + 1}": {
+                "name": f"S1F{seed + 1}",
+                "model_type": "DarkoFitModel",
+                "is_valid": True,
+                "can_infer": True,
+                "hyperparameters_user": dict(hyperparameters),
+                "hyperparameters_fit": {},
+                "hyperparameters": {
+                    "iterations": 1000,
+                    "early_stopping": True,
+                    "tree_mode": "catboost",
+                    "diagnostic_warnings": "never",
+                    **hyperparameters,
+                    "random_state": seed,
+                },
+            }
+            for seed in range(8)
+        }
         return {
             "problem_type": "regression",
             "metric": "rmse",
@@ -413,7 +434,7 @@ def test_remaining9_local_result_row_identifies_only_frozen_configs():
             "time_train_s": 3.0,
             "time_infer_s": 0.2,
             "memory_usage": {"peak_mem_cpu": 1000},
-            "framework": "DarkoFit_test_BAG_L1",
+            "framework": f"DarkoFit_c{config_number}_remaining9_confirm_BAG_L1",
             "task_metadata": {
                 "name": "alpha",
                 "tid": 1001,
@@ -424,10 +445,43 @@ def test_remaining9_local_result_row_identifies_only_frozen_configs():
             "method_metadata": {
                 "model_hyperparameters": {
                     **hyperparameters,
-                    "ag_args": {"name_suffix": "_test"},
-                    "ag_args_ensemble": {"model_random_seed": 0},
+                    "ag_args": {"name_suffix": suffix},
+                    "ag_args_ensemble": {
+                        "model_random_seed": 0,
+                        "vary_seed_across_folds": True,
+                        "fold_fitting_strategy": "sequential_local",
+                        "ag.max_time_limit": 3600,
+                    },
                 },
-                "info": {"is_valid": True, "can_infer": True},
+                "info": {
+                    "model_type": "StackerEnsembleModel",
+                    "is_valid": True,
+                    "can_infer": True,
+                    "bagged_info": {
+                        "child_model_type": "DarkoFitModel",
+                        "num_child_models": 8,
+                        "child_model_names": [
+                            f"S1F{fold}" for fold in range(1, 9)
+                        ],
+                        "_n_repeats": 1,
+                        "_k_per_n_repeat": [8],
+                        "child_hyperparameters_user": dict(hyperparameters),
+                        "child_hyperparameters_fit": {},
+                        "child_hyperparameters": {
+                            "iterations": 1000,
+                            "early_stopping": True,
+                            "tree_mode": "catboost",
+                            "diagnostic_warnings": "never",
+                            **hyperparameters,
+                            "random_state": 0,
+                        },
+                    },
+                    "children_info": children,
+                },
+            },
+            "experiment_metadata": {
+                "experiment_cls": "OOFExperimentRunner",
+                "method_cls": "AGSingleBagWrapper",
             },
         }
 
@@ -453,6 +507,81 @@ def test_remaining9_local_result_row_identifies_only_frozen_configs():
         local_result_row(
             payload({"learning_rate": 0.2}),
             source="unknown",
+            task_split_counts=SMALL_CONFIRMATION_TASKS,
+        )
+
+    incomplete = payload({})
+    incomplete["method_metadata"]["info"]["children_info"].pop("S1F8")
+    with pytest.raises(RuntimeError, match="expected 8 fitted child models"):
+        local_result_row(
+            incomplete,
+            source="incomplete",
+            task_split_counts=SMALL_CONFIRMATION_TASKS,
+        )
+
+    renamed = payload({})
+    renamed["method_metadata"]["info"]["children_info"]["renamed"] = renamed[
+        "method_metadata"
+    ]["info"]["children_info"].pop("S1F8")
+    with pytest.raises(RuntimeError, match="unexpected child model names"):
+        local_result_row(
+            renamed,
+            source="renamed",
+            task_split_counts=SMALL_CONFIRMATION_TASKS,
+        )
+
+    bad_seed = payload({})
+    bad_seed["method_metadata"]["info"]["children_info"]["S1F8"][
+        "hyperparameters"
+    ]["random_state"] = 6
+    with pytest.raises(RuntimeError, match="child S1F8 has seed 6; expected 7"):
+        local_result_row(
+            bad_seed,
+            source="bad-seed",
+            task_split_counts=SMALL_CONFIRMATION_TASKS,
+        )
+
+    bad_ensemble = payload({})
+    bad_ensemble["method_metadata"]["model_hyperparameters"][
+        "ag_args_ensemble"
+    ]["fold_fitting_strategy"] = "parallel_local"
+    with pytest.raises(RuntimeError, match="unexpected ag_args_ensemble"):
+        local_result_row(
+            bad_ensemble,
+            source="bad-ensemble",
+            task_split_counts=SMALL_CONFIRMATION_TASKS,
+        )
+
+    bad_child_type = payload({})
+    bad_child_type["method_metadata"]["info"]["children_info"]["S1F1"][
+        "model_type"
+    ] = "OtherModel"
+    with pytest.raises(RuntimeError, match="is not a DarkoFitModel"):
+        local_result_row(
+            bad_child_type,
+            source="bad-child-type",
+            task_split_counts=SMALL_CONFIRMATION_TASKS,
+        )
+
+    bad_child_params = payload({})
+    bad_child_params["method_metadata"]["info"]["children_info"]["S1F1"][
+        "hyperparameters_user"
+    ] = {"learning_rate": 0.2}
+    with pytest.raises(RuntimeError, match="user hyperparameters do not match"):
+        local_result_row(
+            bad_child_params,
+            source="bad-child-params",
+            task_split_counts=SMALL_CONFIRMATION_TASKS,
+        )
+
+    bad_child_fit = payload({})
+    bad_child_fit["method_metadata"]["info"]["children_info"]["S1F2"][
+        "hyperparameters_fit"
+    ] = {"iterations": 12}
+    with pytest.raises(RuntimeError, match="fitted hyperparameter overrides"):
+        local_result_row(
+            bad_child_fit,
+            source="bad-child-fit",
             task_split_counts=SMALL_CONFIRMATION_TASKS,
         )
 
@@ -503,6 +632,7 @@ def test_remaining9_analysis_emits_ratios_and_passes_predeclared_gates():
     assert summary["matched_chimera"]["equal_dataset"][
         "candidate_chimera_rmse"
     ]["ratio"] == pytest.approx(0.99 / 0.98)
+    assert summary["counts"]["expected_child_fits"] == 16 * 18
     assert summary["gates"]["advance"] is True
 
 

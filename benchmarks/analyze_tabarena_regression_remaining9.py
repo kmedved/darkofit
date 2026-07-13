@@ -11,6 +11,8 @@ from __future__ import annotations
 import argparse
 import csv
 import gzip
+import hashlib
+import io
 import json
 import math
 import pickle
@@ -19,11 +21,25 @@ from pathlib import Path
 from typing import Iterable, Mapping, Sequence, Union
 
 try:
+    from benchmarks.remaining9_run_manifest import (
+        ATTESTATION_SCHEMA_VERSION,
+        SCHEMA_VERSION,
+        load_and_verify_completion_attestation,
+        load_and_verify_manifest,
+        sha256_file,
+    )
     from benchmarks.run_tabarena_regression_remaining9 import (
         FROZEN_CANDIDATE,
         TASK_SPLIT_COUNTS,
     )
 except ModuleNotFoundError:  # Direct execution: python benchmarks/analyze_*.py
+    from remaining9_run_manifest import (
+        ATTESTATION_SCHEMA_VERSION,
+        SCHEMA_VERSION,
+        load_and_verify_completion_attestation,
+        load_and_verify_manifest,
+        sha256_file,
+    )
     from run_tabarena_regression_remaining9 import (
         FROZEN_CANDIDATE,
         TASK_SPLIT_COUNTS,
@@ -51,6 +67,32 @@ GATE_THRESHOLDS = {
     "infer_time_ratio_max": 1.10,
     "peak_memory_ratio_max": 1.10,
 }
+EXPECTED_AG_ENSEMBLE = {
+    "model_random_seed": 0,
+    "vary_seed_across_folds": True,
+    "fold_fitting_strategy": "sequential_local",
+    "ag.max_time_limit": 3_600,
+}
+EXPECTED_CHILD_DEFAULTS = {
+    "iterations": 1_000,
+    "early_stopping": True,
+    "tree_mode": "catboost",
+    "diagnostic_warnings": "never",
+}
+EXPECTED_CONFIG_NAMES = {
+    "default": {
+        "suffix": "_c1_remaining9_confirm",
+        "framework": "DarkoFit_c1_remaining9_confirm_BAG_L1",
+    },
+    "candidate": {
+        "suffix": "_c2_remaining9_confirm",
+        "framework": "DarkoFit_c2_remaining9_confirm_BAG_L1",
+    },
+}
+FROZEN_CHIMERA_ARTIFACT_SHA256 = (
+    "02a093f42931b1b53dd4fae7b88d5dd545ee51083b49142136410f28a4232275"
+)
+FROZEN_CHIMERA_ARTIFACT_SIZE_BYTES = 83_420
 
 
 def _positive_finite(value, field: str) -> float:
@@ -91,14 +133,153 @@ def geometric_mean_ratio(
     return math.exp(math.fsum(logs) / len(logs))
 
 
-def _user_hyperparameters(record: Mapping) -> dict:
-    try:
-        hyperparameters = dict(record["method_metadata"]["model_hyperparameters"])
-    except (KeyError, TypeError, ValueError) as exc:
-        raise RuntimeError("missing method_metadata.model_hyperparameters") from exc
-    hyperparameters.pop("ag_args", None)
-    hyperparameters.pop("ag_args_ensemble", None)
-    return hyperparameters
+def _as_mapping(value, field: str) -> Mapping:
+    if not isinstance(value, Mapping):
+        raise RuntimeError(f"{field} must be a mapping")
+    return value
+
+
+def _validate_fitted_model_metadata(
+    record: Mapping,
+    *,
+    source: str,
+    frozen_candidate: Mapping[str, object],
+) -> tuple[str, Mapping]:
+    """Verify the exact bagging contract and all eight fitted child models."""
+    method_metadata = _as_mapping(
+        record.get("method_metadata"), f"{source}: method_metadata"
+    )
+    raw_hyperparameters = dict(
+        _as_mapping(
+            method_metadata.get("model_hyperparameters"),
+            f"{source}: method_metadata.model_hyperparameters",
+        )
+    )
+    ag_args = raw_hyperparameters.pop("ag_args", None)
+    ag_args_ensemble = raw_hyperparameters.pop("ag_args_ensemble", None)
+    if raw_hyperparameters == {}:
+        config = "default"
+    elif raw_hyperparameters == dict(frozen_candidate):
+        config = "candidate"
+    else:
+        raise RuntimeError(
+            f"{source}: unexpected non-AutoGluon hyperparameters "
+            f"{raw_hyperparameters!r}"
+        )
+
+    expected_name = EXPECTED_CONFIG_NAMES[config]
+    if ag_args != {"name_suffix": expected_name["suffix"]}:
+        raise RuntimeError(f"{source}: unexpected ag_args for {config}: {ag_args!r}")
+    if ag_args_ensemble != EXPECTED_AG_ENSEMBLE:
+        raise RuntimeError(
+            f"{source}: unexpected ag_args_ensemble: {ag_args_ensemble!r}"
+        )
+    if record.get("framework") != expected_name["framework"]:
+        raise RuntimeError(
+            f"{source}: unexpected framework {record.get('framework')!r} for {config}"
+        )
+
+    experiment = _as_mapping(
+        record.get("experiment_metadata"), f"{source}: experiment_metadata"
+    )
+    if (
+        experiment.get("experiment_cls") != "OOFExperimentRunner"
+        or experiment.get("method_cls") != "AGSingleBagWrapper"
+    ):
+        raise RuntimeError(f"{source}: unexpected experiment implementation")
+
+    info = _as_mapping(
+        method_metadata.get("info"), f"{source}: method_metadata.info"
+    )
+    if info.get("is_valid") is not True or info.get("can_infer") is not True:
+        raise RuntimeError(f"{source}: result is not a successful inferable model")
+    if info.get("model_type") != "StackerEnsembleModel":
+        raise RuntimeError(
+            f"{source}: unexpected top-level model type {info.get('model_type')!r}"
+        )
+
+    bagged = _as_mapping(info.get("bagged_info"), f"{source}: bagged_info")
+    expected_bagged = {
+        "child_model_type": "DarkoFitModel",
+        "num_child_models": 8,
+        "child_model_names": [f"S1F{fold}" for fold in range(1, 9)],
+        "_n_repeats": 1,
+        "_k_per_n_repeat": [8],
+        "child_hyperparameters_user": raw_hyperparameters,
+        "child_hyperparameters_fit": {},
+    }
+    for field, expected in expected_bagged.items():
+        if bagged.get(field) != expected:
+            raise RuntimeError(
+                f"{source}: bagged_info.{field}={bagged.get(field)!r}; "
+                f"expected {expected!r}"
+            )
+    expected_base_child = {
+        **EXPECTED_CHILD_DEFAULTS,
+        **raw_hyperparameters,
+        "random_state": 0,
+    }
+    if bagged.get("child_hyperparameters") != expected_base_child:
+        raise RuntimeError(f"{source}: unexpected bagged child hyperparameters")
+
+    children = _as_mapping(info.get("children_info"), f"{source}: children_info")
+    if len(children) != 8:
+        raise RuntimeError(f"{source}: expected 8 fitted child models, got {len(children)}")
+    expected_child_names = {f"S1F{fold}" for fold in range(1, 9)}
+    if set(children) != expected_child_names:
+        raise RuntimeError(
+            f"{source}: unexpected child model names {sorted(children)!r}"
+        )
+    child_seeds = []
+    for child_name, child_value in children.items():
+        child = _as_mapping(child_value, f"{source}: child {child_name}")
+        if child.get("model_type") != "DarkoFitModel":
+            raise RuntimeError(
+                f"{source}: child {child_name} is not a DarkoFitModel"
+            )
+        if child.get("is_valid") is not True or child.get("can_infer") is not True:
+            raise RuntimeError(
+                f"{source}: child {child_name} is not valid and inferable"
+            )
+        if child.get("hyperparameters_user") != raw_hyperparameters:
+            raise RuntimeError(
+                f"{source}: child {child_name} user hyperparameters do not match"
+            )
+        if child.get("name") != child_name:
+            raise RuntimeError(
+                f"{source}: child {child_name} reports name {child.get('name')!r}"
+            )
+        if child.get("hyperparameters_fit") != {}:
+            raise RuntimeError(
+                f"{source}: child {child_name} has fitted hyperparameter overrides"
+            )
+        child_hyperparameters = _as_mapping(
+            child.get("hyperparameters"),
+            f"{source}: child {child_name} hyperparameters",
+        )
+        seed = child_hyperparameters.get("random_state")
+        expected_child = {
+            **EXPECTED_CHILD_DEFAULTS,
+            **raw_hyperparameters,
+            "random_state": seed,
+        }
+        if dict(child_hyperparameters) != expected_child:
+            raise RuntimeError(
+                f"{source}: child {child_name} effective hyperparameters do not match"
+            )
+        if isinstance(seed, bool) or not isinstance(seed, int):
+            raise RuntimeError(f"{source}: child {child_name} has invalid seed {seed!r}")
+        expected_seed = int(str(child_name).removeprefix("S1F")) - 1
+        if seed != expected_seed:
+            raise RuntimeError(
+                f"{source}: child {child_name} has seed {seed}; expected {expected_seed}"
+            )
+        child_seeds.append(seed)
+    if sorted(child_seeds) != list(range(8)):
+        raise RuntimeError(
+            f"{source}: expected fold-wise child seeds 0..7, got {sorted(child_seeds)!r}"
+        )
+    return config, info
 
 
 def local_result_row(
@@ -137,19 +318,11 @@ def local_result_row(
             f"{source}: split_idx={split_idx} does not equal {registered_fold}"
         )
 
-    info = record.get("method_metadata", {}).get("info", {})
-    if info.get("is_valid") is not True or info.get("can_infer") is not True:
-        raise RuntimeError(f"{source}: result is not a successful inferable model")
-
-    hyperparameters = _user_hyperparameters(record)
-    if hyperparameters == {}:
-        config = "default"
-    elif hyperparameters == dict(frozen_candidate):
-        config = "candidate"
-    else:
-        raise RuntimeError(
-            f"{source}: unexpected non-AutoGluon hyperparameters {hyperparameters!r}"
-        )
+    config, _ = _validate_fitted_model_metadata(
+        record,
+        source=source,
+        frozen_candidate=frozen_candidate,
+    )
 
     memory = record.get("memory_usage")
     if not isinstance(memory, Mapping):
@@ -176,7 +349,7 @@ def local_result_row(
         "peak_memory_bytes": _positive_finite(
             memory.get("peak_mem_cpu"), f"{source}: peak_mem_cpu"
         ),
-        "framework": str(record.get("framework", "")),
+        "framework": str(record["framework"]),
         "source": source,
     }
 
@@ -185,18 +358,29 @@ def load_local_rows(
     input_dir: Path,
     *,
     task_split_counts: Mapping[str, tuple[int, int]] = TASK_SPLIT_COUNTS,
+    verified_result_payloads: Mapping[str, bytes] | None = None,
 ) -> list[dict]:
     """Read every gzip result in ``input_dir`` and require the complete panel."""
-    paths = sorted(input_dir.rglob("results.pkl"))
-    paths.extend(sorted(input_dir.rglob("results.pkl.gz")))
-    if not paths:
+    if verified_result_payloads is None:
+        paths = sorted(input_dir.rglob("results.pkl"))
+        paths.extend(sorted(input_dir.rglob("results.pkl.gz")))
+        inputs = [(path, None) for path in paths]
+    else:
+        inputs = [
+            (input_dir / relative, payload)
+            for relative, payload in sorted(verified_result_payloads.items())
+        ]
+    if not inputs:
         raise RuntimeError(f"no gzip result pickles found under {input_dir}")
 
     rows = []
-    for path in paths:
+    for path, verified_payload in inputs:
         try:
-            with gzip.open(path, "rb") as stream:
-                record = pickle.load(stream)
+            if verified_payload is None:
+                with gzip.open(path, "rb") as stream:
+                    record = pickle.load(stream)
+            else:
+                record = pickle.loads(gzip.decompress(verified_payload))
         except Exception as exc:
             raise RuntimeError(f"failed to read gzip result {path}: {exc}") from exc
         if not isinstance(record, Mapping):
@@ -310,6 +494,82 @@ def registered_chimera_rows(
                     f"missing registered CHIMERA row for {(dataset, registered_fold)}"
                 )
     return out
+
+
+def load_frozen_chimera_results(context) -> tuple[object, dict]:
+    """Load the exact registered ChimeraBoost parquet bytes frozen for this run."""
+    method = context.method_metadata(method="ChimeraBoost")
+    if method.method_type != "config":
+        raise RuntimeError(
+            f"registered ChimeraBoost method type is {method.method_type!r}, not 'config'"
+        )
+    path = Path(method.path_results_hpo()).resolve()
+    try:
+        stat_before = path.stat()
+        payload = path.read_bytes()
+        stat_after = path.stat()
+    except OSError as exc:
+        raise RuntimeError(
+            f"failed to read frozen ChimeraBoost results artifact {path}: {exc}"
+        ) from exc
+    if (
+        stat_before.st_size != stat_after.st_size
+        or stat_before.st_mtime_ns != stat_after.st_mtime_ns
+    ):
+        raise RuntimeError("ChimeraBoost results artifact changed while being read")
+    digest = hashlib.sha256(payload).hexdigest()
+    if (
+        stat_after.st_size != FROZEN_CHIMERA_ARTIFACT_SIZE_BYTES
+        or digest != FROZEN_CHIMERA_ARTIFACT_SHA256
+    ):
+        raise RuntimeError(
+            "registered ChimeraBoost results artifact does not match the frozen bytes"
+        )
+
+    import pandas as pd
+
+    try:
+        results = pd.read_parquet(io.BytesIO(payload))
+    except Exception as exc:
+        raise RuntimeError(
+            f"failed to decode frozen ChimeraBoost results artifact {path}: {exc}"
+        ) from exc
+    return results, {
+        "path": str(path),
+        "sha256": digest,
+        "size_bytes": stat_after.st_size,
+        "mtime_ns": stat_after.st_mtime_ns,
+        "method": "ChimeraBoost",
+        "method_type": method.method_type,
+    }
+
+
+def normalized_chimera_rows_sha256(rows: Sequence[Mapping]) -> str:
+    """Return a stable digest of the exact normalized comparison coordinates."""
+    canonical = [
+        {
+            "dataset": str(row["dataset"]),
+            "repeat": int(row["repeat"]),
+            "fold": int(row["fold"]),
+            "registered_fold": int(row["registered_fold"]),
+            "rmse_hex": float(row["rmse"]).hex(),
+            "val_rmse_hex": float(row["val_rmse"]).hex(),
+        }
+        for row in sorted(
+            rows,
+            key=lambda item: (
+                str(item["dataset"]),
+                int(item["registered_fold"]),
+            ),
+        )
+    ]
+    payload = json.dumps(
+        canonical,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode()
+    return hashlib.sha256(payload).hexdigest()
 
 
 def _ratio_fields(prefix: str, numerator: float, denominator: float) -> dict:
@@ -581,6 +841,7 @@ def analyze_rows(
             "dataset_splits": expected,
             "local_default_rows": expected,
             "local_candidate_rows": expected,
+            "expected_child_fits": 16 * expected,
             "registered_chimera_rows": expected,
         },
         "thresholds": dict(GATE_THRESHOLDS),
@@ -608,6 +869,8 @@ def _write_csv(path: Path, rows: Sequence[Mapping]) -> None:
 def parse_args(argv=None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input-dir", type=Path, required=True)
+    parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--attestation", type=Path, required=True)
     parser.add_argument("--csv", type=Path, required=True)
     parser.add_argument("--json", type=Path, required=True)
     return parser.parse_args(argv)
@@ -615,13 +878,74 @@ def parse_args(argv=None) -> argparse.Namespace:
 
 def main(argv=None) -> int:
     args = parse_args(argv)
-    local_rows = load_local_rows(args.input_dir)
+    manifest, manifest_sha256 = load_and_verify_manifest(
+        args.manifest, input_dir=args.input_dir
+    )
+    (
+        attestation,
+        attestation_sha256,
+        verified_result_payloads,
+    ) = load_and_verify_completion_attestation(
+        args.attestation,
+        manifest=manifest,
+        manifest_sha256=manifest_sha256,
+        input_dir=args.input_dir,
+    )
+    local_rows = load_local_rows(
+        args.input_dir,
+        verified_result_payloads=verified_result_payloads,
+    )
 
     from tabarena.contexts import TabArenaContext
 
-    registered = TabArenaContext().load_results(methods=["ChimeraBoost"])
+    registered, chimera_artifact = load_frozen_chimera_results(TabArenaContext())
     chimera_rows = registered_chimera_rows(registered)
+    chimera_artifact["selected_rows"] = len(chimera_rows)
+    chimera_artifact["selected_rows_sha256"] = normalized_chimera_rows_sha256(
+        chimera_rows
+    )
     tidy, summary = analyze_rows(local_rows, chimera_rows)
+    summary["counts"]["validated_child_fits"] = summary["counts"][
+        "expected_child_fits"
+    ]
+    summary["provenance"] = {
+        "analyzer": {
+            "path": str(Path(__file__).resolve()),
+            "sha256": sha256_file(Path(__file__)),
+        },
+        "provenance_validator": {
+            "path": str(Path(load_and_verify_manifest.__code__.co_filename).resolve()),
+            "sha256": sha256_file(
+                Path(load_and_verify_manifest.__code__.co_filename).resolve()
+            ),
+            "manifest_schema_version": SCHEMA_VERSION,
+            "attestation_schema_version": ATTESTATION_SCHEMA_VERSION,
+        },
+        "manifest_path": str(args.manifest.resolve()),
+        "manifest_sha256": manifest_sha256,
+        "captured_at_utc": manifest["captured_at_utc"],
+        "completion_attestation": {
+            "path": str(args.attestation.resolve()),
+            "sha256": attestation_sha256,
+            "watch_started_utc": attestation["watch_started_utc"],
+            "completed_utc": attestation["completed_utc"],
+            "runner_pid": attestation["runner_pid"],
+            "expected_results": attestation["expected_results"],
+            "observed_results_count": len(attestation["observed_results"]),
+            "run_manifest_sha256": attestation["run_manifest_sha256"],
+        },
+        "registered_chimera_artifact": chimera_artifact,
+        "runner": manifest["runner"],
+        "adapter": manifest["adapter"],
+        "darkofit": manifest["darkofit"],
+        "tabarena": manifest["tabarena"],
+        "python": manifest["python"],
+        "packages": manifest["packages"],
+        "runtime_configuration": manifest["runtime_configuration"],
+        "environment": manifest["environment"],
+        "process": manifest["process"],
+        "result_snapshot": manifest["result_snapshot"],
+    }
     _write_csv(args.csv, tidy)
     args.json.parent.mkdir(parents=True, exist_ok=True)
     args.json.write_text(

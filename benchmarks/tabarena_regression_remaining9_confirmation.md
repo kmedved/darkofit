@@ -1,7 +1,9 @@
 # TabArena remaining-nine regression confirmation
 
-_Protocol frozen on 2026-07-12 before candidate results were generated. The
-source under test is DarkoFit commit `224bd46`. Results are pending._
+_The executed matrix was fixed by the runner bytes present before PID 43239
+started on 2026-07-12. The protocol narrative was committed after results had
+begun, so this is not claimed as Git-backed preregistration. The source under
+test is DarkoFit commit `224bd46`; aggregate results remain pending analysis._
 
 ## Objective and frozen candidate
 
@@ -144,3 +146,56 @@ provenance, failures and imputation status, raw timing artifacts, gate outcomes,
 matched ChimeraBoost quality, and limitations. Public defaults change only if
 this gate and the later classification, weighted-data, other-loss, and
 tree-mode checks support the same narrowly scoped policy.
+
+## Execution-time provenance addendum
+
+_Added on 2026-07-13 while the runner was active and before any aggregate was
+computed. This adds evidence checks only; it does not change the candidate,
+matrix, estimand, thresholds, or gates above._
+
+The resumable result cache is accepted only with an in-flight run manifest and
+a live completion attestation. The manifest records the active PID and command,
+runner and adapter hashes and pre-start mtimes, the exact DarkoFit library tree
+at `224bd46`, the clean TabArena source commit, Python and package versions,
+thread/runtime configuration, relevant environment variables, and the frozen
+matrix. Together with the attestation, it provides checked evidence that the
+accepted cache files do not predate the runner. These local JSON artifacts are
+integrity evidence for accidental cache mixing, not signed tamper proofs.
+
+Capture it while the runner is active:
+
+```text
+PYTHONPATH=. NUMBA_CACHE_DIR=.cache/numba-tabarena-remaining9 \
+  /Users/kmedved/.venvs/tabarena-darko312/bin/python \
+  benchmarks/remaining9_run_manifest.py --pid <RUNNER_PID>
+```
+
+Then start the versioned completion watcher while the same runner is active:
+
+```text
+PYTHONPATH=. NUMBA_CACHE_DIR=.cache/numba-tabarena-remaining9 \
+  /Users/kmedved/.venvs/tabarena-darko312/bin/python \
+  benchmarks/remaining9_run_manifest.py --pid <RUNNER_PID> \
+  --watch-completion
+```
+
+The watcher observes the sole runner PID and
+hashes every one of the 330 final cache files while that PID is still alive.
+Its completion attestation binds the exact path set, byte hashes, sizes, and
+nanosecond mtimes to the manifest digest. The analyzer requires both
+`run_manifest.json` via `--manifest` and this attestation via `--attestation`.
+It verifies those artifacts before opening any result payload, then validates
+the exact eight-child bagging contract, child validity and model type,
+user/effective hyperparameters, fold strategy, and seeds for all 330 jobs
+before calculating any aggregate.
+
+For the 2026-07-12 execution, the equivalent live watcher was started as a
+one-off process before this versioned watch mode was committed. The retained
+attestation uses the same schema; the analyzer independently rehashes every
+file and validates all watcher claims before deserializing the verified bytes.
+
+The registered ChimeraBoost comparison is likewise read once from the frozen
+`hpo_results.parquet` bytes rather than through an auto-downloading cache path.
+The analyzer requires the pre-aggregate SHA-256 and size frozen in its source,
+uses those same verified bytes for decoding, and records both the raw artifact
+identity and a canonical digest of the 165 normalized comparison rows.
