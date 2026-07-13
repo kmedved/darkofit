@@ -226,6 +226,71 @@ def test_zero_time_limit_stops_before_first_boosting_attempt(
     assert model.params_trained["iterations"] == 0
 
 
+def test_tree_mode_auto_exposes_shared_deadline_candidate_metadata(
+    tmp_path,
+    regression_data,
+):
+    hyperparameters = dict(FIXED_HYPERPARAMETERS)
+    hyperparameters["tree_mode"] = "auto"
+    model = DarkoFitModel(
+        path=str(tmp_path),
+        name="darkofit_auto_zero_limit",
+        problem_type="regression",
+        hyperparameters=hyperparameters,
+    )
+    fit_kwargs = _fit_kwargs(regression_data, time_limit=0.0)
+
+    model.initialize(**fit_kwargs)
+    model._register_fit_metadata(**fit_kwargs)
+    model._fit(**fit_kwargs)
+
+    metadata = model.get_fit_metadata()["darkofit_fit"]
+    selection = metadata["tree_mode_selection"]
+    candidates = selection["candidates"]
+    assert metadata["requested_tree_mode"] == "auto"
+    assert metadata["selected_tree_mode"] == selection["selected_tree_mode"]
+    assert metadata["selected_lane"] == selection["selected_lane"] == "boosting"
+    assert metadata["deadline_hit"] is True
+    assert selection["deadline_hit"] is True
+    assert selection["wall_clock_stopper_count"] == 1
+    assert selection["candidate_count"] == 3
+    assert selection["fitted_candidate_count"] == 1
+    assert selection["skipped_deadline_candidate_count"] == 2
+    assert selection["candidate_fit_status_counts"] == {
+        "fitted": 1,
+        "skipped_deadline": 2,
+    }
+    assert [candidate["tree_mode"] for candidate in candidates] == [
+        "catboost", "lightgbm", "hybrid",
+    ]
+    assert sum(candidate["selected"] for candidate in candidates) == 1
+    fitted, *skipped = candidates
+    assert fitted["fit_status"] == "fitted"
+    assert fitted["iterations_attempted"] == 0
+    assert fitted["rounds_completed"] == 0
+    assert fitted["rounds_retained"] == 0
+    assert fitted["best_iteration"] == 0
+    assert fitted["resolved_learning_rate"] == 0.1
+    assert fitted["stop_reason"] == "time_limit"
+
+    for candidate in skipped:
+        assert candidate["fit_status"] == "skipped_deadline"
+        assert candidate["iterations_attempted"] == 0
+        assert candidate["rounds_completed"] == 0
+        assert candidate["rounds_retained"] == 0
+        assert candidate["best_iteration"] is None
+        assert candidate["resolved_learning_rate"] is None
+        assert candidate["validation_score"] is None
+        assert candidate["stop_reason"] == "time_limit"
+        assert candidate["deadline_hit_end"] is True
+        assert candidate["deadline_hit"] is True
+        assert type(candidate["wall_clock_elapsed_seconds_end"]) is float
+        assert (
+            candidate["wall_clock_elapsed_seconds"]
+            == candidate["wall_clock_elapsed_seconds_end"]
+        )
+
+
 def test_tabarena_single_bag_persists_all_eight_child_metadata_blocks(tmp_path):
     pytest.importorskip("tabarena")
     from tabarena.contexts import TabArenaContext

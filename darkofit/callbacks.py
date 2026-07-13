@@ -69,12 +69,15 @@ class WallClockStopper:
     def deadline_hit(self):
         return self._deadline_hit
 
-    def __call__(self, progress):
-        del progress
+    def check_deadline(self):
+        """Refresh and return deadline state at a safe work boundary."""
         if time.monotonic() >= self._deadline:
             self._deadline_hit = True
-            return True
-        return False
+        return self._deadline_hit
+
+    def __call__(self, progress):
+        del progress
+        return self.check_deadline()
 
 
 def _normalize_callbacks(callbacks):

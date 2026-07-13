@@ -46,7 +46,10 @@ previous behaviors remain available through explicit parameters.
   rounds plus their stop reason; the metadata survives safe `.npz` round trips
   without serializing callback objects. The TabArena adapter records the same
   diagnostics for every bag child so cap saturation and deadlines are directly
-  auditable. A frozen 444-job, 3,552-child TabArena comparison then retained
+  auditable. Automatic tree-mode selection shares one callback/deadline across
+  its CatBoost, LightGBM, and hybrid candidates and records each candidate's
+  rounds, score, learning rate, stop reason, selection state, and deadline
+  timing. A frozen 444-job, 3,552-child TabArena comparison then retained
   the 1,000-round scalar-regression horizon: 10,000 rounds improved
   equal-dataset test RMSE by 0.453% but missed the required 0.5% gate and added
   12.88% training time plus 10.65% inference time. See the

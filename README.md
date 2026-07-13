@@ -354,11 +354,14 @@ print(model.model_.training_metadata_)
 ```
 
 The fitted metadata records requested, attempted, completed, and retained
-rounds; the best prefix; and the stop reason. Callbacks are supported for a
-single concrete booster fit. They are intentionally rejected with
-`tree_mode="auto"`, automatic learning-rate probes, or `refit=True`, because
-those policies launch multiple fits and do not yet define a shared callback
-budget.
+rounds; the best prefix; and the stop reason. With `tree_mode="auto"`, the same
+callback objects and monotonic deadline are shared across the CatBoost,
+LightGBM, and hybrid candidates. Candidate metadata records each fit's rounds,
+score, learning rate, stop reason, and deadline state; candidates not yet
+started when the deadline expires are marked `skipped_deadline` without paying
+another setup pass. Callbacks remain intentionally rejected with automatic
+learning-rate probes or `refit=True`, whose additional-fit budget semantics are
+not defined.
 
 Automatic validation splitting keeps `validation_fraction=0.1` by default.
 Pass `validation_fraction="auto"` to resolve a held-out fraction from Kish

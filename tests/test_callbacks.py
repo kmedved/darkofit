@@ -263,10 +263,8 @@ def test_sklearn_wrapper_forwards_single_fit_callback():
     "estimator",
     [
         DarkoRegressor(refit=True),
-        DarkoRegressor(tree_mode="auto"),
         DarkoRegressor(auto_learning_rate_probe=True),
         DarkoClassifier(refit=True),
-        DarkoClassifier(tree_mode="auto"),
         DarkoClassifier(auto_learning_rate_probe=True),
     ],
 )
@@ -276,6 +274,144 @@ def test_sklearn_wrapper_rejects_callbacks_for_multi_fit_policies(estimator):
         y = (y > np.median(y)).astype(int)
     with pytest.raises(ValueError, match="callbacks are not supported"):
         estimator.fit(X, y, callbacks=lambda progress: False)
+
+
+def test_tree_mode_auto_shares_wall_clock_stopper_and_audits_candidates():
+    X, y = _regression_data(seed=18)
+    stopper = WallClockStopper(0.0)
+    model = DarkoRegressor(
+        iterations=5,
+        learning_rate=0.1,
+        tree_mode="auto",
+        depth=2,
+        min_child_samples=2,
+        thread_count=1,
+        random_state=0,
+        diagnostic_warnings="never",
+    ).fit(X[:90], y[:90], eval_set=(X[90:], y[90:]), callbacks=stopper)
+
+    selection = model.tree_mode_selection_
+    candidates = selection["candidates"]
+    assert [candidate["tree_mode"] for candidate in candidates] == [
+        "catboost", "lightgbm", "hybrid",
+    ]
+    assert sum(candidate["selected"] for candidate in candidates) == 1
+    selected_candidate = candidates[selection["selected_candidate_index"]]
+    assert selected_candidate["selected"] is True
+    assert selection["selected_tree_mode"] == model.model_.tree_mode_
+    assert selection["selected_lane"] == "boosting"
+    assert selection["candidate_count"] == 3
+    assert selection["fitted_candidate_count"] == 1
+    assert selection["skipped_deadline_candidate_count"] == 2
+    assert selection["candidate_fit_status_counts"] == {
+        "fitted": 1,
+        "skipped_deadline": 2,
+    }
+    assert selection["wall_clock_stopper_count"] == 1
+    assert selection["deadline_hit"] is True
+    assert type(selection["wall_clock_elapsed_seconds"]) is float
+
+    elapsed = []
+    fitted, *skipped = candidates
+    assert fitted["fit_status"] == "fitted"
+    assert fitted["iterations_requested"] == 5
+    assert fitted["iterations_attempted"] == 0
+    assert fitted["rounds_completed"] == 0
+    assert fitted["rounds_retained"] == 0
+    assert fitted["best_iteration"] == 0
+    assert fitted["best_prefix_round"] is None
+    assert fitted["stop_reason"] == "time_limit"
+    assert fitted["resolved_learning_rate"] == 0.1
+    assert np.isfinite(fitted["validation_score"])
+
+    for candidate in skipped:
+        assert candidate["fit_status"] == "skipped_deadline"
+        assert candidate["iterations_requested"] == 5
+        assert candidate["iterations_attempted"] == 0
+        assert candidate["rounds_completed"] == 0
+        assert candidate["rounds_retained"] == 0
+        assert candidate["best_iteration"] is None
+        assert candidate["best_prefix_round"] is None
+        assert candidate["stop_reason"] == "time_limit"
+        assert candidate["resolved_learning_rate"] is None
+        assert candidate["validation_score"] is None
+        assert candidate["probe"] == {
+            "enabled": False,
+            "reason": "skipped_deadline",
+        }
+        assert candidate["lane"] == "boosting"
+        assert candidate["wall_clock_stopper_count"] == 1
+        assert candidate["deadline_hit_end"] is True
+        assert type(candidate["wall_clock_elapsed_seconds_start"]) is float
+        assert type(candidate["wall_clock_elapsed_seconds_end"]) is float
+        assert (
+            candidate["wall_clock_elapsed_seconds"]
+            == candidate["wall_clock_elapsed_seconds_end"]
+        )
+        assert candidate["deadline_hit"] is True
+        assert (
+            candidate["wall_clock_elapsed_seconds_end"]
+            >= candidate["wall_clock_elapsed_seconds_start"]
+        )
+    for candidate in candidates:
+        elapsed.extend([
+            candidate["wall_clock_elapsed_seconds_start"],
+            candidate["wall_clock_elapsed_seconds_end"],
+        ])
+    assert elapsed == sorted(elapsed)
+    assert model.model_.auto_params_["tree_mode_selection"] == selection
+
+
+def test_tree_mode_auto_reuses_callback_objects_for_classifier_candidates():
+    X, y = _regression_data(seed=19)
+    labels = (y > np.median(y)).astype(int)
+    observed_first_rounds = []
+
+    class Observer:
+        def __call__(self, progress):
+            if progress.next_iteration == 0:
+                observed_first_rounds.append(progress)
+            return False
+
+    observer = Observer()
+    model = DarkoClassifier(
+        iterations=2,
+        learning_rate=0.1,
+        tree_mode="auto",
+        depth=2,
+        min_child_samples=2,
+        thread_count=1,
+        random_state=0,
+        diagnostic_warnings="never",
+    ).fit(
+        X[:90], labels[:90],
+        eval_set=(X[90:], labels[90:]),
+        callbacks=(callback for callback in [observer]),
+    )
+
+    assert len(observed_first_rounds) == 3
+    assert all(
+        progress.iterations_attempted == 0
+        for progress in observed_first_rounds
+    )
+    assert all(
+        progress.rounds_completed == 0
+        for progress in observed_first_rounds
+    )
+    assert len(model.tree_mode_selection_["candidates"]) == 3
+    assert model.tree_mode_selection_["candidate_fit_status_counts"] == {
+        "fitted": 3,
+        "skipped_deadline": 0,
+    }
+    assert all(
+        candidate["fit_status"] == "fitted"
+        and candidate["wall_clock_stopper_count"] == 0
+        and candidate["wall_clock_elapsed_seconds_start"] is None
+        and candidate["wall_clock_elapsed_seconds_end"] is None
+        and candidate["deadline_hit_start"] is False
+        and candidate["deadline_hit_end"] is False
+        for candidate in model.tree_mode_selection_["candidates"]
+    )
 
 
 @pytest.mark.parametrize(

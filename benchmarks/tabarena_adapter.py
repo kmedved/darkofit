@@ -6,6 +6,7 @@ This module intentionally lives with the benchmark tooling instead of the
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from autogluon.common.utils.resource_utils import ResourceManager
@@ -132,7 +133,13 @@ class DarkoFitModel(AbstractModel):
             getattr(self.model, "linear_residual_active_", False)
         )
         stop_reason = str(core_model.stop_reason_)
-        self._fit_metadata["darkofit_fit"] = {
+        tree_mode_selection = getattr(
+            self.model, "tree_mode_selection_", None
+        )
+        deadline_hit = stop_reason == "time_limit"
+        if tree_mode_selection is not None and deadline is not None:
+            deadline_hit = bool(deadline.deadline_hit)
+        fitted_metadata = {
             "iterations_requested": int(params["iterations"]),
             "iterations_attempted": int(core_model.iterations_attempted_),
             "rounds_completed": int(core_model.rounds_completed_),
@@ -161,9 +168,14 @@ class DarkoFitModel(AbstractModel):
             "wall_clock_elapsed_seconds": (
                 None if deadline is None else float(deadline.elapsed_seconds)
             ),
-            "deadline_hit": stop_reason == "time_limit",
+            "deadline_hit": deadline_hit,
             "deadline_is_soft": deadline is not None,
         }
+        if tree_mode_selection is not None:
+            fitted_metadata["tree_mode_selection"] = deepcopy(
+                tree_mode_selection
+            )
+        self._fit_metadata["darkofit_fit"] = fitted_metadata
 
     def _set_default_params(self) -> None:
         defaults = {

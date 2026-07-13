@@ -26,7 +26,7 @@ from .auto_params import (
     is_auto_learning_rate,
     resolve_learning_rate_details,
 )
-from .callbacks import _normalize_callbacks
+from .callbacks import WallClockStopper, _normalize_callbacks
 from .losses import VECTOR_LOSSES
 from .linear_residual import WeightedRidgeTrend, validate_linear_residual_loss
 from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin
@@ -70,6 +70,31 @@ def _normalize_tree_mode_token(tree_mode):
 
 def _is_auto_tree_mode(tree_mode):
     return _normalize_tree_mode_token(tree_mode) == "auto"
+
+
+def _wall_clock_callback_state(callbacks, *, refresh_deadline=False):
+    """Snapshot aggregate state from shared monotonic deadline callbacks."""
+    stoppers = tuple(
+        callback
+        for callback in callbacks
+        if isinstance(callback, WallClockStopper)
+    )
+    if not stoppers:
+        return {
+            "wall_clock_stopper_count": 0,
+            "wall_clock_elapsed_seconds": None,
+            "deadline_hit": False,
+        }
+    if refresh_deadline:
+        for stopper in stoppers:
+            stopper.check_deadline()
+    return {
+        "wall_clock_stopper_count": len(stoppers),
+        "wall_clock_elapsed_seconds": max(
+            float(stopper.elapsed_seconds) for stopper in stoppers
+        ),
+        "deadline_hit": any(stopper.deadline_hit for stopper in stoppers),
+    }
 
 
 def _should_early_stop(setting):
@@ -1452,14 +1477,59 @@ class _RefitParamsMixin:
 
     def _fit_tree_mode_auto(
         self, make_model, fit_kwargs, X, y, *, cat_features, eval_set,
-        sample_weight, eval_sample_weight
+        sample_weight, eval_sample_weight, callbacks=()
     ):
         results = []
         best_model = None
         best_score = np.inf
         best_probe_metadata = None
+        best_candidate_index = None
+        selected_lane = (
+            "linear_residual"
+            if bool(getattr(self, "linear_residual_active_", False))
+            else "boosting"
+        )
 
         for tree_mode in _AUTO_TREE_MODE_CANDIDATES:
+            deadline_before = _wall_clock_callback_state(
+                callbacks, refresh_deadline=bool(results)
+            )
+            if results and deadline_before["deadline_hit"]:
+                elapsed = deadline_before["wall_clock_elapsed_seconds"]
+                results.append({
+                    "tree_mode": tree_mode,
+                    "fit_status": "skipped_deadline",
+                    "score": None,
+                    "validation_score": None,
+                    "selected": False,
+                    "lane": selected_lane,
+                    "iterations_requested": int(
+                        fit_kwargs.get("iterations", self.iterations)
+                    ),
+                    "iterations_attempted": 0,
+                    "rounds_completed": 0,
+                    "rounds_retained": 0,
+                    "best_iteration": None,
+                    "best_prefix_round": None,
+                    "n_estimators": 0,
+                    "learning_rate": None,
+                    "resolved_learning_rate": None,
+                    "stop_reason": "time_limit",
+                    "wall_clock_stopper_count": int(
+                        deadline_before["wall_clock_stopper_count"]
+                    ),
+                    "wall_clock_elapsed_seconds_start": elapsed,
+                    "wall_clock_elapsed_seconds_end": elapsed,
+                    "wall_clock_elapsed_seconds": elapsed,
+                    "deadline_hit_start": True,
+                    "deadline_hit_end": True,
+                    "deadline_hit": True,
+                    "probe": {
+                        "enabled": False,
+                        "reason": "skipped_deadline",
+                    },
+                })
+                continue
             candidate_kwargs = self._tree_mode_candidate_kwargs(
                 fit_kwargs, tree_mode
             )
@@ -1479,20 +1549,73 @@ class _RefitParamsMixin:
                 X, y, cat_features=cat_features, eval_set=eval_set,
                 sample_weight=sample_weight,
                 eval_sample_weight=eval_sample_weight,
+                callbacks=callbacks,
             )
+            deadline_after = _wall_clock_callback_state(callbacks)
             score = self._tree_mode_selection_score(model)
+            training = getattr(model, "training_metadata_", {})
+            retained = int(
+                training.get("rounds_retained", len(model.trees_))
+            )
+            completed = int(
+                training.get(
+                    "rounds_completed",
+                    max(retained, len(getattr(model, "valid_history_", ()))),
+                )
+            )
             results.append({
                 "tree_mode": tree_mode,
+                "fit_status": "fitted",
                 "score": score,
+                "validation_score": score,
+                "selected": False,
+                "lane": selected_lane,
+                "iterations_requested": int(
+                    training.get(
+                        "iterations_requested",
+                        candidate_kwargs.get("iterations", self.iterations),
+                    )
+                ),
+                "iterations_attempted": int(
+                    training.get(
+                        "iterations_attempted",
+                        getattr(model, "iterations_attempted_", completed),
+                    )
+                ),
+                "rounds_completed": completed,
+                "rounds_retained": retained,
                 "best_iteration": int(model.best_iteration_),
+                "best_prefix_round": training.get("best_prefix_round"),
                 "n_estimators": len(model.trees_),
                 "learning_rate": float(model.lr_),
+                "resolved_learning_rate": float(model.lr_),
+                "stop_reason": str(
+                    training.get(
+                        "stop_reason", getattr(model, "stop_reason_", "unknown")
+                    )
+                ),
+                "wall_clock_stopper_count": int(
+                    deadline_after["wall_clock_stopper_count"]
+                ),
+                "wall_clock_elapsed_seconds_start": deadline_before[
+                    "wall_clock_elapsed_seconds"
+                ],
+                "wall_clock_elapsed_seconds_end": deadline_after[
+                    "wall_clock_elapsed_seconds"
+                ],
+                "wall_clock_elapsed_seconds": deadline_after[
+                    "wall_clock_elapsed_seconds"
+                ],
+                "deadline_hit_start": bool(deadline_before["deadline_hit"]),
+                "deadline_hit_end": bool(deadline_after["deadline_hit"]),
+                "deadline_hit": bool(deadline_after["deadline_hit"]),
                 "probe": probe_metadata,
             })
             if score < best_score:
                 best_score = score
                 best_model = model
                 best_probe_metadata = probe_metadata
+                best_candidate_index = len(results) - 1
 
         if best_model is None:
             raise ValueError(
@@ -1500,12 +1623,35 @@ class _RefitParamsMixin:
                 "candidate scores were non-finite"
             )
         selected = getattr(best_model, "tree_mode_", None)
+        results[best_candidate_index]["selected"] = True
+        deadline_final = _wall_clock_callback_state(callbacks)
+        fit_status_counts = {
+            status: sum(
+                result["fit_status"] == status for result in results
+            )
+            for status in ("fitted", "skipped_deadline")
+        }
         metadata = {
             "enabled": True,
             "input": self.tree_mode,
             "candidates": results,
             "selected_tree_mode": selected,
+            "selected_lane": selected_lane,
+            "selected_candidate_index": int(best_candidate_index),
             "selected_score": float(best_score),
+            "candidate_count": len(results),
+            "fitted_candidate_count": fit_status_counts["fitted"],
+            "skipped_deadline_candidate_count": fit_status_counts[
+                "skipped_deadline"
+            ],
+            "candidate_fit_status_counts": fit_status_counts,
+            "wall_clock_stopper_count": int(
+                deadline_final["wall_clock_stopper_count"]
+            ),
+            "wall_clock_elapsed_seconds": deadline_final[
+                "wall_clock_elapsed_seconds"
+            ],
+            "deadline_hit": bool(deadline_final["deadline_hit"]),
         }
         if hasattr(best_model, "n_threads_"):
             _apply_thread_count(best_model.n_threads_)
@@ -2391,9 +2537,10 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         callbacks : callable or iterable of callables, or None
             Fit-time boosting callbacks. Each callback receives a
             :class:`darkofit.callbacks.BoostingProgress` snapshot before the
-            next boosting round and may return ``True`` to stop. Callbacks are
-            currently supported only for a single booster fit, not automatic
-            learning-rate probes, automatic tree-mode selection, or refitting.
+            next boosting round and may return ``True`` to stop. Automatic
+            tree-mode selection shares the same callback objects across its
+            candidate fits. Callbacks are not supported with automatic
+            learning-rate probes or refitting.
         """
         callbacks = _normalize_callbacks(callbacks)
         X_input = X
@@ -2428,10 +2575,6 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         if callbacks:
             if self.refit:
                 raise ValueError("callbacks are not supported with refit=True")
-            if tree_mode_auto:
-                raise ValueError(
-                    "callbacks are not supported with tree_mode='auto'"
-                )
             if self.auto_learning_rate_probe:
                 raise ValueError(
                     "callbacks are not supported with "
@@ -2624,6 +2767,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                     eval_set=eval_set,
                     sample_weight=sample_weight,
                     eval_sample_weight=eval_sample_weight,
+                    callbacks=callbacks,
                 )
             )
         else:
@@ -3327,9 +3471,10 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         callbacks : callable or iterable of callables, or None
             Fit-time boosting callbacks. Each callback receives a
             :class:`darkofit.callbacks.BoostingProgress` snapshot before the
-            next boosting round and may return ``True`` to stop. Callbacks are
-            currently supported only for a single booster fit, not automatic
-            learning-rate probes, automatic tree-mode selection, or refitting.
+            next boosting round and may return ``True`` to stop. Automatic
+            tree-mode selection shares the same callback objects across its
+            candidate fits. Callbacks are not supported with automatic
+            learning-rate probes or refitting.
         """
         callbacks = _normalize_callbacks(callbacks)
         X_input = X
@@ -3368,10 +3513,6 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         if callbacks:
             if self.refit:
                 raise ValueError("callbacks are not supported with refit=True")
-            if tree_mode_auto:
-                raise ValueError(
-                    "callbacks are not supported with tree_mode='auto'"
-                )
             if self.auto_learning_rate_probe:
                 raise ValueError(
                     "callbacks are not supported with "
@@ -3475,6 +3616,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                         eval_set=eval_set,
                         sample_weight=sample_weight,
                         eval_sample_weight=eval_sample_weight,
+                        callbacks=callbacks,
                     )
                 )
             else:
@@ -3522,6 +3664,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                         eval_set=eval_set,
                         sample_weight=sample_weight,
                         eval_sample_weight=eval_sample_weight,
+                        callbacks=callbacks,
                     )
                 )
             else:
