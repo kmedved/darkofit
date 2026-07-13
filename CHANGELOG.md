@@ -17,7 +17,14 @@ previous behaviors remain available through explicit parameters.
   TabArena regression check it reduced the geometric-mean RMSE gap to the
   unrelated ChimeraBoost 0.13 default from 5.14% to 1.25%. A fixed learning
   rate of 0.1 improved the aggregate by a further 0.40% but regressed four
-  datasets, so the automatic learning-rate default is unchanged.
+  datasets. A subsequent staged multisplit check on four deliberately hard
+  tasks selected `l2_leaf_reg=1`, `max_bins=128`, and `learning_rate=0.1` as a
+  candidate; it improved six untouched outer splits by 1.25%, won 19 of 24
+  paired comparisons, and narrowed the matched ChimeraBoost gap from 3.00% to
+  1.57%. Because the tasks were selected from prior residual gaps, this
+  advances the candidate to a broader dataset gate rather than changing the
+  automatic defaults. See
+  [the multisplit report](benchmarks/tabarena_regression_multisplit_ablation.md).
 * Make `ordered_boosting="auto"` task-aware in CatBoost/depthwise modes: the
   ordered leave-one-out leaf update stays on for classification and turns off
   for scalar regression. Categorical regression continues to use ordered

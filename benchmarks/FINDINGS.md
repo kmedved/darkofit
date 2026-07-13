@@ -458,6 +458,12 @@ remap payload rejection.
 Decision: keep both features opt-in. No default flip occurs until categorical
 regret/quality reports and LightGBM/hybrid benchmark gates show a durable win.
 
+Follow-up on 2026-07-12: the
+[staged TabArena multisplit ablation](tabarena_regression_multisplit_ablation.md)
+kept `ts_permutations=4` opt-in. It improved Airfoil materially but regressed
+Diamonds test RMSE despite a validation improvement, so neither a universal nor
+validation-gated categorical policy is supported by the current evidence.
+
 ## 2026-07-07 — Opt-in feature-mode performance campaign
 
 Command:

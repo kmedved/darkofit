@@ -3,6 +3,12 @@
 _Run date: 2026-07-12. Environment: Python 3.12.13, TabArena/AutoGluon
 development snapshots installed in `tabarena-darko312`, 18 detected CPUs._
 
+> **Default-policy status:** This one-split diagnostic is superseded for
+> default-policy decisions by the staged
+> [TabArena regression multisplit ablation](tabarena_regression_multisplit_ablation.md).
+> The root-cause analysis and one-split comparisons below are retained as
+> historical provenance.
+
 ## Decision
 
 Keep `learning_rate="auto"`. Fix the shared-split empty-child bug.
