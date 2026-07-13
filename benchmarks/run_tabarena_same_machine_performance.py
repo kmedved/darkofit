@@ -10,6 +10,7 @@ import argparse
 import importlib
 import json
 import os
+import platform
 import subprocess
 import sys
 import time
@@ -88,6 +89,37 @@ def chimera_source_provenance(repo: Path) -> dict:
         "commit": commit,
         "version_expected": FROZEN_CHIMERA_VERSION,
         "dirty": False,
+    }
+
+
+def darkofit_source_provenance(repo: Path) -> dict:
+    """Require a clean DarkoFit checkout and return its source identity."""
+    commit = _git(repo, "rev-parse", "HEAD")
+    dirty = _git(repo, "status", "--porcelain")
+    if dirty:
+        raise RuntimeError("DarkoFit checkout must be clean for this comparison")
+    import darkofit
+
+    return {
+        "darkofit_repository": str(repo),
+        "darkofit_commit": commit,
+        "darkofit_dirty": False,
+        "darkofit_package": "darkofit",
+        "darkofit_version_imported": darkofit.__version__,
+        "darkofit_module_file": str(Path(darkofit.__file__).resolve()),
+    }
+
+
+def runtime_provenance() -> dict:
+    """Return stable machine/runtime fields needed to interpret timings."""
+    return {
+        "python_version": platform.python_version(),
+        "python_implementation": platform.python_implementation(),
+        "python_executable": sys.executable,
+        "platform": platform.platform(),
+        "machine": platform.machine(),
+        "processor": platform.processor(),
+        "logical_cpu_count": os.cpu_count(),
     }
 
 
@@ -240,6 +272,8 @@ def main(argv=None) -> int:
     args = parse_args(argv)
     chimera_repo = resolve_chimera_repo(args.chimera_repo)
     provenance = chimera_source_provenance(chimera_repo)
+    provenance.update(darkofit_source_provenance(REPO_ROOT))
+    provenance["runtime"] = runtime_provenance()
     chimeraboost = import_local_chimeraboost(chimera_repo)
     provenance.update(
         {
