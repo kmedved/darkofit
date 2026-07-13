@@ -1,0 +1,133 @@
+[
+  {
+    "completed_at_utc": "2026-07-13T16:42:41.248149+00:00",
+    "pid": 20130,
+    "warmup": {
+      "clock": "time.monotonic_ns",
+      "config": {
+        "depth": 6,
+        "diagnostic_warnings": "never",
+        "early_stopping": false,
+        "iterations": 5,
+        "l2_leaf_reg": 3.0,
+        "learning_rate": 0.1,
+        "linear_residual": false,
+        "loss": "RMSE",
+        "max_bins": 128,
+        "ordered_boosting": "auto",
+        "random_state": 20260713,
+        "sampling": "uniform",
+        "thread_count": 18,
+        "tree_mode": "catboost",
+        "ts_permutations": 1,
+        "use_best_model": false
+      },
+      "duration_seconds": 1.578191041,
+      "schema_version": 2,
+      "stages": [
+        {
+          "categorical_features": [],
+          "fit_seconds": 1.28788275,
+          "flat_ensemble_type": "FlatObliviousEnsemble",
+          "flat_prediction_router_selected": true,
+          "iterations_fitted": 5,
+          "name": "numeric",
+          "prediction_batches": [
+            {
+              "input_shape": [
+                8191,
+                12
+              ],
+              "name": "serial_subthreshold",
+              "predict_seconds": 0.055410708,
+              "prediction_sha256": "adbac009daf654b53e291500dab25dfa7d45df4365545474b9a72f6b945e066b",
+              "prediction_shape": [
+                8191
+              ],
+              "route": "flat_serial"
+            },
+            {
+              "input_shape": [
+                8192,
+                12
+              ],
+              "name": "parallel_at_threshold",
+              "predict_seconds": 0.1423015,
+              "prediction_sha256": "6ac41b20cde5520776312be5178734f90e80ff4efffc9f6565387f6adae61408",
+              "prediction_shape": [
+                8192
+              ],
+              "route": "flat_parallel"
+            }
+          ],
+          "prediction_parallel_min_rows": 8192,
+          "resolved_learning_rate": 0.1,
+          "resolved_ordered_boosting": false,
+          "resolved_thread_count": 18,
+          "resolved_tree_mode": "catboost",
+          "train_rows": 2048,
+          "tree_depths": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "validation_rows": 512
+        },
+        {
+          "categorical_features": [
+            12
+          ],
+          "fit_seconds": 0.087391542,
+          "flat_ensemble_type": "FlatObliviousEnsemble",
+          "flat_prediction_router_selected": true,
+          "iterations_fitted": 5,
+          "name": "categorical",
+          "prediction_batches": [
+            {
+              "input_shape": [
+                8191,
+                13
+              ],
+              "name": "serial_subthreshold",
+              "predict_seconds": 0.001823625,
+              "prediction_sha256": "7360a4968de3e91a3767cb4d6b577fe4667f385532a68fc71861817540ea97ef",
+              "prediction_shape": [
+                8191
+              ],
+              "route": "flat_serial"
+            },
+            {
+              "input_shape": [
+                8192,
+                13
+              ],
+              "name": "parallel_at_threshold",
+              "predict_seconds": 0.001768333,
+              "prediction_sha256": "27f91411e8923a3cbd6124530efc68cd56ea470b07c74b69c83e3270ba83686c",
+              "prediction_shape": [
+                8192
+              ],
+              "route": "flat_parallel"
+            }
+          ],
+          "prediction_parallel_min_rows": 8192,
+          "resolved_learning_rate": 0.1,
+          "resolved_ordered_boosting": false,
+          "resolved_thread_count": 18,
+          "resolved_tree_mode": "catboost",
+          "train_rows": 2048,
+          "tree_depths": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "validation_rows": 512
+        }
+      ]
+    }
+  }
+]

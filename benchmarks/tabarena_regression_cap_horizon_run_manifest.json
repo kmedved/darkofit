@@ -1,0 +1,1364 @@
+{
+  "created_at_utc": "2026-07-13T16:42:39.614452+00:00",
+  "kind": "darkofit_tabarena_regression_cap_horizon",
+  "output_dir": "/Users/kmedved/Code/GitHub/darkofit/.cache/tabarena-regression-cap-horizon-87aaf9078295-20260713",
+  "protocol": {
+    "arms": {
+      "cap1000": {
+        "early_stopping": true,
+        "iterations": 1000,
+        "l2_leaf_reg": 3.0,
+        "learning_rate": 0.1,
+        "max_bins": 128,
+        "tree_mode": "catboost",
+        "ts_permutations": 1,
+        "use_best_model": true
+      },
+      "cap10000": {
+        "early_stopping": true,
+        "iterations": 10000,
+        "l2_leaf_reg": 3.0,
+        "learning_rate": 0.1,
+        "max_bins": 128,
+        "tree_mode": "catboost",
+        "ts_permutations": 1,
+        "use_best_model": true
+      }
+    },
+    "bag_folds": 8,
+    "bag_sets": 1,
+    "chimera_role": "coverage validation only; excluded from horizon selection",
+    "coordinates": [
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 0
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 0
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 1
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 1
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 2
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 2
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 3
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 3
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 3
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 4
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 4
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 4
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 5
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 5
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 5
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 6
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 6
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 6
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 7
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 7
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 7
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 8
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 8
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 8
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 9
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 9
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 9
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 1,
+        "repeat": 0
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 2,
+        "repeat": 0
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 0,
+        "repeat": 1
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 2,
+        "repeat": 1
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 0,
+        "repeat": 2
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 1,
+        "repeat": 2
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 0,
+        "repeat": 3
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 1,
+        "repeat": 3
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 2,
+        "repeat": 3
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 0,
+        "repeat": 4
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 1,
+        "repeat": 4
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 2,
+        "repeat": 4
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 0,
+        "repeat": 5
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 1,
+        "repeat": 5
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 2,
+        "repeat": 5
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 0,
+        "repeat": 6
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 1,
+        "repeat": 6
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 2,
+        "repeat": 6
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 0,
+        "repeat": 7
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 1,
+        "repeat": 7
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 2,
+        "repeat": 7
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 0,
+        "repeat": 8
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 1,
+        "repeat": 8
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 2,
+        "repeat": 8
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 0,
+        "repeat": 9
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 1,
+        "repeat": 9
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 2,
+        "repeat": 9
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 1,
+        "repeat": 0
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 2,
+        "repeat": 0
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 0,
+        "repeat": 1
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 2,
+        "repeat": 1
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 0,
+        "repeat": 2
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 1,
+        "repeat": 2
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 0,
+        "repeat": 3
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 1,
+        "repeat": 3
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 2,
+        "repeat": 3
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 0,
+        "repeat": 4
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 1,
+        "repeat": 4
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 2,
+        "repeat": 4
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 0,
+        "repeat": 5
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 1,
+        "repeat": 5
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 2,
+        "repeat": 5
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 0,
+        "repeat": 6
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 1,
+        "repeat": 6
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 2,
+        "repeat": 6
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 0,
+        "repeat": 7
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 1,
+        "repeat": 7
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 2,
+        "repeat": 7
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 0,
+        "repeat": 8
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 1,
+        "repeat": 8
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 2,
+        "repeat": 8
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 0,
+        "repeat": 9
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 1,
+        "repeat": 9
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 2,
+        "repeat": 9
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 1,
+        "repeat": 0
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 2,
+        "repeat": 0
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 0,
+        "repeat": 1
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 2,
+        "repeat": 1
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 0,
+        "repeat": 2
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 1,
+        "repeat": 2
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "fold": 1,
+        "repeat": 0
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "fold": 2,
+        "repeat": 0
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "fold": 0,
+        "repeat": 1
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "fold": 2,
+        "repeat": 1
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "fold": 0,
+        "repeat": 2
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "fold": 1,
+        "repeat": 2
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 1,
+        "repeat": 0
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 2,
+        "repeat": 0
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 0,
+        "repeat": 1
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 2,
+        "repeat": 1
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 0,
+        "repeat": 2
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 1,
+        "repeat": 2
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 0,
+        "repeat": 3
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 1,
+        "repeat": 3
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 2,
+        "repeat": 3
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 0,
+        "repeat": 4
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 1,
+        "repeat": 4
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 2,
+        "repeat": 4
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 0,
+        "repeat": 5
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 1,
+        "repeat": 5
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 2,
+        "repeat": 5
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 0,
+        "repeat": 6
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 1,
+        "repeat": 6
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 2,
+        "repeat": 6
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 0,
+        "repeat": 7
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 1,
+        "repeat": 7
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 2,
+        "repeat": 7
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 0,
+        "repeat": 8
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 1,
+        "repeat": 8
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 2,
+        "repeat": 8
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 0,
+        "repeat": 9
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 1,
+        "repeat": 9
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 2,
+        "repeat": 9
+      },
+      {
+        "dataset": "houses",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "houses",
+        "fold": 1,
+        "repeat": 0
+      },
+      {
+        "dataset": "houses",
+        "fold": 2,
+        "repeat": 0
+      },
+      {
+        "dataset": "houses",
+        "fold": 0,
+        "repeat": 1
+      },
+      {
+        "dataset": "houses",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "houses",
+        "fold": 2,
+        "repeat": 1
+      },
+      {
+        "dataset": "houses",
+        "fold": 0,
+        "repeat": 2
+      },
+      {
+        "dataset": "houses",
+        "fold": 1,
+        "repeat": 2
+      },
+      {
+        "dataset": "houses",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "miami_housing",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "miami_housing",
+        "fold": 1,
+        "repeat": 0
+      },
+      {
+        "dataset": "miami_housing",
+        "fold": 2,
+        "repeat": 0
+      },
+      {
+        "dataset": "miami_housing",
+        "fold": 0,
+        "repeat": 1
+      },
+      {
+        "dataset": "miami_housing",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "miami_housing",
+        "fold": 2,
+        "repeat": 1
+      },
+      {
+        "dataset": "miami_housing",
+        "fold": 0,
+        "repeat": 2
+      },
+      {
+        "dataset": "miami_housing",
+        "fold": 1,
+        "repeat": 2
+      },
+      {
+        "dataset": "miami_housing",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "fold": 1,
+        "repeat": 0
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "fold": 2,
+        "repeat": 0
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "fold": 0,
+        "repeat": 1
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "fold": 2,
+        "repeat": 1
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "fold": 0,
+        "repeat": 2
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "fold": 1,
+        "repeat": 2
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "fold": 1,
+        "repeat": 0
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "fold": 2,
+        "repeat": 0
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "fold": 0,
+        "repeat": 1
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "fold": 2,
+        "repeat": 1
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "fold": 0,
+        "repeat": 2
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "fold": 1,
+        "repeat": 2
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 1,
+        "repeat": 0
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 2,
+        "repeat": 0
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 0,
+        "repeat": 1
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 2,
+        "repeat": 1
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 0,
+        "repeat": 2
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 1,
+        "repeat": 2
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 0,
+        "repeat": 3
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 1,
+        "repeat": 3
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 2,
+        "repeat": 3
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 0,
+        "repeat": 4
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 1,
+        "repeat": 4
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 2,
+        "repeat": 4
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 0,
+        "repeat": 5
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 1,
+        "repeat": 5
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 2,
+        "repeat": 5
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 0,
+        "repeat": 6
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 1,
+        "repeat": 6
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 2,
+        "repeat": 6
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 0,
+        "repeat": 7
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 1,
+        "repeat": 7
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 2,
+        "repeat": 7
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 0,
+        "repeat": 8
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 1,
+        "repeat": 8
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 2,
+        "repeat": 8
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 0,
+        "repeat": 9
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 1,
+        "repeat": 9
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 2,
+        "repeat": 9
+      },
+      {
+        "dataset": "superconductivity",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "superconductivity",
+        "fold": 1,
+        "repeat": 0
+      },
+      {
+        "dataset": "superconductivity",
+        "fold": 2,
+        "repeat": 0
+      },
+      {
+        "dataset": "superconductivity",
+        "fold": 0,
+        "repeat": 1
+      },
+      {
+        "dataset": "superconductivity",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "superconductivity",
+        "fold": 2,
+        "repeat": 1
+      },
+      {
+        "dataset": "superconductivity",
+        "fold": 0,
+        "repeat": 2
+      },
+      {
+        "dataset": "superconductivity",
+        "fold": 1,
+        "repeat": 2
+      },
+      {
+        "dataset": "superconductivity",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "wine_quality",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "wine_quality",
+        "fold": 1,
+        "repeat": 0
+      },
+      {
+        "dataset": "wine_quality",
+        "fold": 2,
+        "repeat": 0
+      },
+      {
+        "dataset": "wine_quality",
+        "fold": 0,
+        "repeat": 1
+      },
+      {
+        "dataset": "wine_quality",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "wine_quality",
+        "fold": 2,
+        "repeat": 1
+      },
+      {
+        "dataset": "wine_quality",
+        "fold": 0,
+        "repeat": 2
+      },
+      {
+        "dataset": "wine_quality",
+        "fold": 1,
+        "repeat": 2
+      },
+      {
+        "dataset": "wine_quality",
+        "fold": 2,
+        "repeat": 2
+      }
+    ],
+    "expected_child_fits": 3552,
+    "expected_dataset_splits": 222,
+    "expected_jobs": 444,
+    "fold_fitting_strategy": "sequential_local",
+    "job_order": "adjacent task/split pairs; cap1000 first on even coordinates and cap10000 first on odd coordinates",
+    "seed_configuration": {
+      "model_random_seed": 0,
+      "vary_seed_across_folds": true
+    },
+    "seed_policy": "fold-wise",
+    "split_indices_requested": [
+      "r0f0",
+      "r0f1",
+      "r0f2",
+      "r1f0",
+      "r1f1",
+      "r1f2",
+      "r2f0",
+      "r2f1",
+      "r2f2",
+      "r3f0",
+      "r3f1",
+      "r3f2",
+      "r4f0",
+      "r4f1",
+      "r4f2",
+      "r5f0",
+      "r5f1",
+      "r5f2",
+      "r6f0",
+      "r6f1",
+      "r6f2",
+      "r7f0",
+      "r7f1",
+      "r7f2",
+      "r8f0",
+      "r8f1",
+      "r8f2",
+      "r9f0",
+      "r9f1",
+      "r9f2"
+    ],
+    "task_split_counts": {
+      "Another-Dataset-on-used-Fiat-500": {
+        "split_count": 30,
+        "task_id": 363615
+      },
+      "Food_Delivery_Time": {
+        "split_count": 9,
+        "task_id": 363672
+      },
+      "QSAR-TID-11": {
+        "split_count": 9,
+        "task_id": 363697
+      },
+      "QSAR_fish_toxicity": {
+        "split_count": 30,
+        "task_id": 363698
+      },
+      "airfoil_self_noise": {
+        "split_count": 30,
+        "task_id": 363612
+      },
+      "concrete_compressive_strength": {
+        "split_count": 30,
+        "task_id": 363625
+      },
+      "diamonds": {
+        "split_count": 9,
+        "task_id": 363631
+      },
+      "healthcare_insurance_expenses": {
+        "split_count": 30,
+        "task_id": 363675
+      },
+      "houses": {
+        "split_count": 9,
+        "task_id": 363678
+      },
+      "miami_housing": {
+        "split_count": 9,
+        "task_id": 363686
+      },
+      "physiochemical_protein": {
+        "split_count": 9,
+        "task_id": 363693
+      },
+      "superconductivity": {
+        "split_count": 9,
+        "task_id": 363705
+      },
+      "wine_quality": {
+        "split_count": 9,
+        "task_id": 363708
+      }
+    },
+    "time_limit_seconds": 3600.0,
+    "warmup_outside_run_jobs": true,
+    "warmup_thread_policy": "resolve and pin the built sequential child num_cpus; warmup config and fitted thread count must equal it"
+  },
+  "protocol_sha256": "85250c14f9f1d9ce2e60e807f4221aa2c6b693bb71c3538d1e02c6b97521f0d2",
+  "resolved_child_num_cpus": 18,
+  "runtime": {
+    "environment": {
+      "MKL_NUM_THREADS": null,
+      "NUMBA_BOUNDSCHECK": null,
+      "NUMBA_CACHE_DIR": "/Users/kmedved/Code/GitHub/darkofit/.cache/numba-tabarena-cap-87aaf9078295",
+      "NUMBA_CPU_FEATURES": null,
+      "NUMBA_CPU_NAME": null,
+      "NUMBA_DISABLE_JIT": null,
+      "NUMBA_ENABLE_AVX": null,
+      "NUMBA_LOOP_VECTORIZE": null,
+      "NUMBA_NUM_THREADS": null,
+      "NUMBA_OPT": null,
+      "NUMBA_SLP_VECTORIZE": null,
+      "NUMBA_THREADING_LAYER": null,
+      "NUMBA_THREADING_LAYER_PRIORITY": null,
+      "OMP_NUM_THREADS": null,
+      "OPENBLAS_NUM_THREADS": null,
+      "PYTHONHASHSEED": null,
+      "TABARENA_DISABLE_RESULT_COMPRESSION": null,
+      "VECLIB_MAXIMUM_THREADS": null
+    },
+    "hardware": {
+      "host_identity_sha256": "00353152b14c09db53828acf8f34fef4cdef52b2880308e3c8b92fc886e112f8",
+      "logical_cpu_count": 18,
+      "physical_cpu_count": 18,
+      "process_cpu_affinity_count": 18,
+      "total_memory_bytes": 137438953472
+    },
+    "machine": "arm64",
+    "packages": {
+      "autogluon.common": "1.5.1b20260712",
+      "autogluon.core": "1.5.1b20260712",
+      "autogluon.tabular": "1.5.1b20260712",
+      "darkofit": "0.9.0",
+      "llvmlite": "0.48.0",
+      "numba": "0.66.0",
+      "numpy": "2.4.6",
+      "pandas": "2.3.3",
+      "psutil": "7.1.3",
+      "scikit-learn": "1.7.2",
+      "scipy": "1.16.3",
+      "tabarena": "0.0.1"
+    },
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python_executable": "/Users/kmedved/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/bin/python3.12",
+    "python_version": "3.12.13"
+  },
+  "schema_version": 1,
+  "source": {
+    "darkofit_import": {
+      "git_head": "87aaf907829507a2e170ebc2628222d66ba6a30c",
+      "git_remote_origin": "https://github.com/kmedved/darkofit.git",
+      "git_tree": "d9ad1cad9c9788e3e1d72c07c847e1238b2aa34f",
+      "module": "darkofit",
+      "module_file": "/Users/kmedved/Code/GitHub/darkofit/darkofit/__init__.py",
+      "repository": "/Users/kmedved/Code/GitHub/darkofit",
+      "status": ""
+    },
+    "files": {
+      "benchmarks/analyze_tabarena_regression_cap_horizon.py": {
+        "git_blob": "a27c5b906919f79638a2c406665e851318fed0f9",
+        "sha256": "6b4d7109b7699f51802ab7acd5bd9dfb06beb00315d87ee5aed4ff641b311c37"
+      },
+      "benchmarks/run_tabarena_regression_cap_horizon.py": {
+        "git_blob": "d55f6f5aef986c918d79ddd0ef7a350c301b01fc",
+        "sha256": "7c1588023331fbc0b1f973e0c3e7af818f52ab9baff4e9c40d4a160234a9d1de"
+      },
+      "benchmarks/tabarena_adapter.py": {
+        "git_blob": "c7dfac6912fc5492e5bf6049bd67627526f4fa31",
+        "sha256": "0c52c9be68a504b5c89c23c8e31ce2bad4cc75f9afca062a5a6aa86f0303d148"
+      },
+      "benchmarks/tabarena_regression_cap_horizon_protocol.md": {
+        "git_blob": "14cc11253e75a254f5b21e8ef34a672346ff8d3a",
+        "sha256": "7253dd25a469e2112fb10fd3f432bea8687fe80d7f68358f85080c23509a2840"
+      },
+      "benchmarks/tabarena_warmup.py": {
+        "git_blob": "ec376e308208d298d2e8725ed17c1fe03760d824",
+        "sha256": "5fd09a43f9589f260512f4b93ab3548eac6074289ca81e56ea679c8c6eb7d558"
+      },
+      "darkofit/__init__.py": {
+        "git_blob": "0d883e05c8de8a5f8102f52b481533ea67ab95dc",
+        "sha256": "af3afbe3e484fc7114d89664f744a86da107caa0eaa4839b7d8f85067a17f3ff"
+      },
+      "darkofit/booster.py": {
+        "git_blob": "30a096bea65f6442666442baa7fbe57cac46e3f7",
+        "sha256": "8a05ea92823fff3669232f4a2a61daf01c87b9a2ec1493c233340b762fe167ea"
+      },
+      "darkofit/callbacks.py": {
+        "git_blob": "1e65fb8eeeb5d4b9cd192fbb7f22283796153c3c",
+        "sha256": "99fcfc29552b1eaf61d82ef2cb1a87d57ea374612af756c732c3a942e5e3b923"
+      },
+      "darkofit/serialization.py": {
+        "git_blob": "34b164af6b1f26d6572ffcf586937f3921e05697",
+        "sha256": "d520b7e7fd5e05d6448313371028b1a896bf0da38948d5ea56eb60ebcf7b9d41"
+      },
+      "darkofit/sklearn_api.py": {
+        "git_blob": "9deae8359b6ef148d3226c4cfe542277460472c8",
+        "sha256": "6273817b2e6a4e3a468226703e13baff0ac87e234a33e608594b324b9ed92dfd"
+      },
+      "pyproject.toml": {
+        "git_blob": "e4777a93f67b1896e91a3d79940706108e9af864",
+        "sha256": "8cd6c612046188d136be01bc0c8eebf3b3799a6f6824d61a3754738bce921e01"
+      }
+    },
+    "git_head": "87aaf907829507a2e170ebc2628222d66ba6a30c",
+    "git_tree": "d9ad1cad9c9788e3e1d72c07c847e1238b2aa34f",
+    "relevant_status": "",
+    "repository": "/Users/kmedved/Code/GitHub/darkofit",
+    "tabarena": {
+      "git_head": "4cd1d2526874962daae048a6f2dcf34aa272f3fa",
+      "git_remote_origin": "https://github.com/autogluon/tabarena.git",
+      "git_tree": "a293df372a613c7358ba5fcd746f58d580cde7d6",
+      "module": "tabarena",
+      "module_file": "/Users/kmedved/Code/GitHub/tabarena/packages/tabarena/src/tabarena/__init__.py",
+      "repository": "/Users/kmedved/Code/GitHub/tabarena",
+      "status": ""
+    }
+  },
+  "time_limit_seconds": 3600.0
+}
