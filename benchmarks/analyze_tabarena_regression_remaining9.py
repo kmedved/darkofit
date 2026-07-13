@@ -93,6 +93,23 @@ FROZEN_CHIMERA_ARTIFACT_SHA256 = (
     "02a093f42931b1b53dd4fae7b88d5dd545ee51083b49142136410f28a4232275"
 )
 FROZEN_CHIMERA_ARTIFACT_SIZE_BYTES = 83_420
+FROZEN_RUN_MANIFEST_SHA256 = (
+    "8cf0e1e24bdc8db03f3bd9a81bc4f9c849d83c4c7685f563c0f264bbee26b96e"
+)
+FROZEN_COMPLETION_ATTESTATION_SHA256 = (
+    "4bc3361e4cf0fe4a4b3513710496055f73cad432f13da1e4611ae3dff04a6b19"
+)
+
+
+def require_frozen_execution_digests(
+    manifest_sha256: str,
+    attestation_sha256: str,
+) -> None:
+    """Authenticate the only result bundle this frozen analyzer may unpickle."""
+    if manifest_sha256 != FROZEN_RUN_MANIFEST_SHA256:
+        raise RuntimeError("run manifest is not the trusted frozen execution")
+    if attestation_sha256 != FROZEN_COMPLETION_ATTESTATION_SHA256:
+        raise RuntimeError("completion attestation is not the trusted frozen execution")
 
 
 def _positive_finite(value, field: str) -> float:
@@ -362,25 +379,20 @@ def load_local_rows(
 ) -> list[dict]:
     """Read every gzip result in ``input_dir`` and require the complete panel."""
     if verified_result_payloads is None:
-        paths = sorted(input_dir.rglob("results.pkl"))
-        paths.extend(sorted(input_dir.rglob("results.pkl.gz")))
-        inputs = [(path, None) for path in paths]
-    else:
-        inputs = [
-            (input_dir / relative, payload)
-            for relative, payload in sorted(verified_result_payloads.items())
-        ]
+        raise RuntimeError(
+            "refusing to unpickle result files without trusted attestation bytes"
+        )
+    inputs = [
+        (input_dir / relative, payload)
+        for relative, payload in sorted(verified_result_payloads.items())
+    ]
     if not inputs:
         raise RuntimeError(f"no gzip result pickles found under {input_dir}")
 
     rows = []
     for path, verified_payload in inputs:
         try:
-            if verified_payload is None:
-                with gzip.open(path, "rb") as stream:
-                    record = pickle.load(stream)
-            else:
-                record = pickle.loads(gzip.decompress(verified_payload))
+            record = pickle.loads(gzip.decompress(verified_payload))
         except Exception as exc:
             raise RuntimeError(f"failed to read gzip result {path}: {exc}") from exc
         if not isinstance(record, Mapping):
@@ -891,6 +903,7 @@ def main(argv=None) -> int:
         manifest_sha256=manifest_sha256,
         input_dir=args.input_dir,
     )
+    require_frozen_execution_digests(manifest_sha256, attestation_sha256)
     local_rows = load_local_rows(
         args.input_dir,
         verified_result_payloads=verified_result_payloads,

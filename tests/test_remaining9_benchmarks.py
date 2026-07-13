@@ -8,8 +8,12 @@ import pytest
 import benchmarks.remaining9_run_manifest as remaining9_provenance
 
 from benchmarks.analyze_tabarena_regression_remaining9 import (
+    FROZEN_COMPLETION_ATTESTATION_SHA256,
+    FROZEN_RUN_MANIFEST_SHA256,
     analyze_rows,
+    load_local_rows,
     normalized_chimera_rows_sha256,
+    require_frozen_execution_digests,
 )
 from benchmarks.preflight_hotpaths import _speedup, _timing_summary
 from benchmarks.remaining9_run_manifest import (
@@ -58,6 +62,25 @@ def test_preflight_timing_helpers():
     assert optimized["iqr_seconds"] == 1.0
     assert optimized["iqr_fraction"] == 0.5
     assert _speedup(optimized, reference) == 2.0
+
+
+def test_remaining9_analyzer_requires_trusted_execution_digests(tmp_path):
+    require_frozen_execution_digests(
+        FROZEN_RUN_MANIFEST_SHA256,
+        FROZEN_COMPLETION_ATTESTATION_SHA256,
+    )
+    with pytest.raises(RuntimeError, match="manifest is not the trusted"):
+        require_frozen_execution_digests(
+            "0" * 64,
+            FROZEN_COMPLETION_ATTESTATION_SHA256,
+        )
+    with pytest.raises(RuntimeError, match="attestation is not the trusted"):
+        require_frozen_execution_digests(
+            FROZEN_RUN_MANIFEST_SHA256,
+            "0" * 64,
+        )
+    with pytest.raises(RuntimeError, match="without trusted attestation"):
+        load_local_rows(tmp_path)
 
 
 def test_remaining9_analysis_applies_equal_dataset_and_repeat_gates():

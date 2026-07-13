@@ -268,6 +268,10 @@ thread/runtime configuration, relevant environment variables, and the frozen
 matrix. Together with the attestation, it provides checked evidence that the
 accepted cache files do not predate the runner. These local JSON artifacts are
 integrity evidence for accidental cache mixing, not signed tamper proofs.
+Because TabArena results are pickles, the frozen analyzer also pins the trusted
+manifest and attestation SHA-256 values in its source and rejects any other
+bundle before deserialization. It is not a general-purpose analyzer for
+caller-supplied or shared result caches.
 
 Capture it while the runner is active:
 
