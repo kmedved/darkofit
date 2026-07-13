@@ -150,19 +150,34 @@ def test_native_categorical_schemas_are_exact_and_prove_ts4_is_active():
     assert screen.EXPECTED_NATIVE_CATEGORICAL_COLUMNS["miami_housing"] == []
     assert screen.EXPECTED_NATIVE_CATEGORICAL_COLUMNS["wine_quality"] == []
     for dataset, columns in screen.EXPECTED_NATIVE_CATEGORICAL_COLUMNS.items():
+        features = list(columns) + [
+            f"numeric_{index}" for index in range(max(1, 5 - len(columns)))
+        ]
         metadata = {
+            "schema_version": 2,
             "kind": "native",
             "fit_scope": "darkofit_child_training_fold",
+            "feature_alignment_policy": "autogluon_child_drop_unique",
             "target_used_by_representation": bool(columns),
-            "input_feature_count": 5,
-            "output_feature_count": 5,
+            "input_feature_count": len(features),
+            "output_feature_count": len(features),
+            "external_feature_schema_sha256": screen._feature_schema_sha256(
+                features, "test features"
+            ),
+            "fitted_feature_schema_sha256": screen._feature_schema_sha256(
+                features, "test fitted features"
+            ),
             "categorical_input_columns": list(columns),
+            "fitted_categorical_input_columns": list(columns),
+            "dropped_constant_input_columns": [],
+            "dropped_constant_input_unique_counts": [],
         }
         screen._validate_representation_metadata(
             metadata,
             arm="baseline",
             dataset=dataset,
             field=f"native/{dataset}",
+            child_features=features,
         )
 
     invalid = dict(metadata)
@@ -173,6 +188,7 @@ def test_native_categorical_schemas_are_exact_and_prove_ts4_is_active():
             arm="baseline",
             dataset=dataset,
             field="invalid native columns",
+            child_features=features,
         )
     invalid = dict(metadata)
     invalid["target_used_by_representation"] = not bool(columns)
@@ -182,7 +198,126 @@ def test_native_categorical_schemas_are_exact_and_prove_ts4_is_active():
             arm="baseline",
             dataset=dataset,
             field="invalid native target flag",
+            child_features=features,
         )
+
+
+def test_native_schema_attests_only_exact_fold_local_constant_drops():
+    features = ["signal", "rare", "noise"]
+    fitted = ["signal", "noise"]
+    metadata = {
+        "schema_version": 2,
+        "kind": "native",
+        "fit_scope": "darkofit_child_training_fold",
+        "feature_alignment_policy": "autogluon_child_drop_unique",
+        "target_used_by_representation": False,
+        "input_feature_count": 3,
+        "output_feature_count": 2,
+        "external_feature_schema_sha256": screen._feature_schema_sha256(
+            features, "test features"
+        ),
+        "fitted_feature_schema_sha256": screen._feature_schema_sha256(
+            fitted, "test fitted features"
+        ),
+        "categorical_input_columns": [],
+        "fitted_categorical_input_columns": [],
+        "dropped_constant_input_columns": ["rare"],
+        "dropped_constant_input_unique_counts": [1],
+    }
+    screen._validate_representation_metadata(
+        metadata,
+        arm="baseline",
+        dataset="QSAR-TID-11",
+        field="fold-local constant",
+        child_features=features,
+    )
+    normalized_row = {
+        "arm": "baseline",
+        "dataset": "QSAR-TID-11",
+        "child_features": features,
+        "representation": metadata,
+    }
+    analysis._validate_normalized_representation(normalized_row)
+
+    normalized_row["representation"] = {
+        **metadata,
+        "dropped_constant_input_columns": ["invented_numeric"],
+    }
+    with pytest.raises(RuntimeError, match="not bound to the child"):
+        analysis._validate_normalized_representation(normalized_row)
+
+    invalid = dict(metadata, dropped_constant_input_unique_counts=[2])
+    with pytest.raises(RuntimeError, match="constant-drop audit"):
+        screen._validate_representation_metadata(
+            invalid,
+            arm="baseline",
+            dataset="QSAR-TID-11",
+            field="nonconstant drop",
+            child_features=features,
+        )
+    invalid = dict(metadata, fitted_feature_schema_sha256="0" * 64)
+    with pytest.raises(RuntimeError, match="fitted schema"):
+        screen._validate_representation_metadata(
+            invalid,
+            arm="baseline",
+            dataset="QSAR-TID-11",
+            field="tampered fitted schema",
+            child_features=features,
+        )
+
+    categorical_features = ["attack-angle", "frequency"]
+    categorical_metadata = dict(
+        metadata,
+        target_used_by_representation=False,
+        input_feature_count=2,
+        output_feature_count=1,
+        external_feature_schema_sha256=screen._feature_schema_sha256(
+            categorical_features, "categorical test features"
+        ),
+        fitted_feature_schema_sha256=screen._feature_schema_sha256(
+            ["frequency"], "categorical fitted features"
+        ),
+        categorical_input_columns=["attack-angle"],
+        fitted_categorical_input_columns=[],
+        dropped_constant_input_columns=["attack-angle"],
+        dropped_constant_input_unique_counts=[1],
+    )
+    with pytest.raises(RuntimeError, match="TS4 categorical schema"):
+        screen._validate_representation_metadata(
+            categorical_metadata,
+            arm="ts4",
+            dataset="airfoil_self_noise",
+            field="removed TS4 categorical",
+            child_features=categorical_features,
+        )
+
+
+def test_native_preprocessing_audit_must_match_the_paired_control(monkeypatch):
+    monkeypatch.setattr(screen, "EXPECTED_NATIVE_REPRESENTATION_PAIRS", 1)
+    representation = {"kind": "native", "schema_version": 2}
+    baseline = {
+        "dataset": "QSAR-TID-11",
+        "repeat": 0,
+        "fold": 0,
+        "arm": "baseline",
+        "child": "S1F7",
+        "representation": representation,
+    }
+    candidate = {
+        **baseline,
+        "arm": "auto",
+        "representation": dict(representation),
+    }
+    assert screen.validate_native_representation_pairs(
+        [baseline, candidate]
+    ) == 1
+
+    candidate["representation"] = {
+        **representation,
+        "dropped_constant_input_columns": ["invented"],
+    }
+    with pytest.raises(RuntimeError, match="identical child preprocessing"):
+        screen.validate_native_representation_pairs([baseline, candidate])
 
 
 def _valid_followon_warmup_history(thread_count=18):
@@ -503,6 +638,54 @@ def _numeric_frame(pd, columns, rows=12):
             column: np.linspace(index, index + 1, rows)
             for index, column in enumerate(columns)
         }
+    )
+
+
+def test_native_adapter_records_autogluon_fold_constant_alignment(monkeypatch):
+    pd = pytest.importorskip("pandas")
+    pytest.importorskip("autogluon.core")
+    from benchmarks import tabarena_screen_adapters as adapters
+
+    outer = pd.DataFrame(
+        {
+            "signal": np.arange(9, dtype=np.float64),
+            "rare": [0, 1, 1, 1, 1, 1, 1, 1, 1],
+            "noise": np.arange(9, 0, -1, dtype=np.float64),
+        }
+    )
+    child_train = outer.iloc[1:].reset_index(drop=True)
+    y = pd.Series(np.linspace(0.0, 1.0, len(child_train)))
+    model = adapters.ScreenNativeDarkoFitModel(
+        path="",
+        name="native_constant_alignment",
+        problem_type="regression",
+        eval_metric="root_mean_squared_error",
+        hyperparameters={},
+    )
+    model.initialize(X=child_train, y=y)
+    assert model._features_internal == ["signal", "noise"]
+
+    def fake_parent_fit(self, X, y, **kwargs):
+        del y, kwargs
+        transformed = self.preprocess(X, is_train=True)
+        self.model = SimpleNamespace(
+            n_features_in_=int(transformed.shape[1]),
+            feature_names_in_=np.asarray(transformed.columns, dtype=object),
+        )
+
+    monkeypatch.setattr(adapters.DarkoFitModel, "_fit", fake_parent_fit)
+    model._fit(child_train, y)
+    metadata = model._fit_metadata[adapters.REPRESENTATION_METADATA_KEY]
+    assert metadata["input_feature_count"] == 3
+    assert metadata["output_feature_count"] == 2
+    assert metadata["dropped_constant_input_columns"] == ["rare"]
+    assert metadata["dropped_constant_input_unique_counts"] == [1]
+    screen._validate_representation_metadata(
+        metadata,
+        arm="baseline",
+        dataset="QSAR-TID-11",
+        field="native adapter constant alignment",
+        child_features=list(child_train.columns),
     )
 
 

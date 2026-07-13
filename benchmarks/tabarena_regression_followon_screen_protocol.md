@@ -46,8 +46,18 @@ Expenses. At the child-model boundary AutoGluon's upstream feature generator
 has already converted Miami's and Wine's binary categoricals to numeric 0/1,
 so `ts_permutations` is a structural no-op there. They are excluded from the
 formal TS4 estimand and covered by identity/schema tests instead.
-Native child metadata is checked against the exact post-AutoGluon categorical
-schema for all 13 datasets. The five TS4 datasets must expose, respectively,
+Native child metadata v2 binds both sides of AutoGluon's child-specific feature
+alignment: the ordered external feature names/count/digest and the ordered
+schema actually passed to DarkoFit. AutoGluon may remove a feature that is
+constant inside one child training fold. Such a removal is accepted only when
+the adapter records the exact dropped name, observes exactly one distinct value
+with missing included, and the fitted schema is the order-preserving external
+schema minus those audited constants. The runner also requires this entire
+pre-representation audit to match the paired native control for all 744 native
+candidate child fits.
+
+The surviving categorical schema remains exact for all 13 datasets. The five
+TS4 datasets must expose, respectively,
 `attack-angle`, `model`, `cut/color/clarity`, the three Food categorical
 columns, and Healthcare `region`; every TS4 child therefore proves the lever is
 structurally active. Miami, Wine, and the other numeric panel datasets must
@@ -99,11 +109,11 @@ through DarkoFit's native target-statistic path. In particular, Food Delivery's
 high-cardinality `Delivery_person_ID` stays native while `Type_of_order` and
 `Type_of_vehicle` are one-hot. Dense output is capped at 256 features.
 
-Per-child metadata records the input/output width, source-frozen ordinal
-domain or training-fold one-hot schema digest, encoded positions and category
-counts, remaining native target-stat positions, validation transform count,
-and unseen-category count. Completion fails unless every record proves the
-declared boundary.
+Per-child metadata records native external/fitted schema digests and audited
+constant drops, or the source-frozen ordinal domain/training-fold one-hot
+schema digest, encoded positions and category counts, remaining native
+target-stat positions, validation transform count, and unseen-category count.
+Completion fails unless every record proves the declared boundary.
 
 ## Ordering, resources, and deadlines
 
@@ -173,7 +183,9 @@ The hardened cap-campaign boundaries are reused:
   append-only and attested.
 - The runner validates its own pickles, writes a normalized non-executable JSON
   payload, and seals every result digest and byte size in a completion
-  attestation. The standalone analyzer hashes but never unpickles result files.
+  attestation. Normalized child rows retain the ordered external feature schema
+  so the standalone analyzer recomputes every native schema digest and audited
+  drop relation itself. The analyzer hashes but never unpickles result files.
   Its five outputs use fixed campaign-root filenames so resume can archive every
   stale analysis artifact before any rerun.
   It revalidates the exact grid, row schemas, fitted metadata, representation

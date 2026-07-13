@@ -163,6 +163,11 @@ EXPECTED_CANDIDATE_JOBS = sum(
 EXPECTED_JOBS = EXPECTED_CONTROL_JOBS + EXPECTED_CANDIDATE_JOBS
 EXPECTED_CHILD_FITS = EXPECTED_JOBS * 8
 EXPECTED_PAIRED_COMPARISONS = EXPECTED_CANDIDATE_JOBS
+EXPECTED_NATIVE_REPRESENTATION_PAIRS = 8 * sum(
+    len(spec["datasets"]) * len(SCREEN_SPLITS)
+    for arm, spec in ARM_SPECS.items()
+    if arm != "baseline" and spec["representation"] == "native"
+)
 TIME_LIMIT_SECONDS = 3_600.0
 
 MANIFEST_FILENAME = hardened.MANIFEST_FILENAME
@@ -315,6 +320,14 @@ def frozen_protocol() -> dict[str, Any]:
                 dataset: list(columns)
                 for dataset, columns in EXPECTED_NATIVE_CATEGORICAL_COLUMNS.items()
             },
+            "native_metadata_schema_version": 2,
+            "native_feature_alignment_policy": (
+                "exact external/internal schemas with only audited AutoGluon "
+                "child-fold constants removed"
+            ),
+            "native_representation_pair_count": (
+                EXPECTED_NATIVE_REPRESENTATION_PAIRS
+            ),
             "ordinal_mapping_source": "source-frozen domain semantics",
             "ordinal_compact_domains": EXPECTED_ORDINAL_COMPACT_DOMAINS,
             "ordinal_schema_sha256": EXPECTED_ORDINAL_SCHEMA_SHA256,
@@ -986,8 +999,30 @@ def _validate_sha256(value: Any, field: str) -> str:
     return value
 
 
+def _feature_schema_sha256(columns: list[str], field: str) -> str:
+    if (
+        not isinstance(columns, list)
+        or not columns
+        or any(not isinstance(column, str) for column in columns)
+        or len(set(columns)) != len(columns)
+    ):
+        raise RuntimeError(f"{field} must contain unique string feature names")
+    return hashlib.sha256(
+        json.dumps(
+            columns,
+            allow_nan=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+
+
 def _validate_representation_metadata(
-    value: Any, *, arm: str, dataset: str, field: str
+    value: Any,
+    *,
+    arm: str,
+    dataset: str,
+    field: str,
+    child_features: list[str] | None = None,
 ) -> dict[str, Any]:
     value = dict(_as_mapping(value, field))
     expected_kind = ARM_SPECS[arm]["representation"]
@@ -1003,25 +1038,93 @@ def _validate_representation_metadata(
         raise RuntimeError(f"{field} feature counts must be positive")
     if expected_kind == "native":
         required = {
+            "schema_version",
             "kind",
             "fit_scope",
+            "feature_alignment_policy",
             "target_used_by_representation",
             "input_feature_count",
             "output_feature_count",
+            "external_feature_schema_sha256",
+            "fitted_feature_schema_sha256",
             "categorical_input_columns",
+            "fitted_categorical_input_columns",
+            "dropped_constant_input_columns",
+            "dropped_constant_input_unique_counts",
         }
-        if set(value) != required or value.get(
-            "fit_scope"
-        ) != "darkofit_child_training_fold":
-            raise RuntimeError(f"{field} native metadata is incomplete")
-        expected_columns = EXPECTED_NATIVE_CATEGORICAL_COLUMNS[dataset]
         if (
-            input_count != output_count
-            or value.get("categorical_input_columns") != expected_columns
+            set(value) != required
+            or value.get("schema_version") != 2
+            or value.get("fit_scope") != "darkofit_child_training_fold"
+            or value.get("feature_alignment_policy")
+            != "autogluon_child_drop_unique"
+        ):
+            raise RuntimeError(f"{field} native metadata is incomplete")
+        external_digest = _validate_sha256(
+            value.get("external_feature_schema_sha256"),
+            f"{field}.external_feature_schema_sha256",
+        )
+        fitted_digest = _validate_sha256(
+            value.get("fitted_feature_schema_sha256"),
+            f"{field}.fitted_feature_schema_sha256",
+        )
+        dropped_columns = value.get("dropped_constant_input_columns")
+        dropped_unique_counts = value.get(
+            "dropped_constant_input_unique_counts"
+        )
+        if (
+            not isinstance(dropped_columns, list)
+            or any(not isinstance(column, str) for column in dropped_columns)
+            or len(set(dropped_columns)) != len(dropped_columns)
+            or not isinstance(dropped_unique_counts, list)
+            or len(dropped_unique_counts) != len(dropped_columns)
+            or any(
+                hardened._exact_int(count, f"{field}.dropped unique count") != 1
+                for count in dropped_unique_counts
+            )
+            or output_count != input_count - len(dropped_columns)
+        ):
+            raise RuntimeError(f"{field} native constant-drop audit is inconsistent")
+        expected_columns = EXPECTED_NATIVE_CATEGORICAL_COLUMNS[dataset]
+        fitted_categorical_columns = value.get(
+            "fitted_categorical_input_columns"
+        )
+        expected_fitted_categorical = [
+            column for column in expected_columns if column not in dropped_columns
+        ]
+        if (
+            value.get("categorical_input_columns") != expected_columns
+            or fitted_categorical_columns != expected_fitted_categorical
             or value.get("target_used_by_representation")
-            is not bool(expected_columns)
+            is not bool(expected_fitted_categorical)
         ):
             raise RuntimeError(f"{field} native feature schema is inconsistent")
+        if arm == "ts4" and fitted_categorical_columns != expected_columns:
+            raise RuntimeError(
+                f"{field} TS4 categorical schema was removed before fitting"
+            )
+        if child_features is not None:
+            expected_external_digest = _feature_schema_sha256(
+                child_features, f"{field}.child_features"
+            )
+            if (
+                input_count != len(child_features)
+                or external_digest != expected_external_digest
+                or any(column not in child_features for column in dropped_columns)
+            ):
+                raise RuntimeError(
+                    f"{field} native external schema is not bound to the child"
+                )
+            dropped_set = set(dropped_columns)
+            fitted_features = [
+                column for column in child_features if column not in dropped_set
+            ]
+            if fitted_digest != _feature_schema_sha256(
+                fitted_features, f"{field}.fitted_features"
+            ):
+                raise RuntimeError(
+                    f"{field} native fitted schema does not match audited drops"
+                )
         return value
 
     common_required = {
@@ -1240,6 +1343,13 @@ def parse_result_record(
         or info.get("unlabeled_in_fit") is not False
     ):
         raise RuntimeError(f"{source}: outer model metadata does not match")
+    outer_features = info.get("features")
+    outer_num_features = hardened._exact_int(
+        info.get("num_features"), f"{source}: outer feature count"
+    )
+    _feature_schema_sha256(outer_features, f"{source}: outer features")
+    if outer_num_features != len(outer_features):
+        raise RuntimeError(f"{source}: outer feature schema does not match")
 
     bag = _as_mapping(info.get("bagged_info"), f"{source}: bag info")
     child_names = [f"S1F{index}" for index in range(1, 9)]
@@ -1277,6 +1387,13 @@ def parse_result_record(
     child_best = []
     for child_fold, child_name in enumerate(child_names):
         child = _as_mapping(children[child_name], f"{source}: {child_name}")
+        child_features = child.get("features")
+        child_num_features = hardened._exact_int(
+            child.get("num_features"), f"{source}: {child_name} feature count"
+        )
+        _feature_schema_sha256(
+            child_features, f"{source}: {child_name} features"
+        )
         if (
             child.get("name") != child_name
             or child.get("model_type") != expected_model_cls
@@ -1290,6 +1407,8 @@ def parse_result_record(
             or child.get("num_gpus") != num_gpus_child
             or child.get("val_in_fit") is not True
             or child.get("unlabeled_in_fit") is not False
+            or child_num_features != len(child_features)
+            or set(child_features) != set(outer_features)
         ):
             raise RuntimeError(f"{source}: {child_name} initialized policy mismatch")
         child_ag_args = _as_mapping(
@@ -1386,6 +1505,7 @@ def parse_result_record(
             arm=arm,
             dataset=dataset,
             field=f"{source}: {child_name} representation",
+            child_features=child_features,
         )
         child_best.append(best)
         child_rows.append(
@@ -1413,6 +1533,7 @@ def parse_result_record(
                 "stop_reason": reason,
                 "deadline_hit": deadline_hit,
                 "wall_clock_elapsed_seconds": wall_elapsed,
+                "child_features": list(child_features),
                 "representation": representation,
                 "refit_params": {name: trained[name] for name in sorted(trained)},
                 "num_cpus": num_cpus_child,
@@ -1863,6 +1984,43 @@ def collect_result_artifacts(
     return artifacts
 
 
+def validate_native_representation_pairs(
+    child_rows: Iterable[Mapping[str, Any]],
+) -> int:
+    rows = list(child_rows)
+    index = {
+        (
+            row["dataset"],
+            int(row["repeat"]),
+            int(row["fold"]),
+            row["arm"],
+            row["child"],
+        ): row
+        for row in rows
+    }
+    if len(index) != len(rows):
+        raise RuntimeError("screen child metadata contains duplicate rows")
+    comparisons = 0
+    for key, row in index.items():
+        dataset, repeat, fold, arm, child = key
+        if (
+            arm == "baseline"
+            or ARM_SPECS[arm]["representation"] != "native"
+        ):
+            continue
+        baseline = index.get((dataset, repeat, fold, "baseline", child))
+        if baseline is None or row["representation"] != baseline["representation"]:
+            raise RuntimeError(
+                "paired native arms do not share identical child preprocessing"
+            )
+        comparisons += 1
+    if comparisons != EXPECTED_NATIVE_REPRESENTATION_PAIRS:
+        raise RuntimeError(
+            "native child preprocessing comparison count does not match"
+        )
+    return comparisons
+
+
 def validate_completed_results(
     output_dir: Path, artifacts: Mapping[str, Mapping[str, Any]]
 ) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]]]:
@@ -1907,6 +2065,9 @@ def validate_completed_results(
     resource = next(iter(resources))
     if stop_reasons.get("time_limit", 0):
         raise RuntimeError("screen contains a fitted child with a wall-clock stop")
+    native_representation_pairs = validate_native_representation_pairs(
+        child_rows
+    )
     outer_rows.sort(key=lambda row: (row["task_id"], row["repeat"], row["arm"]))
     child_rows.sort(
         key=lambda row: (
@@ -1920,6 +2081,7 @@ def validate_completed_results(
         "result_count": len(outer_rows),
         "child_fit_count": len(child_rows),
         "paired_comparison_count": EXPECTED_PAIRED_COMPARISONS,
+        "native_representation_pair_count": native_representation_pairs,
         "stop_reason_counts": dict(sorted(stop_reasons.items())),
         "resource_allocation": {
             "num_cpus": resource[0],

@@ -284,6 +284,7 @@ def _validate_safe_payload(
         "stop_reason",
         "deadline_hit",
         "wall_clock_elapsed_seconds",
+        "child_features",
         "representation",
         "refit_params",
         "num_cpus",
@@ -379,12 +380,7 @@ def _validate_safe_payload(
             row["wall_clock_elapsed_seconds"], "safe child wall-clock elapsed"
         ) < 0.0:
             raise RuntimeError("safe child wall-clock elapsed must be nonnegative")
-        screen._validate_representation_metadata(
-            row["representation"],
-            arm=row["arm"],
-            dataset=row["dataset"],
-            field="safe child representation",
-        )
+        _validate_normalized_representation(row)
         screen._validate_refit_params(
             row["refit_params"],
             expected_iterations=best,
@@ -396,6 +392,7 @@ def _validate_safe_payload(
         normalized_children.append(row)
     if any(child_per_outer[key] != 8 for key in outer_index):
         raise RuntimeError("safe payload does not contain eight children per outer fit")
+    screen.validate_native_representation_pairs(normalized_children)
     return list(outer_index.values()), normalized_children
 
 
@@ -413,6 +410,20 @@ def _validate_normalized_tree_mode_selection(
         )
     elif row["tree_mode_selection"] is not None:
         raise RuntimeError("non-auto safe child carries tree selection metadata")
+
+
+def _validate_normalized_representation(row: Mapping[str, Any]) -> None:
+    child_features = row["child_features"]
+    screen._feature_schema_sha256(
+        child_features, "safe child external features"
+    )
+    screen._validate_representation_metadata(
+        row["representation"],
+        arm=row["arm"],
+        dataset=row["dataset"],
+        field="safe child representation",
+        child_features=child_features,
+    )
 
 
 def verify_campaign_integrity(
@@ -546,6 +557,8 @@ def verify_campaign_integrity(
         or validation.get("child_fit_count") != screen.EXPECTED_CHILD_FITS
         or validation.get("paired_comparison_count")
         != screen.EXPECTED_PAIRED_COMPARISONS
+        or validation.get("native_representation_pair_count")
+        != screen.EXPECTED_NATIVE_REPRESENTATION_PAIRS
         or validation.get("resource_allocation", {}).get("num_cpus_child")
         != child_cpus
     ):

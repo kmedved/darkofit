@@ -175,6 +175,23 @@ def _category_schema_digest(columns: list[dict[str, Any]]) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def _feature_schema_digest(columns: list[str]) -> str:
+    """Hash an ordered, string-named feature schema."""
+    if (
+        not isinstance(columns, list)
+        or not columns
+        or any(not isinstance(column, str) for column in columns)
+        or len(set(columns)) != len(columns)
+    ):
+        raise RuntimeError("feature schema must contain unique string names")
+    payload = json.dumps(
+        columns,
+        allow_nan=False,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
 def _category_identity(value: Any) -> dict[str, str]:
     value_type = type(value)
     return {
@@ -189,19 +206,79 @@ class ScreenNativeDarkoFitModel(DarkoFitModel):
     screen_representation = "native"
 
     def _fit(self, X: pd.DataFrame, y: pd.Series, **kwargs) -> None:
+        input_columns = list(X.columns)
+        if (
+            not input_columns
+            or any(not isinstance(column, str) for column in input_columns)
+            or len(set(input_columns)) != len(input_columns)
+            or input_columns != list(self.features or [])
+        ):
+            raise RuntimeError(
+                "native screen input must match the declared unique string schema"
+            )
         categorical_columns = [
             str(column)
             for column in X.select_dtypes(include="category").columns
         ]
-        input_feature_count = int(X.shape[1])
         super()._fit(X, y, **kwargs)
+
+        fitted_names = getattr(self.model, "feature_names_in_", None)
+        if fitted_names is None:
+            raise RuntimeError("native screen fit did not retain fitted feature names")
+        fitted_columns = list(fitted_names)
+        internal_columns = list(getattr(self, "_features_internal", []))
+        if (
+            any(not isinstance(column, str) for column in fitted_columns)
+            or len(set(fitted_columns)) != len(fitted_columns)
+            or fitted_columns != internal_columns
+            or int(self.model.n_features_in_) != len(fitted_columns)
+        ):
+            raise RuntimeError("native screen fitted feature schema is inconsistent")
+        fitted_set = set(fitted_columns)
+        dropped_columns = [
+            column for column in input_columns if column not in fitted_set
+        ]
+        if fitted_columns != [
+            column for column in input_columns if column not in dropped_columns
+        ]:
+            raise RuntimeError(
+                "native screen fitted schema must be an order-preserving subset"
+            )
+        dropped_unique_counts = [
+            int(X[column].nunique(dropna=False)) for column in dropped_columns
+        ]
+        if any(count != 1 for count in dropped_unique_counts):
+            raise RuntimeError(
+                "native screen may drop only child-training-fold constants"
+            )
+        fitted_categorical_columns = [
+            column for column in categorical_columns if column in fitted_set
+        ]
+        actual_categorical_columns = [
+            fitted_columns[index] for index in self._categorical_indices
+        ]
+        if actual_categorical_columns != fitted_categorical_columns:
+            raise RuntimeError(
+                "native screen fitted categorical schema is inconsistent"
+            )
         self._fit_metadata[REPRESENTATION_METADATA_KEY] = {
+            "schema_version": 2,
             "kind": self.screen_representation,
             "fit_scope": "darkofit_child_training_fold",
-            "target_used_by_representation": bool(categorical_columns),
-            "input_feature_count": input_feature_count,
-            "output_feature_count": int(self.model.n_features_in_),
+            "feature_alignment_policy": "autogluon_child_drop_unique",
+            "target_used_by_representation": bool(fitted_categorical_columns),
+            "input_feature_count": len(input_columns),
+            "output_feature_count": len(fitted_columns),
+            "external_feature_schema_sha256": _feature_schema_digest(
+                input_columns
+            ),
+            "fitted_feature_schema_sha256": _feature_schema_digest(
+                fitted_columns
+            ),
             "categorical_input_columns": categorical_columns,
+            "fitted_categorical_input_columns": fitted_categorical_columns,
+            "dropped_constant_input_columns": dropped_columns,
+            "dropped_constant_input_unique_counts": dropped_unique_counts,
         }
 
 
