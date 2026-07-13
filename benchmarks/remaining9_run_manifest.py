@@ -881,6 +881,14 @@ def watch_completion(
     process = _as_manifest_mapping(manifest.get("process"), "process")
     if process.get("pid") != pid:
         raise RuntimeError("watch PID does not match the run manifest")
+    snapshot = _as_manifest_mapping(manifest.get("result_snapshot"), "result_snapshot")
+    if snapshot.get("completed_result_files_at_capture") != 0:
+        raise RuntimeError(
+            "completion watcher must start from a zero-result manifest snapshot"
+        )
+    experiments_dir = Path(str(manifest["experiments_dir"]))
+    if _result_paths(experiments_dir):
+        raise RuntimeError("completion watcher must start before the first result file")
     watch_started = datetime.now(timezone.utc)
     captured_at = _parse_aware_timestamp(
         manifest.get("captured_at_utc"), "manifest capture"
@@ -892,7 +900,6 @@ def watch_completion(
     for field in ("pid", "started_utc", "command", "cwd", "environment"):
         if initial_process.get(field) != process.get(field):
             raise RuntimeError(f"runner process {field} changed before watch start")
-    experiments_dir = Path(str(manifest["experiments_dir"]))
     previous_stats: dict[str, tuple[int, int]] = {}
     observed: dict[str, dict] = {}
     deadline = time.monotonic() + timeout

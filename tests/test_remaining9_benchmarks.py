@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import threading
 
 import pandas as pd
 import pytest
@@ -398,10 +399,6 @@ def test_remaining9_versioned_watcher_emits_verifiable_attestation(
     monkeypatch,
 ):
     experiments = tmp_path / "experiments"
-    for index in range(EXPECTED_JOBS):
-        path = experiments / str(index) / "results.pkl"
-        path.parent.mkdir(parents=True)
-        path.write_bytes(f"result-{index}".encode())
 
     process = {
         "pid": 123,
@@ -414,6 +411,7 @@ def test_remaining9_versioned_watcher_emits_verifiable_attestation(
         "captured_at_utc": "2000-01-01T00:00:01+00:00",
         "experiments_dir": str(experiments),
         "process": process,
+        "result_snapshot": {"completed_result_files_at_capture": 0},
     }
     manifest_path = tmp_path / "run_manifest.json"
     manifest_payload = json.dumps(manifest, sort_keys=True).encode()
@@ -429,11 +427,22 @@ def test_remaining9_versioned_watcher_emits_verifiable_attestation(
         "_matching_runner_pids",
         lambda: [123],
     )
-    monkeypatch.setattr(
-        remaining9_provenance,
-        "_process_snapshot",
-        lambda pid: process,
-    )
+    writer = None
+
+    def write_results():
+        for index in range(EXPECTED_JOBS):
+            path = experiments / str(index) / "results.pkl"
+            path.parent.mkdir(parents=True)
+            path.write_bytes(f"result-{index}".encode())
+
+    def process_snapshot(pid):
+        nonlocal writer
+        if writer is None:
+            writer = threading.Thread(target=write_results)
+            writer.start()
+        return process
+
+    monkeypatch.setattr(remaining9_provenance, "_process_snapshot", process_snapshot)
 
     attestation_path = tmp_path / "completion_attestation.live.json"
     attestation = remaining9_provenance.watch_completion(
@@ -443,6 +452,7 @@ def test_remaining9_versioned_watcher_emits_verifiable_attestation(
         poll_interval=0.001,
         timeout=2.0,
     )
+    writer.join()
     assert attestation_path.is_file()
     assert len(attestation["observed_results"]) == EXPECTED_JOBS
     verified = validate_completion_attestation(
@@ -452,3 +462,29 @@ def test_remaining9_versioned_watcher_emits_verifiable_attestation(
         input_dir=experiments,
     )
     assert len(verified) == EXPECTED_JOBS
+
+
+def test_remaining9_versioned_watcher_rejects_late_start(tmp_path, monkeypatch):
+    experiments = tmp_path / "experiments"
+    manifest = {
+        "captured_at_utc": "2000-01-01T00:00:01+00:00",
+        "experiments_dir": str(experiments),
+        "process": {"pid": 123},
+        "result_snapshot": {"completed_result_files_at_capture": 1},
+    }
+    manifest_path = tmp_path / "run_manifest.json"
+    payload = json.dumps(manifest, sort_keys=True).encode()
+    manifest_path.write_bytes(payload)
+    digest = hashlib.sha256(payload).hexdigest()
+    monkeypatch.setattr(
+        remaining9_provenance,
+        "load_and_verify_manifest",
+        lambda path, input_dir: (manifest, digest),
+    )
+
+    with pytest.raises(RuntimeError, match="zero-result manifest"):
+        remaining9_provenance.watch_completion(
+            manifest_path=manifest_path,
+            attestation_path=tmp_path / "attestation.json",
+            pid=123,
+        )

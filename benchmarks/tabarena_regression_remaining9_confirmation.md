@@ -273,7 +273,7 @@ manifest and attestation SHA-256 values in its source and rejects any other
 bundle before deserialization. It is not a general-purpose analyzer for
 caller-supplied or shared result caches.
 
-Capture it while the runner is active:
+Capture it immediately after the runner starts, before its first result exists:
 
 ```text
 PYTHONPATH=. NUMBA_CACHE_DIR=.cache/numba-tabarena-remaining9 \
@@ -281,7 +281,9 @@ PYTHONPATH=. NUMBA_CACHE_DIR=.cache/numba-tabarena-remaining9 \
   benchmarks/remaining9_run_manifest.py --pid <RUNNER_PID>
 ```
 
-Then start the versioned completion watcher while the same runner is active:
+Then start the versioned completion watcher while the same runner is active and
+the result directory is still empty. The watcher refuses a nonzero manifest
+snapshot or any pre-existing result file:
 
 ```text
 PYTHONPATH=. NUMBA_CACHE_DIR=.cache/numba-tabarena-remaining9 \
@@ -300,10 +302,18 @@ the exact eight-child bagging contract, child validity and model type,
 user/effective hyperparameters, fold strategy, and seeds for all 330 jobs
 before calculating any aggregate.
 
-For the 2026-07-12 execution, the equivalent live watcher was started as a
-one-off process before this versioned watch mode was committed. The retained
-attestation uses the same schema; the analyzer independently rehashes every
-file and validates all watcher claims before deserializing the verified bytes.
+For the 2026-07-12 execution, the final one-off watcher began after the manifest
+was recaptured at 250 results (and observed 255 on startup), rather than from an
+empty directory. The retained attestation therefore authenticates the exact
+final bytes, mtimes, completion state, and sole live runner at observation and
+completion; it does **not** prove continuous sole-writer attribution while the
+earlier files were created. Supporting local evidence is that the output began
+empty, runner progress reported zero cache reuse/failures, every result mtime
+follows the captured process start, the DarkoFit source tree remained exact,
+and repeated process checks found only PID 43239. This is accepted as controlled
+local benchmark evidence for the conservative no-default-change decision, not
+as hostile-environment provenance. Future runs are required by the versioned
+watcher to start monitoring from zero results.
 
 The registered ChimeraBoost comparison is likewise read once from the frozen
 `hpo_results.parquet` bytes rather than through an auto-downloading cache path.
