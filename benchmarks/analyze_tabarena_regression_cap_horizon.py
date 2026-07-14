@@ -2452,6 +2452,7 @@ def _canonical_output_targets(
     targets: Mapping[str, Path],
     *,
     protected_paths: Sequence[Path],
+    target_names: Sequence[str] = OUTPUT_TARGET_NAMES,
 ) -> dict[str, Path]:
     """Validate and canonicalize analyzer output paths before any write.
 
@@ -2463,7 +2464,14 @@ def _canonical_output_targets(
     privileged process concurrently rewriting directory entries after this
     check; the analyzer revalidates immediately before publishing decisions.
     """
-    if set(targets) != set(OUTPUT_TARGET_NAMES):
+    names = tuple(target_names)
+    if (
+        not names
+        or any(not isinstance(name, str) or not name for name in names)
+        or len(set(names)) != len(names)
+    ):
+        raise RuntimeError("analysis output target-name contract is invalid")
+    if set(targets) != set(names):
         raise RuntimeError("analysis output target fields are not exact")
     try:
         canonical_input = input_dir.resolve(strict=True)
@@ -2484,7 +2492,7 @@ def _canonical_output_targets(
             ) from exc
 
     canonical: dict[str, Path] = {}
-    for name in OUTPUT_TARGET_NAMES:
+    for name in names:
         raw = Path(targets[name])
         try:
             target = raw.resolve(strict=False)
@@ -2546,9 +2554,9 @@ def _canonical_output_targets(
             )
         canonical[name] = target
 
-    for index, left_name in enumerate(OUTPUT_TARGET_NAMES):
+    for index, left_name in enumerate(names):
         left = canonical[left_name]
-        for right_name in OUTPUT_TARGET_NAMES[index + 1 :]:
+        for right_name in names[index + 1 :]:
             right = canonical[right_name]
             collision = left == right or left in right.parents or right in left.parents
             if not collision and left.exists() and right.exists():
