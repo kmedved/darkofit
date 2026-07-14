@@ -1,1 +1,2 @@
 benchmarks/tabarena_regression_cap_horizon_*.csv whitespace=cr-at-eol
+benchmarks/tabarena_regression_followon_screen_*.csv whitespace=cr-at-eol

@@ -54,6 +54,15 @@ previous behaviors remain available through explicit parameters.
   equal-dataset test RMSE by 0.453% but missed the required 0.5% gate and added
   12.88% training time plus 10.65% inference time. See the
   [cap-horizon result](benchmarks/tabarena_regression_cap_horizon_result.md).
+  A subsequent isolated 156-job, 1,248-child mechanism screen advanced only
+  the source-declared safe ordinal representation: it improved equal-dataset
+  test RMSE by 19.50% across Airfoil and Diamonds and won all six screen
+  splits, but remains exploratory preprocessing evidence rather than a new
+  default. Automatic tree-mode selection improved RMSE by 3.10% but failed
+  the frozen inference-cost gate at 2.57x the control; four target-statistic
+  permutations, generic safe one-hot, and linear-residual boosting also
+  failed their predeclared gates. See the
+  [follow-on screen result](benchmarks/tabarena_regression_followon_screen_result.md).
 * Default `eval_train_loss=False` on the boosters and sklearn wrappers. The
   per-round training-loss pass is diagnostic-only (early stopping watches the
   eval set) and cost about 15% of multiclass fit time; `verbose=True` still
