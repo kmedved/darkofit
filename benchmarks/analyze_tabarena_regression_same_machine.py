@@ -2546,7 +2546,7 @@ def render_markdown_report(summary: Mapping[str, Any]) -> str:
             "",
             f"- DarkoFit Git commit: `{summary['provenance']['git_head']}`.",
             f"- ChimeraBoost Git commit: `{summary['provenance']['chimeraboost_git_head']}`.",
-            f"- Protocol SHA-256: `{summary['provenance']['protocol_sha256']}`.",
+            f"- Frozen protocol semantic SHA-256: `{summary['provenance']['protocol_sha256']}`.",
             f"- Ordered-grid SHA-256: `{summary['provenance']['job_order_sha256']}`.",
             f"- Manifest SHA-256: `{summary['provenance']['manifest_sha256']}`.",
             f"- Completion attestation SHA-256: `{summary['provenance']['attestation_sha256']}`.",

@@ -73,6 +73,21 @@ previous behaviors remain available through explicit parameters.
   independent dataset generalization or support for generic ordinal inference.
   See the
   [ordinal confirmation result](benchmarks/tabarena_regression_ordinal_confirmation_result.md).
+  A final source-frozen same-machine default characterization compared
+  DarkoFit 0.9.0 with ChimeraBoost 0.14.1 and CatBoost 1.2.10 over 117 primary
+  jobs, plus 18 separate Airfoil/Diamonds representation jobs, for 1,080 fitted
+  children. Equal-dataset test RMSE put DarkoFit 1.25% behind ChimeraBoost
+  (95% CI 0.82%-1.73% behind; five of 13 dataset wins) and 5.38% behind
+  CatBoost (95% CI 5.11%-5.68% behind; one of 13 wins). DarkoFit trained 9.1%
+  faster than ChimeraBoost and 62.7% faster than CatBoost, while inference was
+  43.3% and 25.6% slower and incremental memory was 43.4% and 84.7% lower,
+  respectively. All jobs completed without failure or imputation and with no
+  known deadline/time-limit stops; 494 competitor-child stop reasons remained
+  unresolved and are reported as unknown. The Airfoil diagnostic restores a
+  numeric physical angle from OpenML's nominal/string task schema, so the
+  separate representation lane remains descriptive and does not advance a
+  generic ordinal policy. See the
+  [same-machine result](benchmarks/tabarena_regression_same_machine_result.md).
 * Default `eval_train_loss=False` on the boosters and sklearn wrappers. The
   per-round training-loss pass is diagnostic-only (early stopping watches the
   eval set) and cost about 15% of multiclass fit time; `verbose=True` still

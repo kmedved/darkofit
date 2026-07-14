@@ -1,0 +1,2996 @@
+{
+  "bootstrap": {
+    "datasets_fixed": true,
+    "draws": 10000,
+    "lanes_pooled": false,
+    "ordinal_diagnostic_dataset_weights": {
+      "airfoil_self_noise": 0.5,
+      "diamonds": 0.5
+    },
+    "primary_dataset_weights": {
+      "Another-Dataset-on-used-Fiat-500": 0.07692307692307693,
+      "Food_Delivery_Time": 0.07692307692307693,
+      "QSAR-TID-11": 0.07692307692307693,
+      "QSAR_fish_toxicity": 0.07692307692307693,
+      "airfoil_self_noise": 0.07692307692307693,
+      "concrete_compressive_strength": 0.07692307692307693,
+      "diamonds": 0.07692307692307693,
+      "healthcare_insurance_expenses": 0.07692307692307693,
+      "houses": 0.07692307692307693,
+      "miami_housing": 0.07692307692307693,
+      "physiochemical_protein": 0.07692307692307693,
+      "superconductivity": 0.07692307692307693,
+      "wine_quality": 0.07692307692307693
+    },
+    "resampling": "three_coordinates_within_each_fixed_dataset",
+    "seed": 20260719
+  },
+  "counts": {
+    "child_fits": 1080,
+    "ordinal_diagnostic_coordinates": 6,
+    "ordinal_diagnostic_outer_jobs": 18,
+    "ordinal_diagnostic_paired_splits": 36,
+    "ordinal_diagnostic_per_dataset_rows": 12,
+    "outer_jobs": 135,
+    "paired_child_rows": 1224,
+    "primary_coordinates": 39,
+    "primary_outer_jobs": 117,
+    "primary_paired_splits": 117,
+    "primary_per_dataset_rows": 39
+  },
+  "decision": "descriptive_only",
+  "engine_child_metadata": {
+    "catboost": {
+      "best_iteration": {
+        "count": 360,
+        "max": 10000.0,
+        "median": 2828.5,
+        "min": 75.0,
+        "p90": 9964.1
+      },
+      "child_count": 360,
+      "rounds_retained": {
+        "count": 360,
+        "max": 10000.0,
+        "median": 2828.5,
+        "min": 75.0,
+        "p90": 9964.1
+      },
+      "selected_lane_counts": {
+        "not_applicable": 360
+      },
+      "stop_reason_counts": {
+        "iteration_limit": 82,
+        "unknown": 278
+      }
+    },
+    "chimeraboost": {
+      "best_iteration": {
+        "count": 360,
+        "max": 2319.0,
+        "median": 396.0,
+        "min": 24.0,
+        "p90": 1221.0000000000002
+      },
+      "child_count": 360,
+      "rounds_retained": {
+        "count": 360,
+        "max": 2319.0,
+        "median": 396.0,
+        "min": 24.0,
+        "p90": 1221.0000000000002
+      },
+      "selected_lane_counts": {
+        "constant": 235,
+        "linear": 125
+      },
+      "stop_reason_counts": {
+        "early_stopping": 144,
+        "unknown": 216
+      }
+    },
+    "darkofit": {
+      "best_iteration": {
+        "count": 360,
+        "max": 1000.0,
+        "median": 789.0,
+        "min": 53.0,
+        "p90": 1000.0
+      },
+      "child_count": 360,
+      "rounds_retained": {
+        "count": 360,
+        "max": 1000.0,
+        "median": 789.0,
+        "min": 53.0,
+        "p90": 1000.0
+      },
+      "selected_lane_counts": {
+        "boosting": 360
+      },
+      "stop_reason_counts": {
+        "early_stopping": 192,
+        "iteration_limit": 168
+      }
+    }
+  },
+  "integrity_diagnostics": {
+    "child_rows_verified": 1080,
+    "cross_engine_representation_blocks_verified": 360,
+    "failure_count": 0,
+    "imputation_count": 0,
+    "job_order_verified": true,
+    "known_deadline_hit_count": 0,
+    "known_time_limit_stop_count": 0,
+    "outer_rows_verified": 135,
+    "primary_and_diagnostic_kept_separate": true,
+    "raw_result_hashes_verified": 135,
+    "unknown_stop_reason_children": 494,
+    "validation_basis": "completion attestation, opaque raw-result hashes, runner-normalized finite JSON, and independent exact config/schema/order revalidation"
+  },
+  "official_default_disclosure": {
+    "catboost": {
+      "allow_writing_files": false,
+      "early_stopping": "autogluon_adaptive",
+      "eval_metric": "RMSE",
+      "iterations": 10000,
+      "learning_rate": 0.05,
+      "use_best_model_with_eval_set": true
+    },
+    "chimeraboost": {
+      "cat_n_permutations": 4,
+      "early_stopping": true,
+      "l2_leaf_reg": 1.0,
+      "linear_leaves": null,
+      "max_bins": 128,
+      "min_child_weight": 1.0,
+      "n_estimators": 10000,
+      "ordered_boosting": false,
+      "resolved_depth": 6,
+      "resolved_learning_rate": 0.1,
+      "resolved_patience": 50
+    },
+    "darkofit": {
+      "depth": "auto",
+      "early_stopping": true,
+      "iterations": 1000,
+      "l2_leaf_reg": "auto",
+      "learning_rate": null,
+      "linear_residual": false,
+      "max_bins": 254,
+      "ordered_boosting": "auto",
+      "resolved_l2_leaf_reg": 3.0,
+      "resolved_ordered_boosting_scalar_regression": false,
+      "tree_mode": "catboost",
+      "ts_permutations": 1,
+      "use_best_model": true
+    }
+  },
+  "ordinal_diagnostic": {
+    "can_revive_ordinal_policy": false,
+    "pairwise": [
+      {
+        "child_metadata": {
+          "denominator": {
+            "best_iteration": {
+              "count": 48,
+              "max": 2319.0,
+              "median": 461.5,
+              "min": 107.0,
+              "p90": 1233.3
+            },
+            "engine": "chimeraboost",
+            "explicit_time_limit_stops": 0,
+            "rounds_retained": {
+              "count": 48,
+              "max": 2319.0,
+              "median": 461.5,
+              "min": 107.0,
+              "p90": 1233.3
+            },
+            "selected_lane_counts": {
+              "constant": 33,
+              "linear": 15
+            },
+            "stop_reason_counts": {
+              "early_stopping": 24,
+              "unknown": 24
+            },
+            "unknown_stop_reasons": 24
+          },
+          "numerator": {
+            "best_iteration": {
+              "count": 48,
+              "max": 1000.0,
+              "median": 645.0,
+              "min": 271.0,
+              "p90": 999.3
+            },
+            "engine": "darkofit",
+            "explicit_time_limit_stops": 0,
+            "rounds_retained": {
+              "count": 48,
+              "max": 1000.0,
+              "median": 645.0,
+              "min": 271.0,
+              "p90": 999.3
+            },
+            "selected_lane_counts": {
+              "boosting": 48
+            },
+            "stop_reason_counts": {
+              "early_stopping": 27,
+              "iteration_limit": 21
+            },
+            "unknown_stop_reasons": 0
+          }
+        },
+        "code": "Dord/Mord",
+        "contrast": "darkofit_vs_chimeraboost_ordinal",
+        "coordinate_counts": {
+          "losses": 6,
+          "ties": 0,
+          "wins": 0
+        },
+        "dataset_count": 2,
+        "dataset_counts": {
+          "losses": 2,
+          "ties": 0,
+          "wins": 0
+        },
+        "datasets": [
+          {
+            "contrast": "darkofit_vs_chimeraboost_ordinal",
+            "contrast_code": "Dord/Mord",
+            "coordinate_count": 3,
+            "dataset": "airfoil_self_noise",
+            "incremental_memory_bytes_denominator_mean_bytes": 31817728.0,
+            "incremental_memory_bytes_numerator_mean_bytes": 43690.666666666664,
+            "incremental_memory_bytes_pct": -97.22204358699487,
+            "incremental_memory_bytes_ratio": 0.02777956413005137,
+            "incremental_memory_bytes_ratio_available": true,
+            "incremental_memory_bytes_ratio_unavailable_reason": null,
+            "infer_time_s_pct": 39.81338238289691,
+            "infer_time_s_ratio": 1.3981338238289691,
+            "panel": "ordinal_pairwise",
+            "peak_memory_bytes_pct": -1.5536680964037264,
+            "peak_memory_bytes_ratio": 0.9844633190359627,
+            "task_id": 363612,
+            "test_losses": 3,
+            "test_rmse_pct": 8.670446277135625,
+            "test_rmse_ratio": 1.0867044627713562,
+            "test_ties": 0,
+            "test_wins": 0,
+            "train_time_s_pct": 2.7103402175740365,
+            "train_time_s_ratio": 1.0271034021757404,
+            "val_rmse_pct": 4.959403263186202,
+            "val_rmse_ratio": 1.049594032631862
+          },
+          {
+            "contrast": "darkofit_vs_chimeraboost_ordinal",
+            "contrast_code": "Dord/Mord",
+            "coordinate_count": 3,
+            "dataset": "diamonds",
+            "incremental_memory_bytes_denominator_mean_bytes": 103765.33333333333,
+            "incremental_memory_bytes_numerator_mean_bytes": 617130.6666666666,
+            "incremental_memory_bytes_pct": 207.81912507463892,
+            "incremental_memory_bytes_ratio": 3.0781912507463893,
+            "incremental_memory_bytes_ratio_available": true,
+            "incremental_memory_bytes_ratio_unavailable_reason": null,
+            "infer_time_s_pct": -4.410384088198449,
+            "infer_time_s_ratio": 0.9558961591180155,
+            "panel": "ordinal_pairwise",
+            "peak_memory_bytes_pct": -0.06217905049517025,
+            "peak_memory_bytes_ratio": 0.9993782094950483,
+            "task_id": 363631,
+            "test_losses": 3,
+            "test_rmse_pct": 0.187884704307395,
+            "test_rmse_ratio": 1.001878847043074,
+            "test_ties": 0,
+            "test_wins": 0,
+            "train_time_s_pct": -31.205265439561902,
+            "train_time_s_ratio": 0.687947345604381,
+            "val_rmse_pct": 0.23905293647206172,
+            "val_rmse_ratio": 1.0023905293647206
+          }
+        ],
+        "decision": "descriptive_only",
+        "denominator": "chimeraboost_0_14_1_default_safe_ordinal",
+        "denominator_lane": "ordinal_diagnostic",
+        "metrics": {
+          "incremental_memory_bytes": {
+            "absolute_bytes": {
+              "denominator_equal_dataset_mean": 15960746.666666666,
+              "numerator_equal_dataset_mean": 330410.6666666666
+            },
+            "available": true,
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 0.03850999786312966,
+              "ratio_upper95_one_sided": 1.8020611532864732,
+              "ratio_upper95_two_sided": 2.220483406895805,
+              "seed": 20260719
+            },
+            "log_ratio": -1.229556231805078,
+            "pct": -70.75776833846767,
+            "ratio": 0.2924223166153232,
+            "role": "primary",
+            "unavailable_reason": null,
+            "zero_observation_pair_count": 0
+          },
+          "infer_time_s": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 1.0473458375852027,
+              "ratio_upper95_one_sided": 1.2760548657094102,
+              "ratio_upper95_two_sided": 1.3812025154373873,
+              "seed": 20260719
+            },
+            "log_ratio": 0.1450161862150146,
+            "pct": 15.605828232450957,
+            "ratio": 1.1560582823245096,
+            "role": "primary"
+          },
+          "peak_memory_bytes": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 0.977781036056156,
+              "ratio_upper95_one_sided": 0.9999937684191768,
+              "ratio_upper95_two_sided": 1.0004297877467887,
+              "seed": 20260719
+            },
+            "log_ratio": -0.008140311982118134,
+            "pct": -0.8107269362400804,
+            "ratio": 0.9918927306375992,
+            "role": "secondary_raw_process_rss"
+          },
+          "test_rmse": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 1.0274955975412212,
+              "ratio_upper95_one_sided": 1.0545192962975642,
+              "ratio_upper95_two_sided": 1.0579763788964667,
+              "seed": 20260719
+            },
+            "log_ratio": 0.042513386007372714,
+            "pct": 4.343002364218429,
+            "ratio": 1.0434300236421843,
+            "role": "primary"
+          },
+          "train_time_s": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 0.75231833382535,
+              "ratio_upper95_one_sided": 0.9392208423197413,
+              "ratio_upper95_two_sided": 0.9814427990240521,
+              "seed": 20260719
+            },
+            "log_ratio": -0.1736501834678752,
+            "pct": -15.940910117463824,
+            "ratio": 0.8405908988253618,
+            "role": "primary"
+          },
+          "val_rmse": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 1.0194366247435809,
+              "ratio_upper95_one_sided": 1.0320436724083166,
+              "ratio_upper95_two_sided": 1.0338665562253901,
+              "seed": 20260719
+            },
+            "log_ratio": 0.025395565206416535,
+            "pct": 2.5720779738767074,
+            "ratio": 1.025720779738767,
+            "role": "primary"
+          }
+        },
+        "numerator": "darkofit_product_default_safe_ordinal",
+        "numerator_lane": "ordinal_diagnostic",
+        "paired_children": 48,
+        "paired_splits": 6,
+        "panel": "ordinal_pairwise",
+        "policy_advancement_allowed": false
+      },
+      {
+        "child_metadata": {
+          "denominator": {
+            "best_iteration": {
+              "count": 48,
+              "max": 10000.0,
+              "median": 2125.0,
+              "min": 473.0,
+              "p90": 9997.3
+            },
+            "engine": "catboost",
+            "explicit_time_limit_stops": 0,
+            "rounds_retained": {
+              "count": 48,
+              "max": 10000.0,
+              "median": 2125.0,
+              "min": 473.0,
+              "p90": 9997.3
+            },
+            "selected_lane_counts": {
+              "not_applicable": 48
+            },
+            "stop_reason_counts": {
+              "iteration_limit": 21,
+              "unknown": 27
+            },
+            "unknown_stop_reasons": 27
+          },
+          "numerator": {
+            "best_iteration": {
+              "count": 48,
+              "max": 1000.0,
+              "median": 645.0,
+              "min": 271.0,
+              "p90": 999.3
+            },
+            "engine": "darkofit",
+            "explicit_time_limit_stops": 0,
+            "rounds_retained": {
+              "count": 48,
+              "max": 1000.0,
+              "median": 645.0,
+              "min": 271.0,
+              "p90": 999.3
+            },
+            "selected_lane_counts": {
+              "boosting": 48
+            },
+            "stop_reason_counts": {
+              "early_stopping": 27,
+              "iteration_limit": 21
+            },
+            "unknown_stop_reasons": 0
+          }
+        },
+        "code": "Dord/Cord",
+        "contrast": "darkofit_vs_catboost_ordinal",
+        "coordinate_counts": {
+          "losses": 6,
+          "ties": 0,
+          "wins": 0
+        },
+        "dataset_count": 2,
+        "dataset_counts": {
+          "losses": 2,
+          "ties": 0,
+          "wins": 0
+        },
+        "datasets": [
+          {
+            "contrast": "darkofit_vs_catboost_ordinal",
+            "contrast_code": "Dord/Cord",
+            "coordinate_count": 3,
+            "dataset": "airfoil_self_noise",
+            "incremental_memory_bytes_denominator_mean_bytes": 161939456.0,
+            "incremental_memory_bytes_numerator_mean_bytes": 43690.666666666664,
+            "incremental_memory_bytes_pct": -99.83885669929032,
+            "incremental_memory_bytes_ratio": 0.0016114330070967342,
+            "incremental_memory_bytes_ratio_available": true,
+            "incremental_memory_bytes_ratio_unavailable_reason": null,
+            "infer_time_s_pct": -24.657168082632055,
+            "infer_time_s_ratio": 0.7534283191736795,
+            "panel": "ordinal_pairwise",
+            "peak_memory_bytes_pct": -2.0988819499995093,
+            "peak_memory_bytes_ratio": 0.9790111805000049,
+            "task_id": 363612,
+            "test_losses": 3,
+            "test_rmse_pct": 19.866390382587838,
+            "test_rmse_ratio": 1.1986639038258784,
+            "test_ties": 0,
+            "test_wins": 0,
+            "train_time_s_pct": -80.69934601846087,
+            "train_time_s_ratio": 0.19300653981539134,
+            "val_rmse_pct": 13.084601894401038,
+            "val_rmse_ratio": 1.1308460189440104
+          },
+          {
+            "contrast": "darkofit_vs_catboost_ordinal",
+            "contrast_code": "Dord/Cord",
+            "coordinate_count": 3,
+            "dataset": "diamonds",
+            "incremental_memory_bytes_denominator_mean_bytes": 4947968.0,
+            "incremental_memory_bytes_numerator_mean_bytes": 617130.6666666666,
+            "incremental_memory_bytes_pct": -80.53215139864356,
+            "incremental_memory_bytes_ratio": 0.19467848601356447,
+            "incremental_memory_bytes_ratio_available": true,
+            "incremental_memory_bytes_ratio_unavailable_reason": null,
+            "infer_time_s_pct": 11.15777174884447,
+            "infer_time_s_ratio": 1.1115777174884447,
+            "panel": "ordinal_pairwise",
+            "peak_memory_bytes_pct": 0.05379448558520128,
+            "peak_memory_bytes_ratio": 1.000537944855852,
+            "task_id": 363631,
+            "test_losses": 3,
+            "test_rmse_pct": 1.0831432744178526,
+            "test_rmse_ratio": 1.0108314327441785,
+            "test_ties": 0,
+            "test_wins": 0,
+            "train_time_s_pct": -28.930804517187713,
+            "train_time_s_ratio": 0.7106919548281229,
+            "val_rmse_pct": 0.839869219148448,
+            "val_rmse_ratio": 1.0083986921914845
+          }
+        ],
+        "decision": "descriptive_only",
+        "denominator": "catboost_1_2_10_default_safe_ordinal",
+        "denominator_lane": "ordinal_diagnostic",
+        "metrics": {
+          "incremental_memory_bytes": {
+            "absolute_bytes": {
+              "denominator_equal_dataset_mean": 83443712.0,
+              "numerator_equal_dataset_mean": 330410.6666666666
+            },
+            "available": true,
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 0.0026059808020217393,
+              "ratio_upper95_one_sided": 0.11477605289475992,
+              "ratio_upper95_two_sided": 0.13652775234699835,
+              "seed": 20260719
+            },
+            "log_ratio": -4.03351865009121,
+            "pct": -98.22881017919062,
+            "ratio": 0.01771189820809383,
+            "role": "primary",
+            "unavailable_reason": null,
+            "zero_observation_pair_count": 0
+          },
+          "infer_time_s": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 0.8825651064889555,
+              "ratio_upper95_one_sided": 0.947182365634888,
+              "ratio_upper95_two_sided": 0.9531064629734615,
+              "seed": 20260719
+            },
+            "log_ratio": -0.0886705113443402,
+            "pct": -8.48529455228334,
+            "ratio": 0.9151470544771666,
+            "role": "primary"
+          },
+          "peak_memory_bytes": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 0.9781955663337136,
+              "ratio_upper95_one_sided": 0.9982887287291213,
+              "ratio_upper95_two_sided": 1.000575884531016,
+              "seed": 20260719
+            },
+            "log_ratio": -0.010337207987290459,
+            "pct": -1.0283962680013747,
+            "ratio": 0.9897160373199863,
+            "role": "secondary_raw_process_rss"
+          },
+          "test_rmse": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 1.095322745671397,
+              "ratio_upper95_one_sided": 1.1062010316788797,
+              "ratio_upper95_two_sided": 1.107751443145551,
+              "seed": 20260719
+            },
+            "log_ratio": 0.09599035797816989,
+            "pct": 10.074845050222203,
+            "ratio": 1.100748450502222,
+            "role": "primary"
+          },
+          "train_time_s": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 0.33686444822387734,
+              "ratio_upper95_one_sided": 0.40532377032358796,
+              "ratio_upper95_two_sided": 0.41902399711962285,
+              "seed": 20260719
+            },
+            "log_ratio": -0.993273702439111,
+            "pct": -62.96377515512517,
+            "ratio": 0.3703622484487484,
+            "role": "primary"
+          },
+          "val_rmse": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 1.062834403146564,
+              "ratio_upper95_one_sided": 1.0719127010511587,
+              "ratio_upper95_two_sided": 1.0722102307206454,
+              "seed": 20260719
+            },
+            "log_ratio": 0.06566483067176887,
+            "pct": 6.786874032958146,
+            "ratio": 1.0678687403295815,
+            "role": "primary"
+          }
+        },
+        "numerator": "darkofit_product_default_safe_ordinal",
+        "numerator_lane": "ordinal_diagnostic",
+        "paired_children": 48,
+        "paired_splits": 6,
+        "panel": "ordinal_pairwise",
+        "policy_advancement_allowed": false
+      },
+      {
+        "child_metadata": {
+          "denominator": {
+            "best_iteration": {
+              "count": 48,
+              "max": 10000.0,
+              "median": 2125.0,
+              "min": 473.0,
+              "p90": 9997.3
+            },
+            "engine": "catboost",
+            "explicit_time_limit_stops": 0,
+            "rounds_retained": {
+              "count": 48,
+              "max": 10000.0,
+              "median": 2125.0,
+              "min": 473.0,
+              "p90": 9997.3
+            },
+            "selected_lane_counts": {
+              "not_applicable": 48
+            },
+            "stop_reason_counts": {
+              "iteration_limit": 21,
+              "unknown": 27
+            },
+            "unknown_stop_reasons": 27
+          },
+          "numerator": {
+            "best_iteration": {
+              "count": 48,
+              "max": 2319.0,
+              "median": 461.5,
+              "min": 107.0,
+              "p90": 1233.3
+            },
+            "engine": "chimeraboost",
+            "explicit_time_limit_stops": 0,
+            "rounds_retained": {
+              "count": 48,
+              "max": 2319.0,
+              "median": 461.5,
+              "min": 107.0,
+              "p90": 1233.3
+            },
+            "selected_lane_counts": {
+              "constant": 33,
+              "linear": 15
+            },
+            "stop_reason_counts": {
+              "early_stopping": 24,
+              "unknown": 24
+            },
+            "unknown_stop_reasons": 24
+          }
+        },
+        "code": "Mord/Cord",
+        "contrast": "chimeraboost_vs_catboost_ordinal",
+        "coordinate_counts": {
+          "losses": 6,
+          "ties": 0,
+          "wins": 0
+        },
+        "dataset_count": 2,
+        "dataset_counts": {
+          "losses": 2,
+          "ties": 0,
+          "wins": 0
+        },
+        "datasets": [
+          {
+            "contrast": "chimeraboost_vs_catboost_ordinal",
+            "contrast_code": "Mord/Cord",
+            "coordinate_count": 3,
+            "dataset": "airfoil_self_noise",
+            "incremental_memory_bytes_denominator_mean_bytes": 161939456.0,
+            "incremental_memory_bytes_numerator_mean_bytes": 31817728.0,
+            "incremental_memory_bytes_pct": -94.19921421533925,
+            "incremental_memory_bytes_ratio": 0.05800785784660741,
+            "incremental_memory_bytes_ratio_available": true,
+            "incremental_memory_bytes_ratio_unavailable_reason": null,
+            "infer_time_s_pct": -46.11185951353932,
+            "infer_time_s_ratio": 0.5388814048646068,
+            "panel": "ordinal_pairwise",
+            "peak_memory_bytes_pct": -0.5538183526529794,
+            "peak_memory_bytes_ratio": 0.9944618164734702,
+            "task_id": 363612,
+            "test_losses": 3,
+            "test_rmse_pct": 10.30265770410097,
+            "test_rmse_ratio": 1.1030265770410097,
+            "test_ties": 0,
+            "test_wins": 0,
+            "train_time_s_pct": -81.20865538887901,
+            "train_time_s_ratio": 0.18791344611120994,
+            "val_rmse_pct": 7.741277464050422,
+            "val_rmse_ratio": 1.0774127746405042
+          },
+          {
+            "contrast": "chimeraboost_vs_catboost_ordinal",
+            "contrast_code": "Mord/Cord",
+            "coordinate_count": 3,
+            "dataset": "diamonds",
+            "incremental_memory_bytes_denominator_mean_bytes": 4947968.0,
+            "incremental_memory_bytes_numerator_mean_bytes": 103765.33333333333,
+            "incremental_memory_bytes_pct": -93.67555586527122,
+            "incremental_memory_bytes_ratio": 0.06324444134728778,
+            "incremental_memory_bytes_ratio_available": true,
+            "incremental_memory_bytes_ratio_unavailable_reason": null,
+            "infer_time_s_pct": 16.28645087496463,
+            "infer_time_s_ratio": 1.1628645087496463,
+            "panel": "ordinal_pairwise",
+            "peak_memory_bytes_pct": 0.11604569218992555,
+            "peak_memory_bytes_ratio": 1.0011604569218993,
+            "task_id": 363631,
+            "test_losses": 3,
+            "test_rmse_pct": 0.8935796705886068,
+            "test_rmse_ratio": 1.008935796705886,
+            "test_ties": 0,
+            "test_wins": 0,
+            "train_time_s_pct": 3.3061555319702673,
+            "train_time_s_ratio": 1.0330615553197027,
+            "val_rmse_pct": 0.5993834389648178,
+            "val_rmse_ratio": 1.0059938343896482
+          }
+        ],
+        "decision": "descriptive_only",
+        "denominator": "catboost_1_2_10_default_safe_ordinal",
+        "denominator_lane": "ordinal_diagnostic",
+        "metrics": {
+          "incremental_memory_bytes": {
+            "absolute_bytes": {
+              "denominator_equal_dataset_mean": 83443712.0,
+              "numerator_equal_dataset_mean": 15960746.666666666
+            },
+            "available": true,
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 0.0028308022917124726,
+              "ratio_upper95_one_sided": 0.4804604155574114,
+              "ratio_upper95_two_sided": 0.6510302519614161,
+              "seed": 20260719
+            },
+            "log_ratio": -2.8039624182861322,
+            "pct": -93.9430415526755,
+            "ratio": 0.06056958447324506,
+            "role": "primary",
+            "unavailable_reason": null,
+            "zero_observation_pair_count": 0
+          },
+          "infer_time_s": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 0.6750770508860856,
+              "ratio_upper95_one_sided": 0.8745918773156585,
+              "ratio_upper95_two_sided": 0.878760375676108,
+              "seed": 20260719
+            },
+            "log_ratio": -0.23368669755935484,
+            "pct": -20.83902096725937,
+            "ratio": 0.7916097903274063,
+            "role": "primary"
+          },
+          "peak_memory_bytes": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 0.9914266834943547,
+              "ratio_upper95_one_sided": 1.0023664615978976,
+              "ratio_upper95_two_sided": 1.002699426895246,
+              "seed": 20260719
+            },
+            "log_ratio": -0.002196896005172288,
+            "pct": -0.2194484595338997,
+            "ratio": 0.997805515404661,
+            "role": "secondary_raw_process_rss"
+          },
+          "test_rmse": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 1.0361200835097208,
+              "ratio_upper95_one_sided": 1.0704247087773373,
+              "ratio_upper95_two_sided": 1.0777340457644984,
+              "seed": 20260719
+            },
+            "log_ratio": 0.05347697197079711,
+            "pct": 5.493269846689164,
+            "ratio": 1.0549326984668916,
+            "role": "primary"
+          },
+          "train_time_s": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 0.37072117345713734,
+              "ratio_upper95_one_sided": 0.49881479759209774,
+              "ratio_upper95_two_sided": 0.509634013534287,
+              "seed": 20260719
+            },
+            "log_ratio": -0.8196235189712358,
+            "pct": -55.940250011475136,
+            "ratio": 0.44059749988524866,
+            "role": "primary"
+          },
+          "val_rmse": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 1.0361665365916202,
+              "ratio_upper95_one_sided": 1.0460390005898943,
+              "ratio_upper95_two_sided": 1.047440546031525,
+              "seed": 20260719
+            },
+            "log_ratio": 0.04026926546535235,
+            "pct": 4.10910663246471,
+            "ratio": 1.041091066324647,
+            "role": "primary"
+          }
+        },
+        "numerator": "chimeraboost_0_14_1_default_safe_ordinal",
+        "numerator_lane": "ordinal_diagnostic",
+        "paired_children": 48,
+        "paired_splits": 6,
+        "panel": "ordinal_pairwise",
+        "policy_advancement_allowed": false
+      }
+    ],
+    "pooled_with_primary": false,
+    "within_engine_uplift": [
+      {
+        "child_metadata": {
+          "denominator": {
+            "best_iteration": {
+              "count": 48,
+              "max": 1000.0,
+              "median": 517.5,
+              "min": 126.0,
+              "p90": 995.3
+            },
+            "engine": "darkofit",
+            "explicit_time_limit_stops": 0,
+            "rounds_retained": {
+              "count": 48,
+              "max": 1000.0,
+              "median": 517.5,
+              "min": 126.0,
+              "p90": 995.3
+            },
+            "selected_lane_counts": {
+              "boosting": 48
+            },
+            "stop_reason_counts": {
+              "early_stopping": 36,
+              "iteration_limit": 12
+            },
+            "unknown_stop_reasons": 0
+          },
+          "numerator": {
+            "best_iteration": {
+              "count": 48,
+              "max": 1000.0,
+              "median": 645.0,
+              "min": 271.0,
+              "p90": 999.3
+            },
+            "engine": "darkofit",
+            "explicit_time_limit_stops": 0,
+            "rounds_retained": {
+              "count": 48,
+              "max": 1000.0,
+              "median": 645.0,
+              "min": 271.0,
+              "p90": 999.3
+            },
+            "selected_lane_counts": {
+              "boosting": 48
+            },
+            "stop_reason_counts": {
+              "early_stopping": 27,
+              "iteration_limit": 21
+            },
+            "unknown_stop_reasons": 0
+          }
+        },
+        "code": "Dord/Dnative",
+        "contrast": "darkofit_ordinal_vs_native",
+        "coordinate_counts": {
+          "losses": 0,
+          "ties": 0,
+          "wins": 6
+        },
+        "dataset_count": 2,
+        "dataset_counts": {
+          "losses": 0,
+          "ties": 0,
+          "wins": 2
+        },
+        "datasets": [
+          {
+            "contrast": "darkofit_ordinal_vs_native",
+            "contrast_code": "Dord/Dnative",
+            "coordinate_count": 3,
+            "dataset": "airfoil_self_noise",
+            "incremental_memory_bytes_denominator_mean_bytes": null,
+            "incremental_memory_bytes_numerator_mean_bytes": null,
+            "incremental_memory_bytes_pct": null,
+            "incremental_memory_bytes_ratio": null,
+            "incremental_memory_bytes_ratio_available": false,
+            "incremental_memory_bytes_ratio_unavailable_reason": "cross_lane_resource_comparison_omitted",
+            "infer_time_s_pct": null,
+            "infer_time_s_ratio": null,
+            "panel": "ordinal_uplift",
+            "peak_memory_bytes_pct": null,
+            "peak_memory_bytes_ratio": null,
+            "task_id": 363612,
+            "test_losses": 0,
+            "test_rmse_pct": -13.159059047153498,
+            "test_rmse_ratio": 0.868409409528465,
+            "test_ties": 0,
+            "test_wins": 3,
+            "train_time_s_pct": null,
+            "train_time_s_ratio": null,
+            "val_rmse_pct": -11.863697212152935,
+            "val_rmse_ratio": 0.8813630278784707
+          },
+          {
+            "contrast": "darkofit_ordinal_vs_native",
+            "contrast_code": "Dord/Dnative",
+            "coordinate_count": 3,
+            "dataset": "diamonds",
+            "incremental_memory_bytes_denominator_mean_bytes": null,
+            "incremental_memory_bytes_numerator_mean_bytes": null,
+            "incremental_memory_bytes_pct": null,
+            "incremental_memory_bytes_ratio": null,
+            "incremental_memory_bytes_ratio_available": false,
+            "incremental_memory_bytes_ratio_unavailable_reason": "cross_lane_resource_comparison_omitted",
+            "infer_time_s_pct": null,
+            "infer_time_s_ratio": null,
+            "panel": "ordinal_uplift",
+            "peak_memory_bytes_pct": null,
+            "peak_memory_bytes_ratio": null,
+            "task_id": 363631,
+            "test_losses": 0,
+            "test_rmse_pct": -24.252338591383026,
+            "test_rmse_ratio": 0.7574766140861697,
+            "test_ties": 0,
+            "test_wins": 3,
+            "train_time_s_pct": null,
+            "train_time_s_ratio": null,
+            "val_rmse_pct": -27.17876084398052,
+            "val_rmse_ratio": 0.7282123915601948
+          }
+        ],
+        "decision": "descriptive_only",
+        "denominator": "darkofit_product_default",
+        "denominator_lane": "primary",
+        "metrics": {
+          "test_rmse": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 0.7988096624279154,
+              "ratio_upper95_one_sided": 0.8202703277646778,
+              "ratio_upper95_two_sided": 0.8219361969008541,
+              "seed": 20260719
+            },
+            "log_ratio": -0.20942731006405635,
+            "pct": -18.895140763935014,
+            "ratio": 0.8110485923606499,
+            "role": "primary"
+          },
+          "val_rmse": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 0.7878071543210957,
+              "ratio_upper95_one_sided": 0.812572206122776,
+              "ratio_upper95_two_sided": 0.8146911015516393,
+              "seed": 20260719
+            },
+            "log_ratio": -0.22172410059059947,
+            "pct": -19.886363310350486,
+            "ratio": 0.8011363668964951,
+            "role": "primary"
+          }
+        },
+        "numerator": "darkofit_product_default_safe_ordinal",
+        "numerator_lane": "ordinal_diagnostic",
+        "paired_children": 48,
+        "paired_splits": 6,
+        "panel": "ordinal_uplift",
+        "policy_advancement_allowed": false
+      },
+      {
+        "child_metadata": {
+          "denominator": {
+            "best_iteration": {
+              "count": 48,
+              "max": 1437.0,
+              "median": 315.0,
+              "min": 78.0,
+              "p90": 614.6000000000006
+            },
+            "engine": "chimeraboost",
+            "explicit_time_limit_stops": 0,
+            "rounds_retained": {
+              "count": 48,
+              "max": 1437.0,
+              "median": 315.0,
+              "min": 78.0,
+              "p90": 614.6000000000006
+            },
+            "selected_lane_counts": {
+              "constant": 27,
+              "linear": 21
+            },
+            "stop_reason_counts": {
+              "early_stopping": 24,
+              "unknown": 24
+            },
+            "unknown_stop_reasons": 24
+          },
+          "numerator": {
+            "best_iteration": {
+              "count": 48,
+              "max": 2319.0,
+              "median": 461.5,
+              "min": 107.0,
+              "p90": 1233.3
+            },
+            "engine": "chimeraboost",
+            "explicit_time_limit_stops": 0,
+            "rounds_retained": {
+              "count": 48,
+              "max": 2319.0,
+              "median": 461.5,
+              "min": 107.0,
+              "p90": 1233.3
+            },
+            "selected_lane_counts": {
+              "constant": 33,
+              "linear": 15
+            },
+            "stop_reason_counts": {
+              "early_stopping": 24,
+              "unknown": 24
+            },
+            "unknown_stop_reasons": 24
+          }
+        },
+        "code": "Mord/Mnative",
+        "contrast": "chimeraboost_ordinal_vs_native",
+        "coordinate_counts": {
+          "losses": 0,
+          "ties": 0,
+          "wins": 6
+        },
+        "dataset_count": 2,
+        "dataset_counts": {
+          "losses": 0,
+          "ties": 0,
+          "wins": 2
+        },
+        "datasets": [
+          {
+            "contrast": "chimeraboost_ordinal_vs_native",
+            "contrast_code": "Mord/Mnative",
+            "coordinate_count": 3,
+            "dataset": "airfoil_self_noise",
+            "incremental_memory_bytes_denominator_mean_bytes": null,
+            "incremental_memory_bytes_numerator_mean_bytes": null,
+            "incremental_memory_bytes_pct": null,
+            "incremental_memory_bytes_ratio": null,
+            "incremental_memory_bytes_ratio_available": false,
+            "incremental_memory_bytes_ratio_unavailable_reason": "cross_lane_resource_comparison_omitted",
+            "infer_time_s_pct": null,
+            "infer_time_s_ratio": null,
+            "panel": "ordinal_uplift",
+            "peak_memory_bytes_pct": null,
+            "peak_memory_bytes_ratio": null,
+            "task_id": 363612,
+            "test_losses": 0,
+            "test_rmse_pct": -14.913311066690504,
+            "test_rmse_ratio": 0.850866889333095,
+            "test_ties": 0,
+            "test_wins": 3,
+            "train_time_s_pct": null,
+            "train_time_s_ratio": null,
+            "val_rmse_pct": -12.279245679625983,
+            "val_rmse_ratio": 0.8772075432037402
+          },
+          {
+            "contrast": "chimeraboost_ordinal_vs_native",
+            "contrast_code": "Mord/Mnative",
+            "coordinate_count": 3,
+            "dataset": "diamonds",
+            "incremental_memory_bytes_denominator_mean_bytes": null,
+            "incremental_memory_bytes_numerator_mean_bytes": null,
+            "incremental_memory_bytes_pct": null,
+            "incremental_memory_bytes_ratio": null,
+            "incremental_memory_bytes_ratio_available": false,
+            "incremental_memory_bytes_ratio_unavailable_reason": "cross_lane_resource_comparison_omitted",
+            "infer_time_s_pct": null,
+            "infer_time_s_ratio": null,
+            "panel": "ordinal_uplift",
+            "peak_memory_bytes_pct": null,
+            "peak_memory_bytes_ratio": null,
+            "task_id": 363631,
+            "test_losses": 0,
+            "test_rmse_pct": -25.754158899553957,
+            "test_rmse_ratio": 0.7424584110044604,
+            "test_ties": 0,
+            "test_wins": 3,
+            "train_time_s_pct": null,
+            "train_time_s_ratio": null,
+            "val_rmse_pct": -27.324391907015798,
+            "val_rmse_ratio": 0.726756080929842
+          }
+        ],
+        "decision": "descriptive_only",
+        "denominator": "chimeraboost_0_14_1_default",
+        "denominator_lane": "primary",
+        "metrics": {
+          "test_rmse": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 0.7808719249813627,
+              "ratio_upper95_one_sided": 0.805756567903082,
+              "ratio_upper95_two_sided": 0.8082990495306365,
+              "seed": 20260719
+            },
+            "log_ratio": -0.22964400069861796,
+            "pct": -20.51834937354674,
+            "ratio": 0.7948165062645326,
+            "role": "primary"
+          },
+          "val_rmse": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 0.7859298230320418,
+              "ratio_upper95_one_sided": 0.8098448044037215,
+              "ratio_upper95_two_sided": 0.8115512735877878,
+              "seed": 20260719
+            },
+            "log_ratio": -0.22508801778876975,
+            "pct": -20.155406177948077,
+            "ratio": 0.7984459382205192,
+            "role": "primary"
+          }
+        },
+        "numerator": "chimeraboost_0_14_1_default_safe_ordinal",
+        "numerator_lane": "ordinal_diagnostic",
+        "paired_children": 48,
+        "paired_splits": 6,
+        "panel": "ordinal_uplift",
+        "policy_advancement_allowed": false
+      },
+      {
+        "child_metadata": {
+          "denominator": {
+            "best_iteration": {
+              "count": 48,
+              "max": 10000.0,
+              "median": 2950.5,
+              "min": 799.0,
+              "p90": 9858.9
+            },
+            "engine": "catboost",
+            "explicit_time_limit_stops": 0,
+            "rounds_retained": {
+              "count": 48,
+              "max": 10000.0,
+              "median": 2950.5,
+              "min": 799.0,
+              "p90": 9858.9
+            },
+            "selected_lane_counts": {
+              "not_applicable": 48
+            },
+            "stop_reason_counts": {
+              "iteration_limit": 12,
+              "unknown": 36
+            },
+            "unknown_stop_reasons": 36
+          },
+          "numerator": {
+            "best_iteration": {
+              "count": 48,
+              "max": 10000.0,
+              "median": 2125.0,
+              "min": 473.0,
+              "p90": 9997.3
+            },
+            "engine": "catboost",
+            "explicit_time_limit_stops": 0,
+            "rounds_retained": {
+              "count": 48,
+              "max": 10000.0,
+              "median": 2125.0,
+              "min": 473.0,
+              "p90": 9997.3
+            },
+            "selected_lane_counts": {
+              "not_applicable": 48
+            },
+            "stop_reason_counts": {
+              "iteration_limit": 21,
+              "unknown": 27
+            },
+            "unknown_stop_reasons": 27
+          }
+        },
+        "code": "Cord/Cnative",
+        "contrast": "catboost_ordinal_vs_native",
+        "coordinate_counts": {
+          "losses": 2,
+          "ties": 0,
+          "wins": 4
+        },
+        "dataset_count": 2,
+        "dataset_counts": {
+          "losses": 1,
+          "ties": 0,
+          "wins": 1
+        },
+        "datasets": [
+          {
+            "contrast": "catboost_ordinal_vs_native",
+            "contrast_code": "Cord/Cnative",
+            "coordinate_count": 3,
+            "dataset": "airfoil_self_noise",
+            "incremental_memory_bytes_denominator_mean_bytes": null,
+            "incremental_memory_bytes_numerator_mean_bytes": null,
+            "incremental_memory_bytes_pct": null,
+            "incremental_memory_bytes_ratio": null,
+            "incremental_memory_bytes_ratio_available": false,
+            "incremental_memory_bytes_ratio_unavailable_reason": "cross_lane_resource_comparison_omitted",
+            "infer_time_s_pct": null,
+            "infer_time_s_ratio": null,
+            "panel": "ordinal_uplift",
+            "peak_memory_bytes_pct": null,
+            "peak_memory_bytes_ratio": null,
+            "task_id": 363612,
+            "test_losses": 0,
+            "test_rmse_pct": -14.957414616674903,
+            "test_rmse_ratio": 0.850425853833251,
+            "test_ties": 0,
+            "test_wins": 3,
+            "train_time_s_pct": null,
+            "train_time_s_ratio": null,
+            "val_rmse_pct": -12.319684228317861,
+            "val_rmse_ratio": 0.8768031577168214
+          },
+          {
+            "contrast": "catboost_ordinal_vs_native",
+            "contrast_code": "Cord/Cnative",
+            "coordinate_count": 3,
+            "dataset": "diamonds",
+            "incremental_memory_bytes_denominator_mean_bytes": null,
+            "incremental_memory_bytes_numerator_mean_bytes": null,
+            "incremental_memory_bytes_pct": null,
+            "incremental_memory_bytes_ratio": null,
+            "incremental_memory_bytes_ratio_available": false,
+            "incremental_memory_bytes_ratio_unavailable_reason": "cross_lane_resource_comparison_omitted",
+            "infer_time_s_pct": null,
+            "infer_time_s_ratio": null,
+            "panel": "ordinal_uplift",
+            "peak_memory_bytes_pct": null,
+            "peak_memory_bytes_ratio": null,
+            "task_id": 363631,
+            "test_losses": 2,
+            "test_rmse_pct": 0.0860065882425376,
+            "test_rmse_ratio": 1.0008600658824254,
+            "test_ties": 0,
+            "test_wins": 1,
+            "train_time_s_pct": null,
+            "train_time_s_ratio": null,
+            "val_rmse_pct": -0.2562387153764445,
+            "val_rmse_ratio": 0.9974376128462356
+          }
+        ],
+        "decision": "descriptive_only",
+        "denominator": "catboost_1_2_10_default",
+        "denominator_lane": "primary",
+        "metrics": {
+          "test_rmse": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 0.9216497310449963,
+              "ratio_upper95_one_sided": 0.9234847627399444,
+              "ratio_upper95_two_sided": 0.9235450749064511,
+              "seed": 20260719
+            },
+            "log_ratio": -0.08057917710561482,
+            "pct": -7.7418146668998595,
+            "ratio": 0.9225818533310014,
+            "role": "primary"
+          },
+          "val_rmse": {
+            "bootstrap": {
+              "coordinates_resampled_within_dataset": true,
+              "datasets_resampled": false,
+              "draws": 10000,
+              "ratio_lower95_two_sided": 0.9233369574312851,
+              "ratio_upper95_one_sided": 0.9421246321384098,
+              "ratio_upper95_two_sided": 0.9426765679411767,
+              "seed": 20260719
+            },
+            "log_ratio": -0.06701921853542706,
+            "pct": -6.48227715726245,
+            "ratio": 0.9351772284273755,
+            "role": "primary"
+          }
+        },
+        "numerator": "catboost_1_2_10_default_safe_ordinal",
+        "numerator_lane": "ordinal_diagnostic",
+        "paired_children": 48,
+        "paired_splits": 6,
+        "panel": "ordinal_uplift",
+        "policy_advancement_allowed": false
+      }
+    ]
+  },
+  "policy_advancement_allowed": false,
+  "primary": [
+    {
+      "child_metadata": {
+        "denominator": {
+          "best_iteration": {
+            "count": 312,
+            "max": 1971.0,
+            "median": 394.0,
+            "min": 24.0,
+            "p90": 1206.2000000000003
+          },
+          "engine": "chimeraboost",
+          "explicit_time_limit_stops": 0,
+          "rounds_retained": {
+            "count": 312,
+            "max": 1971.0,
+            "median": 394.0,
+            "min": 24.0,
+            "p90": 1206.2000000000003
+          },
+          "selected_lane_counts": {
+            "constant": 202,
+            "linear": 110
+          },
+          "stop_reason_counts": {
+            "early_stopping": 120,
+            "unknown": 192
+          },
+          "unknown_stop_reasons": 192
+        },
+        "numerator": {
+          "best_iteration": {
+            "count": 312,
+            "max": 1000.0,
+            "median": 799.5,
+            "min": 53.0,
+            "p90": 1000.0
+          },
+          "engine": "darkofit",
+          "explicit_time_limit_stops": 0,
+          "rounds_retained": {
+            "count": 312,
+            "max": 1000.0,
+            "median": 799.5,
+            "min": 53.0,
+            "p90": 1000.0
+          },
+          "selected_lane_counts": {
+            "boosting": 312
+          },
+          "stop_reason_counts": {
+            "early_stopping": 165,
+            "iteration_limit": 147
+          },
+          "unknown_stop_reasons": 0
+        }
+      },
+      "code": "D/M",
+      "contrast": "darkofit_vs_chimeraboost",
+      "coordinate_counts": {
+        "losses": 23,
+        "ties": 0,
+        "wins": 16
+      },
+      "dataset_count": 13,
+      "dataset_counts": {
+        "losses": 8,
+        "ties": 0,
+        "wins": 5
+      },
+      "datasets": [
+        {
+          "contrast": "darkofit_vs_chimeraboost",
+          "contrast_code": "D/M",
+          "coordinate_count": 3,
+          "dataset": "Another-Dataset-on-used-Fiat-500",
+          "incremental_memory_bytes_denominator_mean_bytes": 70997.33333333333,
+          "incremental_memory_bytes_numerator_mean_bytes": 43690.666666666664,
+          "incremental_memory_bytes_pct": -41.51964523574267,
+          "incremental_memory_bytes_ratio": 0.5848035476425733,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 22.927136414736605,
+          "infer_time_s_ratio": 1.229271364147366,
+          "panel": "primary",
+          "peak_memory_bytes_pct": -0.6675590152978472,
+          "peak_memory_bytes_ratio": 0.9933244098470215,
+          "task_id": 363615,
+          "test_losses": 1,
+          "test_rmse_pct": -0.045576039635963905,
+          "test_rmse_ratio": 0.9995442396036404,
+          "test_ties": 0,
+          "test_wins": 2,
+          "train_time_s_pct": 128.54761245744638,
+          "train_time_s_ratio": 2.2854761245744637,
+          "val_rmse_pct": -0.5395442640494408,
+          "val_rmse_ratio": 0.9946045573595056
+        },
+        {
+          "contrast": "darkofit_vs_chimeraboost",
+          "contrast_code": "D/M",
+          "coordinate_count": 3,
+          "dataset": "Food_Delivery_Time",
+          "incremental_memory_bytes_denominator_mean_bytes": 28688384.0,
+          "incremental_memory_bytes_numerator_mean_bytes": 1054037.3333333333,
+          "incremental_memory_bytes_pct": -89.13618096710563,
+          "incremental_memory_bytes_ratio": 0.1086381903289437,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": -4.750262235719848,
+          "infer_time_s_ratio": 0.9524973776428015,
+          "panel": "primary",
+          "peak_memory_bytes_pct": -0.10716513001363115,
+          "peak_memory_bytes_ratio": 0.9989283486998637,
+          "task_id": 363672,
+          "test_losses": 0,
+          "test_rmse_pct": -0.12545100935807962,
+          "test_rmse_ratio": 0.9987454899064192,
+          "test_ties": 0,
+          "test_wins": 3,
+          "train_time_s_pct": -34.5972605620258,
+          "train_time_s_ratio": 0.654027394379742,
+          "val_rmse_pct": -0.21168364225390146,
+          "val_rmse_ratio": 0.997883163577461
+        },
+        {
+          "contrast": "darkofit_vs_chimeraboost",
+          "contrast_code": "D/M",
+          "coordinate_count": 3,
+          "dataset": "QSAR-TID-11",
+          "incremental_memory_bytes_denominator_mean_bytes": 62455808.0,
+          "incremental_memory_bytes_numerator_mean_bytes": 40299178.666666664,
+          "incremental_memory_bytes_pct": -64.21874685496,
+          "incremental_memory_bytes_ratio": 0.3578125314504,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 6.781972120106028,
+          "infer_time_s_ratio": 1.0678197212010603,
+          "panel": "primary",
+          "peak_memory_bytes_pct": -0.8891374418718012,
+          "peak_memory_bytes_ratio": 0.991108625581282,
+          "task_id": 363697,
+          "test_losses": 3,
+          "test_rmse_pct": 0.9442964677069288,
+          "test_rmse_ratio": 1.0094429646770693,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -40.22729206326129,
+          "train_time_s_ratio": 0.5977270793673871,
+          "val_rmse_pct": 0.4523813005371746,
+          "val_rmse_ratio": 1.0045238130053717
+        },
+        {
+          "contrast": "darkofit_vs_chimeraboost",
+          "contrast_code": "D/M",
+          "coordinate_count": 3,
+          "dataset": "QSAR_fish_toxicity",
+          "incremental_memory_bytes_denominator_mean_bytes": 54613.333333333336,
+          "incremental_memory_bytes_numerator_mean_bytes": 60074.666666666664,
+          "incremental_memory_bytes_pct": 14.471424255333186,
+          "incremental_memory_bytes_ratio": 1.1447142425533319,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 37.2323936048776,
+          "infer_time_s_ratio": 1.372323936048776,
+          "panel": "primary",
+          "peak_memory_bytes_pct": -0.0007723260273428956,
+          "peak_memory_bytes_ratio": 0.9999922767397266,
+          "task_id": 363698,
+          "test_losses": 1,
+          "test_rmse_pct": 0.02747530852504898,
+          "test_rmse_ratio": 1.0002747530852505,
+          "test_ties": 0,
+          "test_wins": 2,
+          "train_time_s_pct": 127.27890658412093,
+          "train_time_s_ratio": 2.2727890658412093,
+          "val_rmse_pct": -0.18887161883346382,
+          "val_rmse_ratio": 0.9981112838116654
+        },
+        {
+          "contrast": "darkofit_vs_chimeraboost",
+          "contrast_code": "D/M",
+          "coordinate_count": 3,
+          "dataset": "airfoil_self_noise",
+          "incremental_memory_bytes_denominator_mean_bytes": 54979242.666666664,
+          "incremental_memory_bytes_numerator_mean_bytes": 31058602.666666668,
+          "incremental_memory_bytes_pct": -28.20976333646611,
+          "incremental_memory_bytes_ratio": 0.7179023666353389,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 48.73304280161204,
+          "infer_time_s_ratio": 1.4873304280161204,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 3.5632858621975627,
+          "peak_memory_bytes_ratio": 1.0356328586219756,
+          "task_id": 363612,
+          "test_losses": 3,
+          "test_rmse_pct": 6.47522190768568,
+          "test_rmse_ratio": 1.0647522190768568,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": 46.58712664264159,
+          "train_time_s_ratio": 1.465871266426416,
+          "val_rmse_pct": 4.464536587443169,
+          "val_rmse_ratio": 1.0446453658744317
+        },
+        {
+          "contrast": "darkofit_vs_chimeraboost",
+          "contrast_code": "D/M",
+          "coordinate_count": 3,
+          "dataset": "concrete_compressive_strength",
+          "incremental_memory_bytes_denominator_mean_bytes": 30048256.0,
+          "incremental_memory_bytes_numerator_mean_bytes": 23871488.0,
+          "incremental_memory_bytes_pct": 45.667172338031015,
+          "incremental_memory_bytes_ratio": 1.4566717233803101,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 94.97530414415532,
+          "infer_time_s_ratio": 1.9497530414415531,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 1.6765383648523313,
+          "peak_memory_bytes_ratio": 1.0167653836485233,
+          "task_id": 363625,
+          "test_losses": 0,
+          "test_rmse_pct": -2.8671240151197375,
+          "test_rmse_ratio": 0.9713287598488026,
+          "test_ties": 0,
+          "test_wins": 3,
+          "train_time_s_pct": 91.10831942678746,
+          "train_time_s_ratio": 1.9110831942678745,
+          "val_rmse_pct": 0.00694630046274014,
+          "val_rmse_ratio": 1.0000694630046274
+        },
+        {
+          "contrast": "darkofit_vs_chimeraboost",
+          "contrast_code": "D/M",
+          "coordinate_count": 3,
+          "dataset": "diamonds",
+          "incremental_memory_bytes_denominator_mean_bytes": 10267306.666666666,
+          "incremental_memory_bytes_numerator_mean_bytes": 1829546.6666666667,
+          "incremental_memory_bytes_pct": 11.893153620071772,
+          "incremental_memory_bytes_ratio": 1.1189315362007177,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": -7.8475330180434515,
+          "infer_time_s_ratio": 0.9215246698195655,
+          "panel": "primary",
+          "peak_memory_bytes_pct": -1.18474306334303,
+          "peak_memory_bytes_ratio": 0.9881525693665697,
+          "task_id": 363631,
+          "test_losses": 1,
+          "test_rmse_pct": -1.7985026914690283,
+          "test_rmse_ratio": 0.9820149730853097,
+          "test_ties": 0,
+          "test_wins": 2,
+          "train_time_s_pct": -32.26864981172813,
+          "train_time_s_ratio": 0.6773135018827187,
+          "val_rmse_pct": 0.038590543824357226,
+          "val_rmse_ratio": 1.0003859054382436
+        },
+        {
+          "contrast": "darkofit_vs_chimeraboost",
+          "contrast_code": "D/M",
+          "coordinate_count": 3,
+          "dataset": "healthcare_insurance_expenses",
+          "incremental_memory_bytes_denominator_mean_bytes": 38229.333333333336,
+          "incremental_memory_bytes_numerator_mean_bytes": 33406976.0,
+          "incremental_memory_bytes_pct": 1497.1302726595225,
+          "incremental_memory_bytes_ratio": 15.971302726595225,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": -1.8683413917353953,
+          "infer_time_s_ratio": 0.981316586082646,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 0.0012876642689230167,
+          "peak_memory_bytes_ratio": 1.0000128766426892,
+          "task_id": 363675,
+          "test_losses": 0,
+          "test_rmse_pct": -0.1505029489895615,
+          "test_rmse_ratio": 0.9984949705101044,
+          "test_ties": 0,
+          "test_wins": 3,
+          "train_time_s_pct": 107.63832907381072,
+          "train_time_s_ratio": 2.0763832907381072,
+          "val_rmse_pct": -0.5397804880660328,
+          "val_rmse_ratio": 0.9946021951193397
+        },
+        {
+          "contrast": "darkofit_vs_chimeraboost",
+          "contrast_code": "D/M",
+          "coordinate_count": 3,
+          "dataset": "houses",
+          "incremental_memory_bytes_denominator_mean_bytes": 63548074.666666664,
+          "incremental_memory_bytes_numerator_mean_bytes": 31997952.0,
+          "incremental_memory_bytes_pct": -95.90318779912751,
+          "incremental_memory_bytes_ratio": 0.04096812200872488,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 186.27244895873494,
+          "infer_time_s_ratio": 2.8627244895873494,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 1.268562999404077,
+          "peak_memory_bytes_ratio": 1.0126856299940408,
+          "task_id": 363678,
+          "test_losses": 3,
+          "test_rmse_pct": 2.3750961820291128,
+          "test_rmse_ratio": 1.0237509618202911,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -44.25903975977641,
+          "train_time_s_ratio": 0.5574096024022359,
+          "val_rmse_pct": 1.3388852744292024,
+          "val_rmse_ratio": 1.013388852744292
+        },
+        {
+          "contrast": "darkofit_vs_chimeraboost",
+          "contrast_code": "D/M",
+          "coordinate_count": 3,
+          "dataset": "miami_housing",
+          "incremental_memory_bytes_denominator_mean_bytes": 240298.66666666666,
+          "incremental_memory_bytes_numerator_mean_bytes": 65536.0,
+          "incremental_memory_bytes_pct": -66.66666666666667,
+          "incremental_memory_bytes_ratio": 0.3333333333333333,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 276.61194656987425,
+          "infer_time_s_ratio": 3.7661194656987425,
+          "panel": "primary",
+          "peak_memory_bytes_pct": -1.7494723248418165,
+          "peak_memory_bytes_ratio": 0.9825052767515818,
+          "task_id": 363686,
+          "test_losses": 2,
+          "test_rmse_pct": 0.5531342207170109,
+          "test_rmse_ratio": 1.00553134220717,
+          "test_ties": 0,
+          "test_wins": 1,
+          "train_time_s_pct": -23.17369700167877,
+          "train_time_s_ratio": 0.7682630299832123,
+          "val_rmse_pct": 1.0697463962897613,
+          "val_rmse_ratio": 1.0106974639628976
+        },
+        {
+          "contrast": "darkofit_vs_chimeraboost",
+          "contrast_code": "D/M",
+          "coordinate_count": 3,
+          "dataset": "physiochemical_protein",
+          "incremental_memory_bytes_denominator_mean_bytes": 154075136.0,
+          "incremental_memory_bytes_numerator_mean_bytes": 68916565.33333333,
+          "incremental_memory_bytes_pct": -62.36640058740988,
+          "incremental_memory_bytes_ratio": 0.3763359941259013,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": -67.23694536627019,
+          "infer_time_s_ratio": 0.32763054633729816,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 1.5182010918146416,
+          "peak_memory_bytes_ratio": 1.0151820109181464,
+          "task_id": 363693,
+          "test_losses": 3,
+          "test_rmse_pct": 7.673488611269619,
+          "test_rmse_ratio": 1.0767348861126962,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -78.43210240194315,
+          "train_time_s_ratio": 0.21567897598056843,
+          "val_rmse_pct": 5.9046854381619385,
+          "val_rmse_ratio": 1.0590468543816194
+        },
+        {
+          "contrast": "darkofit_vs_chimeraboost",
+          "contrast_code": "D/M",
+          "coordinate_count": 3,
+          "dataset": "superconductivity",
+          "incremental_memory_bytes_denominator_mean_bytes": 118489088.0,
+          "incremental_memory_bytes_numerator_mean_bytes": 52417877.333333336,
+          "incremental_memory_bytes_pct": -69.0934312906491,
+          "incremental_memory_bytes_ratio": 0.30906568709350907,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 131.2069493634182,
+          "infer_time_s_ratio": 2.312069493634182,
+          "panel": "primary",
+          "peak_memory_bytes_pct": -2.4905021008971073,
+          "peak_memory_bytes_ratio": 0.9750949789910289,
+          "task_id": 363705,
+          "test_losses": 3,
+          "test_rmse_pct": 2.7916689795501215,
+          "test_rmse_ratio": 1.0279166897955012,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -54.12579811660766,
+          "train_time_s_ratio": 0.4587420188339234,
+          "val_rmse_pct": 2.918405993816653,
+          "val_rmse_ratio": 1.0291840599381665
+        },
+        {
+          "contrast": "darkofit_vs_chimeraboost",
+          "contrast_code": "D/M",
+          "coordinate_count": 3,
+          "dataset": "wine_quality",
+          "incremental_memory_bytes_denominator_mean_bytes": 35962880.0,
+          "incremental_memory_bytes_numerator_mean_bytes": 35629738.666666664,
+          "incremental_memory_bytes_pct": -20.864019185895,
+          "incremental_memory_bytes_ratio": 0.79135980814105,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 192.8859773388119,
+          "infer_time_s_ratio": 2.928859773388119,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 1.2138665546231886,
+          "peak_memory_bytes_ratio": 1.0121386655462319,
+          "task_id": 363708,
+          "test_losses": 3,
+          "test_rmse_pct": 0.9421008096275552,
+          "test_rmse_ratio": 1.0094210080962756,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -14.311660418432693,
+          "train_time_s_ratio": 0.8568833958156731,
+          "val_rmse_pct": 0.900474927016548,
+          "val_rmse_ratio": 1.0090047492701655
+        }
+      ],
+      "decision": "descriptive_only",
+      "denominator": "chimeraboost_0_14_1_default",
+      "denominator_lane": "primary",
+      "metrics": {
+        "incremental_memory_bytes": {
+          "absolute_bytes": {
+            "denominator_equal_dataset_mean": 42993716.51282051,
+            "numerator_equal_dataset_mean": 24665481.846153848
+          },
+          "available": true,
+          "bootstrap": {
+            "coordinates_resampled_within_dataset": true,
+            "datasets_resampled": false,
+            "draws": 10000,
+            "ratio_lower95_two_sided": 0.20123171455056796,
+            "ratio_upper95_one_sided": 1.3724916879525593,
+            "ratio_upper95_two_sided": 1.612980107674974,
+            "seed": 20260719
+          },
+          "log_ratio": -0.5692271220616255,
+          "pct": -43.403731021620985,
+          "ratio": 0.5659626897837902,
+          "role": "primary",
+          "unavailable_reason": null,
+          "zero_observation_pair_count": 0
+        },
+        "infer_time_s": {
+          "bootstrap": {
+            "coordinates_resampled_within_dataset": true,
+            "datasets_resampled": false,
+            "draws": 10000,
+            "ratio_lower95_two_sided": 1.3741546667790348,
+            "ratio_upper95_one_sided": 1.4821552699125156,
+            "ratio_upper95_two_sided": 1.4918678063270283,
+            "seed": 20260719
+          },
+          "log_ratio": 0.3598987965970978,
+          "pct": 43.318436408603155,
+          "ratio": 1.4331843640860316,
+          "role": "primary"
+        },
+        "peak_memory_bytes": {
+          "bootstrap": {
+            "coordinates_resampled_within_dataset": true,
+            "datasets_resampled": false,
+            "draws": 10000,
+            "ratio_lower95_two_sided": 0.9949089798645072,
+            "ratio_upper95_one_sided": 1.007303572346088,
+            "ratio_upper95_two_sided": 1.0084233331640413,
+            "seed": 20260719
+          },
+          "log_ratio": 0.0015303168236820582,
+          "pct": 0.15314883560013648,
+          "ratio": 1.0015314883560014,
+          "role": "secondary_raw_process_rss"
+        },
+        "test_rmse": {
+          "bootstrap": {
+            "coordinates_resampled_within_dataset": true,
+            "datasets_resampled": false,
+            "draws": 10000,
+            "ratio_lower95_two_sided": 1.008196090356399,
+            "ratio_upper95_one_sided": 1.0165612860161986,
+            "ratio_upper95_two_sided": 1.0172604976471886,
+            "seed": 20260719
+          },
+          "log_ratio": 0.01244559881018885,
+          "pct": 1.2523367566423804,
+          "ratio": 1.0125233675664238,
+          "role": "primary"
+        },
+        "train_time_s": {
+          "bootstrap": {
+            "coordinates_resampled_within_dataset": true,
+            "datasets_resampled": false,
+            "draws": 10000,
+            "ratio_lower95_two_sided": 0.8765774652949582,
+            "ratio_upper95_one_sided": 0.9355606222518592,
+            "ratio_upper95_two_sided": 0.9398320661635504,
+            "seed": 20260719
+          },
+          "log_ratio": -0.09509856789703643,
+          "pct": -9.071669609212051,
+          "ratio": 0.9092833039078795,
+          "role": "primary"
+        },
+        "val_rmse": {
+          "bootstrap": {
+            "coordinates_resampled_within_dataset": true,
+            "datasets_resampled": false,
+            "draws": 10000,
+            "ratio_lower95_two_sided": 1.00784259044158,
+            "ratio_upper95_one_sided": 1.0155290660907035,
+            "ratio_upper95_two_sided": 1.016224889978984,
+            "seed": 20260719
+          },
+          "log_ratio": 0.011758080456438407,
+          "pct": 1.182747841331433,
+          "ratio": 1.0118274784133143,
+          "role": "primary"
+        }
+      },
+      "numerator": "darkofit_product_default",
+      "numerator_lane": "primary",
+      "paired_children": 312,
+      "paired_splits": 39,
+      "panel": "primary",
+      "policy_advancement_allowed": false
+    },
+    {
+      "child_metadata": {
+        "denominator": {
+          "best_iteration": {
+            "count": 312,
+            "max": 10000.0,
+            "median": 2847.5,
+            "min": 75.0,
+            "p90": 9873.6
+          },
+          "engine": "catboost",
+          "explicit_time_limit_stops": 0,
+          "rounds_retained": {
+            "count": 312,
+            "max": 10000.0,
+            "median": 2847.5,
+            "min": 75.0,
+            "p90": 9873.6
+          },
+          "selected_lane_counts": {
+            "not_applicable": 312
+          },
+          "stop_reason_counts": {
+            "iteration_limit": 61,
+            "unknown": 251
+          },
+          "unknown_stop_reasons": 251
+        },
+        "numerator": {
+          "best_iteration": {
+            "count": 312,
+            "max": 1000.0,
+            "median": 799.5,
+            "min": 53.0,
+            "p90": 1000.0
+          },
+          "engine": "darkofit",
+          "explicit_time_limit_stops": 0,
+          "rounds_retained": {
+            "count": 312,
+            "max": 1000.0,
+            "median": 799.5,
+            "min": 53.0,
+            "p90": 1000.0
+          },
+          "selected_lane_counts": {
+            "boosting": 312
+          },
+          "stop_reason_counts": {
+            "early_stopping": 165,
+            "iteration_limit": 147
+          },
+          "unknown_stop_reasons": 0
+        }
+      },
+      "code": "D/C",
+      "contrast": "darkofit_vs_catboost",
+      "coordinate_counts": {
+        "losses": 36,
+        "ties": 0,
+        "wins": 3
+      },
+      "dataset_count": 13,
+      "dataset_counts": {
+        "losses": 12,
+        "ties": 0,
+        "wins": 1
+      },
+      "datasets": [
+        {
+          "contrast": "darkofit_vs_catboost",
+          "contrast_code": "D/C",
+          "coordinate_count": 3,
+          "dataset": "Another-Dataset-on-used-Fiat-500",
+          "incremental_memory_bytes_denominator_mean_bytes": 5051733.333333333,
+          "incremental_memory_bytes_numerator_mean_bytes": 43690.666666666664,
+          "incremental_memory_bytes_pct": -98.91272549651475,
+          "incremental_memory_bytes_ratio": 0.010872745034852489,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": -12.769910103008996,
+          "infer_time_s_ratio": 0.87230089896991,
+          "panel": "primary",
+          "peak_memory_bytes_pct": -0.21673261946780764,
+          "peak_memory_bytes_ratio": 0.9978326738053219,
+          "task_id": 363615,
+          "test_losses": 3,
+          "test_rmse_pct": 1.212537800120539,
+          "test_rmse_ratio": 1.0121253780012054,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": 9.823899744556442,
+          "train_time_s_ratio": 1.0982389974455644,
+          "val_rmse_pct": 1.952270653205912,
+          "val_rmse_ratio": 1.0195227065320591
+        },
+        {
+          "contrast": "darkofit_vs_catboost",
+          "contrast_code": "D/C",
+          "coordinate_count": 3,
+          "dataset": "Food_Delivery_Time",
+          "incremental_memory_bytes_denominator_mean_bytes": 76141909.33333333,
+          "incremental_memory_bytes_numerator_mean_bytes": 1054037.3333333333,
+          "incremental_memory_bytes_pct": -99.39069548988519,
+          "incremental_memory_bytes_ratio": 0.006093045101148193,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": -19.695894783227473,
+          "infer_time_s_ratio": 0.8030410521677253,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 0.8038057549934585,
+          "peak_memory_bytes_ratio": 1.0080380575499346,
+          "task_id": 363672,
+          "test_losses": 3,
+          "test_rmse_pct": 0.323876324817407,
+          "test_rmse_ratio": 1.003238763248174,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -80.2670514596679,
+          "train_time_s_ratio": 0.19732948540332096,
+          "val_rmse_pct": 0.31382425595261054,
+          "val_rmse_ratio": 1.003138242559526
+        },
+        {
+          "contrast": "darkofit_vs_catboost",
+          "contrast_code": "D/C",
+          "coordinate_count": 3,
+          "dataset": "QSAR-TID-11",
+          "incremental_memory_bytes_denominator_mean_bytes": 99980629.33333333,
+          "incremental_memory_bytes_numerator_mean_bytes": 40299178.666666664,
+          "incremental_memory_bytes_pct": -88.9080857566979,
+          "incremental_memory_bytes_ratio": 0.11091914243302108,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 20.442220058545303,
+          "infer_time_s_ratio": 1.204422200585453,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 3.7889714446349476,
+          "peak_memory_bytes_ratio": 1.0378897144463495,
+          "task_id": 363697,
+          "test_losses": 3,
+          "test_rmse_pct": 2.0594410724793732,
+          "test_rmse_ratio": 1.0205944107247937,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -65.96263682044044,
+          "train_time_s_ratio": 0.34037363179559565,
+          "val_rmse_pct": 1.7586560508761506,
+          "val_rmse_ratio": 1.0175865605087615
+        },
+        {
+          "contrast": "darkofit_vs_catboost",
+          "contrast_code": "D/C",
+          "coordinate_count": 3,
+          "dataset": "QSAR_fish_toxicity",
+          "incremental_memory_bytes_denominator_mean_bytes": 32768.0,
+          "incremental_memory_bytes_numerator_mean_bytes": 60074.666666666664,
+          "incremental_memory_bytes_pct": 77.84466522450315,
+          "incremental_memory_bytes_ratio": 1.7784466522450315,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 44.65535603724944,
+          "infer_time_s_ratio": 1.4465535603724944,
+          "panel": "primary",
+          "peak_memory_bytes_pct": -2.415516231479842e-07,
+          "peak_memory_bytes_ratio": 0.9999999975844838,
+          "task_id": 363698,
+          "test_losses": 2,
+          "test_rmse_pct": 0.9130409836533682,
+          "test_rmse_ratio": 1.0091304098365337,
+          "test_ties": 0,
+          "test_wins": 1,
+          "train_time_s_pct": 284.8236620194442,
+          "train_time_s_ratio": 3.848236620194442,
+          "val_rmse_pct": 1.3733216380834135,
+          "val_rmse_ratio": 1.0137332163808341
+        },
+        {
+          "contrast": "darkofit_vs_catboost",
+          "contrast_code": "D/C",
+          "coordinate_count": 3,
+          "dataset": "airfoil_self_noise",
+          "incremental_memory_bytes_denominator_mean_bytes": 177493333.33333334,
+          "incremental_memory_bytes_numerator_mean_bytes": 31058602.666666668,
+          "incremental_memory_bytes_pct": -96.28533661458732,
+          "incremental_memory_bytes_ratio": 0.03714663385412672,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": -28.451110008859793,
+          "infer_time_s_ratio": 0.7154888999114021,
+          "panel": "primary",
+          "peak_memory_bytes_pct": -7.987221590798277,
+          "peak_memory_bytes_ratio": 0.9201277840920172,
+          "task_id": 363612,
+          "test_losses": 3,
+          "test_rmse_pct": 17.384123511942096,
+          "test_rmse_ratio": 1.173841235119421,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -80.2673362711528,
+          "train_time_s_ratio": 0.19732663728847197,
+          "val_rmse_pct": 12.499540931313579,
+          "val_rmse_ratio": 1.1249954093131358
+        },
+        {
+          "contrast": "darkofit_vs_catboost",
+          "contrast_code": "D/C",
+          "coordinate_count": 3,
+          "dataset": "concrete_compressive_strength",
+          "incremental_memory_bytes_denominator_mean_bytes": 12053162.666666666,
+          "incremental_memory_bytes_numerator_mean_bytes": 23871488.0,
+          "incremental_memory_bytes_pct": -92.05344011721017,
+          "incremental_memory_bytes_ratio": 0.07946559882789832,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 8.105063501517584,
+          "infer_time_s_ratio": 1.0810506350151758,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 4.739473815432782,
+          "peak_memory_bytes_ratio": 1.0473947381543278,
+          "task_id": 363625,
+          "test_losses": 1,
+          "test_rmse_pct": -0.5298717410777254,
+          "test_rmse_ratio": 0.9947012825892227,
+          "test_ties": 0,
+          "test_wins": 2,
+          "train_time_s_pct": -52.209039408309145,
+          "train_time_s_ratio": 0.47790960591690856,
+          "val_rmse_pct": 4.279927226646807,
+          "val_rmse_ratio": 1.042799272266468
+        },
+        {
+          "contrast": "darkofit_vs_catboost",
+          "contrast_code": "D/C",
+          "coordinate_count": 3,
+          "dataset": "diamonds",
+          "incremental_memory_bytes_denominator_mean_bytes": 36831232.0,
+          "incremental_memory_bytes_numerator_mean_bytes": 1829546.6666666667,
+          "incremental_memory_bytes_pct": -97.04394379896364,
+          "incremental_memory_bytes_ratio": 0.029560562010363597,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": -3.923764495417792,
+          "infer_time_s_ratio": 0.9607623550458221,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 0.3267047431779302,
+          "peak_memory_bytes_ratio": 1.0032670474317793,
+          "task_id": 363631,
+          "test_losses": 3,
+          "test_rmse_pct": 33.561986675046704,
+          "test_rmse_ratio": 1.335619866750467,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -86.10375736600156,
+          "train_time_s_ratio": 0.13896242633998437,
+          "val_rmse_pct": 38.121075114058755,
+          "val_rmse_ratio": 1.3812107511405876
+        },
+        {
+          "contrast": "darkofit_vs_catboost",
+          "contrast_code": "D/C",
+          "coordinate_count": 3,
+          "dataset": "healthcare_insurance_expenses",
+          "incremental_memory_bytes_denominator_mean_bytes": 87381.33333333333,
+          "incremental_memory_bytes_numerator_mean_bytes": 33406976.0,
+          "incremental_memory_bytes_pct": 804.8003884931148,
+          "incremental_memory_bytes_ratio": 9.048003884931148,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 1.9194323536994906,
+          "infer_time_s_ratio": 1.019194323536995,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 0.0011780604137756612,
+          "peak_memory_bytes_ratio": 1.0000117806041378,
+          "task_id": 363675,
+          "test_losses": 3,
+          "test_rmse_pct": 0.9559823499128539,
+          "test_rmse_ratio": 1.0095598234991285,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": 108.58210785349756,
+          "train_time_s_ratio": 2.0858210785349756,
+          "val_rmse_pct": 0.8634306912746359,
+          "val_rmse_ratio": 1.0086343069127464
+        },
+        {
+          "contrast": "darkofit_vs_catboost",
+          "contrast_code": "D/C",
+          "coordinate_count": 3,
+          "dataset": "houses",
+          "incremental_memory_bytes_denominator_mean_bytes": 42729472.0,
+          "incremental_memory_bytes_numerator_mean_bytes": 31997952.0,
+          "incremental_memory_bytes_pct": -69.91771017159239,
+          "incremental_memory_bytes_ratio": 0.30082289828407616,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 150.68428796060616,
+          "infer_time_s_ratio": 2.5068428796060616,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 2.467810271440163,
+          "peak_memory_bytes_ratio": 1.0246781027144016,
+          "task_id": 363678,
+          "test_losses": 3,
+          "test_rmse_pct": 3.1221980131389326,
+          "test_rmse_ratio": 1.0312219801313893,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -83.34225620432667,
+          "train_time_s_ratio": 0.16657743795673333,
+          "val_rmse_pct": 2.94139665858677,
+          "val_rmse_ratio": 1.0294139665858677
+        },
+        {
+          "contrast": "darkofit_vs_catboost",
+          "contrast_code": "D/C",
+          "coordinate_count": 3,
+          "dataset": "miami_housing",
+          "incremental_memory_bytes_denominator_mean_bytes": 2315605.3333333335,
+          "incremental_memory_bytes_numerator_mean_bytes": 65536.0,
+          "incremental_memory_bytes_pct": -78.22331816379808,
+          "incremental_memory_bytes_ratio": 0.21776681836201917,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 202.59855450751854,
+          "infer_time_s_ratio": 3.0259855450751854,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 0.4813633204286072,
+          "peak_memory_bytes_ratio": 1.004813633204286,
+          "task_id": 363686,
+          "test_losses": 3,
+          "test_rmse_pct": 2.688279853673592,
+          "test_rmse_ratio": 1.026882798536736,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -64.25820313636575,
+          "train_time_s_ratio": 0.3574179686363425,
+          "val_rmse_pct": 2.745375592730981,
+          "val_rmse_ratio": 1.0274537559273098
+        },
+        {
+          "contrast": "darkofit_vs_catboost",
+          "contrast_code": "D/C",
+          "coordinate_count": 3,
+          "dataset": "physiochemical_protein",
+          "incremental_memory_bytes_denominator_mean_bytes": 137172309.33333334,
+          "incremental_memory_bytes_numerator_mean_bytes": 68916565.33333333,
+          "incremental_memory_bytes_pct": -60.199904481837564,
+          "incremental_memory_bytes_ratio": 0.3980009551816244,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": -45.500279962336066,
+          "infer_time_s_ratio": 0.5449972003766393,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 2.826604723647397,
+          "peak_memory_bytes_ratio": 1.028266047236474,
+          "task_id": 363693,
+          "test_losses": 3,
+          "test_rmse_pct": 7.0690003010392966,
+          "test_rmse_ratio": 1.070690003010393,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -88.06741341510349,
+          "train_time_s_ratio": 0.11932586584896505,
+          "val_rmse_pct": 5.791613878971558,
+          "val_rmse_ratio": 1.0579161387897156
+        },
+        {
+          "contrast": "darkofit_vs_catboost",
+          "contrast_code": "D/C",
+          "coordinate_count": 3,
+          "dataset": "superconductivity",
+          "incremental_memory_bytes_denominator_mean_bytes": 70795264.0,
+          "incremental_memory_bytes_numerator_mean_bytes": 52417877.333333336,
+          "incremental_memory_bytes_pct": 35.942196412938344,
+          "incremental_memory_bytes_ratio": 1.3594219641293834,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 214.28519735065245,
+          "infer_time_s_ratio": 3.1428519735065246,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 0.5680776870209181,
+          "peak_memory_bytes_ratio": 1.0056807768702092,
+          "task_id": 363705,
+          "test_losses": 3,
+          "test_rmse_pct": 3.3866805612470463,
+          "test_rmse_ratio": 1.0338668056124705,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -81.62633976568362,
+          "train_time_s_ratio": 0.18373660234316372,
+          "val_rmse_pct": 3.037139547561596,
+          "val_rmse_ratio": 1.030371395475616
+        },
+        {
+          "contrast": "darkofit_vs_catboost",
+          "contrast_code": "D/C",
+          "coordinate_count": 3,
+          "dataset": "wine_quality",
+          "incremental_memory_bytes_denominator_mean_bytes": 11064661.333333334,
+          "incremental_memory_bytes_numerator_mean_bytes": 35629738.666666664,
+          "incremental_memory_bytes_pct": -93.36120002809629,
+          "incremental_memory_bytes_ratio": 0.06638799971903712,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 61.39344989539068,
+          "infer_time_s_ratio": 1.6139344989539068,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 4.418850191227897,
+          "peak_memory_bytes_ratio": 1.044188501912279,
+          "task_id": 363708,
+          "test_losses": 3,
+          "test_rmse_pct": 2.443132301027684,
+          "test_rmse_ratio": 1.0244313230102768,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -73.40220338586725,
+          "train_time_s_ratio": 0.26597796614132746,
+          "val_rmse_pct": 1.8216714757692154,
+          "val_rmse_ratio": 1.0182167147576922
+        }
+      ],
+      "decision": "descriptive_only",
+      "denominator": "catboost_1_2_10_default",
+      "denominator_lane": "primary",
+      "metrics": {
+        "incremental_memory_bytes": {
+          "absolute_bytes": {
+            "denominator_equal_dataset_mean": 51673035.48717949,
+            "numerator_equal_dataset_mean": 24665481.846153848
+          },
+          "available": true,
+          "bootstrap": {
+            "coordinates_resampled_within_dataset": true,
+            "datasets_resampled": false,
+            "draws": 10000,
+            "ratio_lower95_two_sided": 0.06606016831930259,
+            "ratio_upper95_one_sided": 0.31984451777487016,
+            "ratio_upper95_two_sided": 0.37089153722754303,
+            "seed": 20260719
+          },
+          "log_ratio": -1.8801111000727946,
+          "pct": -84.74268460732813,
+          "ratio": 0.15257315392671877,
+          "role": "primary",
+          "unavailable_reason": null,
+          "zero_observation_pair_count": 0
+        },
+        "infer_time_s": {
+          "bootstrap": {
+            "coordinates_resampled_within_dataset": true,
+            "datasets_resampled": false,
+            "draws": 10000,
+            "ratio_lower95_two_sided": 1.216383454852939,
+            "ratio_upper95_one_sided": 1.29084685175621,
+            "ratio_upper95_two_sided": 1.2975319255789175,
+            "seed": 20260719
+          },
+          "log_ratio": 0.2280333823949481,
+          "pct": 25.61272572686548,
+          "ratio": 1.2561272572686548,
+          "role": "primary"
+        },
+        "peak_memory_bytes": {
+          "bootstrap": {
+            "coordinates_resampled_within_dataset": true,
+            "datasets_resampled": false,
+            "draws": 10000,
+            "ratio_lower95_two_sided": 0.9865607061332515,
+            "ratio_upper95_one_sided": 1.0257932917051922,
+            "ratio_upper95_two_sided": 1.0278187387622364,
+            "seed": 20260719
+          },
+          "log_ratio": 0.00887090020671832,
+          "pct": 0.8910363246539488,
+          "ratio": 1.0089103632465395,
+          "role": "secondary_raw_process_rss"
+        },
+        "test_rmse": {
+          "bootstrap": {
+            "coordinates_resampled_within_dataset": true,
+            "datasets_resampled": false,
+            "draws": 10000,
+            "ratio_lower95_two_sided": 1.0511236382642142,
+            "ratio_upper95_one_sided": 1.0563466521688964,
+            "ratio_upper95_two_sided": 1.0567978733918262,
+            "seed": 20260719
+          },
+          "log_ratio": 0.052435228536684586,
+          "pct": 5.383430147809309,
+          "ratio": 1.053834301478093,
+          "role": "primary"
+        },
+        "train_time_s": {
+          "bootstrap": {
+            "coordinates_resampled_within_dataset": true,
+            "datasets_resampled": false,
+            "draws": 10000,
+            "ratio_lower95_two_sided": 0.35257072721305577,
+            "ratio_upper95_one_sided": 0.3902607589670596,
+            "ratio_upper95_two_sided": 0.39315253768867603,
+            "seed": 20260719
+          },
+          "log_ratio": -0.9865016798047139,
+          "pct": -62.71211383587902,
+          "ratio": 0.3728788616412098,
+          "role": "primary"
+        },
+        "val_rmse": {
+          "bootstrap": {
+            "coordinates_resampled_within_dataset": true,
+            "datasets_resampled": false,
+            "draws": 10000,
+            "ratio_lower95_two_sided": 1.0527825849596526,
+            "ratio_upper95_one_sided": 1.0582020674339148,
+            "ratio_upper95_two_sided": 1.0586298802128036,
+            "seed": 20260719
+          },
+          "log_ratio": 0.05424101995637251,
+          "pct": 5.573902566718347,
+          "ratio": 1.0557390256671835,
+          "role": "primary"
+        }
+      },
+      "numerator": "darkofit_product_default",
+      "numerator_lane": "primary",
+      "paired_children": 312,
+      "paired_splits": 39,
+      "panel": "primary",
+      "policy_advancement_allowed": false
+    },
+    {
+      "child_metadata": {
+        "denominator": {
+          "best_iteration": {
+            "count": 312,
+            "max": 10000.0,
+            "median": 2847.5,
+            "min": 75.0,
+            "p90": 9873.6
+          },
+          "engine": "catboost",
+          "explicit_time_limit_stops": 0,
+          "rounds_retained": {
+            "count": 312,
+            "max": 10000.0,
+            "median": 2847.5,
+            "min": 75.0,
+            "p90": 9873.6
+          },
+          "selected_lane_counts": {
+            "not_applicable": 312
+          },
+          "stop_reason_counts": {
+            "iteration_limit": 61,
+            "unknown": 251
+          },
+          "unknown_stop_reasons": 251
+        },
+        "numerator": {
+          "best_iteration": {
+            "count": 312,
+            "max": 1971.0,
+            "median": 394.0,
+            "min": 24.0,
+            "p90": 1206.2000000000003
+          },
+          "engine": "chimeraboost",
+          "explicit_time_limit_stops": 0,
+          "rounds_retained": {
+            "count": 312,
+            "max": 1971.0,
+            "median": 394.0,
+            "min": 24.0,
+            "p90": 1206.2000000000003
+          },
+          "selected_lane_counts": {
+            "constant": 202,
+            "linear": 110
+          },
+          "stop_reason_counts": {
+            "early_stopping": 120,
+            "unknown": 192
+          },
+          "unknown_stop_reasons": 192
+        }
+      },
+      "code": "M/C",
+      "contrast": "chimeraboost_vs_catboost",
+      "coordinate_counts": {
+        "losses": 35,
+        "ties": 0,
+        "wins": 4
+      },
+      "dataset_count": 13,
+      "dataset_counts": {
+        "losses": 12,
+        "ties": 0,
+        "wins": 1
+      },
+      "datasets": [
+        {
+          "contrast": "chimeraboost_vs_catboost",
+          "contrast_code": "M/C",
+          "coordinate_count": 3,
+          "dataset": "Another-Dataset-on-used-Fiat-500",
+          "incremental_memory_bytes_denominator_mean_bytes": 5051733.333333333,
+          "incremental_memory_bytes_numerator_mean_bytes": 70997.33333333333,
+          "incremental_memory_bytes_pct": -98.14078675160538,
+          "incremental_memory_bytes_ratio": 0.01859213248394623,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": -29.03919147462237,
+          "infer_time_s_ratio": 0.7096080852537763,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 0.45385615349919917,
+          "peak_memory_bytes_ratio": 1.004538561534992,
+          "task_id": 363615,
+          "test_losses": 3,
+          "test_rmse_pct": 1.2586874996702635,
+          "test_rmse_ratio": 1.0125868749967026,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -51.94703695930987,
+          "train_time_s_ratio": 0.4805296304069014,
+          "val_rmse_pct": 2.505332293942719,
+          "val_rmse_ratio": 1.0250533229394272
+        },
+        {
+          "contrast": "chimeraboost_vs_catboost",
+          "contrast_code": "M/C",
+          "coordinate_count": 3,
+          "dataset": "Food_Delivery_Time",
+          "incremental_memory_bytes_denominator_mean_bytes": 76141909.33333333,
+          "incremental_memory_bytes_numerator_mean_bytes": 28688384.0,
+          "incremental_memory_bytes_pct": -94.39143354404268,
+          "incremental_memory_bytes_ratio": 0.05608566455957308,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": -15.690996005148495,
+          "infer_time_s_ratio": 0.8430900399485151,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 0.9119481754549685,
+          "peak_memory_bytes_ratio": 1.0091194817545497,
+          "task_id": 363672,
+          "test_losses": 3,
+          "test_rmse_pct": 0.4498917278891401,
+          "test_rmse_ratio": 1.0044989172788914,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -69.82855961401101,
+          "train_time_s_ratio": 0.3017144038598899,
+          "val_rmse_pct": 0.5266226722600686,
+          "val_rmse_ratio": 1.0052662267226007
+        },
+        {
+          "contrast": "chimeraboost_vs_catboost",
+          "contrast_code": "M/C",
+          "coordinate_count": 3,
+          "dataset": "QSAR-TID-11",
+          "incremental_memory_bytes_denominator_mean_bytes": 99980629.33333333,
+          "incremental_memory_bytes_numerator_mean_bytes": 62455808.0,
+          "incremental_memory_bytes_pct": -69.00076641155965,
+          "incremental_memory_bytes_ratio": 0.3099923358844035,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 12.792653729109382,
+          "infer_time_s_ratio": 1.1279265372910938,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 4.720076857128608,
+          "peak_memory_bytes_ratio": 1.047200768571286,
+          "task_id": 363697,
+          "test_losses": 3,
+          "test_rmse_pct": 1.104712840441846,
+          "test_rmse_ratio": 1.0110471284044185,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -43.05534355983423,
+          "train_time_s_ratio": 0.5694465644016578,
+          "val_rmse_pct": 1.3003920200067798,
+          "val_rmse_ratio": 1.0130039202000678
+        },
+        {
+          "contrast": "chimeraboost_vs_catboost",
+          "contrast_code": "M/C",
+          "coordinate_count": 3,
+          "dataset": "QSAR_fish_toxicity",
+          "incremental_memory_bytes_denominator_mean_bytes": 32768.0,
+          "incremental_memory_bytes_numerator_mean_bytes": 54613.333333333336,
+          "incremental_memory_bytes_pct": 55.36162529769295,
+          "incremental_memory_bytes_ratio": 1.5536162529769295,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 5.409045369961407,
+          "infer_time_s_ratio": 1.054090453699614,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 0.000772090438783124,
+          "peak_memory_bytes_ratio": 1.0000077209043878,
+          "task_id": 363698,
+          "test_losses": 2,
+          "test_rmse_pct": 0.88532243005921,
+          "test_rmse_ratio": 1.008853224300592,
+          "test_ties": 0,
+          "test_wins": 1,
+          "train_time_s_pct": 69.31780771173877,
+          "train_time_s_ratio": 1.6931780771173877,
+          "val_rmse_pct": 1.5651493798878313,
+          "val_rmse_ratio": 1.0156514937988783
+        },
+        {
+          "contrast": "chimeraboost_vs_catboost",
+          "contrast_code": "M/C",
+          "coordinate_count": 3,
+          "dataset": "airfoil_self_noise",
+          "incremental_memory_bytes_denominator_mean_bytes": 177493333.33333334,
+          "incremental_memory_bytes_numerator_mean_bytes": 54979242.666666664,
+          "incremental_memory_bytes_pct": -94.82567051168456,
+          "incremental_memory_bytes_ratio": 0.05174329488315433,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": -51.894421949952395,
+          "infer_time_s_ratio": 0.4810557805004761,
+          "panel": "primary",
+          "peak_memory_bytes_pct": -11.15309094032132,
+          "peak_memory_bytes_ratio": 0.8884690905967868,
+          "task_id": 363612,
+          "test_losses": 3,
+          "test_rmse_pct": 10.24548379313497,
+          "test_rmse_ratio": 1.1024548379313497,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -86.53861073561214,
+          "train_time_s_ratio": 0.13461389264387863,
+          "val_rmse_pct": 7.691609618298179,
+          "val_rmse_ratio": 1.0769160961829818
+        },
+        {
+          "contrast": "chimeraboost_vs_catboost",
+          "contrast_code": "M/C",
+          "coordinate_count": 3,
+          "dataset": "concrete_compressive_strength",
+          "incremental_memory_bytes_denominator_mean_bytes": 12053162.666666666,
+          "incremental_memory_bytes_numerator_mean_bytes": 30048256.0,
+          "incremental_memory_bytes_pct": -94.54471467026951,
+          "incremental_memory_bytes_ratio": 0.05455285329730487,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": -44.55448397629377,
+          "infer_time_s_ratio": 0.5544551602370623,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 3.012430890978557,
+          "peak_memory_bytes_ratio": 1.0301243089097856,
+          "task_id": 363625,
+          "test_losses": 3,
+          "test_rmse_pct": 2.4062422226701408,
+          "test_rmse_ratio": 1.0240624222267014,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -74.99273671861297,
+          "train_time_s_ratio": 0.25007263281387027,
+          "val_rmse_pct": 4.272684132706384,
+          "val_rmse_ratio": 1.0427268413270638
+        },
+        {
+          "contrast": "chimeraboost_vs_catboost",
+          "contrast_code": "M/C",
+          "coordinate_count": 3,
+          "dataset": "diamonds",
+          "incremental_memory_bytes_denominator_mean_bytes": 36831232.0,
+          "incremental_memory_bytes_numerator_mean_bytes": 10267306.666666666,
+          "incremental_memory_bytes_pct": -97.35814381363,
+          "incremental_memory_bytes_ratio": 0.026418561863700056,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 4.257909366000945,
+          "infer_time_s_ratio": 1.0425790936600094,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 1.5295692723744425,
+          "peak_memory_bytes_ratio": 1.0152956927237444,
+          "task_id": 363631,
+          "test_losses": 3,
+          "test_rmse_pct": 36.00809594116432,
+          "test_rmse_ratio": 1.3600809594116432,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -79.48329304617249,
+          "train_time_s_ratio": 0.20516706953827507,
+          "val_rmse_pct": 38.06779400150728,
+          "val_rmse_ratio": 1.3806779400150728
+        },
+        {
+          "contrast": "chimeraboost_vs_catboost",
+          "contrast_code": "M/C",
+          "coordinate_count": 3,
+          "dataset": "healthcare_insurance_expenses",
+          "incremental_memory_bytes_denominator_mean_bytes": 87381.33333333333,
+          "incremental_memory_bytes_numerator_mean_bytes": 38229.333333333336,
+          "incremental_memory_bytes_pct": -43.34836650572953,
+          "incremental_memory_bytes_ratio": 0.5665163349427047,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 3.8598896616589773,
+          "infer_time_s_ratio": 1.0385988966165898,
+          "panel": "primary",
+          "peak_memory_bytes_pct": -0.00010960244384294882,
+          "peak_memory_bytes_ratio": 0.9999989039755616,
+          "task_id": 363675,
+          "test_losses": 3,
+          "test_rmse_pct": 1.108153102000231,
+          "test_rmse_ratio": 1.0110815310200023,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": 0.4545301360768139,
+          "train_time_s_ratio": 1.0045453013607681,
+          "val_rmse_pct": 1.4108265457551061,
+          "val_rmse_ratio": 1.014108265457551
+        },
+        {
+          "contrast": "chimeraboost_vs_catboost",
+          "contrast_code": "M/C",
+          "coordinate_count": 3,
+          "dataset": "houses",
+          "incremental_memory_bytes_denominator_mean_bytes": 42729472.0,
+          "incremental_memory_bytes_numerator_mean_bytes": 63548074.666666664,
+          "incremental_memory_bytes_pct": 634.2853016792194,
+          "incremental_memory_bytes_ratio": 7.342853016792194,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": -12.431570389527325,
+          "infer_time_s_ratio": 0.8756842961047268,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 1.1842246364680342,
+          "peak_memory_bytes_ratio": 1.0118422463646803,
+          "task_id": 363678,
+          "test_losses": 3,
+          "test_rmse_pct": 0.7297691127746919,
+          "test_rmse_ratio": 1.007297691127747,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -70.11579326246908,
+          "train_time_s_ratio": 0.2988420673753092,
+          "val_rmse_pct": 1.581339068234211,
+          "val_rmse_ratio": 1.015813390682342
+        },
+        {
+          "contrast": "chimeraboost_vs_catboost",
+          "contrast_code": "M/C",
+          "coordinate_count": 3,
+          "dataset": "miami_housing",
+          "incremental_memory_bytes_denominator_mean_bytes": 2315605.3333333335,
+          "incremental_memory_bytes_numerator_mean_bytes": 240298.66666666666,
+          "incremental_memory_bytes_pct": -34.66995449139425,
+          "incremental_memory_bytes_ratio": 0.6533004550860575,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": -19.652428112400234,
+          "infer_time_s_ratio": 0.8034757188759977,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 2.270558436740555,
+          "peak_memory_bytes_ratio": 1.0227055843674056,
+          "task_id": 363686,
+          "test_losses": 3,
+          "test_rmse_pct": 2.1234003788185074,
+          "test_rmse_ratio": 1.021234003788185,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -53.47713547479272,
+          "train_time_s_ratio": 0.46522864525207286,
+          "val_rmse_pct": 1.6578939358086187,
+          "val_rmse_ratio": 1.0165789393580862
+        },
+        {
+          "contrast": "chimeraboost_vs_catboost",
+          "contrast_code": "M/C",
+          "coordinate_count": 3,
+          "dataset": "physiochemical_protein",
+          "incremental_memory_bytes_denominator_mean_bytes": 137172309.33333334,
+          "incremental_memory_bytes_numerator_mean_bytes": 154075136.0,
+          "incremental_memory_bytes_pct": 5.7568134310520325,
+          "incremental_memory_bytes_ratio": 1.0575681343105203,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 66.34505129920352,
+          "infer_time_s_ratio": 1.6634505129920352,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 1.2888365019878778,
+          "peak_memory_bytes_ratio": 1.0128883650198788,
+          "task_id": 363693,
+          "test_losses": 0,
+          "test_rmse_pct": -0.5614086791714268,
+          "test_rmse_ratio": 0.9943859132082857,
+          "test_ties": 0,
+          "test_wins": 3,
+          "train_time_s_pct": -44.67431732441288,
+          "train_time_s_ratio": 0.5532568267558712,
+          "val_rmse_pct": -0.10676728675655944,
+          "val_rmse_ratio": 0.9989323271324344
+        },
+        {
+          "contrast": "chimeraboost_vs_catboost",
+          "contrast_code": "M/C",
+          "coordinate_count": 3,
+          "dataset": "superconductivity",
+          "incremental_memory_bytes_denominator_mean_bytes": 70795264.0,
+          "incremental_memory_bytes_numerator_mean_bytes": 118489088.0,
+          "incremental_memory_bytes_pct": 339.84888031846936,
+          "incremental_memory_bytes_ratio": 4.398488803184693,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": 35.93241821492541,
+          "infer_time_s_ratio": 1.359324182149254,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 3.136699351157435,
+          "peak_memory_bytes_ratio": 1.0313669935115743,
+          "task_id": 363705,
+          "test_losses": 3,
+          "test_rmse_pct": 0.5788519513340029,
+          "test_rmse_ratio": 1.00578851951334,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -59.947727742445764,
+          "train_time_s_ratio": 0.4005227225755423,
+          "val_rmse_pct": 0.11536668548099982,
+          "val_rmse_ratio": 1.00115366685481
+        },
+        {
+          "contrast": "chimeraboost_vs_catboost",
+          "contrast_code": "M/C",
+          "coordinate_count": 3,
+          "dataset": "wine_quality",
+          "incremental_memory_bytes_denominator_mean_bytes": 11064661.333333334,
+          "incremental_memory_bytes_numerator_mean_bytes": 35962880.0,
+          "incremental_memory_bytes_pct": -91.61089569673922,
+          "incremental_memory_bytes_ratio": 0.08389104303260789,
+          "incremental_memory_bytes_ratio_available": true,
+          "incremental_memory_bytes_ratio_unavailable_reason": null,
+          "infer_time_s_pct": -44.8954670476798,
+          "infer_time_s_ratio": 0.551045329523202,
+          "panel": "primary",
+          "peak_memory_bytes_pct": 3.166545993848624,
+          "peak_memory_bytes_ratio": 1.0316654599384862,
+          "task_id": 363708,
+          "test_losses": 3,
+          "test_rmse_pct": 1.4870222428112756,
+          "test_rmse_ratio": 1.0148702224281128,
+          "test_ties": 0,
+          "test_wins": 0,
+          "train_time_s_pct": -68.95984127593681,
+          "train_time_s_ratio": 0.3104015872406319,
+          "val_rmse_pct": 0.9129754338807583,
+          "val_rmse_ratio": 1.0091297543388076
+        }
+      ],
+      "decision": "descriptive_only",
+      "denominator": "catboost_1_2_10_default",
+      "denominator_lane": "primary",
+      "metrics": {
+        "incremental_memory_bytes": {
+          "absolute_bytes": {
+            "denominator_equal_dataset_mean": 51673035.48717949,
+            "numerator_equal_dataset_mean": 42993716.51282051
+          },
+          "available": true,
+          "bootstrap": {
+            "coordinates_resampled_within_dataset": true,
+            "datasets_resampled": false,
+            "draws": 10000,
+            "ratio_lower95_two_sided": 0.1272669994485088,
+            "ratio_upper95_one_sided": 0.5195217031474544,
+            "ratio_upper95_two_sided": 0.5962668706445042,
+            "seed": 20260719
+          },
+          "log_ratio": -1.3108839780111692,
+          "pct": -73.04183532221798,
+          "ratio": 0.2695816467778202,
+          "role": "primary",
+          "unavailable_reason": null,
+          "zero_observation_pair_count": 0
+        },
+        "infer_time_s": {
+          "bootstrap": {
+            "coordinates_resampled_within_dataset": true,
+            "datasets_resampled": false,
+            "draws": 10000,
+            "ratio_lower95_two_sided": 0.840350135852669,
+            "ratio_upper95_one_sided": 0.9083265839322987,
+            "ratio_upper95_two_sided": 0.9148226803980696,
+            "seed": 20260719
+          },
+          "log_ratio": -0.1318654142021497,
+          "pct": -12.354105393152903,
+          "ratio": 0.876458946068471,
+          "role": "primary"
+        },
+        "peak_memory_bytes": {
+          "bootstrap": {
+            "coordinates_resampled_within_dataset": true,
+            "datasets_resampled": false,
+            "draws": 10000,
+            "ratio_lower95_two_sided": 0.9874323880861177,
+            "ratio_upper95_one_sided": 1.023091444336102,
+            "ratio_upper95_two_sided": 1.0255203197006648,
+            "seed": 20260719
+          },
+          "log_ratio": 0.0073405833830362584,
+          "pct": 0.7367591509928717,
+          "ratio": 1.0073675915099287,
+          "role": "secondary_raw_process_rss"
+        },
+        "test_rmse": {
+          "bootstrap": {
+            "coordinates_resampled_within_dataset": true,
+            "datasets_resampled": false,
+            "draws": 10000,
+            "ratio_lower95_two_sided": 1.037356240796614,
+            "ratio_upper95_one_sided": 1.0437117094286639,
+            "ratio_upper95_two_sided": 1.0442547639718456,
+            "seed": 20260719
+          },
+          "log_ratio": 0.03998962972649574,
+          "pct": 4.079998075595914,
+          "ratio": 1.0407999807559591,
+          "role": "primary"
+        },
+        "train_time_s": {
+          "bootstrap": {
+            "coordinates_resampled_within_dataset": true,
+            "datasets_resampled": false,
+            "draws": 10000,
+            "ratio_lower95_two_sided": 0.39267332062700083,
+            "ratio_upper95_one_sided": 0.42551753230732453,
+            "ratio_upper95_two_sided": 0.4282790384992326,
+            "seed": 20260719
+          },
+          "log_ratio": -0.8914031119076776,
+          "pct": -58.99200391795751,
+          "ratio": 0.4100799608204249,
+          "role": "primary"
+        },
+        "val_rmse": {
+          "bootstrap": {
+            "coordinates_resampled_within_dataset": true,
+            "datasets_resampled": false,
+            "draws": 10000,
+            "ratio_lower95_two_sided": 1.0406135846482802,
+            "ratio_upper95_one_sided": 1.0457295776019522,
+            "ratio_upper95_two_sided": 1.0461891570172712,
+            "seed": 20260719
+          },
+          "log_ratio": 0.04248293949993412,
+          "pct": 4.339825532582742,
+          "ratio": 1.0433982553258274,
+          "role": "primary"
+        }
+      },
+      "numerator": "chimeraboost_0_14_1_default",
+      "numerator_lane": "primary",
+      "paired_children": 312,
+      "paired_splits": 39,
+      "panel": "primary",
+      "policy_advancement_allowed": false
+    }
+  ],
+  "protocol": "same-machine official-default characterization with a separate, non-poolable safe-ordinal diagnostic",
+  "provenance": {
+    "analysis_payload_sha256": "29010ff23ff6714092ae64cfc9c1b171f7523c943247c91107cdf0c86b0fd2e7",
+    "analysis_runtime_verified": true,
+    "attestation_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/tabarena-regression-same-machine-0.9.0-20260713/completion_attestation.json",
+    "attestation_sha256": "213f462aa06103e97864ecd786b75e8fd8e11743c77f556262fa39bdb3e1b7d9",
+    "catboost_version": "1.2.10",
+    "chimeraboost_git_head": "9c9ea6e704a9fe2bfe6d6c284b22de73914be048",
+    "completed_at_utc": "2026-07-14T06:21:45.250048+00:00",
+    "dependency_provenance_verified": true,
+    "executing_git_head": "6c2dc19d2e50a57f5dd835c916e12adb69264706",
+    "executing_git_tree": "b7b5d5e4162276bd7806dda0655094bfbb61a535",
+    "executing_repository": "/Users/kmedved/Code/GitHub/darkofit",
+    "executing_source_verified": true,
+    "git_head": "6c2dc19d2e50a57f5dd835c916e12adb69264706",
+    "hardware_identity_verified": true,
+    "job_order_sha256": "d8c5589f135f167a2de74a5fe80d6af191c3e483175ba36b435bf49a7fd8a1ec",
+    "manifest_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/tabarena-regression-same-machine-0.9.0-20260713/run_manifest.json",
+    "manifest_sha256": "2869acaaa4bcc8319d9ba03744a4a9ca8602ed349553a031c3d84ab537de72ee",
+    "protocol_sha256": "fc9583d33affe774d56cbbec30b4e7450d95e87b688e1fb79a88b65b33dce7d3",
+    "resume_history_sha256": null,
+    "warmup_history_sha256": "4e002b0725883635c85595508cc67bbd52ae0c7df9692e3b1fa59599401e372b"
+  }
+}

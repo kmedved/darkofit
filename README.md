@@ -9,9 +9,10 @@ inspired by CatBoost.
 * **What?**
     * Tabular machine-learning package that currently centers on GBDTs
     * Only depends on NumPy, Numba, and scikit-learn
-    * Accuracy-competitive with CatBoost and LightGBM in the benchmark suite,
-      with speed depending strongly on dataset size, tree mode, and whether the
-      Numba kernels are warm
+    * Benchmark evidence is tracked against CatBoost, LightGBM, and
+      ChimeraBoost. Current out-of-box regression defaults are close to
+      ChimeraBoost but trail CatBoost overall; accuracy and speed vary
+      materially by dataset ([benchmark notes](BENCHMARK_NOTES.md))
     * Supports sample weights and automatic early stopping
 
 * **Why?**

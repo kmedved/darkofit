@@ -1,0 +1,827 @@
+[
+  {
+    "completed_at_utc": "2026-07-14T04:24:25.214736+00:00",
+    "pid": 7713,
+    "warmup": {
+      "chimeraboost_warmup_environment": null,
+      "clock": "time.monotonic_ns",
+      "counts": {
+        "engine": {
+          "catboost": 2,
+          "chimeraboost": 2,
+          "darkofit": 2
+        },
+        "input_kind": {
+          "categorical": 3,
+          "numeric": 3
+        },
+        "prediction_batch": {
+          "large": 6,
+          "small": 6
+        }
+      },
+      "duration_seconds": 25.260219708,
+      "kind": "darkofit_tabarena_regression_same_machine_warmup",
+      "schema_version": 1,
+      "stage_count": 6,
+      "stage_names": [
+        "darkofit_numeric",
+        "darkofit_categorical",
+        "chimeraboost_numeric",
+        "chimeraboost_categorical",
+        "catboost_numeric",
+        "catboost_categorical"
+      ],
+      "stages": [
+        {
+          "categorical_columns": [],
+          "comparator_fit": {
+            "best_iteration": 234,
+            "deadline_hit": false,
+            "deadline_is_soft": true,
+            "engine": "darkofit",
+            "iterations_attempted": 330,
+            "iterations_requested": 1000,
+            "num_cpus": 18,
+            "num_gpus": 0.0,
+            "requested_tree_mode": "catboost",
+            "resolved_learning_rate": 0.0524,
+            "resolved_params": {
+              "alpha": 0.5,
+              "auto_learning_rate_probe": false,
+              "auto_learning_rate_probe_iterations": 80,
+              "auto_learning_rate_probe_values": null,
+              "bagging_temperature": 0.0,
+              "bin_sample_count": 200000,
+              "bootstrap_type": "none",
+              "cat_smoothing": {
+                "cat_cardinalities": [],
+                "input": 1.0,
+                "resolved": 1.0,
+                "source": "default"
+              },
+              "colsample": 1.0,
+              "depth": {
+                "input": null,
+                "resolved": 6,
+                "source": "default"
+              },
+              "diagnostic_warnings": "never",
+              "dist_calibration": null,
+              "dist_calibration_feature": "metric_code",
+              "dist_params": null,
+              "early_stopping": true,
+              "early_stopping_min_delta": null,
+              "early_stopping_rounds": null,
+              "eval_metric": null,
+              "eval_train_loss": false,
+              "histogram_dtype": "float64",
+              "histogram_parallelism": "auto",
+              "iterations": 1000,
+              "l2_leaf_reg": {
+                "input": "auto",
+                "resolved": 3.0,
+                "source": "auto"
+              },
+              "leaf_dtype": "int64",
+              "learning_rate": 0.0524,
+              "linear_residual": false,
+              "linear_residual_alpha": 1.0,
+              "linear_residual_features": "auto",
+              "linear_residual_fit_intercept": true,
+              "linear_residual_standardize": true,
+              "loss": "RMSE",
+              "max_bins": 254,
+              "min_child_samples": {
+                "input": 20,
+                "resolved": 20,
+                "source": "default"
+              },
+              "min_child_weight": {
+                "input": 1.0,
+                "resolved": 1.0,
+                "source": "default"
+              },
+              "min_gain_to_split": 0.0,
+              "mvs_reg": 1.0,
+              "num_leaves": {
+                "input": null,
+                "resolved": null,
+                "source": "default"
+              },
+              "ordered_boosting": "auto",
+              "other_rate": 0.1,
+              "random_state": 0,
+              "random_strength": 0.0,
+              "refit": false,
+              "refit_strategy": "exact",
+              "rho_l2_leaf_reg_multiplier": 1.0,
+              "rho_learning_rate_multiplier": 1.0,
+              "sampling": "uniform",
+              "sigma_calibration": null,
+              "subsample": 1.0,
+              "target_ordered_cat_codes": "off",
+              "thread_count": 18,
+              "top_rate": 0.2,
+              "tree_mode": "catboost",
+              "ts_permutations": 1,
+              "use_best_model": true,
+              "validation_fraction": 0.1,
+              "validation_strategy": "random",
+              "verbose": false,
+              "verbose_timing": false
+            },
+            "rounds_completed": 330,
+            "rounds_retained": 234,
+            "schema_version": 1,
+            "selected_lane": "boosting",
+            "selected_tree_mode": "catboost",
+            "stop_reason": "early_stopping",
+            "wall_clock_effective_seconds": 294.99622774124146,
+            "wall_clock_elapsed_seconds": 1.0349314999766648,
+            "wall_clock_limit_seconds": 299.99622774124146,
+            "wall_clock_safety_margin_seconds": 5.0
+          },
+          "engine": "darkofit",
+          "explicit_eval_set": true,
+          "fit_seconds": 1.039134583,
+          "input_kind": "numeric",
+          "model_class": "ComparatorDarkoFitModel",
+          "name": "darkofit_numeric",
+          "prediction_batches": [
+            {
+              "input_shape": [
+                31,
+                12
+              ],
+              "name": "small",
+              "predict_seconds": 0.001885917,
+              "prediction_sha256": "1e7445b40c99298518816b9df22436d298bade5e3fbd6ef11caf55546596fdaf",
+              "prediction_shape": [
+                31
+              ],
+              "rows": 31
+            },
+            {
+              "input_shape": [
+                16384,
+                12
+              ],
+              "name": "large",
+              "predict_seconds": 0.003634667,
+              "prediction_sha256": "6e13d02d40602aad06f0397ff7ac52d806ce3ecd58401a983121a37490e30d00",
+              "prediction_shape": [
+                16384
+              ],
+              "rows": 16384
+            }
+          ],
+          "representation": {
+            "categorical_input_columns": [],
+            "dropped_constant_input_columns": [],
+            "dropped_constant_input_unique_counts": [],
+            "external_feature_schema_sha256": "3dd32b9ee8a2d715470e92497cc85af62de0ca967620c2343296f2910c62a652",
+            "feature_alignment_policy": "autogluon_child_drop_unique",
+            "fit_scope": "comparator_child_training_fold",
+            "fitted_categorical_input_columns": [],
+            "fitted_feature_schema_sha256": "3dd32b9ee8a2d715470e92497cc85af62de0ca967620c2343296f2910c62a652",
+            "input_feature_count": 12,
+            "kind": "native",
+            "output_feature_count": 12,
+            "schema_version": 2,
+            "target_used_by_representation": false
+          },
+          "thread_count": 18,
+          "train_rows": 1200,
+          "validation_rows": 400
+        },
+        {
+          "categorical_columns": [
+            "category"
+          ],
+          "comparator_fit": {
+            "best_iteration": 487,
+            "deadline_hit": false,
+            "deadline_is_soft": true,
+            "engine": "darkofit",
+            "iterations_attempted": 583,
+            "iterations_requested": 1000,
+            "num_cpus": 18,
+            "num_gpus": 0.0,
+            "requested_tree_mode": "catboost",
+            "resolved_learning_rate": 0.0524,
+            "resolved_params": {
+              "alpha": 0.5,
+              "auto_learning_rate_probe": false,
+              "auto_learning_rate_probe_iterations": 80,
+              "auto_learning_rate_probe_values": null,
+              "bagging_temperature": 0.0,
+              "bin_sample_count": 200000,
+              "bootstrap_type": "none",
+              "cat_smoothing": {
+                "cat_cardinalities": [],
+                "input": 1.0,
+                "resolved": 1.0,
+                "source": "default"
+              },
+              "colsample": 1.0,
+              "depth": {
+                "input": null,
+                "resolved": 6,
+                "source": "default"
+              },
+              "diagnostic_warnings": "never",
+              "dist_calibration": null,
+              "dist_calibration_feature": "metric_code",
+              "dist_params": null,
+              "early_stopping": true,
+              "early_stopping_min_delta": null,
+              "early_stopping_rounds": null,
+              "eval_metric": null,
+              "eval_train_loss": false,
+              "histogram_dtype": "float64",
+              "histogram_parallelism": "auto",
+              "iterations": 1000,
+              "l2_leaf_reg": {
+                "input": "auto",
+                "resolved": 3.0,
+                "source": "auto"
+              },
+              "leaf_dtype": "int64",
+              "learning_rate": 0.0524,
+              "linear_residual": false,
+              "linear_residual_alpha": 1.0,
+              "linear_residual_features": "auto",
+              "linear_residual_fit_intercept": true,
+              "linear_residual_standardize": true,
+              "loss": "RMSE",
+              "max_bins": 254,
+              "min_child_samples": {
+                "input": 20,
+                "resolved": 20,
+                "source": "default"
+              },
+              "min_child_weight": {
+                "input": 1.0,
+                "resolved": 1.0,
+                "source": "default"
+              },
+              "min_gain_to_split": 0.0,
+              "mvs_reg": 1.0,
+              "num_leaves": {
+                "input": null,
+                "resolved": null,
+                "source": "default"
+              },
+              "ordered_boosting": "auto",
+              "other_rate": 0.1,
+              "random_state": 0,
+              "random_strength": 0.0,
+              "refit": false,
+              "refit_strategy": "exact",
+              "rho_l2_leaf_reg_multiplier": 1.0,
+              "rho_learning_rate_multiplier": 1.0,
+              "sampling": "uniform",
+              "sigma_calibration": null,
+              "subsample": 1.0,
+              "target_ordered_cat_codes": "off",
+              "thread_count": 18,
+              "top_rate": 0.2,
+              "tree_mode": "catboost",
+              "ts_permutations": 1,
+              "use_best_model": true,
+              "validation_fraction": 0.1,
+              "validation_strategy": "random",
+              "verbose": false,
+              "verbose_timing": false
+            },
+            "rounds_completed": 583,
+            "rounds_retained": 487,
+            "schema_version": 1,
+            "selected_lane": "boosting",
+            "selected_tree_mode": "catboost",
+            "stop_reason": "early_stopping",
+            "wall_clock_effective_seconds": 294.99784803390503,
+            "wall_clock_elapsed_seconds": 1.597257665824145,
+            "wall_clock_limit_seconds": 299.99784803390503,
+            "wall_clock_safety_margin_seconds": 5.0
+          },
+          "engine": "darkofit",
+          "explicit_eval_set": true,
+          "fit_seconds": 1.599772959,
+          "input_kind": "categorical",
+          "model_class": "ComparatorDarkoFitModel",
+          "name": "darkofit_categorical",
+          "prediction_batches": [
+            {
+              "input_shape": [
+                31,
+                13
+              ],
+              "name": "small",
+              "predict_seconds": 0.000830583,
+              "prediction_sha256": "2ff6358ec858b0b12dd6383d843a4fb6501688e430ba4787abc8a1f74476f963",
+              "prediction_shape": [
+                31
+              ],
+              "rows": 31
+            },
+            {
+              "input_shape": [
+                16384,
+                13
+              ],
+              "name": "large",
+              "predict_seconds": 0.009451416,
+              "prediction_sha256": "9699178cd0c53335dcd62fa34edd16d683f80929fa48b0dc0535cd1f450e8c76",
+              "prediction_shape": [
+                16384
+              ],
+              "rows": 16384
+            }
+          ],
+          "representation": {
+            "categorical_input_columns": [
+              "category"
+            ],
+            "dropped_constant_input_columns": [],
+            "dropped_constant_input_unique_counts": [],
+            "external_feature_schema_sha256": "44467f66b4c4c2ec63356b706bdd632ffb1d29dedbdb742f75076edd859cd06f",
+            "feature_alignment_policy": "autogluon_child_drop_unique",
+            "fit_scope": "comparator_child_training_fold",
+            "fitted_categorical_input_columns": [
+              "category"
+            ],
+            "fitted_feature_schema_sha256": "44467f66b4c4c2ec63356b706bdd632ffb1d29dedbdb742f75076edd859cd06f",
+            "input_feature_count": 13,
+            "kind": "native",
+            "output_feature_count": 13,
+            "schema_version": 2,
+            "target_used_by_representation": true
+          },
+          "thread_count": 18,
+          "train_rows": 1200,
+          "validation_rows": 400
+        },
+        {
+          "categorical_columns": [],
+          "comparator_fit": {
+            "best_iteration": 106,
+            "engine": "chimeraboost",
+            "iterations_attempted": 156,
+            "iterations_requested": 10000,
+            "linear_leaves_selected": false,
+            "linear_selection_performed": true,
+            "num_cpus": 18,
+            "num_gpus": 0.0,
+            "resolved_learning_rate": 0.1,
+            "resolved_params": {
+              "alpha": 0.5,
+              "cat_combinations": false,
+              "cat_features": null,
+              "cat_n_permutations": 4,
+              "cat_smoothing": 1.0,
+              "colsample": 1.0,
+              "depth": 6,
+              "early_stopping": true,
+              "early_stopping_rounds": 50,
+              "ensemble_n_jobs": 1,
+              "l2_leaf_reg": 1.0,
+              "leaf_estimation_iterations": 1,
+              "learning_rate": 0.1,
+              "linear_lambda": 1.0,
+              "linear_leaves": false,
+              "loss": "RMSE",
+              "max_bins": 128,
+              "min_child_weight": 1.0,
+              "n_ensembles": null,
+              "n_estimators": 10000,
+              "ordered_boosting": false,
+              "random_state": 0,
+              "subsample": 1.0,
+              "thread_count": 18,
+              "validation_fraction": 0.2,
+              "verbose": false
+            },
+            "rounds_retained": 106,
+            "schema_version": 1,
+            "selected_lane": "constant",
+            "stop_reason": null,
+            "stop_reason_inferred": false
+          },
+          "engine": "chimeraboost",
+          "explicit_eval_set": true,
+          "fit_seconds": 0.838363917,
+          "input_kind": "numeric",
+          "model_class": "ComparatorChimeraBoostModel",
+          "name": "chimeraboost_numeric",
+          "prediction_batches": [
+            {
+              "input_shape": [
+                31,
+                12
+              ],
+              "name": "small",
+              "predict_seconds": 0.006772375,
+              "prediction_sha256": "87ac3e3cfffceaff168c74a05200e187fc2457070186acc989675f1709177936",
+              "prediction_shape": [
+                31
+              ],
+              "rows": 31
+            },
+            {
+              "input_shape": [
+                16384,
+                12
+              ],
+              "name": "large",
+              "predict_seconds": 0.001505834,
+              "prediction_sha256": "34deaf3f7f63965deb461ca3e1ce852b2be250e2aefdde7a021103619b02c717",
+              "prediction_shape": [
+                16384
+              ],
+              "rows": 16384
+            }
+          ],
+          "representation": {
+            "categorical_input_columns": [],
+            "dropped_constant_input_columns": [],
+            "dropped_constant_input_unique_counts": [],
+            "external_feature_schema_sha256": "3dd32b9ee8a2d715470e92497cc85af62de0ca967620c2343296f2910c62a652",
+            "feature_alignment_policy": "autogluon_child_drop_unique",
+            "fit_scope": "comparator_child_training_fold",
+            "fitted_categorical_input_columns": [],
+            "fitted_feature_schema_sha256": "3dd32b9ee8a2d715470e92497cc85af62de0ca967620c2343296f2910c62a652",
+            "input_feature_count": 12,
+            "kind": "native",
+            "output_feature_count": 12,
+            "schema_version": 2,
+            "target_used_by_representation": false
+          },
+          "thread_count": 18,
+          "train_rows": 1200,
+          "validation_rows": 400
+        },
+        {
+          "categorical_columns": [
+            "category"
+          ],
+          "comparator_fit": {
+            "best_iteration": 230,
+            "engine": "chimeraboost",
+            "iterations_attempted": 280,
+            "iterations_requested": 10000,
+            "linear_leaves_selected": false,
+            "linear_selection_performed": true,
+            "num_cpus": 18,
+            "num_gpus": 0.0,
+            "resolved_learning_rate": 0.1,
+            "resolved_params": {
+              "alpha": 0.5,
+              "cat_combinations": false,
+              "cat_features": null,
+              "cat_n_permutations": 4,
+              "cat_smoothing": 1.0,
+              "colsample": 1.0,
+              "depth": 6,
+              "early_stopping": true,
+              "early_stopping_rounds": 50,
+              "ensemble_n_jobs": 1,
+              "l2_leaf_reg": 1.0,
+              "leaf_estimation_iterations": 1,
+              "learning_rate": 0.1,
+              "linear_lambda": 1.0,
+              "linear_leaves": false,
+              "loss": "RMSE",
+              "max_bins": 128,
+              "min_child_weight": 1.0,
+              "n_ensembles": null,
+              "n_estimators": 10000,
+              "ordered_boosting": false,
+              "random_state": 0,
+              "subsample": 1.0,
+              "thread_count": 18,
+              "validation_fraction": 0.2,
+              "verbose": false
+            },
+            "rounds_retained": 230,
+            "schema_version": 1,
+            "selected_lane": "constant",
+            "stop_reason": null,
+            "stop_reason_inferred": false
+          },
+          "engine": "chimeraboost",
+          "explicit_eval_set": true,
+          "fit_seconds": 1.481803792,
+          "input_kind": "categorical",
+          "model_class": "ComparatorChimeraBoostModel",
+          "name": "chimeraboost_categorical",
+          "prediction_batches": [
+            {
+              "input_shape": [
+                31,
+                13
+              ],
+              "name": "small",
+              "predict_seconds": 0.00093975,
+              "prediction_sha256": "0c0894ccb37724c3958c64b70a530d70838d0a378dd1e016cb154ff3f9eb57cd",
+              "prediction_shape": [
+                31
+              ],
+              "rows": 31
+            },
+            {
+              "input_shape": [
+                16384,
+                13
+              ],
+              "name": "large",
+              "predict_seconds": 0.009214333,
+              "prediction_sha256": "a3972e73848f2914a7da85c444bf2697680c1247c4e9a0f9d96a92438d52b8df",
+              "prediction_shape": [
+                16384
+              ],
+              "rows": 16384
+            }
+          ],
+          "representation": {
+            "categorical_input_columns": [
+              "category"
+            ],
+            "dropped_constant_input_columns": [],
+            "dropped_constant_input_unique_counts": [],
+            "external_feature_schema_sha256": "44467f66b4c4c2ec63356b706bdd632ffb1d29dedbdb742f75076edd859cd06f",
+            "feature_alignment_policy": "autogluon_child_drop_unique",
+            "fit_scope": "comparator_child_training_fold",
+            "fitted_categorical_input_columns": [
+              "category"
+            ],
+            "fitted_feature_schema_sha256": "44467f66b4c4c2ec63356b706bdd632ffb1d29dedbdb742f75076edd859cd06f",
+            "input_feature_count": 13,
+            "kind": "native",
+            "output_feature_count": 13,
+            "schema_version": 2,
+            "target_used_by_representation": true
+          },
+          "thread_count": 18,
+          "train_rows": 1200,
+          "validation_rows": 400
+        },
+        {
+          "categorical_columns": [],
+          "comparator_fit": {
+            "best_iteration": 230,
+            "catboost_best_iteration_zero_based": 229,
+            "engine": "catboost",
+            "iterations_attempted": 530,
+            "iterations_requested": 10000,
+            "num_cpus": 18,
+            "num_gpus": 0.0,
+            "resolved_learning_rate": 0.05000000074505806,
+            "resolved_params": {
+              "auto_class_weights": "None",
+              "bayesian_matrix_reg": 0.10000000149011612,
+              "best_model_min_trees": 1,
+              "boost_from_average": true,
+              "boosting_type": "Plain",
+              "bootstrap_type": "MVS",
+              "border_count": 254,
+              "classes_count": 0,
+              "depth": 6,
+              "eval_fraction": 0,
+              "eval_metric": "RMSE",
+              "feature_border_type": "GreedyLogSum",
+              "force_unit_auto_pair_weights": false,
+              "grow_policy": "SymmetricTree",
+              "iterations": 10000,
+              "l2_leaf_reg": 3,
+              "leaf_estimation_backtracking": "AnyImprovement",
+              "leaf_estimation_iterations": 1,
+              "leaf_estimation_method": "Newton",
+              "learning_rate": 0.05000000074505806,
+              "loss_function": "RMSE",
+              "max_leaves": 64,
+              "min_data_in_leaf": 1,
+              "model_shrink_mode": "Constant",
+              "model_shrink_rate": 0,
+              "model_size_reg": 0.5,
+              "nan_mode": "Min",
+              "penalties_coefficient": 1,
+              "pool_metainfo_options": {
+                "tags": {}
+              },
+              "posterior_sampling": false,
+              "random_score_type": "NormalWithModelSizeDecrease",
+              "random_seed": 0,
+              "random_strength": 1,
+              "rsm": 1,
+              "sampling_frequency": "PerTree",
+              "score_function": "Cosine",
+              "sparse_features_conflict_fraction": 0,
+              "subsample": 0.800000011920929,
+              "task_type": "CPU",
+              "thread_count": 18,
+              "use_best_model": true
+            },
+            "rounds_retained": 230,
+            "schema_version": 1,
+            "stop_reason": null,
+            "stop_reason_inferred": false,
+            "tree_count": 230
+          },
+          "engine": "catboost",
+          "explicit_eval_set": true,
+          "fit_seconds": 0.320298125,
+          "input_kind": "numeric",
+          "model_class": "ComparatorCatBoostModel",
+          "name": "catboost_numeric",
+          "prediction_batches": [
+            {
+              "input_shape": [
+                31,
+                12
+              ],
+              "name": "small",
+              "predict_seconds": 0.00039075,
+              "prediction_sha256": "a878b7ac9daa2b10aa0c202c84db3a696589b7ad12bd085cde48b8789b15abff",
+              "prediction_shape": [
+                31
+              ],
+              "rows": 31
+            },
+            {
+              "input_shape": [
+                16384,
+                12
+              ],
+              "name": "large",
+              "predict_seconds": 0.000996917,
+              "prediction_sha256": "e5673606f2a1610c312220ea0c1ad289b1c2c3e1854c68d737bc3f50df903d91",
+              "prediction_shape": [
+                16384
+              ],
+              "rows": 16384
+            }
+          ],
+          "representation": {
+            "categorical_input_columns": [],
+            "dropped_constant_input_columns": [],
+            "dropped_constant_input_unique_counts": [],
+            "external_feature_schema_sha256": "3dd32b9ee8a2d715470e92497cc85af62de0ca967620c2343296f2910c62a652",
+            "feature_alignment_policy": "autogluon_child_drop_unique",
+            "fit_scope": "comparator_child_training_fold",
+            "fitted_categorical_input_columns": [],
+            "fitted_feature_schema_sha256": "3dd32b9ee8a2d715470e92497cc85af62de0ca967620c2343296f2910c62a652",
+            "input_feature_count": 12,
+            "kind": "native",
+            "output_feature_count": 12,
+            "schema_version": 2,
+            "target_used_by_representation": false
+          },
+          "thread_count": 18,
+          "train_rows": 1200,
+          "validation_rows": 400
+        },
+        {
+          "categorical_columns": [
+            "category"
+          ],
+          "comparator_fit": {
+            "best_iteration": 7946,
+            "catboost_best_iteration_zero_based": 7945,
+            "engine": "catboost",
+            "iterations_attempted": 10000,
+            "iterations_requested": 10000,
+            "num_cpus": 18,
+            "num_gpus": 0.0,
+            "resolved_learning_rate": 0.05000000074505806,
+            "resolved_params": {
+              "auto_class_weights": "None",
+              "bayesian_matrix_reg": 0.10000000149011612,
+              "best_model_min_trees": 1,
+              "boost_from_average": true,
+              "boosting_type": "Plain",
+              "bootstrap_type": "MVS",
+              "border_count": 254,
+              "classes_count": 0,
+              "combinations_ctr": [
+                "Borders:CtrBorderCount=15:CtrBorderType=Uniform:TargetBorderCount=1:TargetBorderType=MinEntropy:Prior=0/1:Prior=0.5/1:Prior=1/1",
+                "Counter:CtrBorderCount=15:CtrBorderType=Uniform:Prior=0/1"
+              ],
+              "counter_calc_method": "SkipTest",
+              "ctr_leaf_count_limit": 18446744073709551615,
+              "ctr_target_border_count": 1,
+              "depth": 6,
+              "eval_fraction": 0,
+              "eval_metric": "RMSE",
+              "feature_border_type": "GreedyLogSum",
+              "fold_permutation_block": 0,
+              "force_unit_auto_pair_weights": false,
+              "grow_policy": "SymmetricTree",
+              "has_time": false,
+              "iterations": 10000,
+              "l2_leaf_reg": 3,
+              "leaf_estimation_backtracking": "AnyImprovement",
+              "leaf_estimation_iterations": 1,
+              "leaf_estimation_method": "Newton",
+              "learning_rate": 0.05000000074505806,
+              "loss_function": "RMSE",
+              "max_ctr_complexity": 4,
+              "max_leaves": 64,
+              "min_data_in_leaf": 1,
+              "model_shrink_mode": "Constant",
+              "model_shrink_rate": 0,
+              "model_size_reg": 0.5,
+              "nan_mode": "Min",
+              "one_hot_max_size": 2,
+              "penalties_coefficient": 1,
+              "permutation_count": 4,
+              "pool_metainfo_options": {
+                "tags": {}
+              },
+              "posterior_sampling": false,
+              "random_score_type": "NormalWithModelSizeDecrease",
+              "random_seed": 0,
+              "random_strength": 1,
+              "rsm": 1,
+              "sampling_frequency": "PerTree",
+              "score_function": "Cosine",
+              "simple_ctr": [
+                "Borders:CtrBorderCount=15:CtrBorderType=Uniform:TargetBorderCount=1:TargetBorderType=MinEntropy:Prior=0/1:Prior=0.5/1:Prior=1/1",
+                "Counter:CtrBorderCount=15:CtrBorderType=Uniform:Prior=0/1"
+              ],
+              "sparse_features_conflict_fraction": 0,
+              "store_all_simple_ctr": false,
+              "subsample": 0.800000011920929,
+              "task_type": "CPU",
+              "thread_count": 18,
+              "use_best_model": true
+            },
+            "rounds_retained": 7946,
+            "schema_version": 1,
+            "stop_reason": "iteration_limit",
+            "stop_reason_inferred": true,
+            "tree_count": 7946
+          },
+          "engine": "catboost",
+          "explicit_eval_set": true,
+          "fit_seconds": 19.915605541,
+          "input_kind": "categorical",
+          "model_class": "ComparatorCatBoostModel",
+          "name": "catboost_categorical",
+          "prediction_batches": [
+            {
+              "input_shape": [
+                31,
+                13
+              ],
+              "name": "small",
+              "predict_seconds": 0.001272792,
+              "prediction_sha256": "26c3cefdb4e52ea0d8e7c0a3241a1b21a50295888f0cdea2cb5202d5cf531dbb",
+              "prediction_shape": [
+                31
+              ],
+              "rows": 31
+            },
+            {
+              "input_shape": [
+                16384,
+                13
+              ],
+              "name": "large",
+              "predict_seconds": 0.017228,
+              "prediction_sha256": "cd778e22f2ba349092b80ab120e21d035d130fa65742078e6a03802c08f8ce61",
+              "prediction_shape": [
+                16384
+              ],
+              "rows": 16384
+            }
+          ],
+          "representation": {
+            "categorical_input_columns": [
+              "category"
+            ],
+            "dropped_constant_input_columns": [],
+            "dropped_constant_input_unique_counts": [],
+            "external_feature_schema_sha256": "44467f66b4c4c2ec63356b706bdd632ffb1d29dedbdb742f75076edd859cd06f",
+            "feature_alignment_policy": "autogluon_child_drop_unique",
+            "fit_scope": "comparator_child_training_fold",
+            "fitted_categorical_input_columns": [
+              "category"
+            ],
+            "fitted_feature_schema_sha256": "44467f66b4c4c2ec63356b706bdd632ffb1d29dedbdb742f75076edd859cd06f",
+            "input_feature_count": 13,
+            "kind": "native",
+            "output_feature_count": 13,
+            "schema_version": 2,
+            "target_used_by_representation": true
+          },
+          "thread_count": 18,
+          "train_rows": 1200,
+          "validation_rows": 400
+        }
+      ],
+      "thread_count": 18
+    }
+  }
+]

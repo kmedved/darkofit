@@ -27,10 +27,11 @@ The default and one-config HPO smoke completed successfully on 2026-07-09 for
 all three task types. Treat its Elo, rank, and confidence interval as diagnostic
 only: three datasets are far too few for a meaningful leaderboard-quality
 comparison. The adapter uses TabArena's CPU allocation and passes its validation
-split and sample weights through to DarkoFit. DarkoFit does not yet expose a
-wall-clock training callback, so the adapter cannot strictly enforce TabArena's
-per-fit `time_limit`; add that hook before attempting a submission-grade full
-run.
+split and sample weights through to DarkoFit. DarkoFit now exposes a monotonic
+soft wall-clock callback, and the adapter applies TabArena's per-fit
+`time_limit` between boosting rounds while recording requested, attempted,
+completed, retained, and best rounds plus the stop reason for every bag child.
+The deadline remains cooperative rather than hard process preemption.
 
 ## TabArena 13-Dataset Regression Check
 
@@ -47,6 +48,49 @@ better, but its head-to-head wins against ChimeraBoost fell from five to four.
 The automatic learning-rate default therefore remains in place. See
 [`benchmarks/tabarena_regression_default_check.md`](benchmarks/tabarena_regression_default_check.md)
 for the per-dataset table, methodology, and local artifact locations.
+
+## Same-Machine Official-Default Comparison (Current)
+
+On 2026-07-14, a source-frozen campaign compared DarkoFit 0.9.0,
+ChimeraBoost 0.14.1, and CatBoost 1.2.10 on the same machine and the same
+`r0f0`, `r1f1`, and `r2f2` outer coordinates across all 13 regression tasks.
+The primary panel contains 117 outer jobs and weights every dataset equally.
+These are product-default comparisons, not hyperparameter-parity comparisons;
+ratios below one favor the numerator.
+
+| Contrast | Test RMSE ratio | 95% CI | Dataset wins | Train ratio | Inference ratio | Incremental-memory ratio |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| DarkoFit / ChimeraBoost | 1.0125 | [1.0082, 1.0173] | 5/13 | 0.9093 | 1.4332 | 0.5660 |
+| DarkoFit / CatBoost | 1.0538 | [1.0511, 1.0568] | 1/13 | 0.3729 | 1.2561 | 0.1526 |
+| ChimeraBoost / CatBoost | 1.0408 | [1.0374, 1.0443] | 1/13 | 0.4101 | 0.8765 | 0.2696 |
+
+The full campaign added a separate 18-job Airfoil/Diamonds representation
+diagnostic, for 135 outer jobs and 1,080 fitted children in total. Every job
+completed without failure or imputation, and no known deadline or time-limit
+stop occurred. Upstream metadata left 494 competitor-child stop reasons
+unresolved; they are reported as unknown rather than silently classified as
+early stopping.
+
+The diagnostic is deliberately non-poolable and does not advance an ordinal
+default. In particular, OpenML exposes Airfoil's numeric-valued `attack-angle`
+as a nominal/string feature, and AutoGluon compacts those labels in lexical
+order before the child-model boundary. The diagnostic arm restores the
+source-semantic physical degree values; that is a task-schema repair, not
+evidence that generic ordinal encoding helps numeric-only data. Cross-lane
+timing and memory ratios are omitted because process history and lane order
+would confound them.
+
+| Within-engine safe ordinal / native | Airfoil test RMSE | Diamonds test RMSE |
+| --- | ---: | ---: |
+| DarkoFit | 0.8684 | 0.7575 |
+| ChimeraBoost | 0.8509 | 0.7425 |
+| CatBoost | 0.8504 | 1.0009 |
+
+This is the current default comparison and supersedes historical cross-machine
+timing or ChimeraBoost 0.13 results for present-day characterization. See the
+[full result](benchmarks/tabarena_regression_same_machine_result.md),
+[frozen protocol](benchmarks/tabarena_regression_same_machine_protocol.md),
+and [machine-readable summary](benchmarks/tabarena_regression_same_machine_summary.json).
 
 ## Current Default Lanes
 
