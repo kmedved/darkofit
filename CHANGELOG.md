@@ -63,6 +63,16 @@ previous behaviors remain available through explicit parameters.
   permutations, generic safe one-hot, and linear-residual boosting also
   failed their predeclared gates. See the
   [follow-on screen result](benchmarks/tabarena_regression_followon_screen_result.md).
+  A source-frozen mechanism replication on the remaining 33 Airfoil and
+  Diamonds coordinates confirmed the ordinal accuracy signal: versus the
+  identical fixed native policy it improved equal-dataset test RMSE by 17.29%,
+  won all 13 repeat blocks and all 33 coordinates, and passed every accuracy
+  gate. It nevertheless did not advance because its 1.265x inference-time
+  ratio exceeded the predeclared 1.25x ceiling. These coordinates had already
+  appeared in the cap-horizon campaign, so this is mechanism replication, not
+  independent dataset generalization or support for generic ordinal inference.
+  See the
+  [ordinal confirmation result](benchmarks/tabarena_regression_ordinal_confirmation_result.md).
 * Default `eval_train_loss=False` on the boosters and sklearn wrappers. The
   per-round training-loss pass is diagnostic-only (early stopping watches the
   eval set) and cost about 15% of multiclass fit time; `verbose=True` still

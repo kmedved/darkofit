@@ -1,0 +1,626 @@
+{
+  "created_at_utc": "2026-07-14T01:13:18.533615+00:00",
+  "job_order_sha256": "e1a9d2e7faebb593104a4e5613b1da4e427c8e3f01b59387d9494f5338975980",
+  "kind": "darkofit_tabarena_regression_ordinal_confirmation",
+  "ordering_audit": {
+    "job_order_sha256": "e1a9d2e7faebb593104a4e5613b1da4e427c8e3f01b59387d9494f5338975980",
+    "overall_position_counts": {
+      "fixed_base_native": {
+        "first": 11,
+        "second": 11,
+        "third": 11
+      },
+      "fixed_base_safe_ordinal": {
+        "first": 11,
+        "second": 11,
+        "third": 11
+      },
+      "product_default_native": {
+        "first": 11,
+        "second": 11,
+        "third": 11
+      }
+    },
+    "per_dataset_position_counts": {
+      "airfoil_self_noise": {
+        "fixed_base_native": {
+          "first": 9,
+          "second": 9,
+          "third": 9
+        },
+        "fixed_base_safe_ordinal": {
+          "first": 9,
+          "second": 9,
+          "third": 9
+        },
+        "product_default_native": {
+          "first": 9,
+          "second": 9,
+          "third": 9
+        }
+      },
+      "diamonds": {
+        "fixed_base_native": {
+          "first": 2,
+          "second": 2,
+          "third": 2
+        },
+        "fixed_base_safe_ordinal": {
+          "first": 2,
+          "second": 2,
+          "third": 2
+        },
+        "product_default_native": {
+          "first": 2,
+          "second": 2,
+          "third": 2
+        }
+      }
+    }
+  },
+  "output_dir": "/Users/kmedved/Code/GitHub/darkofit/.cache/tabarena-regression-ordinal-confirmation-0.9.0-20260713-96a03d2",
+  "protocol": {
+    "arms": {
+      "fixed_base_native": {
+        "code": "B",
+        "effective_defaults": {
+          "early_stopping": true,
+          "iterations": 1000,
+          "l2_leaf_reg": 3.0,
+          "learning_rate": 0.1,
+          "linear_residual": false,
+          "max_bins": 128,
+          "tree_mode": "catboost",
+          "ts_permutations": 1,
+          "use_best_model": true
+        },
+        "manual_config": {
+          "early_stopping": true,
+          "iterations": 1000,
+          "l2_leaf_reg": 3.0,
+          "learning_rate": 0.1,
+          "linear_residual": false,
+          "max_bins": 128,
+          "tree_mode": "catboost",
+          "ts_permutations": 1,
+          "use_best_model": true
+        },
+        "model_cls": "ScreenNativeDarkoFitModel",
+        "representation": "native"
+      },
+      "fixed_base_safe_ordinal": {
+        "code": "O",
+        "effective_defaults": {
+          "early_stopping": true,
+          "iterations": 1000,
+          "l2_leaf_reg": 3.0,
+          "learning_rate": 0.1,
+          "linear_residual": false,
+          "max_bins": 128,
+          "tree_mode": "catboost",
+          "ts_permutations": 1,
+          "use_best_model": true
+        },
+        "manual_config": {
+          "early_stopping": true,
+          "iterations": 1000,
+          "l2_leaf_reg": 3.0,
+          "learning_rate": 0.1,
+          "linear_residual": false,
+          "max_bins": 128,
+          "tree_mode": "catboost",
+          "ts_permutations": 1,
+          "use_best_model": true
+        },
+        "model_cls": "SafeOrdinalDarkoFitModel",
+        "representation": "safe_ordinal"
+      },
+      "product_default_native": {
+        "code": "P",
+        "effective_defaults": {
+          "early_stopping": true,
+          "iterations": 1000,
+          "l2_leaf_reg": "auto",
+          "learning_rate": null,
+          "linear_residual": false,
+          "max_bins": 254,
+          "tree_mode": "catboost",
+          "ts_permutations": 1,
+          "use_best_model": true
+        },
+        "manual_config": {},
+        "model_cls": "ScreenNativeDarkoFitModel",
+        "representation": "native"
+      }
+    },
+    "bag_folds": 8,
+    "bag_sets": 1,
+    "contrasts": [
+      {
+        "candidate": "fixed_base_safe_ordinal",
+        "reference": "fixed_base_native",
+        "role": "isolated_ordinal_mechanism"
+      },
+      {
+        "candidate": "fixed_base_safe_ordinal",
+        "reference": "product_default_native",
+        "role": "product_relevance"
+      },
+      {
+        "candidate": "fixed_base_native",
+        "reference": "product_default_native",
+        "role": "fixed_policy_context"
+      }
+    ],
+    "coordinates": [
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 0
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 0
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 1
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 1
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 2
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 2
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 3
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 3
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 3
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 4
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 4
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 4
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 5
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 5
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 5
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 6
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 6
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 6
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 7
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 7
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 7
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 8
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 8
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 8
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 9
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 9
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 9
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 1,
+        "repeat": 0
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 2,
+        "repeat": 0
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 0,
+        "repeat": 1
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 2,
+        "repeat": 1
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 0,
+        "repeat": 2
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 1,
+        "repeat": 2
+      }
+    ],
+    "evidence_boundary": {
+      "cap_campaign_previously_inspected_coordinates": true,
+      "globally_unseen_confirmation": false,
+      "mechanism_unused_coordinates": 33,
+      "semantics_scope": "dataset_specific_airfoil_and_diamonds_only"
+    },
+    "excluded_discovery_coordinates": [
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 2,
+        "repeat": 2
+      }
+    ],
+    "expected_child_fits": 792,
+    "expected_coordinates": 33,
+    "expected_independent_contrasts": 66,
+    "expected_jobs": 99,
+    "expected_paired_comparisons": 99,
+    "fold_fitting_strategy": "sequential_local",
+    "freshness": "non-resume execution requires a nonexistent/empty output and all 99 jobs; resume invalidates whole three-arm coordinate groups",
+    "order_cycle_codes": [
+      [
+        "P",
+        "B",
+        "O"
+      ],
+      [
+        "B",
+        "O",
+        "P"
+      ],
+      [
+        "O",
+        "P",
+        "B"
+      ],
+      [
+        "O",
+        "B",
+        "P"
+      ],
+      [
+        "P",
+        "O",
+        "B"
+      ],
+      [
+        "B",
+        "P",
+        "O"
+      ]
+    ],
+    "order_cycle_scope": "restart_for_each_dataset",
+    "ordered_job_sha256": "e1a9d2e7faebb593104a4e5613b1da4e427c8e3f01b59387d9494f5338975980",
+    "representation_safety": {
+      "native_categorical_columns": {
+        "airfoil_self_noise": [
+          "attack-angle"
+        ],
+        "diamonds": [
+          "cut",
+          "color",
+          "clarity"
+        ]
+      },
+      "native_metadata_schema_version": 2,
+      "native_pair_child_count": 264,
+      "ordinal_fit_scope": "child_training_rows_only",
+      "ordinal_mapping_source": "source_frozen_before_campaign",
+      "ordinal_target_used": false,
+      "ordinal_unknown_policy": "fail_closed"
+    },
+    "seed_configuration": {
+      "model_random_seed": 0,
+      "vary_seed_across_folds": true
+    },
+    "seed_policy": "fold-wise",
+    "task_split_counts": {
+      "airfoil_self_noise": {
+        "registered_split_count": 30,
+        "task_id": 363612
+      },
+      "diamonds": {
+        "registered_split_count": 9,
+        "task_id": 363631
+      }
+    },
+    "time_limit_seconds": 3600.0,
+    "warmup": {
+      "expected_counts": {
+        "input_kind": {
+          "categorical": 5,
+          "numeric": 4
+        },
+        "requested_tree_mode": {
+          "catboost": 5,
+          "hybrid": 2,
+          "lightgbm": 2
+        },
+        "resolved_tree_mode": {
+          "catboost": 5,
+          "hybrid": 2,
+          "lightgbm": 2
+        },
+        "selected_lane": {
+          "boosting": 7,
+          "linear_residual": 2
+        },
+        "ts_permutations": {
+          "1": 8,
+          "4": 1
+        }
+      },
+      "kind": "darkofit_tabarena_followon_screen_warmup",
+      "schema_version": 1,
+      "stage_names": [
+        "catboost_numeric",
+        "catboost_categorical",
+        "lightgbm_numeric",
+        "lightgbm_categorical",
+        "hybrid_numeric",
+        "hybrid_categorical",
+        "linear_residual_numeric",
+        "linear_residual_categorical",
+        "catboost_categorical_ts4"
+      ],
+      "thread_policy": "same pinned CPU count as every measured child"
+    },
+    "warmup_outside_run_jobs": true
+  },
+  "protocol_sha256": "5a077d07ddd96fa86134ad0f4b83aaf3d36534c351cd846ea4c6eef3c4e29222",
+  "resolved_child_num_cpus": 18,
+  "runtime": {
+    "environment": {
+      "MKL_NUM_THREADS": null,
+      "NUMBA_BOUNDSCHECK": null,
+      "NUMBA_CACHE_DIR": null,
+      "NUMBA_CPU_FEATURES": null,
+      "NUMBA_CPU_NAME": null,
+      "NUMBA_DISABLE_JIT": null,
+      "NUMBA_ENABLE_AVX": null,
+      "NUMBA_LOOP_VECTORIZE": null,
+      "NUMBA_NUM_THREADS": null,
+      "NUMBA_OPT": null,
+      "NUMBA_SLP_VECTORIZE": null,
+      "NUMBA_THREADING_LAYER": null,
+      "NUMBA_THREADING_LAYER_PRIORITY": null,
+      "OMP_NUM_THREADS": null,
+      "OPENBLAS_NUM_THREADS": null,
+      "PYTHONHASHSEED": null,
+      "TABARENA_DISABLE_RESULT_COMPRESSION": null,
+      "VECLIB_MAXIMUM_THREADS": null
+    },
+    "hardware": {
+      "host_identity_sha256": "00353152b14c09db53828acf8f34fef4cdef52b2880308e3c8b92fc886e112f8",
+      "logical_cpu_count": 18,
+      "physical_cpu_count": 18,
+      "process_cpu_affinity_count": 18,
+      "total_memory_bytes": 137438953472
+    },
+    "machine": "arm64",
+    "packages": {
+      "autogluon.common": "1.5.1b20260712",
+      "autogluon.core": "1.5.1b20260712",
+      "autogluon.tabular": "1.5.1b20260712",
+      "darkofit": "0.9.0",
+      "llvmlite": "0.48.0",
+      "numba": "0.66.0",
+      "numpy": "2.4.6",
+      "pandas": "2.3.3",
+      "psutil": "7.1.3",
+      "scikit-learn": "1.7.2",
+      "scipy": "1.16.3",
+      "tabarena": "0.0.1"
+    },
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python_executable": "/Users/kmedved/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/bin/python3.12",
+    "python_version": "3.12.13"
+  },
+  "schema_version": 1,
+  "source": {
+    "darkofit_import": {
+      "git_head": "96a03d2568c97799c367802ce7e6d0c85a409c5d",
+      "git_remote_origin": "https://github.com/kmedved/darkofit.git",
+      "git_tree": "2628d297be7f7996fe78bee71ba927890a3e48da",
+      "module": "darkofit",
+      "module_file": "/Users/kmedved/Code/GitHub/darkofit/darkofit/__init__.py",
+      "repository": "/Users/kmedved/Code/GitHub/darkofit",
+      "status": ""
+    },
+    "files": {
+      "benchmarks/analyze_tabarena_regression_cap_horizon.py": {
+        "git_blob": "a27c5b906919f79638a2c406665e851318fed0f9",
+        "sha256": "6b4d7109b7699f51802ab7acd5bd9dfb06beb00315d87ee5aed4ff641b311c37"
+      },
+      "benchmarks/analyze_tabarena_regression_followon_screen.py": {
+        "git_blob": "9c751e0ae8a67e60c1abeffef5f9e716188e6d35",
+        "sha256": "f8628673950c6d5dde3df654a3b3ff3d14b2c0cc971fad05c0d481096706ecac"
+      },
+      "benchmarks/analyze_tabarena_regression_ordinal_confirmation.py": {
+        "git_blob": "6c0d4887be8f8e7016e03439187e6d2df9844c8d",
+        "sha256": "76d8584850ae20a31ceacebe76d07683a29f0073342479e4e16b6152f279c340"
+      },
+      "benchmarks/run_tabarena_regression_cap_horizon.py": {
+        "git_blob": "d55f6f5aef986c918d79ddd0ef7a350c301b01fc",
+        "sha256": "7c1588023331fbc0b1f973e0c3e7af818f52ab9baff4e9c40d4a160234a9d1de"
+      },
+      "benchmarks/run_tabarena_regression_followon_screen.py": {
+        "git_blob": "89dd3307d064799cd2d58b6f8d597a8d1902ba88",
+        "sha256": "707d6b9523c26d1fc966a298e1a3369f49f22adfd125ee5b191bed5962c1cb24"
+      },
+      "benchmarks/run_tabarena_regression_ordinal_confirmation.py": {
+        "git_blob": "f0cfb39fa682cdb690072c3bb927329c74700665",
+        "sha256": "796a598f781be71f305503126050d1b27ba0adef9fd46f41cdf31495eeabca51"
+      },
+      "benchmarks/tabarena_adapter.py": {
+        "git_blob": "e2e4f207e7fe0db7079b72291eb185e01e6e21a2",
+        "sha256": "13fefe3937ca9a4020412023324aa724e073330377fdd6ecd476fd29fc63740a"
+      },
+      "benchmarks/tabarena_followon_warmup.py": {
+        "git_blob": "42f619601ffc39590a60b99228b5504bce16a61c",
+        "sha256": "f4c8a17850bb8a1de2441380bb0ea3b591fd2de23dd31a5607f7f38cd1956bbb"
+      },
+      "benchmarks/tabarena_regression_ordinal_confirmation_protocol.md": {
+        "git_blob": "6443365a9490caa05b609c35de18757859bcc369",
+        "sha256": "5ecb092171c4dbc9727231a0af1a9c3e8329af698659e56978dd8561fe802fbf"
+      },
+      "benchmarks/tabarena_screen_adapters.py": {
+        "git_blob": "8ae4d3e3cfe1e091c837e253a06664b5abd37dda",
+        "sha256": "c491b8ccdbbd6ab13f2e296020dff8e209dcab7f4568f39b7f886c05c29ae1af"
+      },
+      "benchmarks/tabarena_warmup.py": {
+        "git_blob": "ec376e308208d298d2e8725ed17c1fe03760d824",
+        "sha256": "5fd09a43f9589f260512f4b93ab3548eac6074289ca81e56ea679c8c6eb7d558"
+      },
+      "darkofit/__init__.py": {
+        "git_blob": "0d883e05c8de8a5f8102f52b481533ea67ab95dc",
+        "sha256": "af3afbe3e484fc7114d89664f744a86da107caa0eaa4839b7d8f85067a17f3ff"
+      },
+      "darkofit/booster.py": {
+        "git_blob": "fbb11ea4e156f5f175da9800d69424c2ce21de4e",
+        "sha256": "ba8ff579cd34a074617baac545428278ddd172487f6ceb7dec39d212c5b50d9d"
+      },
+      "darkofit/callbacks.py": {
+        "git_blob": "13dab2fc29c43318b45d5e9bcae6b64b7c616684",
+        "sha256": "e2bd4bb7cf97c4a348178999c91c31d276daf6934141499209008d642e3853c0"
+      },
+      "darkofit/preprocessing.py": {
+        "git_blob": "8d05384c9f0d40f56c3a8c79ca0fa08f6c93886c",
+        "sha256": "4bffa9cc532c2056cb431dd6103ffe1497a793c157bedcc36303b2dcd5ec33f5"
+      },
+      "darkofit/serialization.py": {
+        "git_blob": "34b164af6b1f26d6572ffcf586937f3921e05697",
+        "sha256": "d520b7e7fd5e05d6448313371028b1a896bf0da38948d5ea56eb60ebcf7b9d41"
+      },
+      "darkofit/sklearn_api.py": {
+        "git_blob": "b77e38b954df3b4e50d41077771b8452942955a1",
+        "sha256": "14c1647dcce8fb8e4144a62cb41090423c1645eb040376228ea67da875f9a3a1"
+      },
+      "pyproject.toml": {
+        "git_blob": "e4777a93f67b1896e91a3d79940706108e9af864",
+        "sha256": "8cd6c612046188d136be01bc0c8eebf3b3799a6f6824d61a3754738bce921e01"
+      }
+    },
+    "git_head": "96a03d2568c97799c367802ce7e6d0c85a409c5d",
+    "git_tree": "2628d297be7f7996fe78bee71ba927890a3e48da",
+    "relevant_status": "",
+    "repository": "/Users/kmedved/Code/GitHub/darkofit",
+    "tabarena": {
+      "git_head": "4cd1d2526874962daae048a6f2dcf34aa272f3fa",
+      "git_remote_origin": "https://github.com/autogluon/tabarena.git",
+      "git_tree": "a293df372a613c7358ba5fcd746f58d580cde7d6",
+      "module": "tabarena",
+      "module_file": "/Users/kmedved/Code/GitHub/tabarena/packages/tabarena/src/tabarena/__init__.py",
+      "repository": "/Users/kmedved/Code/GitHub/tabarena",
+      "status": ""
+    }
+  },
+  "time_limit_seconds": 3600.0
+}

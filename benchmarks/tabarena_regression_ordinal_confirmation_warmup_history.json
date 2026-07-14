@@ -1,0 +1,763 @@
+[
+  {
+    "completed_at_utc": "2026-07-14T01:13:18.917439+00:00",
+    "pid": 50944,
+    "warmup": {
+      "clock": "time.monotonic_ns",
+      "counts": {
+        "input_kind": {
+          "categorical": 5,
+          "numeric": 4
+        },
+        "requested_tree_mode": {
+          "catboost": 5,
+          "hybrid": 2,
+          "lightgbm": 2
+        },
+        "resolved_tree_mode": {
+          "catboost": 5,
+          "hybrid": 2,
+          "lightgbm": 2
+        },
+        "selected_lane": {
+          "boosting": 7,
+          "linear_residual": 2
+        },
+        "ts_permutations": {
+          "1": 8,
+          "4": 1
+        }
+      },
+      "duration_seconds": 0.3271905,
+      "kind": "darkofit_tabarena_followon_screen_warmup",
+      "schema_version": 1,
+      "stage_count": 9,
+      "stages": [
+        {
+          "categorical_features": [],
+          "config": {
+            "depth": 6,
+            "diagnostic_warnings": "never",
+            "early_stopping": false,
+            "iterations": 5,
+            "l2_leaf_reg": 3.0,
+            "learning_rate": 0.1,
+            "linear_residual": false,
+            "loss": "RMSE",
+            "max_bins": 128,
+            "ordered_boosting": "auto",
+            "random_state": 20260713,
+            "sampling": "uniform",
+            "thread_count": 18,
+            "tree_mode": "catboost",
+            "ts_permutations": 1,
+            "use_best_model": false
+          },
+          "encoder_modes": [],
+          "encoder_ts_permutations": [],
+          "fit_seconds": 0.087871875,
+          "flat_ensemble_type": "FlatObliviousEnsemble",
+          "flat_prediction_router_selected": true,
+          "input_kind": "numeric",
+          "iterations_fitted": 5,
+          "linear_residual_active": false,
+          "name": "catboost_numeric",
+          "prediction_batches": [
+            {
+              "input_shape": [
+                8191,
+                12
+              ],
+              "name": "serial_subthreshold",
+              "predict_seconds": 0.001637791,
+              "prediction_sha256": "adbac009daf654b53e291500dab25dfa7d45df4365545474b9a72f6b945e066b",
+              "prediction_shape": [
+                8191
+              ],
+              "route": "flat_serial"
+            },
+            {
+              "input_shape": [
+                8192,
+                12
+              ],
+              "name": "parallel_at_threshold",
+              "predict_seconds": 0.001944042,
+              "prediction_sha256": "6ac41b20cde5520776312be5178734f90e80ff4efffc9f6565387f6adae61408",
+              "prediction_shape": [
+                8192
+              ],
+              "route": "flat_parallel"
+            }
+          ],
+          "prediction_parallel_min_rows": 8192,
+          "requested_tree_mode": "catboost",
+          "resolved_include_cat_codes": false,
+          "resolved_learning_rate": 0.1,
+          "resolved_ordered_boosting": false,
+          "resolved_target_encoding_mode": "ordered",
+          "resolved_thread_count": 18,
+          "resolved_tree_mode": "catboost",
+          "resolved_ts_permutations": 1,
+          "selected_lane": "boosting",
+          "train_rows": 2048,
+          "tree_depths": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "validation_rows": 512
+        },
+        {
+          "categorical_features": [
+            12
+          ],
+          "config": {
+            "depth": 6,
+            "diagnostic_warnings": "never",
+            "early_stopping": false,
+            "iterations": 5,
+            "l2_leaf_reg": 3.0,
+            "learning_rate": 0.1,
+            "linear_residual": false,
+            "loss": "RMSE",
+            "max_bins": 128,
+            "ordered_boosting": "auto",
+            "random_state": 20260713,
+            "sampling": "uniform",
+            "thread_count": 18,
+            "tree_mode": "catboost",
+            "ts_permutations": 1,
+            "use_best_model": false
+          },
+          "encoder_modes": [
+            "ordered"
+          ],
+          "encoder_ts_permutations": [
+            1
+          ],
+          "fit_seconds": 0.0177575,
+          "flat_ensemble_type": "FlatObliviousEnsemble",
+          "flat_prediction_router_selected": true,
+          "input_kind": "categorical",
+          "iterations_fitted": 5,
+          "linear_residual_active": false,
+          "name": "catboost_categorical",
+          "prediction_batches": [
+            {
+              "input_shape": [
+                8191,
+                13
+              ],
+              "name": "serial_subthreshold",
+              "predict_seconds": 0.001679958,
+              "prediction_sha256": "7360a4968de3e91a3767cb4d6b577fe4667f385532a68fc71861817540ea97ef",
+              "prediction_shape": [
+                8191
+              ],
+              "route": "flat_serial"
+            },
+            {
+              "input_shape": [
+                8192,
+                13
+              ],
+              "name": "parallel_at_threshold",
+              "predict_seconds": 0.001635917,
+              "prediction_sha256": "27f91411e8923a3cbd6124530efc68cd56ea470b07c74b69c83e3270ba83686c",
+              "prediction_shape": [
+                8192
+              ],
+              "route": "flat_parallel"
+            }
+          ],
+          "prediction_parallel_min_rows": 8192,
+          "requested_tree_mode": "catboost",
+          "resolved_include_cat_codes": false,
+          "resolved_learning_rate": 0.1,
+          "resolved_ordered_boosting": false,
+          "resolved_target_encoding_mode": "ordered",
+          "resolved_thread_count": 18,
+          "resolved_tree_mode": "catboost",
+          "resolved_ts_permutations": 1,
+          "selected_lane": "boosting",
+          "train_rows": 2048,
+          "tree_depths": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "validation_rows": 512
+        },
+        {
+          "categorical_features": [],
+          "config": {
+            "depth": 6,
+            "diagnostic_warnings": "never",
+            "early_stopping": false,
+            "iterations": 5,
+            "l2_leaf_reg": 3.0,
+            "learning_rate": 0.1,
+            "linear_residual": false,
+            "loss": "RMSE",
+            "max_bins": 128,
+            "ordered_boosting": "auto",
+            "random_state": 20260713,
+            "sampling": "uniform",
+            "thread_count": 18,
+            "tree_mode": "lightgbm",
+            "ts_permutations": 1,
+            "use_best_model": false
+          },
+          "encoder_modes": [],
+          "encoder_ts_permutations": [],
+          "fit_seconds": 0.0383415,
+          "flat_ensemble_type": "FlatNonObliviousEnsemble",
+          "flat_prediction_router_selected": false,
+          "input_kind": "numeric",
+          "iterations_fitted": 5,
+          "linear_residual_active": false,
+          "name": "lightgbm_numeric",
+          "prediction_batches": [
+            {
+              "input_shape": [
+                8191,
+                12
+              ],
+              "name": "serial_subthreshold",
+              "predict_seconds": 0.000815,
+              "prediction_sha256": "bbcdfda12f79be50d0277286c86cfa2572fab0730a73ea074f6a6b4e8752daf3",
+              "prediction_shape": [
+                8191
+              ],
+              "route": "tree_loop"
+            },
+            {
+              "input_shape": [
+                8192,
+                12
+              ],
+              "name": "parallel_at_threshold",
+              "predict_seconds": 0.002736125,
+              "prediction_sha256": "aa1579d6929c10558d5aedc1e9fcbac7e58433aec56db27850c8f9f55a86fd20",
+              "prediction_shape": [
+                8192
+              ],
+              "route": "tree_loop"
+            }
+          ],
+          "prediction_parallel_min_rows": 8192,
+          "requested_tree_mode": "lightgbm",
+          "resolved_include_cat_codes": true,
+          "resolved_learning_rate": 0.1,
+          "resolved_ordered_boosting": false,
+          "resolved_target_encoding_mode": "kfold",
+          "resolved_thread_count": 2,
+          "resolved_tree_mode": "lightgbm",
+          "resolved_ts_permutations": 1,
+          "selected_lane": "boosting",
+          "train_rows": 2048,
+          "tree_depths": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "validation_rows": 512
+        },
+        {
+          "categorical_features": [
+            12
+          ],
+          "config": {
+            "depth": 6,
+            "diagnostic_warnings": "never",
+            "early_stopping": false,
+            "iterations": 5,
+            "l2_leaf_reg": 3.0,
+            "learning_rate": 0.1,
+            "linear_residual": false,
+            "loss": "RMSE",
+            "max_bins": 128,
+            "ordered_boosting": "auto",
+            "random_state": 20260713,
+            "sampling": "uniform",
+            "thread_count": 18,
+            "tree_mode": "lightgbm",
+            "ts_permutations": 1,
+            "use_best_model": false
+          },
+          "encoder_modes": [
+            "kfold"
+          ],
+          "encoder_ts_permutations": [
+            1
+          ],
+          "fit_seconds": 0.02847575,
+          "flat_ensemble_type": "FlatNonObliviousEnsemble",
+          "flat_prediction_router_selected": false,
+          "input_kind": "categorical",
+          "iterations_fitted": 5,
+          "linear_residual_active": false,
+          "name": "lightgbm_categorical",
+          "prediction_batches": [
+            {
+              "input_shape": [
+                8191,
+                13
+              ],
+              "name": "serial_subthreshold",
+              "predict_seconds": 0.002146834,
+              "prediction_sha256": "78be96aab0afc0b7d7e0955a533cd7a69b731d008bac0acc2697d8a7c98031ed",
+              "prediction_shape": [
+                8191
+              ],
+              "route": "tree_loop"
+            },
+            {
+              "input_shape": [
+                8192,
+                13
+              ],
+              "name": "parallel_at_threshold",
+              "predict_seconds": 0.002295542,
+              "prediction_sha256": "dc5861f33f4abef09e0dc84259d0694005b4eed1673b6cafb0fc77a3bfe65bc4",
+              "prediction_shape": [
+                8192
+              ],
+              "route": "tree_loop"
+            }
+          ],
+          "prediction_parallel_min_rows": 8192,
+          "requested_tree_mode": "lightgbm",
+          "resolved_include_cat_codes": true,
+          "resolved_learning_rate": 0.1,
+          "resolved_ordered_boosting": false,
+          "resolved_target_encoding_mode": "kfold",
+          "resolved_thread_count": 2,
+          "resolved_tree_mode": "lightgbm",
+          "resolved_ts_permutations": 1,
+          "selected_lane": "boosting",
+          "train_rows": 2048,
+          "tree_depths": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "validation_rows": 512
+        },
+        {
+          "categorical_features": [],
+          "config": {
+            "depth": 6,
+            "diagnostic_warnings": "never",
+            "early_stopping": false,
+            "iterations": 5,
+            "l2_leaf_reg": 3.0,
+            "learning_rate": 0.1,
+            "linear_residual": false,
+            "loss": "RMSE",
+            "max_bins": 128,
+            "ordered_boosting": "auto",
+            "random_state": 20260713,
+            "sampling": "uniform",
+            "thread_count": 18,
+            "tree_mode": "hybrid",
+            "ts_permutations": 1,
+            "use_best_model": false
+          },
+          "encoder_modes": [],
+          "encoder_ts_permutations": [],
+          "fit_seconds": 0.0308675,
+          "flat_ensemble_type": "FlatNonObliviousEnsemble",
+          "flat_prediction_router_selected": false,
+          "input_kind": "numeric",
+          "iterations_fitted": 5,
+          "linear_residual_active": false,
+          "name": "hybrid_numeric",
+          "prediction_batches": [
+            {
+              "input_shape": [
+                8191,
+                12
+              ],
+              "name": "serial_subthreshold",
+              "predict_seconds": 0.00081625,
+              "prediction_sha256": "ba7c1d48c8fd2377e3b6d47fad97da58982a1cad3d6a41718b4787c5252c2f56",
+              "prediction_shape": [
+                8191
+              ],
+              "route": "tree_loop"
+            },
+            {
+              "input_shape": [
+                8192,
+                12
+              ],
+              "name": "parallel_at_threshold",
+              "predict_seconds": 0.000997166,
+              "prediction_sha256": "9f812a59bd0756c12a3aa24d77144537dde9b230093189a457bc54b1cfc6719f",
+              "prediction_shape": [
+                8192
+              ],
+              "route": "tree_loop"
+            }
+          ],
+          "prediction_parallel_min_rows": 8192,
+          "requested_tree_mode": "hybrid",
+          "resolved_include_cat_codes": true,
+          "resolved_learning_rate": 0.1,
+          "resolved_ordered_boosting": false,
+          "resolved_target_encoding_mode": "kfold",
+          "resolved_thread_count": 2,
+          "resolved_tree_mode": "hybrid",
+          "resolved_ts_permutations": 1,
+          "selected_lane": "boosting",
+          "train_rows": 2048,
+          "tree_depths": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "validation_rows": 512
+        },
+        {
+          "categorical_features": [
+            12
+          ],
+          "config": {
+            "depth": 6,
+            "diagnostic_warnings": "never",
+            "early_stopping": false,
+            "iterations": 5,
+            "l2_leaf_reg": 3.0,
+            "learning_rate": 0.1,
+            "linear_residual": false,
+            "loss": "RMSE",
+            "max_bins": 128,
+            "ordered_boosting": "auto",
+            "random_state": 20260713,
+            "sampling": "uniform",
+            "thread_count": 18,
+            "tree_mode": "hybrid",
+            "ts_permutations": 1,
+            "use_best_model": false
+          },
+          "encoder_modes": [
+            "kfold"
+          ],
+          "encoder_ts_permutations": [
+            1
+          ],
+          "fit_seconds": 0.030049208,
+          "flat_ensemble_type": "FlatNonObliviousEnsemble",
+          "flat_prediction_router_selected": false,
+          "input_kind": "categorical",
+          "iterations_fitted": 5,
+          "linear_residual_active": false,
+          "name": "hybrid_categorical",
+          "prediction_batches": [
+            {
+              "input_shape": [
+                8191,
+                13
+              ],
+              "name": "serial_subthreshold",
+              "predict_seconds": 0.002321417,
+              "prediction_sha256": "dff951b622ba38746381ce9851eecd6be936eb3c0b25a8869e5cf413ba388841",
+              "prediction_shape": [
+                8191
+              ],
+              "route": "tree_loop"
+            },
+            {
+              "input_shape": [
+                8192,
+                13
+              ],
+              "name": "parallel_at_threshold",
+              "predict_seconds": 0.002266834,
+              "prediction_sha256": "1faca799cd1bd08cb1dafa457a199560e8e60aea75c38f77941b80974ce78a38",
+              "prediction_shape": [
+                8192
+              ],
+              "route": "tree_loop"
+            }
+          ],
+          "prediction_parallel_min_rows": 8192,
+          "requested_tree_mode": "hybrid",
+          "resolved_include_cat_codes": true,
+          "resolved_learning_rate": 0.1,
+          "resolved_ordered_boosting": false,
+          "resolved_target_encoding_mode": "kfold",
+          "resolved_thread_count": 2,
+          "resolved_tree_mode": "hybrid",
+          "resolved_ts_permutations": 1,
+          "selected_lane": "boosting",
+          "train_rows": 2048,
+          "tree_depths": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "validation_rows": 512
+        },
+        {
+          "categorical_features": [],
+          "config": {
+            "depth": 6,
+            "diagnostic_warnings": "never",
+            "early_stopping": false,
+            "iterations": 5,
+            "l2_leaf_reg": 3.0,
+            "learning_rate": 0.1,
+            "linear_residual": true,
+            "loss": "RMSE",
+            "max_bins": 128,
+            "ordered_boosting": "auto",
+            "random_state": 20260713,
+            "sampling": "uniform",
+            "thread_count": 18,
+            "tree_mode": "catboost",
+            "ts_permutations": 1,
+            "use_best_model": false
+          },
+          "encoder_modes": [],
+          "encoder_ts_permutations": [],
+          "fit_seconds": 0.01709475,
+          "flat_ensemble_type": "FlatObliviousEnsemble",
+          "flat_prediction_router_selected": true,
+          "input_kind": "numeric",
+          "iterations_fitted": 5,
+          "linear_residual_active": true,
+          "name": "linear_residual_numeric",
+          "prediction_batches": [
+            {
+              "input_shape": [
+                8191,
+                12
+              ],
+              "name": "serial_subthreshold",
+              "predict_seconds": 0.000780125,
+              "prediction_sha256": "d9e948655f8be1e70485fc1594cd81b553cb8dbcdb266c88f982131bf4ce481c",
+              "prediction_shape": [
+                8191
+              ],
+              "route": "flat_serial"
+            },
+            {
+              "input_shape": [
+                8192,
+                12
+              ],
+              "name": "parallel_at_threshold",
+              "predict_seconds": 0.000674625,
+              "prediction_sha256": "59dc6c83f183ee9c4467da313833d1732da8e4813acd0786a28187acf4fe941e",
+              "prediction_shape": [
+                8192
+              ],
+              "route": "flat_parallel"
+            }
+          ],
+          "prediction_parallel_min_rows": 8192,
+          "requested_tree_mode": "catboost",
+          "resolved_include_cat_codes": false,
+          "resolved_learning_rate": 0.1,
+          "resolved_ordered_boosting": false,
+          "resolved_target_encoding_mode": "ordered",
+          "resolved_thread_count": 18,
+          "resolved_tree_mode": "catboost",
+          "resolved_ts_permutations": 1,
+          "selected_lane": "linear_residual",
+          "train_rows": 2048,
+          "tree_depths": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "validation_rows": 512
+        },
+        {
+          "categorical_features": [
+            12
+          ],
+          "config": {
+            "depth": 6,
+            "diagnostic_warnings": "never",
+            "early_stopping": false,
+            "iterations": 5,
+            "l2_leaf_reg": 3.0,
+            "learning_rate": 0.1,
+            "linear_residual": true,
+            "loss": "RMSE",
+            "max_bins": 128,
+            "ordered_boosting": "auto",
+            "random_state": 20260713,
+            "sampling": "uniform",
+            "thread_count": 18,
+            "tree_mode": "catboost",
+            "ts_permutations": 1,
+            "use_best_model": false
+          },
+          "encoder_modes": [
+            "ordered"
+          ],
+          "encoder_ts_permutations": [
+            1
+          ],
+          "fit_seconds": 0.018801208,
+          "flat_ensemble_type": "FlatObliviousEnsemble",
+          "flat_prediction_router_selected": true,
+          "input_kind": "categorical",
+          "iterations_fitted": 5,
+          "linear_residual_active": true,
+          "name": "linear_residual_categorical",
+          "prediction_batches": [
+            {
+              "input_shape": [
+                8191,
+                13
+              ],
+              "name": "serial_subthreshold",
+              "predict_seconds": 0.00265125,
+              "prediction_sha256": "0c62be784607cabb4b9404e4f57245b4d1f15b4ecc5598bd7011af581979469b",
+              "prediction_shape": [
+                8191
+              ],
+              "route": "flat_serial"
+            },
+            {
+              "input_shape": [
+                8192,
+                13
+              ],
+              "name": "parallel_at_threshold",
+              "predict_seconds": 0.002555583,
+              "prediction_sha256": "de63e55ec947ce668146cccc9290cce10af4bac164316f429cce92cf1aa87870",
+              "prediction_shape": [
+                8192
+              ],
+              "route": "flat_parallel"
+            }
+          ],
+          "prediction_parallel_min_rows": 8192,
+          "requested_tree_mode": "catboost",
+          "resolved_include_cat_codes": false,
+          "resolved_learning_rate": 0.1,
+          "resolved_ordered_boosting": false,
+          "resolved_target_encoding_mode": "ordered",
+          "resolved_thread_count": 18,
+          "resolved_tree_mode": "catboost",
+          "resolved_ts_permutations": 1,
+          "selected_lane": "linear_residual",
+          "train_rows": 2048,
+          "tree_depths": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "validation_rows": 512
+        },
+        {
+          "categorical_features": [
+            12
+          ],
+          "config": {
+            "depth": 6,
+            "diagnostic_warnings": "never",
+            "early_stopping": false,
+            "iterations": 5,
+            "l2_leaf_reg": 3.0,
+            "learning_rate": 0.1,
+            "linear_residual": false,
+            "loss": "RMSE",
+            "max_bins": 128,
+            "ordered_boosting": "auto",
+            "random_state": 20260713,
+            "sampling": "uniform",
+            "thread_count": 18,
+            "tree_mode": "catboost",
+            "ts_permutations": 4,
+            "use_best_model": false
+          },
+          "encoder_modes": [
+            "ordered"
+          ],
+          "encoder_ts_permutations": [
+            4
+          ],
+          "fit_seconds": 0.023752792,
+          "flat_ensemble_type": "FlatObliviousEnsemble",
+          "flat_prediction_router_selected": true,
+          "input_kind": "categorical",
+          "iterations_fitted": 5,
+          "linear_residual_active": false,
+          "name": "catboost_categorical_ts4",
+          "prediction_batches": [
+            {
+              "input_shape": [
+                8191,
+                13
+              ],
+              "name": "serial_subthreshold",
+              "predict_seconds": 0.001778959,
+              "prediction_sha256": "d2c3f0af43d74f6f669ee2d03d3acf09139b3a68a8f093464a82527c1896b26c",
+              "prediction_shape": [
+                8191
+              ],
+              "route": "flat_serial"
+            },
+            {
+              "input_shape": [
+                8192,
+                13
+              ],
+              "name": "parallel_at_threshold",
+              "predict_seconds": 0.001556917,
+              "prediction_sha256": "7e408b221dba80ab56426fddb25ace4e81ee37d0fc4adb6d77fbf83dea2b8efb",
+              "prediction_shape": [
+                8192
+              ],
+              "route": "flat_parallel"
+            }
+          ],
+          "prediction_parallel_min_rows": 8192,
+          "requested_tree_mode": "catboost",
+          "resolved_include_cat_codes": false,
+          "resolved_learning_rate": 0.1,
+          "resolved_ordered_boosting": false,
+          "resolved_target_encoding_mode": "ordered",
+          "resolved_thread_count": 18,
+          "resolved_tree_mode": "catboost",
+          "resolved_ts_permutations": 4,
+          "selected_lane": "boosting",
+          "train_rows": 2048,
+          "tree_depths": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "validation_rows": 512
+        }
+      ],
+      "thread_count": 18
+    }
+  }
+]
