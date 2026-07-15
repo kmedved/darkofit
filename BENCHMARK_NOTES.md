@@ -92,6 +92,37 @@ timing or ChimeraBoost 0.13 results for present-day characterization. See the
 [frozen protocol](benchmarks/tabarena_regression_same_machine_protocol.md),
 and [machine-readable summary](benchmarks/tabarena_regression_same_machine_summary.json).
 
+## Accuracy-Profile Development Shootout
+
+On 2026-07-15, the source-frozen `A10` profile combined a 10,000-round safe
+cap, fixed learning rate 0.1, 128 bins, L2=3, and validation-selected
+CatBoost/LightGBM/hybrid tree mode. It passed all development gates on the same
+spent 13-dataset, three-coordinate panel. This is not independent confirmation
+and does not change the product default.
+
+| Contrast | Equal-dataset test RMSE | Dataset wins |
+| --- | ---: | ---: |
+| `A10` / ChimeraBoost 0.14.1 | 0.9756 (-2.44%) | 7/13 |
+| `A10` / DarkoFit product default | 0.9636 (-3.64%) | 9/13 |
+| `A10` / fixed CatBoost-mode `B10` | 0.9722 (-2.78%) | 11/13 |
+| `A10` / CatBoost 1.2.10 (descriptive) | 1.0154 (+1.54%) | 2/13 |
+
+Diamonds supplied 87.6% of the mean-log advantage over ChimeraBoost. Without
+it, `A10` was only 0.33% better and the remaining datasets split 6-6, so the
+result establishes development parity with a slight edge rather than broad
+superiority. The CatBoost deficit is robust: every leave-one-dataset-out
+estimate still favored CatBoost. The full `A10` profile now freezes for a
+preregistered unseen confirmation; no linear-residual second iteration is
+allowed by the protocol.
+
+All 78 new outer jobs, 624 selected children, and 936 internal automatic-mode
+candidates completed without failure, imputation, deadline, restart, recovery,
+or time-limit stop. The quality-only execution recorded zero swap-out, but
+swap-in occurred, so timing and memory-performance comparisons are inadmissible.
+See the [full result](benchmarks/tabarena_regression_accuracy_shootout_result.md),
+[frozen protocol](benchmarks/tabarena_regression_accuracy_shootout_protocol.md),
+and [machine-readable summary](benchmarks/tabarena_regression_accuracy_shootout_summary.json).
+
 ## Current Default Lanes
 
 `tree_mode="catboost"` remains the default CatBoost-like path. The recent

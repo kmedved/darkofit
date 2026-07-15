@@ -1,0 +1,570 @@
+{
+  "a10_selected_tree_mode_counts": {
+    "catboost": 142,
+    "hybrid": 93,
+    "lightgbm": 77
+  },
+  "aggregation": {
+    "campaign": "equal-dataset geometric mean over 13 datasets",
+    "dataset": "geometric mean over r0f0/r1f1/r2f2",
+    "missing_pair_policy": "invalidate; never drop or impute",
+    "split": "paired outer-test RMSE ratio"
+  },
+  "contrasts": {
+    "A10/B10": {
+      "test_rmse": {
+        "dataset_counts": {
+          "losses": 2,
+          "ties": 0,
+          "wins": 11
+        },
+        "log_ratio": -0.028197923261762715,
+        "pct": -2.7804072431282023,
+        "ratio": 0.972195927568718,
+        "split_counts": {
+          "losses": 6,
+          "ties": 1,
+          "wins": 32
+        },
+        "worst_dataset": {
+          "dataset": "miami_housing",
+          "ratio": 1.0024652672633125
+        },
+        "worst_split": {
+          "dataset": "concrete_compressive_strength",
+          "fold": 1,
+          "ratio": 1.0297253333995844,
+          "repeat": 1
+        }
+      },
+      "val_rmse": {
+        "dataset_counts": {
+          "losses": 0,
+          "ties": 0,
+          "wins": 13
+        },
+        "log_ratio": -0.03303830893407814,
+        "pct": -3.249850507190699,
+        "ratio": 0.967501494928093,
+        "split_counts": {
+          "losses": 0,
+          "ties": 1,
+          "wins": 38
+        },
+        "worst_dataset": {
+          "dataset": "Food_Delivery_Time",
+          "ratio": 0.9994469462645248
+        },
+        "worst_split": {
+          "dataset": "Food_Delivery_Time",
+          "fold": 1,
+          "ratio": 1.0,
+          "repeat": 1
+        }
+      }
+    },
+    "A10/M": {
+      "test_rmse": {
+        "dataset_counts": {
+          "losses": 6,
+          "ties": 0,
+          "wins": 7
+        },
+        "log_ratio": -0.02468016783466103,
+        "pct": -2.437810260180806,
+        "ratio": 0.9756218973981919,
+        "split_counts": {
+          "losses": 16,
+          "ties": 0,
+          "wins": 23
+        },
+        "worst_dataset": {
+          "dataset": "houses",
+          "ratio": 1.015691766972734
+        },
+        "worst_split": {
+          "dataset": "QSAR_fish_toxicity",
+          "fold": 1,
+          "ratio": 1.0184500143010073,
+          "repeat": 1
+        }
+      },
+      "val_rmse": {
+        "dataset_counts": {
+          "losses": 4,
+          "ties": 0,
+          "wins": 9
+        },
+        "log_ratio": -0.02782608254964866,
+        "pct": -2.744250318634378,
+        "ratio": 0.9725574968136562,
+        "split_counts": {
+          "losses": 13,
+          "ties": 0,
+          "wins": 26
+        },
+        "worst_dataset": {
+          "dataset": "houses",
+          "ratio": 1.0123365693463893
+        },
+        "worst_split": {
+          "dataset": "miami_housing",
+          "fold": 1,
+          "ratio": 1.0190352721100626,
+          "repeat": 1
+        }
+      }
+    },
+    "A10/P": {
+      "test_rmse": {
+        "dataset_counts": {
+          "losses": 4,
+          "ties": 0,
+          "wins": 9
+        },
+        "log_ratio": -0.03712576664484988,
+        "pct": -3.644505534417808,
+        "ratio": 0.9635549446558219,
+        "split_counts": {
+          "losses": 9,
+          "ties": 0,
+          "wins": 30
+        },
+        "worst_dataset": {
+          "dataset": "concrete_compressive_strength",
+          "ratio": 1.0086052780814778
+        },
+        "worst_split": {
+          "dataset": "concrete_compressive_strength",
+          "fold": 1,
+          "ratio": 1.0365682415975617,
+          "repeat": 1
+        }
+      },
+      "val_rmse": {
+        "dataset_counts": {
+          "losses": 2,
+          "ties": 0,
+          "wins": 11
+        },
+        "log_ratio": -0.03958416300608704,
+        "pct": -3.881094597395096,
+        "ratio": 0.961189054026049,
+        "split_counts": {
+          "losses": 7,
+          "ties": 0,
+          "wins": 32
+        },
+        "worst_dataset": {
+          "dataset": "miami_housing",
+          "ratio": 1.0014041568218048
+        },
+        "worst_split": {
+          "dataset": "miami_housing",
+          "fold": 2,
+          "ratio": 1.013177816007685,
+          "repeat": 2
+        }
+      }
+    },
+    "B10/P": {
+      "test_rmse": {
+        "dataset_counts": {
+          "losses": 4,
+          "ties": 0,
+          "wins": 9
+        },
+        "log_ratio": -0.00892784338308718,
+        "pct": -0.8888108526133864,
+        "ratio": 0.9911118914738661,
+        "split_counts": {
+          "losses": 13,
+          "ties": 0,
+          "wins": 26
+        },
+        "worst_dataset": {
+          "dataset": "concrete_compressive_strength",
+          "ratio": 1.0083300489157856
+        },
+        "worst_split": {
+          "dataset": "concrete_compressive_strength",
+          "fold": 2,
+          "ratio": 1.0178816820339613,
+          "repeat": 2
+        }
+      },
+      "val_rmse": {
+        "dataset_counts": {
+          "losses": 7,
+          "ties": 0,
+          "wins": 6
+        },
+        "log_ratio": -0.0065458540720089225,
+        "pct": -0.652447663919431,
+        "ratio": 0.9934755233608057,
+        "split_counts": {
+          "losses": 16,
+          "ties": 0,
+          "wins": 23
+        },
+        "worst_dataset": {
+          "dataset": "QSAR_fish_toxicity",
+          "ratio": 1.0053887891786266
+        },
+        "worst_split": {
+          "dataset": "concrete_compressive_strength",
+          "fold": 0,
+          "ratio": 1.024400157454631,
+          "repeat": 0
+        }
+      }
+    }
+  },
+  "counts": {
+    "coordinates_per_dataset": 3,
+    "datasets": 13,
+    "new_child_fits": 624,
+    "new_outer_jobs": 78,
+    "paired_child_comparisons": 312,
+    "paired_outer_coordinates": 39
+  },
+  "decision": "freeze_iteration_1_candidate",
+  "execution_mode": "concurrent",
+  "execution_mode_selection": {
+    "criteria": [
+      "data_prime_complete",
+      "eight_valid_executions",
+      "exact_behavior_fingerprints",
+      "full_session_swap_policy",
+      "measured_phase_swap_policy",
+      "no_preflight_error",
+      "no_sequential_recovery_override",
+      "no_worker_restarts",
+      "operational_limits",
+      "reciprocal_pairing",
+      "swap_policy_attested"
+    ],
+    "performance_comparison_criteria_used": false,
+    "raw_preflight_operational_audit": {
+      "reciprocal_asymmetry_ratio": 1.3054370788600458,
+      "throughput_speedup": 1.1638832623419966
+    }
+  },
+  "gates": {
+    "all_development_gates_pass": true,
+    "complete_39_coordinate_and_312_child_grid": true,
+    "parity_g_a10_over_m_at_most_1": true,
+    "worst_dataset_a10_over_p_at_most_1_02": true,
+    "worst_lodo_a10_over_m_at_most_1_01": true,
+    "zero_failures_imputations_deadlines_or_time_limit_stops": true
+  },
+  "integrity_diagnostics": {
+    "a10_internal_candidates_required_per_child": 3,
+    "a10_internal_candidates_verified": 936,
+    "deadline_hit_children": 0,
+    "duplicate_results": 0,
+    "failed_results": 0,
+    "imputed_results": 0,
+    "missing_results": 0,
+    "new_child_fits_verified": 624,
+    "new_outer_jobs_verified": 78,
+    "paired_child_comparisons_verified": 312,
+    "paired_outer_coordinates_verified": 39,
+    "reused_source_artifacts_verified": 4,
+    "source_runtime_and_hardware_lock_verified": true,
+    "time_limit_stop_children": 0
+  },
+  "lodo_a10_over_m": [
+    {
+      "log_ratio": -0.025452871854407727,
+      "omitted_dataset": "airfoil_self_noise",
+      "pct": -2.5131678380668876,
+      "ratio": 0.9748683216193311
+    },
+    {
+      "log_ratio": -0.025943643713134113,
+      "omitted_dataset": "Another-Dataset-on-used-Fiat-500",
+      "pct": -2.5609998936148903,
+      "ratio": 0.9743900010638511
+    },
+    {
+      "log_ratio": -0.0250266963506523,
+      "omitted_dataset": "concrete_compressive_strength",
+      "pct": -2.471612483952723,
+      "ratio": 0.9752838751604728
+    },
+    {
+      "log_ratio": -0.00332013771764351,
+      "omitted_dataset": "diamonds",
+      "pct": -0.3314632155172137,
+      "ratio": 0.9966853678448279
+    },
+    {
+      "log_ratio": -0.02678137670932611,
+      "omitted_dataset": "Food_Delivery_Time",
+      "pct": -2.6425935774874842,
+      "ratio": 0.9735740642251252
+    },
+    {
+      "log_ratio": -0.02610997359975561,
+      "omitted_dataset": "healthcare_insurance_expenses",
+      "pct": -2.577205563674101,
+      "ratio": 0.974227944363259
+    },
+    {
+      "log_ratio": -0.02803434216786096,
+      "omitted_dataset": "houses",
+      "pct": -2.7645026549868557,
+      "ratio": 0.9723549734501314
+    },
+    {
+      "log_ratio": -0.02780921411891357,
+      "omitted_dataset": "miami_housing",
+      "pct": -2.742609752920444,
+      "ratio": 0.9725739024707956
+    },
+    {
+      "log_ratio": -0.02686908345583071,
+      "omitted_dataset": "physiochemical_protein",
+      "pct": -2.6511321044042413,
+      "ratio": 0.9734886789559576
+    },
+    {
+      "log_ratio": -0.02539639610827395,
+      "omitted_dataset": "QSAR-TID-11",
+      "pct": -2.5076620410117934,
+      "ratio": 0.9749233795898821
+    },
+    {
+      "log_ratio": -0.026804142243306486,
+      "omitted_dataset": "QSAR_fish_toxicity",
+      "pct": -2.6448099456031327,
+      "ratio": 0.9735519005439687
+    },
+    {
+      "log_ratio": -0.026810055545183953,
+      "omitted_dataset": "superconductivity",
+      "pct": -2.6453856345291515,
+      "ratio": 0.9735461436547085
+    },
+    {
+      "log_ratio": -0.026484248266304484,
+      "omitted_dataset": "wine_quality",
+      "pct": -2.613661624860375,
+      "ratio": 0.9738633837513962
+    }
+  ],
+  "memory_performance_admissible": false,
+  "performance_evidence_disposition": "inadmissible_by_quality_only_swap_in_policy",
+  "protocol": "frozen TabArena B10/A10 regression accuracy shootout",
+  "provenance": {
+    "analysis_payload_sha256": "8d4d24245b10a5af18779a5b73e4bf547f54e27a699f31134943a958c1a511bd",
+    "analysis_runtime_verified": true,
+    "attestation_sha256": "d19bf5f954565cba849e0d19d21a13e25f19bbf40cecfd5303568cb64698ac0f",
+    "completed_at_utc": "2026-07-15T22:38:55.804307+00:00",
+    "concurrency_history_sha256": "e76e3f543aa0e5576b643e510ab8135500d0a87d4520708f60b6e2c86ac188e5",
+    "dependency_provenance_verified": true,
+    "executing_git_head": "54b5e99b2d06137c6cb8c5c9b5c7b66165520ebd",
+    "executing_git_tree": "a9bfc029d2a1c6fc0183b721985ba413e9db1151",
+    "executing_repository": "/Users/kmedved/Code/GitHub/darkofit",
+    "executing_source_verified": true,
+    "execution_grid_artifact_sha256": "9bb806bf6f0d55e48b4f83e0a663576f5ad0ed77e838021fa65e0a662ea676b4",
+    "git_head": "54b5e99b2d06137c6cb8c5c9b5c7b66165520ebd",
+    "manifest_sha256": "59e4c86eef06b259151b8abc06d66df77e63c092ef7558a16d2be5319e8170a6",
+    "owner_lock_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "owner_state_sha256": "76eede42fd5bd6af211b2ba1a75c57097e242c6d6f9a43921cd6f1b53f0fc1f7",
+    "preflight_decision": {
+      "criteria": {
+        "data_prime_complete": true,
+        "eight_valid_executions": true,
+        "exact_behavior_fingerprints": true,
+        "full_session_swap_policy": true,
+        "measured_phase_swap_policy": true,
+        "no_preflight_error": true,
+        "no_sequential_recovery_override": true,
+        "no_worker_restarts": true,
+        "operational_limits": true,
+        "reciprocal_arm_slot_symmetry": true,
+        "reciprocal_pairing": true,
+        "swap_policy_attested": true,
+        "throughput_speedup_at_least_1_10": true
+      },
+      "execution_mode": "concurrent",
+      "mode_selection_criteria": [
+        "data_prime_complete",
+        "eight_valid_executions",
+        "exact_behavior_fingerprints",
+        "full_session_swap_policy",
+        "measured_phase_swap_policy",
+        "no_preflight_error",
+        "no_sequential_recovery_override",
+        "no_worker_restarts",
+        "operational_limits",
+        "reciprocal_pairing",
+        "swap_policy_attested"
+      ],
+      "passed": true,
+      "reciprocal_asymmetry_ratio": 1.3054370788600458,
+      "throughput_speedup": 1.1638832623419966,
+      "timing_admissible": false,
+      "timing_inadmissibility_reason": "quality_only_swap_in_policy"
+    },
+    "preflight_report_sha256": "d7aa131e9adcebfb63c414732b533e19bef1e9017ab698453cf9bb26a4a6f802",
+    "protocol_sha256": "ff1270ac7ae53bd18d694bc3ebf8bdc33738428467ef622e3f00741db2ffccd6",
+    "resume_history_sha256": null,
+    "reused_evidence": {
+      "base_adapter_sha256": {
+        "benchmarks/tabarena_adapter.py": "13fefe3937ca9a4020412023324aa724e073330377fdd6ecd476fd29fc63740a",
+        "benchmarks/tabarena_screen_adapters.py": "c491b8ccdbbd6ab13f2e296020dff8e209dcab7f4568f39b7f886c05c29ae1af"
+      },
+      "contract": {
+        "artifacts": {
+          "tabarena_regression_same_machine_completion_attestation.json": "213f462aa06103e97864ecd786b75e8fd8e11743c77f556262fa39bdb3e1b7d9",
+          "tabarena_regression_same_machine_primary_paired_splits.csv": "3e7bbe21e0ffe40771f2065dc252dbd4314550f8ab350f2fbed9641401b341b1",
+          "tabarena_regression_same_machine_run_manifest.json": "2869acaaa4bcc8319d9ba03744a4a9ca8602ed349553a031c3d84ab537de72ee",
+          "tabarena_regression_same_machine_summary.json": "ca23618bdc3d9e0ab38557e7738c66e95827945ad34e3eb63005f253c92ccf01"
+        },
+        "catboost_version": "1.2.10",
+        "chimeraboost_tag_commit": "9c9ea6e704a9fe2bfe6d6c284b22de73914be048",
+        "source_commit": "a1ff4b74510b5e314bb41c27b40544910741543d",
+        "source_darkofit_subtree": "52278b0326419a45a72bdfd3afcfc13019087838"
+      },
+      "darkofit_subtree": "52278b0326419a45a72bdfd3afcfc13019087838",
+      "dependency_lock": {
+        "common_packages": [
+          "autogluon.common",
+          "autogluon.core",
+          "autogluon.features",
+          "autogluon.tabular",
+          "darkofit",
+          "graphviz",
+          "llvmlite",
+          "numba",
+          "numpy",
+          "pandas",
+          "psutil",
+          "scikit-learn",
+          "scipy",
+          "tabarena"
+        ],
+        "comparator_only_packages": [
+          "catboost",
+          "chimeraboost"
+        ],
+        "omitted_comparator_packages": [
+          "chimeraboost"
+        ]
+      },
+      "reused_coordinates": 39,
+      "runtime_lock_verified": true,
+      "source_artifact_count": 4,
+      "source_primary_csv_rows": 117,
+      "tabarena_provenance": {
+        "git_head": "4cd1d2526874962daae048a6f2dcf34aa272f3fa",
+        "git_tree": "a293df372a613c7358ba5fcd746f58d580cde7d6",
+        "repository": "/Users/kmedved/Code/GitHub/tabarena"
+      }
+    },
+    "swap_audit": {
+      "preflight": {
+        "decision_execution_mode": "concurrent",
+        "decision_passed": true,
+        "lifecycle": {
+          "policy_passed": true,
+          "status": "complete",
+          "swap_in_bytes": 713277440,
+          "swap_out_bytes": 0
+        },
+        "measured": {
+          "policy_passed": true,
+          "status": "complete",
+          "swap_in_bytes": 712638464,
+          "swap_out_bytes": 0
+        },
+        "preflight_error": null,
+        "selected_policy_passed": true,
+        "zero_swap_out_coverage_status": "complete",
+        "zero_swap_out_observed": true
+      },
+      "production": {
+        "lifecycle": {
+          "policy_passed": true,
+          "status": "complete",
+          "swap_in_bytes": 754024448,
+          "swap_out_bytes": 0
+        },
+        "measured": {
+          "policy_passed": true,
+          "status": "complete",
+          "swap_in_bytes": 753172480,
+          "swap_out_bytes": 0
+        }
+      },
+      "production_zero_swap_out_verified": true,
+      "swap_policy": "quality_only_swap_in",
+      "timing_admissible": false
+    },
+    "warmup_history_sha256": "740bd039251df7554ac2f16a5a4c0f529e5a5a30d6033b314689577c902236af"
+  },
+  "public_arm_labels": {
+    "A10": "validation-selected auto-mode 10,000-round candidate",
+    "B10": "fixed catboost-mode 10,000-round base",
+    "C": "CatBoost 1.2.10 default (reused reference)",
+    "M": "ChimeraBoost 0.14.1 default (reused)",
+    "P": "DarkoFit product default (reused)"
+  },
+  "swap_audit": {
+    "preflight": {
+      "decision_execution_mode": "concurrent",
+      "decision_passed": true,
+      "lifecycle": {
+        "policy_passed": true,
+        "status": "complete",
+        "swap_in_bytes": 713277440,
+        "swap_out_bytes": 0
+      },
+      "measured": {
+        "policy_passed": true,
+        "status": "complete",
+        "swap_in_bytes": 712638464,
+        "swap_out_bytes": 0
+      },
+      "preflight_error": null,
+      "selected_policy_passed": true,
+      "zero_swap_out_coverage_status": "complete",
+      "zero_swap_out_observed": true
+    },
+    "production": {
+      "lifecycle": {
+        "policy_passed": true,
+        "status": "complete",
+        "swap_in_bytes": 754024448,
+        "swap_out_bytes": 0
+      },
+      "measured": {
+        "policy_passed": true,
+        "status": "complete",
+        "swap_in_bytes": 753172480,
+        "swap_out_bytes": 0
+      }
+    },
+    "production_zero_swap_out_verified": true,
+    "swap_policy": "quality_only_swap_in",
+    "timing_admissible": false
+  },
+  "swap_policy": "quality_only_swap_in",
+  "test_use_disclosure": "This is a spent 13-dataset development panel and is not independent confirmation. No parameter was tuned from these shootout results.",
+  "thresholds": {
+    "parity_a10_over_m_max": 1.0,
+    "worst_dataset_a10_over_p_max": 1.02,
+    "worst_lodo_a10_over_m_max": 1.01
+  },
+  "timing_admissible": false,
+  "timing_disclosure": "Timing and memory-performance evidence is inadmissible under the quality_only_swap_in policy. Raw timing, memory, and swap values are retained only as operational audit data; no descriptive or causal performance claim is made.",
+  "worst_lodo_a10_over_m": {
+    "log_ratio": -0.00332013771764351,
+    "omitted_dataset": "diamonds",
+    "pct": -0.3314632155172137,
+    "ratio": 0.9966853678448279
+  }
+}

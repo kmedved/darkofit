@@ -12,7 +12,10 @@ inspired by CatBoost.
     * Benchmark evidence is tracked against CatBoost, LightGBM, and
       ChimeraBoost. Current out-of-box regression defaults are close to
       ChimeraBoost but trail CatBoost overall; accuracy and speed vary
-      materially by dataset ([benchmark notes](BENCHMARK_NOTES.md))
+      materially by dataset. A frozen explicit accuracy profile reached
+      ChimeraBoost development parity on the spent 13-dataset panel but still
+      trailed CatBoost and awaits unseen confirmation
+      ([benchmark notes](BENCHMARK_NOTES.md))
     * Supports sample weights and automatic early stopping
 
 * **Why?**

@@ -88,6 +88,20 @@ previous behaviors remain available through explicit parameters.
   separate representation lane remains descriptive and does not advance a
   generic ordinal policy. See the
   [same-machine result](benchmarks/tabarena_regression_same_machine_result.md).
+  A subsequent source-frozen accuracy shootout evaluated a 10,000-round,
+  fixed-0.1-LR, 128-bin, L2=3 profile with validation-selected
+  CatBoost/LightGBM/hybrid tree mode. It passed every development gate:
+  equal-dataset test RMSE was 2.44% lower than ChimeraBoost 0.14.1, 3.64%
+  lower than the DarkoFit product default, and 2.78% lower than the identical
+  fixed CatBoost-mode arm. Diamonds supplied 87.6% of the ChimeraBoost
+  advantage; without it the edge was only 0.33%, so this is development parity
+  rather than a broad superiority claim. The candidate remained 1.54% behind
+  CatBoost 1.2.10 and won only two of 13 datasets. All 78 jobs and 624 selected
+  children completed without failure, imputation, deadline, restart, recovery,
+  or time-limit stop. Because the quality-only run allowed swap-in, timing and
+  memory-performance evidence is inadmissible. The profile freezes unchanged
+  for unseen confirmation and does not change defaults. See the
+  [accuracy-shootout result](benchmarks/tabarena_regression_accuracy_shootout_result.md).
 * Default `eval_train_loss=False` on the boosters and sklearn wrappers. The
   per-round training-loss pass is diagnostic-only (early stopping watches the
   eval set) and cost about 15% of multiclass fit time; `verbose=True` still

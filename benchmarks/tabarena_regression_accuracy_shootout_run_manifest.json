@@ -1,0 +1,1769 @@
+{
+  "created_at_utc": "2026-07-15T21:40:02.037394+00:00",
+  "execution_grid_artifact_sha256": "9bb806bf6f0d55e48b4f83e0a663576f5ad0ed77e838021fa65e0a662ea676b4",
+  "execution_grid_sha256": "f3fa6ad18c4f1da3cc13cdd385699b931d8e1cc31d007f0205f1d35d77565616",
+  "execution_mode": "concurrent",
+  "kind": "darkofit_tabarena_regression_accuracy_shootout",
+  "ordering_balance": {
+    "auto": {
+      "candidate_after": 19,
+      "candidate_before": 20
+    }
+  },
+  "output_dir": "/Users/kmedved/Code/GitHub/darkofit/.cache/tabarena-regression-accuracy-shootout-quality-only-20260715-v2",
+  "preflight_report_sha256": "d7aa131e9adcebfb63c414732b533e19bef1e9017ab698453cf9bb26a4a6f802",
+  "protocol": {
+    "arms": {
+      "A10": {
+        "early_stopping": true,
+        "iterations": 10000,
+        "l2_leaf_reg": 3.0,
+        "learning_rate": 0.1,
+        "linear_residual": false,
+        "max_bins": 128,
+        "tree_mode": "auto",
+        "ts_permutations": 1,
+        "use_best_model": true
+      },
+      "B10": {
+        "early_stopping": true,
+        "iterations": 10000,
+        "l2_leaf_reg": 3.0,
+        "learning_rate": 0.1,
+        "linear_residual": false,
+        "max_bins": 128,
+        "tree_mode": "catboost",
+        "ts_permutations": 1,
+        "use_best_model": true
+      }
+    },
+    "bag_folds": 8,
+    "bag_sets": 1,
+    "configured_child_cpus": 18,
+    "coordinates": [
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "houses",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "houses",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "houses",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "miami_housing",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "miami_housing",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "miami_housing",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "superconductivity",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "superconductivity",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "superconductivity",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "wine_quality",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "wine_quality",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "wine_quality",
+        "fold": 2,
+        "repeat": 2
+      }
+    ],
+    "execution": {
+      "barrier_between_waves": true,
+      "failure_policy": "stop releasing waves, drain or terminate the active partner, and emit no completion attestation",
+      "intentional_max_runnable_threads": 36,
+      "one_a10_and_one_b10_per_wave": true,
+      "parent_only_campaign_metadata_writes": true,
+      "persistent_worker_count": 2,
+      "private_worker_cwd": true,
+      "safe_zero_start_resume": true,
+      "start_method": "spawn",
+      "swap_policies": {
+        "allowed": [
+          "strict",
+          "quality_only_swap_in"
+        ],
+        "default": "strict",
+        "measured_phase_uses_shared_lifecycle_samples": true,
+        "quality_only_swap_in": "host swap-in is allowed and recorded anywhere; host swap-out is forbidden for the full worker session and every dispatch; timing and memory-performance evidence is inadmissible by policy",
+        "strict": "zero host swap-in and swap-out for the full worker session"
+      },
+      "within_dataset_partner_derangement": "B10 coordinate j+1 mod 3",
+      "worker_slot_policy": "A10 slot alternates by global wave parity"
+    },
+    "expected_child_fits": 624,
+    "expected_jobs": 78,
+    "fold_fitting_strategy": "sequential_local",
+    "internal_arm_names": {
+      "A10": "auto",
+      "B10": "baseline"
+    },
+    "kind": "darkofit_tabarena_regression_accuracy_shootout",
+    "preflight": {
+      "coordinates": {
+        "QSAR-TID-11": {
+          "fold": 2,
+          "repeat": 2
+        },
+        "physiochemical_protein": {
+          "fold": 0,
+          "repeat": 0
+        }
+      },
+      "datasets": [
+        "physiochemical_protein",
+        "QSAR-TID-11"
+      ],
+      "maximum_concurrent_job_seconds": 1800.0,
+      "maximum_start_skew_seconds": 1.0,
+      "namespace_is_non_reusable": true,
+      "performance_comparison_limits_by_swap_policy": {
+        "quality_only_swap_in": {
+          "maximum_reciprocal_asymmetry_ratio": null,
+          "minimum_throughput_speedup": null
+        },
+        "strict": {
+          "maximum_reciprocal_asymmetry_ratio": 1.5,
+          "minimum_throughput_speedup": 1.1
+        }
+      },
+      "require_exact_quality_and_structure_fingerprints": true,
+      "require_os_high_water_rss": true,
+      "require_policy_valid_swap_during_every_dispatch_and_gap": true,
+      "require_zero_deadlines_time_limits_restarts_or_oom": true,
+      "require_zero_full_session_swap_out": true,
+      "untimed_data_prime_both_tasks_per_worker": true
+    },
+    "schema_version": 1,
+    "seed_policy": "fold-wise",
+    "tasks": {
+      "Another-Dataset-on-used-Fiat-500": 363615,
+      "Food_Delivery_Time": 363672,
+      "QSAR-TID-11": 363697,
+      "QSAR_fish_toxicity": 363698,
+      "airfoil_self_noise": 363612,
+      "concrete_compressive_strength": 363625,
+      "diamonds": 363631,
+      "healthcare_insurance_expenses": 363675,
+      "houses": 363678,
+      "miami_housing": 363686,
+      "physiochemical_protein": 363693,
+      "superconductivity": 363705,
+      "wine_quality": 363708
+    },
+    "time_limit_seconds": 3600.0,
+    "timing_interpretation": {
+      "by_swap_policy": {
+        "quality_only_swap_in": {
+          "campaign_throughput_status": "inadmissible_raw_operational_audit_only",
+          "preflight_performance_comparison_criteria": []
+        },
+        "strict": {
+          "campaign_throughput_status": "descriptive",
+          "preflight_performance_comparison_criteria": [
+            "throughput_speedup_at_least_1_10",
+            "reciprocal_arm_slot_symmetry"
+          ]
+        }
+      },
+      "causal_arm_timing_claim_allowed": false,
+      "isolated_timing_rerun_required_if_freeze_depends_on_resources": true,
+      "per_arm_wall_time_is_contention_exposed": true,
+      "quality_is_primary": true
+    },
+    "warmup": {
+      "process_local": true,
+      "thread_count_per_worker": 18,
+      "worker_count": 2,
+      "workers_warmed_serially_before_wave_zero": true
+    },
+    "wave_schedule": [
+      {
+        "dataset": "airfoil_self_noise",
+        "dataset_index": 0,
+        "jobs": [
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "airfoil_self_noise",
+              "fold": 0,
+              "internal_arm": "auto",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363612
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "airfoil_self_noise",
+              "fold": 1,
+              "internal_arm": "baseline",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363612
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 0,
+        "wave_index": 0
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "dataset_index": 0,
+        "jobs": [
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "airfoil_self_noise",
+              "fold": 2,
+              "internal_arm": "baseline",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363612
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "airfoil_self_noise",
+              "fold": 1,
+              "internal_arm": "auto",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363612
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 1,
+        "wave_index": 1
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "dataset_index": 0,
+        "jobs": [
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "airfoil_self_noise",
+              "fold": 2,
+              "internal_arm": "auto",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363612
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "airfoil_self_noise",
+              "fold": 0,
+              "internal_arm": "baseline",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363612
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 2,
+        "wave_index": 2
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "dataset_index": 1,
+        "jobs": [
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "Another-Dataset-on-used-Fiat-500",
+              "fold": 1,
+              "internal_arm": "baseline",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363615
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "Another-Dataset-on-used-Fiat-500",
+              "fold": 0,
+              "internal_arm": "auto",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363615
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 0,
+        "wave_index": 3
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "dataset_index": 1,
+        "jobs": [
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "Another-Dataset-on-used-Fiat-500",
+              "fold": 1,
+              "internal_arm": "auto",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363615
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "Another-Dataset-on-used-Fiat-500",
+              "fold": 2,
+              "internal_arm": "baseline",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363615
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 1,
+        "wave_index": 4
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "dataset_index": 1,
+        "jobs": [
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "Another-Dataset-on-used-Fiat-500",
+              "fold": 0,
+              "internal_arm": "baseline",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363615
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "Another-Dataset-on-used-Fiat-500",
+              "fold": 2,
+              "internal_arm": "auto",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363615
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 2,
+        "wave_index": 5
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "dataset_index": 2,
+        "jobs": [
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "concrete_compressive_strength",
+              "fold": 0,
+              "internal_arm": "auto",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363625
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "concrete_compressive_strength",
+              "fold": 1,
+              "internal_arm": "baseline",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363625
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 0,
+        "wave_index": 6
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "dataset_index": 2,
+        "jobs": [
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "concrete_compressive_strength",
+              "fold": 2,
+              "internal_arm": "baseline",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363625
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "concrete_compressive_strength",
+              "fold": 1,
+              "internal_arm": "auto",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363625
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 1,
+        "wave_index": 7
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "dataset_index": 2,
+        "jobs": [
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "concrete_compressive_strength",
+              "fold": 2,
+              "internal_arm": "auto",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363625
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "concrete_compressive_strength",
+              "fold": 0,
+              "internal_arm": "baseline",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363625
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 2,
+        "wave_index": 8
+      },
+      {
+        "dataset": "diamonds",
+        "dataset_index": 3,
+        "jobs": [
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "diamonds",
+              "fold": 1,
+              "internal_arm": "baseline",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363631
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "diamonds",
+              "fold": 0,
+              "internal_arm": "auto",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363631
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 0,
+        "wave_index": 9
+      },
+      {
+        "dataset": "diamonds",
+        "dataset_index": 3,
+        "jobs": [
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "diamonds",
+              "fold": 1,
+              "internal_arm": "auto",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363631
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "diamonds",
+              "fold": 2,
+              "internal_arm": "baseline",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363631
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 1,
+        "wave_index": 10
+      },
+      {
+        "dataset": "diamonds",
+        "dataset_index": 3,
+        "jobs": [
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "diamonds",
+              "fold": 0,
+              "internal_arm": "baseline",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363631
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "diamonds",
+              "fold": 2,
+              "internal_arm": "auto",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363631
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 2,
+        "wave_index": 11
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "dataset_index": 4,
+        "jobs": [
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "Food_Delivery_Time",
+              "fold": 0,
+              "internal_arm": "auto",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363672
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "Food_Delivery_Time",
+              "fold": 1,
+              "internal_arm": "baseline",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363672
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 0,
+        "wave_index": 12
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "dataset_index": 4,
+        "jobs": [
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "Food_Delivery_Time",
+              "fold": 2,
+              "internal_arm": "baseline",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363672
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "Food_Delivery_Time",
+              "fold": 1,
+              "internal_arm": "auto",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363672
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 1,
+        "wave_index": 13
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "dataset_index": 4,
+        "jobs": [
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "Food_Delivery_Time",
+              "fold": 2,
+              "internal_arm": "auto",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363672
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "Food_Delivery_Time",
+              "fold": 0,
+              "internal_arm": "baseline",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363672
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 2,
+        "wave_index": 14
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "dataset_index": 5,
+        "jobs": [
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "healthcare_insurance_expenses",
+              "fold": 1,
+              "internal_arm": "baseline",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363675
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "healthcare_insurance_expenses",
+              "fold": 0,
+              "internal_arm": "auto",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363675
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 0,
+        "wave_index": 15
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "dataset_index": 5,
+        "jobs": [
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "healthcare_insurance_expenses",
+              "fold": 1,
+              "internal_arm": "auto",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363675
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "healthcare_insurance_expenses",
+              "fold": 2,
+              "internal_arm": "baseline",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363675
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 1,
+        "wave_index": 16
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "dataset_index": 5,
+        "jobs": [
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "healthcare_insurance_expenses",
+              "fold": 0,
+              "internal_arm": "baseline",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363675
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "healthcare_insurance_expenses",
+              "fold": 2,
+              "internal_arm": "auto",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363675
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 2,
+        "wave_index": 17
+      },
+      {
+        "dataset": "houses",
+        "dataset_index": 6,
+        "jobs": [
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "houses",
+              "fold": 0,
+              "internal_arm": "auto",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363678
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "houses",
+              "fold": 1,
+              "internal_arm": "baseline",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363678
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 0,
+        "wave_index": 18
+      },
+      {
+        "dataset": "houses",
+        "dataset_index": 6,
+        "jobs": [
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "houses",
+              "fold": 2,
+              "internal_arm": "baseline",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363678
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "houses",
+              "fold": 1,
+              "internal_arm": "auto",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363678
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 1,
+        "wave_index": 19
+      },
+      {
+        "dataset": "houses",
+        "dataset_index": 6,
+        "jobs": [
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "houses",
+              "fold": 2,
+              "internal_arm": "auto",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363678
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "houses",
+              "fold": 0,
+              "internal_arm": "baseline",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363678
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 2,
+        "wave_index": 20
+      },
+      {
+        "dataset": "miami_housing",
+        "dataset_index": 7,
+        "jobs": [
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "miami_housing",
+              "fold": 1,
+              "internal_arm": "baseline",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363686
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "miami_housing",
+              "fold": 0,
+              "internal_arm": "auto",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363686
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 0,
+        "wave_index": 21
+      },
+      {
+        "dataset": "miami_housing",
+        "dataset_index": 7,
+        "jobs": [
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "miami_housing",
+              "fold": 1,
+              "internal_arm": "auto",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363686
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "miami_housing",
+              "fold": 2,
+              "internal_arm": "baseline",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363686
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 1,
+        "wave_index": 22
+      },
+      {
+        "dataset": "miami_housing",
+        "dataset_index": 7,
+        "jobs": [
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "miami_housing",
+              "fold": 0,
+              "internal_arm": "baseline",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363686
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "miami_housing",
+              "fold": 2,
+              "internal_arm": "auto",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363686
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 2,
+        "wave_index": 23
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "dataset_index": 8,
+        "jobs": [
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "physiochemical_protein",
+              "fold": 0,
+              "internal_arm": "auto",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363693
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "physiochemical_protein",
+              "fold": 1,
+              "internal_arm": "baseline",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363693
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 0,
+        "wave_index": 24
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "dataset_index": 8,
+        "jobs": [
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "physiochemical_protein",
+              "fold": 2,
+              "internal_arm": "baseline",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363693
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "physiochemical_protein",
+              "fold": 1,
+              "internal_arm": "auto",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363693
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 1,
+        "wave_index": 25
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "dataset_index": 8,
+        "jobs": [
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "physiochemical_protein",
+              "fold": 2,
+              "internal_arm": "auto",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363693
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "physiochemical_protein",
+              "fold": 0,
+              "internal_arm": "baseline",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363693
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 2,
+        "wave_index": 26
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "dataset_index": 9,
+        "jobs": [
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "QSAR-TID-11",
+              "fold": 1,
+              "internal_arm": "baseline",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363697
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "QSAR-TID-11",
+              "fold": 0,
+              "internal_arm": "auto",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363697
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 0,
+        "wave_index": 27
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "dataset_index": 9,
+        "jobs": [
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "QSAR-TID-11",
+              "fold": 1,
+              "internal_arm": "auto",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363697
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "QSAR-TID-11",
+              "fold": 2,
+              "internal_arm": "baseline",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363697
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 1,
+        "wave_index": 28
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "dataset_index": 9,
+        "jobs": [
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "QSAR-TID-11",
+              "fold": 0,
+              "internal_arm": "baseline",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363697
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "QSAR-TID-11",
+              "fold": 2,
+              "internal_arm": "auto",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363697
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 2,
+        "wave_index": 29
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "dataset_index": 10,
+        "jobs": [
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "QSAR_fish_toxicity",
+              "fold": 0,
+              "internal_arm": "auto",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363698
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "QSAR_fish_toxicity",
+              "fold": 1,
+              "internal_arm": "baseline",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363698
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 0,
+        "wave_index": 30
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "dataset_index": 10,
+        "jobs": [
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "QSAR_fish_toxicity",
+              "fold": 2,
+              "internal_arm": "baseline",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363698
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "QSAR_fish_toxicity",
+              "fold": 1,
+              "internal_arm": "auto",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363698
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 1,
+        "wave_index": 31
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "dataset_index": 10,
+        "jobs": [
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "QSAR_fish_toxicity",
+              "fold": 2,
+              "internal_arm": "auto",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363698
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "QSAR_fish_toxicity",
+              "fold": 0,
+              "internal_arm": "baseline",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363698
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 2,
+        "wave_index": 32
+      },
+      {
+        "dataset": "superconductivity",
+        "dataset_index": 11,
+        "jobs": [
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "superconductivity",
+              "fold": 1,
+              "internal_arm": "baseline",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363705
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "superconductivity",
+              "fold": 0,
+              "internal_arm": "auto",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363705
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 0,
+        "wave_index": 33
+      },
+      {
+        "dataset": "superconductivity",
+        "dataset_index": 11,
+        "jobs": [
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "superconductivity",
+              "fold": 1,
+              "internal_arm": "auto",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363705
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "superconductivity",
+              "fold": 2,
+              "internal_arm": "baseline",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363705
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 1,
+        "wave_index": 34
+      },
+      {
+        "dataset": "superconductivity",
+        "dataset_index": 11,
+        "jobs": [
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "superconductivity",
+              "fold": 0,
+              "internal_arm": "baseline",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363705
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "superconductivity",
+              "fold": 2,
+              "internal_arm": "auto",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363705
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 2,
+        "wave_index": 35
+      },
+      {
+        "dataset": "wine_quality",
+        "dataset_index": 12,
+        "jobs": [
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "wine_quality",
+              "fold": 0,
+              "internal_arm": "auto",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363708
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "wine_quality",
+              "fold": 1,
+              "internal_arm": "baseline",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363708
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 0,
+        "wave_index": 36
+      },
+      {
+        "dataset": "wine_quality",
+        "dataset_index": 12,
+        "jobs": [
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "wine_quality",
+              "fold": 2,
+              "internal_arm": "baseline",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363708
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "wine_quality",
+              "fold": 1,
+              "internal_arm": "auto",
+              "registered_fold": 4,
+              "repeat": 1,
+              "task_id": 363708
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 1,
+        "wave_index": 37
+      },
+      {
+        "dataset": "wine_quality",
+        "dataset_index": 12,
+        "jobs": [
+          {
+            "key": {
+              "arm": "A10",
+              "dataset": "wine_quality",
+              "fold": 2,
+              "internal_arm": "auto",
+              "registered_fold": 8,
+              "repeat": 2,
+              "task_id": 363708
+            },
+            "worker_slot": 0
+          },
+          {
+            "key": {
+              "arm": "B10",
+              "dataset": "wine_quality",
+              "fold": 0,
+              "internal_arm": "baseline",
+              "registered_fold": 0,
+              "repeat": 0,
+              "task_id": 363708
+            },
+            "worker_slot": 1
+          }
+        ],
+        "local_wave_index": 2,
+        "wave_index": 38
+      }
+    ],
+    "wave_schedule_sha256": "6b4d727be3b4094b8cdf0627a13b26de513d0dbd78bcc558070403593c18bcbf"
+  },
+  "protocol_sha256": "ff1270ac7ae53bd18d694bc3ebf8bdc33738428467ef622e3f00741db2ffccd6",
+  "resolved_child_num_cpus": 18,
+  "reused_evidence": {
+    "artifacts": {
+      "tabarena_regression_same_machine_completion_attestation.json": "213f462aa06103e97864ecd786b75e8fd8e11743c77f556262fa39bdb3e1b7d9",
+      "tabarena_regression_same_machine_primary_paired_splits.csv": "3e7bbe21e0ffe40771f2065dc252dbd4314550f8ab350f2fbed9641401b341b1",
+      "tabarena_regression_same_machine_run_manifest.json": "2869acaaa4bcc8319d9ba03744a4a9ca8602ed349553a031c3d84ab537de72ee",
+      "tabarena_regression_same_machine_summary.json": "ca23618bdc3d9e0ab38557e7738c66e95827945ad34e3eb63005f253c92ccf01"
+    },
+    "catboost_version": "1.2.10",
+    "chimeraboost_tag_commit": "9c9ea6e704a9fe2bfe6d6c284b22de73914be048",
+    "source_commit": "a1ff4b74510b5e314bb41c27b40544910741543d",
+    "source_darkofit_subtree": "52278b0326419a45a72bdfd3afcfc13019087838"
+  },
+  "runtime": {
+    "environment": {
+      "CHIMERABOOST_WARMUP": null,
+      "MKL_NUM_THREADS": null,
+      "NUMBA_BOUNDSCHECK": null,
+      "NUMBA_CACHE_DIR": null,
+      "NUMBA_CPU_FEATURES": null,
+      "NUMBA_CPU_NAME": null,
+      "NUMBA_DISABLE_JIT": null,
+      "NUMBA_ENABLE_AVX": null,
+      "NUMBA_LOOP_VECTORIZE": null,
+      "NUMBA_NUM_THREADS": null,
+      "NUMBA_OPT": null,
+      "NUMBA_SLP_VECTORIZE": null,
+      "NUMBA_THREADING_LAYER": null,
+      "NUMBA_THREADING_LAYER_PRIORITY": null,
+      "OMP_NUM_THREADS": null,
+      "OPENBLAS_NUM_THREADS": null,
+      "PYTHONHASHSEED": null,
+      "TABARENA_DISABLE_RESULT_COMPRESSION": null,
+      "VECLIB_MAXIMUM_THREADS": null
+    },
+    "hardware": {
+      "host_identity_sha256": "00353152b14c09db53828acf8f34fef4cdef52b2880308e3c8b92fc886e112f8",
+      "logical_cpu_count": 18,
+      "physical_cpu_count": 18,
+      "process_cpu_affinity_count": 18,
+      "total_memory_bytes": 137438953472
+    },
+    "machine": "arm64",
+    "packages": {
+      "autogluon.common": "1.5.1b20260712",
+      "autogluon.core": "1.5.1b20260712",
+      "autogluon.features": "1.5.1b20260712",
+      "autogluon.tabular": "1.5.1b20260712",
+      "catboost": "1.2.10",
+      "chimeraboost": null,
+      "darkofit": "0.9.0",
+      "graphviz": "0.21",
+      "llvmlite": "0.48.0",
+      "numba": "0.66.0",
+      "numpy": "2.4.6",
+      "pandas": "2.3.3",
+      "psutil": "7.1.3",
+      "scikit-learn": "1.7.2",
+      "scipy": "1.16.3",
+      "tabarena": "0.0.1"
+    },
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python_executable": "/Users/kmedved/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/bin/python3.12",
+    "python_version": "3.12.13"
+  },
+  "schema_version": 1,
+  "source": {
+    "darkofit_import": {
+      "git_head": "54b5e99b2d06137c6cb8c5c9b5c7b66165520ebd",
+      "git_remote_origin": "https://github.com/kmedved/darkofit.git",
+      "git_tree": "a9bfc029d2a1c6fc0183b721985ba413e9db1151",
+      "module": "darkofit",
+      "module_file": "/Users/kmedved/Code/GitHub/darkofit/darkofit/__init__.py",
+      "repository": "/Users/kmedved/Code/GitHub/darkofit",
+      "status": ""
+    },
+    "files": {
+      "benchmarks/analyze_tabarena_regression_accuracy_shootout.py": {
+        "git_blob": "b5ebfe64a101da34346c6eed331248453dd269cf",
+        "sha256": "45d221d9d4089b58feb5103e54e70d300fca01ce177f60cfdf3ec4aa714c4553"
+      },
+      "benchmarks/analyze_tabarena_regression_cap_horizon.py": {
+        "git_blob": "7a4217641844d2e0b828ea8c41f537055f100876",
+        "sha256": "f01a0a7d197adb48edaf18904248c2c46f9197aa57f9219a64f9f846763b762d"
+      },
+      "benchmarks/run_tabarena_regression_accuracy_shootout.py": {
+        "git_blob": "ff8298083509781b0a98b7891373d353f0077462",
+        "sha256": "fc1093e8a3e9fece23b9086c2d82aa23943b37bce11bc0ee9c4e90bcb92a248e"
+      },
+      "benchmarks/run_tabarena_regression_cap_horizon.py": {
+        "git_blob": "d55f6f5aef986c918d79ddd0ef7a350c301b01fc",
+        "sha256": "7c1588023331fbc0b1f973e0c3e7af818f52ab9baff4e9c40d4a160234a9d1de"
+      },
+      "benchmarks/run_tabarena_regression_followon_screen.py": {
+        "git_blob": "0a64aacf14ce77d353f5d851c070653d2b1a4ea8",
+        "sha256": "424250cb081f180c9e93e72b3faa3608fb695ba2305d7752ff2de031bd5bc68e"
+      },
+      "benchmarks/tabarena_adapter.py": {
+        "git_blob": "e2e4f207e7fe0db7079b72291eb185e01e6e21a2",
+        "sha256": "13fefe3937ca9a4020412023324aa724e073330377fdd6ecd476fd29fc63740a"
+      },
+      "benchmarks/tabarena_followon_warmup.py": {
+        "git_blob": "42f619601ffc39590a60b99228b5504bce16a61c",
+        "sha256": "f4c8a17850bb8a1de2441380bb0ea3b591fd2de23dd31a5607f7f38cd1956bbb"
+      },
+      "benchmarks/tabarena_regression_accuracy_shootout_protocol.md": {
+        "git_blob": "b89fd3d10e0ae0b0d6fd66f278760e5a3eb36650",
+        "sha256": "e1460a63bd6b4b8a86df2213b58d282eba970de18d77680e78b0865d117cba46"
+      },
+      "benchmarks/tabarena_screen_adapters.py": {
+        "git_blob": "8ae4d3e3cfe1e091c837e253a06664b5abd37dda",
+        "sha256": "c491b8ccdbbd6ab13f2e296020dff8e209dcab7f4568f39b7f886c05c29ae1af"
+      },
+      "benchmarks/tabarena_warmup.py": {
+        "git_blob": "ec376e308208d298d2e8725ed17c1fe03760d824",
+        "sha256": "5fd09a43f9589f260512f4b93ab3548eac6074289ca81e56ea679c8c6eb7d558"
+      },
+      "darkofit/__init__.py": {
+        "git_blob": "0d883e05c8de8a5f8102f52b481533ea67ab95dc",
+        "sha256": "af3afbe3e484fc7114d89664f744a86da107caa0eaa4839b7d8f85067a17f3ff"
+      },
+      "darkofit/booster.py": {
+        "git_blob": "fbb11ea4e156f5f175da9800d69424c2ce21de4e",
+        "sha256": "ba8ff579cd34a074617baac545428278ddd172487f6ceb7dec39d212c5b50d9d"
+      },
+      "darkofit/callbacks.py": {
+        "git_blob": "13dab2fc29c43318b45d5e9bcae6b64b7c616684",
+        "sha256": "e2bd4bb7cf97c4a348178999c91c31d276daf6934141499209008d642e3853c0"
+      },
+      "darkofit/preprocessing.py": {
+        "git_blob": "8d05384c9f0d40f56c3a8c79ca0fa08f6c93886c",
+        "sha256": "4bffa9cc532c2056cb431dd6103ffe1497a793c157bedcc36303b2dcd5ec33f5"
+      },
+      "darkofit/serialization.py": {
+        "git_blob": "34b164af6b1f26d6572ffcf586937f3921e05697",
+        "sha256": "d520b7e7fd5e05d6448313371028b1a896bf0da38948d5ea56eb60ebcf7b9d41"
+      },
+      "darkofit/sklearn_api.py": {
+        "git_blob": "b77e38b954df3b4e50d41077771b8452942955a1",
+        "sha256": "14c1647dcce8fb8e4144a62cb41090423c1645eb040376228ea67da875f9a3a1"
+      },
+      "pyproject.toml": {
+        "git_blob": "e4777a93f67b1896e91a3d79940706108e9af864",
+        "sha256": "8cd6c612046188d136be01bc0c8eebf3b3799a6f6824d61a3754738bce921e01"
+      }
+    },
+    "git_head": "54b5e99b2d06137c6cb8c5c9b5c7b66165520ebd",
+    "git_tree": "a9bfc029d2a1c6fc0183b721985ba413e9db1151",
+    "relevant_status": "",
+    "repository": "/Users/kmedved/Code/GitHub/darkofit",
+    "tabarena": {
+      "git_head": "4cd1d2526874962daae048a6f2dcf34aa272f3fa",
+      "git_remote_origin": "https://github.com/autogluon/tabarena.git",
+      "git_tree": "a293df372a613c7358ba5fcd746f58d580cde7d6",
+      "module": "tabarena",
+      "module_file": "/Users/kmedved/Code/GitHub/tabarena/packages/tabarena/src/tabarena/__init__.py",
+      "repository": "/Users/kmedved/Code/GitHub/tabarena",
+      "status": ""
+    }
+  },
+  "start_method": "spawn",
+  "swap_policy": "quality_only_swap_in",
+  "time_limit_seconds": 3600.0,
+  "timing_admissible": false,
+  "wave_count": 39,
+  "wave_schedule_sha256": "6b4d727be3b4094b8cdf0627a13b26de513d0dbd78bcc558070403593c18bcbf",
+  "worker_count": 2
+}
