@@ -575,6 +575,8 @@ def test_preflight_analysis_invokes_runner_attestation_validator(
         "passed": True,
         "execution_mode": "concurrent",
         "throughput_speedup": 1.2,
+        "timing_admissible": True,
+        "mode_selection_criteria": ["synthetic"],
         "criteria": {"synthetic": True},
     }
     report = {
@@ -582,6 +584,7 @@ def test_preflight_analysis_invokes_runner_attestation_validator(
         "kind": analysis.campaign.CAMPAIGN_KIND + "_preflight",
         "protocol_sha256": analysis.protocol_sha256(),
         "wave_schedule_sha256": analysis.campaign.wave_schedule_sha256(),
+        "swap_policy": analysis.campaign.SWAP_POLICY_STRICT,
         "decision": decision,
     }
     observed = []
@@ -600,6 +603,87 @@ def test_preflight_analysis_invokes_runner_attestation_validator(
         report, execution_mode="concurrent", input_dir=tmp_path
     ) == decision
     assert observed == [(report, tmp_path)]
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (
+            {
+                "swap_policy": analysis.campaign.SWAP_POLICY_STRICT,
+                "timing_admissible": False,
+            },
+            "timing admissibility",
+        ),
+        (
+            {
+                "swap_policy": analysis.campaign.SWAP_POLICY_QUALITY_ONLY_SWAP_IN,
+                "timing_admissible": True,
+            },
+            "timing admissibility",
+        ),
+        (
+            {"swap_policy": "unknown", "timing_admissible": False},
+            "swap policy",
+        ),
+    ],
+)
+def test_policy_timing_binding_rejects_tampering(value, expected):
+    with pytest.raises(RuntimeError, match=expected):
+        analysis._validate_policy_timing_binding(value, "synthetic artifact")
+
+
+def test_preflight_policy_must_match_manifest_selection(tmp_path, monkeypatch):
+    report = {
+        "swap_policy": analysis.campaign.SWAP_POLICY_QUALITY_ONLY_SWAP_IN,
+    }
+    monkeypatch.setattr(
+        analysis.campaign,
+        "validate_preflight_attestation",
+        lambda *_args, **_kwargs: None,
+    )
+
+    with pytest.raises(RuntimeError, match="preflight swap policy"):
+        analysis._validate_preflight_artifact(
+            report,
+            execution_mode="concurrent",
+            input_dir=tmp_path,
+            swap_policy=analysis.campaign.SWAP_POLICY_STRICT,
+            timing_admissible=True,
+        )
+
+
+def test_concurrency_validator_receives_exact_selected_policy(tmp_path, monkeypatch):
+    observed = []
+    history = {
+        "swap_policy": analysis.campaign.SWAP_POLICY_QUALITY_ONLY_SWAP_IN,
+        "timing_admissible": False,
+    }
+
+    def validate(value, **kwargs):
+        observed.append((value, kwargs))
+
+    monkeypatch.setattr(
+        analysis.campaign, "validate_concurrency_history", validate
+    )
+    analysis._validate_concurrency_artifact(
+        history,
+        execution_mode="concurrent",
+        input_dir=tmp_path,
+        swap_policy=analysis.campaign.SWAP_POLICY_QUALITY_ONLY_SWAP_IN,
+        timing_admissible=False,
+    )
+
+    assert observed == [
+        (
+            history,
+            {
+                "execution_mode": "concurrent",
+                "output_dir": tmp_path,
+                "swap_policy": analysis.campaign.SWAP_POLICY_QUALITY_ONLY_SWAP_IN,
+            },
+        )
+    ]
 
 
 def test_concurrency_reports_bind_bijectively_to_completed_artifacts(tmp_path):
@@ -783,6 +867,389 @@ def test_sequential_fallback_report_makes_no_contention_claim():
     assert "contention-exposed" not in summary["timing_disclosure"]
     report = analysis.render_report(summary, per_dataset)
     assert "Execution mode: **sequential_fallback**" in report
+
+
+def test_quality_only_report_disclaims_performance_and_exposes_raw_swap_audit():
+    outer, reused, children = _synthetic_inputs()
+    swap_audit = {
+        "swap_policy": analysis.campaign.SWAP_POLICY_QUALITY_ONLY_SWAP_IN,
+        "timing_admissible": False,
+        "production_zero_swap_out_verified": True,
+        "preflight": {
+            "decision_passed": True,
+            "decision_execution_mode": "concurrent",
+            "selected_policy_passed": True,
+            "zero_swap_out_coverage_status": "complete",
+            "zero_swap_out_observed": True,
+            "preflight_error": None,
+            "lifecycle": {
+                "status": "complete",
+                "swap_in_bytes": 11,
+                "swap_out_bytes": 0,
+                "policy_passed": True,
+            },
+            "measured": {
+                "status": "complete",
+                "swap_in_bytes": 7,
+                "swap_out_bytes": 0,
+                "policy_passed": True,
+            },
+        },
+        "production": {
+            "lifecycle": {
+                "status": "complete",
+                "swap_in_bytes": 19,
+                "swap_out_bytes": 0,
+                "policy_passed": True,
+            },
+            "measured": {
+                "status": "complete",
+                "swap_in_bytes": 13,
+                "swap_out_bytes": 0,
+                "policy_passed": True,
+            },
+        },
+    }
+    decision = {
+        "execution_mode": "concurrent",
+        "timing_admissible": False,
+        "mode_selection_criteria": [
+            "eight_valid_executions",
+            "exact_behavior_fingerprints",
+            "operational_limits",
+            "full_session_swap_policy",
+        ],
+        "throughput_speedup": 1.23,
+        "reciprocal_asymmetry_ratio": 1.08,
+    }
+
+    summary, per_dataset = analysis.analyze(
+        analysis.pair_outer_rows(outer, reused),
+        children,
+        swap_policy=analysis.campaign.SWAP_POLICY_QUALITY_ONLY_SWAP_IN,
+        timing_admissible=False,
+        swap_audit=swap_audit,
+        preflight_decision=decision,
+    )
+
+    assert summary["timing_admissible"] is False
+    assert summary["memory_performance_admissible"] is False
+    assert summary["swap_audit"] == swap_audit
+    assert summary["execution_mode_selection"][
+        "performance_comparison_criteria_used"
+    ] is False
+    assert "inadmissible" in summary["timing_disclosure"]
+    assert "operational audit data" in summary["timing_disclosure"]
+    assert "contention-exposed" not in summary["timing_disclosure"]
+    report = analysis.render_report(summary, per_dataset)
+    assert "Timing and memory-performance evidence: **inadmissible by policy**" in report
+    assert "| Preflight lifecycle | complete | 11 B | 0 B | pass |" in report
+    assert "| Production measured | complete | 13 B | 0 B | pass |" in report
+    assert "Production zero swap-out verified" in report
+    assert "raw host-counter deltas, not performance results" in report
+    assert (
+        "Zero swap-out observed across the complete preflight lifecycle and "
+        "measured windows: **yes**."
+    ) in report
+
+
+@pytest.mark.parametrize(
+    ("execution_mode", "swap_policy", "timing_admissible", "disposition"),
+    [
+        (
+            "concurrent",
+            analysis.campaign.SWAP_POLICY_STRICT,
+            True,
+            "timing_admissible_with_noncausal_schedule_limits",
+        ),
+        (
+            "sequential_fallback",
+            analysis.campaign.SWAP_POLICY_STRICT,
+            True,
+            "timing_admissible_with_noncausal_schedule_limits",
+        ),
+        (
+            "concurrent",
+            analysis.campaign.SWAP_POLICY_QUALITY_ONLY_SWAP_IN,
+            False,
+            "inadmissible_by_quality_only_swap_in_policy",
+        ),
+    ],
+)
+def test_standalone_comparative_csv_rows_carry_policy_disposition(
+    execution_mode, swap_policy, timing_admissible, disposition
+):
+    outer, reused, children = _synthetic_inputs()
+    paired = analysis.pair_outer_rows(outer, reused)
+    summary, per_dataset = analysis.analyze(
+        paired,
+        children,
+        execution_mode=execution_mode,
+        swap_policy=swap_policy,
+        timing_admissible=timing_admissible,
+    )
+
+    payloads = analysis._build_output_payloads(
+        paired, per_dataset, children, summary
+    )
+
+    for key, expected_count in (("split_csv", 39), ("child_csv", 312)):
+        rows = list(csv.DictReader(payloads[key].decode("utf-8").splitlines()))
+        assert len(rows) == expected_count
+        assert all(row["execution_mode"] == execution_mode for row in rows)
+        assert all(row["swap_policy"] == swap_policy for row in rows)
+        assert all(
+            row["timing_admissible"] == str(timing_admissible) for row in rows
+        )
+        assert all(
+            row["performance_evidence_disposition"] == disposition for row in rows
+        )
+    assert all(
+        not set(row).intersection(analysis.EXPORT_CONTEXT_FIELDS) for row in paired
+    )
+    assert all(
+        not set(row).intersection(analysis.EXPORT_CONTEXT_FIELDS) for row in children
+    )
+
+
+def test_quality_only_mode_selection_rejects_timing_criteria():
+    outer, reused, children = _synthetic_inputs()
+    with pytest.raises(RuntimeError, match="inadmissible timing evidence"):
+        analysis.analyze(
+            analysis.pair_outer_rows(outer, reused),
+            children,
+            swap_policy=analysis.campaign.SWAP_POLICY_QUALITY_ONLY_SWAP_IN,
+            timing_admissible=False,
+            preflight_decision={
+                "execution_mode": "concurrent",
+                "timing_admissible": False,
+                "mode_selection_criteria": [
+                    "throughput_speedup_at_least_1_10"
+                ],
+            },
+        )
+
+
+def test_swap_audit_rejects_production_swap_out():
+    preflight = {
+        "decision": {
+            "passed": True,
+            "execution_mode": "concurrent",
+            "criteria": {
+                "full_session_swap_policy": True,
+                "measured_phase_swap_policy": True,
+            },
+        },
+        "preflight_error": None,
+        "worker_session_swap_telemetry": {
+            "swap_in_delta": 1,
+            "swap_out_delta": 0,
+        },
+        "measured_phase_swap_window": {
+            "swap_in_delta": 1,
+            "swap_out_delta": 0,
+        },
+    }
+    concurrency = {
+        "execution_mode": "concurrent",
+        "worker_session_swap_telemetry": {
+            "swap_in_delta": 2,
+            "swap_out_delta": 0,
+        },
+        "measured_phase_swap_window": {
+            "swap_in_delta": 2,
+            "swap_out_delta": 1,
+        },
+    }
+
+    with pytest.raises(RuntimeError, match="zero swap-out"):
+        analysis._build_swap_audit(
+            preflight,
+            concurrency,
+            swap_policy=analysis.campaign.SWAP_POLICY_QUALITY_ONLY_SWAP_IN,
+            timing_admissible=False,
+        )
+
+
+def test_swap_audit_accepts_unavailable_measured_preflight_for_fallback():
+    preflight = {
+        "decision": {
+            "passed": False,
+            "execution_mode": "sequential_fallback",
+            "criteria": {
+                "full_session_swap_policy": True,
+                "measured_phase_swap_policy": False,
+            },
+        },
+        "preflight_error": {
+            "error_type": "RuntimeError",
+            "error": "pilot worker failed before measured dispatch",
+        },
+        "worker_session_swap_telemetry": {
+            "swap_in_delta": 0,
+            "swap_out_delta": 0,
+        },
+        "measured_phase_swap_window": None,
+    }
+    production = {
+        "execution_mode": "sequential_fallback",
+        "worker_session_swap_telemetry": {
+            "swap_in_delta": 0,
+            "swap_out_delta": 0,
+        },
+        "measured_phase_swap_window": {
+            "swap_in_delta": 0,
+            "swap_out_delta": 0,
+        },
+    }
+
+    audit = analysis._build_swap_audit(
+        preflight,
+        production,
+        swap_policy=analysis.campaign.SWAP_POLICY_STRICT,
+        timing_admissible=True,
+    )
+
+    assert audit["preflight"]["measured"] == {
+        "status": "unavailable",
+        "swap_in_bytes": None,
+        "swap_out_bytes": None,
+        "policy_passed": False,
+    }
+    assert audit["preflight"]["zero_swap_out_coverage_status"] == "unavailable"
+    assert audit["preflight"]["zero_swap_out_observed"] is None
+    assert audit["preflight"]["decision_execution_mode"] == "sequential_fallback"
+    assert audit["production_zero_swap_out_verified"] is True
+    outer, reused, children = _synthetic_inputs()
+    summary, per_dataset = analysis.analyze(
+        analysis.pair_outer_rows(outer, reused),
+        children,
+        execution_mode="sequential_fallback",
+        swap_policy=analysis.campaign.SWAP_POLICY_STRICT,
+        timing_admissible=True,
+        swap_audit=audit,
+    )
+    report = analysis.render_report(summary, per_dataset)
+    assert "| Preflight measured | unavailable | unavailable | unavailable | fail |" in report
+    assert "pilot worker failed before measured dispatch" in report
+    assert "Production zero swap-out verified" in report
+    assert "Preflight zero-swap-out coverage: **unavailable**" in report
+    assert "across complete preflight windows" not in report
+
+
+def test_partial_preflight_swap_coverage_has_no_complete_window_conclusion():
+    preflight = {
+        "decision": {
+            "passed": False,
+            "execution_mode": "sequential_fallback",
+            "criteria": {
+                "full_session_swap_policy": True,
+                "measured_phase_swap_policy": False,
+            },
+        },
+        "preflight_error": {
+            "error_type": "RuntimeError",
+            "error": "pilot failed after one measured dispatch",
+        },
+        "worker_session_swap_telemetry": {
+            "swap_in_delta": 0,
+            "swap_out_delta": 0,
+        },
+        "measured_phase_swap_window": {
+            "swap_in_delta": 0,
+            "swap_out_delta": 0,
+        },
+    }
+    production = {
+        "execution_mode": "sequential_fallback",
+        "worker_session_swap_telemetry": {
+            "swap_in_delta": 0,
+            "swap_out_delta": 0,
+        },
+        "measured_phase_swap_window": {
+            "swap_in_delta": 0,
+            "swap_out_delta": 0,
+        },
+    }
+
+    audit = analysis._build_swap_audit(
+        preflight,
+        production,
+        swap_policy=analysis.campaign.SWAP_POLICY_STRICT,
+        timing_admissible=True,
+    )
+
+    assert audit["preflight"]["measured"]["status"] == "partial"
+    assert audit["preflight"]["zero_swap_out_coverage_status"] == "partial"
+    assert audit["preflight"]["zero_swap_out_observed"] is None
+    outer, reused, children = _synthetic_inputs()
+    summary, per_dataset = analysis.analyze(
+        analysis.pair_outer_rows(outer, reused),
+        children,
+        execution_mode="sequential_fallback",
+        swap_policy=analysis.campaign.SWAP_POLICY_STRICT,
+        timing_admissible=True,
+        swap_audit=audit,
+    )
+    report = analysis.render_report(summary, per_dataset)
+    assert "Preflight zero-swap-out coverage: **partial**" in report
+    assert "no complete two-window zero-swap-out conclusion" in report
+    assert "across the complete preflight lifecycle" not in report
+
+
+def test_swap_audit_preserves_preflight_swapout_failure_for_fallback():
+    preflight = {
+        "decision": {
+            "passed": False,
+            "execution_mode": "sequential_fallback",
+            "criteria": {
+                "full_session_swap_policy": False,
+                "measured_phase_swap_policy": False,
+            },
+        },
+        "preflight_error": None,
+        "worker_session_swap_telemetry": {
+            "swap_in_delta": 5,
+            "swap_out_delta": 3,
+        },
+        "measured_phase_swap_window": {
+            "swap_in_delta": 4,
+            "swap_out_delta": 2,
+        },
+    }
+    production = {
+        "execution_mode": "sequential_fallback",
+        "worker_session_swap_telemetry": {
+            "swap_in_delta": 9,
+            "swap_out_delta": 0,
+        },
+        "measured_phase_swap_window": {
+            "swap_in_delta": 4,
+            "swap_out_delta": 0,
+        },
+    }
+
+    audit = analysis._build_swap_audit(
+        preflight,
+        production,
+        swap_policy=analysis.campaign.SWAP_POLICY_QUALITY_ONLY_SWAP_IN,
+        timing_admissible=False,
+    )
+
+    assert audit["preflight"]["selected_policy_passed"] is False
+    assert audit["preflight"]["zero_swap_out_observed"] is False
+    assert audit["preflight"]["lifecycle"]["swap_out_bytes"] == 3
+    assert audit["production_zero_swap_out_verified"] is True
+    outer, reused, children = _synthetic_inputs()
+    summary, _ = analysis.analyze(
+        analysis.pair_outer_rows(outer, reused),
+        children,
+        execution_mode="sequential_fallback",
+        swap_policy=analysis.campaign.SWAP_POLICY_QUALITY_ONLY_SWAP_IN,
+        timing_admissible=False,
+        swap_audit=audit,
+    )
+    assert summary["swap_audit"]["preflight"]["zero_swap_out_observed"] is False
 
 
 def test_per_dataset_worst_validation_split_is_not_reused_from_test_metric():

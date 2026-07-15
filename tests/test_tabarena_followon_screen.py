@@ -418,6 +418,18 @@ def test_followon_warmup_and_inherited_provenance_are_source_frozen():
         "benchmarks/analyze_tabarena_regression_cap_horizon.py",
     } <= source_files
     protocol = screen.frozen_protocol()
+    assert protocol["artifact_schema_versions"] == {
+        "run_manifest": screen.RUN_MANIFEST_SCHEMA_VERSION,
+        "completion_attestation": screen.COMPLETION_ATTESTATION_SCHEMA_VERSION,
+        "analysis_payload": screen.ANALYSIS_PAYLOAD_SCHEMA_VERSION,
+    }
+    assert screen.ANALYSIS_PAYLOAD_SCHEMA_VERSION == 2
+    legacy_protocol = deepcopy(protocol)
+    legacy_protocol.pop("artifact_schema_versions")
+    legacy_digest = screen.hashlib.sha256(
+        screen.hardened._canonical_json(legacy_protocol)
+    ).hexdigest()
+    assert screen.protocol_sha256() != legacy_digest
     assert protocol["warmup"] == {
         "kind": screen.WARMUP_KIND,
         "schema_version": screen.WARMUP_SCHEMA_VERSION,
@@ -447,6 +459,25 @@ def test_followon_warmup_and_inherited_provenance_are_source_frozen():
     with pytest.raises(RuntimeError, match="counts or resources"):
         screen._validate_followon_warmup_history(
             invalid, expected_thread_count=18
+        )
+
+
+def test_followon_analyzer_accepts_current_payload_schema():
+    payload = {"schema_version": screen.ANALYSIS_PAYLOAD_SCHEMA_VERSION}
+    assert analysis._require_schema_version(
+        payload,
+        expected=screen.ANALYSIS_PAYLOAD_SCHEMA_VERSION,
+        field="safe analysis payload",
+    ) == 2
+
+
+@pytest.mark.parametrize("schema_version", (1, 3))
+def test_followon_analyzer_rejects_old_or_tampered_payload_schema(schema_version):
+    with pytest.raises(RuntimeError, match="requires schema version 2"):
+        analysis._require_schema_version(
+            {"schema_version": schema_version},
+            expected=screen.ANALYSIS_PAYLOAD_SCHEMA_VERSION,
+            field="safe analysis payload",
         )
 
 
@@ -819,6 +850,8 @@ def _valid_auto_selection():
     candidates = []
     scores = (2.0, 1.0, 3.0)
     for index, mode in enumerate(("catboost", "lightgbm", "hybrid")):
+        elapsed_start = float(index)
+        elapsed_end = float(index + 1)
         candidates.append(
             {
                 "tree_mode": mode,
@@ -834,6 +867,9 @@ def _valid_auto_selection():
                 "best_iteration": 90,
                 "resolved_learning_rate": 0.1,
                 "stop_reason": "early_stopping",
+                "wall_clock_elapsed_seconds_start": elapsed_start,
+                "wall_clock_elapsed_seconds_end": elapsed_end,
+                "wall_clock_elapsed_seconds": elapsed_end,
                 "deadline_hit_start": False,
                 "deadline_hit_end": False,
                 "deadline_hit": False,
@@ -874,6 +910,10 @@ def _valid_auto_top_level(selection):
         },
         "selected_tree_mode": selected["tree_mode"],
         "selected_lane": selected["lane"],
+        "wall_clock_limit_seconds": 10.0,
+        "wall_clock_safety_margin_seconds": 0.5,
+        "wall_clock_effective_seconds": 9.5,
+        "wall_clock_elapsed_seconds": 4.0,
     }
 
 
@@ -924,6 +964,192 @@ def test_auto_candidate_audit_rejects_bad_counters_and_nonminimum_selection():
             selected_tree_mode="lightgbm",
             deadline_hit=False,
             top_level=_valid_auto_top_level(selection),
+            field="auto test",
+        )
+
+
+@pytest.mark.parametrize("wall_elapsed", (9.5, 9.75, 10.0))
+def test_child_deadline_audit_allows_soft_overrun_within_hard_limit(wall_elapsed):
+    metadata = {
+        "wall_clock_limit_seconds": 10.0,
+        "wall_clock_safety_margin_seconds": 0.5,
+        "wall_clock_effective_seconds": 9.5,
+        "wall_clock_elapsed_seconds": wall_elapsed,
+        "stop_reason": "early_stopping",
+        "deadline_hit": False,
+    }
+
+    assert screen._validate_child_wall_clock_audit(
+        metadata, field="child test"
+    ) == (10.0, 0.5, 9.5, wall_elapsed)
+
+
+@pytest.mark.parametrize(
+    "updates",
+    (
+        {"wall_clock_elapsed_seconds": 10.000001},
+        {
+            "wall_clock_elapsed_seconds": 9.499999,
+            "deadline_hit": True,
+            "stop_reason": "time_limit",
+        },
+        {
+            "wall_clock_elapsed_seconds": 9.75,
+            "deadline_hit": False,
+            "stop_reason": "time_limit",
+        },
+        {"stop_reason": "unknown"},
+    ),
+)
+def test_child_deadline_audit_rejects_hard_overrun_or_impossible_hit(updates):
+    metadata = {
+        "wall_clock_limit_seconds": 10.0,
+        "wall_clock_safety_margin_seconds": 0.5,
+        "wall_clock_effective_seconds": 9.5,
+        "wall_clock_elapsed_seconds": 9.0,
+        "stop_reason": "early_stopping",
+        "deadline_hit": False,
+    }
+    metadata.update(updates)
+
+    with pytest.raises(RuntimeError, match="wall-clock audit mismatch"):
+        screen._validate_child_wall_clock_audit(metadata, field="child test")
+
+
+@pytest.mark.parametrize(
+    ("candidate_index", "updates", "error"),
+    (
+        (
+            0,
+            {"wall_clock_elapsed_seconds_start": float("nan")},
+            "must be finite",
+        ),
+        (
+            1,
+            {
+                "wall_clock_elapsed_seconds_start": 2.5,
+                "wall_clock_elapsed_seconds_end": 2.0,
+                "wall_clock_elapsed_seconds": 2.0,
+            },
+            "timing fields are inconsistent",
+        ),
+        (
+            1,
+            {"wall_clock_elapsed_seconds": 2.5},
+            "timing fields are inconsistent",
+        ),
+        (
+            2,
+            {
+                "wall_clock_elapsed_seconds_start": -1.0,
+                "wall_clock_elapsed_seconds_end": 3.0,
+                "wall_clock_elapsed_seconds": 3.0,
+            },
+            "timing must be nonnegative",
+        ),
+    ),
+)
+def test_auto_candidate_audit_rejects_malformed_timing(
+    candidate_index, updates, error
+):
+    selection = _valid_auto_selection()
+    selection["candidates"][candidate_index].update(updates)
+
+    with pytest.raises(RuntimeError, match=error):
+        screen._validate_tree_mode_selection(
+            selection,
+            selected_tree_mode="lightgbm",
+            deadline_hit=False,
+            top_level=_valid_auto_top_level(selection),
+            field="auto test",
+        )
+
+
+def test_auto_candidate_audit_rejects_overlapping_candidate_timeline():
+    selection = _valid_auto_selection()
+    selection["candidates"][1]["wall_clock_elapsed_seconds_start"] = 0.5
+
+    with pytest.raises(RuntimeError, match="candidate timings are not ordered"):
+        screen._validate_tree_mode_selection(
+            selection,
+            selected_tree_mode="lightgbm",
+            deadline_hit=False,
+            top_level=_valid_auto_top_level(selection),
+            field="auto test",
+        )
+
+
+@pytest.mark.parametrize("candidate_end", (9.5, 9.75, 10.0))
+def test_auto_candidate_audit_allows_final_candidate_soft_overrun(
+    candidate_end,
+):
+    selection = _valid_auto_selection()
+    candidate = selection["candidates"][2]
+    candidate["wall_clock_elapsed_seconds_end"] = candidate_end
+    candidate["wall_clock_elapsed_seconds"] = candidate_end
+    top_level = _valid_auto_top_level(selection)
+    top_level["wall_clock_elapsed_seconds"] = candidate_end
+
+    screen._validate_tree_mode_selection(
+        selection,
+        selected_tree_mode="lightgbm",
+        deadline_hit=False,
+        top_level=top_level,
+        field="auto test",
+    )
+
+
+@pytest.mark.parametrize("candidate_start", (9.5, 9.500001))
+def test_auto_candidate_audit_rejects_candidate_start_at_soft_deadline(
+    candidate_start,
+):
+    selection = _valid_auto_selection()
+    candidate = selection["candidates"][2]
+    candidate["wall_clock_elapsed_seconds_start"] = candidate_start
+    candidate["wall_clock_elapsed_seconds_end"] = candidate_start + 0.1
+    candidate["wall_clock_elapsed_seconds"] = candidate_start + 0.1
+    top_level = _valid_auto_top_level(selection)
+    top_level["wall_clock_elapsed_seconds"] = candidate_start + 0.1
+
+    with pytest.raises(RuntimeError, match="starts at or after"):
+        screen._validate_tree_mode_selection(
+            selection,
+            selected_tree_mode="lightgbm",
+            deadline_hit=False,
+            top_level=top_level,
+            field="auto test",
+        )
+
+
+def test_auto_candidate_audit_rejects_hard_wall_clock_overrun():
+    selection = _valid_auto_selection()
+    candidate = selection["candidates"][2]
+    candidate["wall_clock_elapsed_seconds_end"] = 10.000001
+    candidate["wall_clock_elapsed_seconds"] = 10.000001
+    top_level = _valid_auto_top_level(selection)
+    top_level["wall_clock_elapsed_seconds"] = 10.0
+
+    with pytest.raises(RuntimeError, match="exceeds the hard wall-clock limit"):
+        screen._validate_tree_mode_selection(
+            selection,
+            selected_tree_mode="lightgbm",
+            deadline_hit=False,
+            top_level=top_level,
+            field="auto test",
+        )
+
+
+def test_auto_candidate_audit_rejects_child_elapsed_before_final_candidate():
+    selection = _valid_auto_selection()
+    top_level = _valid_auto_top_level(selection)
+    top_level["wall_clock_elapsed_seconds"] = 2.5
+
+    with pytest.raises(RuntimeError, match="precedes its final candidate"):
+        screen._validate_tree_mode_selection(
+            selection,
+            selected_tree_mode="lightgbm",
+            deadline_hit=False,
+            top_level=top_level,
             field="auto test",
         )
 

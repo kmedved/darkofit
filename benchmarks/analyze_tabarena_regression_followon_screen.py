@@ -74,6 +74,20 @@ def _read_json_stable(path: Path, field: str) -> tuple[dict[str, Any], bytes]:
     return dict(hardened_analysis._as_mapping(value, field)), payload
 
 
+def _require_schema_version(
+    value: Mapping[str, Any], *, expected: int, field: str
+) -> int:
+    """Reject artifacts from older or unknown standalone schema contracts."""
+    observed = hardened_analysis._exact_int(
+        value.get("schema_version"), f"{field} schema version"
+    )
+    if observed != expected:
+        raise RuntimeError(
+            f"{field} requires schema version {expected}, got {observed}"
+        )
+    return observed
+
+
 def _verify_repository_source(
     source: Mapping[str, Any], input_dir: Path
 ) -> dict[str, Any]:
@@ -283,6 +297,9 @@ def _validate_safe_payload(
         "tree_mode_selection",
         "stop_reason",
         "deadline_hit",
+        "wall_clock_limit_seconds",
+        "wall_clock_safety_margin_seconds",
+        "wall_clock_effective_seconds",
         "wall_clock_elapsed_seconds",
         "child_features",
         "representation",
@@ -376,10 +393,7 @@ def _validate_safe_payload(
         )
         if row["stop_reason"] == "time_limit" or row["deadline_hit"] is not False:
             raise RuntimeError("screen payload contains a deadline-hit child")
-        if screen._finite(
-            row["wall_clock_elapsed_seconds"], "safe child wall-clock elapsed"
-        ) < 0.0:
-            raise RuntimeError("safe child wall-clock elapsed must be nonnegative")
+        screen._validate_child_wall_clock_audit(row, field="safe child")
         _validate_normalized_representation(row)
         screen._validate_refit_params(
             row["refit_params"],
@@ -435,9 +449,13 @@ def verify_campaign_integrity(
     manifest, manifest_bytes = _read_json_stable(manifest_path, "run manifest")
     protocol = screen.frozen_protocol()
     protocol_digest = hashlib.sha256(screen.hardened._canonical_json(protocol)).hexdigest()
+    _require_schema_version(
+        manifest,
+        expected=screen.RUN_MANIFEST_SCHEMA_VERSION,
+        field="run manifest",
+    )
     if (
-        manifest.get("schema_version") != 1
-        or manifest.get("kind") != screen.CAMPAIGN_KIND
+        manifest.get("kind") != screen.CAMPAIGN_KIND
         or Path(str(manifest.get("output_dir", ""))).resolve() != input_dir
         or manifest.get("protocol") != protocol
         or manifest.get("protocol_sha256") != protocol_digest
@@ -454,6 +472,11 @@ def verify_campaign_integrity(
     attestation, attestation_bytes = _read_json_stable(
         attestation_path, "completion attestation"
     )
+    _require_schema_version(
+        attestation,
+        expected=screen.COMPLETION_ATTESTATION_SCHEMA_VERSION,
+        field="completion attestation",
+    )
     expected_counts = {
         "result_count": screen.EXPECTED_JOBS,
         "expected_result_count": screen.EXPECTED_JOBS,
@@ -461,8 +484,7 @@ def verify_campaign_integrity(
         "expected_paired_comparisons": screen.EXPECTED_PAIRED_COMPARISONS,
     }
     if (
-        attestation.get("schema_version") != 1
-        or attestation.get("kind") != screen.COMPLETION_KIND
+        attestation.get("kind") != screen.COMPLETION_KIND
         or any(attestation.get(key) != value for key, value in expected_counts.items())
         or attestation.get("protocol_sha256") != protocol_digest
         or attestation.get("git_head") != manifest["source"]["git_head"]
@@ -515,9 +537,13 @@ def verify_campaign_integrity(
         )
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise RuntimeError("safe analysis payload is not valid JSON") from exc
+    _require_schema_version(
+        payload,
+        expected=screen.ANALYSIS_PAYLOAD_SCHEMA_VERSION,
+        field="safe analysis payload",
+    )
     if (
-        payload.get("schema_version") != 1
-        or payload.get("kind") != screen.PAYLOAD_KIND
+        payload.get("kind") != screen.PAYLOAD_KIND
         or payload.get("protocol_sha256") != protocol_digest
         or payload.get("result_artifacts_sha256")
         != hashlib.sha256(screen.hardened._canonical_json(artifacts)).hexdigest()

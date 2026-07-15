@@ -66,6 +66,10 @@ EXPECTED_CHILD_CPUS = 18
 WORKER_COUNT = 2
 TIME_LIMIT_SECONDS = 3_600.0
 MAX_PREFLIGHT_RECIPROCAL_ASYMMETRY = 1.5
+SWAP_POLICY_STRICT = "strict"
+SWAP_POLICY_QUALITY_ONLY_SWAP_IN = "quality_only_swap_in"
+SWAP_POLICIES = (SWAP_POLICY_STRICT, SWAP_POLICY_QUALITY_ONLY_SWAP_IN)
+DEFAULT_SWAP_POLICY = SWAP_POLICY_STRICT
 
 B10_CONFIG: dict[str, Any] = {
     "iterations": 10_000,
@@ -379,6 +383,17 @@ def frozen_protocol() -> dict[str, Any]:
                 "stop releasing waves, drain or terminate the active partner, "
                 "and emit no completion attestation"
             ),
+            "swap_policies": {
+                "default": SWAP_POLICY_STRICT,
+                "allowed": list(SWAP_POLICIES),
+                "strict": "zero host swap-in and swap-out for the full worker session",
+                "quality_only_swap_in": (
+                    "host swap-in is allowed and recorded anywhere; host swap-out "
+                    "is forbidden for the full worker session and every dispatch; "
+                    "timing and memory-performance evidence is inadmissible by policy"
+                ),
+                "measured_phase_uses_shared_lifecycle_samples": True,
+            },
         },
         "wave_schedule_sha256": wave_schedule_sha256(),
         "wave_schedule": expected_wave_schedule(),
@@ -386,8 +401,22 @@ def frozen_protocol() -> dict[str, Any]:
             "quality_is_primary": True,
             "per_arm_wall_time_is_contention_exposed": True,
             "causal_arm_timing_claim_allowed": False,
-            "campaign_throughput_is_descriptive": True,
             "isolated_timing_rerun_required_if_freeze_depends_on_resources": True,
+            "by_swap_policy": {
+                SWAP_POLICY_STRICT: {
+                    "campaign_throughput_status": "descriptive",
+                    "preflight_performance_comparison_criteria": [
+                        "throughput_speedup_at_least_1_10",
+                        "reciprocal_arm_slot_symmetry",
+                    ],
+                },
+                SWAP_POLICY_QUALITY_ONLY_SWAP_IN: {
+                    "campaign_throughput_status": (
+                        "inadmissible_raw_operational_audit_only"
+                    ),
+                    "preflight_performance_comparison_criteria": [],
+                },
+            },
         },
         "warmup": {
             "process_local": True,
@@ -403,14 +432,24 @@ def frozen_protocol() -> dict[str, Any]:
                 dataset: {"repeat": repeat, "fold": fold}
                 for dataset, (repeat, fold) in PREFLIGHT_COORDINATES.items()
             },
-            "minimum_throughput_speedup": 1.10,
             "maximum_start_skew_seconds": 1.0,
             "maximum_concurrent_job_seconds": 1_800.0,
-            "maximum_reciprocal_asymmetry_ratio": (
-                MAX_PREFLIGHT_RECIPROCAL_ASYMMETRY
-            ),
+            "performance_comparison_limits_by_swap_policy": {
+                SWAP_POLICY_STRICT: {
+                    "minimum_throughput_speedup": 1.10,
+                    "maximum_reciprocal_asymmetry_ratio": (
+                        MAX_PREFLIGHT_RECIPROCAL_ASYMMETRY
+                    ),
+                },
+                SWAP_POLICY_QUALITY_ONLY_SWAP_IN: {
+                    "minimum_throughput_speedup": None,
+                    "maximum_reciprocal_asymmetry_ratio": None,
+                },
+            },
             "require_exact_quality_and_structure_fingerprints": True,
-            "require_zero_deadlines_time_limits_restarts_oom_or_swap": True,
+            "require_zero_deadlines_time_limits_restarts_or_oom": True,
+            "require_policy_valid_swap_during_every_dispatch_and_gap": True,
+            "require_zero_full_session_swap_out": True,
             "require_os_high_water_rss": True,
         },
     }
@@ -1194,6 +1233,12 @@ def _swap_counter_sample() -> dict[str, int]:
     }
 
 
+def _validate_swap_policy(value: Any) -> str:
+    if type(value) is not str or value not in SWAP_POLICIES:
+        raise RuntimeError(f"unknown swap policy: {value!r}")
+    return str(value)
+
+
 def _new_swap_session_telemetry() -> dict[str, Any]:
     telemetry: dict[str, Any] = {
         "sample_count": 0,
@@ -1205,15 +1250,22 @@ def _new_swap_session_telemetry() -> dict[str, Any]:
     return telemetry
 
 
-def _append_swap_session_sample(telemetry: dict[str, Any]) -> None:
+def _append_swap_session_sample(
+    telemetry: dict[str, Any], sample: Mapping[str, Any] | None = None
+) -> int:
     """Extend one continuous host-counter record for a worker session."""
-    sample = _swap_counter_sample()
+    observed = dict(_swap_counter_sample() if sample is None else sample)
     samples = telemetry.get("samples")
     if not isinstance(samples, list):
         raise RuntimeError("worker-session swap samples are invalid")
-    if samples and sample["monotonic_ns"] <= samples[-1].get("monotonic_ns", -1):
+    if set(observed) != {"monotonic_ns", "swap_in_bytes", "swap_out_bytes"} or any(
+        type(observed[name]) is not int or observed[name] < 0
+        for name in observed
+    ):
+        raise RuntimeError("worker-session swap sample is invalid")
+    if samples and observed["monotonic_ns"] <= samples[-1].get("monotonic_ns", -1):
         raise RuntimeError("worker-session swap clock did not advance")
-    samples.append(sample)
+    samples.append(observed)
     telemetry["sample_count"] = len(samples)
     telemetry["swap_in_delta"] = (
         samples[-1]["swap_in_bytes"] - samples[0]["swap_in_bytes"]
@@ -1221,6 +1273,7 @@ def _append_swap_session_sample(telemetry: dict[str, Any]) -> None:
     telemetry["swap_out_delta"] = (
         samples[-1]["swap_out_bytes"] - samples[0]["swap_out_bytes"]
     )
+    return len(samples) - 1
 
 
 def _swap_session_telemetry_structurally_valid(value: Any) -> bool:
@@ -1236,7 +1289,10 @@ def _swap_session_telemetry_structurally_valid(value: Any) -> bool:
     if (
         not isinstance(samples, list)
         or not samples
+        or type(value.get("sample_count")) is not int
         or value.get("sample_count") != len(samples)
+        or type(value.get("swap_in_delta")) is not int
+        or type(value.get("swap_out_delta")) is not int
     ):
         return False
     previous_monotonic_ns = -1
@@ -1274,19 +1330,369 @@ def _swap_session_telemetry_structurally_valid(value: Any) -> bool:
     )
 
 
-def _swap_session_telemetry_valid(value: Any) -> bool:
-    """Require a structurally valid worker-session record with zero swap I/O."""
-    return (
+def _swap_session_telemetry_valid(
+    value: Any, swap_policy: str = DEFAULT_SWAP_POLICY
+) -> bool:
+    """Apply the selected full-lifecycle swap policy to one worker session."""
+    try:
+        policy = _validate_swap_policy(swap_policy)
+    except RuntimeError:
+        return False
+    return bool(
         _swap_session_telemetry_structurally_valid(value)
-        and value.get("swap_in_delta") == 0
         and value.get("swap_out_delta") == 0
+        and (
+            policy == SWAP_POLICY_QUALITY_ONLY_SWAP_IN
+            or value.get("swap_in_delta") == 0
+        )
     )
 
 
-def _checkpoint_swap_session(telemetry: dict[str, Any]) -> None:
+def _checkpoint_swap_session(
+    telemetry: dict[str, Any], swap_policy: str = DEFAULT_SWAP_POLICY
+) -> None:
     _append_swap_session_sample(telemetry)
-    if not _swap_session_telemetry_valid(telemetry):
+    if not _swap_session_telemetry_valid(telemetry, swap_policy):
         raise RuntimeError("worker session observed swap I/O")
+
+
+_MEASURED_SWAP_WINDOW_FIELDS = {
+    "start_sample_index",
+    "end_sample_index",
+    "sample_count",
+    "swap_in_delta",
+    "swap_out_delta",
+    "dispatches",
+}
+_MEASURED_SWAP_DISPATCH_FIELDS = {
+    "label",
+    "sample_index",
+    "resource_first_monotonic_ns",
+    "resource_last_monotonic_ns",
+    "resource_first_swap_in_bytes",
+    "resource_last_swap_in_bytes",
+    "resource_first_swap_out_bytes",
+    "resource_last_swap_out_bytes",
+    "barrier_release_monotonic_ns",
+    "max_report_end_monotonic_ns",
+}
+
+
+def _start_measured_swap_window(
+    session_telemetry: dict[str, Any], *, swap_policy: str
+) -> dict[str, Any]:
+    """Start timing after setup using one sample owned by the full lifecycle."""
+    _validate_swap_policy(swap_policy)
+    sample_index = _append_swap_session_sample(session_telemetry)
+    if not _swap_session_telemetry_valid(session_telemetry, swap_policy):
+        raise RuntimeError("worker session observed swap I/O")
+    return {
+        "start_sample_index": sample_index,
+        "end_sample_index": sample_index,
+        "sample_count": 1,
+        "swap_in_delta": 0,
+        "swap_out_delta": 0,
+        "dispatches": [],
+    }
+
+
+def _resource_swap_boundary(telemetry: Mapping[str, Any]) -> tuple[int, int]:
+    samples = telemetry.get("samples")
+    if not isinstance(samples, list) or not samples:
+        raise RuntimeError("dispatch resource samples are missing")
+    try:
+        first = screen.hardened._exact_int(
+            samples[0].get("monotonic_ns"), "dispatch first resource sample"
+        )
+        last = screen.hardened._exact_int(
+            samples[-1].get("monotonic_ns"), "dispatch last resource sample"
+        )
+    except (AttributeError, RuntimeError) as exc:
+        raise RuntimeError("dispatch resource sample clock is invalid") from exc
+    if first > last:
+        raise RuntimeError("dispatch resource sample clock is reversed")
+    return first, last
+
+
+def _checkpoint_measured_swap_window(
+    session_telemetry: dict[str, Any],
+    measured_window: dict[str, Any],
+    *,
+    label: str,
+    resource_telemetry: Mapping[str, Any],
+    reports: Sequence[Mapping[str, Any]],
+    swap_policy: str,
+) -> int:
+    """Close one measured dispatch and cross-bind it to the lifecycle record."""
+    if not isinstance(label, str) or not label:
+        raise RuntimeError("measured dispatch label is invalid")
+    first, last = _resource_swap_boundary(resource_telemetry)
+    resource_samples = resource_telemetry["samples"]
+    if not reports:
+        raise RuntimeError("measured dispatch reports are missing")
+    release = screen.hardened._exact_int(
+        resource_telemetry.get("barrier_release_monotonic_ns"),
+        "measured dispatch barrier release",
+    )
+    report_ends = [
+        screen.hardened._exact_int(
+            report.get("ended_monotonic_ns"), "measured dispatch report end"
+        )
+        for report in reports
+    ]
+    if any(report.get("barrier_release_monotonic_ns") != release for report in reports):
+        raise RuntimeError("measured dispatch barrier identity changed")
+    sample_index = _append_swap_session_sample(session_telemetry)
+    measured_window["end_sample_index"] = sample_index
+    measured_window["sample_count"] = (
+        sample_index - measured_window["start_sample_index"] + 1
+    )
+    samples = session_telemetry["samples"]
+    start = measured_window["start_sample_index"]
+    measured_window["swap_in_delta"] = (
+        samples[sample_index]["swap_in_bytes"] - samples[start]["swap_in_bytes"]
+    )
+    measured_window["swap_out_delta"] = (
+        samples[sample_index]["swap_out_bytes"] - samples[start]["swap_out_bytes"]
+    )
+    measured_window["dispatches"].append(
+        {
+            "label": label,
+            "sample_index": sample_index,
+            "resource_first_monotonic_ns": first,
+            "resource_last_monotonic_ns": last,
+            "resource_first_swap_in_bytes": resource_samples[0]["swap_in_bytes"],
+            "resource_last_swap_in_bytes": resource_samples[-1]["swap_in_bytes"],
+            "resource_first_swap_out_bytes": resource_samples[0]["swap_out_bytes"],
+            "resource_last_swap_out_bytes": resource_samples[-1]["swap_out_bytes"],
+            "barrier_release_monotonic_ns": release,
+            "max_report_end_monotonic_ns": max(report_ends),
+        }
+    )
+    if not _swap_session_telemetry_valid(session_telemetry, swap_policy):
+        raise RuntimeError("worker session observed swap I/O")
+    if not _measured_swap_window_valid(
+        measured_window,
+        session_telemetry,
+        swap_policy=swap_policy,
+        expected_dispatches=[(label, resource_telemetry, reports)]
+        if len(measured_window["dispatches"]) == 1
+        else None,
+        require_shutdown_sample=False,
+    ):
+        raise RuntimeError("measured phase observed swap I/O or invalid boundaries")
+    return sample_index
+
+
+def _measured_swap_window_structurally_valid(
+    value: Any,
+    session_telemetry: Any,
+    *,
+    expected_dispatches: Sequence[
+        tuple[str, Mapping[str, Any], Sequence[Mapping[str, Any]]]
+    ]
+    | None = None,
+    require_shutdown_sample: bool,
+    expected_start_sample_index: int | None = None,
+    require_exact_shutdown_suffix: bool = False,
+) -> bool:
+    """Validate a derived measured window against shared lifecycle samples."""
+    if (
+        not isinstance(value, Mapping)
+        or set(value) != _MEASURED_SWAP_WINDOW_FIELDS
+        or not _swap_session_telemetry_structurally_valid(session_telemetry)
+    ):
+        return False
+    try:
+        start = screen.hardened._exact_int(
+            value.get("start_sample_index"), "measured swap start index"
+        )
+        end = screen.hardened._exact_int(
+            value.get("end_sample_index"), "measured swap end index"
+        )
+        dispatches = value.get("dispatches")
+        samples = session_telemetry["samples"]
+        if (
+            start <= 0
+            or (
+                expected_start_sample_index is not None
+                and start != expected_start_sample_index
+            )
+            or end < start
+            or end >= len(samples)
+            or not isinstance(dispatches, list)
+            or type(value.get("sample_count")) is not int
+            or value.get("sample_count") != end - start + 1
+            or len(dispatches) != end - start
+            or (require_shutdown_sample and end >= len(samples) - 1)
+            or (require_exact_shutdown_suffix and end != len(samples) - 2)
+            or type(value.get("swap_in_delta")) is not int
+            or type(value.get("swap_out_delta")) is not int
+        ):
+            return False
+        if (
+            value.get("swap_in_delta")
+            != samples[end]["swap_in_bytes"] - samples[start]["swap_in_bytes"]
+            or value.get("swap_out_delta")
+            != samples[end]["swap_out_bytes"] - samples[start]["swap_out_bytes"]
+        ):
+            return False
+        observed_labels = set()
+        for ordinal, dispatch in enumerate(dispatches, start=1):
+            if (
+                not isinstance(dispatch, Mapping)
+                or set(dispatch) != _MEASURED_SWAP_DISPATCH_FIELDS
+            ):
+                return False
+            label = dispatch.get("label")
+            sample_index = dispatch.get("sample_index")
+            resource_first = dispatch.get("resource_first_monotonic_ns")
+            resource_last = dispatch.get("resource_last_monotonic_ns")
+            resource_first_swap_in = dispatch.get("resource_first_swap_in_bytes")
+            resource_last_swap_in = dispatch.get("resource_last_swap_in_bytes")
+            resource_first_swap_out = dispatch.get("resource_first_swap_out_bytes")
+            resource_last_swap_out = dispatch.get("resource_last_swap_out_bytes")
+            release = dispatch.get("barrier_release_monotonic_ns")
+            report_end = dispatch.get("max_report_end_monotonic_ns")
+            expected_index = start + ordinal
+            if (
+                not isinstance(label, str)
+                or not label
+                or label in observed_labels
+                or type(sample_index) is not int
+                or sample_index != expected_index
+                or type(resource_first) is not int
+                or type(resource_last) is not int
+                or type(resource_first_swap_in) is not int
+                or type(resource_last_swap_in) is not int
+                or type(resource_first_swap_out) is not int
+                or type(resource_last_swap_out) is not int
+                or type(release) is not int
+                or type(report_end) is not int
+                or not samples[expected_index - 1]["monotonic_ns"]
+                < resource_first
+                <= resource_last
+                < samples[expected_index]["monotonic_ns"]
+                or not samples[expected_index - 1]["monotonic_ns"]
+                < release
+                <= report_end
+                <= resource_last
+                or not samples[expected_index - 1]["swap_in_bytes"]
+                <= resource_first_swap_in
+                <= resource_last_swap_in
+                <= samples[expected_index]["swap_in_bytes"]
+                or not samples[expected_index - 1]["swap_out_bytes"]
+                <= resource_first_swap_out
+                <= resource_last_swap_out
+                <= samples[expected_index]["swap_out_bytes"]
+            ):
+                return False
+            observed_labels.add(label)
+        if expected_dispatches is not None:
+            if len(expected_dispatches) != len(dispatches):
+                return False
+            for dispatch, (expected_label, telemetry, reports) in zip(
+                dispatches, expected_dispatches
+            ):
+                first, last = _resource_swap_boundary(telemetry)
+                release = screen.hardened._exact_int(
+                    telemetry.get("barrier_release_monotonic_ns"),
+                    "expected measured dispatch release",
+                )
+                if not reports:
+                    return False
+                report_end = max(
+                    screen.hardened._exact_int(
+                        report.get("ended_monotonic_ns"),
+                        "expected measured dispatch report end",
+                    )
+                    for report in reports
+                )
+                if (
+                    dispatch["label"] != expected_label
+                    or dispatch["resource_first_monotonic_ns"] != first
+                    or dispatch["resource_last_monotonic_ns"] != last
+                    or dispatch["resource_first_swap_in_bytes"]
+                    != telemetry["samples"][0]["swap_in_bytes"]
+                    or dispatch["resource_last_swap_in_bytes"]
+                    != telemetry["samples"][-1]["swap_in_bytes"]
+                    or dispatch["resource_first_swap_out_bytes"]
+                    != telemetry["samples"][0]["swap_out_bytes"]
+                    or dispatch["resource_last_swap_out_bytes"]
+                    != telemetry["samples"][-1]["swap_out_bytes"]
+                    or dispatch["barrier_release_monotonic_ns"] != release
+                    or dispatch["max_report_end_monotonic_ns"] != report_end
+                    or any(
+                        report.get("barrier_release_monotonic_ns") != release
+                        for report in reports
+                    )
+                ):
+                    return False
+    except (KeyError, RuntimeError, TypeError, ValueError):
+        return False
+    return True
+
+
+def _measured_swap_window_valid(
+    value: Any,
+    session_telemetry: Any,
+    *,
+    swap_policy: str = DEFAULT_SWAP_POLICY,
+    expected_dispatches: Sequence[
+        tuple[str, Mapping[str, Any], Sequence[Mapping[str, Any]]]
+    ]
+    | None = None,
+    require_shutdown_sample: bool,
+    expected_start_sample_index: int | None = None,
+    require_exact_shutdown_suffix: bool = False,
+) -> bool:
+    try:
+        policy = _validate_swap_policy(swap_policy)
+    except RuntimeError:
+        return False
+    return bool(
+        _measured_swap_window_structurally_valid(
+            value,
+            session_telemetry,
+            expected_dispatches=expected_dispatches,
+            require_shutdown_sample=require_shutdown_sample,
+            expected_start_sample_index=expected_start_sample_index,
+            require_exact_shutdown_suffix=require_exact_shutdown_suffix,
+        )
+        and value.get("swap_out_delta") == 0
+        and (
+            policy == SWAP_POLICY_QUALITY_ONLY_SWAP_IN
+            or value.get("swap_in_delta") == 0
+        )
+    )
+
+
+def _truncate_measured_swap_window(
+    measured_window: dict[str, Any],
+    session_telemetry: Mapping[str, Any],
+    dispatch_count: int,
+) -> None:
+    """Roll an interrupted in-memory transaction back to its durable prefix."""
+    dispatches = measured_window.get("dispatches")
+    if (
+        type(dispatch_count) is not int
+        or dispatch_count < 0
+        or not isinstance(dispatches, list)
+        or dispatch_count > len(dispatches)
+    ):
+        raise RuntimeError("cannot truncate measured swap coverage")
+    del dispatches[dispatch_count:]
+    start = measured_window["start_sample_index"]
+    end = start + dispatch_count
+    samples = session_telemetry["samples"]
+    measured_window["end_sample_index"] = end
+    measured_window["sample_count"] = dispatch_count + 1
+    measured_window["swap_in_delta"] = (
+        samples[end]["swap_in_bytes"] - samples[start]["swap_in_bytes"]
+    )
+    measured_window["swap_out_delta"] = (
+        samples[end]["swap_out_bytes"] - samples[start]["swap_out_bytes"]
+    )
 
 
 def _physical_memory_bytes() -> int:
@@ -1630,11 +2036,43 @@ def preflight_reciprocal_asymmetry(
     return result
 
 
+def _preflight_measured_dispatches(
+    report: Mapping[str, Any],
+) -> list[tuple[str, Mapping[str, Any], Sequence[Mapping[str, Any]]]]:
+    dispatches: list[
+        tuple[str, Mapping[str, Any], Sequence[Mapping[str, Any]]]
+    ] = []
+    for index, item in enumerate(report.get("isolated_runs", [])):
+        if not isinstance(item, Mapping) or not isinstance(
+            item.get("telemetry"), Mapping
+        ):
+            raise RuntimeError("preflight isolated dispatch evidence is invalid")
+        dispatches.append(
+            (f"preflight-isolated-{index}", item["telemetry"], [item])
+        )
+    for index, wave in enumerate(report.get("concurrent_waves", [])):
+        if not isinstance(wave, Mapping) or not isinstance(
+            wave.get("telemetry"), Mapping
+        ):
+            raise RuntimeError("preflight concurrent dispatch evidence is invalid")
+        reports = wave.get("reports")
+        if not isinstance(reports, list):
+            raise RuntimeError("preflight concurrent reports are invalid")
+        dispatches.append(
+            (f"preflight-concurrent-{index}", wave["telemetry"], reports)
+        )
+    return dispatches
+
+
 def evaluate_preflight(report: Mapping[str, Any]) -> dict[str, Any]:
     isolated = report.get("isolated_runs")
     waves = report.get("concurrent_waves")
     if not isinstance(isolated, list) or not isinstance(waves, list):
         raise ValueError("preflight report is missing run lists")
+    try:
+        swap_policy = _validate_swap_policy(report.get("swap_policy"))
+    except RuntimeError:
+        swap_policy = ""
     isolated_timing_valid = len(isolated) == 4 and all(
         isinstance(item, Mapping)
         and _dispatch_timing_valid([item], item.get("telemetry"))
@@ -1767,6 +2205,7 @@ def evaluate_preflight(report: Mapping[str, Any]) -> dict[str, Any]:
                 item.get("telemetry"),
                 expected_pids=expected_pids,
                 reports=[item],
+                swap_policy=swap_policy,
             )
             for item in isolated
         )
@@ -1789,10 +2228,17 @@ def evaluate_preflight(report: Mapping[str, Any]) -> dict[str, Any]:
                 wave.get("telemetry"),
                 expected_pids=expected_pids,
                 reports=wave.get("reports", []),
+                swap_policy=swap_policy,
             )
             for wave in waves
         )
     )
+    try:
+        measured_dispatches = _preflight_measured_dispatches(report)
+    except RuntimeError:
+        measured_dispatches = []
+    session_swap = report.get("worker_session_swap_telemetry")
+    measured_swap = report.get("measured_phase_swap_window")
     criteria = {
         "throughput_speedup_at_least_1_10": math.isfinite(speedup)
         and speedup >= 1.10,
@@ -1806,14 +2252,34 @@ def evaluate_preflight(report: Mapping[str, Any]) -> dict[str, Any]:
         ),
         "data_prime_complete": data_prime_complete,
         "operational_limits": operational,
-        "zero_worker_session_swap": _swap_session_telemetry_valid(
-            report.get("worker_session_swap_telemetry")
+        "swap_policy_attested": swap_policy in SWAP_POLICIES,
+        "full_session_swap_policy": _swap_session_telemetry_valid(
+            session_swap, swap_policy
+        ),
+        "measured_phase_swap_policy": (
+            len(measured_dispatches) == 6
+            and _measured_swap_window_valid(
+                measured_swap,
+                session_swap,
+                swap_policy=swap_policy,
+                expected_dispatches=measured_dispatches,
+                require_shutdown_sample=True,
+                expected_start_sample_index=3,
+                require_exact_shutdown_suffix=True,
+            )
+            and measured_swap.get("sample_count") == 7
+            and session_swap.get("sample_count") == 11
         ),
         "no_worker_restarts": report.get("worker_restarts") is False,
         "no_preflight_error": report.get("preflight_error") is None,
         "no_sequential_recovery_override": report.get("sequential_recovery") is None,
     }
-    passed = all(criteria.values())
+    timing_admissible = swap_policy == SWAP_POLICY_STRICT
+    scientific_criteria = dict(criteria)
+    if swap_policy == SWAP_POLICY_QUALITY_ONLY_SWAP_IN:
+        scientific_criteria.pop("throughput_speedup_at_least_1_10", None)
+        scientific_criteria.pop("reciprocal_arm_slot_symmetry", None)
+    passed = all(scientific_criteria.values())
     return {
         "passed": passed,
         "execution_mode": "concurrent" if passed else "sequential_fallback",
@@ -1821,7 +2287,12 @@ def evaluate_preflight(report: Mapping[str, Any]) -> dict[str, Any]:
         "reciprocal_asymmetry_ratio": (
             reciprocal_asymmetry if math.isfinite(reciprocal_asymmetry) else None
         ),
+        "timing_admissible": timing_admissible,
+        "timing_inadmissibility_reason": (
+            None if timing_admissible else "quality_only_swap_in_policy"
+        ),
         "criteria": criteria,
+        "mode_selection_criteria": sorted(scientific_criteria),
     }
 
 
@@ -1836,6 +2307,7 @@ def _validate_sequential_recovery_record(value: Any) -> dict[str, Any]:
         "source_execution_grid_sha256",
         "source_git_head",
         "source_execution_mode",
+        "source_swap_policy",
         "invalid_attempt",
     }:
         raise RuntimeError("sequential recovery record fields are incomplete")
@@ -1862,6 +2334,7 @@ def _validate_sequential_recovery_record(value: Any) -> dict[str, Any]:
             for character in value["source_git_head"]
         )
         or value["source_execution_mode"] != "concurrent"
+        or value["source_swap_policy"] not in SWAP_POLICIES
         or not isinstance(value["source_execution_grid_sha256"], str)
         or len(value["source_execution_grid_sha256"]) != 64
         or not isinstance(marker, Mapping)
@@ -1872,6 +2345,7 @@ def _validate_sequential_recovery_record(value: Any) -> dict[str, Any]:
             "pid",
             "output_dir",
             "execution_mode",
+            "swap_policy",
             "wave_schedule_sha256",
             "protocol_sha256",
             "manifest_sha256",
@@ -1886,6 +2360,7 @@ def _validate_sequential_recovery_record(value: Any) -> dict[str, Any]:
         or marker.get("kind") != CAMPAIGN_KIND + "_invalid_attempt"
         or marker.get("output_dir") != value["source_output_dir"]
         or marker.get("execution_mode") != "concurrent"
+        or marker.get("swap_policy") != value["source_swap_policy"]
         or marker.get("wave_schedule_sha256") != wave_schedule_sha256()
         or marker.get("protocol_sha256") != screen.protocol_sha256()
         or marker.get("manifest_sha256") != value["source_manifest_sha256"]
@@ -1907,9 +2382,13 @@ def _validate_sequential_recovery_record(value: Any) -> dict[str, Any]:
 
 
 def collect_sequential_recovery(
-    source_output_dir: Path, *, current_source: Mapping[str, Any]
+    source_output_dir: Path,
+    *,
+    current_source: Mapping[str, Any],
+    swap_policy: str = DEFAULT_SWAP_POLICY,
 ) -> dict[str, Any]:
     """Bind a fresh sequential run to one invalid concurrent attempt."""
+    swap_policy = _validate_swap_policy(swap_policy)
     source_output_dir = source_output_dir.resolve(strict=True)
     manifest_path = source_output_dir / screen.MANIFEST_FILENAME
     marker_path = source_output_dir / INVALID_ATTEMPT_FILENAME
@@ -1925,13 +2404,16 @@ def collect_sequential_recovery(
         marker = json.loads(marker_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise RuntimeError("could not read sequential recovery source") from exc
-    preflight, preflight_sha256 = _load_preflight_report(source_output_dir)
+    preflight, preflight_sha256 = _load_preflight_report(
+        source_output_dir, swap_policy
+    )
     if (
         not isinstance(manifest, Mapping)
         or manifest.get("kind") != CAMPAIGN_KIND
         or manifest.get("protocol_sha256") != screen.protocol_sha256()
         or manifest.get("wave_schedule_sha256") != wave_schedule_sha256()
         or manifest.get("execution_mode") != "concurrent"
+        or manifest.get("swap_policy") != swap_policy
         or manifest.get("preflight_report_sha256") != preflight_sha256
         or manifest.get("source") != dict(current_source)
         or preflight["decision"].get("execution_mode") != "concurrent"
@@ -1949,6 +2431,7 @@ def collect_sequential_recovery(
         "source_execution_grid_sha256": manifest["execution_grid_sha256"],
         "source_git_head": manifest["source"]["git_head"],
         "source_execution_mode": "concurrent",
+        "source_swap_policy": swap_policy,
         "invalid_attempt": marker,
     }
     return _validate_sequential_recovery_record(record)
@@ -2171,8 +2654,13 @@ def _resource_telemetry_valid(
     expected_pids: Mapping[int, int],
     reports: Sequence[Mapping[str, Any]],
     expected_physical_memory_bytes: int | None = None,
+    swap_policy: str = DEFAULT_SWAP_POLICY,
 ) -> bool:
     """Require structurally valid telemetry that also passes resource policy."""
+    try:
+        policy = _validate_swap_policy(swap_policy)
+    except RuntimeError:
+        return False
     return (
         _resource_telemetry_structurally_valid(
             telemetry,
@@ -2182,8 +2670,11 @@ def _resource_telemetry_valid(
         )
         and telemetry.get("peak_combined_rss_bytes")
         < 0.8 * telemetry["physical_memory_bytes"]
-        and telemetry.get("swap_in_delta") == 0
         and telemetry.get("swap_out_delta") == 0
+        and (
+            policy == SWAP_POLICY_QUALITY_ONLY_SWAP_IN
+            or telemetry.get("swap_in_delta") == 0
+        )
     )
 
 
@@ -2191,6 +2682,8 @@ def _sequential_fallback_telemetry_valid(
     reports: Sequence[Mapping[str, Any]],
     telemetry: Any,
     mode_details: Any,
+    *,
+    swap_policy: str = DEFAULT_SWAP_POLICY,
 ) -> bool:
     """Reconcile two serial dispatch segments with their aggregate evidence."""
     if (
@@ -2236,11 +2729,12 @@ def _sequential_fallback_telemetry_valid(
     for report, segment in zip(ordered_reports, segments):
         if (
             not _dispatch_timing_valid([report], segment)
-            or not _resource_telemetry_structurally_valid(
+            or not _resource_telemetry_valid(
                 segment,
                 expected_pids=expected_pids,
                 reports=[report],
                 expected_physical_memory_bytes=physical,
+                swap_policy=swap_policy,
             )
         ):
             return False
@@ -2307,21 +2801,62 @@ def _sequential_fallback_telemetry_valid(
 
 
 def validate_preflight_attestation(value: Mapping[str, Any], output_dir: Path) -> None:
+    expected_fields = {
+        "schema_version",
+        "kind",
+        "completed_at_utc",
+        "protocol_sha256",
+        "wave_schedule_sha256",
+        "swap_policy",
+        "worker_ready",
+        "worker_warmup",
+        "worker_data_prime",
+        "worker_restarts",
+        "isolated_runs",
+        "concurrent_waves",
+        "worker_session_swap_telemetry",
+        "measured_phase_swap_window",
+        "preflight_error",
+        "sequential_recovery",
+        "decision",
+    }
+    if (
+        not isinstance(value, Mapping)
+        or set(value) != expected_fields
+        or value.get("schema_version") != 1
+        or value.get("kind") != CAMPAIGN_KIND + "_preflight"
+        or not isinstance(value.get("completed_at_utc"), str)
+        or not value["completed_at_utc"]
+        or value.get("protocol_sha256") != screen.protocol_sha256()
+        or value.get("wave_schedule_sha256") != wave_schedule_sha256()
+    ):
+        raise RuntimeError("preflight report header or fields are incomplete")
     ready = value.get("worker_ready")
     warmup = value.get("worker_warmup")
     data_prime = value.get("worker_data_prime")
     recovery = value.get("sequential_recovery")
-    if not _swap_session_telemetry_structurally_valid(
-        value.get("worker_session_swap_telemetry")
-    ):
+    swap_policy = _validate_swap_policy(value.get("swap_policy"))
+    session_swap = value.get("worker_session_swap_telemetry")
+    measured_swap = value.get("measured_phase_swap_window")
+    if not _swap_session_telemetry_structurally_valid(session_swap):
         raise RuntimeError("preflight worker-session swap evidence is invalid")
     expected_decision = evaluate_preflight(value)
     if value.get("decision") != expected_decision:
         raise RuntimeError("preflight decision does not match its evidence")
     if recovery is not None:
-        _validate_sequential_recovery_record(recovery)
+        validated_recovery = _validate_sequential_recovery_record(recovery)
+        if validated_recovery["source_swap_policy"] != swap_policy:
+            raise RuntimeError("preflight recovery swap policy does not match")
     preflight_error = value.get("preflight_error")
     if preflight_error is not None:
+        if measured_swap is not None and not _measured_swap_window_structurally_valid(
+            measured_swap,
+            session_swap,
+            require_shutdown_sample=True,
+            expected_start_sample_index=3,
+            require_exact_shutdown_suffix=True,
+        ):
+            raise RuntimeError("preflight measured swap evidence is invalid")
         if (
             not isinstance(preflight_error, Mapping)
             or set(preflight_error) != {"error_type", "error"}
@@ -2347,6 +2882,27 @@ def validate_preflight_attestation(value: Mapping[str, Any], output_dir: Path) -
         or value.get("worker_restarts") is not False
     ):
         raise RuntimeError("preflight workers were not completely attested")
+    measured_dispatches = _preflight_measured_dispatches(value)
+    if (
+        len(measured_dispatches) != 6
+        or not _measured_swap_window_structurally_valid(
+            measured_swap,
+            session_swap,
+            expected_dispatches=measured_dispatches,
+            require_shutdown_sample=True,
+            expected_start_sample_index=3,
+            require_exact_shutdown_suffix=True,
+        )
+        or measured_swap.get("sample_count") != 7
+        or session_swap.get("sample_count") != 11
+    ):
+        raise RuntimeError("preflight measured swap coverage is incomplete")
+    # A policy failure is a valid, attested fallback; the evidence still has to
+    # be internally consistent and the recomputed decision must reject it.
+    if _swap_session_telemetry_valid(session_swap, swap_policy) != bool(
+        value["decision"]["criteria"]["full_session_swap_policy"]
+    ):
+        raise RuntimeError("preflight full-session swap decision is inconsistent")
     ready_by_slot = {}
     scratch_roots = set()
     for item in ready:
@@ -2456,6 +3012,7 @@ def _validate_completed_wave(
     *,
     execution_mode: str,
     wave_index: int,
+    swap_policy: str = DEFAULT_SWAP_POLICY,
 ) -> None:
     if len(reports) != 2:
         raise RuntimeError(f"wave {wave_index} did not return two results")
@@ -2485,6 +3042,7 @@ def _validate_completed_wave(
             telemetry,
             expected_pids=expected_pids,
             reports=reports,
+            swap_policy=swap_policy,
         )
         or not math.isfinite(wave_seconds)
         or wave_seconds <= 0.0
@@ -2512,9 +3070,11 @@ def run_preflight(
     *,
     sequential_recovery: Mapping[str, Any] | None = None,
     owner_session: Mapping[str, Any] | None = None,
+    swap_policy: str = DEFAULT_SWAP_POLICY,
 ) -> dict[str, Any]:
     """Compare isolated and concurrent behavior in a non-reusable namespace."""
     root = output_dir / "preflight"
+    swap_policy = _validate_swap_policy(swap_policy)
     if root.exists():
         raise RuntimeError(f"preflight namespace already exists: {root}")
     root.mkdir(parents=True)
@@ -2528,6 +3088,7 @@ def run_preflight(
     owner_binding_error = None
     owner_workers_bound = False
     session_swap = _new_swap_session_telemetry()
+    measured_swap = None
     try:
         worker_root = root / "worker_scratch"
         _create_private_worker_root(worker_root, output_dir=output_dir)
@@ -2539,11 +3100,13 @@ def run_preflight(
             except Exception as exc:
                 owner_binding_error = exc
                 raise
-        _checkpoint_swap_session(session_swap)
+        _checkpoint_swap_session(session_swap, swap_policy)
         warmup = _warm_workers(workers)
-        _checkpoint_swap_session(session_swap)
+        _checkpoint_swap_session(session_swap, swap_policy)
         data_prime = _prime_preflight_workers(workers)
-        _checkpoint_swap_session(session_swap)
+        measured_swap = _start_measured_swap_window(
+            session_swap, swap_policy=swap_policy
+        )
         protein = ("physiochemical_protein", 0, 0)
         qsar = ("QSAR-TID-11", 2, 2)
         isolated_plan = [
@@ -2558,7 +3121,14 @@ def run_preflight(
                 [(slot, key, root / "isolated" / f"run-{index}")],
                 label=f"preflight-isolated-{index}",
             )
-            _checkpoint_swap_session(session_swap)
+            _checkpoint_measured_swap_window(
+                session_swap,
+                measured_swap,
+                label=f"preflight-isolated-{index}",
+                resource_telemetry=telemetry,
+                reports=reports,
+                swap_policy=swap_policy,
+            )
             isolated_runs.append({**reports[0], "telemetry": telemetry})
         concurrent_plan = [
             ((0, _job_key(protein, "A10")), (1, _job_key(qsar, "B10"))),
@@ -2573,7 +3143,14 @@ def run_preflight(
                 ],
                 label=f"preflight-concurrent-{index}",
             )
-            _checkpoint_swap_session(session_swap)
+            _checkpoint_measured_swap_window(
+                session_swap,
+                measured_swap,
+                label=f"preflight-concurrent-{index}",
+                resource_telemetry=telemetry,
+                reports=reports,
+                swap_policy=swap_policy,
+            )
             concurrent_waves.append(
                 {
                     "wave_index": index,
@@ -2591,7 +3168,10 @@ def run_preflight(
     finally:
         shutdown_error = None
         try:
-            _stop_workers(workers, force=preflight_error is not None)
+            _stop_workers(
+                workers,
+                force=preflight_error is not None or sys.exc_info()[0] is not None,
+            )
         except Exception as exc:
             shutdown_error = exc
         if shutdown_error is None and owner_workers_bound:
@@ -2618,6 +3198,7 @@ def run_preflight(
         "completed_at_utc": datetime.now(timezone.utc).isoformat(),
         "protocol_sha256": screen.protocol_sha256(),
         "wave_schedule_sha256": wave_schedule_sha256(),
+        "swap_policy": swap_policy,
         "worker_ready": ready,
         "worker_warmup": warmup,
         "worker_data_prime": data_prime,
@@ -2630,6 +3211,7 @@ def run_preflight(
         "isolated_runs": isolated_runs,
         "concurrent_waves": concurrent_waves,
         "worker_session_swap_telemetry": session_swap,
+        "measured_phase_swap_window": measured_swap,
         "preflight_error": preflight_error,
         "sequential_recovery": (
             _validate_sequential_recovery_record(sequential_recovery)
@@ -2645,13 +3227,18 @@ def run_preflight(
     return report
 
 
-def execution_grid_payload(execution_mode: str) -> dict[str, Any]:
+def execution_grid_payload(
+    execution_mode: str, swap_policy: str = DEFAULT_SWAP_POLICY
+) -> dict[str, Any]:
     if execution_mode not in {"concurrent", "sequential_fallback"}:
         raise ValueError(f"invalid execution mode: {execution_mode}")
+    swap_policy = _validate_swap_policy(swap_policy)
     return {
         "schema_version": 1,
         "kind": CAMPAIGN_KIND + "_execution_grid",
         "execution_mode": execution_mode,
+        "swap_policy": swap_policy,
+        "timing_admissible": swap_policy == SWAP_POLICY_STRICT,
         "worker_count": WORKER_COUNT,
         "start_method": "spawn",
         "configured_child_cpus": EXPECTED_CHILD_CPUS,
@@ -2665,9 +3252,13 @@ def execution_grid_payload(execution_mode: str) -> dict[str, Any]:
     }
 
 
-def execution_grid_sha256(execution_mode: str) -> str:
+def execution_grid_sha256(
+    execution_mode: str, swap_policy: str = DEFAULT_SWAP_POLICY
+) -> str:
     return hashlib.sha256(
-        screen.hardened._canonical_json(execution_grid_payload(execution_mode))
+        screen.hardened._canonical_json(
+            execution_grid_payload(execution_mode, swap_policy)
+        )
     ).hexdigest()
 
 
@@ -2679,7 +3270,9 @@ def build_run_manifest(
     execution_mode: str,
     preflight_sha256: str,
     reused_evidence: Mapping[str, Any],
+    swap_policy: str = DEFAULT_SWAP_POLICY,
 ) -> dict[str, Any]:
+    swap_policy = _validate_swap_policy(swap_policy)
     manifest = screen.build_run_manifest(
         output_dir=output_dir,
         source=source,
@@ -2689,11 +3282,15 @@ def build_run_manifest(
     manifest.update(
         {
             "execution_mode": execution_mode,
+            "swap_policy": swap_policy,
+            "timing_admissible": swap_policy == SWAP_POLICY_STRICT,
             "worker_count": WORKER_COUNT,
             "start_method": "spawn",
             "wave_count": EXPECTED_WAVES,
             "wave_schedule_sha256": wave_schedule_sha256(),
-            "execution_grid_sha256": execution_grid_sha256(execution_mode),
+            "execution_grid_sha256": execution_grid_sha256(
+                execution_mode, swap_policy
+            ),
             "preflight_report_sha256": preflight_sha256,
             "reused_evidence": dict(reused_evidence),
         }
@@ -2724,7 +3321,10 @@ def write_or_validate_manifest(
     return existing
 
 
-def _load_preflight_report(output_dir: Path) -> tuple[dict[str, Any], str]:
+def _load_preflight_report(
+    output_dir: Path, swap_policy: str = DEFAULT_SWAP_POLICY
+) -> tuple[dict[str, Any], str]:
+    swap_policy = _validate_swap_policy(swap_policy)
     path = output_dir / PREFLIGHT_REPORT_FILENAME
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
@@ -2734,6 +3334,7 @@ def _load_preflight_report(output_dir: Path) -> tuple[dict[str, Any], str]:
         value.get("kind") != CAMPAIGN_KIND + "_preflight"
         or value.get("protocol_sha256") != screen.protocol_sha256()
         or value.get("wave_schedule_sha256") != wave_schedule_sha256()
+        or value.get("swap_policy") != swap_policy
         or value.get("decision") != evaluate_preflight(value)
     ):
         raise RuntimeError("preflight report does not match the frozen protocol")
@@ -3572,10 +4173,12 @@ def prepare_wave_resume(
     *,
     resume: bool,
     execution_mode: str = "concurrent",
+    swap_policy: str = DEFAULT_SWAP_POLICY,
 ) -> dict[str, Any]:
     """Validate metadata, archive prior-process pickles, and restart at wave zero."""
     if execution_mode not in {"concurrent", "sequential_fallback"}:
         raise RuntimeError("resume execution mode is invalid")
+    swap_policy = _validate_swap_policy(swap_policy)
     validate_wave_schedule(schedule)
     lookup = _job_lookup(jobs)
     if not resume:
@@ -3633,6 +4236,7 @@ def prepare_wave_resume(
         if (
             not isinstance(journal, Mapping)
             or journal.get("execution_mode") != execution_mode
+            or journal.get("swap_policy") != swap_policy
             or journal.get("wave_schedule_sha256") != wave_schedule_sha256()
             or not isinstance(journal.get("entries"), list)
         ):
@@ -3642,6 +4246,10 @@ def prepare_wave_resume(
             execution_mode=execution_mode,
             output_dir=output_dir,
             require_complete=False,
+            swap_policy=swap_policy,
+            # A hard crash cannot append the post-shutdown sample.  This journal
+            # is validated only so it can be archived for a zero-start rerun.
+            require_shutdown_sample=False,
         )
     prior_resume_history = []
     history_path = output_dir / screen.RESUME_HISTORY_FILENAME
@@ -3679,7 +4287,7 @@ def prepare_wave_resume(
             str(destination.relative_to(output_dir))
         )
     screen.hardened._atomic_write_json(
-        journal_path, _empty_concurrency_history(execution_mode)
+        journal_path, _empty_concurrency_history(execution_mode, swap_policy)
     )
     reusable: list[int] = []
     pending = list(range(EXPECTED_WAVES))
@@ -3737,19 +4345,67 @@ def prepare_wave_resume(
     }
 
 
+def _production_measured_dispatches(
+    entries: Sequence[Mapping[str, Any]], execution_mode: str
+) -> list[tuple[str, Mapping[str, Any], Sequence[Mapping[str, Any]]]]:
+    dispatches: list[
+        tuple[str, Mapping[str, Any], Sequence[Mapping[str, Any]]]
+    ] = []
+    for entry in entries:
+        wave_index = screen.hardened._exact_int(
+            entry.get("wave_index"), "measured production wave index"
+        )
+        if execution_mode == "concurrent":
+            telemetry = entry.get("telemetry")
+            if not isinstance(telemetry, Mapping):
+                raise RuntimeError("production dispatch telemetry is invalid")
+            reports = entry.get("reports")
+            if not isinstance(reports, list):
+                raise RuntimeError("production dispatch reports are invalid")
+            dispatches.append(
+                (f"production-wave-{wave_index}", telemetry, reports)
+            )
+        elif execution_mode == "sequential_fallback":
+            details = entry.get("mode_details")
+            segments = details.get("segment_telemetry") if isinstance(details, Mapping) else None
+            if (
+                not isinstance(segments, list)
+                or len(segments) != WORKER_COUNT
+                or any(not isinstance(item, Mapping) for item in segments)
+            ):
+                raise RuntimeError("sequential production dispatches are incomplete")
+            dispatches.extend(
+                (
+                    f"production-wave-{wave_index}-job-{ordinal}",
+                    telemetry,
+                    [sorted(entry["reports"], key=lambda item: item["slot"])[ordinal]],
+                )
+                for ordinal, telemetry in enumerate(segments)
+            )
+        else:
+            raise RuntimeError("production execution mode is invalid")
+    return dispatches
+
+
 def validate_concurrency_history(
     value: Any,
     *,
     execution_mode: str,
     output_dir: Path,
     require_complete: bool = True,
+    swap_policy: str = DEFAULT_SWAP_POLICY,
+    require_shutdown_sample: bool = True,
 ) -> None:
+    swap_policy = _validate_swap_policy(swap_policy)
     if not isinstance(value, Mapping) or set(value) != {
         "schema_version",
         "kind",
         "execution_mode",
+        "swap_policy",
+        "timing_admissible",
         "wave_schedule_sha256",
         "worker_session_swap_telemetry",
+        "measured_phase_swap_window",
         "entries",
     }:
         raise RuntimeError("concurrency history fields are incomplete")
@@ -3757,15 +4413,18 @@ def validate_concurrency_history(
         value["schema_version"] != 1
         or value["kind"] != CAMPAIGN_KIND + "_concurrency_history"
         or value["execution_mode"] != execution_mode
+        or value["swap_policy"] != swap_policy
+        or value["timing_admissible"] is not (swap_policy == SWAP_POLICY_STRICT)
         or value["wave_schedule_sha256"] != wave_schedule_sha256()
         or not isinstance(value["entries"], list)
     ):
         raise RuntimeError("concurrency history header does not match")
     session_swap = value["worker_session_swap_telemetry"]
+    measured_swap = value["measured_phase_swap_window"]
     if session_swap is None:
-        if value["entries"] or require_complete:
+        if measured_swap is not None or value["entries"] or require_complete:
             raise RuntimeError("concurrency worker-session swap evidence is missing")
-    elif not _swap_session_telemetry_valid(session_swap):
+    elif not _swap_session_telemetry_valid(session_swap, swap_policy):
         raise RuntimeError("concurrency worker session observed swap I/O")
     schedule = expected_wave_schedule()
     seen = set()
@@ -3876,6 +4535,7 @@ def validate_concurrency_history(
             telemetry,
             execution_mode=execution_mode,
             wave_index=wave_index,
+            swap_policy=swap_policy,
         )
         samples = telemetry.get("samples")
         if (
@@ -3893,7 +4553,10 @@ def validate_concurrency_history(
             ):
                 raise RuntimeError("concurrency barrier telemetry is inconsistent")
         elif not _sequential_fallback_telemetry_valid(
-            reports, telemetry, entry["mode_details"]
+            reports,
+            telemetry,
+            entry["mode_details"],
+            swap_policy=swap_policy,
         ):
             raise RuntimeError("sequential fallback segments are incomplete")
     expected_order = list(range(EXPECTED_WAVES if require_complete else len(observed_order)))
@@ -3903,6 +4566,40 @@ def validate_concurrency_history(
         raise RuntimeError("production worker identity changed between waves")
     if require_complete and seen != set(range(EXPECTED_WAVES)):
         raise RuntimeError("concurrency history does not cover all frozen waves")
+    if session_swap is not None:
+        measured_dispatches = _production_measured_dispatches(
+            value["entries"], execution_mode
+        )
+        expected_sample_count = len(measured_dispatches) + 1
+        if (
+            measured_swap is None
+            or not _measured_swap_window_valid(
+                measured_swap,
+                session_swap,
+                swap_policy=swap_policy,
+                expected_dispatches=measured_dispatches,
+                require_shutdown_sample=require_shutdown_sample,
+                expected_start_sample_index=2,
+                require_exact_shutdown_suffix=(
+                    require_complete and require_shutdown_sample
+                ),
+            )
+            or measured_swap.get("sample_count") != expected_sample_count
+        ):
+            raise RuntimeError("production measured swap coverage is incomplete")
+        if require_complete:
+            frozen_sample_count = (
+                EXPECTED_WAVES + 1
+                if execution_mode == "concurrent"
+                else EXPECTED_WAVES * WORKER_COUNT + 1
+            )
+            if expected_sample_count != frozen_sample_count:
+                raise RuntimeError("production measured swap coverage is not exact")
+            expected_session_sample_count = frozen_sample_count + (
+                3 if require_shutdown_sample else 2
+            )
+            if session_swap.get("sample_count") != expected_session_sample_count:
+                raise RuntimeError("production worker-session coverage is not exact")
 
 
 def _record_warmup_session(
@@ -3990,8 +4687,12 @@ def validate_warmup_sessions(
 
 
 def _load_concurrency_history(
-    output_dir: Path, execution_mode: str, invalidated: set[int]
+    output_dir: Path,
+    execution_mode: str,
+    invalidated: set[int],
+    swap_policy: str = DEFAULT_SWAP_POLICY,
 ) -> dict[str, Any]:
+    swap_policy = _validate_swap_policy(swap_policy)
     path = output_dir / CONCURRENCY_HISTORY_FILENAME
     if path.exists():
         value = json.loads(path.read_text(encoding="utf-8"))
@@ -3999,6 +4700,7 @@ def _load_concurrency_history(
             raise RuntimeError("could not resume concurrency history")
         if (
             value.get("execution_mode") != execution_mode
+            or value.get("swap_policy") != swap_policy
             or value.get("wave_schedule_sha256") != wave_schedule_sha256()
         ):
             raise RuntimeError("concurrency history does not match execution mode")
@@ -4011,18 +4713,25 @@ def _load_concurrency_history(
             execution_mode=execution_mode,
             output_dir=output_dir,
             require_complete=False,
+            swap_policy=swap_policy,
         )
         return value
-    return _empty_concurrency_history(execution_mode)
+    return _empty_concurrency_history(execution_mode, swap_policy)
 
 
-def _empty_concurrency_history(execution_mode: str) -> dict[str, Any]:
+def _empty_concurrency_history(
+    execution_mode: str, swap_policy: str = DEFAULT_SWAP_POLICY
+) -> dict[str, Any]:
+    swap_policy = _validate_swap_policy(swap_policy)
     return {
         "schema_version": 1,
         "kind": CAMPAIGN_KIND + "_concurrency_history",
         "execution_mode": execution_mode,
+        "swap_policy": swap_policy,
+        "timing_admissible": swap_policy == SWAP_POLICY_STRICT,
         "wave_schedule_sha256": wave_schedule_sha256(),
         "worker_session_swap_telemetry": None,
+        "measured_phase_swap_window": None,
         "entries": [],
     }
 
@@ -4046,6 +4755,7 @@ def _write_invalid_attempt(
             "pid": os.getpid(),
             "output_dir": str(output_dir.resolve()),
             "execution_mode": execution_mode,
+            "swap_policy": manifest["swap_policy"],
             "wave_schedule_sha256": wave_schedule_sha256(),
             "protocol_sha256": manifest["protocol_sha256"],
             "manifest_sha256": screen.hardened._sha256_file(manifest_path),
@@ -4068,23 +4778,29 @@ def _write_invalid_attempt(
 
 def _close_production_swap_session(
     session_swap: dict[str, Any],
+    measured_swap: dict[str, Any] | None,
     history: dict[str, Any] | None,
     *,
     history_path: Path,
     execution_mode: str,
     output_dir: Path,
     require_complete: bool,
+    swap_policy: str = DEFAULT_SWAP_POLICY,
 ) -> None:
     """Capture shutdown and durably bind the full worker-session swap record."""
-    _checkpoint_swap_session(session_swap)
+    swap_policy = _validate_swap_policy(swap_policy)
+    _checkpoint_swap_session(session_swap, swap_policy)
     if history is None:
         return
     history["worker_session_swap_telemetry"] = session_swap
+    history["measured_phase_swap_window"] = measured_swap
     validate_concurrency_history(
         history,
         execution_mode=execution_mode,
         output_dir=output_dir,
         require_complete=require_complete,
+        swap_policy=swap_policy,
+        require_shutdown_sample=True,
     )
     screen.hardened._atomic_write_json(history_path, history)
 
@@ -4096,8 +4812,10 @@ def execute_production(
     pending_wave_indices: Sequence[int],
     invalidated_wave_indices: Sequence[int],
     owner_session: Mapping[str, Any] | None = None,
+    swap_policy: str = DEFAULT_SWAP_POLICY,
 ) -> dict[str, Any]:
     """Execute strict waves and durably journal only completed barriers."""
+    swap_policy = _validate_swap_policy(swap_policy)
     session_root = (
         output_dir
         / "worker_scratch"
@@ -4105,18 +4823,22 @@ def execute_production(
     )
     workers = []
     session_swap = _new_swap_session_telemetry()
+    measured_swap: dict[str, Any] | None = None
     history: dict[str, Any] | None = None
     history_path = output_dir / CONCURRENCY_HISTORY_FILENAME
     owner_workers_bound = False
+    durable_entry_count = 0
     try:
         _create_private_worker_root(session_root, output_dir=output_dir)
         workers, ready = _start_workers(session_root)
         if owner_session is not None:
             bind_owner_workers(owner_session, "production", workers)
             owner_workers_bound = True
-        _checkpoint_swap_session(session_swap)
+        _checkpoint_swap_session(session_swap, swap_policy)
         warmup = _warm_workers(workers)
-        _checkpoint_swap_session(session_swap)
+        measured_swap = _start_measured_swap_window(
+            session_swap, swap_policy=swap_policy
+        )
         _record_warmup_session(
             output_dir,
             execution_mode=execution_mode,
@@ -4124,11 +4846,15 @@ def execute_production(
             records=warmup,
         )
         history = _load_concurrency_history(
-            output_dir, execution_mode, set(pending_wave_indices)
+            output_dir,
+            execution_mode,
+            set(pending_wave_indices),
+            swap_policy,
         )
         if history["entries"]:
             raise RuntimeError("production worker session cannot adopt prior waves")
         history["worker_session_swap_telemetry"] = session_swap
+        history["measured_phase_swap_window"] = measured_swap
         schedule = expected_wave_schedule()
         completed = {entry["wave_index"] for entry in history["entries"]}
         for wave_index in pending_wave_indices:
@@ -4144,8 +4870,17 @@ def execute_production(
                 for item in wave["jobs"]
             ]
             if execution_mode == "concurrent":
+                dispatch_label = f"production-wave-{wave_index}"
                 reports, telemetry = _dispatch_runs(
-                    workers, assignments, label=f"production-wave-{wave_index}"
+                    workers, assignments, label=dispatch_label
+                )
+                _checkpoint_measured_swap_window(
+                    session_swap,
+                    measured_swap,
+                    label=dispatch_label,
+                    resource_telemetry=telemetry,
+                    reports=reports,
+                    swap_policy=swap_policy,
                 )
                 mode_details = {"segments": 1}
             else:
@@ -4158,6 +4893,14 @@ def execute_production(
                         workers,
                         [assignment],
                         label=f"production-wave-{wave_index}-job-{ordinal}",
+                    )
+                    _checkpoint_measured_swap_window(
+                        session_swap,
+                        measured_swap,
+                        label=f"production-wave-{wave_index}-job-{ordinal}",
+                        resource_telemetry=current_telemetry,
+                        reports=current_reports,
+                        swap_policy=swap_policy,
                     )
                     reports.extend(current_reports)
                     segments.append(current_telemetry)
@@ -4210,12 +4953,12 @@ def execute_production(
                     "solo_tail_seconds": 0.0,
                 }
                 mode_details = {"segments": 2, "segment_telemetry": segments}
-            _checkpoint_swap_session(session_swap)
             _validate_completed_wave(
                 reports,
                 telemetry,
                 execution_mode=execution_mode,
                 wave_index=wave_index,
+                swap_policy=swap_policy,
             )
             enriched = []
             by_slot = {item["slot"]: item for item in reports}
@@ -4241,13 +4984,18 @@ def execute_production(
             )
             history["entries"].sort(key=lambda item: item["wave_index"])
             screen.hardened._atomic_write_json(history_path, history)
+            durable_entry_count = len(history["entries"])
             print(
                 f"SHOOTOUT_WAVE_COMPLETE {wave_index + 1}/{EXPECTED_WAVES} "
                 f"{wave['dataset']} {execution_mode}",
                 flush=True,
             )
         validate_concurrency_history(
-            history, execution_mode=execution_mode, output_dir=output_dir
+            history,
+            execution_mode=execution_mode,
+            output_dir=output_dir,
+            swap_policy=swap_policy,
+            require_shutdown_sample=False,
         )
         return history
     except Exception as exc:
@@ -4257,6 +5005,20 @@ def execute_production(
         raise
     finally:
         if sys.exc_info()[0] is not None:
+            active_error = sys.exc_info()[1]
+            if (
+                isinstance(active_error, KeyboardInterrupt)
+                and history is not None
+                and measured_swap is not None
+                and not (output_dir / INVALID_ATTEMPT_FILENAME).exists()
+            ):
+                del history["entries"][durable_entry_count:]
+                dispatch_count = durable_entry_count * (
+                    1 if execution_mode == "concurrent" else WORKER_COUNT
+                )
+                _truncate_measured_swap_window(
+                    measured_swap, session_swap, dispatch_count
+                )
             try:
                 _stop_workers(workers, force=True)
                 if owner_workers_bound:
@@ -4282,11 +5044,13 @@ def execute_production(
                 )
                 _close_production_swap_session(
                     session_swap,
+                    measured_swap,
                     resumable_history,
                     history_path=history_path,
                     execution_mode=execution_mode,
                     output_dir=output_dir,
                     require_complete=False,
+                    swap_policy=swap_policy,
                 )
             except Exception as resource_error:
                 if not (output_dir / INVALID_ATTEMPT_FILENAME).exists():
@@ -4306,11 +5070,13 @@ def execute_production(
                     mark_owner_workers_quiesced(owner_session, "production")
                 _close_production_swap_session(
                     session_swap,
+                    measured_swap,
                     history,
                     history_path=history_path,
                     execution_mode=execution_mode,
                     output_dir=output_dir,
                     require_complete=True,
+                    swap_policy=swap_policy,
                 )
             except Exception as exc:
                 _write_invalid_attempt(
@@ -4372,6 +5138,8 @@ def write_completion_attestation(
         "wave_schedule_sha256": manifest["wave_schedule_sha256"],
         "execution_grid_sha256": manifest["execution_grid_sha256"],
         "preflight_report_sha256": manifest["preflight_report_sha256"],
+        "swap_policy": manifest["swap_policy"],
+        "timing_admissible": manifest["timing_admissible"],
         "result_artifacts_sha256": hashlib.sha256(
             screen.hardened._canonical_json(artifacts)
         ).hexdigest(),
@@ -4386,6 +5154,7 @@ def write_completion_attestation(
         concurrency,
         execution_mode=manifest["execution_mode"],
         output_dir=output_dir,
+        swap_policy=manifest["swap_policy"],
     )
     warmup_path = output_dir / screen.WARMUP_HISTORY_FILENAME
     warmup_sessions = json.loads(warmup_path.read_text(encoding="utf-8"))
@@ -4438,6 +5207,8 @@ def write_completion_attestation(
         "completed_at_utc": datetime.now(timezone.utc).isoformat(),
         "pid": os.getpid(),
         "execution_mode": manifest["execution_mode"],
+        "swap_policy": manifest["swap_policy"],
+        "timing_admissible": manifest["timing_admissible"],
         "wave_schedule_sha256": manifest["wave_schedule_sha256"],
         "execution_grid_sha256": manifest["execution_grid_sha256"],
         "protocol_sha256": manifest["protocol_sha256"],
@@ -4481,6 +5252,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--preflight", action="store_true")
     parser.add_argument(
+        "--swap-policy",
+        choices=SWAP_POLICIES,
+        default=None,
+        help=(
+            "host swap policy; quality_only_swap_in preserves quality/safety "
+            "gates but makes performance evidence inadmissible"
+        ),
+    )
+    parser.add_argument(
         "--sequential-recovery-from",
         type=Path,
         help=(
@@ -4506,15 +5286,60 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return args
 
 
+def _read_bound_swap_policy(output_dir: Path) -> str:
+    """Read a campaign policy without mutating or acquiring its namespace."""
+    output_dir = output_dir.resolve(strict=True)
+    path = output_dir / screen.MANIFEST_FILENAME
+    screen.hardened._require_regular_archive_source(path, "swap-policy manifest")
+    if not path.is_file():
+        raise RuntimeError("swap-policy manifest is missing")
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError("could not read swap-policy manifest") from exc
+    if (
+        not isinstance(manifest, Mapping)
+        or manifest.get("kind") != CAMPAIGN_KIND
+        or manifest.get("protocol_sha256") != screen.protocol_sha256()
+    ):
+        raise RuntimeError("swap-policy manifest does not match this campaign")
+    policy = _validate_swap_policy(manifest.get("swap_policy"))
+    if manifest.get("timing_admissible") is not (policy == SWAP_POLICY_STRICT):
+        raise RuntimeError("swap-policy manifest timing status is inconsistent")
+    return policy
+
+
+def resolve_invocation_swap_policy(
+    args: argparse.Namespace, output_dir: Path
+) -> str:
+    """Resolve omitted resume/recovery policy before any namespace mutation."""
+    requested = args.swap_policy
+    source = None
+    if args.resume:
+        source = output_dir
+    elif args.sequential_recovery_from is not None:
+        source = args.sequential_recovery_from
+    if source is None:
+        return _validate_swap_policy(requested or DEFAULT_SWAP_POLICY)
+    bound = _read_bound_swap_policy(Path(source))
+    if requested is not None and requested != bound:
+        raise RuntimeError(
+            f"requested swap policy {requested!r} does not match bound policy {bound!r}"
+        )
+    return bound
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     output_dir = args.output_dir.resolve()
+    args.swap_policy = resolve_invocation_swap_policy(args, output_dir)
     schedule = expected_wave_schedule()
     _, jobs, child_cpus = build_runtime_jobs(args.time_limit)
     ordering = screen.ordering_balance(jobs)
     print(
         f"built {len(jobs)} B10/A10 jobs ({EXPECTED_CHILD_FITS} child fits); "
-        f"waves={len(schedule)} workers={WORKER_COUNT} child_cpus={child_cpus}"
+        f"waves={len(schedule)} workers={WORKER_COUNT} child_cpus={child_cpus} "
+        f"swap_policy={args.swap_policy}"
     )
     print(
         "schedule "
@@ -4550,12 +5375,15 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "this execution attempt is invalid and cannot be resumed; "
                     "use a fresh output directory"
                 )
-            preflight, preflight_sha256 = _load_preflight_report(output_dir)
+            preflight, preflight_sha256 = _load_preflight_report(
+                output_dir, args.swap_policy
+            )
         else:
             recovery = (
                 collect_sequential_recovery(
                     args.sequential_recovery_from,
                     current_source=source,
+                    swap_policy=args.swap_policy,
                 )
                 if args.sequential_recovery_from is not None
                 else None
@@ -4564,6 +5392,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 output_dir,
                 sequential_recovery=recovery,
                 owner_session=owner_session,
+                swap_policy=args.swap_policy,
             )
             preflight_sha256 = screen.hardened._sha256_file(
                 output_dir / PREFLIGHT_REPORT_FILENAME
@@ -4571,15 +5400,20 @@ def main(argv: Sequence[str] | None = None) -> int:
             if args.preflight:
                 finalize_owner_session(owner_session, "preflight_only")
                 decision = preflight["decision"]
+                timing_detail = (
+                    f"speedup={decision['throughput_speedup']}"
+                    if decision["timing_admissible"]
+                    else "timing=inadmissible_raw_operational_audit_only"
+                )
                 print(
                     "SHOOTOUT_PREFLIGHT_COMPLETE "
                     f"{decision['execution_mode']} "
-                    f"speedup={decision['throughput_speedup']} {output_dir}",
+                    f"{timing_detail} {output_dir}",
                     flush=True,
                 )
                 return 0
         execution_mode = preflight["decision"]["execution_mode"]
-        grid = execution_grid_payload(execution_mode)
+        grid = execution_grid_payload(execution_mode, args.swap_policy)
         grid_path = output_dir / WAVE_SCHEDULE_FILENAME
         if args.resume:
             try:
@@ -4597,6 +5431,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             execution_mode=execution_mode,
             preflight_sha256=preflight_sha256,
             reused_evidence=reused_evidence,
+            swap_policy=args.swap_policy,
         )
         manifest["execution_grid_artifact_sha256"] = screen.hardened._sha256_file(
             grid_path
@@ -4614,6 +5449,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             schedule,
             resume=args.resume,
             execution_mode=execution_mode,
+            swap_policy=args.swap_policy,
         )
         resume_prepared = True
         execute_production(
@@ -4622,6 +5458,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             pending_wave_indices=resume_state["pending_wave_indices"],
             invalidated_wave_indices=resume_state["invalidated_wave_indices"],
             owner_session=owner_session,
+            swap_policy=args.swap_policy,
         )
         attestation = write_completion_attestation(
             output_dir,

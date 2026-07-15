@@ -183,9 +183,14 @@ The hardened cap-campaign boundaries are reused:
   append-only and attested.
 - The runner validates its own pickles, writes a normalized non-executable JSON
   payload, and seals every result digest and byte size in a completion
-  attestation. Normalized child rows retain the ordered external feature schema
-  so the standalone analyzer recomputes every native schema digest and audited
-  drop relation itself. The analyzer hashes but never unpickles result files.
+  attestation. The normalized analysis payload uses schema version 2; version 1
+  payloads are intentionally incompatible because version 2 binds each child's
+  fitted policy metadata and complete soft-deadline audit tuple. The version is
+  also part of the frozen protocol digest, so old and new campaigns cannot
+  share an artifact identity. Normalized child rows retain the ordered external
+  feature schema so the standalone analyzer recomputes every native schema
+  digest and audited drop relation itself. The analyzer hashes but never
+  unpickles result files.
   Its five outputs use fixed campaign-root filenames so resume can archive every
   stale analysis artifact before any rerun.
   It revalidates the exact grid, row schemas, fitted metadata, representation

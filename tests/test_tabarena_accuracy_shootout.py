@@ -50,6 +50,171 @@ def _zero_swap_session() -> dict:
     }
 
 
+def _attach_measured_swap_evidence(
+    owner: dict,
+    dispatches: list[tuple[str, dict, list[dict]]],
+    *,
+    swap_policy: str = shootout.SWAP_POLICY_STRICT,
+    swap_in_by_boundary: list[int] | None = None,
+) -> None:
+    """Attach one exact measured window derived from shared lifecycle samples."""
+    measured_start_index = 3 if "isolated_runs" in owner else 2
+    lifecycle_sample_count = measured_start_index + len(dispatches) + 2
+    if swap_in_by_boundary is None:
+        swap_in_by_boundary = [0] * lifecycle_sample_count
+    assert len(swap_in_by_boundary) == lifecycle_sample_count
+    assert swap_in_by_boundary == sorted(swap_in_by_boundary)
+    lifecycle = [
+        {
+            "monotonic_ns": index + 1,
+            "swap_in_bytes": swap_in_by_boundary[index],
+            "swap_out_bytes": 0,
+        }
+        for index in range(measured_start_index + 1)
+    ]
+    measured_dispatches = []
+    for ordinal, (label, telemetry, reports) in enumerate(dispatches, start=1):
+        release = 1_000_000_000 + ordinal * 100_000_000_000
+        prior_release = telemetry["barrier_release_monotonic_ns"]
+        shift = release - prior_release
+        telemetry["barrier_release_monotonic_ns"] = release
+        for report in reports:
+            report["barrier_release_monotonic_ns"] += shift
+            report["started_monotonic_ns"] += shift
+            report["ended_monotonic_ns"] += shift
+        resource_samples = telemetry["samples"]
+        base = max(report["ended_monotonic_ns"] for report in reports) + 1
+        preceding_index = measured_start_index + ordinal - 1
+        closing_index = measured_start_index + ordinal
+        for sample_index, sample in enumerate(resource_samples):
+            sample["monotonic_ns"] = base + sample_index
+            sample["swap_in_bytes"] = swap_in_by_boundary[preceding_index]
+            sample["swap_out_bytes"] = 0
+        telemetry["swap_in_delta"] = 0
+        telemetry["swap_out_delta"] = 0
+        first = resource_samples[0]["monotonic_ns"]
+        last = resource_samples[-1]["monotonic_ns"]
+        lifecycle.append(
+            {
+                "monotonic_ns": last + 1,
+                "swap_in_bytes": swap_in_by_boundary[closing_index],
+                "swap_out_bytes": 0,
+            }
+        )
+        measured_dispatches.append(
+            {
+                "label": label,
+                "sample_index": closing_index,
+                "resource_first_monotonic_ns": first,
+                "resource_last_monotonic_ns": last,
+                "resource_first_swap_in_bytes": resource_samples[0][
+                    "swap_in_bytes"
+                ],
+                "resource_last_swap_in_bytes": resource_samples[-1][
+                    "swap_in_bytes"
+                ],
+                "resource_first_swap_out_bytes": resource_samples[0][
+                    "swap_out_bytes"
+                ],
+                "resource_last_swap_out_bytes": resource_samples[-1][
+                    "swap_out_bytes"
+                ],
+                "barrier_release_monotonic_ns": release,
+                "max_report_end_monotonic_ns": max(
+                    report["ended_monotonic_ns"] for report in reports
+                ),
+            }
+        )
+    lifecycle.append(
+        {
+            "monotonic_ns": lifecycle[-1]["monotonic_ns"] + 100,
+            "swap_in_bytes": swap_in_by_boundary[-1],
+            "swap_out_bytes": 0,
+        }
+    )
+    owner["swap_policy"] = swap_policy
+    owner["worker_session_swap_telemetry"] = {
+        "sample_count": len(lifecycle),
+        "samples": lifecycle,
+        "swap_in_delta": lifecycle[-1]["swap_in_bytes"]
+        - lifecycle[0]["swap_in_bytes"],
+        "swap_out_delta": 0,
+    }
+    owner["measured_phase_swap_window"] = {
+        "start_sample_index": measured_start_index,
+        "end_sample_index": measured_start_index + len(dispatches),
+        "sample_count": len(dispatches) + 1,
+        "swap_in_delta": lifecycle[-2]["swap_in_bytes"]
+        - lifecycle[measured_start_index]["swap_in_bytes"],
+        "swap_out_delta": 0,
+        "dispatches": measured_dispatches,
+    }
+
+
+def _append_dispatch_swap_sample(
+    owner: dict, telemetry: dict, *, label: str, direction: str
+) -> None:
+    assert direction in {"swap_in", "swap_out"}
+    prior = telemetry["samples"][-1]
+    sample = {
+        **prior,
+        "monotonic_ns": prior["monotonic_ns"] + 1,
+        f"{direction}_bytes": prior[f"{direction}_bytes"] + 1,
+    }
+    telemetry["samples"].append(sample)
+    telemetry["sample_count"] += 1
+    telemetry[f"{direction}_delta"] += 1
+    dispatch = next(
+        item
+        for item in owner["measured_phase_swap_window"]["dispatches"]
+        if item["label"] == label
+    )
+    if "isolated_runs" in owner:
+        telemetry_by_label = {
+            **{
+                f"preflight-isolated-{index}": item["telemetry"]
+                for index, item in enumerate(owner["isolated_runs"])
+            },
+            **{
+                f"preflight-concurrent-{index}": item["telemetry"]
+                for index, item in enumerate(owner["concurrent_waves"])
+            },
+        }
+    elif owner["execution_mode"] == "concurrent":
+        telemetry_by_label = {
+            f"production-wave-{entry['wave_index']}": entry["telemetry"]
+            for entry in owner["entries"]
+        }
+    else:
+        telemetry_by_label = {
+            f"production-wave-{entry['wave_index']}-job-{ordinal}": telemetry
+            for entry in owner["entries"]
+            for ordinal, telemetry in enumerate(
+                entry["mode_details"]["segment_telemetry"]
+            )
+        }
+    dispatch["resource_last_monotonic_ns"] = sample["monotonic_ns"]
+    dispatch[f"resource_last_{direction}_bytes"] = sample[f"{direction}_bytes"]
+    dispatch_position = owner["measured_phase_swap_window"]["dispatches"].index(
+        dispatch
+    )
+    for later in owner["measured_phase_swap_window"]["dispatches"][
+        dispatch_position + 1 :
+    ]:
+        later_telemetry = telemetry_by_label[later["label"]]
+        if later_telemetry is not None:
+            for later_sample in later_telemetry["samples"]:
+                later_sample[f"{direction}_bytes"] += 1
+        later[f"resource_first_{direction}_bytes"] += 1
+        later[f"resource_last_{direction}_bytes"] += 1
+    lifecycle = owner["worker_session_swap_telemetry"]["samples"]
+    for item in lifecycle[dispatch["sample_index"] :]:
+        item["monotonic_ns"] += 1
+        item[f"{direction}_bytes"] += 1
+    owner["worker_session_swap_telemetry"][f"{direction}_delta"] += 1
+    owner["measured_phase_swap_window"][f"{direction}_delta"] += 1
+
+
 def _preflight_worker_report(dataset: str, arm: str) -> dict:
     repeat, fold = shootout.PREFLIGHT_COORDINATES[dataset]
     key = shootout._key_payload((dataset, repeat, fold, arm))
@@ -58,7 +223,7 @@ def _preflight_worker_report(dataset: str, arm: str) -> dict:
     release_ns = 1_000_000_000
     started_ns = 2_000_000_000
     ended_ns = 12_000_000_000
-    return {
+    report = {
         "key": key,
         "slot": slot,
         "pid": 10_000 + slot,
@@ -106,6 +271,7 @@ def _preflight_worker_report(dataset: str, arm: str) -> dict:
             "solo_tail_seconds": 0.0,
         },
     }
+    return report
 
 
 def _passing_preflight_report() -> dict:
@@ -129,7 +295,7 @@ def _passing_preflight_report() -> dict:
         result["ended_monotonic_ns"] = 12_000_000_000 + slot * 100_000_000
         return result
 
-    return {
+    report = {
         "worker_ready": [
             {"slot": slot, "pid": 10_000 + slot}
             for slot in range(shootout.WORKER_COUNT)
@@ -226,9 +392,26 @@ def _passing_preflight_report() -> dict:
                 },
             },
         ],
-        "worker_session_swap_telemetry": _zero_swap_session(),
         "worker_restarts": False,
     }
+    _attach_measured_swap_evidence(
+        report,
+        [
+            *[
+                (f"preflight-isolated-{index}", item["telemetry"], [item])
+                for index, item in enumerate(report["isolated_runs"])
+            ],
+            *[
+                (
+                    f"preflight-concurrent-{index}",
+                    item["telemetry"],
+                    item["reports"],
+                )
+                for index, item in enumerate(report["concurrent_waves"])
+            ],
+        ],
+    )
+    return report
 
 
 def _fake_jobs() -> list[SimpleNamespace]:
@@ -358,14 +541,26 @@ def _valid_concurrency_history(output_dir) -> dict:
                 "mode_details": {"segments": 1},
             }
         )
-    return {
+    history = {
         "schema_version": 1,
         "kind": shootout.CAMPAIGN_KIND + "_concurrency_history",
         "execution_mode": "concurrent",
+        "timing_admissible": True,
         "wave_schedule_sha256": shootout.wave_schedule_sha256(),
-        "worker_session_swap_telemetry": _zero_swap_session(),
         "entries": entries,
     }
+    _attach_measured_swap_evidence(
+        history,
+        [
+            (
+                f"production-wave-{entry['wave_index']}",
+                entry["telemetry"],
+                entry["reports"],
+            )
+            for entry in entries
+        ],
+    )
+    return history
 
 
 def _valid_sequential_concurrency_history(output_dir) -> dict:
@@ -419,7 +614,73 @@ def _valid_sequential_concurrency_history(output_dir) -> dict:
             "segments": 2,
             "segment_telemetry": segments,
         }
+    _attach_measured_swap_evidence(
+        history,
+        [
+            (
+                f"production-wave-{entry['wave_index']}-job-{ordinal}",
+                telemetry,
+                [entry["reports"][ordinal]],
+            )
+            for entry in history["entries"]
+            for ordinal, telemetry in enumerate(
+                entry["mode_details"]["segment_telemetry"]
+            )
+        ],
+    )
     return history
+
+
+def _truncate_history_entries(history: dict, count: int) -> None:
+    history["entries"] = history["entries"][:count]
+    dispatch_count = count * (
+        1 if history["execution_mode"] == "concurrent" else shootout.WORKER_COUNT
+    )
+    shootout._truncate_measured_swap_window(
+        history["measured_phase_swap_window"],
+        history["worker_session_swap_telemetry"],
+        dispatch_count,
+    )
+
+
+def _valid_sequential_recovery_record(tmp_path, swap_policy: str) -> dict:
+    source_output_dir = str((tmp_path / "failed-concurrent-source").resolve())
+    manifest_sha256 = "1" * 64
+    owner_state_sha256 = "2" * 64
+    preflight_sha256 = "3" * 64
+    execution_grid_sha256 = "4" * 64
+    git_head = "5" * 40
+    marker = {
+        "schema_version": 1,
+        "kind": shootout.CAMPAIGN_KIND + "_invalid_attempt",
+        "failed_at_utc": "2026-07-15T00:00:00+00:00",
+        "pid": 12345,
+        "output_dir": source_output_dir,
+        "execution_mode": "concurrent",
+        "swap_policy": swap_policy,
+        "wave_schedule_sha256": shootout.wave_schedule_sha256(),
+        "protocol_sha256": shootout.screen.protocol_sha256(),
+        "manifest_sha256": manifest_sha256,
+        "preflight_report_sha256": preflight_sha256,
+        "execution_grid_sha256": execution_grid_sha256,
+        "git_head": git_head,
+        "error_type": "RuntimeError",
+        "error": "simulated concurrent failure",
+        "recovery": "use --sequential-recovery-from with a fresh output namespace",
+    }
+    return {
+        "schema_version": 1,
+        "source_output_dir": source_output_dir,
+        "source_manifest_sha256": manifest_sha256,
+        "source_invalid_attempt_sha256": "6" * 64,
+        "source_owner_state_sha256": owner_state_sha256,
+        "source_preflight_sha256": preflight_sha256,
+        "source_execution_grid_sha256": execution_grid_sha256,
+        "source_git_head": git_head,
+        "source_execution_mode": "concurrent",
+        "source_swap_policy": swap_policy,
+        "invalid_attempt": marker,
+    }
 
 
 def test_shootout_policy_specialization_does_not_mutate_shared_runner():
@@ -478,7 +739,7 @@ def test_wave_resume_archives_both_members_when_one_partner_is_missing(
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(b"synthetic valid result")
     journal = _valid_concurrency_history(tmp_path)
-    journal["entries"] = journal["entries"][:1]
+    _truncate_history_entries(journal, 1)
     for report in journal["entries"][0]["reports"]:
         path = result_path(_public_key(report))
         report["result_sha256"] = shootout.screen.hardened._sha256_file(path)
@@ -509,7 +770,7 @@ def test_wave_resume_restarts_the_journal_before_replacement_wave_zero(tmp_path)
     jobs_by_key = {shootout._public_job_key(job): job for job in jobs}
     waves = shootout.expected_wave_schedule()
     journal = _valid_concurrency_history(tmp_path)
-    journal["entries"] = journal["entries"][:1]
+    _truncate_history_entries(journal, 1)
     for item in waves[0]["jobs"]:
         path = shootout.screen._result_path(
             tmp_path, jobs_by_key[_public_key(item)]
@@ -619,7 +880,7 @@ def test_wave_resume_validates_existing_journal_before_result_mutation(
     source.parent.mkdir(parents=True, exist_ok=True)
     source.write_bytes(b"must remain in place")
     journal = _valid_concurrency_history(tmp_path)
-    journal["entries"] = journal["entries"][:1]
+    _truncate_history_entries(journal, 1)
     journal["entries"][0].pop("telemetry")
     (tmp_path / shootout.CONCURRENCY_HISTORY_FILENAME).write_text(
         shootout.json.dumps(journal), encoding="utf-8"
@@ -864,12 +1125,171 @@ def test_resume_manifest_mismatch_fails_before_result_mutation(tmp_path):
     assert not (output_dir / "resume_invalidated").exists()
 
 
+def _write_bound_policy_manifest(output_dir, policy):
+    manifest = {
+        "kind": shootout.CAMPAIGN_KIND,
+        "protocol_sha256": shootout.screen.protocol_sha256(),
+        "swap_policy": policy,
+        "timing_admissible": policy == shootout.SWAP_POLICY_STRICT,
+    }
+    path = output_dir / shootout.screen.MANIFEST_FILENAME
+    path.write_text(shootout.json.dumps(manifest), encoding="utf-8")
+    return path
+
+
+def test_omitted_resume_policy_derives_quality_binding_before_owner_mutation(
+    tmp_path,
+):
+    output_dir = tmp_path / "campaign"
+    output_dir.mkdir()
+    _write_bound_policy_manifest(
+        output_dir, shootout.SWAP_POLICY_QUALITY_ONLY_SWAP_IN
+    )
+    args = shootout.parse_args(["--resume", "--output-dir", str(output_dir)])
+
+    assert args.swap_policy is None
+    assert (
+        shootout.resolve_invocation_swap_policy(args, output_dir)
+        == shootout.SWAP_POLICY_QUALITY_ONLY_SWAP_IN
+    )
+
+
+def test_explicit_resume_policy_mismatch_is_rejected_before_any_mutation(tmp_path):
+    output_dir = tmp_path / "campaign"
+    output_dir.mkdir()
+    manifest = _write_bound_policy_manifest(
+        output_dir, shootout.SWAP_POLICY_QUALITY_ONLY_SWAP_IN
+    )
+    owner = output_dir / shootout.OWNER_STATE_FILENAME
+    owner.write_bytes(b"owner sentinel")
+    result = output_dir / "experiments" / "data" / "job" / "results.pkl"
+    result.parent.mkdir(parents=True)
+    result.write_bytes(b"result sentinel")
+    before = {path: path.read_bytes() for path in (manifest, owner, result)}
+
+    with pytest.raises(RuntimeError, match="does not match bound policy"):
+        shootout.main(
+            [
+                "--resume",
+                "--output-dir",
+                str(output_dir),
+                "--swap-policy",
+                shootout.SWAP_POLICY_STRICT,
+            ]
+        )
+
+    assert {path: path.read_bytes() for path in before} == before
+    assert not (output_dir / "resume_invalidated").exists()
+
+
+def test_prepare_resume_policy_mismatch_precedes_result_or_journal_mutation(
+    tmp_path,
+):
+    jobs = _fake_jobs()
+    history = _valid_concurrency_history(tmp_path)
+    history["swap_policy"] = shootout.SWAP_POLICY_QUALITY_ONLY_SWAP_IN
+    history["timing_admissible"] = False
+    _truncate_history_entries(history, 1)
+    journal = tmp_path / shootout.CONCURRENCY_HISTORY_FILENAME
+    journal.write_text(shootout.json.dumps(history), encoding="utf-8")
+    result = shootout.screen._result_path(tmp_path, jobs[0])
+    result.parent.mkdir(parents=True, exist_ok=True)
+    result.write_bytes(b"result sentinel")
+    before_journal = journal.read_bytes()
+
+    with pytest.raises(RuntimeError, match="incompatible with resume"):
+        shootout.prepare_wave_resume(
+            tmp_path,
+            jobs,
+            shootout.expected_wave_schedule(),
+            resume=True,
+            swap_policy=shootout.SWAP_POLICY_STRICT,
+        )
+
+    assert journal.read_bytes() == before_journal
+    assert result.read_bytes() == b"result sentinel"
+    assert not (tmp_path / "resume_invalidated").exists()
+
+
+def test_hard_crash_journal_is_validated_for_discard_and_zero_start_resume(
+    tmp_path,
+):
+    jobs = _fake_jobs()
+    history = _valid_concurrency_history(tmp_path)
+    _truncate_history_entries(history, 1)
+    window = history["measured_phase_swap_window"]
+    lifecycle = history["worker_session_swap_telemetry"]
+    lifecycle["samples"] = lifecycle["samples"][: window["end_sample_index"] + 1]
+    lifecycle["sample_count"] = len(lifecycle["samples"])
+    lifecycle["swap_in_delta"] = (
+        lifecycle["samples"][-1]["swap_in_bytes"]
+        - lifecycle["samples"][0]["swap_in_bytes"]
+    )
+    lifecycle["swap_out_delta"] = (
+        lifecycle["samples"][-1]["swap_out_bytes"]
+        - lifecycle["samples"][0]["swap_out_bytes"]
+    )
+    journal = tmp_path / shootout.CONCURRENCY_HISTORY_FILENAME
+    journal.write_text(shootout.json.dumps(history), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="measured swap coverage"):
+        shootout.validate_concurrency_history(
+            history,
+            execution_mode="concurrent",
+            output_dir=tmp_path,
+            require_complete=False,
+        )
+
+    state = shootout.prepare_wave_resume(
+        tmp_path,
+        jobs,
+        shootout.expected_wave_schedule(),
+        resume=True,
+    )
+
+    assert state["pending_wave_indices"] == list(range(shootout.EXPECTED_WAVES))
+    assert shootout.json.loads(journal.read_text(encoding="utf-8")) == (
+        shootout._empty_concurrency_history("concurrent")
+    )
+    assert (tmp_path / "resume_invalidated").is_dir()
+
+
 def test_concurrency_history_requires_all_39_two_report_barrier_waves(tmp_path):
     history = _valid_concurrency_history(tmp_path)
 
     shootout.validate_concurrency_history(
         history, execution_mode="concurrent", output_dir=tmp_path
     )
+    window = history["measured_phase_swap_window"]
+    lifecycle = history["worker_session_swap_telemetry"]
+    assert window["start_sample_index"] == 2
+    assert window["end_sample_index"] == 41
+    assert lifecycle["sample_count"] == 43
+    assert window["end_sample_index"] == lifecycle["sample_count"] - 2
+
+
+def test_complete_pre_shutdown_history_has_exact_no_suffix_layout(tmp_path):
+    history = _valid_concurrency_history(tmp_path)
+    lifecycle = history["worker_session_swap_telemetry"]
+    lifecycle["samples"].pop()
+    lifecycle["sample_count"] = len(lifecycle["samples"])
+    lifecycle["swap_in_delta"] = (
+        lifecycle["samples"][-1]["swap_in_bytes"]
+        - lifecycle["samples"][0]["swap_in_bytes"]
+    )
+    lifecycle["swap_out_delta"] = (
+        lifecycle["samples"][-1]["swap_out_bytes"]
+        - lifecycle["samples"][0]["swap_out_bytes"]
+    )
+
+    shootout.validate_concurrency_history(
+        history,
+        execution_mode="concurrent",
+        output_dir=tmp_path,
+        require_shutdown_sample=False,
+    )
+
+    assert lifecycle["sample_count"] == 42
+    assert history["measured_phase_swap_window"]["end_sample_index"] == 41
 
 
 def test_production_failure_marks_attempt_invalid_before_shutdown(
@@ -881,6 +1301,7 @@ def test_production_failure_marks_attempt_invalid_before_shutdown(
         output_dir / shootout.screen.MANIFEST_FILENAME,
         {
             "protocol_sha256": shootout.screen.protocol_sha256(),
+            "swap_policy": shootout.SWAP_POLICY_STRICT,
             "preflight_report_sha256": "1" * 64,
             "execution_grid_sha256": "2" * 64,
             "source": {"git_head": "3" * 40},
@@ -1158,6 +1579,32 @@ def test_keyboard_interrupt_during_readiness_aborts_without_fallback_or_leak(
     assert not (tmp_path / shootout.PREFLIGHT_REPORT_FILENAME).exists()
 
 
+def test_keyboard_interrupt_during_preflight_dispatch_forces_clean_shutdown(
+    tmp_path, monkeypatch
+):
+    workers = [{"slot": 0}, {"slot": 1}]
+    stopped = []
+    monkeypatch.setattr(shootout, "_start_workers", lambda _root: (workers, []))
+    monkeypatch.setattr(shootout, "_warm_workers", lambda _workers: [])
+    monkeypatch.setattr(shootout, "_prime_preflight_workers", lambda _workers: [])
+    monkeypatch.setattr(
+        shootout,
+        "_dispatch_runs",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(KeyboardInterrupt()),
+    )
+    monkeypatch.setattr(
+        shootout,
+        "_stop_workers",
+        lambda observed, **kwargs: stopped.append((observed, kwargs)),
+    )
+
+    with pytest.raises(KeyboardInterrupt):
+        shootout.run_preflight(tmp_path)
+
+    assert stopped == [(workers, {"force": True})]
+    assert not (tmp_path / shootout.PREFLIGHT_REPORT_FILENAME).exists()
+
+
 def test_worker_startup_fails_closed_when_pipe_closure_cannot_be_confirmed(
     tmp_path, monkeypatch
 ):
@@ -1279,6 +1726,7 @@ def test_keyboard_interrupt_with_unquiesced_worker_marks_attempt_invalid(
         output_dir / shootout.screen.MANIFEST_FILENAME,
         {
             "protocol_sha256": shootout.screen.protocol_sha256(),
+            "swap_policy": shootout.SWAP_POLICY_STRICT,
             "preflight_report_sha256": "1" * 64,
             "execution_grid_sha256": "2" * 64,
             "source": {"git_head": "3" * 40},
@@ -1514,6 +1962,7 @@ def test_production_issues_no_worker_command_before_durable_owner_binding(
         tmp_path / shootout.screen.MANIFEST_FILENAME,
         {
             "protocol_sha256": shootout.screen.protocol_sha256(),
+            "swap_policy": shootout.SWAP_POLICY_STRICT,
             "preflight_report_sha256": "1" * 64,
             "execution_grid_sha256": "2" * 64,
             "source": {"git_head": "3" * 40},
@@ -1566,6 +2015,7 @@ def test_sequential_failure_emits_supported_fresh_start_guidance(tmp_path):
         output_dir / shootout.screen.MANIFEST_FILENAME,
         {
             "protocol_sha256": shootout.screen.protocol_sha256(),
+            "swap_policy": shootout.SWAP_POLICY_STRICT,
             "preflight_report_sha256": "1" * 64,
             "execution_grid_sha256": "2" * 64,
             "source": {"git_head": "3" * 40},
@@ -1594,6 +2044,7 @@ def test_worker_startup_failure_marks_concurrent_attempt_invalid(
         output_dir / shootout.screen.MANIFEST_FILENAME,
         {
             "protocol_sha256": shootout.screen.protocol_sha256(),
+            "swap_policy": shootout.SWAP_POLICY_STRICT,
             "preflight_report_sha256": "1" * 64,
             "execution_grid_sha256": "2" * 64,
             "source": {"git_head": "3" * 40},
@@ -1753,11 +2204,125 @@ def test_sequential_history_reconciles_segment_telemetry(tmp_path, mutation):
 
 
 def test_valid_sequential_history_reconciles_both_segments(tmp_path):
+    history = _valid_sequential_concurrency_history(tmp_path)
     shootout.validate_concurrency_history(
-        _valid_sequential_concurrency_history(tmp_path),
+        history,
         execution_mode="sequential_fallback",
         output_dir=tmp_path,
     )
+    window = history["measured_phase_swap_window"]
+    lifecycle = history["worker_session_swap_telemetry"]
+    assert window["start_sample_index"] == 2
+    assert window["end_sample_index"] == 80
+    assert lifecycle["sample_count"] == 82
+    assert window["end_sample_index"] == lifecycle["sample_count"] - 2
+
+
+def test_quality_only_complete_history_records_swap_in_and_suppresses_timing(
+    tmp_path,
+):
+    history = _valid_concurrency_history(tmp_path)
+    history["swap_policy"] = shootout.SWAP_POLICY_QUALITY_ONLY_SWAP_IN
+    history["timing_admissible"] = False
+    _append_dispatch_swap_sample(
+        history,
+        history["entries"][0]["telemetry"],
+        label="production-wave-0",
+        direction="swap_in",
+    )
+
+    shootout.validate_concurrency_history(
+        history,
+        execution_mode="concurrent",
+        output_dir=tmp_path,
+        swap_policy=shootout.SWAP_POLICY_QUALITY_ONLY_SWAP_IN,
+    )
+    assert history["measured_phase_swap_window"]["sample_count"] == 40
+    assert history["measured_phase_swap_window"]["swap_in_delta"] == 1
+    assert history["worker_session_swap_telemetry"]["swap_in_delta"] == 1
+    assert history["timing_admissible"] is False
+
+
+def test_partial_clean_interrupt_history_keeps_exact_resumable_prefix(tmp_path):
+    history = _valid_concurrency_history(tmp_path)
+    _truncate_history_entries(history, 3)
+
+    shootout.validate_concurrency_history(
+        history,
+        execution_mode="concurrent",
+        output_dir=tmp_path,
+        require_complete=False,
+    )
+    assert history["measured_phase_swap_window"]["sample_count"] == 4
+    assert len(history["measured_phase_swap_window"]["dispatches"]) == 3
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "sample_index",
+        "barrier_release",
+        "report_end",
+        "resource_counter",
+        "missing_dispatch",
+        "sample_count",
+        "full_swap_out",
+        "deleted_prefix_reindexed",
+        "extra_shutdown_suffix",
+    ],
+)
+def test_measured_window_rejects_hostile_cross_binding_mutations(
+    tmp_path, mutation
+):
+    history = _valid_concurrency_history(tmp_path)
+    window = history["measured_phase_swap_window"]
+    dispatch = window["dispatches"][0]
+    if mutation == "sample_index":
+        dispatch["sample_index"] += 1
+    elif mutation == "barrier_release":
+        dispatch["barrier_release_monotonic_ns"] += 1
+    elif mutation == "report_end":
+        dispatch["max_report_end_monotonic_ns"] += 1
+    elif mutation == "resource_counter":
+        dispatch["resource_first_swap_in_bytes"] = 1
+    elif mutation == "missing_dispatch":
+        window["dispatches"].pop()
+    elif mutation == "sample_count":
+        window["sample_count"] -= 1
+    elif mutation == "full_swap_out":
+        lifecycle = history["worker_session_swap_telemetry"]
+        lifecycle["samples"][-1]["swap_out_bytes"] = 1
+        lifecycle["swap_out_delta"] = 1
+    elif mutation == "deleted_prefix_reindexed":
+        lifecycle = history["worker_session_swap_telemetry"]
+        lifecycle["samples"].pop(0)
+        lifecycle["sample_count"] = len(lifecycle["samples"])
+        lifecycle["swap_in_delta"] = (
+            lifecycle["samples"][-1]["swap_in_bytes"]
+            - lifecycle["samples"][0]["swap_in_bytes"]
+        )
+        lifecycle["swap_out_delta"] = (
+            lifecycle["samples"][-1]["swap_out_bytes"]
+            - lifecycle["samples"][0]["swap_out_bytes"]
+        )
+        window["start_sample_index"] -= 1
+        window["end_sample_index"] -= 1
+        for item in window["dispatches"]:
+            item["sample_index"] -= 1
+    else:
+        lifecycle = history["worker_session_swap_telemetry"]
+        lifecycle["samples"].append(
+            {
+                **lifecycle["samples"][-1],
+                "monotonic_ns": lifecycle["samples"][-1]["monotonic_ns"] + 1,
+            }
+        )
+        lifecycle["sample_count"] = len(lifecycle["samples"])
+
+    with pytest.raises(RuntimeError):
+        shootout.validate_concurrency_history(
+            history, execution_mode="concurrent", output_dir=tmp_path
+        )
 
 
 def test_shootout_schedule_is_exact_and_digest_frozen():
@@ -1889,13 +2454,38 @@ def test_shootout_protocol_freezes_concurrency_and_fallback_contract():
             "stop releasing waves, drain or terminate the active partner, "
             "and emit no completion attestation"
         ),
+        "swap_policies": {
+            "default": "strict",
+            "allowed": ["strict", "quality_only_swap_in"],
+            "strict": "zero host swap-in and swap-out for the full worker session",
+            "quality_only_swap_in": (
+                "host swap-in is allowed and recorded anywhere; host swap-out "
+                "is forbidden for the full worker session and every dispatch; "
+                "timing and memory-performance evidence is inadmissible by policy"
+            ),
+            "measured_phase_uses_shared_lifecycle_samples": True,
+        },
     }
     assert timing == {
         "quality_is_primary": True,
         "per_arm_wall_time_is_contention_exposed": True,
         "causal_arm_timing_claim_allowed": False,
-        "campaign_throughput_is_descriptive": True,
         "isolated_timing_rerun_required_if_freeze_depends_on_resources": True,
+        "by_swap_policy": {
+            "strict": {
+                "campaign_throughput_status": "descriptive",
+                "preflight_performance_comparison_criteria": [
+                    "throughput_speedup_at_least_1_10",
+                    "reciprocal_arm_slot_symmetry",
+                ],
+            },
+            "quality_only_swap_in": {
+                "campaign_throughput_status": (
+                    "inadmissible_raw_operational_audit_only"
+                ),
+                "preflight_performance_comparison_criteria": [],
+            },
+        },
     }
     assert warmup == {
         "process_local": True,
@@ -1911,12 +2501,22 @@ def test_shootout_protocol_freezes_concurrency_and_fallback_contract():
             dataset: {"repeat": repeat, "fold": fold}
             for dataset, (repeat, fold) in shootout.PREFLIGHT_COORDINATES.items()
         },
-        "minimum_throughput_speedup": 1.10,
         "maximum_start_skew_seconds": 1.0,
         "maximum_concurrent_job_seconds": 1_800.0,
-        "maximum_reciprocal_asymmetry_ratio": 1.5,
+        "performance_comparison_limits_by_swap_policy": {
+            "strict": {
+                "minimum_throughput_speedup": 1.10,
+                "maximum_reciprocal_asymmetry_ratio": 1.5,
+            },
+            "quality_only_swap_in": {
+                "minimum_throughput_speedup": None,
+                "maximum_reciprocal_asymmetry_ratio": None,
+            },
+        },
         "require_exact_quality_and_structure_fingerprints": True,
-        "require_zero_deadlines_time_limits_restarts_oom_or_swap": True,
+        "require_zero_deadlines_time_limits_restarts_or_oom": True,
+        "require_policy_valid_swap_during_every_dispatch_and_gap": True,
+        "require_zero_full_session_swap_out": True,
         "require_os_high_water_rss": True,
     }
 
@@ -1936,8 +2536,26 @@ def test_shootout_arm_configs_differ_only_by_tree_mode():
     } == {"tree_mode"}
 
 
-def test_preflight_accepts_a_preexisting_empty_output_directory(
-    tmp_path, monkeypatch
+@pytest.mark.parametrize(
+    ("swap_policy", "timing_admissible", "expected_detail", "forbidden_detail"),
+    [
+        ("strict", True, "speedup=1.25", "timing=inadmissible"),
+        (
+            "quality_only_swap_in",
+            False,
+            "timing=inadmissible_raw_operational_audit_only",
+            "speedup=",
+        ),
+    ],
+)
+def test_preflight_accepts_an_empty_output_directory_and_labels_timing_policy(
+    tmp_path,
+    monkeypatch,
+    capsys,
+    swap_policy,
+    timing_admissible,
+    expected_detail,
+    forbidden_detail,
 ):
     jobs = _fake_jobs()
     monkeypatch.setattr(
@@ -1962,7 +2580,8 @@ def test_preflight_accepts_a_preexisting_empty_output_directory(
         report = {
             "decision": {
                 "execution_mode": "sequential_fallback",
-                "throughput_speedup": None,
+                "throughput_speedup": 1.25,
+                "timing_admissible": timing_admissible,
             }
         }
         shootout.screen.hardened._atomic_write_json(
@@ -1972,9 +2591,19 @@ def test_preflight_accepts_a_preexisting_empty_output_directory(
 
     monkeypatch.setattr(shootout, "run_preflight", preflight)
 
-    assert (
-        shootout.main(["--output-dir", str(tmp_path), "--preflight"]) == 0
-    )
+    assert shootout.main(
+        [
+            "--output-dir",
+            str(tmp_path),
+            "--preflight",
+            "--swap-policy",
+            swap_policy,
+        ]
+    ) == 0
+    output = capsys.readouterr().out
+    assert "SHOOTOUT_PREFLIGHT_COMPLETE sequential_fallback" in output
+    assert expected_detail in output
+    assert forbidden_detail not in output
 
 
 def test_preflight_throughput_speedup_uses_isolated_sum_over_wave_makespans():
@@ -2014,6 +2643,11 @@ def _attestable_preflight_report(tmp_path, monkeypatch):
     report = _passing_preflight_report()
     report.update(
         {
+            "schema_version": 1,
+            "kind": shootout.CAMPAIGN_KIND + "_preflight",
+            "completed_at_utc": "2026-07-15T00:00:00+00:00",
+            "protocol_sha256": shootout.screen.protocol_sha256(),
+            "wave_schedule_sha256": shootout.wave_schedule_sha256(),
             "preflight_error": None,
             "sequential_recovery": None,
             "worker_warmup": [
@@ -2042,6 +2676,99 @@ def _attestable_preflight_report(tmp_path, monkeypatch):
     return report
 
 
+def test_preflight_attestation_freezes_lifecycle_layout(tmp_path, monkeypatch):
+    report = _attestable_preflight_report(tmp_path, monkeypatch)
+    report["decision"] = shootout.evaluate_preflight(report)
+
+    shootout.validate_preflight_attestation(report, tmp_path)
+
+    window = report["measured_phase_swap_window"]
+    lifecycle = report["worker_session_swap_telemetry"]
+    assert window["start_sample_index"] == 3
+    assert window["end_sample_index"] == 9
+    assert lifecycle["sample_count"] == 11
+    assert window["end_sample_index"] == lifecycle["sample_count"] - 2
+
+
+@pytest.mark.parametrize("mutation", ["deleted_prefix_reindexed", "extra_suffix"])
+def test_preflight_attestation_rejects_noncanonical_lifecycle_layout(
+    tmp_path, monkeypatch, mutation
+):
+    report = _attestable_preflight_report(tmp_path, monkeypatch)
+    window = report["measured_phase_swap_window"]
+    lifecycle = report["worker_session_swap_telemetry"]
+    if mutation == "deleted_prefix_reindexed":
+        lifecycle["samples"].pop(0)
+        lifecycle["sample_count"] = len(lifecycle["samples"])
+        lifecycle["swap_in_delta"] = (
+            lifecycle["samples"][-1]["swap_in_bytes"]
+            - lifecycle["samples"][0]["swap_in_bytes"]
+        )
+        lifecycle["swap_out_delta"] = (
+            lifecycle["samples"][-1]["swap_out_bytes"]
+            - lifecycle["samples"][0]["swap_out_bytes"]
+        )
+        window["start_sample_index"] -= 1
+        window["end_sample_index"] -= 1
+        for item in window["dispatches"]:
+            item["sample_index"] -= 1
+    else:
+        lifecycle["samples"].append(
+            {
+                **lifecycle["samples"][-1],
+                "monotonic_ns": lifecycle["samples"][-1]["monotonic_ns"] + 1,
+            }
+        )
+        lifecycle["sample_count"] = len(lifecycle["samples"])
+    report["decision"] = shootout.evaluate_preflight(report)
+
+    with pytest.raises(RuntimeError, match="measured swap coverage"):
+        shootout.validate_preflight_attestation(report, tmp_path)
+
+
+def test_preflight_attestation_binds_recovery_to_swap_policy(
+    tmp_path, monkeypatch
+):
+    report = _attestable_preflight_report(tmp_path, monkeypatch)
+    report["sequential_recovery"] = _valid_sequential_recovery_record(
+        tmp_path, shootout.SWAP_POLICY_STRICT
+    )
+    report["decision"] = shootout.evaluate_preflight(report)
+    shootout.validate_preflight_attestation(report, tmp_path)
+
+    report["sequential_recovery"]["source_swap_policy"] = (
+        shootout.SWAP_POLICY_QUALITY_ONLY_SWAP_IN
+    )
+    report["sequential_recovery"]["invalid_attempt"]["swap_policy"] = (
+        shootout.SWAP_POLICY_QUALITY_ONLY_SWAP_IN
+    )
+
+    with pytest.raises(RuntimeError, match="recovery swap policy does not match"):
+        shootout.validate_preflight_attestation(report, tmp_path)
+
+
+def test_run_preflight_rejects_recovery_from_other_swap_policy(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(
+        shootout,
+        "_start_workers",
+        lambda _root: (_ for _ in ()).throw(RuntimeError("pilot unavailable")),
+    )
+    recovery = _valid_sequential_recovery_record(
+        tmp_path, shootout.SWAP_POLICY_QUALITY_ONLY_SWAP_IN
+    )
+
+    with pytest.raises(RuntimeError, match="recovery swap policy does not match"):
+        shootout.run_preflight(
+            tmp_path,
+            sequential_recovery=recovery,
+            swap_policy=shootout.SWAP_POLICY_STRICT,
+        )
+
+    assert not (tmp_path / shootout.PREFLIGHT_REPORT_FILENAME).exists()
+
+
 @pytest.mark.parametrize(
     "failed_policy", ["memory_headroom", "resource_swap", "session_swap"]
 )
@@ -2056,15 +2783,12 @@ def test_valid_resource_policy_failure_is_attested_and_written_as_fallback(
         ] = 102_400_000_000
     elif failed_policy == "resource_swap":
         telemetry = report["concurrent_waves"][0]["telemetry"]
-        telemetry["samples"].append(
-            {
-                **telemetry["samples"][0],
-                "monotonic_ns": 2,
-                "swap_out_bytes": 1,
-            }
+        _append_dispatch_swap_sample(
+            report,
+            telemetry,
+            label="preflight-concurrent-0",
+            direction="swap_out",
         )
-        telemetry["sample_count"] = len(telemetry["samples"])
-        telemetry["swap_out_delta"] = 1
     else:
         session = report["worker_session_swap_telemetry"]
         session["samples"][-1]["swap_out_bytes"] = 1
@@ -2142,11 +2866,256 @@ def test_post_shutdown_swap_checkpoint_fails_before_completion(
         shootout._close_production_swap_session(
             telemetry,
             None,
+            None,
             history_path=tmp_path / shootout.CONCURRENCY_HISTORY_FILENAME,
             execution_mode="concurrent",
             output_dir=tmp_path,
             require_complete=False,
         )
+
+
+def test_swap_policy_cli_is_strict_by_default_and_quality_only_is_explicit():
+    fresh = shootout.parse_args([])
+    assert fresh.swap_policy is None
+    assert (
+        shootout.resolve_invocation_swap_policy(fresh, shootout.DEFAULT_OUTPUT_DIR)
+        == shootout.SWAP_POLICY_STRICT
+    )
+    assert (
+        shootout.parse_args(
+            ["--swap-policy", shootout.SWAP_POLICY_QUALITY_ONLY_SWAP_IN]
+        ).swap_policy
+        == shootout.SWAP_POLICY_QUALITY_ONLY_SWAP_IN
+    )
+    with pytest.raises(SystemExit):
+        shootout.parse_args(["--swap-policy", "permissive"])
+
+
+def test_quality_only_lifecycle_allows_swap_in_but_never_swap_out(
+    tmp_path, monkeypatch
+):
+    samples = iter(
+        [
+            {"monotonic_ns": 1, "swap_in_bytes": 10, "swap_out_bytes": 20},
+            {"monotonic_ns": 2, "swap_in_bytes": 30, "swap_out_bytes": 20},
+        ]
+    )
+    monkeypatch.setattr(shootout, "_swap_counter_sample", lambda: next(samples))
+    telemetry = shootout._new_swap_session_telemetry()
+    shootout._close_production_swap_session(
+        telemetry,
+        None,
+        None,
+        history_path=tmp_path / shootout.CONCURRENCY_HISTORY_FILENAME,
+        execution_mode="concurrent",
+        output_dir=tmp_path,
+        require_complete=False,
+        swap_policy=shootout.SWAP_POLICY_QUALITY_ONLY_SWAP_IN,
+    )
+    assert telemetry["swap_in_delta"] == 20
+    assert telemetry["swap_out_delta"] == 0
+
+    samples = iter(
+        [
+            {"monotonic_ns": 3, "swap_in_bytes": 30, "swap_out_bytes": 20},
+            {"monotonic_ns": 4, "swap_in_bytes": 30, "swap_out_bytes": 21},
+        ]
+    )
+    monkeypatch.setattr(shootout, "_swap_counter_sample", lambda: next(samples))
+    telemetry = shootout._new_swap_session_telemetry()
+    with pytest.raises(RuntimeError, match="observed swap I/O"):
+        shootout._close_production_swap_session(
+            telemetry,
+            None,
+            None,
+            history_path=tmp_path / shootout.CONCURRENCY_HISTORY_FILENAME,
+            execution_mode="concurrent",
+            output_dir=tmp_path,
+            require_complete=False,
+            swap_policy=shootout.SWAP_POLICY_QUALITY_ONLY_SWAP_IN,
+        )
+
+
+def test_quality_only_allows_setup_swap_in_before_measured_baseline(monkeypatch):
+    samples = iter(
+        [
+            {"monotonic_ns": 1, "swap_in_bytes": 0, "swap_out_bytes": 0},
+            {"monotonic_ns": 2, "swap_in_bytes": 10, "swap_out_bytes": 0},
+        ]
+    )
+    monkeypatch.setattr(shootout, "_swap_counter_sample", lambda: next(samples))
+    lifecycle = shootout._new_swap_session_telemetry()
+    window = shootout._start_measured_swap_window(
+        lifecycle, swap_policy=shootout.SWAP_POLICY_QUALITY_ONLY_SWAP_IN
+    )
+    assert lifecycle["swap_in_delta"] == 10
+    assert window["start_sample_index"] == 1
+    assert window["swap_in_delta"] == 0
+
+    samples = iter(
+        [
+            {"monotonic_ns": 3, "swap_in_bytes": 0, "swap_out_bytes": 0},
+            {"monotonic_ns": 4, "swap_in_bytes": 10, "swap_out_bytes": 0},
+        ]
+    )
+    monkeypatch.setattr(shootout, "_swap_counter_sample", lambda: next(samples))
+    lifecycle = shootout._new_swap_session_telemetry()
+    with pytest.raises(RuntimeError, match="observed swap I/O"):
+        shootout._start_measured_swap_window(
+            lifecycle, swap_policy=shootout.SWAP_POLICY_STRICT
+        )
+
+
+def test_quality_only_dispatch_allows_swap_in_but_rejects_swap_out():
+    report = _passing_preflight_report()
+    telemetry = report["isolated_runs"][0]["telemetry"]
+    expected_pids = {0: 10_000, 1: 10_001}
+
+    _append_dispatch_swap_sample(
+        report,
+        telemetry,
+        label="preflight-isolated-0",
+        direction="swap_in",
+    )
+    assert shootout._resource_telemetry_valid(
+        telemetry,
+        expected_pids=expected_pids,
+        reports=[report["isolated_runs"][0]],
+        swap_policy=shootout.SWAP_POLICY_QUALITY_ONLY_SWAP_IN,
+    )
+    assert not shootout._resource_telemetry_valid(
+        telemetry,
+        expected_pids=expected_pids,
+        reports=[report["isolated_runs"][0]],
+        swap_policy=shootout.SWAP_POLICY_STRICT,
+    )
+
+    report = _passing_preflight_report()
+    telemetry = report["isolated_runs"][0]["telemetry"]
+    _append_dispatch_swap_sample(
+        report,
+        telemetry,
+        label="preflight-isolated-0",
+        direction="swap_out",
+    )
+    assert not shootout._resource_telemetry_valid(
+        telemetry,
+        expected_pids=expected_pids,
+        reports=[report["isolated_runs"][0]],
+        swap_policy=shootout.SWAP_POLICY_QUALITY_ONLY_SWAP_IN,
+    )
+
+
+def _make_quality_only_preflight_with_inadmissible_timing() -> dict:
+    report = _passing_preflight_report()
+    for wave_index, wave in enumerate(report["concurrent_waves"]):
+        release = wave["telemetry"]["barrier_release_monotonic_ns"]
+        for report_index, item in enumerate(wave["reports"]):
+            elapsed = 40.0 if (wave_index, report_index) == (0, 0) else 20.0
+            item["ended_monotonic_ns"] = item["started_monotonic_ns"] + int(
+                elapsed * 1e9
+            )
+            item["elapsed_seconds"] = elapsed
+        starts = [item["started_monotonic_ns"] for item in wave["reports"]]
+        ends = [item["ended_monotonic_ns"] for item in wave["reports"]]
+        telemetry = wave["telemetry"]
+        telemetry["start_skew_seconds"] = (max(starts) - min(starts)) / 1e9
+        telemetry["wave_seconds"] = (max(ends) - release) / 1e9
+        telemetry["overlap_seconds"] = max(0.0, (min(ends) - max(starts)) / 1e9)
+        telemetry["solo_tail_seconds"] = max(0.0, (max(ends) - min(ends)) / 1e9)
+        wave["start_skew_seconds"] = telemetry["start_skew_seconds"]
+        wave["wave_seconds"] = telemetry["wave_seconds"]
+    _attach_measured_swap_evidence(
+        report,
+        [
+            *[
+                (f"preflight-isolated-{index}", item["telemetry"], [item])
+                for index, item in enumerate(report["isolated_runs"])
+            ],
+            *[
+                (
+                    f"preflight-concurrent-{index}",
+                    item["telemetry"],
+                    item["reports"],
+                )
+                for index, item in enumerate(report["concurrent_waves"])
+            ],
+        ],
+        swap_policy=shootout.SWAP_POLICY_QUALITY_ONLY_SWAP_IN,
+    )
+    _append_dispatch_swap_sample(
+        report,
+        report["isolated_runs"][0]["telemetry"],
+        label="preflight-isolated-0",
+        direction="swap_in",
+    )
+    return report
+
+
+def test_quality_only_preflight_selects_concurrent_without_timing_inference():
+    report = _make_quality_only_preflight_with_inadmissible_timing()
+    decision = shootout.evaluate_preflight(report)
+
+    assert decision["passed"] is True
+    assert decision["execution_mode"] == "concurrent"
+    assert decision["timing_admissible"] is False
+    assert decision["timing_inadmissibility_reason"] == "quality_only_swap_in_policy"
+    assert decision["criteria"]["throughput_speedup_at_least_1_10"] is False
+    assert decision["criteria"]["reciprocal_arm_slot_symmetry"] is False
+    assert "throughput_speedup_at_least_1_10" not in decision[
+        "mode_selection_criteria"
+    ]
+    assert "reciprocal_arm_slot_symmetry" not in decision["mode_selection_criteria"]
+    assert decision["criteria"]["operational_limits"] is True
+    assert decision["criteria"]["exact_behavior_fingerprints"] is True
+    assert report["measured_phase_swap_window"]["sample_count"] == 7
+    assert report["measured_phase_swap_window"]["swap_in_delta"] == 1
+
+
+def test_quality_only_attestation_accepts_setup_and_teardown_only_swap_in(
+    tmp_path, monkeypatch
+):
+    report = _attestable_preflight_report(tmp_path, monkeypatch)
+    report["swap_policy"] = shootout.SWAP_POLICY_QUALITY_ONLY_SWAP_IN
+    lifecycle = report["worker_session_swap_telemetry"]
+    for sample in lifecycle["samples"][1:-1]:
+        sample["swap_in_bytes"] = 5
+    lifecycle["samples"][-1]["swap_in_bytes"] = 12
+    lifecycle["swap_in_delta"] = 12
+    for item in report["measured_phase_swap_window"]["dispatches"]:
+        item["resource_first_swap_in_bytes"] = 5
+        item["resource_last_swap_in_bytes"] = 5
+    for telemetry in [
+        *[item["telemetry"] for item in report["isolated_runs"]],
+        *[item["telemetry"] for item in report["concurrent_waves"]],
+    ]:
+        for sample in telemetry["samples"]:
+            sample["swap_in_bytes"] = 5
+        telemetry["swap_in_delta"] = 0
+    report["decision"] = shootout.evaluate_preflight(report)
+
+    assert report["decision"]["passed"] is True
+    assert report["decision"]["timing_admissible"] is False
+    assert report["measured_phase_swap_window"]["swap_in_delta"] == 0
+    shootout.validate_preflight_attestation(report, tmp_path)
+
+
+@pytest.mark.parametrize("failure", ["deadline", "swap_out"])
+def test_quality_only_preflight_keeps_safety_and_quality_gates(failure):
+    report = _make_quality_only_preflight_with_inadmissible_timing()
+    if failure == "deadline":
+        report["concurrent_waves"][0]["reports"][0]["deadline_hit"] = True
+    else:
+        _append_dispatch_swap_sample(
+            report,
+            report["concurrent_waves"][0]["telemetry"],
+            label="preflight-concurrent-0",
+            direction="swap_out",
+        )
+
+    decision = shootout.evaluate_preflight(report)
+    assert decision["passed"] is False
+    assert decision["execution_mode"] == "sequential_fallback"
 
 
 def test_incomplete_preflight_is_attested_as_sequential_fallback(

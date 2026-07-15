@@ -182,6 +182,12 @@ DEFAULT_OUTPUT_DIR = Path(
 CAMPAIGN_KIND = "darkofit_tabarena_regression_followon_screen"
 COMPLETION_KIND = CAMPAIGN_KIND + "_completion"
 PAYLOAD_KIND = CAMPAIGN_KIND + "_analysis_payload"
+RUN_MANIFEST_SCHEMA_VERSION = 1
+COMPLETION_ATTESTATION_SCHEMA_VERSION = 1
+# Version 2 adds the complete fitted-child policy/deadline audit to every
+# normalized child row.  Version 1 payloads must not be interpreted under this
+# stricter contract, even when their campaign kind happens to match.
+ANALYSIS_PAYLOAD_SCHEMA_VERSION = 2
 
 SOURCE_FILES = (
     Path("pyproject.toml"),
@@ -272,6 +278,11 @@ def expected_child_hyperparameters(arm: str, child_fold: int) -> dict[str, Any]:
 
 def frozen_protocol() -> dict[str, Any]:
     return {
+        "artifact_schema_versions": {
+            "run_manifest": RUN_MANIFEST_SCHEMA_VERSION,
+            "completion_attestation": COMPLETION_ATTESTATION_SCHEMA_VERSION,
+            "analysis_payload": ANALYSIS_PAYLOAD_SCHEMA_VERSION,
+        },
         "tasks": dict(TASKS),
         "screen_splits": [
             {"repeat": repeat, "fold": fold, "registered_fold": 3 * repeat + fold}
@@ -609,7 +620,7 @@ def build_run_manifest(
     ordering: Mapping[str, Mapping[str, int]],
 ) -> dict[str, Any]:
     return {
-        "schema_version": 1,
+        "schema_version": RUN_MANIFEST_SCHEMA_VERSION,
         "kind": CAMPAIGN_KIND,
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "output_dir": str(output_dir.resolve()),
@@ -674,6 +685,61 @@ def _finite(value: Any, field: str, *, positive: bool = False) -> float:
         qualifier = "positive and " if positive else ""
         raise RuntimeError(f"{field} must be {qualifier}finite")
     return number
+
+
+def _validate_child_wall_clock_audit(
+    value: Mapping[str, Any], *, field: str
+) -> tuple[float, float, float, float]:
+    """Validate one child's soft deadline and enclosing hard allocation.
+
+    The effective deadline is checked only between boosting rounds. A round
+    that starts before it may therefore finish after it without setting the
+    deadline flag. The recorded elapsed time must still stay within the
+    child's full wall-clock allocation, and a reported hit cannot precede the
+    effective deadline.
+    """
+    wall_limit = _finite(
+        value.get("wall_clock_limit_seconds"),
+        f"{field}.wall_clock_limit_seconds",
+        positive=True,
+    )
+    wall_margin = _finite(
+        value.get("wall_clock_safety_margin_seconds"),
+        f"{field}.wall_clock_safety_margin_seconds",
+    )
+    wall_effective = _finite(
+        value.get("wall_clock_effective_seconds"),
+        f"{field}.wall_clock_effective_seconds",
+    )
+    wall_elapsed = _finite(
+        value.get("wall_clock_elapsed_seconds"),
+        f"{field}.wall_clock_elapsed_seconds",
+    )
+    deadline_hit = value.get("deadline_hit")
+    stop_reason = value.get("stop_reason")
+    if (
+        wall_limit > TIME_LIMIT_SECONDS
+        or min(wall_margin, wall_effective, wall_elapsed) < 0.0
+        or not math.isclose(
+            wall_margin,
+            min(5.0, 0.05 * wall_limit),
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        )
+        or not math.isclose(
+            wall_effective,
+            max(0.0, wall_limit - wall_margin),
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        )
+        or wall_elapsed > wall_limit
+        or not isinstance(deadline_hit, bool)
+        or stop_reason not in VALID_STOP_REASONS
+        or (deadline_hit and wall_elapsed < wall_effective)
+        or (stop_reason == "time_limit" and deadline_hit is not True)
+    ):
+        raise RuntimeError(f"{field} wall-clock audit mismatch")
+    return wall_limit, wall_margin, wall_effective, wall_elapsed
 
 
 def _arm_from_method(method: Mapping[str, Any], field: str) -> str:
@@ -809,6 +875,9 @@ def _validate_tree_mode_selection(
             top_level.get("iterations_requested"),
             f"{field}.expected_iterations",
         )
+    wall_limit, _, wall_effective, wall_elapsed = (
+        _validate_child_wall_clock_audit(top_level, field=field)
+    )
     selection = _as_mapping(value, field)
     if (
         selection.get("enabled") is not True
@@ -851,8 +920,10 @@ def _validate_tree_mode_selection(
     ):
         raise RuntimeError(f"{field} selected candidate does not match")
     scores = []
+    previous_end = 0.0
     for index, item in enumerate(candidates):
-        item = _as_mapping(item, f"{field}.candidates[{index}]")
+        candidate_field = f"{field}.candidates[{index}]"
+        item = _as_mapping(item, candidate_field)
         if (
             item.get("fit_status") != "fitted"
             or item.get("deadline_hit") is not False
@@ -862,6 +933,31 @@ def _validate_tree_mode_selection(
             raise RuntimeError(
                 f"{field} contains a deadline-hit or skipped auto candidate"
             )
+        elapsed_start = _finite(
+            item.get("wall_clock_elapsed_seconds_start"),
+            f"{candidate_field}.wall_clock_elapsed_seconds_start",
+        )
+        elapsed_end = _finite(
+            item.get("wall_clock_elapsed_seconds_end"),
+            f"{candidate_field}.wall_clock_elapsed_seconds_end",
+        )
+        elapsed = _finite(
+            item.get("wall_clock_elapsed_seconds"),
+            f"{candidate_field}.wall_clock_elapsed_seconds",
+        )
+        if min(elapsed_start, elapsed_end, elapsed) < 0.0:
+            raise RuntimeError(f"{candidate_field} timing must be nonnegative")
+        if elapsed_start > elapsed_end or elapsed_end != elapsed:
+            raise RuntimeError(f"{candidate_field} timing fields are inconsistent")
+        if elapsed_start < previous_end:
+            raise RuntimeError(f"{field} candidate timings are not ordered")
+        if elapsed_start >= wall_effective:
+            raise RuntimeError(
+                f"{candidate_field} starts at or after the effective deadline"
+            )
+        if elapsed_end > wall_limit:
+            raise RuntimeError(f"{candidate_field} exceeds the hard wall-clock limit")
+        previous_end = elapsed_end
         requested = hardened._exact_int(
             item.get("iterations_requested"), f"{field}.iterations_requested"
         )
@@ -901,6 +997,8 @@ def _validate_tree_mode_selection(
         if _finite(item.get("score"), f"{field}.score") != score:
             raise RuntimeError(f"{field} candidate score fields disagree")
         scores.append(score)
+    if wall_elapsed < previous_end:
+        raise RuntimeError(f"{field} child elapsed time precedes its final candidate")
     expected_selected_index = min(range(len(scores)), key=scores.__getitem__)
     selected_score = _finite(selection.get("selected_score"), f"{field}.selected_score")
     if (
@@ -1477,17 +1575,11 @@ def parse_result_record(
             raise RuntimeError(f"{source}: {child_name} deadline flags invalid")
         if arm != "auto" and deadline_hit is not (reason == "time_limit"):
             raise RuntimeError(f"{source}: {child_name} deadline causality mismatch")
-        wall_limit = _finite(fitted["wall_clock_limit_seconds"], "wall limit", positive=True)
-        wall_margin = _finite(fitted["wall_clock_safety_margin_seconds"], "wall margin")
-        wall_effective = _finite(fitted["wall_clock_effective_seconds"], "wall effective")
-        wall_elapsed = _finite(fitted["wall_clock_elapsed_seconds"], "wall elapsed")
-        if (
-            wall_limit > TIME_LIMIT_SECONDS
-            or min(wall_margin, wall_effective, wall_elapsed) < 0.0
-            or not math.isclose(wall_margin, min(5.0, 0.05 * wall_limit), abs_tol=1e-12)
-            or not math.isclose(wall_effective, max(0.0, wall_limit - wall_margin), abs_tol=1e-12)
-        ):
-            raise RuntimeError(f"{source}: {child_name} wall-clock audit mismatch")
+        wall_limit, wall_margin, wall_effective, wall_elapsed = (
+            _validate_child_wall_clock_audit(
+                fitted, field=f"{source}: {child_name}"
+            )
+        )
         trained = _validate_refit_params(
             child.get("hyperparameters_fit"),
             expected_iterations=best,
@@ -1542,6 +1634,9 @@ def parse_result_record(
                 "tree_mode_selection": tree_mode_selection,
                 "stop_reason": reason,
                 "deadline_hit": deadline_hit,
+                "wall_clock_limit_seconds": wall_limit,
+                "wall_clock_safety_margin_seconds": wall_margin,
+                "wall_clock_effective_seconds": wall_effective,
                 "wall_clock_elapsed_seconds": wall_elapsed,
                 "child_features": list(child_features),
                 "representation": representation,
@@ -2375,7 +2470,7 @@ def write_completion_attestation(
     if child_cpus != manifest["resolved_child_num_cpus"]:
         raise RuntimeError("completed child CPUs do not match the manifest")
     payload = {
-        "schema_version": 1,
+        "schema_version": ANALYSIS_PAYLOAD_SCHEMA_VERSION,
         "kind": PAYLOAD_KIND,
         "protocol_sha256": manifest["protocol_sha256"],
         "result_artifacts_sha256": hashlib.sha256(
@@ -2414,7 +2509,7 @@ def write_completion_attestation(
         raise RuntimeError("runtime provenance changed during the campaign")
     manifest_path = output_dir / MANIFEST_FILENAME
     attestation = {
-        "schema_version": 1,
+        "schema_version": COMPLETION_ATTESTATION_SCHEMA_VERSION,
         "kind": COMPLETION_KIND,
         "completed_at_utc": datetime.now(timezone.utc).isoformat(),
         "pid": os.getpid(),

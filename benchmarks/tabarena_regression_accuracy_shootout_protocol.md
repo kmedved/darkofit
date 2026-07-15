@@ -212,8 +212,11 @@ when either is installed, its version must match the reused source lock.
 Reused training, inference, and memory values are historical same-machine
 context, not paired timing controls for the newly executed arms. Production
 `A10` and `B10` jobs run concurrently and therefore expose each arm's wall time
-to partner-dependent CPU and memory contention. Their individual times and the
-campaign throughput are descriptive, not a causal operational contrast.
+to partner-dependent CPU and memory contention. Under the default `strict`
+swap policy, their individual times and campaign throughput may be described
+with that limitation but are not a causal operational contrast. Under
+`quality_only_swap_in`, they are audit counters only and support no descriptive
+or causal performance claim.
 Comparator timing must be rerun if a freeze decision depends on it, and any
 resource-sensitive `A10`/`B10` decision requires the isolated timing panel
 defined below.
@@ -255,7 +258,8 @@ including the returned job identity, result path, process identity, timestamps,
 and completion state. The journal records wave, slot, partner, dispatch/start/
 finish timestamps, start skew, overlap, solo tail, worker PID, and available
 host load/resource telemetry. A worker error, crash, deadline hit, time-limit
-stop, missing automatic-mode candidate, restart, OOM, swap event, or peak
+stop, missing automatic-mode candidate, restart, OOM, swap event forbidden by
+the selected policy, or peak
 combined resident memory reaching 80% of physical memory stops the release of
 new waves, drains or terminates the active partner, invalidates that production
 attempt, and forbids a completion attestation. A fallback rerun must start
@@ -284,6 +288,44 @@ result and cannot satisfy a result-cache lookup.
 
 ### Concurrency preflight and fallback
 
+The default swap policy remains `strict`: completed production and any passing
+concurrent preflight require zero swap-in and zero swap-out over each complete
+worker lifecycle, every dispatch, and the measured windows. An explicit
+`quality_only_swap_in` run may instead admit and record swap-in, but completed
+production and a passing concurrent preflight still require zero swap-out over
+every one of those boundaries. A preflight that observes a forbidden swap
+delta, or fails before completing its measured window, is retained as failure
+evidence and selects sequential fallback; it does not make an otherwise valid
+fallback production run unanalyzable. The selected policy and its derived
+`timing_admissible` boolean are exact, tamper-evident fields in the manifest,
+execution grid, preflight report/decision, concurrency journal, safe analysis
+payload, and completion attestation. They cannot change on resume or sequential
+recovery.
+
+This alternative was justified from outcome-free host evidence collected
+before inspecting any shootout result: the otherwise idle host accumulated
+**1,753,088 bytes of swap-in over 30 seconds** and **15,777,792 bytes over 60
+seconds**, with **zero swap-out** in both observations. That evidence diagnoses
+background page-in activity; it says nothing about either model arm and cannot
+support a performance conclusion.
+
+Under `quality_only_swap_in`, the run remains admissible only for quality and
+safety conclusions. All raw wall-clock, memory, throughput, asymmetry, and swap
+values remain in the artifacts as operational audit data, but timing and
+memory-performance evidence is inadmissible by policy. The analyzer must make
+no descriptive or causal performance claim from it. It must report the exact
+preflight and production lifecycle and measured-window swap-in/swap-out deltas
+when available, label incomplete preflight coverage explicitly, disclose the
+preflight decision and policy status, and verify production zero swap-out. A
+preflight zero-swap-out conclusion is available only when both the lifecycle
+and measured windows are complete; otherwise its aggregate coverage is labeled
+`partial` or `unavailable` and the conclusion is `null`. The standalone
+`paired_splits.csv` and `paired_children.csv` exports repeat `execution_mode`,
+`swap_policy`, `timing_admissible`, and `performance_evidence_disposition` on
+every row, so a detached CSV identifies its concurrent-contention or sequential
+slot/order exposure and cannot silently promote operational timing or memory
+fields into performance evidence.
+
 No production result is released until a non-reusable preflight compares
 isolated and concurrent execution on `physiochemical_protein/r0f0` and
 `QSAR-TID-11/r2f2`, the two source-frozen slow coordinates selected before
@@ -296,8 +338,8 @@ lookup.
 
 Let the isolated wall time be the sum of all four isolated job durations and
 the concurrent wall time be the sum of the two concurrent wave makespans. The
-preflight throughput speedup is their ratio and must be at least 1.10. It also
-passes only when:
+preflight throughput speedup is their ratio. Under the default `strict` policy
+it must be at least 1.10. The strict preflight also passes only when:
 
 - all eight outer executions finish and validate;
 - both pilot workers attest the untimed materialization of both actual pilot
@@ -306,7 +348,8 @@ passes only when:
   fitted-structure fingerprints (timing and process identifiers are excluded
   from the fingerprint);
 - every `A10` child has exactly three finite candidates in the frozen order;
-- no execution reports a deadline, time-limit stop, restart, OOM, or swap;
+- no execution reports a deadline, time-limit stop, restart, OOM, or swap
+  forbidden by the selected policy;
 - dispatch-to-start skew within each concurrent wave is at most 1.0 second;
 - every concurrent job finishes in less than 1,800 seconds;
 - peak combined resident memory remains below 80% of physical memory in every
@@ -315,6 +358,24 @@ passes only when:
   concurrent-to-isolated duration ratios for all four matched jobs, then require
   every arm, worker-slot, and within-dataset arm geometric-mean asymmetry factor
   to be at most 1.50.
+
+For `quality_only_swap_in`, throughput speedup and reciprocal duration
+asymmetry are computed and retained only as raw audit values; neither is a
+mode-selection criterion. Concurrent production is selected only if all eight
+executions and their fitted candidates validate, isolated/concurrent behavior
+fingerprints match exactly, reciprocal pairing and data priming are complete,
+dispatch timing is structurally coherent, operational deadline/OOM/RSS limits
+hold, the full-lifecycle and measured-window selected swap policy holds, and
+there are no worker restarts, preflight errors, or recovery override. These are
+quality, identity, synchronization, and safety criteria—not a claim that
+concurrency is faster or more memory-efficient. Failure selects the same frozen
+sequential fallback as the strict policy.
+
+The machine-readable protocol records the throughput and reciprocal-asymmetry
+thresholds as `strict`-only limits. Its `quality_only_swap_in` entry has no
+performance-comparison criteria or limits, and preflight-only console output
+labels timing as inadmissible raw operational audit data without printing a
+speedup claim.
 
 The manifest binds the complete preflight report digest, execution mode,
 worker count, start method, and production schedule digest. A failed or
@@ -333,7 +394,11 @@ RSS series. The larger value is the gate input. Sampling alone is never labeled
 or accepted as the peak-memory observation. Swap deltas are recomputed from the
 first and last samples of the fully merged execution/high-water interval (and,
 for sequential fallback, across both concatenated segments), so activity in a
-phase boundary cannot disappear from the zero-swap gate.
+phase boundary cannot disappear. Strict mode requires both deltas to remain
+zero for completed production and for a passing concurrent preflight.
+Quality-only mode allows swap-in but still requires production zero swap-out;
+a preflight swap-out is an attested fallback cause, not production evidence.
+All quality-only timing and memory-performance evidence remains inadmissible.
 
 The journal must contain exactly one invariant PID per worker slot across all
 39 waves. Completion binds those two identities exactly to the newest warmup
@@ -347,6 +412,10 @@ arms once per coordinate), balanced in alternating arm order after identical
 process-local warmup. Its coordinate list, order, aggregation, and resource
 gates must be committed before inspecting those timings. It cannot reuse
 production timings or change any quality gate.
+For a `quality_only_swap_in` campaign this paragraph does not authorize even a
+descriptive timing or memory-performance claim: those observations are raw
+operational audit data only, and any performance question requires a new
+strict, source-frozen run.
 
 Every result file is runner-owned, uniquely keyed by protocol digest, arm,
 task, repeat, and fold. Resume may consume only byte- and provenance-validated

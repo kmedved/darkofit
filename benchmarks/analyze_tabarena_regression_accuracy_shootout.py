@@ -109,6 +109,268 @@ OUTPUT_NAMES = (
     "summary.json",
     "report.md",
 )
+EXPORT_CONTEXT_FIELDS = (
+    "execution_mode",
+    "swap_policy",
+    "timing_admissible",
+    "performance_evidence_disposition",
+)
+PERFORMANCE_EVIDENCE_DISPOSITIONS = {
+    campaign.SWAP_POLICY_STRICT: (
+        "timing_admissible_with_noncausal_schedule_limits"
+    ),
+    campaign.SWAP_POLICY_QUALITY_ONLY_SWAP_IN: (
+        "inadmissible_by_quality_only_swap_in_policy"
+    ),
+}
+
+
+def _validate_policy_timing_binding(
+    value: Mapping[str, Any],
+    field: str,
+    *,
+    expected_policy: str | None = None,
+    expected_timing_admissible: bool | None = None,
+) -> tuple[str, bool]:
+    """Require one artifact to carry the exact selected swap disposition."""
+    try:
+        policy = campaign._validate_swap_policy(value.get("swap_policy"))
+    except RuntimeError as exc:
+        raise RuntimeError(f"{field} swap policy is invalid") from exc
+    timing_admissible = value.get("timing_admissible")
+    expected_for_policy = policy == campaign.SWAP_POLICY_STRICT
+    if type(timing_admissible) is not bool or timing_admissible != expected_for_policy:
+        raise RuntimeError(f"{field} timing admissibility is inconsistent")
+    if expected_policy is not None and policy != expected_policy:
+        raise RuntimeError(f"{field} swap policy does not match the run")
+    if (
+        expected_timing_admissible is not None
+        and timing_admissible != expected_timing_admissible
+    ):
+        raise RuntimeError(f"{field} timing admissibility does not match the run")
+    return policy, timing_admissible
+
+
+def _performance_evidence_disposition(
+    swap_policy: str, timing_admissible: bool
+) -> str:
+    """Return the one frozen timing/memory disposition for an export row."""
+    try:
+        policy = campaign._validate_swap_policy(swap_policy)
+    except RuntimeError as exc:
+        raise RuntimeError("performance disposition swap policy is invalid") from exc
+    if (
+        type(timing_admissible) is not bool
+        or timing_admissible != (policy == campaign.SWAP_POLICY_STRICT)
+    ):
+        raise RuntimeError("performance disposition timing status is inconsistent")
+    return PERFORMANCE_EVIDENCE_DISPOSITIONS[policy]
+
+
+def _label_comparative_export_rows(
+    rows: Sequence[Mapping[str, Any]],
+    summary: Mapping[str, Any],
+    field: str,
+) -> list[dict[str, Any]]:
+    """Make each standalone comparative CSV row self-describing."""
+    if not rows:
+        raise RuntimeError(f"refusing to label empty {field}")
+    policy, timing_admissible = _validate_policy_timing_binding(
+        summary, "analysis summary"
+    )
+    disposition = _performance_evidence_disposition(policy, timing_admissible)
+    execution_mode = summary.get("execution_mode")
+    if execution_mode not in {"concurrent", "sequential_fallback"}:
+        raise RuntimeError("analysis summary execution mode is invalid")
+    if summary.get("performance_evidence_disposition") != disposition:
+        raise RuntimeError("analysis summary performance disposition is inconsistent")
+    labeled = []
+    expected_fields = None
+    for raw in rows:
+        row = dict(hardened._as_mapping(raw, field))
+        if set(row).intersection(EXPORT_CONTEXT_FIELDS):
+            raise RuntimeError(f"{field} already contains disposition labels")
+        if expected_fields is None:
+            expected_fields = set(row)
+        elif set(row) != expected_fields:
+            raise RuntimeError(f"{field} row fields are inconsistent")
+        labeled.append(
+            {
+                "execution_mode": execution_mode,
+                "swap_policy": policy,
+                "timing_admissible": timing_admissible,
+                "performance_evidence_disposition": disposition,
+                **row,
+            }
+        )
+    return labeled
+
+
+def _swap_delta_pair(value: Any, field: str) -> dict[str, int]:
+    telemetry = hardened._as_mapping(value, field)
+    swap_in = _exact_int(telemetry.get("swap_in_delta"), f"{field} swap-in")
+    swap_out = _exact_int(telemetry.get("swap_out_delta"), f"{field} swap-out")
+    if swap_in < 0 or swap_out < 0:
+        raise RuntimeError(f"{field} swap deltas must be nonnegative")
+    return {"swap_in_bytes": swap_in, "swap_out_bytes": swap_out}
+
+
+def _exposed_swap_delta_pair(value: Any, field: str) -> dict[str, int]:
+    telemetry = hardened._as_mapping(value, field)
+    if set(telemetry) != {"swap_in_bytes", "swap_out_bytes"}:
+        raise RuntimeError(f"{field} fields are not exact")
+    swap_in = _exact_int(telemetry.get("swap_in_bytes"), f"{field} swap-in")
+    swap_out = _exact_int(telemetry.get("swap_out_bytes"), f"{field} swap-out")
+    if swap_in < 0 or swap_out < 0:
+        raise RuntimeError(f"{field} swap deltas must be nonnegative")
+    return {"swap_in_bytes": swap_in, "swap_out_bytes": swap_out}
+
+
+def _preflight_zero_swap_out_observation(
+    lifecycle: Mapping[str, Any], measured: Mapping[str, Any]
+) -> tuple[str, bool | None]:
+    """Describe required two-window coverage without upgrading partial evidence."""
+    statuses = (lifecycle.get("status"), measured.get("status"))
+    if any(status == "unavailable" for status in statuses):
+        return "unavailable", None
+    if any(status != "complete" for status in statuses):
+        return "partial", None
+    return "complete", all(
+        window.get("swap_out_bytes") == 0 for window in (lifecycle, measured)
+    )
+
+
+def _build_swap_audit(
+    preflight: Any,
+    concurrency: Any,
+    *,
+    swap_policy: str,
+    timing_admissible: bool,
+) -> dict[str, Any]:
+    """Expose exact attested deltas without interpreting them as performance."""
+    expected_timing = swap_policy == campaign.SWAP_POLICY_STRICT
+    if timing_admissible != expected_timing:
+        raise RuntimeError("swap audit timing admissibility is inconsistent")
+    preflight_report = hardened._as_mapping(preflight, "preflight swap evidence")
+    production_history = hardened._as_mapping(
+        concurrency, "production swap evidence"
+    )
+    decision = hardened._as_mapping(
+        preflight_report.get("decision"), "preflight swap decision"
+    )
+    criteria = hardened._as_mapping(
+        decision.get("criteria"), "preflight swap criteria"
+    )
+    decision_passed = decision.get("passed")
+    decision_mode = decision.get("execution_mode")
+    if (
+        type(decision_passed) is not bool
+        or decision_mode not in {"concurrent", "sequential_fallback"}
+    ):
+        raise RuntimeError("preflight swap decision is invalid")
+    preflight_error = preflight_report.get("preflight_error")
+    if preflight_error is None:
+        exposed_error = None
+    else:
+        error = hardened._as_mapping(preflight_error, "preflight error")
+        exposed_error = {
+            "error_type": str(error.get("error_type")),
+            "error": str(error.get("error")),
+        }
+
+    lifecycle_policy_passed = criteria.get("full_session_swap_policy") is True
+    measured_policy_passed = criteria.get("measured_phase_swap_policy") is True
+    lifecycle = {
+        "status": "complete",
+        **_swap_delta_pair(
+            preflight_report.get("worker_session_swap_telemetry"),
+            "preflight lifecycle swap evidence",
+        ),
+        "policy_passed": lifecycle_policy_passed,
+    }
+    raw_measured = preflight_report.get("measured_phase_swap_window")
+    if raw_measured is None:
+        measured = {
+            "status": "unavailable",
+            "swap_in_bytes": None,
+            "swap_out_bytes": None,
+            "policy_passed": measured_policy_passed,
+        }
+    else:
+        measured = {
+            "status": "partial" if preflight_error is not None else "complete",
+            **_swap_delta_pair(
+                raw_measured, "preflight measured swap evidence"
+            ),
+            "policy_passed": measured_policy_passed,
+        }
+    (
+        preflight_zero_swap_out_coverage,
+        preflight_zero_swap_out,
+    ) = _preflight_zero_swap_out_observation(
+        lifecycle,
+        measured,
+    )
+
+    production_windows = {
+        "lifecycle": {
+            "status": "complete",
+            **_swap_delta_pair(
+                production_history.get("worker_session_swap_telemetry"),
+                "production lifecycle swap evidence",
+            ),
+            "policy_passed": True,
+        },
+        "measured": {
+            "status": "complete",
+            **_swap_delta_pair(
+                production_history.get("measured_phase_swap_window"),
+                "production measured swap evidence",
+            ),
+            "policy_passed": True,
+        },
+    }
+    if any(
+        window["swap_out_bytes"] != 0 for window in production_windows.values()
+    ):
+        raise RuntimeError("production does not verify zero swap-out")
+    if swap_policy == campaign.SWAP_POLICY_STRICT and any(
+        window["swap_in_bytes"] != 0 for window in production_windows.values()
+    ):
+        raise RuntimeError("strict production contains swap-in")
+
+    production_mode = production_history.get("execution_mode")
+    if production_mode is not None and production_mode != decision_mode:
+        raise RuntimeError("preflight and production execution modes differ")
+    if decision_mode == "concurrent" and (
+        not decision_passed
+        or exposed_error is not None
+        or measured["status"] != "complete"
+        or not lifecycle_policy_passed
+        or not measured_policy_passed
+    ):
+        raise RuntimeError("concurrent run lacks complete passing preflight swap evidence")
+    if decision_mode == "sequential_fallback" and decision_passed:
+        raise RuntimeError("sequential fallback carries a passing preflight decision")
+
+    return {
+        "swap_policy": swap_policy,
+        "timing_admissible": timing_admissible,
+        "production_zero_swap_out_verified": True,
+        "preflight": {
+            "decision_passed": decision_passed,
+            "decision_execution_mode": decision_mode,
+            "selected_policy_passed": (
+                lifecycle_policy_passed and measured_policy_passed
+            ),
+            "zero_swap_out_coverage_status": preflight_zero_swap_out_coverage,
+            "zero_swap_out_observed": preflight_zero_swap_out,
+            "preflight_error": exposed_error,
+            "lifecycle": lifecycle,
+            "measured": measured,
+        },
+        "production": production_windows,
+    }
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -710,9 +972,18 @@ def _validate_optional_artifact_presence(
 
 
 def _validate_preflight_artifact(
-    value: Any, *, execution_mode: str, input_dir: Path
+    value: Any,
+    *,
+    execution_mode: str,
+    input_dir: Path,
+    swap_policy: str = campaign.DEFAULT_SWAP_POLICY,
+    timing_admissible: bool | None = None,
 ) -> dict[str, Any]:
     report = dict(hardened._as_mapping(value, "preflight report"))
+    if timing_admissible is None:
+        timing_admissible = swap_policy == campaign.SWAP_POLICY_STRICT
+    if report.get("swap_policy") != swap_policy:
+        raise RuntimeError("preflight swap policy does not match the run")
     campaign.validate_preflight_attestation(report, input_dir)
     evaluator = getattr(campaign, "evaluate_preflight", None)
     if evaluator is None:
@@ -724,6 +995,7 @@ def _validate_preflight_artifact(
         or report.get("protocol_sha256") != protocol_sha256()
         or report.get("wave_schedule_sha256")
         != campaign.wave_schedule_sha256()
+        or decision.get("timing_admissible") != timing_admissible
         or report.get("decision") != decision
     ):
         raise RuntimeError("preflight report does not bind the frozen protocol")
@@ -736,10 +1008,27 @@ def _validate_preflight_artifact(
 
 
 def _validate_concurrency_artifact(
-    value: Any, *, execution_mode: str, input_dir: Path
+    value: Any,
+    *,
+    execution_mode: str,
+    input_dir: Path,
+    swap_policy: str = campaign.DEFAULT_SWAP_POLICY,
+    timing_admissible: bool | None = None,
 ) -> None:
+    if timing_admissible is None:
+        timing_admissible = swap_policy == campaign.SWAP_POLICY_STRICT
+    history = hardened._as_mapping(value, "concurrency history")
+    _validate_policy_timing_binding(
+        history,
+        "concurrency history",
+        expected_policy=swap_policy,
+        expected_timing_admissible=timing_admissible,
+    )
     campaign.validate_concurrency_history(
-        value, execution_mode=execution_mode, output_dir=input_dir
+        value,
+        execution_mode=execution_mode,
+        output_dir=input_dir,
+        swap_policy=swap_policy,
     )
 
 
@@ -1128,6 +1417,9 @@ def verify_campaign_integrity(
     protocol = campaign.frozen_protocol()
     protocol_digest = protocol_sha256()
     execution_mode = manifest.get("execution_mode")
+    swap_policy, timing_admissible = _validate_policy_timing_binding(
+        manifest, "run manifest"
+    )
     if (
         manifest.get("schema_version") != 1
         or manifest.get("kind") != campaign.CAMPAIGN_KIND
@@ -1143,15 +1435,21 @@ def verify_campaign_integrity(
         or manifest.get("worker_count") != campaign.WORKER_COUNT
         or manifest.get("wave_count") != campaign.EXPECTED_WAVES
         or manifest.get("execution_grid_sha256")
-        != campaign.execution_grid_sha256(str(execution_mode))
+        != campaign.execution_grid_sha256(str(execution_mode), swap_policy)
     ):
         raise RuntimeError("run manifest does not match the frozen shootout")
     grid_path = input_dir / campaign.WAVE_SCHEDULE_FILENAME
     grid, grid_bytes = _read_json(grid_path, "execution grid")
+    _validate_policy_timing_binding(
+        grid,
+        "execution grid",
+        expected_policy=swap_policy,
+        expected_timing_admissible=timing_admissible,
+    )
     if (
-        grid != campaign.execution_grid_payload(str(execution_mode))
+        grid != campaign.execution_grid_payload(str(execution_mode), swap_policy)
         or _sha256(_canonical_json(grid))
-        != campaign.execution_grid_sha256(str(execution_mode))
+        != campaign.execution_grid_sha256(str(execution_mode), swap_policy)
         or manifest.get("execution_grid_artifact_sha256") != _sha256(grid_bytes)
     ):
         raise RuntimeError("execution grid does not match the frozen shootout")
@@ -1161,6 +1459,12 @@ def verify_campaign_integrity(
 
     attestation, attestation_bytes = _read_json(
         attestation_path, "completion attestation"
+    )
+    _validate_policy_timing_binding(
+        attestation,
+        "completion attestation",
+        expected_policy=swap_policy,
+        expected_timing_admissible=timing_admissible,
     )
     if (
         attestation.get("schema_version") != 1
@@ -1260,6 +1564,12 @@ def verify_campaign_integrity(
         != manifest.get("preflight_report_sha256")
     ):
         raise RuntimeError("safe analysis payload does not bind the shootout")
+    _validate_policy_timing_binding(
+        payload,
+        "safe analysis payload",
+        expected_policy=swap_policy,
+        expected_timing_admissible=timing_admissible,
+    )
     outer_rows, child_rows = _validate_safe_payload(payload, artifacts, 18)
     payload["outer_rows"] = outer_rows
     payload["child_rows"] = child_rows
@@ -1272,7 +1582,11 @@ def verify_campaign_integrity(
         required=True,
     )
     preflight_decision = _validate_preflight_artifact(
-        preflight, execution_mode=str(execution_mode), input_dir=input_dir
+        preflight,
+        execution_mode=str(execution_mode),
+        input_dir=input_dir,
+        swap_policy=swap_policy,
+        timing_admissible=timing_admissible,
     )
     if (
         manifest.get("preflight_report_sha256") != preflight_digest
@@ -1289,9 +1603,19 @@ def verify_campaign_integrity(
         required=True,
     )
     _validate_concurrency_artifact(
-        concurrency, execution_mode=str(execution_mode), input_dir=input_dir
+        concurrency,
+        execution_mode=str(execution_mode),
+        input_dir=input_dir,
+        swap_policy=swap_policy,
+        timing_admissible=timing_admissible,
     )
     _validate_concurrency_result_bindings(concurrency, artifacts, input_dir)
+    swap_audit = _build_swap_audit(
+        preflight,
+        concurrency,
+        swap_policy=swap_policy,
+        timing_admissible=timing_admissible,
+    )
     warmup, warmup_digest = _attested_json_artifact(
         input_dir,
         attestation,
@@ -1371,6 +1695,7 @@ def verify_campaign_integrity(
         "owner_state_sha256": _sha256(owner_state_bytes),
         "owner_lock_sha256": _sha256(owner_lock_bytes),
         "preflight_decision": preflight_decision,
+        "swap_audit": swap_audit,
         "reused_evidence": reused_diagnostics,
         **execution,
     }
@@ -1475,6 +1800,9 @@ def _validate_safe_payload(
         "tree_mode_selection",
         "stop_reason",
         "deadline_hit",
+        "wall_clock_limit_seconds",
+        "wall_clock_safety_margin_seconds",
+        "wall_clock_effective_seconds",
         "wall_clock_elapsed_seconds",
         "child_features",
         "representation",
@@ -1554,7 +1882,9 @@ def _validate_safe_payload(
         )
         if row["stop_reason"] == "time_limit" or row["deadline_hit"] is not False:
             raise RuntimeError("shootout contains a deadline-hit child")
-        _nonnegative(row["wall_clock_elapsed_seconds"], "child wall time")
+        campaign.screen._validate_child_wall_clock_audit(
+            row, field="safe child"
+        )
         campaign.screen._feature_schema_sha256(
             row["child_features"], "safe child external features"
         )
@@ -1731,11 +2061,235 @@ def analyze(
     paired_children: Sequence[Mapping[str, Any]],
     *,
     execution_mode: str = "concurrent",
+    swap_policy: str = campaign.DEFAULT_SWAP_POLICY,
+    timing_admissible: bool | None = None,
+    swap_audit: Mapping[str, Any] | None = None,
+    preflight_decision: Mapping[str, Any] | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     if len(paired_rows) != 39 or len(paired_children) != 312:
         raise RuntimeError("analysis inputs do not match the frozen comparison counts")
     if execution_mode not in {"concurrent", "sequential_fallback"}:
         raise RuntimeError("analysis execution mode is invalid")
+    try:
+        swap_policy = campaign._validate_swap_policy(swap_policy)
+    except RuntimeError as exc:
+        raise RuntimeError("analysis swap policy is invalid") from exc
+    expected_timing_admissible = swap_policy == campaign.SWAP_POLICY_STRICT
+    if timing_admissible is None:
+        timing_admissible = expected_timing_admissible
+    if (
+        type(timing_admissible) is not bool
+        or timing_admissible != expected_timing_admissible
+    ):
+        raise RuntimeError("analysis timing admissibility is inconsistent")
+    if swap_audit is not None:
+        raw_audit = dict(hardened._as_mapping(swap_audit, "swap audit"))
+        if (
+            set(raw_audit)
+            != {
+                "swap_policy",
+                "timing_admissible",
+                "production_zero_swap_out_verified",
+                "preflight",
+                "production",
+            }
+            or raw_audit.get("swap_policy") != swap_policy
+            or raw_audit.get("timing_admissible") != timing_admissible
+            or raw_audit.get("production_zero_swap_out_verified") is not True
+        ):
+            raise RuntimeError("analysis swap audit does not match the run")
+        audit = {
+            "swap_policy": swap_policy,
+            "timing_admissible": timing_admissible,
+            "production_zero_swap_out_verified": True,
+        }
+        raw_preflight = hardened._as_mapping(
+            raw_audit.get("preflight"), "preflight swap audit"
+        )
+        if set(raw_preflight) != {
+            "decision_passed",
+            "decision_execution_mode",
+            "selected_policy_passed",
+            "zero_swap_out_coverage_status",
+            "zero_swap_out_observed",
+            "preflight_error",
+            "lifecycle",
+            "measured",
+        }:
+            raise RuntimeError("preflight swap audit fields are incomplete")
+
+        def exposed_window(value: Any, field: str) -> dict[str, Any]:
+            window = hardened._as_mapping(value, field)
+            if set(window) != {
+                "status",
+                "swap_in_bytes",
+                "swap_out_bytes",
+                "policy_passed",
+            }:
+                raise RuntimeError(f"{field} fields are not exact")
+            status = window.get("status")
+            policy_passed = window.get("policy_passed")
+            if (
+                status not in {"complete", "partial", "unavailable"}
+                or type(policy_passed) is not bool
+            ):
+                raise RuntimeError(f"{field} status is invalid")
+            if status == "unavailable":
+                if (
+                    window.get("swap_in_bytes") is not None
+                    or window.get("swap_out_bytes") is not None
+                    or policy_passed
+                ):
+                    raise RuntimeError(f"{field} unavailable state is inconsistent")
+                return {
+                    "status": status,
+                    "swap_in_bytes": None,
+                    "swap_out_bytes": None,
+                    "policy_passed": False,
+                }
+            deltas = _exposed_swap_delta_pair(
+                {
+                    "swap_in_bytes": window.get("swap_in_bytes"),
+                    "swap_out_bytes": window.get("swap_out_bytes"),
+                },
+                field,
+            )
+            if status == "partial" and policy_passed:
+                raise RuntimeError(f"{field} partial state cannot pass policy")
+            return {"status": status, **deltas, "policy_passed": policy_passed}
+
+        preflight_lifecycle = exposed_window(
+            raw_preflight.get("lifecycle"), "preflight lifecycle swap audit"
+        )
+        preflight_measured = exposed_window(
+            raw_preflight.get("measured"), "preflight measured swap audit"
+        )
+        decision_passed = raw_preflight.get("decision_passed")
+        decision_mode = raw_preflight.get("decision_execution_mode")
+        selected_policy_passed = raw_preflight.get("selected_policy_passed")
+        if (
+            type(decision_passed) is not bool
+            or decision_mode != execution_mode
+            or type(selected_policy_passed) is not bool
+            or selected_policy_passed
+            != (
+                preflight_lifecycle["policy_passed"]
+                and preflight_measured["policy_passed"]
+            )
+        ):
+            raise RuntimeError("preflight swap audit decision is inconsistent")
+        (
+            zero_swap_out_coverage,
+            observed_zero_swap_out,
+        ) = _preflight_zero_swap_out_observation(
+            preflight_lifecycle,
+            preflight_measured,
+        )
+        if (
+            raw_preflight.get("zero_swap_out_coverage_status")
+            != zero_swap_out_coverage
+            or raw_preflight.get("zero_swap_out_observed")
+            is not observed_zero_swap_out
+        ):
+            raise RuntimeError("preflight swap-out audit is inconsistent")
+        error = raw_preflight.get("preflight_error")
+        if error is not None:
+            error = dict(hardened._as_mapping(error, "preflight audit error"))
+            if (
+                set(error) != {"error_type", "error"}
+                or not all(isinstance(item, str) and item for item in error.values())
+            ):
+                raise RuntimeError("preflight audit error is invalid")
+        if execution_mode == "concurrent" and (
+            not decision_passed
+            or error is not None
+            or not selected_policy_passed
+            or preflight_lifecycle["status"] != "complete"
+            or preflight_measured["status"] != "complete"
+            or zero_swap_out_coverage != "complete"
+            or observed_zero_swap_out is not True
+            or (
+                swap_policy == campaign.SWAP_POLICY_STRICT
+                and any(
+                    window["swap_in_bytes"] != 0
+                    for window in (preflight_lifecycle, preflight_measured)
+                )
+            )
+        ):
+            raise RuntimeError("concurrent analysis lacks passing preflight swap evidence")
+        if execution_mode == "sequential_fallback" and decision_passed:
+            raise RuntimeError("sequential analysis carries passing preflight")
+        audit["preflight"] = {
+            "decision_passed": decision_passed,
+            "decision_execution_mode": decision_mode,
+            "selected_policy_passed": selected_policy_passed,
+            "zero_swap_out_coverage_status": zero_swap_out_coverage,
+            "zero_swap_out_observed": observed_zero_swap_out,
+            "preflight_error": error,
+            "lifecycle": preflight_lifecycle,
+            "measured": preflight_measured,
+        }
+
+        raw_production = hardened._as_mapping(
+            raw_audit.get("production"), "production swap audit"
+        )
+        if set(raw_production) != {"lifecycle", "measured"}:
+            raise RuntimeError("production swap audit windows are incomplete")
+        audit["production"] = {
+            window: exposed_window(
+                raw_production.get(window), f"production {window} swap audit"
+            )
+            for window in ("lifecycle", "measured")
+        }
+        if any(
+            window["status"] != "complete"
+            or not window["policy_passed"]
+            or window["swap_out_bytes"] != 0
+            for window in audit["production"].values()
+        ):
+            raise RuntimeError("production swap audit does not verify zero swap-out")
+        if swap_policy == campaign.SWAP_POLICY_STRICT and any(
+            window["swap_in_bytes"] != 0
+            for window in audit["production"].values()
+        ):
+            raise RuntimeError("strict production swap audit contains swap-in")
+    else:
+        audit = None
+    if preflight_decision is None:
+        mode_selection = None
+    else:
+        decision = hardened._as_mapping(preflight_decision, "preflight decision")
+        criteria = decision.get("mode_selection_criteria")
+        if (
+            decision.get("execution_mode") != execution_mode
+            or decision.get("timing_admissible") != timing_admissible
+            or not isinstance(criteria, list)
+            or not all(isinstance(item, str) and item for item in criteria)
+        ):
+            raise RuntimeError("preflight mode selection does not match the run")
+        timing_criteria = {
+            "throughput_speedup_at_least_1_10",
+            "reciprocal_arm_slot_symmetry",
+        }
+        if (
+            swap_policy == campaign.SWAP_POLICY_QUALITY_ONLY_SWAP_IN
+            and timing_criteria.intersection(criteria)
+        ):
+            raise RuntimeError(
+                "quality-only mode selection used inadmissible timing evidence"
+            )
+        mode_selection = {
+            "criteria": list(criteria),
+            "performance_comparison_criteria_used": bool(
+                timing_criteria.intersection(criteria)
+            ),
+            "raw_preflight_operational_audit": {
+                "throughput_speedup": decision.get("throughput_speedup"),
+                "reciprocal_asymmetry_ratio": decision.get(
+                    "reciprocal_asymmetry_ratio"
+                ),
+            },
+        }
     per_dataset: list[dict[str, Any]] = []
     contrasts: dict[str, Any] = {}
     for code, _numerator, _denominator in CONTRASTS:
@@ -1865,9 +2419,34 @@ def analyze(
     auto_mode_counts = Counter(
         row["A10_selected_tree_mode"] for row in paired_children
     )
+    if timing_admissible:
+        timing_disclosure = (
+            "A10/B10 wall-clock values are contention-exposed under the paired "
+            "two-worker schedule and are descriptive, not a causal arm contrast."
+            if execution_mode == "concurrent"
+            else "A10/B10 wall-clock values were collected in the two-segment "
+            "sequential fallback schedule. They are descriptive and retain "
+            "slot/order exposure, not a causal arm contrast."
+        )
+    else:
+        timing_disclosure = (
+            "Timing and memory-performance evidence is inadmissible under the "
+            "quality_only_swap_in policy. Raw timing, memory, and swap values "
+            "are retained only as operational audit data; no descriptive or "
+            "causal performance claim is made."
+        )
+    performance_disposition = _performance_evidence_disposition(
+        swap_policy, timing_admissible
+    )
     summary = {
         "protocol": "frozen TabArena B10/A10 regression accuracy shootout",
         "execution_mode": execution_mode,
+        "swap_policy": swap_policy,
+        "timing_admissible": timing_admissible,
+        "memory_performance_admissible": timing_admissible,
+        "performance_evidence_disposition": performance_disposition,
+        "swap_audit": audit,
+        "execution_mode_selection": mode_selection,
         "public_arm_labels": {
             "P": "DarkoFit product default (reused)",
             "B10": "fixed catboost-mode 10,000-round base",
@@ -1904,14 +2483,7 @@ def analyze(
             "This is a spent 13-dataset development panel and is not independent "
             "confirmation. No parameter was tuned from these shootout results."
         ),
-        "timing_disclosure": (
-            "A10/B10 wall-clock values are contention-exposed under the paired "
-            "two-worker schedule and are descriptive, not a causal arm contrast."
-            if execution_mode == "concurrent"
-            else "A10/B10 wall-clock values were collected in the two-segment "
-            "sequential fallback schedule. They are descriptive and retain "
-            "slot/order exposure, not a causal arm contrast."
-        ),
+        "timing_disclosure": timing_disclosure,
     }
     return summary, per_dataset
 
@@ -1935,6 +2507,13 @@ def render_report(
         summary["test_use_disclosure"],
         "",
         f"Execution mode: **{summary['execution_mode']}**.",
+        f"Swap policy: **{summary['swap_policy']}**.",
+        "Timing and memory-performance evidence: "
+        + (
+            "**admissible with the stated noncausal schedule limits**."
+            if summary["timing_admissible"]
+            else "**inadmissible by policy**."
+        ),
         "",
         "Negative percentages favor the numerator. Quality uses paired outer-test "
         "RMSE, three-split geometric means within each dataset, then an "
@@ -1990,6 +2569,102 @@ def render_report(
             f"| {item['omitted_dataset']} | {item['ratio']:.6f} | "
             f"{item['pct']:+.3f}% |"
         )
+    swap_audit = summary.get("swap_audit")
+    if swap_audit is not None:
+        lines.extend(
+            [
+                "",
+                "## Operational swap audit",
+                "",
+                "These are raw host-counter deltas, not performance results.",
+                "",
+                "| Phase/window | Coverage | Swap-in | Swap-out | Policy |",
+                "| --- | --- | ---: | ---: | --- |",
+            ]
+        )
+        for phase in ("preflight", "production"):
+            for window_name in ("lifecycle", "measured"):
+                window = swap_audit[phase][window_name]
+                swap_in = (
+                    "unavailable"
+                    if window["swap_in_bytes"] is None
+                    else f"{window['swap_in_bytes']} B"
+                )
+                swap_out = (
+                    "unavailable"
+                    if window["swap_out_bytes"] is None
+                    else f"{window['swap_out_bytes']} B"
+                )
+                lines.append(
+                    f"| {phase.title()} {window_name} | {window['status']} | "
+                    f"{swap_in} | {swap_out} | "
+                    f"{'pass' if window['policy_passed'] else 'fail'} |"
+                )
+        preflight = swap_audit["preflight"]
+        preflight_zero_swap_out = preflight["zero_swap_out_observed"]
+        preflight_coverage = preflight["zero_swap_out_coverage_status"]
+        if (
+            preflight_coverage == "complete"
+            and type(preflight_zero_swap_out) is not bool
+        ) or (
+            preflight_coverage in {"partial", "unavailable"}
+            and preflight_zero_swap_out is not None
+        ):
+            raise RuntimeError("preflight zero-swap-out report status is inconsistent")
+        lines.extend(
+            [
+                "",
+                "Production zero swap-out verified across lifecycle and measured "
+                "windows: **yes**.",
+                "Preflight decision: "
+                f"**{preflight['decision_execution_mode']}**; selected swap "
+                "policy passed: "
+                f"**{'yes' if preflight['selected_policy_passed'] else 'no'}**.",
+            ]
+        )
+        if preflight_coverage == "complete":
+            lines.append(
+                "Zero swap-out observed across the complete preflight lifecycle "
+                "and measured windows: "
+                f"**{'yes' if preflight_zero_swap_out else 'no'}**."
+            )
+        elif preflight_coverage == "partial":
+            lines.append(
+                "Preflight zero-swap-out coverage: **partial**; no complete "
+                "two-window zero-swap-out conclusion is available."
+            )
+        elif preflight_coverage == "unavailable":
+            lines.append(
+                "Preflight zero-swap-out coverage: **unavailable** because at "
+                "least one required window is unavailable; no complete "
+                "two-window zero-swap-out conclusion is available."
+            )
+        else:
+            raise RuntimeError("preflight zero-swap-out coverage status is invalid")
+        if preflight["preflight_error"] is not None:
+            lines.append(
+                "Preflight failure: "
+                f"`{preflight['preflight_error']['error_type']}` — "
+                f"{preflight['preflight_error']['error']}."
+            )
+    mode_selection = summary.get("execution_mode_selection")
+    if mode_selection is not None:
+        criteria = ", ".join(
+            f"`{item}`" for item in mode_selection["criteria"]
+        )
+        lines.extend(
+            [
+                "",
+                "## Execution-mode selection",
+                "",
+                f"Applied preflight criteria: {criteria}.",
+            ]
+        )
+        if not summary["timing_admissible"]:
+            lines.append(
+                "Timing and memory-performance comparisons were excluded from "
+                "mode selection; operational safety limits still applied."
+            )
     lines.extend(
         [
             "",
@@ -2000,6 +2675,30 @@ def render_report(
         ]
     )
     return "\n".join(lines)
+
+
+def _build_output_payloads(
+    paired_rows: Sequence[Mapping[str, Any]],
+    per_dataset: Sequence[Mapping[str, Any]],
+    paired_children: Sequence[Mapping[str, Any]],
+    summary: Mapping[str, Any],
+) -> dict[str, bytes]:
+    """Build the exact standalone outputs with row-level policy labels."""
+    labeled_splits = _label_comparative_export_rows(
+        paired_rows, summary, "paired split export"
+    )
+    labeled_children = _label_comparative_export_rows(
+        paired_children, summary, "paired child export"
+    )
+    return {
+        "split_csv": _csv_bytes(labeled_splits, "paired split CSV"),
+        "dataset_csv": _csv_bytes(per_dataset, "per-dataset CSV"),
+        "child_csv": _csv_bytes(labeled_children, "paired child CSV"),
+        "summary_json": (
+            json.dumps(summary, allow_nan=False, indent=2, sort_keys=True) + "\n"
+        ).encode("utf-8"),
+        "report_md": render_report(summary, per_dataset).encode("utf-8"),
+    }
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -2021,6 +2720,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         paired,
         paired_children,
         execution_mode=str(manifest["execution_mode"]),
+        swap_policy=str(manifest["swap_policy"]),
+        timing_admissible=manifest["timing_admissible"],
+        swap_audit=digests["swap_audit"],
+        preflight_decision=digests["preflight_decision"],
     )
     summary["integrity_diagnostics"] = {
         "new_outer_jobs_verified": 78,
@@ -2054,15 +2757,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         protected_paths=protected,
         target_names=OUTPUT_KEYS,
     )
-    payloads = {
-        "split_csv": _csv_bytes(paired, "paired split CSV"),
-        "dataset_csv": _csv_bytes(per_dataset, "per-dataset CSV"),
-        "child_csv": _csv_bytes(paired_children, "paired child CSV"),
-        "summary_json": (
-            json.dumps(summary, allow_nan=False, indent=2, sort_keys=True) + "\n"
-        ).encode("utf-8"),
-        "report_md": render_report(summary, per_dataset).encode("utf-8"),
-    }
+    payloads = _build_output_payloads(paired, per_dataset, paired_children, summary)
     hardened._atomic_write_group(
         [(outputs[name], payloads[name]) for name in OUTPUT_KEYS],
         post_write_check=lambda: verify_campaign_integrity(args.input_dir),
