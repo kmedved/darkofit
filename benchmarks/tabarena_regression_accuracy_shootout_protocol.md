@@ -309,6 +309,22 @@ seconds**, with **zero swap-out** in both observations. That evidence diagnoses
 background page-in activity; it says nothing about either model arm and cannot
 support a performance conclusion.
 
+The first quality-only launch on 2026-07-15 was discarded after preflight
+selected the sequential fallback for an apparent behavior-fingerprint
+mismatch. A recursive comparison of the four matched preflight artifacts found
+that both fixed-mode fingerprints matched exactly and that each automatic-mode
+pair differed in exactly 48 values: the start and end elapsed-time observations
+for three candidates across eight children. No quality or fitted-structure
+field differed. The normalizer excluded names ending in `_seconds` but had
+failed to exclude suffix-qualified fields such as
+`wall_clock_elapsed_seconds_start` and `_end`, contrary to the frozen rule that
+operational timing is outside the behavior fingerprint. The abort/fix decision
+was made from that preflight-only diff; a buffered interrupt subsequently showed
+that one sequential Airfoil wave had completed, but no production artifact was
+opened, analyzed, or reused. The interrupted namespace has no completion
+attestation and is permanently excluded. The corrected source requires a fresh
+preflight and production namespace.
+
 Under `quality_only_swap_in`, the run remains admissible only for quality and
 safety conclusions. All raw wall-clock, memory, throughput, asymmetry, and swap
 values remain in the artifacts as operational audit data, but timing and
@@ -345,8 +361,9 @@ it must be at least 1.10. The strict preflight also passes only when:
 - both pilot workers attest the untimed materialization of both actual pilot
   tasks before the first timed execution;
 - the matching isolated and concurrent executions have exact quality and
-  fitted-structure fingerprints (timing and process identifiers are excluded
-  from the fingerprint);
+  fitted-structure fingerprints (all operational timing fields, including
+  per-candidate elapsed start/end observations, plus process identifiers are
+  excluded from the fingerprint);
 - every `A10` child has exactly three finite candidates in the frozen order;
 - no execution reports a deadline, time-limit stop, restart, OOM, or swap
   forbidden by the selected policy;

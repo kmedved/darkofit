@@ -752,7 +752,9 @@ def _behavior_value(value: Any) -> Any:
             str(key): _behavior_value(item)
             for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))
             if str(key) not in excluded
-            and not str(key).endswith("_seconds")
+            and not (
+                str(key).endswith("_seconds") or "_seconds_" in str(key)
+            )
             and "memory" not in str(key)
         }
     if isinstance(value, list):

@@ -2536,6 +2536,69 @@ def test_shootout_arm_configs_differ_only_by_tree_mode():
     } == {"tree_mode"}
 
 
+def test_behavior_fingerprint_excludes_nested_operational_seconds_fields():
+    isolated = {
+        "children": [
+            {
+                "deadline_hit": False,
+                "rounds_completed": 101,
+                "selected_tree_mode": "catboost",
+                "tree_mode_selection": {
+                    "candidates": [
+                        {
+                            "validation_score": 1.25,
+                            "wall_clock_elapsed_seconds": 2.0,
+                            "wall_clock_elapsed_seconds_start": 0.25,
+                            "wall_clock_elapsed_seconds_end": 2.0,
+                            "duration_seconds_p95": 1.9,
+                        }
+                    ]
+                },
+            }
+        ]
+    }
+    concurrent = deepcopy(isolated)
+    concurrent_candidate = concurrent["children"][0]["tree_mode_selection"][
+        "candidates"
+    ][0]
+    concurrent_candidate.update(
+        {
+            "wall_clock_elapsed_seconds": 8.0,
+            "wall_clock_elapsed_seconds_start": 0.5,
+            "wall_clock_elapsed_seconds_end": 8.0,
+            "duration_seconds_p95": 7.5,
+        }
+    )
+
+    assert shootout._behavior_value(isolated) == shootout._behavior_value(
+        concurrent
+    )
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("deadline_hit", True),
+        ("rounds_completed", 100),
+        ("selected_tree_mode", "lightgbm"),
+        ("validation_score", 1.5),
+    ],
+)
+def test_behavior_fingerprint_preserves_quality_and_structure_fields(field, value):
+    baseline = {
+        "deadline_hit": False,
+        "rounds_completed": 101,
+        "selected_tree_mode": "catboost",
+        "validation_score": 1.25,
+        "wall_clock_elapsed_seconds_start": 0.25,
+        "wall_clock_elapsed_seconds_end": 2.0,
+    }
+    changed = deepcopy(baseline)
+    changed[field] = value
+
+    assert shootout._behavior_value(baseline) != shootout._behavior_value(changed)
+
+
 @pytest.mark.parametrize(
     ("swap_policy", "timing_admissible", "expected_detail", "forbidden_detail"),
     [
