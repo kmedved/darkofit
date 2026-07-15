@@ -802,7 +802,13 @@ def _validate_tree_mode_selection(
     deadline_hit: bool,
     top_level: Mapping[str, Any],
     field: str,
+    expected_iterations: int | None = None,
 ) -> None:
+    if expected_iterations is None:
+        expected_iterations = hardened._exact_int(
+            top_level.get("iterations_requested"),
+            f"{field}.expected_iterations",
+        )
     selection = _as_mapping(value, field)
     if (
         selection.get("enabled") is not True
@@ -871,7 +877,7 @@ def _validate_tree_mode_selection(
         best = hardened._exact_int(
             item.get("best_iteration"), f"{field}.best_iteration"
         )
-        if requested != 1_000 or not (
+        if requested != expected_iterations or not (
             0 <= retained == best <= completed <= attempted <= requested
         ):
             raise RuntimeError(f"{field} candidate round counters are inconsistent")
@@ -1430,7 +1436,10 @@ def parse_result_record(
         completed = hardened._exact_int(fitted["rounds_completed"], "completed")
         retained = hardened._exact_int(fitted["rounds_retained"], "retained")
         best = hardened._exact_int(fitted["best_iteration"], "best")
-        if requested != 1_000 or not (
+        expected_iterations = hardened._exact_int(
+            ARM_SPECS[arm]["config"]["iterations"], "configured iterations"
+        )
+        if requested != expected_iterations or not (
             0 <= retained == best <= completed <= attempted <= requested
         ):
             raise RuntimeError(f"{source}: {child_name} round counters are inconsistent")
@@ -1495,6 +1504,7 @@ def parse_result_record(
             )
             _validate_tree_mode_selection(
                 tree_mode_selection,
+                expected_iterations=expected_iterations,
                 selected_tree_mode=selected_mode,
                 deadline_hit=deadline_hit,
                 top_level=fitted,

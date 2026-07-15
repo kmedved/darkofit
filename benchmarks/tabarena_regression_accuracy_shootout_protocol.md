@@ -181,8 +181,9 @@ whose DarkoFit package subtree is
 is tag commit `9c9ea6e704a9fe2bfe6d6c284b22de73914be048`; CatBoost is wheel version
 1.2.10.
 
-The runner/analyzer must revalidate these committed inputs before joining a new
-candidate result:
+The runner must revalidate these committed inputs before preflight or any model
+execution, and the analyzer must independently revalidate them before joining a
+new candidate result:
 
 | Artifact | SHA-256 |
 | --- | --- |
@@ -199,12 +200,23 @@ all affected arms; it may not be waived. Any base-adapter byte change,
 including telemetry or resolver edits, requires rerunning `P` across all 39
 coordinates. Fixed numeric and categorical fixture checks are diagnostic only;
 they cannot authorize reuse or waive that rerun.
+The common dependency lock explicitly includes AutoGluon common, core,
+features, and tabular plus DarkoFit, Graphviz, Numba/llvmlite, NumPy, pandas,
+psutil, scikit-learn, SciPy, and TabArena. Only the comparator-only CatBoost and
+ChimeraBoost distributions may be absent. The TabArena checkout itself must
+match the reused Git head, tree, remote, clean status, repository, and module
+path—not merely its package version.
+The runtime collector still records both optional comparator distributions;
+when either is installed, its version must match the reused source lock.
 
 Reused training, inference, and memory values are historical same-machine
-context, not paired timing controls for the newly executed arms. Only `A10`
-versus `B10`, run in a balanced alternating order after identical warmup, may
-support a causal operational contrast. Comparator timing must be rerun if a
-freeze decision depends on it.
+context, not paired timing controls for the newly executed arms. Production
+`A10` and `B10` jobs run concurrently and therefore expose each arm's wall time
+to partner-dependent CPU and memory contention. Their individual times and the
+campaign throughput are descriptive, not a causal operational contrast.
+Comparator timing must be rerun if a freeze decision depends on it, and any
+resource-sensitive `A10`/`B10` decision requires the isolated timing panel
+defined below.
 
 ## New execution grid and warmup
 
@@ -212,16 +224,155 @@ The mandatory new primary grid is 13 datasets x 3 coordinates x 2 arms = 78
 outer jobs and 624 selected child models. Internal auto-mode candidates are
 additional fits and must be counted separately in fitted metadata.
 
-`A10` and `B10` alternate first/second position within every dataset and repeat
-block. The exact ordered grid is emitted and hashed before execution. Warmup is
-outside measured jobs, uses 18 threads, covers numeric and categorical data,
-and exercises all three automatic tree modes plus prediction for each selected
-tree family. Diagnostic resolver warmup is separate and cannot populate a
-measured result cache.
+Production uses two persistent processes created with the multiprocessing
+`spawn` start method. Each worker retains the source-frozen 18-CPU child
+allocation; two active jobs may therefore expose up to 36 runnable threads on
+the 18-core host. That deliberate oversubscription is admitted only after the
+preflight below. Every worker has a private current working directory so
+AutoGluon's default relative scratch path cannot collide. Workers write only
+their disjoint result paths. The parent process is the sole writer of the run
+manifest, warmup history, concurrency journal, resume history, analysis
+artifacts, and completion attestation.
+The parent creates every worker scratch directory before spawning and rejects
+any symlink or non-directory component. Resume performs this confinement check
+before archiving or otherwise mutating prior campaign artifacts.
+
+The exact production ordering is 39 strict two-job waves in the task-table
+order above. Within each dataset let `c0=r0f0`, `c1=r1f1`, and `c2=r2f2`.
+Local wave `j` pairs `A10(cj)` with `B10(c((j + 1) mod 3))`. This cyclic
+derangement gives each coordinate to each arm exactly once while preventing
+the two workers from reading or writing the same coordinate in one wave. The
+global wave index is `3 * dataset_index + j`, where `dataset_index` is the
+zero-based task-table position. `A10` runs in worker slot `global_index mod 2`
+and `B10` in the other slot. Thus each arm's exposure differs by at most one
+wave across the two persistent worker slots. The complete ordered schedule and
+its canonical digest are emitted and bound into the manifest before execution;
+no hash-based or runtime-dependent reordering is allowed.
+
+A hard parent barrier separates waves. The parent releases no job from wave
+`k + 1` until it has received and validated both reports from wave `k`,
+including the returned job identity, result path, process identity, timestamps,
+and completion state. The journal records wave, slot, partner, dispatch/start/
+finish timestamps, start skew, overlap, solo tail, worker PID, and available
+host load/resource telemetry. A worker error, crash, deadline hit, time-limit
+stop, missing automatic-mode candidate, restart, OOM, swap event, or peak
+combined resident memory reaching 80% of physical memory stops the release of
+new waves, drains or terminates the active partner, invalidates that production
+attempt, and forbids a completion attestation. A fallback rerun must start
+sequentially in a fresh namespace; it may not mix results from the failed
+two-worker attempt. The only authorization is the runner's
+`--sequential-recovery-from <invalid-attempt>` input. It validates the prior
+manifest, passing preflight, source revision, protocol and schedule digests,
+and runner-written invalid-attempt marker, then embeds their hashes in the new
+preflight report. An arbitrary force-sequential switch is not permitted.
+
+Warmup remains outside measured jobs. Both persistent production workers must
+report ready, then the parent warms them serially before wave zero. Each
+process-local warmup uses 18 threads, covers numeric and categorical data, and
+exercises all three automatic tree modes plus prediction for each selected tree
+family. The parent consolidates the two returned warmup records only after both
+workers acknowledge completion. Diagnostic resolver warmup is separate and
+cannot populate a measured result cache.
+
+The preflight has an additional untimed data-prime barrier. After kernel
+warmup and before any measured pilot job, each pilot worker materializes both
+actual preflight OpenML tasks, including their datasets and split definitions,
+and reports the exact task keys and PID. This removes the systematic cold-cache
+confound that would otherwise favor the concurrent observations merely because
+they execute after all isolated observations. Data priming writes no measured
+result and cannot satisfy a result-cache lookup.
+
+### Concurrency preflight and fallback
+
+No production result is released until a non-reusable preflight compares
+isolated and concurrent execution on `physiochemical_protein/r0f0` and
+`QSAR-TID-11/r2f2`, the two source-frozen slow coordinates selected before
+execution. First run `A10` and `B10` for each dataset in isolation
+(four jobs total). Then run two reciprocal concurrent waves (four more jobs):
+one pairs protein `A10` with QSAR `B10`, and the other pairs protein `B10` with
+QSAR `A10`, with the `A10` slot reversed between waves. Preflight artifacts
+live outside the production namespace and can never satisfy a production cache
+lookup.
+
+Let the isolated wall time be the sum of all four isolated job durations and
+the concurrent wall time be the sum of the two concurrent wave makespans. The
+preflight throughput speedup is their ratio and must be at least 1.10. It also
+passes only when:
+
+- all eight outer executions finish and validate;
+- both pilot workers attest the untimed materialization of both actual pilot
+  tasks before the first timed execution;
+- the matching isolated and concurrent executions have exact quality and
+  fitted-structure fingerprints (timing and process identifiers are excluded
+  from the fingerprint);
+- every `A10` child has exactly three finite candidates in the frozen order;
+- no execution reports a deadline, time-limit stop, restart, OOM, or swap;
+- dispatch-to-start skew within each concurrent wave is at most 1.0 second;
+- every concurrent job finishes in less than 1,800 seconds;
+- peak combined resident memory remains below 80% of physical memory in every
+  isolated run and concurrent wave; and
+- the reciprocal waves show no unexplained arm/slot-specific behavior: compute
+  concurrent-to-isolated duration ratios for all four matched jobs, then require
+  every arm, worker-slot, and within-dataset arm geometric-mean asymmetry factor
+  to be at most 1.50.
+
+The manifest binds the complete preflight report digest, execution mode,
+worker count, start method, and production schedule digest. A failed or
+incomplete preflight selects a fully sequential production run in a fresh
+namespace; it is not a reason to relax a gate. Sequential execution preserves
+the same frozen job order, process-local warmup, quality validation, and result
+identity contract. It retains both warm persistent worker processes and their
+frozen slot assignment, but dispatches only one job at a time (`worker_count=2`,
+maximum active jobs one, two serial segments per wave) and makes no concurrency
+claim.
+
+Memory enforcement uses each worker process's OS-reported lifetime maximum RSS
+(`getrusage(RUSAGE_SELF).ru_maxrss`) after every job, summed conservatively
+across the two persistent workers and reconciled with the sampled concurrent
+RSS series. The larger value is the gate input. Sampling alone is never labeled
+or accepted as the peak-memory observation. Swap deltas are recomputed from the
+first and last samples of the fully merged execution/high-water interval (and,
+for sequential fallback, across both concatenated segments), so activity in a
+phase boundary cannot disappear from the zero-swap gate.
+
+The journal must contain exactly one invariant PID per worker slot across all
+39 waves. Completion binds those two identities exactly to the newest warmup
+session; historical warmup sessions retained after a safe zero-start resume
+cannot authorize mixed-process results.
+
+Concurrent production timings remain contention-exposed even after a passing
+preflight. If runtime or memory affects whether the accuracy profile freezes,
+run a separate source-frozen isolated panel of six coordinates (12 jobs, both
+arms once per coordinate), balanced in alternating arm order after identical
+process-local warmup. Its coordinate list, order, aggregation, and resource
+gates must be committed before inspecting those timings. It cannot reuse
+production timings or change any quality gate.
 
 Every result file is runner-owned, uniquely keyed by protocol digest, arm,
 task, repeat, and fold. Resume may consume only byte- and provenance-validated
-results from this exact campaign. There is no imputation or substitution.
+results from this exact campaign. Manifest, schedule, and contiguous journal-
+prefix compatibility are checked before any filesystem mutation. Because
+TabArena result files are Python pickles and the campaign directory is not an
+external trust root, `--resume` never decodes or reuses a pickle written by a
+prior process. It archives every existing result without deserializing it,
+clears the measured journal, and restarts the exact schedule at wave zero.
+Thus a clean external interruption is safely restartable but receives no
+cross-process compute credit. Any semantic or resource failure listed above
+still invalidates the attempt and requires the provenance-bound fresh
+sequential fallback. There is no imputation or substitution.
+The journal execution mode must match the manifest-selected mode before resume
+archives any result. Every retained resume-history record and referenced
+archive byte is semantically and path validated both before another resume and
+before completion attestation. Resume archives all generated analysis tables,
+summary, and report alongside the prior payload so stale conclusions are never
+left visible while replacement results are running.
+Retained warmup sessions are likewise validated before any archive mutation.
+If the provenance-bound sequential fallback itself fails, it cannot be fed
+back into the concurrent-to-sequential recovery option; retry starts the frozen
+campaign without a recovery flag in another fresh namespace.
+The recovery runner re-executes the operational preflight for diagnostics but
+the provenance-bound recovery record forces the new production namespace onto
+the predeclared sequential mode even if concurrency passes again.
 
 ## Required child and prediction telemetry
 
