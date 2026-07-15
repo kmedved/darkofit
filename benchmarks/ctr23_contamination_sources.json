@@ -1,0 +1,367 @@
+{
+  "schema_version": 3,
+  "ctr23_suite_id": 353,
+  "split_seed": 20260715,
+  "builder_runtime": {
+    "python": "3.12.13",
+    "openml": "0.15.1",
+    "numpy": "2.4.6",
+    "pandas": "2.3.3",
+    "scipy": "1.16.3",
+    "pyarrow": "24.0.0",
+    "liac-arff": "2.5.0"
+  },
+  "registry_scope": {
+    "policy": "union_of_known_darkofit_and_chimeraboost_comparator_exposure",
+    "reason": "CTR23 is intended to compare DarkoFit with ChimeraBoost, so a task exposed to either development lineage is not independent evidence for that comparison.",
+    "default_manual_exclusion_model_scope": "darkofit_main",
+    "darkofit_only_hard_exclusion_count": 12,
+    "comparator_union_additional_hard_exclusion_count": 4,
+    "comparator_union_additional_ambiguous_count": 1
+  },
+  "manual_evidence_catalog": {
+    "path": "benchmarks/ctr23_manual_evidence_catalog.json",
+    "sha256": "abb3dc9c875db5119b2bfbbf23d49cbb1cc2176c39d0a8237d5e01ba533941f3"
+  },
+  "near_match_thresholds": {
+    "column_containment_threshold": 0.9,
+    "feature_coverage_threshold": 0.8,
+    "mean_containment_threshold": 0.95,
+    "row_ratio_threshold": 0.7,
+    "minimum_informative_unique_values": 16,
+    "minimum_informative_matches": 2,
+    "row_sketch_containment_threshold": 0.95,
+    "schema_deletion_membership_threshold": 1.0
+  },
+  "source_task_groups": [
+    {
+      "key": "tabarena_regression_13",
+      "reason": "Dataset appeared in the spent 13-task TabArena regression development panel.",
+      "openml_task_ids": [
+        363612,
+        363615,
+        363625,
+        363631,
+        363672,
+        363675,
+        363678,
+        363686,
+        363693,
+        363697,
+        363698,
+        363705,
+        363708
+      ]
+    }
+  ],
+  "eligible_task_lineage_clusters": [
+    {
+      "openml_task_id": 361236,
+      "expected_normalized_name": "auction_verification",
+      "lineage_cluster": "auction_verification"
+    },
+    {
+      "openml_task_id": 361247,
+      "expected_normalized_name": "naval_propulsion_plant",
+      "lineage_cluster": "uci_naval_propulsion"
+    },
+    {
+      "openml_task_id": 361251,
+      "expected_normalized_name": "grid_stability",
+      "lineage_cluster": "electrical_grid_stability"
+    },
+    {
+      "openml_task_id": 361252,
+      "expected_normalized_name": "video_transcoding",
+      "lineage_cluster": "online_video_transcoding"
+    },
+    {
+      "openml_task_id": 361253,
+      "expected_normalized_name": "wave_energy",
+      "lineage_cluster": "wave_energy_converters"
+    },
+    {
+      "openml_task_id": 361254,
+      "expected_normalized_name": "sarcos",
+      "lineage_cluster": "sarcos_robot_arm"
+    },
+    {
+      "openml_task_id": 361258,
+      "expected_normalized_name": "kin8nm",
+      "lineage_cluster": "delve_kin8nm"
+    },
+    {
+      "openml_task_id": 361261,
+      "expected_normalized_name": "cps88wages",
+      "lineage_cluster": "cps_1988_wages"
+    },
+    {
+      "openml_task_id": 361264,
+      "expected_normalized_name": "socmob",
+      "lineage_cluster": "occupational_mobility"
+    },
+    {
+      "openml_task_id": 361268,
+      "expected_normalized_name": "fps_benchmark",
+      "lineage_cluster": "fps_benchmark"
+    },
+    {
+      "openml_task_id": 361269,
+      "expected_normalized_name": "health_insurance",
+      "lineage_cluster": "ecdat_health_insurance"
+    },
+    {
+      "openml_task_id": 361272,
+      "expected_normalized_name": "fifa",
+      "lineage_cluster": "fifa_players"
+    },
+    {
+      "openml_task_id": 361616,
+      "expected_normalized_name": "moneyball",
+      "lineage_cluster": "moneyball"
+    },
+    {
+      "openml_task_id": 361617,
+      "expected_normalized_name": "energy_efficiency",
+      "lineage_cluster": "uci_energy_efficiency"
+    },
+    {
+      "openml_task_id": 361618,
+      "expected_normalized_name": "forest_fires",
+      "lineage_cluster": "uci_forest_fires"
+    },
+    {
+      "openml_task_id": 361619,
+      "expected_normalized_name": "student_performance_por",
+      "lineage_cluster": "uci_student_performance"
+    },
+    {
+      "openml_task_id": 361622,
+      "expected_normalized_name": "cars",
+      "lineage_cluster": "caret_cars"
+    },
+    {
+      "openml_task_id": 361623,
+      "expected_normalized_name": "space_ga",
+      "lineage_cluster": "space_ga"
+    }
+  ],
+  "manual_task_exclusions": [
+    {
+      "openml_task_id": 361234,
+      "expected_normalized_name": "abalone",
+      "status": "excluded",
+      "lineage_cluster": "uci_abalone",
+      "reason_code": "prior_policy_influence",
+      "reason": "Abalone results informed the ordered-boosting scalar-regression policy.",
+      "evidence_id": "darkofit_ordered_policy_abalone"
+    },
+    {
+      "openml_task_id": 361235,
+      "expected_normalized_name": "airfoil_self_noise",
+      "status": "excluded",
+      "lineage_cluster": "uci_airfoil_self_noise",
+      "reason_code": "spent_tabarena_dataset",
+      "reason": "The same Airfoil source appeared in the spent TabArena regression panel.",
+      "evidence_id": "spent_openml_task_363612"
+    },
+    {
+      "openml_task_id": 361237,
+      "expected_normalized_name": "concrete_compressive_strength",
+      "status": "excluded",
+      "lineage_cluster": "uci_concrete_compressive_strength",
+      "reason_code": "spent_tabarena_dataset",
+      "reason": "The same Concrete source appeared in the spent TabArena regression panel.",
+      "evidence_id": "spent_openml_task_363625"
+    },
+    {
+      "openml_task_id": 361241,
+      "expected_normalized_name": "physiochemical_protein",
+      "status": "excluded",
+      "lineage_cluster": "casp_protein_structure",
+      "reason_code": "spent_tabarena_dataset",
+      "reason": "The same Physiochemical Protein source appeared in the spent TabArena regression panel.",
+      "evidence_id": "spent_openml_task_363693"
+    },
+    {
+      "openml_task_id": 361242,
+      "expected_normalized_name": "superconductivity",
+      "status": "excluded",
+      "lineage_cluster": "superconductivity_critical_temperature",
+      "reason_code": "spent_tabarena_dataset",
+      "reason": "The same Superconductivity source appeared in the spent TabArena regression panel.",
+      "evidence_id": "spent_openml_task_363705"
+    },
+    {
+      "openml_task_id": 361243,
+      "expected_normalized_name": "geographical_origin_of_music",
+      "status": "excluded",
+      "model_scope": "chimeraboost_comparator",
+      "lineage_cluster": "uci_geographical_origin_of_music",
+      "reason_code": "comparator_historical_holdout_influence",
+      "reason": "This dataset was a PMLB holdout in a historical ChimeraBoost study that informed comparator HPO design.",
+      "evidence_id": "chimeraboost_pmlb_holdout_hpo"
+    },
+    {
+      "openml_task_id": 361244,
+      "expected_normalized_name": "solar_flare",
+      "status": "excluded",
+      "model_scope": "chimeraboost_comparator",
+      "lineage_cluster": "uci_solar_flare",
+      "reason_code": "comparator_historical_holdout_influence",
+      "reason": "This dataset was a PMLB holdout in a historical ChimeraBoost study that informed comparator HPO design.",
+      "evidence_id": "chimeraboost_pmlb_holdout_hpo"
+    },
+    {
+      "openml_task_id": 361249,
+      "expected_normalized_name": "white_wine",
+      "status": "excluded",
+      "lineage_cluster": "uci_wine_quality",
+      "reason_code": "component_of_spent_dataset",
+      "reason": "White Wine is a component of the spent TabArena wine_quality dataset.",
+      "evidence_id": "spent_openml_task_363708"
+    },
+    {
+      "openml_task_id": 361250,
+      "expected_normalized_name": "red_wine",
+      "status": "excluded",
+      "lineage_cluster": "uci_wine_quality",
+      "reason_code": "component_of_spent_dataset",
+      "reason": "Red Wine is a component of the spent TabArena wine_quality dataset.",
+      "evidence_id": "spent_openml_task_363708"
+    },
+    {
+      "openml_task_id": 361255,
+      "expected_normalized_name": "california_housing",
+      "status": "excluded",
+      "lineage_cluster": "california_housing_1990_census",
+      "reason_code": "spent_lineage_and_policy_influence",
+      "reason": "California Housing informed prior policy and shares predictors with the spent TabArena houses task despite its target transform.",
+      "evidence_id": "spent_openml_task_363678"
+    },
+    {
+      "openml_task_id": 361256,
+      "expected_normalized_name": "cpu_activity",
+      "status": "excluded",
+      "lineage_cluster": "delve_cpu_activity",
+      "reason_code": "historical_benchmark_influence",
+      "reason": "The same CPU Activity source was already used as OpenML dataset 197 in repository benchmarks.",
+      "evidence_id": "darkofit_cpu_activity_dataset_197"
+    },
+    {
+      "openml_task_id": 361257,
+      "expected_normalized_name": "diamonds",
+      "status": "excluded",
+      "lineage_cluster": "ggplot2_diamonds",
+      "reason_code": "spent_tabarena_dataset",
+      "reason": "The same Diamonds source appeared in the spent TabArena regression panel.",
+      "evidence_id": "spent_openml_task_363631"
+    },
+    {
+      "openml_task_id": 361259,
+      "expected_normalized_name": "pumadyn32nh",
+      "status": "ambiguous",
+      "model_scope": "chimeraboost_comparator",
+      "lineage_cluster": "delve_puma_560_high_noise",
+      "reason_code": "ambiguous_family_lineage",
+      "reason": "A different high-noise Puma-560 task was used in the historical ChimeraBoost PMLB tuning panel; family-level independence is unresolved, so this task fails closed.",
+      "evidence_id": "chimeraboost_pmlb_puma_hpo"
+    },
+    {
+      "openml_task_id": 361260,
+      "expected_normalized_name": "miami_housing",
+      "status": "excluded",
+      "lineage_cluster": "miami_housing",
+      "reason_code": "spent_tabarena_lineage",
+      "reason": "A curated subset of the same Miami Housing source appeared in the spent TabArena panel.",
+      "evidence_id": "spent_openml_task_363686"
+    },
+    {
+      "openml_task_id": 361266,
+      "expected_normalized_name": "kings_county",
+      "status": "excluded",
+      "model_scope": "chimeraboost_comparator",
+      "lineage_cluster": "king_county_house_sales",
+      "reason_code": "comparator_historical_default_policy_influence",
+      "reason": "The equivalent Grinsztajn house_sales task was in the 59-task study that drove historical ChimeraBoost scalar-regression defaults.",
+      "evidence_id": "chimeraboost_grinsztajn_house_sales"
+    },
+    {
+      "openml_task_id": 361267,
+      "expected_normalized_name": "brazilian_houses",
+      "status": "excluded",
+      "model_scope": "chimeraboost_comparator",
+      "lineage_cluster": "brazilian_houses",
+      "reason_code": "comparator_historical_default_policy_influence",
+      "reason": "The equivalent Grinsztajn Brazilian_houses task was in the 59-task study that drove historical ChimeraBoost scalar-regression defaults.",
+      "evidence_id": "chimeraboost_grinsztajn_brazilian_houses"
+    },
+    {
+      "openml_task_id": 361621,
+      "expected_normalized_name": "qsar_fish_toxicity",
+      "status": "excluded",
+      "lineage_cluster": "qsar_fish_toxicity",
+      "reason_code": "spent_tabarena_dataset",
+      "reason": "The same QSAR Fish Toxicity source appeared in the spent TabArena panel.",
+      "evidence_id": "spent_openml_task_363698"
+    }
+  ],
+  "expected_excluded_ctr23_task_ids": [
+    361234,
+    361235,
+    361237,
+    361241,
+    361242,
+    361243,
+    361244,
+    361249,
+    361250,
+    361255,
+    361256,
+    361257,
+    361260,
+    361266,
+    361267,
+    361621
+  ],
+  "expected_ambiguous_ctr23_task_ids": [
+    361259
+  ],
+  "expected_ctr23_tasks": [
+    {"openml_task_id": 361234, "expected_normalized_name": "abalone"},
+    {"openml_task_id": 361235, "expected_normalized_name": "airfoil_self_noise"},
+    {"openml_task_id": 361236, "expected_normalized_name": "auction_verification"},
+    {"openml_task_id": 361237, "expected_normalized_name": "concrete_compressive_strength"},
+    {"openml_task_id": 361241, "expected_normalized_name": "physiochemical_protein"},
+    {"openml_task_id": 361242, "expected_normalized_name": "superconductivity"},
+    {"openml_task_id": 361243, "expected_normalized_name": "geographical_origin_of_music"},
+    {"openml_task_id": 361244, "expected_normalized_name": "solar_flare"},
+    {"openml_task_id": 361247, "expected_normalized_name": "naval_propulsion_plant"},
+    {"openml_task_id": 361249, "expected_normalized_name": "white_wine"},
+    {"openml_task_id": 361250, "expected_normalized_name": "red_wine"},
+    {"openml_task_id": 361251, "expected_normalized_name": "grid_stability"},
+    {"openml_task_id": 361252, "expected_normalized_name": "video_transcoding"},
+    {"openml_task_id": 361253, "expected_normalized_name": "wave_energy"},
+    {"openml_task_id": 361254, "expected_normalized_name": "sarcos"},
+    {"openml_task_id": 361255, "expected_normalized_name": "california_housing"},
+    {"openml_task_id": 361256, "expected_normalized_name": "cpu_activity"},
+    {"openml_task_id": 361257, "expected_normalized_name": "diamonds"},
+    {"openml_task_id": 361258, "expected_normalized_name": "kin8nm"},
+    {"openml_task_id": 361259, "expected_normalized_name": "pumadyn32nh"},
+    {"openml_task_id": 361260, "expected_normalized_name": "miami_housing"},
+    {"openml_task_id": 361261, "expected_normalized_name": "cps88wages"},
+    {"openml_task_id": 361264, "expected_normalized_name": "socmob"},
+    {"openml_task_id": 361266, "expected_normalized_name": "kings_county"},
+    {"openml_task_id": 361267, "expected_normalized_name": "brazilian_houses"},
+    {"openml_task_id": 361268, "expected_normalized_name": "fps_benchmark"},
+    {"openml_task_id": 361269, "expected_normalized_name": "health_insurance"},
+    {"openml_task_id": 361272, "expected_normalized_name": "fifa"},
+    {"openml_task_id": 361616, "expected_normalized_name": "moneyball"},
+    {"openml_task_id": 361617, "expected_normalized_name": "energy_efficiency"},
+    {"openml_task_id": 361618, "expected_normalized_name": "forest_fires"},
+    {"openml_task_id": 361619, "expected_normalized_name": "student_performance_por"},
+    {"openml_task_id": 361621, "expected_normalized_name": "qsar_fish_toxicity"},
+    {"openml_task_id": 361622, "expected_normalized_name": "cars"},
+    {"openml_task_id": 361623, "expected_normalized_name": "space_ga"}
+  ]
+}

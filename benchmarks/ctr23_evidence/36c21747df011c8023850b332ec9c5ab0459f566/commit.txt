@@ -1,0 +1,20 @@
+tree 96aad5456e24f6b7edafcb1b3ae10a6409b5ca11
+parent 5e68f68cce4ef5528fdb8ebab9961246f314e12f
+author Nathan Walker <nathanedwardwalker@gmail.com> 1780228289 -0400
+committer Nathan Walker <nathanedwardwalker@gmail.com> 1780228289 -0400
+
+Default ordered_boosting=False for ChimeraBoostRegressor
+
+LOO correction reduces gradient signal per tree on large smooth regression
+datasets, causing slower convergence and a quality ceiling vs the field.
+Disabling it for regression by default yields +3.6pp on Grinsztajn RMSE
+with zero cost to classification accuracy or calibration.
+
+ChimeraBoostClassifier keeps ordered_boosting=True (LOO still wins there).
+Benchmark harness updated to use class defaults rather than always passing
+True, so --no-ordered-boosting now forces False for both tasks.
+
+Also ships: Grinsztajn HuggingFace benchmark suite (59 datasets), calibration
+MCB column in make_tables.py, and ChimeraBoostEns10 in the default model set.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>

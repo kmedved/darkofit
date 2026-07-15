@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "evidence_id": "darkofit_ordered_policy_abalone",
+      "kind": "repository_file",
+      "path": "benchmarks/ordered_boosting_policy_check.md",
+      "sha256": "18b71456a09cb5731b05c68cffecaed52f196da4537d0c1f39a871c93c64e350",
+      "required_claims": [
+        {
+          "literal": "| Abalone |",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "evidence_id": "spent_openml_task_363612",
+      "kind": "openml_task_snapshot",
+      "openml_task_id": 363612
+    },
+    {
+      "evidence_id": "spent_openml_task_363625",
+      "kind": "openml_task_snapshot",
+      "openml_task_id": 363625
+    },
+    {
+      "evidence_id": "spent_openml_task_363631",
+      "kind": "openml_task_snapshot",
+      "openml_task_id": 363631
+    },
+    {
+      "evidence_id": "spent_openml_task_363678",
+      "kind": "openml_task_snapshot",
+      "openml_task_id": 363678
+    },
+    {
+      "evidence_id": "spent_openml_task_363686",
+      "kind": "openml_task_snapshot",
+      "openml_task_id": 363686
+    },
+    {
+      "evidence_id": "spent_openml_task_363693",
+      "kind": "openml_task_snapshot",
+      "openml_task_id": 363693
+    },
+    {
+      "evidence_id": "spent_openml_task_363698",
+      "kind": "openml_task_snapshot",
+      "openml_task_id": 363698
+    },
+    {
+      "evidence_id": "spent_openml_task_363705",
+      "kind": "openml_task_snapshot",
+      "openml_task_id": 363705
+    },
+    {
+      "evidence_id": "spent_openml_task_363708",
+      "kind": "openml_task_snapshot",
+      "openml_task_id": 363708
+    },
+    {
+      "evidence_id": "darkofit_cpu_activity_dataset_197",
+      "kind": "repository_file",
+      "path": "benchmarks/run_benchmarks.py",
+      "sha256": "8ae8f642f8c7b5b388560f240ce94777310ad5f21c3fd8e2bed49303ce147d60",
+      "required_claims": [
+        {
+          "literal": "dict(data_id=197",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "evidence_id": "chimeraboost_pmlb_holdout_hpo",
+      "kind": "historical_git_snapshot",
+      "sources": [
+        {
+          "artifact_kind": "git_blob",
+          "artifact_path": "benchmarks/ctr23_evidence/08e21d88566f37338bbe362bd904e46416ab91c6/run_benchmarks.py",
+          "artifact_sha256": "f0d8e28b35af0d3b4da0b5a76ac341cd5405c4bb2e5e00179c0870d7e982521f",
+          "source_commit_sha1": "08e21d88566f37338bbe362bd904e46416ab91c6",
+          "source_path": "benchmarks/run_benchmarks.py",
+          "source_git_blob_sha1": "99df9fb5040a06be28a6aa05f83053b54fa4d026",
+          "source_blob_sha256": "7160e642e83006ecce293b311739a5b90f16dcdd0c9aeb2643e1c491ece09c82",
+          "strip_artifact_final_newline": true,
+          "proof_path": "benchmarks/ctr23_evidence/08e21d88566f37338bbe362bd904e46416ab91c6/git_membership.json",
+          "proof_sha256": "ba6842700a8943cdf9a73d3b78a93bd0b1b7b23d0992b7268006c74d66b52e02",
+          "required_claims": [
+            {
+              "literal": "(\"4544_GeographicalOriginalofMusic\", \"regression\")",
+              "count": 1
+            },
+            {
+              "literal": "(\"solar_flare\", \"regression\")",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "artifact_kind": "git_blob",
+          "artifact_path": "benchmarks/ctr23_evidence/08e21d88566f37338bbe362bd904e46416ab91c6/random_search.py",
+          "artifact_sha256": "5624ca1d6fed5632a274c3d907f2704491218db34fca38963f781285f490a780",
+          "source_commit_sha1": "08e21d88566f37338bbe362bd904e46416ab91c6",
+          "source_path": "benchmarks/random_search.py",
+          "source_git_blob_sha1": "7ccdece8335a45cb1d21c77376358edd5456b569",
+          "source_blob_sha256": "5624ca1d6fed5632a274c3d907f2704491218db34fca38963f781285f490a780",
+          "strip_artifact_final_newline": false,
+          "proof_path": "benchmarks/ctr23_evidence/08e21d88566f37338bbe362bd904e46416ab91c6/git_membership.json",
+          "proof_sha256": "ba6842700a8943cdf9a73d3b78a93bd0b1b7b23d0992b7268006c74d66b52e02",
+          "required_claims": [
+            {
+              "literal": "The single best SHARED config",
+              "count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "evidence_id": "chimeraboost_pmlb_puma_hpo",
+      "kind": "historical_git_snapshot",
+      "sources": [
+        {
+          "artifact_kind": "git_blob",
+          "artifact_path": "benchmarks/ctr23_evidence/08e21d88566f37338bbe362bd904e46416ab91c6/run_benchmarks.py",
+          "artifact_sha256": "f0d8e28b35af0d3b4da0b5a76ac341cd5405c4bb2e5e00179c0870d7e982521f",
+          "source_commit_sha1": "08e21d88566f37338bbe362bd904e46416ab91c6",
+          "source_path": "benchmarks/run_benchmarks.py",
+          "source_git_blob_sha1": "99df9fb5040a06be28a6aa05f83053b54fa4d026",
+          "source_blob_sha256": "7160e642e83006ecce293b311739a5b90f16dcdd0c9aeb2643e1c491ece09c82",
+          "strip_artifact_final_newline": true,
+          "proof_path": "benchmarks/ctr23_evidence/08e21d88566f37338bbe362bd904e46416ab91c6/git_membership.json",
+          "proof_sha256": "ba6842700a8943cdf9a73d3b78a93bd0b1b7b23d0992b7268006c74d66b52e02",
+          "required_claims": [
+            {
+              "literal": "(\"225_puma8NH\", \"regression\")",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "artifact_kind": "git_blob",
+          "artifact_path": "benchmarks/ctr23_evidence/08e21d88566f37338bbe362bd904e46416ab91c6/random_search.py",
+          "artifact_sha256": "5624ca1d6fed5632a274c3d907f2704491218db34fca38963f781285f490a780",
+          "source_commit_sha1": "08e21d88566f37338bbe362bd904e46416ab91c6",
+          "source_path": "benchmarks/random_search.py",
+          "source_git_blob_sha1": "7ccdece8335a45cb1d21c77376358edd5456b569",
+          "source_blob_sha256": "5624ca1d6fed5632a274c3d907f2704491218db34fca38963f781285f490a780",
+          "strip_artifact_final_newline": false,
+          "proof_path": "benchmarks/ctr23_evidence/08e21d88566f37338bbe362bd904e46416ab91c6/git_membership.json",
+          "proof_sha256": "ba6842700a8943cdf9a73d3b78a93bd0b1b7b23d0992b7268006c74d66b52e02",
+          "required_claims": [
+            {
+              "literal": "PMLB tuning suite",
+              "count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "evidence_id": "chimeraboost_grinsztajn_house_sales",
+      "kind": "historical_git_snapshot",
+      "sources": [
+        {
+          "artifact_kind": "git_blob",
+          "artifact_path": "benchmarks/ctr23_evidence/36c21747df011c8023850b332ec9c5ab0459f566/run_benchmarks.py",
+          "artifact_sha256": "b5d2933f485c89360c341fda2f158b1f405ad9e1a3e4efd7b7a12fb1e0c5aa0e",
+          "source_commit_sha1": "36c21747df011c8023850b332ec9c5ab0459f566",
+          "source_path": "benchmarks/run_benchmarks.py",
+          "source_git_blob_sha1": "7fb9e8e6533081cbbf9e39a8780ce2416823a872",
+          "source_blob_sha256": "120d373d0fb6816a4cecd05765ff00282500f83faa16d4cf44bca94c8dc61e90",
+          "strip_artifact_final_newline": true,
+          "proof_path": "benchmarks/ctr23_evidence/36c21747df011c8023850b332ec9c5ab0459f566/git_membership.json",
+          "proof_sha256": "b39bdaff64bdfc395dc1f3b70be3fa3fae0ddd4070d2511ef53919540dc73754",
+          "required_claims": [
+            {
+              "literal": "\"house_sales\", \"houses\", \"medical_charges\"",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "artifact_kind": "git_commit",
+          "artifact_path": "benchmarks/ctr23_evidence/36c21747df011c8023850b332ec9c5ab0459f566/commit.txt",
+          "artifact_sha256": "95d9a4f3283f3c00ca261f9f1c895987abc52decd01654ab8c57a8bfce8787c1",
+          "source_commit_sha1": "36c21747df011c8023850b332ec9c5ab0459f566",
+          "required_claims": [
+            {
+              "literal": "Default ordered_boosting=False for ChimeraBoostRegressor",
+              "count": 1
+            },
+            {
+              "literal": "yields +3.6pp on Grinsztajn RMSE",
+              "count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "evidence_id": "chimeraboost_grinsztajn_brazilian_houses",
+      "kind": "historical_git_snapshot",
+      "sources": [
+        {
+          "artifact_kind": "git_blob",
+          "artifact_path": "benchmarks/ctr23_evidence/36c21747df011c8023850b332ec9c5ab0459f566/run_benchmarks.py",
+          "artifact_sha256": "b5d2933f485c89360c341fda2f158b1f405ad9e1a3e4efd7b7a12fb1e0c5aa0e",
+          "source_commit_sha1": "36c21747df011c8023850b332ec9c5ab0459f566",
+          "source_path": "benchmarks/run_benchmarks.py",
+          "source_git_blob_sha1": "7fb9e8e6533081cbbf9e39a8780ce2416823a872",
+          "source_blob_sha256": "120d373d0fb6816a4cecd05765ff00282500f83faa16d4cf44bca94c8dc61e90",
+          "strip_artifact_final_newline": true,
+          "proof_path": "benchmarks/ctr23_evidence/36c21747df011c8023850b332ec9c5ab0459f566/git_membership.json",
+          "proof_sha256": "b39bdaff64bdfc395dc1f3b70be3fa3fae0ddd4070d2511ef53919540dc73754",
+          "required_claims": [
+            {
+              "literal": "\"reg_num\": [\"Ailerons\", \"Bike_Sharing_Demand\", \"Brazilian_houses\"",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "artifact_kind": "git_commit",
+          "artifact_path": "benchmarks/ctr23_evidence/36c21747df011c8023850b332ec9c5ab0459f566/commit.txt",
+          "artifact_sha256": "95d9a4f3283f3c00ca261f9f1c895987abc52decd01654ab8c57a8bfce8787c1",
+          "source_commit_sha1": "36c21747df011c8023850b332ec9c5ab0459f566",
+          "required_claims": [
+            {
+              "literal": "Default ordered_boosting=False for ChimeraBoostRegressor",
+              "count": 1
+            },
+            {
+              "literal": "yields +3.6pp on Grinsztajn RMSE",
+              "count": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
