@@ -1,0 +1,4425 @@
+{
+  "entries": [
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "auction_verification",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361236
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "auction_verification",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361236
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 31564038333,
+      "peak_combined_rss_fraction": 0.008767247200012207,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1260730349636041,
+          "behavior_sha256": "182f7494cb10ba49ef8b8395afffb609288e916d786f5b65d35be64db3e85b8f",
+          "child_count": 8,
+          "command_id": "production-wave-0-0-1260730099696291",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1260928510808791,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "auction_verification",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361236
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 674512896,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361236/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "cd83f399de7f27e1d77fd1964a5ea6b4071b97953d4bb1be280bdb0d27fafda4",
+          "result_size_bytes": 38240,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1260730350729208,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1260730349636041,
+          "behavior_sha256": "cc0ba4709213420f025a0683be1a884233cf8a57a955dffa85b1966f905c6bc6",
+          "child_count": 8,
+          "command_id": "production-wave-0-1-1260730099945041",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1260761914767541,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "auction_verification",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361236
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 530448384,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361236/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "e0fa2dbf3b79e40d7e41e655169cb06f295a9d50691403caf165914af9106b9c",
+          "result_size_bytes": 34639,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1260730349875208,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 854000,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 198160933583,
+      "wave_index": 0
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "auction_verification",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361236
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "C",
+            "arm_code": "C",
+            "dataset": "auction_verification",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361236
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 23305213583,
+      "peak_combined_rss_fraction": 0.011931061744689941,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1260929358744500,
+          "behavior_sha256": "8cd4c07db75345bbcc9517d069e890a46eea322843d04122f54498b45370f1ba",
+          "child_count": 8,
+          "command_id": "production-wave-1-0-1260929108797625",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1260952665515583,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "auction_verification",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361236
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 675381248,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361236/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "bc0344b157255f1cd72a301a7ae769f9b5b3662cc4243e1fa9907ab8efc80cc1",
+          "result_size_bytes": 37110,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1260929360302000,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1260929358744500,
+          "behavior_sha256": "f867c4a7601fdda7160fab2d72bccf95f7b21719efc6d8eaf9537e5556ce0b90",
+          "child_count": 8,
+          "command_id": "production-wave-1-1-1260929108971500",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1261124141270958,
+          "key": {
+            "arm": "C",
+            "arm_code": "C",
+            "dataset": "auction_verification",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361236
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1000341504,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/CatBoost_c1_ctr23_minimal_C_BAG_L1/361236/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "891e9b74730de1e2b415d9bc459204ce8ad4fbe4f89adba41c469fd7744f11ff",
+          "result_size_bytes": 35730,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1260929360077375,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 224625,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 194781193583,
+      "wave_index": 1
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "auction_verification",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361236
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "auction_verification",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361236
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 50921630958,
+      "peak_combined_rss_fraction": 0.011931061744689941,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1261124726460750,
+          "behavior_sha256": "8c8c1869b8c48d7f52898683b84468ca2cf29b2678b6857249071a436216cfd8",
+          "child_count": 8,
+          "command_id": "production-wave-2-0-1261124476513583",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1261256115750375,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "auction_verification",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361236
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 675381248,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361236/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "7850a34a5e5c34190d16d4431fa22c72ed3860748700cecf6a0783fb860cbf3d",
+          "result_size_bytes": 38241,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1261124727235458,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1261124726460750,
+          "behavior_sha256": "cbe6c91e9ec9d2813ea11872b80744e2e952642ea705e6ef987af9bc05a34ecb",
+          "child_count": 8,
+          "command_id": "production-wave-2-1-1261124476677208",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1261175651251041,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "auction_verification",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361236
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1000882176,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361236/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "a3ea3fab80971d98c24029a0b957eb1fcb5ef7e5eab13b43a1b7d10c4ff4c901",
+          "result_size_bytes": 34933,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1261124729620083,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 2384625,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 131388514917,
+      "wave_index": 2
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "auction_verification",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361236
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "auction_verification",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361236
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 37914680500,
+      "peak_combined_rss_fraction": 0.011010169982910156,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1261256680050458,
+          "behavior_sha256": "83bad5f8937d306d5725375f3c38400974d31502c1ac16eb313f131e1a473290",
+          "child_count": 8,
+          "command_id": "production-wave-3-0-1261256430103041",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1261294597541166,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "auction_verification",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361236
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 675381248,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361236/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "96645d8c217bb323c31ea8246c79ab397ca8f79a0e67ce1e20e7ab97c5a60849",
+          "result_size_bytes": 37189,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1261256682271375,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1261256680050458,
+          "behavior_sha256": "a0b58829c4067f029b115da191f2498d8a5b478d0dabf1a4a14638859b8ff502",
+          "child_count": 8,
+          "command_id": "production-wave-3-1-1261256430267041",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1261392153294125,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "auction_verification",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361236
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1000882176,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361236/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "050479a58c9401a0ac108315a9bf6a348817050f2ae38d7d645af0d91fdd0fab",
+          "result_size_bytes": 38240,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1261256682860666,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 589291,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 135471022750,
+      "wave_index": 3
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "auction_verification",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361236
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "auction_verification",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361236
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 34928330500,
+      "peak_combined_rss_fraction": 0.01103675365447998,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1261392653705541,
+          "behavior_sha256": "39719ff5c2d831aea57bf65e187eaa42c6e78e73310d6fb8f7ef810e7dcf5799",
+          "child_count": 8,
+          "command_id": "production-wave-4-0-1261392403760750",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1261427584517458,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "auction_verification",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361236
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 675381248,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361236/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "071f4dd38c2d103fc8c8fccacd2ce31f6386a77faa6d990fef20834d8e1bdbed",
+          "result_size_bytes": 34878,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1261392654075708,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1261392653705541,
+          "behavior_sha256": "58fd0700d3dfcd062e112f6bdf9e69ef10c7467156deefb6fd66beded803e80e",
+          "child_count": 8,
+          "command_id": "production-wave-4-1-1261392403937500",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1261429661580083,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "auction_verification",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361236
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1000882176,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361236/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "9ad13f231cd31693dc8b4fbb60fb40b788572a1de9ff7a72019c10c703d30f86",
+          "result_size_bytes": 36941,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1261392656186958,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 2111250,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 37007504375,
+      "wave_index": 4
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "grid_stability",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361251
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "grid_stability",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361251
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 110413196875,
+      "peak_combined_rss_fraction": 0.011339783668518066,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1261429927877125,
+          "behavior_sha256": "966527b38fc9ff506e5ae118016f850ca7c1bcc519cf040f157e91707fc4cd75",
+          "child_count": 8,
+          "command_id": "production-wave-5-0-1261429677929791",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1261540342243291,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "grid_stability",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361251
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 687407104,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361251/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "11914e46611c051984e3aebaee562a372dcd21c9a11e83d1495824d416ef024f",
+          "result_size_bytes": 184826,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1261429929046416,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1261429927877125,
+          "behavior_sha256": "fbdae2818c225f8d2ac28ce161a39fdbcbbb0f29d23522fbc422332071020ecb",
+          "child_count": 8,
+          "command_id": "production-wave-5-1-1261429678107083",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1261638346206916,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "grid_stability",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361251
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1000882176,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361251/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "3619679a707f2606e99aa8efb4bf3292fd4d3ff2931fef2076b4a5ddf47a5fe8",
+          "result_size_bytes": 188044,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1261429928137500,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 908916,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 208418069416,
+      "wave_index": 5
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "C",
+            "arm_code": "C",
+            "dataset": "grid_stability",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361251
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "grid_stability",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361251
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 39603503375,
+      "peak_combined_rss_fraction": 0.013356685638427734,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1261639450397458,
+          "behavior_sha256": "fab5f0230144bc5aa6bdfe426b93ab4dfe406303157ace0990a3461aa885585f",
+          "child_count": 8,
+          "command_id": "production-wave-6-0-1261639200454708",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1261834768888375,
+          "key": {
+            "arm": "C",
+            "arm_code": "C",
+            "dataset": "grid_stability",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361251
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 960823296,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/CatBoost_c1_ctr23_minimal_C_BAG_L1/361251/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "1e8abf088363d3b76ee229f1490430e15343a53634aeadcab3ce4e55c592def4",
+          "result_size_bytes": 185170,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1261639453855541,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1261639450397458,
+          "behavior_sha256": "3dc7b5a5373d69df9f56864fc04a5aabccb48e5dd1c80234f8e4be300307ded0",
+          "child_count": 8,
+          "command_id": "production-wave-6-1-1261639200642500",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1261679057358916,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "grid_stability",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361251
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1000882176,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361251/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "5162c16cc9b37e67a80817f5b11aa2a9503d9ed181abd49e752abc6a9418d0e5",
+          "result_size_bytes": 186983,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1261639451640458,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 2215083,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 195317247917,
+      "wave_index": 6
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "grid_stability",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361251
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "grid_stability",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361251
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 114349211625,
+      "peak_combined_rss_fraction": 0.013408303260803223,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1261835891317291,
+          "behavior_sha256": "447fff7f2cce765dc00af086ba9e7663f906e7a9043d2554480c2ba0fc30fe29",
+          "child_count": 8,
+          "command_id": "production-wave-7-0-1261835641463791",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1261950242754750,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "grid_stability",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361251
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 966852608,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361251/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "d7a056c7a38e967b4163ee522dcdf59e2722a9c426f7df793c957279fddf08f9",
+          "result_size_bytes": 184721,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1261835893543125,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1261835891317291,
+          "behavior_sha256": "1aa0c96d1ac57778efe15054b07896835a3a48280bfa3f044f42eeb5420bce2e",
+          "child_count": 8,
+          "command_id": "production-wave-7-1-1261835641874208",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1262030016046625,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "grid_stability",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361251
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1000882176,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361251/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "627fe7f05d88a5e019d008fdaa7e04ae0dd7da0d8b22eab65649b6c2144e5a99",
+          "result_size_bytes": 187943,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1261835891551625,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 1991500,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 194124495000,
+      "wave_index": 7
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "grid_stability",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361251
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "grid_stability",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361251
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 46833135500,
+      "peak_combined_rss_fraction": 0.012404084205627441,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1262031256495708,
+          "behavior_sha256": "58d57c5716974a30ec0f21e656cce726ed86ffe5322db0358ff831fdbb4e5d37",
+          "child_count": 8,
+          "command_id": "production-wave-8-0-1262031006614125",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1262078093569666,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "grid_stability",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361251
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 966852608,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361251/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "f1ed7bed2ae2c132824f4a62f6413412c92acbf726108dc44bb66e83f09b28c3",
+          "result_size_bytes": 186888,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1262031260434166,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1262031256495708,
+          "behavior_sha256": "3e7f7b6c8454d0510fa2cc97707aec5d8393e7072cd0ec083f567e8f6b0f54fb",
+          "child_count": 8,
+          "command_id": "production-wave-8-1-1262031007010166",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1262225797961833,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "grid_stability",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361251
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1000882176,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361251/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "f7338feca3fc4d18a26e822284fd29b768109608a7e61166282b4b9206f5c824",
+          "result_size_bytes": 187961,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1262031258404291,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 2029875,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 194539557542,
+      "wave_index": 8
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "grid_stability",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361251
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "grid_stability",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361251
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 53910821042,
+      "peak_combined_rss_fraction": 0.012412071228027344,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1262226537476541,
+          "behavior_sha256": "9a83f258177cf59bf1dc79730cb9c7be21fe138389d69b612983a3c5ed9bdda1",
+          "child_count": 8,
+          "command_id": "production-wave-9-0-1262226287532041",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1262323837609916,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "grid_stability",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361251
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 966852608,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361251/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "e17f79afd271114c7911862ca932c19b1da3ba68ed5999807fd0b18e97d67753",
+          "result_size_bytes": 184760,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1262226537993000,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1262226537476541,
+          "behavior_sha256": "6e97dd34aef8b92331d7b88cf316d25265a53341287b77e06c1aa4aa7f3ecede",
+          "child_count": 8,
+          "command_id": "production-wave-9-1-1262226287713625",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1262280448814833,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "grid_stability",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361251
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1000882176,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361251/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "f9578798ab37220de2dcf3d99ac70377fced4dc57e1e63aa1214a5d72a727b09",
+          "result_size_bytes": 187019,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1262226537993791,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 791,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 97299616916,
+      "wave_index": 9
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "video_transcoding",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361252
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "video_transcoding",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361252
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 460057717167,
+      "peak_combined_rss_fraction": 0.015560507774353027,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1262324965124500,
+          "behavior_sha256": "1f46372c9592b48d0226592b067c73b8c8c39cc2b2593b93b65c3b23fdef882a",
+          "child_count": 8,
+          "command_id": "production-wave-10-0-1262324715180375",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1263531095878083,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "video_transcoding",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361252
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1094189056,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361252/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "39656cb63a1dd761d15103a641d142e1e103e9ed360ab72fe9ec57e882058541",
+          "result_size_bytes": 928439,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1262324966793541,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1262324965124500,
+          "behavior_sha256": "a09c28823a82f43e1c89c7b3650ddd43cb015d3c867bb76573c57527f8710a6b",
+          "child_count": 8,
+          "command_id": "production-wave-10-1-1262324715349791",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1262785024510708,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "video_transcoding",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361252
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1074020352,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361252/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "b9e3b20dbcfe7d5e420beebc9bd6cc915ca6bd51b66107c03b09208c00ef5600",
+          "result_size_bytes": 925474,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1262324965293500,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 1500041,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 1206130584583,
+      "wave_index": 10
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "video_transcoding",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361252
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "C",
+            "arm_code": "C",
+            "dataset": "video_transcoding",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361252
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 70317497041,
+      "peak_combined_rss_fraction": 0.017988920211791992,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1263531477591791,
+          "behavior_sha256": "f4bed3a47d4ac7a6bcc42a78da5adb4950fbbc08305bfbab500460b93847981f",
+          "child_count": 8,
+          "command_id": "production-wave-11-0-1263531227651083",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1263601796950791,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "video_transcoding",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361252
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1094189056,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361252/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "14e82e0f75e4c7dae5ef3ecff7af45230b81015981d794eece31b8125d135ddf",
+          "result_size_bytes": 927693,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1263531479453750,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1263531477591791,
+          "behavior_sha256": "9dca57926b49a185a04cb8abb0ca66f255739c5d0470c53b0051f14c41af6f74",
+          "child_count": 8,
+          "command_id": "production-wave-11-1-1263531227860416",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1264158251750125,
+          "key": {
+            "arm": "C",
+            "arm_code": "C",
+            "dataset": "video_transcoding",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361252
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1537458176,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/CatBoost_c1_ctr23_minimal_C_BAG_L1/361252/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "588d8e3ed240804eda8398a4d57a4c8bfd6cdde21eb06ccd9bf653f43bcb7eab",
+          "result_size_bytes": 925984,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1263531479435041,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 18709,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 626772315084,
+      "wave_index": 11
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "video_transcoding",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361252
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "video_transcoding",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361252
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 333416820458,
+      "peak_combined_rss_fraction": 0.01853787899017334,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1264158671581583,
+          "behavior_sha256": "6f7345090356bf15e200d59f6e423a19eeffdfc2513eba0d5143a31e6a623adc",
+          "child_count": 8,
+          "command_id": "production-wave-12-0-1264158421637666",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1265135488920000,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "video_transcoding",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361252
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1094189056,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361252/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "4abbf1699005d4850ff81b32aae9690b319899f00c4ad7766cb27c4dabff5011",
+          "result_size_bytes": 928603,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1264158672094333,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1264158671581583,
+          "behavior_sha256": "72ceb2fab9c59e2f797b09a652ad485e063b9d110d685fa99684e326f893f316",
+          "child_count": 8,
+          "command_id": "production-wave-12-1-1264158421823208",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1264492088914791,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "video_transcoding",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361252
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1569947648,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361252/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "ddb26421e7c88f9c91018d1b6d0fb502482277c04938d01f8c331e1b18465ca8",
+          "result_size_bytes": 925640,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1264158672089875,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 4458,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 976816830125,
+      "wave_index": 12
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "video_transcoding",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361252
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "video_transcoding",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361252
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 61986975708,
+      "peak_combined_rss_fraction": 0.018841266632080078,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1265135754545125,
+          "behavior_sha256": "6e7a76598c9484399f538e7ef558f085813059487689514801f80768919a9579",
+          "child_count": 8,
+          "command_id": "production-wave-13-0-1265135504618375",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1265197742553291,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "video_transcoding",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361252
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1140080640,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361252/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "550ab805e017d77ffca55c60211e1ded42a30f06feaa8a4dd24a0c2f2c5d8e3a",
+          "result_size_bytes": 927702,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1265135754829500,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1265135754545125,
+          "behavior_sha256": "e53f66b681fe8bb586e6dc5ca389caaca80e6c0af06962549ab4d0679d9dcc1e",
+          "child_count": 8,
+          "command_id": "production-wave-13-1-1265135504806666",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1266137904065333,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "video_transcoding",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361252
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1620869120,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361252/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "cc0e517001eac231a8e45b9b5cec6bf3e2764503456ffb5354da04336f2e6bf3",
+          "result_size_bytes": 928395,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1265135755577583,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 748083,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 1002149235833,
+      "wave_index": 13
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "video_transcoding",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361252
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "video_transcoding",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361252
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 62031962041,
+      "peak_combined_rss_fraction": 0.01945626735687256,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1266138532576583,
+          "behavior_sha256": "2afa057879c90eeac378088057ec3847fc7bbdcbef23865be883698a85346a26",
+          "child_count": 8,
+          "command_id": "production-wave-14-0-1266138282631750",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1266432891968000,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "video_transcoding",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361252
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1140080640,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361252/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "b8f2e29bd628f3b2fe400d406aa3c28e6d320b09c158f7ecaeace232b914585f",
+          "result_size_bytes": 925382,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1266138534308083,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1266138532576583,
+          "behavior_sha256": "43251af767ce327826474085bc825f5930855696421069a1216fb82cd488e524",
+          "child_count": 8,
+          "command_id": "production-wave-14-1-1266138282818208",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1266200567259541,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "video_transcoding",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361252
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1677508608,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361252/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "8609c7ec9938d1ac38a4916cc5030b7781c2ab56b7e51008ab3e27e94a018168",
+          "result_size_bytes": 927548,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1266138535297500,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 989417,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 294357659917,
+      "wave_index": 14
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "kin8nm",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361258
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "kin8nm",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361258
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 98916189958,
+      "peak_combined_rss_fraction": 0.01882338523864746,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1266433666319291,
+          "behavior_sha256": "6e7c68f0e612dbd0c74d1fbabfb9d58165f288f395fe3063c70da077e5b528d2",
+          "child_count": 8,
+          "command_id": "production-wave-15-0-1266433416385041",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1266532586417208,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "kin8nm",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361258
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1140080640,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361258/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "3628b816467725b88820b1016e3fc636a0ce6d2b2b054cede801d85dea0d615e",
+          "result_size_bytes": 147396,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1266433670227250,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1266433666319291,
+          "behavior_sha256": "4d04cfd319426e6bccc90344884b2cdc5bb3518679a0dd439f55f43b068cbebc",
+          "child_count": 8,
+          "command_id": "production-wave-15-1-1266433416822708",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1266625870463125,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "kin8nm",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361258
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1677508608,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361258/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "2f6cdbe7d9596e7f69d126e24116c416132815654f8ac8284a8749fa854df348",
+          "result_size_bytes": 150459,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1266433666463125,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 3764125,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 192204000000,
+      "wave_index": 15
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "C",
+            "arm_code": "C",
+            "dataset": "kin8nm",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361258
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "kin8nm",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361258
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 41026662667,
+      "peak_combined_rss_fraction": 0.018088221549987793,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1266626149928625,
+          "behavior_sha256": "9c3f12df44da817146b39e5a935cdb08151b21e8c8e8d02e6ae85cf391c024ea",
+          "child_count": 8,
+          "command_id": "production-wave-16-0-1266625899987250",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1266756997395666,
+          "key": {
+            "arm": "C",
+            "arm_code": "C",
+            "dataset": "kin8nm",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361258
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1140080640,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/CatBoost_c1_ctr23_minimal_C_BAG_L1/361258/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "ef374ea7df2c0f4666c8510f0079ab5efae5bd4929308875bff236ed12e61cf9",
+          "result_size_bytes": 147744,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1266626151282333,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1266626149928625,
+          "behavior_sha256": "553b314330969afc79e57c4250e48f845e33d9354e57bf1159271ed08196685e",
+          "child_count": 8,
+          "command_id": "production-wave-16-1-1266625900170000",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1266667180251750,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "kin8nm",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361258
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1677508608,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361258/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "41101ef1973ff1efe838946a9a39a1c31eba4195749b32f0fdd645a8f3fbf345",
+          "result_size_bytes": 149508,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1266626153589083,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 2306750,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 130846113333,
+      "wave_index": 16
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "kin8nm",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361258
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "kin8nm",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361258
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 92994149084,
+      "peak_combined_rss_fraction": 0.018094420433044434,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1266758140692125,
+          "behavior_sha256": "bb785bb1afc779d502271f033ca156ad3c4ebc74235ad590d05b6c49048e0822",
+          "child_count": 8,
+          "command_id": "production-wave-17-0-1266757890747041",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1266940345299375,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "kin8nm",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361258
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1140080640,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361258/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "98e81467e422bdd4e7452b9a024d1ae39d73eef909ada6d467a173e233d12e6e",
+          "result_size_bytes": 150434,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1266758144329583,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1266758140692125,
+          "behavior_sha256": "cc8c7b1a26aba484c19b085b72c88478011cb1a198e9dcdd5cd2ae40f6e34230",
+          "child_count": 8,
+          "command_id": "production-wave-17-1-1266757890923500",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1266851138480875,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "kin8nm",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361258
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1677508608,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361258/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "ff9fb59dccd975577c4a847221985d9a80e297e61f7a64d828578bc8e4689bf7",
+          "result_size_bytes": 147380,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1266758144331791,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 2208,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 182200969792,
+      "wave_index": 17
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "kin8nm",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361258
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "kin8nm",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361258
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 50076343125,
+      "peak_combined_rss_fraction": 0.017112135887145996,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1266941536230500,
+          "behavior_sha256": "c976934e1fb504e9085324566c21458f2173909d19efce19564d3b9b66f41623",
+          "child_count": 8,
+          "command_id": "production-wave-18-0-1266941286284875",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1266991617316166,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "kin8nm",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361258
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1140080640,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361258/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "2df2e94008b40ca77bbbcc929a94658484c4aac05364ad800e153ccd18904386",
+          "result_size_bytes": 149441,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1266941537954500,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1266941536230500,
+          "behavior_sha256": "b56c723fae3af21e3151628dde34dcc4709600da5697af703e68a963216e3bc7",
+          "child_count": 8,
+          "command_id": "production-wave-18-1-1266941286460500",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1267114018149500,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "kin8nm",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361258
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1677508608,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361258/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "74457f6db229ef101c48501d6be965e777840b96082f0699d017628b7f3b53cd",
+          "result_size_bytes": 150455,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1266941540973041,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 3018541,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 172480195000,
+      "wave_index": 18
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "kin8nm",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361258
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "kin8nm",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361258
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 51038997292,
+      "peak_combined_rss_fraction": 0.01726996898651123,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1267114781137375,
+          "behavior_sha256": "12e94942e645661a52dd509f25c6626dd8a6162bd981c49daef03b569f080157",
+          "child_count": 8,
+          "command_id": "production-wave-19-0-1267114531271791",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1267194649108250,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "kin8nm",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361258
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1140080640,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361258/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "0a87d19dbdec806dc4559b73c271156371c8ea361a4fd675a5963170f6858baf",
+          "result_size_bytes": 147380,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1267114784172458,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1267114781137375,
+          "behavior_sha256": "1f9b8bc2992cb97a0a71eeaf07163631a5ee6f320f5d21ced5d1f16c3f26aa24",
+          "child_count": 8,
+          "command_id": "production-wave-19-1-1267114531711833",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1267165823169750,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "kin8nm",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361258
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1677508608,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361258/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "4bb3a3362bca1175923dae63a98cdabe92957771b7278cf4b096c7710f9263a6",
+          "result_size_bytes": 149493,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1267114782876291,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 1296167,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 79866231959,
+      "wave_index": 19
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "fps_benchmark",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361268
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "fps_benchmark",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361268
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 78296564791,
+      "peak_combined_rss_fraction": 0.018105149269104004,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1267195389276125,
+          "behavior_sha256": "c517673ac6cae72bd3bb8baf203d74607572f19e38283633e52e9f49b8bfbbf3",
+          "child_count": 8,
+          "command_id": "production-wave-20-0-1267195139412708",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1267784601060166,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "fps_benchmark",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361268
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1140080640,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361268/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "92336b525ce4104458b5c2fead01a80a11f18daec7c4c4cd24b1ec4541987385",
+          "result_size_bytes": 315135,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1267195389786833,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1267195389276125,
+          "behavior_sha256": "df797fd4ad07e2c9497e18d53297310faf877f7cf96b51cd9fba1dc84c6c5ce0",
+          "child_count": 8,
+          "command_id": "production-wave-20-1-1267195140274041",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1267273686592791,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "fps_benchmark",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361268
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1677508608,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361268/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "779c79d3d49122b2915af39280af43fa28413213760e27108a17cae955f86e4f",
+          "result_size_bytes": 311821,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1267195390028000,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 241167,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 589211273333,
+      "wave_index": 20
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "fps_benchmark",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361268
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "C",
+            "arm_code": "C",
+            "dataset": "fps_benchmark",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361268
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 48810215542,
+      "peak_combined_rss_fraction": 0.02165961265563965,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1267785610313500,
+          "behavior_sha256": "bbb99de3569436b6cf2f8189b819bc5c3fca0a737226a30d87eecb9736bd8bbc",
+          "child_count": 8,
+          "command_id": "production-wave-21-0-1267785360377416",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1267834422200833,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "fps_benchmark",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361268
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1140080640,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361268/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "deabb15900d93bb879d54e7f44befc2a9cf004361eccc6b6a4f3b5e69dc88275",
+          "result_size_bytes": 314004,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1267785610488166,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1267785610313500,
+          "behavior_sha256": "6a0228508e51bef522b18148f9b690c7c06484f705b1dc27e177c943fc99a45f",
+          "child_count": 8,
+          "command_id": "production-wave-21-1-1267785360597791",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1268325444905500,
+          "key": {
+            "arm": "C",
+            "arm_code": "C",
+            "dataset": "fps_benchmark",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361268
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1967144960,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/CatBoost_c1_ctr23_minimal_C_BAG_L1/361268/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "45979486ed407c042f1455b9a0057ab048e005f23d00d7c4446d453d4a6e0567",
+          "result_size_bytes": 312381,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1267785611985291,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 1497125,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 539834417334,
+      "wave_index": 21
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "fps_benchmark",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361268
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "fps_benchmark",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361268
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 78382098375,
+      "peak_combined_rss_fraction": 0.02200949192047119,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1268326405396958,
+          "behavior_sha256": "2d03ed872e95f5b51ec0da3937c054812b9f1850b70dc5bbb5060bdb578d265d",
+          "child_count": 8,
+          "command_id": "production-wave-22-0-1268326155493250",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269006701292583,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "fps_benchmark",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361268
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1275920384,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361268/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "2c807e073f5e122bc7b611166491da5e22f6dd86796d320c09290964e372cdff",
+          "result_size_bytes": 315065,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1268326409886416,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1268326405396958,
+          "behavior_sha256": "5a6aa15537a4710a3f579b2346568ddc7de15f07601b4f8f2a80400731823dba",
+          "child_count": 8,
+          "command_id": "production-wave-22-1-1268326155768291",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1268404791984791,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "fps_benchmark",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361268
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361268/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "1106d066bf9984fae3aba7d9112ef757c98c9f82cc388a00910d311e9b559e87",
+          "result_size_bytes": 311856,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1268326406879833,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 3006583,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 680294412750,
+      "wave_index": 22
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "fps_benchmark",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361268
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "fps_benchmark",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361268
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 45727723625,
+      "peak_combined_rss_fraction": 0.02123105525970459,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269007299548250,
+          "behavior_sha256": "bbcb1c97f0832ee685a1d9a569c374c8ef460031eb7630627a79b762e5b6e0c9",
+          "child_count": 8,
+          "command_id": "production-wave-23-0-1269007049664541",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269053027761000,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "fps_benchmark",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361268
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361268/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "34f5c5ad44ee41ec96d1d2068fc0408f49152cab3e9f5f5f740d87a3675f49dc",
+          "result_size_bytes": 314017,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269007300037375,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1269007299548250,
+          "behavior_sha256": "e16a9daf74444b3dddf5c12427b940491e6255d150ad06988715eb5c60b75a63",
+          "child_count": 8,
+          "command_id": "production-wave-23-1-1269007049985500",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269553332970875,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "fps_benchmark",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361268
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361268/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "2c62c925dbcfd946bce643f97bc272cf175fc62ef55cbabdf91df2dd13fa3202",
+          "result_size_bytes": 315139,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269007299991708,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 45667,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 546032979167,
+      "wave_index": 23
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "fps_benchmark",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361268
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "fps_benchmark",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361268
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 50243059417,
+      "peak_combined_rss_fraction": 0.01952648162841797,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269554331370666,
+          "behavior_sha256": "89b7352df0bee1bfe52c729dfdb1e22ef0fcb2f2f2b61eeefb4b8988929b0dc5",
+          "child_count": 8,
+          "command_id": "production-wave-24-0-1269554081491791",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269626030495125,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "fps_benchmark",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361268
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361268/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "082e72db8e9a43cfbabef2939cfc69bf07ba9cfb331b9ad0e9b1db527e63e767",
+          "result_size_bytes": 311831,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269554333831458,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269554331370666,
+          "behavior_sha256": "332c901e23508ca3ba67f1bc3e1d9004082ac6a7324c4cc0bdbe02923baa6341",
+          "child_count": 8,
+          "command_id": "production-wave-24-1-1269554081857000",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269604576890875,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "fps_benchmark",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361268
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361268/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "03e5faf92b8c776510534185cbd25cb079cb0397026a90430cbbf0a07eb6901b",
+          "result_size_bytes": 314017,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269554331516208,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 2315250,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 71698978917,
+      "wave_index": 24
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "health_insurance",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361269
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "health_insurance",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361269
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 14232245834,
+      "peak_combined_rss_fraction": 0.018630385398864746,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269626888142541,
+          "behavior_sha256": "79dba81db9e1e1469bf326ba1dc8bf1749fcf4bea2ce21c359b8122e18998a2d",
+          "child_count": 8,
+          "command_id": "production-wave-25-0-1269626638212583",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269641122030875,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "health_insurance",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361269
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361269/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "082dd37acdd1d9d7eb6fbbf6d977a0f2ff90bafbd0c615e55519b2da2209dee2",
+          "result_size_bytes": 241858,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269626888249625,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1269626888142541,
+          "behavior_sha256": "0d5ca6e412bdc532c0a083cdbe3b3254a7f93a32fa73a2a3c619bdfe6c96c91a",
+          "child_count": 8,
+          "command_id": "production-wave-25-1-1269626638473333",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269650460273041,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "health_insurance",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361269
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361269/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "6dc9428a8fd0435e80e19cfcb7853273796e447151a21a00350ce2861c53f90c",
+          "result_size_bytes": 243891,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269626889785041,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 1535416,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 23572023416,
+      "wave_index": 25
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "C",
+            "arm_code": "C",
+            "dataset": "health_insurance",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361269
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "health_insurance",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361269
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 9607685958,
+      "peak_combined_rss_fraction": 0.019116520881652832,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269651090107416,
+          "behavior_sha256": "0ad0d18d8ac276c75eeb13a80ccd5afcb8d4000f90387d6fd66b537f5069f13e",
+          "child_count": 8,
+          "command_id": "production-wave-26-0-1269650840230041",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269669438854916,
+          "key": {
+            "arm": "C",
+            "arm_code": "C",
+            "dataset": "health_insurance",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361269
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/CatBoost_c1_ctr23_minimal_C_BAG_L1/361269/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "6f3f4ad88bbbc22b594f5e85259d785f0d49bc6a895b9aba0f165a36a51b5ead",
+          "result_size_bytes": 242853,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269651090603625,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269651090107416,
+          "behavior_sha256": "2c8691b06e260fabbf83a576f1419a50bb1f44b2f343d4ac88adcbf0419eca58",
+          "child_count": 8,
+          "command_id": "production-wave-26-1-1269650840613291",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269660699974708,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "health_insurance",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361269
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361269/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "ccc0c57fa64efaedb3dc5d731792ded33b46f0f14310e7aff48ea06c6ff7ec6d",
+          "result_size_bytes": 243482,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269651092288750,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 1685125,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 18348251291,
+      "wave_index": 26
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "health_insurance",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361269
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "health_insurance",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361269
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 15352840333,
+      "peak_combined_rss_fraction": 0.019113898277282715,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269670260606958,
+          "behavior_sha256": "3b81c60d23f0bb458242d17d7002f5ec57e2aebbe081e3546409ee4f3a456fe6",
+          "child_count": 8,
+          "command_id": "production-wave-27-0-1269670010750250",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269685616850583,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "health_insurance",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361269
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361269/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "386cbbe5e019ab389252b0ddc25bd26f60d1575c0f3fd515a88f2b8cd26234d5",
+          "result_size_bytes": 242147,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269670260656166,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1269670260606958,
+          "behavior_sha256": "c7313b9fc83b8a5d893ca68be8bd0df6a279cc80fdeca401ac889c294f869529",
+          "child_count": 8,
+          "command_id": "production-wave-27-1-1269670011209291",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269694555589750,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "health_insurance",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361269
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361269/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "a006562644aa2eed84d9d9976837f7fc389888bb9818d89aaabefe32c4dcbfc9",
+          "result_size_bytes": 244185,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269670264010250,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 3354084,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 24294933584,
+      "wave_index": 27
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "health_insurance",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361269
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "health_insurance",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361269
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 9360186250,
+      "peak_combined_rss_fraction": 0.019106030464172363,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1269695465999875,
+          "behavior_sha256": "c2d5f3c81af45d7d77037816afd83e61f5cf5234a448e99bdc41cb9eb9cc36c7",
+          "child_count": 8,
+          "command_id": "production-wave-28-0-1269695216060500",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269716185053666,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "health_insurance",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361269
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361269/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "6a5d0a685884b473bda3e33f2ef34900653bb0cafefaa81a390dd5208a11713b",
+          "result_size_bytes": 242300,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269695466269166,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269695465999875,
+          "behavior_sha256": "39adecda09857d609a8f0256792c625f1a59010ad9e1fdd03ed2112ec04805c1",
+          "child_count": 8,
+          "command_id": "production-wave-28-1-1269695216312000",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269704829043458,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "health_insurance",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361269
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361269/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "87d2c2393248952b9bb199044ba35e38735d9a300cd5c7f91a80e794ffaeda94",
+          "result_size_bytes": 243587,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269695468857208,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 2588042,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 20718784500,
+      "wave_index": 28
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "health_insurance",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361269
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "health_insurance",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361269
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 10114557958,
+      "peak_combined_rss_fraction": 0.019095778465270996,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269716647840083,
+          "behavior_sha256": "0a46969d33a911f0e17f791dcdc911b1675d470d3125a14b382e744f0d13380f",
+          "child_count": 8,
+          "command_id": "production-wave-29-0-1269716397895375",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269729589579416,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "health_insurance",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361269
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361269/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "25361956d0fd49c0db38c2ae3fdf3f0743a6f863539b6b56fa25b532234ca877",
+          "result_size_bytes": 241960,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269716648368083,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269716647840083,
+          "behavior_sha256": "ff1b75b0cefe818a59f3f24eee4452fca87be456d158eaa4e6b509052d69b2fd",
+          "child_count": 8,
+          "command_id": "production-wave-29-1-1269716398095583",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269726763913583,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "health_insurance",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361269
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361269/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "a74aed65c08b8156418475c49518e05645109cfbed77a4405328dae28207d58b",
+          "result_size_bytes": 243842,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269716649355625,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 987542,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 12941211333,
+      "wave_index": 29
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "student_performance_por",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361619
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "student_performance_por",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361619
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 4985827125,
+      "peak_combined_rss_fraction": 0.019108295440673828,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1269730772819375,
+          "behavior_sha256": "74e787ea0a05e5a42157a414e9a5393d7ce8f0880eeba978cfb7a22a327d615f",
+          "child_count": 8,
+          "command_id": "production-wave-30-0-1269730523024083",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269746357040541,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "student_performance_por",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361619
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361619/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "b60af08e63a187551057379fc8107d52fb1016dc84abb80602a86ea0da5847c2",
+          "result_size_bytes": 14507,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269730774682250,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269730772819375,
+          "behavior_sha256": "9b4732674729ac5a2cf35f6f95a44ab57ce5f0fcb8e95070fa0bdde4aed28f96",
+          "child_count": 8,
+          "command_id": "production-wave-30-1-1269730523307000",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269735762180250,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "student_performance_por",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361619
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361619/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "9dc9c83920a89669b52a945380c1aa7039d89893209a2ab801ca9268b9370844",
+          "result_size_bytes": 11339,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269730776353125,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 1670875,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 15582358291,
+      "wave_index": 30
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "student_performance_por",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361619
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "C",
+            "arm_code": "C",
+            "dataset": "student_performance_por",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361619
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 10753206083,
+      "peak_combined_rss_fraction": 0.01911139488220215,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269746907785500,
+          "behavior_sha256": "010266f5e0b436157f7e141d1bf477a58339b78ea4bbea7cf7157da89b07f03b",
+          "child_count": 8,
+          "command_id": "production-wave-31-0-1269746658106875",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269758043014958,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "student_performance_por",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361619
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361619/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "2791c76cbd2b5056be595b3399ccd539f0bd9547dd3a81e7096e1513b56ce729",
+          "result_size_bytes": 13618,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269746912152875,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269746907785500,
+          "behavior_sha256": "cf1e70fcc268a1320c5ef9d8451893cdbc903b8a03b41d714ebe78766af84126",
+          "child_count": 8,
+          "command_id": "production-wave-31-1-1269746658600000",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269757665358958,
+          "key": {
+            "arm": "C",
+            "arm_code": "C",
+            "dataset": "student_performance_por",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361619
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/CatBoost_c1_ctr23_minimal_C_BAG_L1/361619/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "195ff1e25ac6d692e98baaef4b2871d0082d9294c370234da884fb0d0296b08f",
+          "result_size_bytes": 11973,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269746909898416,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 2254459,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 11133116542,
+      "wave_index": 31
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "student_performance_por",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361619
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "student_performance_por",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361619
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 5803655500,
+      "peak_combined_rss_fraction": 0.019112110137939453,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1269759012831500,
+          "behavior_sha256": "f5f8fd1a98aa2941b8f9ac475a7751272b52b0f69d3c6f725b1a18e775fb4f45",
+          "child_count": 8,
+          "command_id": "production-wave-32-0-1269758762989041",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269772360305375,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "student_performance_por",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361619
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361619/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "f2342d3f89febc9b4ab8dad8e085245b8701157b501ff8ff3e4a9ff3e2e9f636",
+          "result_size_bytes": 14509,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269759013734750,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269759012831500,
+          "behavior_sha256": "844c9dccc5e2ceb3b15d27a2727e2d70894bc63f80eea20c1d6b7c7dad56930d",
+          "child_count": 8,
+          "command_id": "production-wave-32-1-1269758763387875",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269764819648791,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "student_performance_por",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361619
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361619/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "fdda3440b906e52b2d5ca868a873a827b76545c85fd59884581a923ae663bc53",
+          "result_size_bytes": 11341,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269759015993291,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 2258541,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 13346570625,
+      "wave_index": 32
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "student_performance_por",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361619
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "student_performance_por",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361619
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 10449120958,
+      "peak_combined_rss_fraction": 0.019114971160888672,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269773125349666,
+          "behavior_sha256": "1260d43e16d565f2524b33ce2796acd2ed8cc51dab0d924395b34289f8f57161",
+          "child_count": 8,
+          "command_id": "production-wave-33-0-1269772875430041",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269783579420791,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "student_performance_por",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361619
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361619/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "6925fd5cefa481ebc63e552f6c254fb50f40a7a2082875bc4b44968b48fe9075",
+          "result_size_bytes": 13620,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269773130299833,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1269773125349666,
+          "behavior_sha256": "02c8774c398fbc6f407a016a23f991119331de0249be30d29523c2ea1451543a",
+          "child_count": 8,
+          "command_id": "production-wave-33-1-1269772875696208",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269786983101000,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "student_performance_por",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361619
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361619/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "3832f01cc4e81ebed1ba6dfcaefc928f437ac9c884e6d9cb53016df6b3806f0c",
+          "result_size_bytes": 14510,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269773128958750,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 1341083,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 13854142250,
+      "wave_index": 33
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "student_performance_por",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361619
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "student_performance_por",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361619
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 4803326750,
+      "peak_combined_rss_fraction": 0.019115209579467773,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269787251476875,
+          "behavior_sha256": "988c6cf1f3fee70022cfccb01e6b0165d7b782588f50556b163850487198c4d6",
+          "child_count": 8,
+          "command_id": "production-wave-34-0-1269787001531791",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269792058546791,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "student_performance_por",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361619
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361619/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "50eb127aa2fc8777b8f003637158a713e1fd5cf1af40e123f03d0968cfca2517",
+          "result_size_bytes": 11336,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269787253080541,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269787251476875,
+          "behavior_sha256": "071edb952afd77b54ade16da05715de704c5c6dfc5146adc1d6b5a1ec531db6c",
+          "child_count": 8,
+          "command_id": "production-wave-34-1-1269787001715791",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269794642716833,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "student_performance_por",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361619
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361619/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "806f209726c131d110bfd4cbd50fd57df6506af435e227c5827138315cb21b88",
+          "result_size_bytes": 13616,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269787255220041,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 2139500,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 7389636292,
+      "wave_index": 34
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "cars",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361622
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "cars",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361622
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 7212626167,
+      "peak_combined_rss_fraction": 0.019123077392578125,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1269795327959208,
+          "behavior_sha256": "23d99aa7ac497a65b6ce4e12c4a54a80c443e056add4b4460268fdf93870d649",
+          "child_count": 8,
+          "command_id": "production-wave-35-0-1269795078022291",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269826673838958,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "cars",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361622
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361622/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "a86fcf64b4169b8558e51aee022750251db5520e07bcfeb3b1aec2eedb7550d3",
+          "result_size_bytes": 19066,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269795329954583,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269795327959208,
+          "behavior_sha256": "96bc1541682137fb9af87285f85aea6c3ea9dabe5628e5e75a57030a16c2916c",
+          "child_count": 8,
+          "command_id": "production-wave-35-1-1269795078238916",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269802542957250,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "cars",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361622
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361622/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "f05433dc2166839603139e4112a5c370ee8391f4b7d89d53704f8a1b45d9de83",
+          "result_size_bytes": 15983,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269795330331083,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 376500,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 31343884375,
+      "wave_index": 35
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "C",
+            "arm_code": "C",
+            "dataset": "cars",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361622
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "cars",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361622
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 5442593708,
+      "peak_combined_rss_fraction": 0.01913285255432129,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269827528796458,
+          "behavior_sha256": "755f850e299783e06d4e7d1c1eef627bf268a5e8dc2a8abb49413be1afbeb9a7",
+          "child_count": 8,
+          "command_id": "production-wave-36-0-1269827278922416",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269832974197291,
+          "key": {
+            "arm": "C",
+            "arm_code": "C",
+            "dataset": "cars",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361622
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/CatBoost_c1_ctr23_minimal_C_BAG_L1/361622/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "3314ae90a5460c1aa37fdd53693eb6066399e9df5e0b391775bd66829176ba3e",
+          "result_size_bytes": 16413,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269827531243291,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269827528796458,
+          "behavior_sha256": "f52eaad879ac4d06af44a3453153902ae7190aeb5baf0ff4a07fbfd2d1cb6a58",
+          "child_count": 8,
+          "command_id": "production-wave-36-1-1269827279372208",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269839045958583,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "cars",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361622
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361622/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "19cf76bf92508b70afb45791154b8f71ebb96afdab87f57e6f7cb4a839fae1e5",
+          "result_size_bytes": 18299,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269827531603583,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 360292,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 11514715292,
+      "wave_index": 36
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "cars",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361622
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "cars",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361622
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 5970366834,
+      "peak_combined_rss_fraction": 0.019133806228637695,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1269839620470375,
+          "behavior_sha256": "24b45d7bec883014306b40c215c88e266c1242d7b74d67d01a657a8fc0ad8c91",
+          "child_count": 8,
+          "command_id": "production-wave-37-0-1269839370653500",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269869221250375,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "cars",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361622
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361622/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "7702bfc90a1a8272c0b536fc7a2b0c3013e008f674f7e589c45d7e12ccb90cf2",
+          "result_size_bytes": 19049,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269839624196541,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269839620470375,
+          "behavior_sha256": "9ac991199cb07a29f286e461f21ef45a86ab3d7328c315e1d61eeac262b489d4",
+          "child_count": 8,
+          "command_id": "production-wave-37-1-1269839370863125",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269845594563375,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "cars",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361622
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361622/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "839cf016e43318a5bae44ed3860f3d58f126a7a21425d5a719d72b463d86389c",
+          "result_size_bytes": 15912,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269839622687333,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 1509208,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 29598563042,
+      "wave_index": 37
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "cars",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361622
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "cars",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361622
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 13916889375,
+      "peak_combined_rss_fraction": 0.019141316413879395,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269869853899375,
+          "behavior_sha256": "2b7442688f711f158aba784fb429cf8369263211e6a84d416cda5f099e0f8329",
+          "child_count": 8,
+          "command_id": "production-wave-38-0-1269869604099041",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269883772519041,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "cars",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361622
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361622/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "611bb76b473c8ad3e3eda0a0b9341171246f2bad9685cc78b401c6dd8ce58e7a",
+          "result_size_bytes": 18280,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269869854775000,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1269869853899375,
+          "behavior_sha256": "b260897e2a8f9c5a7ef7aadce89df31c263d4d3d0ce1e2fa07f7dc0fce5956d2",
+          "child_count": 8,
+          "command_id": "production-wave-38-1-1269869604402541",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269906243174166,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "cars",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361622
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361622/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "7d1ae66ad97c90415602183c92c3b14acc236472c2e053a73d10c782d5fa095b",
+          "result_size_bytes": 19179,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269869855629666,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 854666,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 36388399166,
+      "wave_index": 38
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "cars",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361622
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "cars",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361622
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 7774627041,
+      "peak_combined_rss_fraction": 0.019141674041748047,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269907136241666,
+          "behavior_sha256": "6c61105899abffee29965e19941b846ab838dbb863cb011d89c57239e5f9a8ef",
+          "child_count": 8,
+          "command_id": "production-wave-39-0-1269906886322208",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269914913217916,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "cars",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361622
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361622/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "eb8ffd783970b866a55d83da98fa9191cddfa2a4a444a0083564f69ddc87a1fd",
+          "result_size_bytes": 16019,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269907138572583,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269907136241666,
+          "behavior_sha256": "f72a9bc9b09433efcbe2e9f1108ea3056dd3d57909a5b2bd22bb720cf918904d",
+          "child_count": 8,
+          "command_id": "production-wave-39-1-1269906886584208",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269921902820541,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "cars",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361622
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361622/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "e86926c91881af0dda8b832e8cbb9171d50f2f0233ddbd0a5957147d6b87bb9a",
+          "result_size_bytes": 18376,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269907138590875,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 18292,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 14764247958,
+      "wave_index": 39
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "space_ga",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361623
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "space_ga",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361623
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 35917637625,
+      "peak_combined_rss_fraction": 0.01914381980895996,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1269922257490833,
+          "behavior_sha256": "429c421bda4aedefe6a9b23900d6c4cb58d16fd4743d8c4b4cf483d110856dc3",
+          "child_count": 8,
+          "command_id": "production-wave-40-0-1269922007558958",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269978208529208,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "space_ga",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361623
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361623/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "c5627c64ad33c00877a6194b1141aee4c40ea4d41c4168183fb15b01b25284a3",
+          "result_size_bytes": 61909,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269922260227375,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269922257490833,
+          "behavior_sha256": "4947af248d28eb9996dd96974d41c2eb780657875dcc08113e612b2db66a7eb1",
+          "child_count": 8,
+          "command_id": "production-wave-40-1-1269922007784166",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1269958177865000,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "space_ga",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361623
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361623/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "2d088ab1d5f6b0b69922bfcfc68421a771fa6fa2478b29d7316dc7b4f1f35af0",
+          "result_size_bytes": 58642,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269922259458791,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 768584,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 55949070417,
+      "wave_index": 40
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "space_ga",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361623
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "C",
+            "arm_code": "C",
+            "dataset": "space_ga",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361623
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 33890078541,
+      "peak_combined_rss_fraction": 0.019191861152648926,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269978643068625,
+          "behavior_sha256": "b38dc7e999f9e54bfdd2bca1a3eb7cdb9ad00f7467f1d96dbac55bb3f9666610",
+          "child_count": 8,
+          "command_id": "production-wave-41-0-1269978393157291",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1270012536072291,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "space_ga",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361623
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361623/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "01534dd76ff72225cb6e286d3da3f1ffbc24cc902d6e13955bded0c9f3d89551",
+          "result_size_bytes": 61011,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269978645993750,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1269978643068625,
+          "behavior_sha256": "7f82ee1f45fc41315a8940b55f33adbbc6a8fc69c4650403e7520e00a61535cc",
+          "child_count": 8,
+          "command_id": "production-wave-41-1-1269978393405375",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1270016599879083,
+          "key": {
+            "arm": "C",
+            "arm_code": "C",
+            "dataset": "space_ga",
+            "fold": 0,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361623
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/CatBoost_c1_ctr23_minimal_C_BAG_L1/361623/0_0/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "8ea1a4cf32bbf00c1b7ab0ef5d26aa3a36adea23f9183b473056ae02e491455d",
+          "result_size_bytes": 59089,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1269978644627541,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 1366209,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 37955251542,
+      "wave_index": 41
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "space_ga",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361623
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "space_ga",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361623
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 37262455000,
+      "peak_combined_rss_fraction": 0.019193291664123535,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1270016916737625,
+          "behavior_sha256": "842f814e007bcbc0cdbf9c0d965770ff5f23e78f39dd5012fbd94245900a9347",
+          "child_count": 8,
+          "command_id": "production-wave-42-0-1270016666796583",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1270075241524791,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "space_ga",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361623
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361623/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "2c1933382b1bc4ad15824fdbfce87e150cee2abb78ea8ac3618eb2301266d7af",
+          "result_size_bytes": 61895,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1270016917381208,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1270016916737625,
+          "behavior_sha256": "aec0a21ed36f356eb52ce2ddef178498bdfcf6d64a82da3a1fa225f4e2adfb7f",
+          "child_count": 8,
+          "command_id": "production-wave-42-1-1270016666988125",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1270054180015750,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "space_ga",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361623
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361623/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "683e0d776954ac8a0bb9644b1bdc462c80fb25e642274af27600f559fb5c4464",
+          "result_size_bytes": 58647,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1270016917560750,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 179542,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 58324143583,
+      "wave_index": 42
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "space_ga",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361623
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "space_ga",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361623
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 41101600250,
+      "peak_combined_rss_fraction": 0.019193291664123535,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1270076369591208,
+          "behavior_sha256": "ea0536ed68f608d5621d9c739a30db411e11d9b6cf91a06db25a95905f7141c1",
+          "child_count": 8,
+          "command_id": "production-wave-43-0-1270076119651916",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1270117475545708,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "space_ga",
+            "fold": 1,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361623
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361623/0_1/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "c0ec7c01bbdf300321b6593638d89e70e537d18a2203ca4784652bf0637a83e5",
+          "result_size_bytes": 60948,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1270076373945458,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 24,
+          "barrier_release_monotonic_ns": 1270076369591208,
+          "behavior_sha256": "aca145ca7668e0407075d89056ad310cd767527a477605c475ea41bbfe54e72e",
+          "child_count": 8,
+          "command_id": "production-wave-43-1-1270076119842041",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1270135269395541,
+          "key": {
+            "arm": "A10",
+            "arm_code": "A",
+            "dataset": "space_ga",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361623
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_A_BAG_L1/361623/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "56c6286dcc03d014f96268ec168f46dde9cbe70e4b701dc135db3ee184dc3d1a",
+          "result_size_bytes": 61935,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1270076369730916,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 4214542,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 58899664625,
+      "wave_index": 43
+    },
+    {
+      "jobs": [
+        {
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "space_ga",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361623
+          },
+          "worker_slot": 0
+        },
+        {
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "space_ga",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361623
+          },
+          "worker_slot": 1
+        }
+      ],
+      "overlap_ns": 38422228458,
+      "peak_combined_rss_fraction": 0.01913595199584961,
+      "reports": [
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1270135818929875,
+          "behavior_sha256": "a1dc957745e814fd571e071c35e7c2ab47f38012775df2ef008ebfaccb0a9c4a",
+          "child_count": 8,
+          "command_id": "production-wave-44-0-1270135569035833",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1270174242410958,
+          "key": {
+            "arm": "M",
+            "arm_code": "M",
+            "dataset": "space_ga",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361623
+          },
+          "pid": 46684,
+          "process_peak_rss_bytes": 1295941632,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/ChimeraBoost_c1_ctr23_minimal_M_BAG_L1/361623/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "8f0868a5431f69a34f28ea3a514a2afb4bafe71c9a751611133fc196c8eaefd1",
+          "result_size_bytes": 58724,
+          "slot": 0,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1270135820182500,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        },
+        {
+          "a10_candidate_fit_count": 0,
+          "barrier_release_monotonic_ns": 1270135818929875,
+          "behavior_sha256": "6fe6a924ac84599c261ebaa31c0e7bf43e8522d05f166a534261bf6ce2e1a602",
+          "child_count": 8,
+          "command_id": "production-wave-44-1-1270135569320750",
+          "deadline_hit": false,
+          "ended_monotonic_ns": 1270176154818875,
+          "key": {
+            "arm": "D",
+            "arm_code": "D",
+            "dataset": "space_ga",
+            "fold": 2,
+            "repeat": 0,
+            "sample": 0,
+            "task_id": 361623
+          },
+          "pid": 46685,
+          "process_peak_rss_bytes": 1997176832,
+          "result_count": 1,
+          "result_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715/experiments/data/DarkoFit_c1_ctr23_minimal_D_BAG_L1/361623/0_2/results.pkl",
+          "result_root": "/Users/kmedved/Code/GitHub/darkofit/.cache/ctr23-minimal-confirmation-20260715",
+          "result_sha256": "53c2a8609b6d29b6ace6cfd8c5ae4d97fa40a27c734b4fee8b587ae835c59277",
+          "result_size_bytes": 61015,
+          "slot": 1,
+          "start_method": "spawn",
+          "started_monotonic_ns": 1270135819638750,
+          "status": "ok",
+          "time_callback_hit_count": 0,
+          "type": "result"
+        }
+      ],
+      "start_skew_ns": 543750,
+      "swap_out_delta": 0,
+      "wave_elapsed_ns": 40335180125,
+      "wave_index": 44
+    }
+  ],
+  "execution_mode": "concurrent",
+  "failure_count": 0,
+  "kind": "darkofit_ctr23_minimal_confirmation_concurrency_history",
+  "peak_combined_rss_fraction": 0.023960590362548828,
+  "recovery_mixing_count": 0,
+  "schema_version": 1,
+  "swap_out_bytes": 0,
+  "swap_policy": "quality_only_swap_in",
+  "timing_admissible": false,
+  "wave_count": 45,
+  "worker_restart_count": 0
+}

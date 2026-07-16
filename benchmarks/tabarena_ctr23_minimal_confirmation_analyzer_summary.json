@@ -1,0 +1,276 @@
+{
+  "aggregation": "paired split ratios; geometric mean within task; equal-task geometric mean",
+  "claim_scope": "external fixed-panel confirmation only; no lockbox, preset, or default-change authorization",
+  "confirmation_passed": false,
+  "contrasts": {
+    "a10_over_c": {
+      "test_rmse": {
+        "dataset_counts": {
+          "losses": 8,
+          "ties": 0,
+          "wins": 1
+        },
+        "descriptive_interval": {
+          "draws": 10000,
+          "lower_95": 0.9513352684107897,
+          "quantile_method": "higher",
+          "rng": "numpy.random.Generator(PCG64)",
+          "seed": 20260721,
+          "upper_95": 1.186516745728242
+        },
+        "log_ratio": 0.05439689073190643,
+        "pct": 5.59035973535007,
+        "ratio": 1.0559035973535007,
+        "split_counts": {
+          "losses": 8,
+          "ties": 0,
+          "wins": 1
+        },
+        "worst_dataset_ratio": 1.5018876121953164,
+        "worst_split_ratio": 1.5018876121953164
+      },
+      "val_rmse": {
+        "dataset_counts": {
+          "losses": 7,
+          "ties": 0,
+          "wins": 2
+        },
+        "log_ratio": 0.05633800485293462,
+        "pct": 5.795521730680364,
+        "ratio": 1.0579552173068036,
+        "split_counts": {
+          "losses": 7,
+          "ties": 0,
+          "wins": 2
+        },
+        "worst_dataset_ratio": 1.683861287435591,
+        "worst_split_ratio": 1.683861287435591
+      }
+    },
+    "a10_over_d": {
+      "test_rmse": {
+        "dataset_counts": {
+          "losses": 2,
+          "ties": 0,
+          "wins": 7
+        },
+        "log_ratio": -0.14379446987366368,
+        "pct": -13.39342676326012,
+        "ratio": 0.8660657323673988,
+        "split_counts": {
+          "losses": 6,
+          "ties": 0,
+          "wins": 21
+        },
+        "worst_dataset_ratio": 1.0180361827736308,
+        "worst_split_ratio": 1.068456969858637
+      },
+      "val_rmse": {
+        "dataset_counts": {
+          "losses": 0,
+          "ties": 0,
+          "wins": 9
+        },
+        "log_ratio": -0.1296616986032486,
+        "pct": -12.160745791494987,
+        "ratio": 0.8783925420850501,
+        "split_counts": {
+          "losses": 1,
+          "ties": 0,
+          "wins": 26
+        },
+        "worst_dataset_ratio": 0.9992384308379096,
+        "worst_split_ratio": 1.0000470279400202
+      }
+    },
+    "a10_over_m": {
+      "test_rmse": {
+        "dataset_counts": {
+          "losses": 5,
+          "ties": 0,
+          "wins": 4
+        },
+        "log_ratio": -0.059719270684918696,
+        "pct": -5.797104839006129,
+        "ratio": 0.9420289516099387,
+        "split_counts": {
+          "losses": 16,
+          "ties": 0,
+          "wins": 11
+        },
+        "worst_dataset_ratio": 1.0617986441105605,
+        "worst_split_ratio": 1.1272033314975047
+      },
+      "val_rmse": {
+        "dataset_counts": {
+          "losses": 5,
+          "ties": 0,
+          "wins": 4
+        },
+        "log_ratio": -0.040888498227941196,
+        "pct": -4.006384143650898,
+        "ratio": 0.959936158563491,
+        "split_counts": {
+          "losses": 16,
+          "ties": 0,
+          "wins": 11
+        },
+        "worst_dataset_ratio": 1.0731311004657649,
+        "worst_split_ratio": 1.0785789927565843
+      }
+    },
+    "d_over_c": {
+      "test_rmse": {
+        "dataset_counts": {
+          "losses": 8,
+          "ties": 0,
+          "wins": 1
+        },
+        "descriptive_interval": {
+          "draws": 10000,
+          "lower_95": 1.0339655092181248,
+          "quantile_method": "higher",
+          "rng": "numpy.random.Generator(PCG64)",
+          "seed": 20260721,
+          "upper_95": 1.5180226678527995
+        },
+        "log_ratio": 0.1950417911574037,
+        "pct": 21.536177680374724,
+        "ratio": 1.2153617768037472,
+        "split_counts": {
+          "losses": 8,
+          "ties": 0,
+          "wins": 1
+        },
+        "worst_dataset_ratio": 2.677490671290464,
+        "worst_split_ratio": 2.677490671290464
+      },
+      "val_rmse": {
+        "dataset_counts": {
+          "losses": 9,
+          "ties": 0,
+          "wins": 0
+        },
+        "log_ratio": 0.1856296185590171,
+        "pct": 20.39762473278559,
+        "ratio": 1.203976247327856,
+        "split_counts": {
+          "losses": 9,
+          "ties": 0,
+          "wins": 0
+        },
+        "worst_dataset_ratio": 2.8091828575472233,
+        "worst_split_ratio": 2.8091828575472233
+      }
+    },
+    "m_over_c": {
+      "test_rmse": {
+        "dataset_counts": {
+          "losses": 3,
+          "ties": 0,
+          "wins": 6
+        },
+        "descriptive_interval": {
+          "draws": 10000,
+          "lower_95": 0.9725563499269194,
+          "quantile_method": "higher",
+          "rng": "numpy.random.Generator(PCG64)",
+          "seed": 20260721,
+          "upper_95": 1.4143224327636255
+        },
+        "log_ratio": 0.11130604459834609,
+        "pct": 11.773693186470435,
+        "ratio": 1.1177369318647044,
+        "split_counts": {
+          "losses": 3,
+          "ties": 0,
+          "wins": 6
+        },
+        "worst_dataset_ratio": 2.7602905327825864,
+        "worst_split_ratio": 2.7602905327825864
+      },
+      "val_rmse": {
+        "dataset_counts": {
+          "losses": 6,
+          "ties": 0,
+          "wins": 3
+        },
+        "log_ratio": 0.11590161921972711,
+        "pct": 12.28853963575467,
+        "ratio": 1.1228853963575467,
+        "split_counts": {
+          "losses": 6,
+          "ties": 0,
+          "wins": 3
+        },
+        "worst_dataset_ratio": 2.8182335418166318,
+        "worst_split_ratio": 2.8182335418166318
+      }
+    }
+  },
+  "decision": "confirmation_not_established_clean_stop",
+  "desired_primary_point_at_most_0_995": true,
+  "execution_mode": "concurrent",
+  "gates": {
+    "a10_over_d_simultaneous_max_regret_95_upper_at_most_1_02": false,
+    "a10_over_m_one_sided_95_upper_strictly_below_1": false,
+    "complete_grid_and_safety": true
+  },
+  "integrity": {
+    "catboost_coordinates_verified": 9,
+    "deadline_hit_count": 0,
+    "failure_count": 0,
+    "imputation_count": 0,
+    "known_time_limit_stop_count": 0,
+    "outer_jobs_verified": 90,
+    "primary_coordinates_verified": 27,
+    "raw_results_deserialized_by_analyzer": false,
+    "recovery_mixing_count": 0,
+    "selected_children_verified": 720,
+    "time_callback_hit_count": 0,
+    "unresolved_comparator_stop_count": 210,
+    "worker_failure_count": 0
+  },
+  "kind": "ctr23_minimal_confirmation_analysis",
+  "performance_evidence_disposition": "inadmissible_by_quality_only_swap_in_policy",
+  "primary_interval": {
+    "draws": 10000,
+    "quantile_method": "higher",
+    "rng": "numpy.random.Generator(PCG64)",
+    "seed": 20260719,
+    "upper_95": 1.0120911243873554
+  },
+  "product_guardrail_interval": {
+    "draws": 10000,
+    "quantile_method": "higher",
+    "rng": "numpy.random.Generator(PCG64)",
+    "seed": 20260720,
+    "upper_95_simultaneous_max_regret": 1.0461213126485698
+  },
+  "product_task_point_flags": [
+    {
+      "dataset": "student_performance_por",
+      "ratio": 1.0180361827736308,
+      "task_id": 361619
+    }
+  ],
+  "provenance": {
+    "analysis_payload_sha256": "56f83dfff91ffc7ea6578fbafb8bbef174683ec9039dada7e7164de82ec028bc",
+    "completed_at_utc": "2026-07-16T07:53:14.856916+00:00",
+    "completion_attestation_sha256": "7a993286761649edccbfe94fe1fa30932eb417079ea6f14786509f998d10ac20",
+    "concurrency_history_artifact": "24d667a41cee4843cba4ba5e70e333da97b49e2a8da23676b5284d2b02557be1",
+    "coordinate_manifest_sha256": "6cef3b771c20440c9dad6b737797f50650d84217ee99cf8fc6fcfcbd85829c0b",
+    "frozen_protocol_sha256": "dfdf3c00c0f5f622e60619bee7b39a40847d960dff5d9f8886b604a35f383418",
+    "manifest_sha256": "020c61194811d3b05bac75b59be92d82a16343a0d0e514b7d54eaff394d33101",
+    "preflight_report_artifact": "c1b8ff32067afe902c5aee9bb0ab29fcd13c26e143e83442d8fd13861a398419",
+    "protocol_sha256": "d92466668990ce53c391106f50122ed2b711ec901ab440e88cdd6820a00b6710",
+    "schedule_artifact_sha256": "34df99b973166b9b110d8ca3665edb33ff753ca727a0c55595a85656d10c4873",
+    "schedule_sha256": "0285ca4242bd544f368578519f52f1a7157c1aa0f5c1c0ddcec9fcff5722055e",
+    "source_validation_sha256": "bf87129b7b43a48a0b2762e78909ca842c8f2fb599ac6a753ee183a54a1cd7da",
+    "warmup_history_artifact": "cb447ad30b562a6b474093cf3712faec46a5e55fa23074fa79acac2ab0f9bf0d"
+  },
+  "schema_version": 1,
+  "swap_policy": "quality_only_swap_in",
+  "terminal_policy": "stop regardless of outcome; do not add folds, tune, open the lockbox, or change a preset/default",
+  "timing_admissible": false
+}

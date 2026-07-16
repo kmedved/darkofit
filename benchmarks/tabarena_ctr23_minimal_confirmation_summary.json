@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "kind": "darkofit_ctr23_minimal_confirmation_reviewed_publication",
+  "decision": "confirmation_not_established_protocol_deviation_stop",
+  "confirmation_passed": false,
+  "quality_statistics_validated": true,
+  "full_protocol_compliance": false,
+  "timing_admissible": false,
+  "performance_evidence_disposition": "inadmissible_by_quality_only_swap_in_policy",
+  "registered_analyzer": {
+    "decision": "confirmation_not_established_clean_stop",
+    "report_artifact": "tabarena_ctr23_minimal_confirmation_analyzer_result.md",
+    "report_sha256": "ce142fb069bd93256f54c19a1abc1f791cdedf0c6dd9db7c9d933c6501699981",
+    "summary_artifact": "tabarena_ctr23_minimal_confirmation_analyzer_summary.json",
+    "summary_sha256": "23a0d8b1657fcf13465afe46cfc82d393d86a394fb7dd573ea78a042103d1580"
+  },
+  "gates": {
+    "a10_over_m_one_sided_95_upper_strictly_below_1": false,
+    "a10_over_d_simultaneous_max_regret_95_upper_at_most_1_02": false,
+    "complete_grid_and_safety": false,
+    "complete_grid_and_resource_limits_observed": true,
+    "registered_operational_audit_evidence_complete": false,
+    "swap_in_audit_evidence_retained": false,
+    "registered_safe_analysis_boundary_compliant": false
+  },
+  "quality": {
+    "a10_over_m": {
+      "ratio": 0.9420289516099387,
+      "pct": -5.797104839006129,
+      "one_sided_upper_95": 1.0120911243873554,
+      "dataset_wins": 4,
+      "dataset_losses": 5,
+      "split_wins": 11,
+      "split_losses": 16
+    },
+    "a10_over_product_default": {
+      "ratio": 0.8660657323673988,
+      "pct": -13.39342676326012,
+      "simultaneous_max_regret_upper_95": 1.0461213126485698
+    },
+    "a10_over_catboost_r0f0_descriptive": {
+      "ratio": 1.0559035973535007,
+      "pct": 5.59035973535007,
+      "lower_95": 0.9513352684107897,
+      "upper_95": 1.186516745728242
+    }
+  },
+  "integrity": {
+    "outer_jobs_verified": 90,
+    "selected_children_verified": 720,
+    "a10_candidate_fits_verified": 648,
+    "concurrent_waves_verified": 45,
+    "stable_worker_count": 2,
+    "failure_count": 0,
+    "worker_restart_count": 0,
+    "deadline_hit_count": 0,
+    "recovery_mixing_count": 0,
+    "imputation_count": 0,
+    "swap_out_bytes": 0,
+    "swap_in_audit_evidence_retained": false,
+    "operational_protocol_deviation_count": 1,
+    "analysis_boundary_deviation_count": 1,
+    "protocol_deviation_count": 2,
+    "additional_operational_json_artifacts_read_by_analyzer": [
+      "wave_schedule.json",
+      "preflight_report.json",
+      "concurrency_history.json",
+      "warmup_history.json"
+    ],
+    "raw_results_read_as_opaque_bytes_by_analyzer": true,
+    "raw_results_deserialized_by_analyzer": false
+  },
+  "protocol_deviations": [
+    {
+      "id": "swap_in_telemetry_not_retained",
+      "category": "operational_audit_evidence",
+      "registered_requirement": "swap-in is allowed but measured and retained as operational audit evidence",
+      "observed": "the shared dispatch helper measured swap-in transiently, but the CTR23 runner persisted only swap-out telemetry and its lifecycle samples retained only sout",
+      "effect": "quality RMSE and bootstrap calculations remain valid and zero swap-out is proven, but literal full protocol compliance is not established",
+      "remediation": "disclose_and_stop_without_rerun_after_metrics"
+    },
+    {
+      "id": "raw_results_read_as_opaque_bytes_for_hash_verification",
+      "category": "safe_analysis_boundary",
+      "registered_requirement": "the analyzer may read only the protocol and registry artifacts, run manifest, completion attestation, and safe-analysis payload and may not open a raw result pickle",
+      "observed": "for integrity authentication, the frozen analyzer additionally read the schedule, preflight, concurrency, and warmup JSON artifacts and all 90 raw result files as opaque bytes while never importing pickle or deserializing result contents",
+      "effect": "semantic isolation and quality calculations remain intact, but the literal no-open/no-read boundary was crossed",
+      "remediation": "disclose_and_stop_without_rerun_after_metrics"
+    }
+  ],
+  "independent_review": {
+    "statistical_cross_checks": 139,
+    "statistical_discrepancies": 0,
+    "maximum_absolute_floating_difference": 2.22e-16,
+    "deterministic_analyzer_invocations": 2,
+    "deterministic_outputs_byte_identical": true,
+    "unresolved_comparator_stop_reason_count": 210,
+    "time_callback_hit_count": 0
+  },
+  "provenance": {
+    "source_verifier_commit": "5b714927c87b3d0da92558222506477cf9de6772",
+    "source_verifier_tree": "4e76c5862e28d9243d9b2e32da7ae1e75c76a06b",
+    "darkofit_subtree": "52278b0326419a45a72bdfd3afcfc13019087838",
+    "protocol_sha256": "d92466668990ce53c391106f50122ed2b711ec901ab440e88cdd6820a00b6710",
+    "schedule_sha256": "0285ca4242bd544f368578519f52f1a7157c1aa0f5c1c0ddcec9fcff5722055e",
+    "coordinate_manifest_sha256": "6cef3b771c20440c9dad6b737797f50650d84217ee99cf8fc6fcfcbd85829c0b",
+    "analysis_payload_sha256": "56f83dfff91ffc7ea6578fbafb8bbef174683ec9039dada7e7164de82ec028bc",
+    "completion_attestation_sha256": "7a993286761649edccbfe94fe1fa30932eb417079ea6f14786509f998d10ac20",
+    "evidence_relationship": "static descendant publication; executable verification remains bound to the source_verifier_commit head and tree"
+  },
+  "terminal_policy": "stop regardless of outcome; do not add folds, tune, open the lockbox, or change a preset/default"
+}

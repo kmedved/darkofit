@@ -3,3 +3,4 @@ benchmarks/tabarena_regression_followon_screen_*.csv whitespace=cr-at-eol
 benchmarks/tabarena_regression_ordinal_confirmation_*.csv whitespace=cr-at-eol
 benchmarks/tabarena_regression_same_machine_*.csv whitespace=cr-at-eol
 benchmarks/tabarena_regression_accuracy_shootout_*.csv whitespace=cr-at-eol
+benchmarks/tabarena_ctr23_minimal_confirmation_*.csv whitespace=cr-at-eol

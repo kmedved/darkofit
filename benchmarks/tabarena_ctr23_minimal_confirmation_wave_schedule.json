@@ -1,0 +1,1442 @@
+[
+  {
+    "dataset": "auction_verification",
+    "jobs": [
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "auction_verification",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361236
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "auction_verification",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361236
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 0,
+    "task_index": 0,
+    "wave_index": 0
+  },
+  {
+    "dataset": "auction_verification",
+    "jobs": [
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "auction_verification",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361236
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "C",
+          "arm_code": "C",
+          "dataset": "auction_verification",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361236
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 1,
+    "task_index": 0,
+    "wave_index": 1
+  },
+  {
+    "dataset": "auction_verification",
+    "jobs": [
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "auction_verification",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361236
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "auction_verification",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361236
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 2,
+    "task_index": 0,
+    "wave_index": 2
+  },
+  {
+    "dataset": "auction_verification",
+    "jobs": [
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "auction_verification",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361236
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "auction_verification",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361236
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 3,
+    "task_index": 0,
+    "wave_index": 3
+  },
+  {
+    "dataset": "auction_verification",
+    "jobs": [
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "auction_verification",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361236
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "auction_verification",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361236
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 4,
+    "task_index": 0,
+    "wave_index": 4
+  },
+  {
+    "dataset": "grid_stability",
+    "jobs": [
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "grid_stability",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361251
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "grid_stability",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361251
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 0,
+    "task_index": 1,
+    "wave_index": 5
+  },
+  {
+    "dataset": "grid_stability",
+    "jobs": [
+      {
+        "key": {
+          "arm": "C",
+          "arm_code": "C",
+          "dataset": "grid_stability",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361251
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "grid_stability",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361251
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 1,
+    "task_index": 1,
+    "wave_index": 6
+  },
+  {
+    "dataset": "grid_stability",
+    "jobs": [
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "grid_stability",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361251
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "grid_stability",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361251
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 2,
+    "task_index": 1,
+    "wave_index": 7
+  },
+  {
+    "dataset": "grid_stability",
+    "jobs": [
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "grid_stability",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361251
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "grid_stability",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361251
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 3,
+    "task_index": 1,
+    "wave_index": 8
+  },
+  {
+    "dataset": "grid_stability",
+    "jobs": [
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "grid_stability",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361251
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "grid_stability",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361251
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 4,
+    "task_index": 1,
+    "wave_index": 9
+  },
+  {
+    "dataset": "video_transcoding",
+    "jobs": [
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "video_transcoding",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361252
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "video_transcoding",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361252
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 0,
+    "task_index": 2,
+    "wave_index": 10
+  },
+  {
+    "dataset": "video_transcoding",
+    "jobs": [
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "video_transcoding",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361252
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "C",
+          "arm_code": "C",
+          "dataset": "video_transcoding",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361252
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 1,
+    "task_index": 2,
+    "wave_index": 11
+  },
+  {
+    "dataset": "video_transcoding",
+    "jobs": [
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "video_transcoding",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361252
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "video_transcoding",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361252
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 2,
+    "task_index": 2,
+    "wave_index": 12
+  },
+  {
+    "dataset": "video_transcoding",
+    "jobs": [
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "video_transcoding",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361252
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "video_transcoding",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361252
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 3,
+    "task_index": 2,
+    "wave_index": 13
+  },
+  {
+    "dataset": "video_transcoding",
+    "jobs": [
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "video_transcoding",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361252
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "video_transcoding",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361252
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 4,
+    "task_index": 2,
+    "wave_index": 14
+  },
+  {
+    "dataset": "kin8nm",
+    "jobs": [
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "kin8nm",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361258
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "kin8nm",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361258
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 0,
+    "task_index": 3,
+    "wave_index": 15
+  },
+  {
+    "dataset": "kin8nm",
+    "jobs": [
+      {
+        "key": {
+          "arm": "C",
+          "arm_code": "C",
+          "dataset": "kin8nm",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361258
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "kin8nm",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361258
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 1,
+    "task_index": 3,
+    "wave_index": 16
+  },
+  {
+    "dataset": "kin8nm",
+    "jobs": [
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "kin8nm",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361258
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "kin8nm",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361258
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 2,
+    "task_index": 3,
+    "wave_index": 17
+  },
+  {
+    "dataset": "kin8nm",
+    "jobs": [
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "kin8nm",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361258
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "kin8nm",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361258
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 3,
+    "task_index": 3,
+    "wave_index": 18
+  },
+  {
+    "dataset": "kin8nm",
+    "jobs": [
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "kin8nm",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361258
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "kin8nm",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361258
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 4,
+    "task_index": 3,
+    "wave_index": 19
+  },
+  {
+    "dataset": "fps_benchmark",
+    "jobs": [
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "fps_benchmark",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361268
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "fps_benchmark",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361268
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 0,
+    "task_index": 4,
+    "wave_index": 20
+  },
+  {
+    "dataset": "fps_benchmark",
+    "jobs": [
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "fps_benchmark",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361268
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "C",
+          "arm_code": "C",
+          "dataset": "fps_benchmark",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361268
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 1,
+    "task_index": 4,
+    "wave_index": 21
+  },
+  {
+    "dataset": "fps_benchmark",
+    "jobs": [
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "fps_benchmark",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361268
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "fps_benchmark",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361268
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 2,
+    "task_index": 4,
+    "wave_index": 22
+  },
+  {
+    "dataset": "fps_benchmark",
+    "jobs": [
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "fps_benchmark",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361268
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "fps_benchmark",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361268
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 3,
+    "task_index": 4,
+    "wave_index": 23
+  },
+  {
+    "dataset": "fps_benchmark",
+    "jobs": [
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "fps_benchmark",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361268
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "fps_benchmark",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361268
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 4,
+    "task_index": 4,
+    "wave_index": 24
+  },
+  {
+    "dataset": "health_insurance",
+    "jobs": [
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "health_insurance",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361269
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "health_insurance",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361269
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 0,
+    "task_index": 5,
+    "wave_index": 25
+  },
+  {
+    "dataset": "health_insurance",
+    "jobs": [
+      {
+        "key": {
+          "arm": "C",
+          "arm_code": "C",
+          "dataset": "health_insurance",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361269
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "health_insurance",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361269
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 1,
+    "task_index": 5,
+    "wave_index": 26
+  },
+  {
+    "dataset": "health_insurance",
+    "jobs": [
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "health_insurance",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361269
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "health_insurance",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361269
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 2,
+    "task_index": 5,
+    "wave_index": 27
+  },
+  {
+    "dataset": "health_insurance",
+    "jobs": [
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "health_insurance",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361269
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "health_insurance",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361269
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 3,
+    "task_index": 5,
+    "wave_index": 28
+  },
+  {
+    "dataset": "health_insurance",
+    "jobs": [
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "health_insurance",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361269
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "health_insurance",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361269
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 4,
+    "task_index": 5,
+    "wave_index": 29
+  },
+  {
+    "dataset": "student_performance_por",
+    "jobs": [
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "student_performance_por",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361619
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "student_performance_por",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361619
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 0,
+    "task_index": 6,
+    "wave_index": 30
+  },
+  {
+    "dataset": "student_performance_por",
+    "jobs": [
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "student_performance_por",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361619
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "C",
+          "arm_code": "C",
+          "dataset": "student_performance_por",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361619
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 1,
+    "task_index": 6,
+    "wave_index": 31
+  },
+  {
+    "dataset": "student_performance_por",
+    "jobs": [
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "student_performance_por",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361619
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "student_performance_por",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361619
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 2,
+    "task_index": 6,
+    "wave_index": 32
+  },
+  {
+    "dataset": "student_performance_por",
+    "jobs": [
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "student_performance_por",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361619
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "student_performance_por",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361619
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 3,
+    "task_index": 6,
+    "wave_index": 33
+  },
+  {
+    "dataset": "student_performance_por",
+    "jobs": [
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "student_performance_por",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361619
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "student_performance_por",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361619
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 4,
+    "task_index": 6,
+    "wave_index": 34
+  },
+  {
+    "dataset": "cars",
+    "jobs": [
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "cars",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361622
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "cars",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361622
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 0,
+    "task_index": 7,
+    "wave_index": 35
+  },
+  {
+    "dataset": "cars",
+    "jobs": [
+      {
+        "key": {
+          "arm": "C",
+          "arm_code": "C",
+          "dataset": "cars",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361622
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "cars",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361622
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 1,
+    "task_index": 7,
+    "wave_index": 36
+  },
+  {
+    "dataset": "cars",
+    "jobs": [
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "cars",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361622
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "cars",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361622
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 2,
+    "task_index": 7,
+    "wave_index": 37
+  },
+  {
+    "dataset": "cars",
+    "jobs": [
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "cars",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361622
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "cars",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361622
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 3,
+    "task_index": 7,
+    "wave_index": 38
+  },
+  {
+    "dataset": "cars",
+    "jobs": [
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "cars",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361622
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "cars",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361622
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 4,
+    "task_index": 7,
+    "wave_index": 39
+  },
+  {
+    "dataset": "space_ga",
+    "jobs": [
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "space_ga",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361623
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "space_ga",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361623
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 0,
+    "task_index": 8,
+    "wave_index": 40
+  },
+  {
+    "dataset": "space_ga",
+    "jobs": [
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "space_ga",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361623
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "C",
+          "arm_code": "C",
+          "dataset": "space_ga",
+          "fold": 0,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361623
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 1,
+    "task_index": 8,
+    "wave_index": 41
+  },
+  {
+    "dataset": "space_ga",
+    "jobs": [
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "space_ga",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361623
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "space_ga",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361623
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 2,
+    "task_index": 8,
+    "wave_index": 42
+  },
+  {
+    "dataset": "space_ga",
+    "jobs": [
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "space_ga",
+          "fold": 1,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361623
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "A10",
+          "arm_code": "A",
+          "dataset": "space_ga",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361623
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 3,
+    "task_index": 8,
+    "wave_index": 43
+  },
+  {
+    "dataset": "space_ga",
+    "jobs": [
+      {
+        "key": {
+          "arm": "M",
+          "arm_code": "M",
+          "dataset": "space_ga",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361623
+        },
+        "worker_slot": 0
+      },
+      {
+        "key": {
+          "arm": "D",
+          "arm_code": "D",
+          "dataset": "space_ga",
+          "fold": 2,
+          "repeat": 0,
+          "sample": 0,
+          "task_id": 361623
+        },
+        "worker_slot": 1
+      }
+    ],
+    "local_wave_index": 4,
+    "task_index": 8,
+    "wave_index": 44
+  }
+]
