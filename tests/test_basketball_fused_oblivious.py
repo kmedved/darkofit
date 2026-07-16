@@ -253,6 +253,31 @@ def test_training_only_policy_binds_frozen_candidate_and_protocol(monkeypatch):
         experiment._validate_runtime_policy(args)
 
 
+def test_automatic_policy_binds_promoted_subtree_and_dedicated_output(monkeypatch):
+    args = experiment.parse_args(
+        [
+            "--threads",
+            "18",
+            "--runtime-policy",
+            "automatic-training-only",
+            "--output",
+            str(experiment.AUTOMATIC_OUTPUT),
+        ]
+    )
+    monkeypatch.setattr(
+        experiment,
+        "_current_darkofit_subtree",
+        lambda: experiment.AUTOMATIC_DARKOFIT_SUBTREE,
+    )
+
+    experiment._validate_runtime_policy(args)
+
+    invalid = experiment.parse_args(["--threads", "18"])
+    invalid.runtime_policy = experiment.RUNTIME_POLICY_AUTOMATIC
+    with pytest.raises(RuntimeError, match="output path is not exact"):
+        experiment._validate_runtime_policy(invalid)
+
+
 def test_atomic_benchmark_publication_never_replaces_existing_output(tmp_path):
     output = tmp_path / "result.json"
     experiment._atomic_write_new_bytes(output, b"first\n")
@@ -262,3 +287,15 @@ def test_atomic_benchmark_publication_never_replaces_existing_output(tmp_path):
 
     assert output.read_bytes() == b"first\n"
     assert not list(tmp_path.glob(".*.tmp"))
+
+
+def test_automatic_success_emits_final_promotion_disposition():
+    assert experiment._decision_recommendation(
+        True, experiment.RUNTIME_POLICY_AUTOMATIC
+    ) == "promote_internal_fused_lane"
+    assert experiment._decision_recommendation(
+        True, experiment.RUNTIME_POLICY_TRAINING_ONLY
+    ) == "advance_to_expanded_behavior_tests"
+    assert experiment._decision_recommendation(
+        False, experiment.RUNTIME_POLICY_AUTOMATIC
+    ) == "advance_none"

@@ -41,7 +41,12 @@ MAX_PREDICT_RATIO = 1.02
 MAX_PEAK_RSS_RATIO = 1.10
 RUNTIME_POLICY_ORIGINAL = "original"
 RUNTIME_POLICY_TRAINING_ONLY = "training-only"
-RUNTIME_POLICIES = (RUNTIME_POLICY_ORIGINAL, RUNTIME_POLICY_TRAINING_ONLY)
+RUNTIME_POLICY_AUTOMATIC = "automatic-training-only"
+RUNTIME_POLICIES = (
+    RUNTIME_POLICY_ORIGINAL,
+    RUNTIME_POLICY_TRAINING_ONLY,
+    RUNTIME_POLICY_AUTOMATIC,
+)
 EXPECTED_DEFAULT_MEAN_R2 = 0.5267495183883605
 WORKER_RESULT_PREFIX = "BASKETBALL_FUSED_OBLIVIOUS_RESULT="
 DEFAULT_OUTPUT = REPO_ROOT / "benchmarks" / "basketball_fused_oblivious.json"
@@ -56,6 +61,17 @@ CONFIRMATION_PROTOCOL_SHA256 = (
 )
 CONFIRMATION_DARKOFIT_SUBTREE = "033ff90c60b01a30281ffb3b88729f30571ab246"
 CONFIRMATION_THREADS = 18
+AUTOMATIC_OUTPUT = (
+    REPO_ROOT / "benchmarks" / "basketball_fused_oblivious_automatic.json"
+)
+AUTOMATIC_PROTOCOL = (
+    REPO_ROOT / "benchmarks" / "basketball_fused_oblivious_automatic_protocol.md"
+)
+AUTOMATIC_PROTOCOL_SHA256 = (
+    "a0d36c335c06e24902efa36fad69d444c78ab07e89316f71dc317b0a5af2df87"
+)
+AUTOMATIC_DARKOFIT_SUBTREE = "5d8d1f0e7c9edffcb1a8e03315f231ec3e30caf4"
+AUTOMATIC_THREADS = 18
 _FUSED_LEVEL_COUNTER: np.ndarray | None = None
 
 
@@ -464,22 +480,44 @@ def _current_darkofit_subtree() -> str:
     return value
 
 
+def _runtime_policy_binding(runtime_policy: str):
+    if runtime_policy == RUNTIME_POLICY_TRAINING_ONLY:
+        return {
+            "label": "training-only confirmation",
+            "threads": CONFIRMATION_THREADS,
+            "output": CONFIRMATION_OUTPUT,
+            "protocol": CONFIRMATION_PROTOCOL,
+            "protocol_sha256": CONFIRMATION_PROTOCOL_SHA256,
+            "darkofit_subtree": CONFIRMATION_DARKOFIT_SUBTREE,
+        }
+    if runtime_policy == RUNTIME_POLICY_AUTOMATIC:
+        return {
+            "label": "automatic training confirmation",
+            "threads": AUTOMATIC_THREADS,
+            "output": AUTOMATIC_OUTPUT,
+            "protocol": AUTOMATIC_PROTOCOL,
+            "protocol_sha256": AUTOMATIC_PROTOCOL_SHA256,
+            "darkofit_subtree": AUTOMATIC_DARKOFIT_SUBTREE,
+        }
+    raise RuntimeError(f"unknown runtime policy: {runtime_policy}")
+
+
 def _validate_runtime_policy(args: argparse.Namespace) -> None:
     if args.runtime_policy == RUNTIME_POLICY_ORIGINAL:
         return
-    if args.runtime_policy != RUNTIME_POLICY_TRAINING_ONLY:
-        raise RuntimeError(f"unknown runtime policy: {args.runtime_policy}")
-    if args.threads != CONFIRMATION_THREADS:
-        raise RuntimeError("training-only confirmation requires exactly 18 threads")
-    if args.output != CONFIRMATION_OUTPUT:
-        raise RuntimeError("training-only confirmation output path is not exact")
+    binding = _runtime_policy_binding(args.runtime_policy)
+    label = binding["label"]
+    if args.threads != binding["threads"]:
+        raise RuntimeError(f"{label} requires exactly 18 threads")
+    if args.output != binding["output"]:
+        raise RuntimeError(f"{label} output path is not exact")
     if args.allow_dirty_source:
-        raise RuntimeError("training-only confirmation requires clean source")
-    protocol_payload = CONFIRMATION_PROTOCOL.read_bytes()
-    if hashlib.sha256(protocol_payload).hexdigest() != CONFIRMATION_PROTOCOL_SHA256:
-        raise RuntimeError("training-only confirmation protocol changed")
-    if _current_darkofit_subtree() != CONFIRMATION_DARKOFIT_SUBTREE:
-        raise RuntimeError("training-only confirmation candidate subtree changed")
+        raise RuntimeError(f"{label} requires clean source")
+    protocol_payload = binding["protocol"].read_bytes()
+    if hashlib.sha256(protocol_payload).hexdigest() != binding["protocol_sha256"]:
+        raise RuntimeError(f"{label} protocol changed")
+    if _current_darkofit_subtree() != binding["darkofit_subtree"]:
+        raise RuntimeError(f"{label} candidate subtree changed")
 
 
 def _assert_source_unchanged(expected, observed, boundary: str) -> None:
@@ -529,6 +567,14 @@ def _repeat_record(block: int, position: int, result: dict[str, Any]):
         "worker_stdout": result["worker_stdout"],
         "worker_stderr": result["worker_stderr"],
     }
+
+
+def _decision_recommendation(passes_all: bool, runtime_policy: str) -> str:
+    if not passes_all:
+        return "advance_none"
+    if runtime_policy == RUNTIME_POLICY_AUTOMATIC:
+        return "promote_internal_fused_lane"
+    return "advance_to_expanded_behavior_tests"
 
 
 def run_parent(args: argparse.Namespace) -> dict[str, Any]:
@@ -634,16 +680,24 @@ def run_parent(args: argparse.Namespace) -> dict[str, Any]:
         "evidence_gates": {"committed_clean_source": evidence_eligible},
         "evidence_eligible": evidence_eligible,
         "passes_all_gates": passes_all,
-        "recommendation": (
-            "advance_to_expanded_behavior_tests" if passes_all else "advance_none"
+        "recommendation": _decision_recommendation(
+            passes_all, args.runtime_policy
         ),
     }
     artifact = {
         "schema_version": 1,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "protocol": {
-            "name": "basketball_behavior_exact_fused_oblivious",
-            "candidate_scope": "private_engine_candidate",
+            "name": (
+                "basketball_behavior_exact_fused_oblivious_automatic"
+                if args.runtime_policy == RUNTIME_POLICY_AUTOMATIC
+                else "basketball_behavior_exact_fused_oblivious"
+            ),
+            "candidate_scope": (
+                "automatic_internal_dispatch"
+                if args.runtime_policy == RUNTIME_POLICY_AUTOMATIC
+                else "private_engine_candidate"
+            ),
             "public_parameter_added": False,
             "creator_benchmark_changed": False,
             "quality_tuning": False,
@@ -717,18 +771,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         parser.error("--threads must be at least 3 for the fused campaign")
     args.output = creator._absolute_lexical_path(args.output)
     args.data_cache = creator._absolute_lexical_path(args.data_cache)
-    if args.runtime_policy == RUNTIME_POLICY_TRAINING_ONLY:
-        if args.threads != CONFIRMATION_THREADS:
+    if args.runtime_policy != RUNTIME_POLICY_ORIGINAL:
+        binding = _runtime_policy_binding(args.runtime_policy)
+        if args.threads != binding["threads"]:
             parser.error(
-                "--runtime-policy training-only requires --threads 18"
+                f"--runtime-policy {args.runtime_policy} requires --threads 18"
             )
-        if args.output != CONFIRMATION_OUTPUT:
+        if args.output != binding["output"]:
             parser.error(
-                "--runtime-policy training-only requires the frozen confirmation output"
+                f"--runtime-policy {args.runtime_policy} requires its frozen output"
             )
         if args.allow_dirty_source:
             parser.error(
-                "--runtime-policy training-only does not allow dirty source"
+                f"--runtime-policy {args.runtime_policy} does not allow dirty source"
             )
     return args
 
