@@ -391,7 +391,12 @@ def _run_worker_process(
     ]
     if profile:
         command.extend(
-            ["--profile-config", config_name, "--profile-fold", str(PROFILE_FOLD)]
+            [
+                "--profile-config",
+                config_name,
+                "--profile-fold",
+                str(args.profile_fold),
+            ]
         )
     else:
         command.extend(["--worker-config", config_name])
@@ -565,20 +570,23 @@ def run_parent(args: argparse.Namespace) -> dict[str, Any]:
             _validate_source_state(args),
             boundary=f"before profiling {config_name}",
         )
-        print(f"profiling {config_name} on fold {PROFILE_FOLD}...", flush=True)
+        print(
+            f"profiling {config_name} on fold {args.profile_fold}...",
+            flush=True,
+        )
         profiles[config_name] = _run_worker_process(
             args, config_name, profile=True
         )
         matching = next(
             result for result in results if result["config"] == config_name
-        )["folds"][PROFILE_FOLD]
+        )["folds"][args.profile_fold]
         if (
             profiles[config_name]["prediction_sha256"]
             != matching["prediction_sha256"]
             or profiles[config_name]["r2"] != matching["r2"]
         ):
             raise RuntimeError(
-                f"profile changed {config_name} fold-{PROFILE_FOLD} behavior"
+                f"profile changed {config_name} fold-{args.profile_fold} behavior"
             )
 
     baseline._assert_sources_unchanged(
@@ -611,7 +619,7 @@ def run_parent(args: argparse.Namespace) -> dict[str, Any]:
             "warmup": "one full first-fold fit and predict per config outside timing",
             "weights_used": False,
             "held_out_teams_scored": True,
-            "profile_fold": PROFILE_FOLD,
+            "profile_fold": args.profile_fold,
         },
         "raw_data": raw_metadata,
         "processed_data": processed_metadata,
@@ -666,6 +674,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     args = parser.parse_args(argv)
     if args.threads < 1:
         parser.error("--threads must be positive")
+    if args.profile_fold < 0 or args.profile_fold >= baseline.N_SPLITS:
+        parser.error(f"--profile-fold must be in [0, {baseline.N_SPLITS - 1}]")
     args.output = baseline._absolute_lexical_path(args.output)
     args.data_cache = baseline._absolute_lexical_path(args.data_cache)
     args.chimeraboost_repo = args.chimeraboost_repo.expanduser().resolve()

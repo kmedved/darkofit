@@ -8,7 +8,7 @@ the predeclared quality, fold-breadth, held-team, and runtime gates.
 
 `linear_residual=True` was the screen winner, but its +0.000402 mean R² gain
 closes only 4.2% of the gap to CatBoost. It won 5 of 10 folds, and its mean gain
-became negative when either of two favorable folds was omitted. This is useful
+became negative when any of four favorable folds was omitted. This is useful
 opt-in evidence, not a default-policy result.
 
 ## Results

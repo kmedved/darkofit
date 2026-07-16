@@ -1,3 +1,5 @@
+import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
@@ -197,3 +199,30 @@ def test_prediction_fingerprint_is_shape_and_value_stable():
 def test_invalid_phase_timing_fails_closed():
     with pytest.raises(RuntimeError, match="invalid value"):
         ablation._phase_timing(SimpleNamespace(timing_={"tree_build": -1.0}))
+
+
+def test_profile_worker_process_forwards_requested_fold(monkeypatch):
+    observed = {}
+
+    def fake_run(command, **kwargs):
+        observed["command"] = command
+        payload = ablation.WORKER_RESULT_PREFIX + json.dumps({}) + "\n"
+        return SimpleNamespace(returncode=0, stdout=payload, stderr="")
+
+    monkeypatch.setattr(ablation.subprocess, "run", fake_run)
+    args = SimpleNamespace(
+        data_cache=Path("data.csv"),
+        threads=2,
+        profile_fold=3,
+    )
+
+    ablation._run_worker_process(args, "default", profile=True)
+
+    index = observed["command"].index("--profile-fold")
+    assert observed["command"][index + 1] == "3"
+
+
+@pytest.mark.parametrize("value", ("-1", "10"))
+def test_parse_args_rejects_out_of_range_profile_fold(value):
+    with pytest.raises(SystemExit):
+        ablation.parse_args(["--profile-fold", value])
