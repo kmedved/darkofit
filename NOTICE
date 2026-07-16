@@ -11,3 +11,8 @@ commits 425dfb316fcfb39538ccbe3794455e9ca6cf9e04,
 ce5ca0d6ed324f16c1973b366663e0fe29ea3c03. DarkoFit integrates those ideas
 with its own row-major tree kernels, sampling semantics, model format,
 flattened prediction path, and validation/refit policy.
+
+The feature-parallel fused histogram-build/shared-split design is adapted
+from ChimeraBoost commit a04430657fb82c806ee2a039506c99944a27accc.
+DarkoFit preserves its own row-major buffers, split-legality semantics,
+floating-point order, and existing kernels as exact-equality references.

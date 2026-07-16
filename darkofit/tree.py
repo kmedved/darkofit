@@ -2282,6 +2282,129 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
     return best_f, feat_thr[best_f], best_gain
 
 
+@njit(cache=True, parallel=True)
+def _build_histograms_unit_hess_and_best_split(
+    X_binned,
+    grad,
+    leaf,
+    n_leaves,
+    hg,
+    hh,
+    n_bins_per_feature,
+    l2,
+    feat_mask,
+    min_child_weight,
+    scratch_Gt,
+    scratch_Ht,
+    scratch_GL,
+    scratch_HL,
+    scratch_parent,
+    scratch_last_positive,
+):
+    """Fuse the common unit-Hessian histogram build and shared split scan.
+
+    This is the feature-parallel composition of
+    ``_build_histograms_unit_hess_into`` and ``_best_split``. Each feature's
+    histogram is consumed by the same worker immediately after it is built,
+    removing one parallel launch per tree level while preserving the current
+    accumulation, legality, tie-breaking, and floating-point operation order.
+    Adapted from ChimeraBoost's Apache-2.0 fused-kernel design; see ``NOTICE``.
+    """
+    n_samples, n_features = X_binned.shape
+    max_bins = hg.shape[2]
+    feat_gain = np.full(n_features, -np.inf)
+    feat_thr = np.full(n_features, -1, dtype=np.int64)
+
+    for f in prange(n_features):
+        # Build every feature exactly like the reference histogram kernel,
+        # including masked features, so the reusable buffers remain exact.
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+        for i in range(n_samples):
+            l = leaf[i]
+            b = X_binned[i, f]
+            hg[f, l, b] += grad[i]
+            hh[f, l, b] += 1.0
+
+        if feat_mask[f] == 0:
+            continue
+        nb = n_bins_per_feature[f]
+        for l in range(n_leaves):
+            scratch_Gt[f, l] = 0.0
+            scratch_Ht[f, l] = 0.0
+            scratch_last_positive[f, l] = -1
+            for b in range(nb):
+                scratch_Gt[f, l] += hg[f, l, b]
+                scratch_Ht[f, l] += hh[f, l, b]
+                if hh[f, l, b] > 0.0:
+                    scratch_last_positive[f, l] = b
+        for l in range(n_leaves):
+            scratch_GL[f, l] = 0.0
+            scratch_HL[f, l] = 0.0
+            parent_denom = scratch_Ht[f, l] + l2
+            if scratch_Ht[f, l] > 0.0 and parent_denom > 0.0:
+                scratch_parent[f, l] = (
+                    scratch_Gt[f, l] * scratch_Gt[f, l] / parent_denom
+                )
+            else:
+                scratch_parent[f, l] = 0.0
+
+        best_g = -np.inf
+        best_t = -1
+        for t in range(nb - 1):
+            gain = 0.0
+            legal = True
+            any_nonempty = False
+
+            for l in range(n_leaves):
+                scratch_GL[f, l] += hg[f, l, t]
+                scratch_HL[f, l] += hh[f, l, t]
+
+                if scratch_Ht[f, l] > 0.0:
+                    any_nonempty = True
+                    hl = scratch_HL[f, l]
+                    hr = scratch_Ht[f, l] - hl
+                    if hl <= 0.0 or t >= scratch_last_positive[f, l]:
+                        continue
+                    left_denom = hl + l2
+                    right_denom = hr + l2
+                    parent_denom = scratch_Ht[f, l] + l2
+                    if (
+                        hl < min_child_weight
+                        or hr < min_child_weight
+                        or hr <= 0.0
+                        or left_denom <= 0.0
+                        or right_denom <= 0.0
+                        or parent_denom <= 0.0
+                    ):
+                        legal = False
+                    else:
+                        gl = scratch_GL[f, l]
+                        gr = scratch_Gt[f, l] - gl
+                        gain += (
+                            gl * gl / left_denom
+                            + gr * gr / right_denom
+                            - scratch_parent[f, l]
+                        )
+
+            if legal and any_nonempty and gain > best_g:
+                best_g = gain
+                best_t = t
+
+        feat_gain[f] = best_g
+        feat_thr[f] = best_t
+
+    best_f = 0
+    best_gain = -np.inf
+    for f in range(n_features):
+        if feat_gain[f] > best_gain:
+            best_gain = feat_gain[f]
+            best_f = f
+    return best_f, feat_thr[best_f], best_gain
+
+
 @njit(cache=True)
 def _best_split_serial(hg, hh, n_bins_per_feature, l2, feat_mask,
                        min_child_weight, n_leaves):
@@ -4748,7 +4871,8 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                          level_histogram_subtraction="auto",
                          root_histograms=None, random_strength=0.0,
                          split_seed=0, tree_iteration=0,
-                         leaf_dtype="int64"):
+                         leaf_dtype="int64", fused_oblivious_kernel=False,
+                         fused_oblivious_counter=None):
     """Grow one oblivious tree level by level and return an ObliviousTree.
 
     X_hist_binned: optional feature-contiguous view/copy of X_binned used only
@@ -4790,6 +4914,13 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     arrays holding the precomputed root histograms (e.g. from one fused
     class-major pass in the multiclass booster). When supplied in the
     full-row/full-feature lane, level 0 copies them instead of scanning.
+    fused_oblivious_kernel: private experimental switch for the common
+    multithreaded full-row/full-feature unit-Hessian lane. It fuses histogram
+    construction and split scanning without changing any public estimator
+    parameter. Ineligible lanes retain the current kernels.
+    fused_oblivious_counter: optional one-element integer array incremented
+    once for every actual fused level invocation. This is benchmark
+    observability only; requesting the candidate does not count as engagement.
     """
     if X_hist_binned is None:
         X_hist_binned = X_binned
@@ -4800,6 +4931,15 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     elif X_route_binned.shape != X_binned.shape:
         raise ValueError("X_route_binned must have the same shape as X_binned")
     leaf_dtype = _normalize_leaf_dtype(leaf_dtype)
+    if fused_oblivious_counter is not None:
+        fused_oblivious_counter = np.asarray(fused_oblivious_counter)
+        if (
+            fused_oblivious_counter.shape != (1,)
+            or not np.issubdtype(fused_oblivious_counter.dtype, np.integer)
+        ):
+            raise ValueError(
+                "fused_oblivious_counter must be a one-element integer array"
+            )
     n_samples = X_binned.shape[0]
     n_features = X_binned.shape[1]
     max_bins = n_features and int(n_bins_per_feature.max())
@@ -4907,6 +5047,17 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
         and row_indices is None
         and feature_indices is None
     )
+    fused_lane = (
+        bool(fused_oblivious_kernel)
+        and not use_serial_kernels
+        and constant_hessian
+        and row_indices is None
+        and feature_indices is None
+        and rowpar_buffers is None
+        and not subtract_lane
+        and not root_copy_lane
+        and random_strength <= 0.0
+    )
 
     for d in range(max_depth):
         n_leaves = 1 << d
@@ -4917,7 +5068,28 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
             hh[:n_features, 0, :max_bins] = root_histograms[1]
         if subtract_level:
             scan_idx, scan_side = _level_scan_plan(leaf, n_leaves >> 1)
-        if use_serial_kernels:
+        if fused_lane:
+            if fused_oblivious_counter is not None:
+                fused_oblivious_counter[0] += 1
+            f, t, gain = _build_histograms_unit_hess_and_best_split(
+                X_hist_binned,
+                grad,
+                leaf,
+                n_leaves,
+                hg,
+                hh,
+                n_bins_per_feature,
+                l2,
+                feature_mask,
+                min_child_weight,
+                split_scratch[0],
+                split_scratch[1],
+                split_scratch[2],
+                split_scratch[3],
+                split_scratch[4],
+                split_scratch[5],
+            )
+        elif use_serial_kernels:
             if root_copy:
                 pass
             elif subtract_level:

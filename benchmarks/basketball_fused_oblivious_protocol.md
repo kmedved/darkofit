@@ -52,7 +52,8 @@ semantics, and floating-point operation order.
 Initial eligibility is deliberately narrow:
 
 - oblivious/`tree_mode="catboost"` scalar trees;
-- more than one Numba thread;
+- at least three Numba threads (the existing subtraction lane owns one- and
+  two-thread fits);
 - constant Hessian;
 - all rows and all features;
 - no root-histogram injection;
@@ -82,7 +83,9 @@ Before timing:
 - the standalone readable oblivious oracle must pass;
 - the complete test suite must pass; and
 - unsupported/ineligible lanes must prove that the fused function was not
-  called.
+  called; and
+- the clean candidate artifact must record a positive count of actual fused
+  level invocations while the default records zero.
 
 The clean basketball campaign then runs the unchanged ten folds plus the
 overlap-exposed team holdout and 585-row cold-player subset. Candidate and
