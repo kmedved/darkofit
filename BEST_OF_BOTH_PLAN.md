@@ -239,6 +239,12 @@ Code-mass comparison:
 5. **`n_ensembles` bagging with OOB early stopping** (port ~80 lines from
    their `_fit_bagged`). Basketball evidence says this is the quality ceiling
    on small noisy data (0.5402 vs our 0.5267).
+   **Screened 2026-07-16:** an independent five-member DarkoFit prototype
+   passed all five basketball quality gates (mean +0.003876 R²; cold-player
+   +0.019349) but both arms failed the frozen timing-stability gate after a
+   shared final-block slowdown. Formal decision: `advance_none`; preserve as
+   promising evidence and do not add the API without a separately frozen,
+   stable confirmation campaign.
 6. **Calibration ports**: temperature scaling for `DarkoClassifier`
    (validation split, monotonic, predict unchanged) and the split-conformal
    quantile offset for `loss="Quantile"` — both natural fits for our
