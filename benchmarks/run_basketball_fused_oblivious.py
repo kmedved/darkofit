@@ -65,14 +65,18 @@ def configure_builder(config_name: str) -> None:
 
     import darkofit.booster as booster_module
 
-    if config_name == DEFAULT_CONFIG:
-        _FUSED_LEVEL_COUNTER = None
-        return
-    if config_name != FUSED_CONFIG:
+    if config_name not in CONFIG_ORDER:
         raise ValueError(f"unknown basketball config: {config_name}")
     original = booster_module.build_oblivious_tree
     if isinstance(original, functools.partial):
         raise RuntimeError("oblivious builder was already wrapped")
+    if config_name == DEFAULT_CONFIG:
+        _FUSED_LEVEL_COUNTER = None
+        booster_module.build_oblivious_tree = functools.partial(
+            original,
+            fused_oblivious_kernel=False,
+        )
+        return
     _FUSED_LEVEL_COUNTER = np.zeros(1, dtype=np.int64)
     booster_module.build_oblivious_tree = functools.partial(
         original,
@@ -485,6 +489,29 @@ def _assert_source_unchanged(expected, observed, boundary: str) -> None:
         raise RuntimeError(f"DarkoFit source changed {boundary}: " + ", ".join(changed))
 
 
+def _atomic_write_new_bytes(path: Path, payload: bytes) -> None:
+    """Publish one new artifact atomically without replacing any existing path."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+            os.fchmod(stream.fileno(), 0o644)
+        try:
+            os.link(temporary, path)
+        except FileExistsError as exc:
+            raise RuntimeError(
+                f"refusing to overwrite benchmark output: {path}"
+            ) from exc
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 def _repeat_record(block: int, position: int, result: dict[str, Any]):
     return {
         "block": int(block),
@@ -507,6 +534,8 @@ def _repeat_record(block: int, position: int, result: dict[str, Any]):
 def run_parent(args: argparse.Namespace) -> dict[str, Any]:
     if args.output.is_symlink():
         raise RuntimeError(f"refusing symlink benchmark output: {args.output}")
+    if args.output.exists():
+        raise RuntimeError(f"refusing to overwrite benchmark output: {args.output}")
     _validate_runtime_policy(args)
     source = _source_state(args.allow_dirty_source)
     dataset = harness.load_basketball_dataset(args.data_cache)
@@ -660,7 +689,7 @@ def run_parent(args: argparse.Namespace) -> dict[str, Any]:
         "peak_rss_values": rss_values,
         "decision": decision,
     }
-    creator._atomic_write_bytes(
+    _atomic_write_new_bytes(
         args.output,
         (json.dumps(artifact, indent=2, sort_keys=True, allow_nan=False) + "\n").encode(
             "utf-8"

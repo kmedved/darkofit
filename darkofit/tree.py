@@ -4871,7 +4871,7 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                          level_histogram_subtraction="auto",
                          root_histograms=None, random_strength=0.0,
                          split_seed=0, tree_iteration=0,
-                         leaf_dtype="int64", fused_oblivious_kernel=False,
+                         leaf_dtype="int64", fused_oblivious_kernel=True,
                          fused_oblivious_counter=None):
     """Grow one oblivious tree level by level and return an ObliviousTree.
 
@@ -4914,10 +4914,11 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     arrays holding the precomputed root histograms (e.g. from one fused
     class-major pass in the multiclass booster). When supplied in the
     full-row/full-feature lane, level 0 copies them instead of scanning.
-    fused_oblivious_kernel: private experimental switch for the common
-    multithreaded full-row/full-feature unit-Hessian lane. It fuses histogram
-    construction and split scanning without changing any public estimator
-    parameter. Ineligible lanes retain the current kernels.
+    fused_oblivious_kernel: private internal dispatch switch for the common
+    multithreaded full-row/full-feature unit-Hessian lane. The proven lane is
+    enabled by default and fuses histogram construction and split scanning
+    without changing any public estimator parameter. Ineligible lanes retain
+    the current kernels.
     fused_oblivious_counter: optional one-element integer array incremented
     once for every actual fused level invocation. This is benchmark
     observability only; requesting the candidate does not count as engagement.
@@ -5049,7 +5050,7 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     )
     fused_lane = (
         bool(fused_oblivious_kernel)
-        and not use_serial_kernels
+        and get_num_threads() > _LEVEL_SUBTRACTION_MAX_THREADS
         and constant_hessian
         and row_indices is None
         and feature_indices is None

@@ -14,8 +14,12 @@ def test_configure_builder_wraps_only_fused_worker(monkeypatch):
 
     monkeypatch.setattr(booster_module, "build_oblivious_tree", builder)
     experiment.configure_builder(experiment.DEFAULT_CONFIG)
-    assert booster_module.build_oblivious_tree is builder
+    reference = booster_module.build_oblivious_tree
+    assert isinstance(reference, partial)
+    assert reference.func is builder
+    assert reference.keywords["fused_oblivious_kernel"] is False
 
+    monkeypatch.setattr(booster_module, "build_oblivious_tree", builder)
     experiment.configure_builder(experiment.FUSED_CONFIG)
     wrapped = booster_module.build_oblivious_tree
     assert isinstance(wrapped, partial)
@@ -247,3 +251,14 @@ def test_training_only_policy_binds_frozen_candidate_and_protocol(monkeypatch):
     )
     with pytest.raises(RuntimeError, match="candidate subtree changed"):
         experiment._validate_runtime_policy(args)
+
+
+def test_atomic_benchmark_publication_never_replaces_existing_output(tmp_path):
+    output = tmp_path / "result.json"
+    experiment._atomic_write_new_bytes(output, b"first\n")
+
+    with pytest.raises(RuntimeError, match="refusing to overwrite"):
+        experiment._atomic_write_new_bytes(output, b"second\n")
+
+    assert output.read_bytes() == b"first\n"
+    assert not list(tmp_path.glob(".*.tmp"))

@@ -227,3 +227,39 @@ def test_ineligible_builder_lanes_do_not_call_fused_kernel(
         assert int(fused_counter[0]) == 0
     finally:
         _set_threads(previous)
+
+
+@pytest.mark.parametrize("thread_count", [1, 2])
+def test_fused_builder_requires_at_least_three_threads(
+    monkeypatch, thread_count
+):
+    previous = _set_threads(thread_count)
+    try:
+        X, grad, _leaf, n_bins = _varied_bin_case(seed=47)
+        hess = np.ones(len(X), dtype=np.float64)
+
+        def fail_if_called(*args, **kwargs):
+            raise AssertionError("low-thread lane called the fused kernel")
+
+        monkeypatch.setattr(
+            tree_module,
+            "_build_histograms_unit_hess_and_best_split",
+            fail_if_called,
+        )
+        fused_counter = np.zeros(1, dtype=np.int64)
+        build_oblivious_tree(
+            X,
+            grad,
+            hess,
+            n_bins,
+            max_depth=3,
+            l2=3.0,
+            lr=0.1,
+            constant_hessian=True,
+            level_histogram_subtraction=False,
+            fused_oblivious_kernel=True,
+            fused_oblivious_counter=fused_counter,
+        )
+        assert int(fused_counter[0]) == 0
+    finally:
+        _set_threads(previous)
