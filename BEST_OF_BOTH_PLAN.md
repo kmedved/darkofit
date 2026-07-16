@@ -30,6 +30,25 @@ claims until independently reproduced here.*
   has 27 constructor parameters; DarkoFit contains 22,057 package lines and
   its regressor has 58 parameters.
 
+### Current execution status (2026-07-16)
+
+- The first fused engine port is complete. DarkoFit now combines its existing
+  unit-Hessian histogram builder and shared split scan in one feature-parallel
+  launch for the narrow proven lane; all unsupported paths retain their exact
+  previous kernels.
+- Basketball remained the first fatal gate throughout. The final automatic
+  promotion run matched every fold, held-team and cold-player prediction,
+  feature importance, fitted metadata payload, and serialized model byte.
+  Median fit time fell from 28.93s to 19.31s (33.2%) and steady wall time from
+  29.46s to 19.83s (32.7%).
+- Expanded exactness coverage passed for categorical RMSE, MAE, Quantile,
+  callbacks, and early-stop/exact-refit fits. Weighted RMSE, binary
+  classification, and one- or two-thread fits proved they remain on the
+  reference fallbacks.
+- This closes roughly one third of DarkoFit's basketball runtime, but it does
+  not reach the aspirational 13-second target or ChimeraBoost's diagnostic
+  7.52-second run. The next engine work must again pass basketball first.
+
 ## 0. Thesis
 
 ChimeraBoost wins on **engine discipline and product defaults**; DarkoFit wins

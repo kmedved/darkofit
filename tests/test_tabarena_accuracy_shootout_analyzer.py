@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import json
 import math
+import subprocess
 from copy import deepcopy
 from pathlib import Path
 
@@ -83,11 +84,35 @@ def test_reused_comparator_rows_form_exact_39_coordinate_grid():
     )
 
 
-def test_complete_reused_evidence_contract_revalidates_committed_inputs():
+def test_complete_reused_evidence_contract_revalidates_frozen_inputs(tmp_path):
     repository = Path(analysis.__file__).resolve().parents[1]
+    frozen_repository = tmp_path / "frozen-source"
+    subprocess.run(
+        [
+            "git",
+            "clone",
+            "--quiet",
+            "--shared",
+            "--no-checkout",
+            str(repository),
+            str(frozen_repository),
+        ],
+        check=True,
+    )
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(frozen_repository),
+            "checkout",
+            "--quiet",
+            analysis.SOURCE_COMMIT,
+        ],
+        check=True,
+    )
     source_manifest = json.loads(
         (
-            repository
+            frozen_repository
             / "benchmarks/tabarena_regression_same_machine_run_manifest.json"
         ).read_text(encoding="utf-8")
     )
@@ -100,7 +125,7 @@ def test_complete_reused_evidence_contract_revalidates_committed_inputs():
     }
 
     rows, diagnostics = analysis._verify_source_reuse_contract(
-        repository, manifest
+        frozen_repository, manifest
     )
 
     assert len(rows) == 39
@@ -109,6 +134,23 @@ def test_complete_reused_evidence_contract_revalidates_committed_inputs():
     assert diagnostics["tabarena_provenance"]["git_head"] == (
         source_manifest["source"]["tabarena"]["git_head"]
     )
+
+
+def test_reused_evidence_contract_rejects_package_subtree_drift(monkeypatch):
+    def simulated_git(_repository, args, _label):
+        if args == ["rev-parse", f"{analysis.SOURCE_COMMIT}:darkofit"]:
+            return analysis.SOURCE_DARKOFIT_SUBTREE
+        if args == ["rev-parse", "HEAD:darkofit"]:
+            return "0" * 40
+        raise AssertionError(f"unexpected git command: {args}")
+
+    monkeypatch.setattr(analysis, "_git", simulated_git)
+
+    with pytest.raises(RuntimeError, match="package subtree changed"):
+        analysis._verify_source_reuse_contract(
+            Path(analysis.__file__).resolve().parents[1],
+            {"reused_evidence": analysis.REUSED_EVIDENCE_CONTRACT},
+        )
 
 
 def test_common_dependency_lock_is_explicit_and_only_comparators_may_be_omitted():

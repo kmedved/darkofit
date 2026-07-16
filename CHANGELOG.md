@@ -6,6 +6,20 @@ Behavior-changing default improvements from a full-repo review, plus targeted
 performance and robustness fixes. These are intentional clean cutovers; the
 previous behaviors remain available through explicit parameters.
 
+* Fuse unit-Hessian oblivious histogram construction and shared-split scanning
+  into one feature-parallel launch for the proven full-row/full-feature lane
+  at three or more threads. Weighted RMSE, classification, sampled rows or
+  columns, injected root histograms, random split noise, and one- or two-thread
+  fits retain their existing kernels. The readable implementation remains an
+  exact-equality oracle and no public parameter or model format changed. On
+  the frozen basketball creator folds plus held-team and cold-player
+  guardrails, automatic dispatch produced byte-identical models and identical
+  R² while reducing median fit time by 33.2% (28.93s to 19.31s) and steady
+  wall time by 32.7% (29.46s to 19.83s), with stable reciprocal blocks and
+  essentially flat RSS. Expanded archive-exact tests cover categorical RMSE,
+  MAE, Quantile, callbacks, and exact refit; ineligible weighted and binary
+  lanes prove fallback. The design is adapted from Apache-2.0 ChimeraBoost
+  commit `a04430657fb82c806ee2a039506c99944a27accc`, recorded in `NOTICE`.
 * Add experimental, default-off `linear_leaves=True` for scalar RMSE
   CatBoost/oblivious fits. Each tree can attach Hessian-weighted local ridge
   models over its numeric split features without changing DarkoFit's split
