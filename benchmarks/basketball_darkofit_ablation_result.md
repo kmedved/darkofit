@@ -31,6 +31,33 @@ The external quality targets remain CatBoost at 0.536308 and the current
 five-member ChimeraBoost ensemble at 0.540159. The external speed target
 remains single-model ChimeraBoost at 9.29s on the same frozen steady protocol.
 
+## Guardrail correction and cold-player supplement
+
+The alphabetical team holdout is not independent at the player level. Of its
+767 player identities, 557 (72.6%) also occur in training; those repeated
+players account for 1,824 of 2,409 holdout rows (75.7%). `Player` is not a
+model feature, so this is not direct feature leakage, but the previous generic
+"held-team" label overstated the split's independence. This report now calls
+it the **overlap-exposed team holdout**.
+
+A reproducible supplement rescored the already-persisted predictions on the
+585 holdout rows belonging to 210 players absent from training. It did not
+refit any model or change the frozen creator benchmark.
+
+| Configuration | Overlap-exposed team R² | Cold-player R² | Seen-player R² |
+|---|---:|---:|---:|
+| Current default | 0.531269 | 0.500434 | 0.530247 |
+| A10 numeric | 0.516310 | 0.499691 | 0.510409 |
+| A10 numeric, 2,000 rounds | 0.496402 | 0.479899 | 0.490004 |
+| A10 + early stop + exact refit | 0.527851 | **0.521139** | 0.519058 |
+| Linear residual | **0.539212** | 0.507523 | **0.538647** |
+
+The correction does not reverse the frozen decision. A10 remains rejected;
+the early-stop arm improved cold-player R² but regressed the overlap-exposed
+team and mean fold scores, while linear residual still lacks fold breadth.
+There is no season or date field in the source, so this is an unseen-identity
+diagnostic and not a temporal-generalization claim.
+
 ## What the fitted metadata says
 
 - The default and linear-residual arms resolved learning rate to
@@ -91,6 +118,10 @@ learning rate. Any production policy still requires unseen-dataset validation.
 - `basketball_darkofit_ablation.json` contains all fold scores, predictions,
   prediction hashes, held-team predictions, fitted metadata, phase timings,
   decision gates, and profiles.
+- `basketball_darkofit_cold_player_guardrail.json` pins the source artifact and
+  records the overlap disclosure plus cold/seen-player rescoring.
+- `analyze_basketball_cold_player_guardrail.py` reproduces that supplement
+  without refitting models.
 - `basketball_darkofit_default_timing_confirmation.json` is the clean-source
   isolated timing confirmation.
 - `run_basketball_darkofit_ablation.py` is the frozen five-arm runner.

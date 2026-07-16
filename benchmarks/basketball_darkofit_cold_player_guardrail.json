@@ -1,0 +1,172 @@
+{
+  "comparisons": [
+    {
+      "cold_player_r2_delta_vs_default": -0.0007425887869850767,
+      "config": "a10_numeric",
+      "overlap_exposed_team_r2_delta_vs_default": -0.014959225071086601
+    },
+    {
+      "cold_player_r2_delta_vs_default": -0.02053497747717281,
+      "config": "a10_numeric_2000",
+      "overlap_exposed_team_r2_delta_vs_default": -0.03486666977247266
+    },
+    {
+      "cold_player_r2_delta_vs_default": 0.020705602107772947,
+      "config": "a10_early_stopping_refit",
+      "overlap_exposed_team_r2_delta_vs_default": -0.0034185123485314106
+    },
+    {
+      "cold_player_r2_delta_vs_default": 0.007089200414626129,
+      "config": "linear_residual",
+      "overlap_exposed_team_r2_delta_vs_default": 0.007943020827643754
+    }
+  ],
+  "created_at": "2026-07-16T18:27:09.302537+00:00",
+  "decision": {
+    "previous_recommendation": "advance_none",
+    "reason": "cold-player supplement is diagnostic and no source model was refit",
+    "recommendation": "advance_none",
+    "recommendation_changed": false
+  },
+  "guardrail": {
+    "cold_player_holdout_row_rate": 0.24283935242839352,
+    "cold_player_holdout_rows": 585,
+    "cold_player_mask_sha256": "e17887c9240fd95aee21d37d7e1e8a533c38ef87f4492acd28fb3aa496a3dd19",
+    "cold_players_absent_from_training": true,
+    "cold_unique_players": 210,
+    "creator_team_holdout_unchanged": true,
+    "holdout_player_sequence_sha256": "0f7e3b3cd7c4f1a06fb91e7b220d29747517e24f9887d1af13302e37a0d4dfd2",
+    "holdout_rows": 2409,
+    "holdout_unique_players": 767,
+    "name": "alphabetical_team_holdout_with_cold_player_subset",
+    "overlapping_unique_player_rate": 0.7262059973924381,
+    "overlapping_unique_players": 557,
+    "player_identifier_column": "Player",
+    "player_identifier_policy": "exact_source_string",
+    "player_identifier_used_as_model_feature": false,
+    "seen_player_holdout_row_rate": 0.7571606475716065,
+    "seen_player_holdout_rows": 1824,
+    "team_holdout_interpretation": "player_overlap_exposed",
+    "temporal_guardrail_available": false,
+    "temporal_guardrail_unavailable_reason": "source_has_no_season_or_date_column",
+    "test_teams": [
+      "ATL",
+      "BOS",
+      "BRK",
+      "CHA",
+      "CHH",
+      "CHI",
+      "CHO",
+      "CLE",
+      "DAL",
+      "DEN",
+      "DET",
+      "GSW"
+    ],
+    "train_player_sequence_sha256": "1cba92d12aa0c1aa8a856d2fcad3ae902d9839d01c633481a7047a88aeeba92b",
+    "train_rows": 5241,
+    "train_unique_players": 1190
+  },
+  "results": [
+    {
+      "cold_player_subset": {
+        "prediction_sha256": "998a14f530ed284865a50726191da067f72d69da3001614d664a4b90e7aa6376",
+        "r2": 0.5004336061224341,
+        "rows": 585
+      },
+      "config": "default",
+      "overlap_exposed_team_holdout": {
+        "prediction_sha256": "5d910ae8f6b0dca563b99f9f881dcb17ee092711a46b2890452eaa3b8e68367a",
+        "r2": 0.5312691168690223,
+        "rows": 2409
+      },
+      "seen_player_subset": {
+        "prediction_sha256": "c9b506afbfb3eb660dd918ee9635d996c0285b0320ba250cbf39c80df9122425",
+        "r2": 0.5302474458848148,
+        "rows": 1824
+      }
+    },
+    {
+      "cold_player_subset": {
+        "prediction_sha256": "4539997e9e89eac5ed51e5a032fa5d9b41d155ae1b64d5c9779769324dd443dd",
+        "r2": 0.4996910173354491,
+        "rows": 585
+      },
+      "config": "a10_numeric",
+      "overlap_exposed_team_holdout": {
+        "prediction_sha256": "3441f5ad5d70b0c9011b15ad152320a6f83c541be02d0d68f2331ae6aec6da2c",
+        "r2": 0.5163098917979357,
+        "rows": 2409
+      },
+      "seen_player_subset": {
+        "prediction_sha256": "b3212bfd080448a7c98115705f83cc756702f313236ab69c0c0c9fce822b1ee5",
+        "r2": 0.5104091687962242,
+        "rows": 1824
+      }
+    },
+    {
+      "cold_player_subset": {
+        "prediction_sha256": "182db526b6b63432682aafb72ef641a0a2d3f337238578f5384cca2425c5e9a8",
+        "r2": 0.47989862864526134,
+        "rows": 585
+      },
+      "config": "a10_numeric_2000",
+      "overlap_exposed_team_holdout": {
+        "prediction_sha256": "f243694f18e173f51705b6347d8f1cd1bcaaefbc65ac1ea0f17ba25826e10a5e",
+        "r2": 0.4964024470965497,
+        "rows": 2409
+      },
+      "seen_player_subset": {
+        "prediction_sha256": "07c05cb228ff300092b7cab503d64d39f537eb207e7bca11d0dd2ebcee65798a",
+        "r2": 0.49000410568946307,
+        "rows": 1824
+      }
+    },
+    {
+      "cold_player_subset": {
+        "prediction_sha256": "fa0b691aea981cedd83706ce1e0383fdbee3c5b902aceac221890712cb140f64",
+        "r2": 0.5211392082302071,
+        "rows": 585
+      },
+      "config": "a10_early_stopping_refit",
+      "overlap_exposed_team_holdout": {
+        "prediction_sha256": "03d238b87f3af9537e9a678c4ee36693ee542fff92ecc7fd2d0edd7129b61e7a",
+        "r2": 0.5278506045204909,
+        "rows": 2409
+      },
+      "seen_player_subset": {
+        "prediction_sha256": "d737a8555c9ad2e1e21d8e4e253a408b5ba540dc54d8e45dc689878a7bb23b84",
+        "r2": 0.519058294673495,
+        "rows": 1824
+      }
+    },
+    {
+      "cold_player_subset": {
+        "prediction_sha256": "074185b4b735f78a39fa873a37a192108d2651b86a8100a1358a037671c16553",
+        "r2": 0.5075228065370603,
+        "rows": 585
+      },
+      "config": "linear_residual",
+      "overlap_exposed_team_holdout": {
+        "prediction_sha256": "dbabb0302e28ca3d02cc575e334bf409f10c52b25c48157f57ed07340538a3c0",
+        "r2": 0.5392121376966661,
+        "rows": 2409
+      },
+      "seen_player_subset": {
+        "prediction_sha256": "f0223d9b1b8af94be43d65b3b7c29d0a9cfcfe92a50370ae4ac01cff5441657f",
+        "r2": 0.5386466020803998,
+        "rows": 1824
+      }
+    }
+  ],
+  "schema_version": 1,
+  "scope": {
+    "creator_benchmark_changed": false,
+    "diagnostic_only": true,
+    "models_refit": false,
+    "source_artifact_expected_sha256": "eb7cd737331e270714228e1bf2a7cf61db755b0bd22689f7fa4a3b7bdd881b6f",
+    "source_artifact_head": "55e7dabfb1c4aaee14eddab6018057942d2154fe",
+    "source_artifact_sha256": "eb7cd737331e270714228e1bf2a7cf61db755b0bd22689f7fa4a3b7bdd881b6f",
+    "source_predictions_reused": true
+  }
+}

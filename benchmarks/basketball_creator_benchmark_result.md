@@ -84,4 +84,6 @@ JSON artifacts.
 The frozen five-arm DarkoFit diagnostic is recorded in
 `basketball_darkofit_ablation_result.md`. No tested candidate passed its
 quality, fold-breadth, held-team, and runtime gates, so the current default was
-left unchanged.
+left unchanged. Its later cold-player supplement also corrects the held-team
+description: 72.6% of holdout player identities occur in training, so the
+split is overlap-exposed rather than an independent player guardrail.
