@@ -136,11 +136,114 @@ def test_runtime_analysis_enforces_speed_stability_prediction_and_memory():
     assert result["passes_runtime_gates"] is False
 
 
+def test_training_only_runtime_policy_records_but_does_not_gate_prediction_noise():
+    wall = {
+        experiment.DEFAULT_CONFIG: harness.timing_summary([10.0, 10.1, 10.2]),
+        experiment.FUSED_CONFIG: harness.timing_summary([8.0, 8.1, 8.2]),
+    }
+    fit = {
+        experiment.DEFAULT_CONFIG: harness.timing_summary([9.0, 9.1, 9.2]),
+        experiment.FUSED_CONFIG: harness.timing_summary([7.4, 7.5, 7.6]),
+    }
+    predict = {
+        experiment.DEFAULT_CONFIG: harness.timing_summary([1.0, 1.01, 1.02]),
+        experiment.FUSED_CONFIG: harness.timing_summary([1.2, 1.21, 1.22]),
+    }
+    rss = {
+        experiment.DEFAULT_CONFIG: [100, 101, 102],
+        experiment.FUSED_CONFIG: [102, 103, 104],
+    }
+
+    result = experiment.analyze_runtime(
+        wall,
+        fit,
+        predict,
+        rss,
+        _canonical(),
+        runtime_policy=experiment.RUNTIME_POLICY_TRAINING_ONLY,
+    )
+
+    assert result["passes_runtime_gates"] is True
+    assert "prediction_no_regression" not in result["runtime_gates"]
+    assert result["prediction_timing_disposition"] == (
+        "diagnostic_noncausal_for_training_only_candidate"
+    )
+    original = experiment.analyze_runtime(
+        wall,
+        fit,
+        predict,
+        rss,
+        _canonical(),
+        runtime_policy=experiment.RUNTIME_POLICY_ORIGINAL,
+    )
+    assert original["runtime_gates"]["prediction_no_regression"] is False
+    assert original["passes_runtime_gates"] is False
+
+
 def test_parse_args_requires_multithreaded_campaign(tmp_path):
     args = experiment.parse_args(
         ["--threads", "3", "--output", str(tmp_path / "result.json")]
     )
     assert args.threads == 3
     assert args.output == tmp_path / "result.json"
+    assert args.runtime_policy == experiment.RUNTIME_POLICY_ORIGINAL
+    confirmation = experiment.parse_args(
+        [
+            "--threads",
+            "18",
+            "--runtime-policy",
+            "training-only",
+            "--output",
+            str(experiment.CONFIRMATION_OUTPUT),
+        ]
+    )
+    assert confirmation.runtime_policy == experiment.RUNTIME_POLICY_TRAINING_ONLY
+    with pytest.raises(SystemExit):
+        experiment.parse_args(
+            [
+                "--threads",
+                "3",
+                "--runtime-policy",
+                "training-only",
+                "--output",
+                str(experiment.CONFIRMATION_OUTPUT),
+            ]
+        )
+    with pytest.raises(SystemExit):
+        experiment.parse_args(
+            [
+                "--threads",
+                "18",
+                "--runtime-policy",
+                "training-only",
+            ]
+        )
     with pytest.raises(SystemExit):
         experiment.parse_args(["--threads", "2"])
+
+
+def test_training_only_policy_binds_frozen_candidate_and_protocol(monkeypatch):
+    args = experiment.parse_args(
+        [
+            "--threads",
+            "18",
+            "--runtime-policy",
+            "training-only",
+            "--output",
+            str(experiment.CONFIRMATION_OUTPUT),
+        ]
+    )
+    monkeypatch.setattr(
+        experiment,
+        "_current_darkofit_subtree",
+        lambda: experiment.CONFIRMATION_DARKOFIT_SUBTREE,
+    )
+    experiment._validate_runtime_policy(args)
+
+    monkeypatch.setattr(
+        experiment,
+        "_current_darkofit_subtree",
+        lambda: "0" * 40,
+    )
+    with pytest.raises(RuntimeError, match="candidate subtree changed"):
+        experiment._validate_runtime_policy(args)

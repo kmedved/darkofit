@@ -39,9 +39,23 @@ MAX_WALL_RATIO = 0.85
 MAX_FIT_RATIO = 0.85
 MAX_PREDICT_RATIO = 1.02
 MAX_PEAK_RSS_RATIO = 1.10
+RUNTIME_POLICY_ORIGINAL = "original"
+RUNTIME_POLICY_TRAINING_ONLY = "training-only"
+RUNTIME_POLICIES = (RUNTIME_POLICY_ORIGINAL, RUNTIME_POLICY_TRAINING_ONLY)
 EXPECTED_DEFAULT_MEAN_R2 = 0.5267495183883605
 WORKER_RESULT_PREFIX = "BASKETBALL_FUSED_OBLIVIOUS_RESULT="
 DEFAULT_OUTPUT = REPO_ROOT / "benchmarks" / "basketball_fused_oblivious.json"
+CONFIRMATION_OUTPUT = (
+    REPO_ROOT / "benchmarks" / "basketball_fused_oblivious_confirmation.json"
+)
+CONFIRMATION_PROTOCOL = (
+    REPO_ROOT / "benchmarks" / "basketball_fused_oblivious_confirmation_protocol.md"
+)
+CONFIRMATION_PROTOCOL_SHA256 = (
+    "e806fd59dd8fd1f1683fba3f0ed852104cf172cc2af0eb0a52e961c072e57ea3"
+)
+CONFIRMATION_DARKOFIT_SUBTREE = "033ff90c60b01a30281ffb3b88729f30571ab246"
+CONFIRMATION_THREADS = 18
 _FUSED_LEVEL_COUNTER: np.ndarray | None = None
 
 
@@ -373,7 +387,11 @@ def analyze_runtime(
     predict_timing,
     peak_rss_values,
     canonical,
+    *,
+    runtime_policy=RUNTIME_POLICY_ORIGINAL,
 ) -> dict[str, Any]:
+    if runtime_policy not in RUNTIME_POLICIES:
+        raise ValueError(f"unknown runtime policy: {runtime_policy}")
     wall_ratio = float(
         wall_timing[FUSED_CONFIG]["median_seconds"]
         / wall_timing[DEFAULT_CONFIG]["median_seconds"]
@@ -399,11 +417,19 @@ def analyze_runtime(
         "fused_timing_stable": wall_timing[FUSED_CONFIG]["stable"],
         "wall_speedup": wall_ratio <= MAX_WALL_RATIO,
         "fit_speedup": fit_ratio <= MAX_FIT_RATIO,
-        "prediction_no_regression": predict_ratio <= MAX_PREDICT_RATIO,
         "archive_bytes_exact": fused_archives == default_archives,
         "peak_rss_within_budget": rss_ratio <= MAX_PEAK_RSS_RATIO,
     }
+    prediction_timing_disposition = "gated"
+    if runtime_policy == RUNTIME_POLICY_ORIGINAL:
+        gates["prediction_no_regression"] = predict_ratio <= MAX_PREDICT_RATIO
+    else:
+        prediction_timing_disposition = (
+            "diagnostic_noncausal_for_training_only_candidate"
+        )
     return {
+        "runtime_policy": runtime_policy,
+        "prediction_timing_disposition": prediction_timing_disposition,
         "fused_over_default_median_wall_time": wall_ratio,
         "fused_over_default_median_fit_time": fit_ratio,
         "fused_over_default_median_predict_time": predict_ratio,
@@ -418,6 +444,38 @@ def _source_state(allow_dirty: bool) -> dict[str, Any]:
     if not allow_dirty and not state["clean"]:
         raise RuntimeError("refusing to benchmark a dirty DarkoFit source tree")
     return state
+
+
+def _current_darkofit_subtree() -> str:
+    completed = subprocess.run(
+        ["git", "rev-parse", "HEAD:darkofit"],
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    value = completed.stdout.strip()
+    if completed.returncode or len(value) != 40:
+        raise RuntimeError("could not attest the current DarkoFit package subtree")
+    return value
+
+
+def _validate_runtime_policy(args: argparse.Namespace) -> None:
+    if args.runtime_policy == RUNTIME_POLICY_ORIGINAL:
+        return
+    if args.runtime_policy != RUNTIME_POLICY_TRAINING_ONLY:
+        raise RuntimeError(f"unknown runtime policy: {args.runtime_policy}")
+    if args.threads != CONFIRMATION_THREADS:
+        raise RuntimeError("training-only confirmation requires exactly 18 threads")
+    if args.output != CONFIRMATION_OUTPUT:
+        raise RuntimeError("training-only confirmation output path is not exact")
+    if args.allow_dirty_source:
+        raise RuntimeError("training-only confirmation requires clean source")
+    protocol_payload = CONFIRMATION_PROTOCOL.read_bytes()
+    if hashlib.sha256(protocol_payload).hexdigest() != CONFIRMATION_PROTOCOL_SHA256:
+        raise RuntimeError("training-only confirmation protocol changed")
+    if _current_darkofit_subtree() != CONFIRMATION_DARKOFIT_SUBTREE:
+        raise RuntimeError("training-only confirmation candidate subtree changed")
 
 
 def _assert_source_unchanged(expected, observed, boundary: str) -> None:
@@ -449,6 +507,7 @@ def _repeat_record(block: int, position: int, result: dict[str, Any]):
 def run_parent(args: argparse.Namespace) -> dict[str, Any]:
     if args.output.is_symlink():
         raise RuntimeError(f"refusing symlink benchmark output: {args.output}")
+    _validate_runtime_policy(args)
     source = _source_state(args.allow_dirty_source)
     dataset = harness.load_basketball_dataset(args.data_cache)
     schedule = harness.reciprocal_schedule(DEFAULT_CONFIG, FUSED_CONFIG)
@@ -525,6 +584,7 @@ def run_parent(args: argparse.Namespace) -> dict[str, Any]:
             predict_timing,
             rss_values,
             canonical,
+            runtime_policy=args.runtime_policy,
         )
 
     evidence_eligible = bool(source["clean"])
@@ -566,6 +626,10 @@ def run_parent(args: argparse.Namespace) -> dict[str, Any]:
             "maximum_fit_ratio": MAX_FIT_RATIO,
             "maximum_predict_ratio": MAX_PREDICT_RATIO,
             "maximum_peak_rss_ratio": MAX_PEAK_RSS_RATIO,
+            "runtime_policy": args.runtime_policy,
+            "prediction_timing_is_decision_gate": (
+                args.runtime_policy == RUNTIME_POLICY_ORIGINAL
+            ),
             "threads_per_fit": args.threads,
             "random_state": creator.RANDOM_STATE,
             "weights_used": False,
@@ -612,6 +676,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--data-cache", type=Path, default=harness.DEFAULT_CACHE)
     parser.add_argument("--threads", type=int, default=max(1, os.cpu_count() or 1))
+    parser.add_argument(
+        "--runtime-policy",
+        choices=RUNTIME_POLICIES,
+        default=RUNTIME_POLICY_ORIGINAL,
+    )
     parser.add_argument("--allow-dirty-source", action="store_true")
     parser.add_argument("--worker-config", choices=CONFIG_ORDER, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
@@ -619,6 +688,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         parser.error("--threads must be at least 3 for the fused campaign")
     args.output = creator._absolute_lexical_path(args.output)
     args.data_cache = creator._absolute_lexical_path(args.data_cache)
+    if args.runtime_policy == RUNTIME_POLICY_TRAINING_ONLY:
+        if args.threads != CONFIRMATION_THREADS:
+            parser.error(
+                "--runtime-policy training-only requires --threads 18"
+            )
+        if args.output != CONFIRMATION_OUTPUT:
+            parser.error(
+                "--runtime-policy training-only requires the frozen confirmation output"
+            )
+        if args.allow_dirty_source:
+            parser.error(
+                "--runtime-policy training-only does not allow dirty source"
+            )
     return args
 
 
