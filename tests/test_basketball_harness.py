@@ -75,12 +75,14 @@ def test_behavior_fingerprint_ignores_timing_only():
     first = {
         "prediction_sha256": "abc",
         "fit_seconds": 1.0,
+        "warmup_seconds_outside_timing": 2.0,
         "fit_metadata": harness.extract_fit_metadata(_model(phase=1.0)),
         "timing_summary": harness.timing_summary([1.0, 1.1, 1.2]),
     }
     second = {
         "prediction_sha256": "abc",
         "fit_seconds": 99.0,
+        "warmup_seconds_outside_timing": 222.0,
         "fit_metadata": harness.extract_fit_metadata(_model(phase=88.0)),
         "timing_summary": harness.timing_summary([7.0, 9.0, 12.0]),
     }

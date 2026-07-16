@@ -216,7 +216,7 @@ def _without_timing(value: Any) -> Any:
         return {
             key: _without_timing(item)
             for key, item in value.items()
-            if not key.endswith("_seconds")
+            if "_seconds" not in key
             and key not in {"worker_stdout", "worker_stderr"}
             and not _is_timing_summary(item)
         }
