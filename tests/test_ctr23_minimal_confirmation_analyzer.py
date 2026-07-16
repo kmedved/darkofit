@@ -6,12 +6,47 @@ import ast
 import hashlib
 import json
 import math
+import sys
 from copy import deepcopy
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 
 from benchmarks import analyze_ctr23_minimal_confirmation as analysis
+
+
+def _install_raw_path_tripwire(monkeypatch) -> list[Path]:
+    touched: list[Path] = []
+    for method_name in (
+        "resolve",
+        "stat",
+        "lstat",
+        "exists",
+        "is_file",
+        "open",
+        "read_bytes",
+        "iterdir",
+        "glob",
+        "rglob",
+    ):
+        original = getattr(Path, method_name)
+
+        def guarded(
+            path,
+            *args,
+            _original=original,
+            _method_name=method_name,
+            **kwargs,
+        ):
+            folded = {part.casefold() for part in path.parts}
+            if "experiments" in folded or "results.pkl" in folded:
+                touched.append(path)
+                raise AssertionError(f"raw path {_method_name} touched {path}")
+            return _original(path, *args, **kwargs)
+
+        monkeypatch.setattr(Path, method_name, guarded)
+    return touched
 
 
 def _outer_rows(
@@ -576,7 +611,9 @@ def test_analyzer_source_never_imports_or_calls_pickle():
 
     assert "pickle" not in imported
     assert not any(name.startswith("pickle") for name in called)
-    assert "results.pkl" in source  # It is documented and authenticated as opaque bytes.
+    assert "_observed_result_paths" not in source
+    assert "os.walk" not in source
+    assert "results.pkl" in source  # The prohibition is explicit in the module contract.
 
 
 def test_strict_json_rejects_duplicate_keys_and_nonfinite_constants():
@@ -586,30 +623,44 @@ def test_strict_json_rejects_duplicate_keys_and_nonfinite_constants():
         analysis._strict_json_loads(b'{"x":NaN}', "fixture")
 
 
-def test_artifact_reader_rejects_hash_size_and_symlink_attacks(tmp_path):
+def test_campaign_json_reader_enforces_allowlist_hash_size_and_symlinks(tmp_path):
     root = tmp_path / "campaign"
     root.mkdir()
-    payload = b"opaque-not-a-pickle"
-    result = root / "results.pkl"
+    payload = b'{}\n'
+    result = root / analysis.campaign.ANALYSIS_PAYLOAD_FILENAME
     result.write_bytes(payload)
     metadata = {"sha256": analysis._sha256(payload), "size_bytes": len(payload)}
 
-    assert analysis._artifact_bytes(root, "results.pkl", metadata, "result") == payload
-    with pytest.raises(RuntimeError, match="hash or size"):
-        analysis._artifact_bytes(
-            root, "results.pkl", {**metadata, "sha256": "0" * 64}, "result"
+    assert analysis._campaign_json_artifact_bytes(
+        root, analysis.campaign.ANALYSIS_PAYLOAD_FILENAME, metadata, "payload"
+    ) == payload
+    with pytest.raises(RuntimeError, match="allowlist"):
+        analysis._campaign_json_artifact_bytes(
+            root, "results.pkl", metadata, "raw result"
         )
     with pytest.raises(RuntimeError, match="hash or size"):
-        analysis._artifact_bytes(
-            root, "results.pkl", {**metadata, "size_bytes": len(payload) + 1}, "result"
+        analysis._campaign_json_artifact_bytes(
+            root,
+            analysis.campaign.ANALYSIS_PAYLOAD_FILENAME,
+            {**metadata, "sha256": "0" * 64},
+            "payload",
+        )
+    with pytest.raises(RuntimeError, match="hash or size"):
+        analysis._campaign_json_artifact_bytes(
+            root,
+            analysis.campaign.ANALYSIS_PAYLOAD_FILENAME,
+            {**metadata, "size_bytes": len(payload) + 1},
+            "payload",
         )
 
-    outside = tmp_path / "outside.pkl"
+    outside = tmp_path / "outside.json"
     outside.write_bytes(payload)
     result.unlink()
     result.symlink_to(outside)
     with pytest.raises(RuntimeError, match="symbolic-link"):
-        analysis._artifact_bytes(root, "results.pkl", metadata, "result")
+        analysis._campaign_json_artifact_bytes(
+            root, analysis.campaign.ANALYSIS_PAYLOAD_FILENAME, metadata, "payload"
+        )
 
 
 def test_report_is_terminal_and_does_not_claim_catboost_parity():
@@ -648,6 +699,35 @@ def _absolute_metadata(path: Path) -> dict:
     }
 
 
+def _recovery_failure_swap_telemetry() -> dict:
+    session = {
+        "sample_count": 2,
+        "samples": [
+            {
+                "monotonic_ns": 100,
+                "swap_in_bytes": 10,
+                "swap_out_bytes": 20,
+            },
+            {
+                "monotonic_ns": 200,
+                "swap_in_bytes": 15,
+                "swap_out_bytes": 20,
+            },
+        ],
+        "swap_in_delta": 5,
+        "swap_out_delta": 0,
+    }
+    return {
+        "capture_status": "captured",
+        "teardown_confirmed": True,
+        "post_teardown_sample_recorded": True,
+        "worker_session_swap_telemetry": session,
+        "swap_in_bytes": 5,
+        "swap_out_bytes": 0,
+        "diagnostic": None,
+    }
+
+
 def _recovery_fixture(tmp_path: Path) -> tuple[Path, Path, dict, dict]:
     source = (tmp_path / "failed-concurrent").resolve()
     destination = (tmp_path / "fresh-sequential").resolve()
@@ -678,7 +758,7 @@ def _recovery_fixture(tmp_path: Path) -> tuple[Path, Path, dict, dict]:
     source_manifest_path = source / analysis.campaign.MANIFEST_FILENAME
     source_manifest_bytes = _write_json(source_manifest_path, source_manifest)
     marker = {
-        "schema_version": 1,
+        "schema_version": analysis.campaign.HARNESS_SCHEMA_VERSION,
         "kind": analysis.campaign.CAMPAIGN_KIND + "_invalid_attempt",
         "invalidated_at_utc": "2026-07-15T13:00:00+00:00",
         "execution_mode": "concurrent",
@@ -686,6 +766,8 @@ def _recovery_fixture(tmp_path: Path) -> tuple[Path, Path, dict, dict]:
         "reuse_allowed": False,
         "recovery_policy": "fresh_sequential_namespace_from_wave_zero_only",
         "manifest_sha256": hashlib.sha256(source_manifest_bytes).hexdigest(),
+        "worker_shutdown_confirmed": True,
+        "failure_swap_telemetry": _recovery_failure_swap_telemetry(),
         "error_type": "RuntimeError",
         "error": "resource barrier invalidated the complete attempt",
     }
@@ -738,8 +820,6 @@ def _stub_runner_recovery_provenance(monkeypatch, manifest: dict) -> None:
 
 
 def _operational_artifacts_fixture(tmp_path: Path, monkeypatch):
-    from benchmarks import tabarena_comparator_warmup
-
     root = (tmp_path / "operational-campaign").resolve()
     ready = [
         {
@@ -791,8 +871,52 @@ def _operational_artifacts_fixture(tmp_path: Path, monkeypatch):
         )
     probe_starts = [item["started_monotonic_ns"] for item in probes]
     probe_ends = [item["ended_monotonic_ns"] for item in probes]
+    preflight_session = {
+        "sample_count": 6,
+        "samples": [
+            {"monotonic_ns": 1, "swap_in_bytes": 100, "swap_out_bytes": 200},
+            {"monotonic_ns": 2, "swap_in_bytes": 101, "swap_out_bytes": 200},
+            {"monotonic_ns": 3, "swap_in_bytes": 102, "swap_out_bytes": 200},
+            {"monotonic_ns": 90_000_000, "swap_in_bytes": 110, "swap_out_bytes": 200},
+            {"monotonic_ns": 120_000_000, "swap_in_bytes": 125, "swap_out_bytes": 200},
+            {"monotonic_ns": 130_000_000, "swap_in_bytes": 130, "swap_out_bytes": 200},
+        ],
+        "swap_in_delta": 30,
+        "swap_out_delta": 0,
+    }
+    preflight_dispatch = {
+        "sample_count": 2,
+        "samples": [
+            {"monotonic_ns": 95_000_000, "swap_in_bytes": 112, "swap_out_bytes": 200},
+            {"monotonic_ns": 110_000_000, "swap_in_bytes": 120, "swap_out_bytes": 200},
+        ],
+        "swap_in_delta": 8,
+        "swap_out_delta": 0,
+        "barrier_release_monotonic_ns": probe_release,
+    }
+    preflight_measured = {
+        "start_sample_index": 3,
+        "end_sample_index": 4,
+        "sample_count": 2,
+        "swap_in_delta": 15,
+        "swap_out_delta": 0,
+        "dispatches": [
+            {
+                "label": "preflight-synthetic-probe",
+                "sample_index": 4,
+                "resource_first_monotonic_ns": 95_000_000,
+                "resource_last_monotonic_ns": 110_000_000,
+                "resource_first_swap_in_bytes": 112,
+                "resource_last_swap_in_bytes": 120,
+                "resource_first_swap_out_bytes": 200,
+                "resource_last_swap_out_bytes": 200,
+                "barrier_release_monotonic_ns": probe_release,
+                "max_report_end_monotonic_ns": max(probe_ends),
+            }
+        ],
+    }
     preflight = {
-        "schema_version": 1,
+        "schema_version": analysis.campaign.HARNESS_SCHEMA_VERSION,
         "kind": analysis.campaign.CAMPAIGN_KIND + "_preflight",
         "completed_at_utc": "2026-07-16T00:00:01+00:00",
         "status": "passed",
@@ -806,12 +930,22 @@ def _operational_artifacts_fixture(tmp_path: Path, monkeypatch):
         "overlap_ns": max(0, min(probe_ends) - max(probe_starts)),
         "worker_restarts": False,
         "failure_count": 0,
+        "worker_session_swap_telemetry": preflight_session,
+        "measured_phase_swap_window": preflight_measured,
+        "synthetic_dispatch_telemetry": preflight_dispatch,
+        "swap_in_bytes": 30,
         "swap_out_bytes": 0,
         "peak_combined_rss_fraction": 0.1,
     }
     artifacts = {}
     entries = []
     previous_end = 500_000_000
+    production_samples = [
+        {"monotonic_ns": 400_000_000, "swap_in_bytes": 1_000, "swap_out_bytes": 2_000},
+        {"monotonic_ns": 450_000_000, "swap_in_bytes": 1_001, "swap_out_bytes": 2_000},
+        {"monotonic_ns": 500_000_000, "swap_in_bytes": 1_010, "swap_out_bytes": 2_000},
+    ]
+    measured_dispatches = []
     for wave in analysis.campaign.expected_schedule():
         index = wave["wave_index"]
         release = previous_end + 1_000
@@ -854,11 +988,41 @@ def _operational_artifacts_fixture(tmp_path: Path, monkeypatch):
             )
         starts = [item["started_monotonic_ns"] for item in reports]
         ends = [item["ended_monotonic_ns"] for item in reports]
+        swap_start_index = 2 + index
+        swap_end_index = swap_start_index + 1
+        prior_swap_in = production_samples[-1]["swap_in_bytes"]
+        resource_first_ns = release - 100
+        resource_last_ns = max(ends) + 100
+        checkpoint_ns = resource_last_ns + 100
+        production_samples.append(
+            {
+                "monotonic_ns": checkpoint_ns,
+                "swap_in_bytes": prior_swap_in + 3,
+                "swap_out_bytes": 2_000,
+            }
+        )
+        measured_dispatches.append(
+            {
+                "label": f"production-wave-{index}",
+                "sample_index": swap_end_index,
+                "resource_first_monotonic_ns": resource_first_ns,
+                "resource_last_monotonic_ns": resource_last_ns,
+                "resource_first_swap_in_bytes": prior_swap_in + 1,
+                "resource_last_swap_in_bytes": prior_swap_in + 2,
+                "resource_first_swap_out_bytes": 2_000,
+                "resource_last_swap_out_bytes": 2_000,
+                "barrier_release_monotonic_ns": release,
+                "max_report_end_monotonic_ns": max(ends),
+            }
+        )
         entries.append(
             {
                 "wave_index": index,
                 "jobs": deepcopy(wave["jobs"]),
                 "reports": reports,
+                "swap_start_sample_index": swap_start_index,
+                "swap_end_sample_index": swap_end_index,
+                "swap_in_delta": 3,
                 "swap_out_delta": 0,
                 "peak_combined_rss_fraction": 0.1,
                 "start_skew_ns": max(starts) - min(starts),
@@ -867,8 +1031,29 @@ def _operational_artifacts_fixture(tmp_path: Path, monkeypatch):
             }
         )
         previous_end = max(ends)
+    measured_swap = {
+        "start_sample_index": 2,
+        "end_sample_index": 47,
+        "sample_count": 46,
+        "swap_in_delta": 135,
+        "swap_out_delta": 0,
+        "dispatches": measured_dispatches,
+    }
+    production_samples.append(
+        {
+            "monotonic_ns": production_samples[-1]["monotonic_ns"] + 1_000,
+            "swap_in_bytes": production_samples[-1]["swap_in_bytes"] + 1,
+            "swap_out_bytes": 2_000,
+        }
+    )
+    production_session = {
+        "sample_count": len(production_samples),
+        "samples": production_samples,
+        "swap_in_delta": production_samples[-1]["swap_in_bytes"] - 1_000,
+        "swap_out_delta": 0,
+    }
     concurrency = {
-        "schema_version": 1,
+        "schema_version": analysis.campaign.HARNESS_SCHEMA_VERSION,
         "kind": analysis.campaign.CAMPAIGN_KIND + "_concurrency_history",
         "execution_mode": "concurrent",
         "swap_policy": analysis.campaign.SWAP_POLICY,
@@ -878,6 +1063,10 @@ def _operational_artifacts_fixture(tmp_path: Path, monkeypatch):
         "failure_count": 0,
         "worker_restart_count": 0,
         "recovery_mixing_count": 0,
+        "worker_session_swap_telemetry": production_session,
+        "measured_phase_swap_window": measured_swap,
+        "swap_dispatch_count": 45,
+        "swap_in_bytes": production_session["swap_in_delta"],
         "swap_out_bytes": 0,
         "peak_combined_rss_fraction": 0.1,
     }
@@ -885,7 +1074,7 @@ def _operational_artifacts_fixture(tmp_path: Path, monkeypatch):
         "preflight_report_artifact": preflight,
         "concurrency_history_artifact": concurrency,
         "warmup_history_artifact": {
-            "schema_version": 1,
+            "schema_version": analysis.campaign.HARNESS_SCHEMA_VERSION,
             "kind": analysis.campaign.CAMPAIGN_KIND + "_warmup_history",
             "execution_mode": "concurrent",
             "worker_ready": ready,
@@ -895,22 +1084,33 @@ def _operational_artifacts_fixture(tmp_path: Path, monkeypatch):
     manifest = {
         "output_dir": str(root),
         "execution_mode": "concurrent",
+        "swap_policy": analysis.campaign.SWAP_POLICY,
+        "timing_admissible": False,
         "sequential_recovery": None,
     }
+    swap_audit = analysis.campaign.build_swap_audit(
+        preflight, concurrency, execution_mode="concurrent"
+    )
     attestation = {
         "execution_mode": "concurrent",
         "result_artifacts": artifacts,
+        "raw_result_verification": {
+            "authority": "runner",
+            "count": 90,
+            "method": "sha256_size_and_safe_extraction",
+            "analyzer_access": "forbidden",
+        },
+        "analysis_boundary": analysis.campaign.analysis_boundary(),
+        "swap_audit": swap_audit,
     }
     monkeypatch.setattr(
         analysis.campaign.hardened.screen,
         "_validate_followon_warmup_history",
         lambda *args, **kwargs: None,
     )
-    monkeypatch.setattr(
-        tabarena_comparator_warmup,
-        "validate_comparator_warmup_history",
-        lambda *args, **kwargs: None,
-    )
+    module = ModuleType("benchmarks.tabarena_comparator_warmup")
+    module.validate_comparator_warmup_history = lambda *args, **kwargs: None
+    monkeypatch.setitem(sys.modules, module.__name__, module)
     return root, operational, manifest, attestation
 
 
@@ -923,6 +1123,61 @@ def test_sequential_recovery_replays_exact_failed_concurrent_source(
     analysis._validate_sequential_recovery(
         manifest, campaign_root=destination
     )
+
+
+def test_sequential_recovery_reads_only_attested_json_and_completion_absence(
+    tmp_path, monkeypatch,
+):
+    source, destination, manifest, _ = _recovery_fixture(tmp_path)
+    _stub_runner_recovery_provenance(monkeypatch, manifest)
+    reads: list[Path] = []
+    absence_checks: list[Path] = []
+    original_read = analysis._read_stable_regular
+    original_exists = analysis._exists_including_broken_symlink
+
+    def tracked_read(path, field):
+        reads.append(path)
+        return original_read(path, field)
+
+    def tracked_exists(path, field):
+        absence_checks.append(path)
+        return original_exists(path, field)
+
+    monkeypatch.setattr(analysis, "_read_stable_regular", tracked_read)
+    monkeypatch.setattr(
+        analysis, "_exists_including_broken_symlink", tracked_exists
+    )
+
+    analysis._validate_sequential_recovery(
+        manifest, campaign_root=destination
+    )
+
+    assert reads == [
+        source / analysis.campaign.INVALID_ATTEMPT_FILENAME,
+        source / analysis.campaign.MANIFEST_FILENAME,
+    ]
+    assert absence_checks == [
+        source / analysis.campaign.COMPLETION_ATTESTATION_FILENAME
+    ]
+
+
+def test_recovery_git_ignore_gate_is_case_insensitive(tmp_path, monkeypatch):
+    repository = tmp_path / "Repository"
+    repository.mkdir()
+    monkeypatch.setattr(analysis.campaign, "REPOSITORY_ROOT", repository)
+    calls = []
+
+    def fake_run(args, **kwargs):
+        calls.append((args, kwargs))
+        return analysis.subprocess.CompletedProcess(args, 0)
+
+    monkeypatch.setattr(analysis.subprocess, "run", fake_run)
+    variant = repository.with_name(repository.name.swapcase()) / ".cache" / "run"
+
+    analysis._validate_recovery_namespace_policy(variant)
+
+    assert len(calls) == 1
+    assert calls[0][0][-1] == str(Path(".cache/run"))
 
 
 def test_sequential_recovery_rejects_authenticated_foreign_source_manifest(
@@ -959,7 +1214,7 @@ def test_sequential_recovery_rejects_authenticated_foreign_source_manifest(
         lambda source, destination, record: record.__setitem__(
             "source_output_dir", str(destination)
         ),
-        "overlaps",
+        "unsafe",
     ),
 ])
 def test_sequential_recovery_rejects_hostile_artifacts(
@@ -970,6 +1225,72 @@ def test_sequential_recovery_rejects_hostile_artifacts(
     mutation(source, destination, record)
 
     with pytest.raises(RuntimeError, match=pattern):
+        analysis._validate_sequential_recovery(
+            manifest, campaign_root=destination
+        )
+
+
+@pytest.mark.parametrize(
+    "raw_suffix",
+    [
+        ("ExPeRiMeNtS", "hostile", "ReSuLtS.PkL"),
+        ("ReSuLtS.PkL", "failed-concurrent"),
+    ],
+)
+def test_sequential_recovery_rejects_case_variant_raw_path_before_access(
+    tmp_path, monkeypatch, raw_suffix,
+):
+    _, destination, manifest, record = _recovery_fixture(tmp_path)
+    record["source_output_dir"] = str(destination.joinpath(*raw_suffix))
+    touched = _install_raw_path_tripwire(monkeypatch)
+
+    with pytest.raises(RuntimeError, match="unsafe"):
+        analysis._validate_sequential_recovery(
+            manifest, campaign_root=destination
+        )
+    assert touched == []
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda marker: marker.__setitem__("schema_version", 2.0),
+        lambda marker: marker.__setitem__("worker_shutdown_confirmed", False),
+        lambda marker: marker["failure_swap_telemetry"].__setitem__(
+            "teardown_confirmed", False
+        ),
+        lambda marker: marker["failure_swap_telemetry"].__setitem__(
+            "post_teardown_sample_recorded", False
+        ),
+        lambda marker: marker.__setitem__("error_type", "x" * 257),
+        lambda marker: marker.__setitem__("error", "x" * 4_097),
+        lambda marker: (
+            marker["failure_swap_telemetry"][
+                "worker_session_swap_telemetry"
+            ]["samples"][0].update(
+                {"swap_in_bytes": -1, "swap_out_bytes": -1}
+            ),
+            marker["failure_swap_telemetry"][
+                "worker_session_swap_telemetry"
+            ].update({"swap_in_delta": 16, "swap_out_delta": 21}),
+            marker["failure_swap_telemetry"].update(
+                {"swap_in_bytes": 16, "swap_out_bytes": 21}
+            ),
+        ),
+    ],
+)
+def test_sequential_recovery_rejects_noncanonical_failure_marker(
+    tmp_path, monkeypatch, mutation,
+):
+    source, destination, manifest, record = _recovery_fixture(tmp_path)
+    _stub_runner_recovery_provenance(monkeypatch, manifest)
+    marker_path = source / analysis.campaign.INVALID_ATTEMPT_FILENAME
+    marker = json.loads(marker_path.read_text())
+    mutation(marker)
+    _write_json(marker_path, marker)
+    _refresh_recovery_record(source, record)
+
+    with pytest.raises(RuntimeError, match="marker|swap telemetry|swap counters"):
         analysis._validate_sequential_recovery(
             manifest, campaign_root=destination
         )
@@ -988,6 +1309,180 @@ def test_operational_validator_accepts_recomputed_concurrent_evidence(
         attestation=attestation,
         output_dir=root,
     )
+
+
+def test_operational_validator_rejects_boolean_swap_audit_substitution(
+    tmp_path, monkeypatch,
+):
+    root, operational, manifest, attestation = _operational_artifacts_fixture(
+        tmp_path, monkeypatch
+    )
+    attestation["swap_audit"]["preflight"][
+        "worker_lifecycle_swap_out_bytes"
+    ] = False
+
+    with pytest.raises(RuntimeError, match="detaches operational evidence"):
+        analysis.campaign.validate_operational_artifacts_for_analysis(
+            operational,
+            manifest=manifest,
+            attestation=attestation,
+            output_dir=root,
+        )
+
+
+def test_operational_validator_rejects_raw_result_count_coercion(
+    tmp_path, monkeypatch,
+):
+    root, operational, manifest, attestation = _operational_artifacts_fixture(
+        tmp_path, monkeypatch
+    )
+    attestation["raw_result_verification"]["count"] = 90.0
+
+    with pytest.raises(RuntimeError, match="raw result count"):
+        analysis.campaign.validate_operational_artifacts_for_analysis(
+            operational,
+            manifest=manifest,
+            attestation=attestation,
+            output_dir=root,
+        )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda value: value["preflight_report_artifact"].__setitem__(
+            "failure_count", False
+        ),
+        lambda value: value["preflight_report_artifact"].__setitem__(
+            "ctr23_fit_count", False
+        ),
+        lambda value: value["preflight_report_artifact"].__setitem__(
+            "peak_combined_rss_fraction", "0.1"
+        ),
+        lambda value: value["concurrency_history_artifact"].__setitem__(
+            "worker_restart_count", False
+        ),
+        lambda value: value["concurrency_history_artifact"].__setitem__(
+            "recovery_mixing_count", False
+        ),
+        lambda value: value["concurrency_history_artifact"].__setitem__(
+            "peak_combined_rss_fraction", "0.1"
+        ),
+    ],
+)
+def test_operational_validator_rejects_header_type_coercions(
+    tmp_path, monkeypatch, mutation,
+):
+    root, operational, manifest, attestation = _operational_artifacts_fixture(
+        tmp_path, monkeypatch
+    )
+    mutation(operational)
+
+    with pytest.raises(RuntimeError, match="operational artifacts"):
+        analysis.campaign.validate_operational_artifacts_for_analysis(
+            operational,
+            manifest=manifest,
+            attestation=attestation,
+            output_dir=root,
+        )
+
+
+def test_operational_validator_never_touches_runner_owned_raw_results(
+    tmp_path, monkeypatch
+):
+    root, operational, manifest, attestation = _operational_artifacts_fixture(
+        tmp_path, monkeypatch
+    )
+
+    for method_name in ("resolve", "stat", "lstat", "exists", "is_file", "open", "read_bytes"):
+        original = getattr(Path, method_name)
+
+        def guarded(path, *args, _original=original, _name=method_name, **kwargs):
+            if path.name == "results.pkl":
+                raise AssertionError(f"raw result {_name} is forbidden")
+            return _original(path, *args, **kwargs)
+
+        monkeypatch.setattr(Path, method_name, guarded)
+
+    analysis.campaign.validate_operational_artifacts_for_analysis(
+        operational,
+        manifest=manifest,
+        attestation=attestation,
+        output_dir=root,
+    )
+
+
+def test_operational_validator_rejects_hostile_scratch_before_raw_access(
+    tmp_path, monkeypatch,
+):
+    root, operational, manifest, attestation = _operational_artifacts_fixture(
+        tmp_path, monkeypatch
+    )
+    operational["warmup_history_artifact"]["worker_ready"][0][
+        "scratch_root"
+    ] = str(root / "ExPeRiMeNtS" / "hostile" / "ReSuLtS.PkL")
+    touched = _install_raw_path_tripwire(monkeypatch)
+
+    with pytest.raises(RuntimeError, match="warmup worker readiness"):
+        analysis.campaign.validate_operational_artifacts_for_analysis(
+            operational,
+            manifest=manifest,
+            attestation=attestation,
+            output_dir=root,
+        )
+    assert touched == []
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda value: value["preflight_report_artifact"].__setitem__(
+            "swap_in_bytes", value["preflight_report_artifact"]["swap_in_bytes"] + 1
+        ),
+        lambda value: value["concurrency_history_artifact"].__setitem__(
+            "swap_in_bytes",
+            value["concurrency_history_artifact"]["swap_in_bytes"] + 1,
+        ),
+        lambda value: value["concurrency_history_artifact"]["entries"][0].__setitem__(
+            "swap_in_delta",
+            value["concurrency_history_artifact"]["entries"][0]["swap_in_delta"]
+            + 1,
+        ),
+        lambda value: value["concurrency_history_artifact"][
+            "worker_session_swap_telemetry"
+        ].__setitem__(
+            "swap_in_delta",
+            value["concurrency_history_artifact"][
+                "worker_session_swap_telemetry"
+            ]["swap_in_delta"]
+            + 1,
+        ),
+        lambda value: value["concurrency_history_artifact"][
+            "measured_phase_swap_window"
+        ].__setitem__(
+            "swap_in_delta",
+            value["concurrency_history_artifact"]["measured_phase_swap_window"][
+                "swap_in_delta"
+            ]
+            + 1,
+        ),
+    ],
+)
+def test_operational_validator_rejects_detached_swap_in_evidence(
+    tmp_path, monkeypatch, mutation
+):
+    root, operational, manifest, attestation = _operational_artifacts_fixture(
+        tmp_path, monkeypatch
+    )
+    mutation(operational)
+
+    with pytest.raises(RuntimeError, match="swap"):
+        analysis.campaign.validate_operational_artifacts_for_analysis(
+            operational,
+            manifest=manifest,
+            attestation=attestation,
+            output_dir=root,
+        )
 
 
 @pytest.mark.parametrize(
@@ -1057,13 +1552,155 @@ def test_operational_validator_rejects_cross_wave_barrier_overlap(
         report["started_monotonic_ns"] += shift
         report["ended_monotonic_ns"] += shift
 
-    with pytest.raises(RuntimeError, match="precedes its release"):
+    with pytest.raises(RuntimeError, match="precedes its release|swap dispatch binding"):
         analysis.campaign.validate_operational_artifacts_for_analysis(
             operational,
             manifest=manifest,
             attestation=attestation,
             output_dir=root,
         )
+
+
+def _swap_audit_fixture() -> dict:
+    waves = [
+        {
+            "wave_index": index,
+            "dispatch_count": 1,
+            "swap_in_bytes": 5 if index == 0 else 0,
+            "swap_out_bytes": 0,
+        }
+        for index in range(45)
+    ]
+    return {
+        "policy": "quality_only_swap_in",
+        "preflight": {
+            "worker_lifecycle_swap_in_bytes": 3,
+            "worker_lifecycle_swap_out_bytes": 0,
+            "measured_phase_swap_in_bytes": 2,
+            "measured_phase_swap_out_bytes": 0,
+            "measured_dispatch_count": 1,
+        },
+        "production": {
+            "worker_lifecycle_swap_in_bytes": 7,
+            "worker_lifecycle_swap_out_bytes": 0,
+            "measured_phase_swap_in_bytes": 5,
+            "measured_phase_swap_out_bytes": 0,
+            "measured_dispatch_count": 45,
+            "wave_count": 45,
+            "waves": waves,
+        },
+    }
+
+
+def _completion_validation_fixture(swap_audit: dict) -> dict:
+    return {
+        "result_count": 90,
+        "child_fit_count": 720,
+        "a10_candidate_fit_count": 648,
+        "failure_count": 0,
+        "imputation_count": 0,
+        "deadline_hit_count": 0,
+        "time_callback_hit_count": 0,
+        "worker_failure_count": 0,
+        "recovery_mixing_count": 0,
+        "swap_in_audit_evidence_retained": True,
+        "preflight_swap_in_bytes": swap_audit["preflight"][
+            "worker_lifecycle_swap_in_bytes"
+        ],
+        "production_swap_in_bytes": swap_audit["production"][
+            "worker_lifecycle_swap_in_bytes"
+        ],
+        "swap_dispatch_count": 45,
+        "swap_wave_count": 45,
+        "swap_out_bytes": 0,
+        "peak_combined_rss_fraction": 0.1,
+        "unresolved_comparator_stop_count": 288,
+        "resource_allocation": {
+            "num_cpus": 18,
+            "num_gpus": 0,
+            "num_cpus_child": 18,
+            "num_gpus_child": 0,
+        },
+    }
+
+
+@pytest.mark.parametrize(
+    "field,bad_value",
+    [
+        ("swap_in_audit_evidence_retained", False),
+        ("preflight_swap_in_bytes", 4),
+        ("production_swap_in_bytes", 8),
+        ("swap_dispatch_count", 44),
+        ("swap_wave_count", 44),
+        ("swap_out_bytes", 1),
+        ("swap_out_bytes", False),
+        ("failure_count", False),
+    ],
+)
+def test_completion_validation_binds_swap_audit_end_to_end(field, bad_value):
+    outer = _payload_shape_rows(_outer_rows(), analysis.campaign.OUTER_PAYLOAD_FIELDS)
+    children = _payload_shape_rows(
+        _child_rows(), analysis.campaign.CHILD_PAYLOAD_FIELDS
+    )
+    swap_audit = _swap_audit_fixture()
+    validation = _completion_validation_fixture(swap_audit)
+    manifest = {
+        "execution_mode": "concurrent",
+        "swap_policy": analysis.campaign.SWAP_POLICY,
+        "timing_admissible": False,
+    }
+
+    analysis.campaign.validate_completion_for_analysis(
+        validation,
+        manifest=manifest,
+        outer_rows=outer,
+        child_rows=children,
+        swap_audit=swap_audit,
+    )
+    validation[field] = bad_value
+    with pytest.raises(RuntimeError, match="completion validation"):
+        analysis.campaign.validate_completion_for_analysis(
+            validation,
+            manifest=manifest,
+            outer_rows=outer,
+            child_rows=children,
+            swap_audit=swap_audit,
+        )
+
+
+def test_completion_validation_rejects_boolean_zero_in_audit_and_resources():
+    outer = _payload_shape_rows(_outer_rows(), analysis.campaign.OUTER_PAYLOAD_FIELDS)
+    children = _payload_shape_rows(
+        _child_rows(), analysis.campaign.CHILD_PAYLOAD_FIELDS
+    )
+    manifest = {
+        "execution_mode": "concurrent",
+        "swap_policy": analysis.campaign.SWAP_POLICY,
+        "timing_admissible": False,
+    }
+    for mutate in (
+        lambda validation, audit: validation.__setitem__(
+            "preflight_swap_in_bytes", False
+        ),
+        lambda validation, audit: audit["preflight"].__setitem__(
+            "worker_lifecycle_swap_in_bytes", False
+        ),
+        lambda validation, audit: validation["resource_allocation"].__setitem__(
+            "num_gpus", False
+        ),
+    ):
+        swap_audit = _swap_audit_fixture()
+        swap_audit["preflight"]["worker_lifecycle_swap_in_bytes"] = 0
+        validation = _completion_validation_fixture(swap_audit)
+        mutate(validation, swap_audit)
+        with pytest.raises(RuntimeError, match="completion validation"):
+            analysis.campaign.validate_completion_for_analysis(
+                validation,
+                manifest=manifest,
+                outer_rows=outer,
+                child_rows=children,
+                swap_audit=swap_audit,
+            )
 
 
 def _campaign_fixture(tmp_path: Path, monkeypatch) -> Path:
@@ -1077,10 +1714,7 @@ def _campaign_fixture(tmp_path: Path, monkeypatch) -> Path:
     source_map = {}
     for row in outer:
         relative = row["source"]
-        path = root / relative
-        path.parent.mkdir(parents=True, exist_ok=True)
         payload = b"opaque-invalid-pickle-" + relative.encode()
-        path.write_bytes(payload)
         result_artifacts[relative] = {
             "sha256": hashlib.sha256(payload).hexdigest(),
             "size_bytes": len(payload),
@@ -1130,8 +1764,10 @@ def _campaign_fixture(tmp_path: Path, monkeypatch) -> Path:
         "sequential_recovery": None,
     }
     manifest_bytes = _write_json(root / analysis.campaign.MANIFEST_FILENAME, manifest)
+    swap_audit = _swap_audit_fixture()
+    boundary = analysis.campaign.analysis_boundary()
     payload = {
-        "schema_version": 1,
+        "schema_version": analysis.campaign.HARNESS_SCHEMA_VERSION,
         "kind": analysis.campaign.PAYLOAD_KIND,
         "protocol_sha256": analysis.campaign.protocol_sha256(),
         "frozen_protocol_sha256": analysis.campaign.frozen_protocol_sha256(),
@@ -1141,8 +1777,12 @@ def _campaign_fixture(tmp_path: Path, monkeypatch) -> Path:
         "result_artifacts_sha256": analysis._sha256(
             analysis._canonical_json(result_artifacts)
         ),
+        "analysis_boundary_sha256": analysis._sha256(
+            analysis._canonical_json(boundary)
+        ),
         "swap_policy": "quality_only_swap_in",
         "timing_admissible": False,
+        "swap_audit": swap_audit,
         "outer_rows": outer,
         "child_rows": children,
     }
@@ -1153,7 +1793,7 @@ def _campaign_fixture(tmp_path: Path, monkeypatch) -> Path:
         "failure_count": 0,
     }
     attestation = {
-        "schema_version": 1,
+        "schema_version": analysis.campaign.HARNESS_SCHEMA_VERSION,
         "kind": analysis.campaign.COMPLETION_KIND,
         "completed_at_utc": "2026-07-15T13:00:00Z",
         "pid": 123,
@@ -1169,6 +1809,14 @@ def _campaign_fixture(tmp_path: Path, monkeypatch) -> Path:
         "expected_result_count": 90,
         "expected_child_fits": 720,
         "result_artifacts": result_artifacts,
+        "raw_result_verification": {
+            "authority": "runner",
+            "count": 90,
+            "method": "sha256_size_and_safe_extraction",
+            "analyzer_access": "forbidden",
+        },
+        "analysis_boundary": boundary,
+        "swap_audit": swap_audit,
         "analysis_payload_artifact": _singleton_metadata(
             root / analysis.campaign.ANALYSIS_PAYLOAD_FILENAME, root
         ),
@@ -1209,10 +1857,16 @@ def _campaign_fixture(tmp_path: Path, monkeypatch) -> Path:
         lambda value, **kwargs: None,
         raising=False,
     )
+    monkeypatch.setattr(
+        analysis.campaign,
+        "build_swap_audit",
+        lambda *args, **kwargs: deepcopy(swap_audit),
+        raising=False,
+    )
     return root
 
 
-def test_full_integrity_accepts_opaque_nonpickle_results_and_exact_hash_chain(
+def test_full_integrity_accepts_runner_attestation_without_raw_result_files(
     tmp_path, monkeypatch
 ):
     root = _campaign_fixture(tmp_path, monkeypatch)
@@ -1225,15 +1879,109 @@ def test_full_integrity_accepts_opaque_nonpickle_results_and_exact_hash_chain(
     assert len(payload["outer_rows"]) == 90
     assert len(payload["child_rows"]) == 720
     assert len(digests["manifest_sha256"]) == 64
-    assert len(protected) == 97
+    assert len(protected) == 7
 
 
-@pytest.mark.parametrize("target", ["result", "payload", "schedule", "manifest"])
+@pytest.mark.parametrize(
+    "parts",
+    [
+        ("ExPeRiMeNtS", "hostile", "ReSuLtS.PkL"),
+        ("ReSuLtS.PkL", ".."),
+        ("ReSuLtS.PkL", "child"),
+    ],
+)
+def test_full_integrity_rejects_raw_cli_path_before_filesystem_access(
+    tmp_path, monkeypatch, parts,
+):
+    raw_path = tmp_path.joinpath(*parts)
+    touched = _install_raw_path_tripwire(monkeypatch)
+
+    with pytest.raises(RuntimeError, match="campaign directory path is unsafe"):
+        analysis.verify_campaign_integrity(raw_path)
+    assert touched == []
+
+
+def test_full_integrity_allows_unrelated_experiments_ancestor(
+    tmp_path, monkeypatch,
+):
+    parent = tmp_path / "experiments"
+    parent.mkdir()
+    root = _campaign_fixture(parent, monkeypatch)
+
+    manifest, *_ = analysis.verify_campaign_integrity(root)
+
+    assert manifest["output_dir"] == str(root.resolve())
+
+
+def test_full_integrity_reads_exact_json_allowlist_and_never_raw_results(
+    tmp_path, monkeypatch
+):
+    root = _campaign_fixture(tmp_path, monkeypatch).resolve()
+    observed = []
+    original = analysis._read_stable_regular
+
+    def guarded_read(path, field):
+        resolved = path.resolve()
+        if root == resolved or root in resolved.parents:
+            relative = str(resolved.relative_to(root))
+            if relative.endswith("results.pkl"):
+                raise AssertionError("analyzer attempted to read a raw result")
+            observed.append(relative)
+        return original(path, field)
+
+    monkeypatch.setattr(analysis, "_read_stable_regular", guarded_read)
+
+    analysis.verify_campaign_integrity(root)
+
+    assert len(observed) == len(set(observed)) == 7
+    assert set(observed) == set(analysis.campaign.ANALYZER_CAMPAIGN_JSON_FILENAMES)
+
+
+def test_full_integrity_rejects_hostile_manifest_path_before_raw_access(
+    tmp_path, monkeypatch,
+):
+    root = _campaign_fixture(tmp_path, monkeypatch)
+    manifest_path = root / analysis.campaign.MANIFEST_FILENAME
+    manifest = json.loads(manifest_path.read_text())
+    manifest["output_dir"] = str(
+        root / "ExPeRiMeNtS" / "hostile" / "ReSuLtS.PkL"
+    )
+    _write_json(manifest_path, manifest)
+    touched = _install_raw_path_tripwire(monkeypatch)
+
+    with pytest.raises(RuntimeError, match="run manifest"):
+        analysis.verify_campaign_integrity(root)
+    assert touched == []
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda manifest: manifest.__setitem__("schema_version", True),
+        lambda manifest: manifest.__setitem__("expected_jobs", 90.0),
+        lambda manifest: manifest.__setitem__("time_limit_seconds", 3_600),
+        lambda manifest: manifest["schedule"][0]["jobs"][0].__setitem__(
+            "worker_slot", False
+        ),
+    ],
+)
+def test_full_integrity_rejects_manifest_type_coercions(
+    tmp_path, monkeypatch, mutation,
+):
+    root = _campaign_fixture(tmp_path, monkeypatch)
+    manifest_path = root / analysis.campaign.MANIFEST_FILENAME
+    manifest = json.loads(manifest_path.read_text())
+    mutation(manifest)
+    _write_json(manifest_path, manifest)
+
+    with pytest.raises(RuntimeError, match="run manifest"):
+        analysis.verify_campaign_integrity(root)
+
+
+@pytest.mark.parametrize("target", ["payload", "schedule", "manifest"])
 def test_full_integrity_rejects_hash_chain_tampering(tmp_path, monkeypatch, target):
     root = _campaign_fixture(tmp_path, monkeypatch)
-    if target == "result":
-        path = next((root / "experiments").rglob("results.pkl"))
-    elif target == "payload":
+    if target == "payload":
         path = root / analysis.campaign.ANALYSIS_PAYLOAD_FILENAME
     elif target == "schedule":
         path = root / analysis.campaign.SCHEDULE_FILENAME
@@ -1242,6 +1990,92 @@ def test_full_integrity_rejects_hash_chain_tampering(tmp_path, monkeypatch, targ
     path.write_bytes(path.read_bytes() + b" ")
 
     with pytest.raises(RuntimeError, match="hash|attestation|manifest"):
+        analysis.verify_campaign_integrity(root)
+
+
+def test_full_integrity_rejects_detached_swap_audit(tmp_path, monkeypatch):
+    root = _campaign_fixture(tmp_path, monkeypatch)
+    payload_path = root / analysis.campaign.ANALYSIS_PAYLOAD_FILENAME
+    payload = json.loads(payload_path.read_text())
+    payload["swap_audit"]["production"]["worker_lifecycle_swap_in_bytes"] += 1
+    _write_json(payload_path, payload)
+    attestation_path = root / analysis.campaign.COMPLETION_ATTESTATION_FILENAME
+    attestation = json.loads(attestation_path.read_text())
+    attestation["analysis_payload_artifact"] = _singleton_metadata(
+        payload_path, root
+    )
+    _write_json(attestation_path, attestation)
+
+    with pytest.raises(RuntimeError, match="swap audit|safe analysis payload"):
+        analysis.verify_campaign_integrity(root)
+
+
+def test_full_integrity_rejects_payload_schema_type_coercion(
+    tmp_path, monkeypatch,
+):
+    root = _campaign_fixture(tmp_path, monkeypatch)
+    payload_path = root / analysis.campaign.ANALYSIS_PAYLOAD_FILENAME
+    payload = json.loads(payload_path.read_text())
+    payload["schema_version"] = 2.0
+    _write_json(payload_path, payload)
+    attestation_path = root / analysis.campaign.COMPLETION_ATTESTATION_FILENAME
+    attestation = json.loads(attestation_path.read_text())
+    attestation["analysis_payload_artifact"] = _singleton_metadata(
+        payload_path, root
+    )
+    _write_json(attestation_path, attestation)
+
+    with pytest.raises(RuntimeError, match="safe analysis payload"):
+        analysis.verify_campaign_integrity(root)
+
+
+def test_full_integrity_rejects_raw_result_count_type_coercion(
+    tmp_path, monkeypatch,
+):
+    root = _campaign_fixture(tmp_path, monkeypatch)
+    attestation_path = root / analysis.campaign.COMPLETION_ATTESTATION_FILENAME
+    attestation = json.loads(attestation_path.read_text())
+    attestation["raw_result_verification"]["count"] = 90.0
+    _write_json(attestation_path, attestation)
+
+    with pytest.raises(RuntimeError, match="raw result count"):
+        analysis.verify_campaign_integrity(root)
+
+
+def test_full_integrity_rejects_boolean_boundary_substitution(
+    tmp_path, monkeypatch,
+):
+    root = _campaign_fixture(tmp_path, monkeypatch)
+    attestation_path = root / analysis.campaign.COMPLETION_ATTESTATION_FILENAME
+    attestation = json.loads(attestation_path.read_text())
+    attestation["analysis_boundary"]["schema_version"] = True
+    _write_json(attestation_path, attestation)
+
+    with pytest.raises(RuntimeError, match="analysis boundary"):
+        analysis.verify_campaign_integrity(root)
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("schema_version", 2.0),
+        ("completed_at_utc", ""),
+        ("pid", True),
+        ("result_count", 90.0),
+        ("expected_result_count", 90.0),
+        ("expected_child_fits", 720.0),
+    ],
+)
+def test_full_integrity_rejects_attestation_type_coercions(
+    tmp_path, monkeypatch, field, value,
+):
+    root = _campaign_fixture(tmp_path, monkeypatch)
+    attestation_path = root / analysis.campaign.COMPLETION_ATTESTATION_FILENAME
+    attestation = json.loads(attestation_path.read_text())
+    attestation[field] = value
+    _write_json(attestation_path, attestation)
+
+    with pytest.raises(RuntimeError, match="completion attestation"):
         analysis.verify_campaign_integrity(root)
 
 
@@ -1272,5 +2106,10 @@ def test_main_atomically_publishes_byte_deterministic_outputs(tmp_path, monkeypa
 
     assert first == second
     summary = json.loads(first["summary.json"])
+    assert summary["integrity"]["swap_in_audit_evidence_retained"] is True
+    assert summary["integrity"]["preflight_worker_lifecycle_swap_in_bytes"] == 3
+    assert summary["integrity"]["production_worker_lifecycle_swap_in_bytes"] == 7
+    assert summary["integrity"]["production_dispatches_with_swap_in_telemetry"] == 45
+    assert summary["integrity"]["raw_results_read_by_analyzer"] is False
     assert summary["integrity"]["raw_results_deserialized_by_analyzer"] is False
     assert summary["timing_admissible"] is False

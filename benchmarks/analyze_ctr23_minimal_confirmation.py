@@ -1,9 +1,8 @@
 """Verify and analyze the frozen minimal CTR23 regression confirmation.
 
-The analyzer consumes only the runner's finite JSON payload.  Runner-owned
-``results.pkl`` files are treated as opaque bytes: this module authenticates
-their paths, sizes, and SHA-256 digests and never imports ``pickle`` or calls a
-raw-result decoder.
+The analyzer reads an exact allowlist of runner-attested finite JSON inputs.
+Only the runner opens, hashes, or decodes ``results.pkl`` files; this module
+validates their attested metadata chain without accessing the raw files.
 """
 
 from __future__ import annotations
@@ -14,8 +13,8 @@ import hashlib
 import io
 import json
 import math
-import os
 import stat
+import subprocess
 from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -213,9 +212,20 @@ def _confined_regular_path(root: Path, relative: str | Path, field: str) -> Path
     return resolved
 
 
-def _artifact_bytes(
+def _campaign_json_path(root: Path, expected_name: str, field: str) -> Path:
+    if (
+        type(expected_name) is not str
+        or expected_name not in campaign.ANALYZER_CAMPAIGN_JSON_FILENAMES
+        or Path(expected_name).parts != (expected_name,)
+        or not expected_name.endswith(".json")
+    ):
+        raise RuntimeError(f"{field} is outside the analyzer JSON allowlist")
+    return _confined_regular_path(root, expected_name, field)
+
+
+def _campaign_json_artifact_bytes(
     root: Path,
-    relative: str,
+    expected_name: str,
     metadata: Mapping[str, Any],
     field: str,
 ) -> bytes:
@@ -231,7 +241,7 @@ def _artifact_bytes(
     ):
         raise RuntimeError(f"{field} metadata is invalid")
     payload = _read_stable_regular(
-        _confined_regular_path(root, relative, field), field
+        _campaign_json_path(root, expected_name, field), field
     )
     if len(payload) != size or _sha256(payload) != digest:
         raise RuntimeError(f"{field} hash or size differs")
@@ -251,9 +261,9 @@ def _singleton_artifact_bytes(
     relative = item.get("path")
     if not isinstance(relative, str) or relative != expected_name:
         raise RuntimeError(f"{field} path is not canonical")
-    payload = _artifact_bytes(
+    payload = _campaign_json_artifact_bytes(
         root,
-        relative,
+        expected_name,
         {"sha256": item.get("sha256"), "size_bytes": item.get("size_bytes")},
         field,
     )
@@ -297,37 +307,148 @@ def _exists_including_broken_symlink(path: Path, field: str) -> bool:
     return True
 
 
+def _validate_recovery_namespace_policy(path: Path) -> None:
+    """Mirror the runner's Git-ignore gate without opening recovery artifacts."""
+    repository = campaign.REPOSITORY_ROOT.resolve(strict=True)
+    repository_parts = tuple(part.casefold() for part in repository.parts)
+    path_parts = tuple(part.casefold() for part in path.parts)
+    if path_parts[: len(repository_parts)] != repository_parts:
+        return
+    suffix = path.parts[len(repository.parts) :]
+    relative = Path(*suffix) if suffix else Path(".")
+    if relative == Path("."):
+        raise RuntimeError("recovery source cannot be the campaign repository")
+    try:
+        ignored = subprocess.run(
+            [
+                "git",
+                "check-ignore",
+                "--quiet",
+                "--no-index",
+                "--",
+                str(relative),
+            ],
+            cwd=repository,
+            check=False,
+            capture_output=True,
+        )
+    except OSError as exc:
+        raise RuntimeError(
+            "could not validate recovery source Git-ignore state"
+        ) from exc
+    if ignored.returncode == 0:
+        return
+    if ignored.returncode == 1:
+        raise RuntimeError("in-repository recovery source is not Git-ignored")
+    raise RuntimeError(
+        "could not validate recovery source Git-ignore state: "
+        f"git check-ignore exited with status {ignored.returncode}"
+    )
+
+
+def _validate_recovery_failure_swap_telemetry(value: Any) -> None:
+    """Independently prove a recoverable failure retained its shutdown sample."""
+    record = _as_mapping(value, "recovery failure swap telemetry")
+    if (
+        set(record)
+        != {
+            "capture_status",
+            "teardown_confirmed",
+            "post_teardown_sample_recorded",
+            "worker_session_swap_telemetry",
+            "swap_in_bytes",
+            "swap_out_bytes",
+            "diagnostic",
+        }
+        or record.get("capture_status") != "captured"
+        or record.get("teardown_confirmed") is not True
+        or record.get("post_teardown_sample_recorded") is not True
+        or record.get("diagnostic") is not None
+    ):
+        raise RuntimeError("recovery failure swap telemetry is not canonical")
+    telemetry = _as_mapping(
+        record.get("worker_session_swap_telemetry"),
+        "recovery worker-session swap telemetry",
+    )
+    if set(telemetry) != {
+        "sample_count",
+        "samples",
+        "swap_in_delta",
+        "swap_out_delta",
+    }:
+        raise RuntimeError("recovery worker-session swap fields changed")
+    samples = telemetry.get("samples")
+    if (
+        not isinstance(samples, list)
+        or len(samples) < 2
+        or _exact_int(telemetry.get("sample_count"), "recovery swap sample count")
+        != len(samples)
+    ):
+        raise RuntimeError("recovery worker-session swap samples are incomplete")
+    previous = (-1, -1, -1)
+    for sample_value in samples:
+        sample = _as_mapping(sample_value, "recovery swap sample")
+        if set(sample) != {"monotonic_ns", "swap_in_bytes", "swap_out_bytes"}:
+            raise RuntimeError("recovery swap sample fields changed")
+        current = (
+            _exact_int(sample.get("monotonic_ns"), "recovery swap clock"),
+            _exact_int(sample.get("swap_in_bytes"), "recovery swap-in counter"),
+            _exact_int(sample.get("swap_out_bytes"), "recovery swap-out counter"),
+        )
+        if (
+            current[0] <= previous[0]
+            or current[1] < 0
+            or current[2] < 0
+            or current[1] < previous[1]
+            or current[2] < previous[2]
+        ):
+            raise RuntimeError("recovery swap counters are not monotonic")
+        previous = current
+    swap_in = samples[-1]["swap_in_bytes"] - samples[0]["swap_in_bytes"]
+    swap_out = samples[-1]["swap_out_bytes"] - samples[0]["swap_out_bytes"]
+    if (
+        _exact_int(telemetry.get("swap_in_delta"), "recovery lifecycle swap-in")
+        != swap_in
+        or _exact_int(telemetry.get("swap_out_delta"), "recovery lifecycle swap-out")
+        != swap_out
+        or _exact_int(record.get("swap_in_bytes"), "recovery retained swap-in")
+        != swap_in
+        or _exact_int(record.get("swap_out_bytes"), "recovery retained swap-out")
+        != swap_out
+    ):
+        raise RuntimeError("recovery failure swap deltas changed")
+
+
 def _read_json_file(path: Path, field: str) -> tuple[dict[str, Any], bytes]:
     payload = _read_stable_regular(path, field)
     value = _strict_json_loads(payload, field)
     return dict(_as_mapping(value, field)), payload
 
 
-def _observed_result_paths(root: Path) -> set[str]:
-    experiments = root / "experiments"
-    _reject_symlink_components(experiments, "experiment result tree")
-    if not experiments.is_dir():
-        raise RuntimeError("experiment result directory is missing")
-    observed: set[str] = set()
-    for directory, dirnames, filenames in os.walk(experiments, followlinks=False):
-        base = Path(directory)
-        for name in list(dirnames):
-            child = base / name
-            mode = child.lstat().st_mode
-            if stat.S_ISLNK(mode):
-                raise RuntimeError("experiment result tree contains a symlink")
-            if not stat.S_ISDIR(mode):
-                raise RuntimeError("experiment result tree contains a non-directory")
-        for name in filenames:
-            child = base / name
-            mode = child.lstat().st_mode
-            if stat.S_ISLNK(mode):
-                raise RuntimeError("experiment result tree contains a symlink")
-            if name == "results.pkl":
-                if not stat.S_ISREG(mode):
-                    raise RuntimeError("raw result is not a regular file")
-                observed.add(str(child.relative_to(root)))
-    return observed
+def _validate_runner_attested_result_manifest(value: Any) -> dict[str, Any]:
+    """Validate raw-result metadata without touching the runner-owned files."""
+    artifacts = dict(_as_mapping(value, "runner-attested result manifest"))
+    expected_paths = {
+        campaign.expected_result_relative_path(*key)
+        for key in campaign.expected_grid()
+    }
+    if set(artifacts) != expected_paths:
+        raise RuntimeError("runner-attested result manifest does not cover the grid")
+    for relative, raw_metadata in artifacts.items():
+        metadata = _as_mapping(
+            raw_metadata, f"runner-attested raw result {relative}"
+        )
+        digest = metadata.get("sha256")
+        size = metadata.get("size_bytes")
+        if (
+            set(metadata) != {"sha256", "size_bytes"}
+            or not isinstance(digest, str)
+            or len(digest) != 64
+            or any(character not in "0123456789abcdef" for character in digest)
+            or _exact_int(size, f"runner-attested raw result {relative} size") < 0
+        ):
+            raise RuntimeError("runner-attested result metadata is invalid")
+    return artifacts
 
 
 def _ratio_summary(log_ratio: float) -> dict[str, float]:
@@ -1225,6 +1346,21 @@ def render_report(
         lines.append("- None.")
     integrity = summary.get("integrity")
     if isinstance(integrity, Mapping):
+        if integrity.get("swap_in_audit_evidence_retained") is True:
+            lines.extend(
+                [
+                    "",
+                    "## Operational integrity",
+                    "",
+                    "Swap-in host counters were retained for the complete preflight "
+                    "and production worker lifecycles and for every production "
+                    f"dispatch ({integrity['production_dispatches_with_swap_in_telemetry']} "
+                    f"dispatches across {integrity['production_waves_with_swap_in_telemetry']} "
+                    "waves). Swap-out remained zero. These counters are integrity "
+                    "evidence only and remain inadmissible for timing or memory-"
+                    "performance claims.",
+                ]
+            )
         unresolved = integrity.get("unresolved_comparator_stop_count")
         if isinstance(unresolved, int) and unresolved:
             lines.extend(
@@ -1267,6 +1403,18 @@ def _build_output_payloads(
         "timing_admissible": False,
         "performance_evidence_disposition": PERFORMANCE_EVIDENCE_DISPOSITION,
     }
+    integrity = summary.get("integrity")
+    if isinstance(integrity, Mapping):
+        for name in (
+            "swap_in_audit_evidence_retained",
+            "preflight_worker_lifecycle_swap_in_bytes",
+            "production_worker_lifecycle_swap_in_bytes",
+            "production_measured_phase_swap_in_bytes",
+            "production_dispatches_with_swap_in_telemetry",
+            "production_waves_with_swap_in_telemetry",
+            "swap_out_bytes",
+        ):
+            context[name] = integrity.get(name)
 
     def labeled(rows: Sequence[Mapping[str, Any]], field: str) -> list[dict[str, Any]]:
         result = []
@@ -1315,6 +1463,19 @@ def _validate_sequential_recovery(
     if not isinstance(source_raw, str) or not Path(source_raw).is_absolute():
         raise RuntimeError("sequential recovery source path is not absolute")
     source_path = Path(source_raw)
+    source_parts = tuple(part.casefold() for part in source_path.parts)
+    campaign_parts = tuple(part.casefold() for part in campaign_root.parts)
+    overlaps_campaign = (
+        source_parts == campaign_parts[: len(source_parts)]
+        or campaign_parts == source_parts[: len(campaign_parts)]
+    )
+    if (
+        str(source_path) != source_raw
+        or any(part in {".", ".."} for part in source_parts)
+        or "results.pkl" in source_parts
+        or overlaps_campaign
+    ):
+        raise RuntimeError("sequential recovery source path is unsafe")
     _reject_symlink_components(source_path, "sequential recovery source")
     try:
         source_root = source_path.resolve(strict=True)
@@ -1322,12 +1483,15 @@ def _validate_sequential_recovery(
         raise RuntimeError("sequential recovery source does not exist") from exc
     if not source_root.is_dir() or source_raw != str(source_root):
         raise RuntimeError("sequential recovery source path is not canonical")
+    if source_root != source_path:
+        raise RuntimeError("sequential recovery source path is not canonical")
     if (
         source_root == campaign_root
         or source_root in campaign_root.parents
         or campaign_root in source_root.parents
     ):
         raise RuntimeError("sequential recovery source overlaps its destination")
+    _validate_recovery_namespace_policy(source_root)
     if _exists_including_broken_symlink(
         source_root / campaign.COMPLETION_ATTESTATION_FILENAME,
         "recovery-source completion attestation",
@@ -1369,12 +1533,15 @@ def _validate_sequential_recovery(
         "reuse_allowed",
         "recovery_policy",
         "manifest_sha256",
+        "worker_shutdown_confirmed",
+        "failure_swap_telemetry",
         "error_type",
         "error",
     }
     if (
         set(marker) != marker_fields
-        or marker.get("schema_version") != 1
+        or type(marker.get("schema_version")) is not int
+        or marker.get("schema_version") != campaign.HARNESS_SCHEMA_VERSION
         or marker.get("kind") != campaign.CAMPAIGN_KIND + "_invalid_attempt"
         or not isinstance(marker.get("invalidated_at_utc"), str)
         or not marker["invalidated_at_utc"]
@@ -1384,12 +1551,16 @@ def _validate_sequential_recovery(
         or marker.get("recovery_policy")
         != "fresh_sequential_namespace_from_wave_zero_only"
         or marker.get("manifest_sha256") != source_manifest_digest
+        or marker.get("worker_shutdown_confirmed") is not True
         or not isinstance(marker.get("error_type"), str)
-        or not marker["error_type"]
+        or not 0 < len(marker["error_type"]) <= 256
         or not isinstance(marker.get("error"), str)
-        or not marker["error"]
+        or not 0 < len(marker["error"]) <= 4_096
     ):
         raise RuntimeError("recovery invalid-attempt marker is not canonical")
+    _validate_recovery_failure_swap_telemetry(
+        marker.get("failure_swap_telemetry")
+    )
 
     frozen_fields = (
         "protocol_sha256",
@@ -1409,6 +1580,7 @@ def _validate_sequential_recovery(
     )
     if (
         set(source_manifest) != MANIFEST_FIELDS
+        or type(source_manifest.get("schema_version")) is not int
         or source_manifest.get("schema_version") != 1
         or source_manifest.get("kind") != campaign.CAMPAIGN_KIND
         or source_manifest.get("output_dir") != str(source_root)
@@ -1416,14 +1588,13 @@ def _validate_sequential_recovery(
         or not source_manifest["created_at_utc"]
         or source_manifest.get("execution_mode") != "concurrent"
         or source_manifest.get("sequential_recovery") is not None
-        or any(source_manifest.get(field) != manifest.get(field) for field in frozen_fields)
+        or any(
+            _canonical_json(source_manifest.get(field))
+            != _canonical_json(manifest.get(field))
+            for field in frozen_fields
+        )
     ):
         raise RuntimeError("recovery source manifest is foreign or changed")
-
-    runner_validator = getattr(campaign, "validate_sequential_recovery_record", None)
-    if not callable(runner_validator) or runner_validator(record) != record:
-        raise RuntimeError("runner rejected the sequential recovery record")
-
 
 def verify_campaign_integrity(
     input_dir: Path,
@@ -1435,6 +1606,13 @@ def verify_campaign_integrity(
     list[Path],
 ]:
     """Authenticate the complete campaign without decoding a raw result."""
+    input_parts = tuple(part.casefold() for part in input_dir.parts)
+    if ".." in input_parts or "results.pkl" in input_parts:
+        # Reject the raw-result artifact itself before lstat/resolve/is_dir can
+        # inspect it, including malformed descendants and parent traversals.
+        # An unrelated ``experiments`` ancestor is not raw authority: valid
+        # campaign roots may live under such a namespace.
+        raise RuntimeError("campaign directory path is unsafe")
     _reject_symlink_components(input_dir, "campaign directory")
     try:
         root = input_dir.resolve(strict=True)
@@ -1443,7 +1621,7 @@ def verify_campaign_integrity(
     if not root.is_dir():
         raise RuntimeError("campaign path is not a directory")
 
-    manifest_path = _confined_regular_path(
+    manifest_path = _campaign_json_path(
         root, campaign.MANIFEST_FILENAME, "run manifest"
     )
     manifest, manifest_bytes = _read_json_file(manifest_path, "run manifest")
@@ -1451,19 +1629,27 @@ def verify_campaign_integrity(
         raise RuntimeError("run manifest fields are not exact")
     execution_mode = manifest.get("execution_mode")
     if (
-        manifest.get("schema_version") != 1
+        type(manifest.get("schema_version")) is not int
+        or manifest.get("schema_version") != 1
         or manifest.get("kind") != campaign.CAMPAIGN_KIND
-        or Path(str(manifest.get("output_dir", ""))).resolve() != root
+        or not isinstance(manifest.get("created_at_utc"), str)
+        or not manifest.get("created_at_utc")
+        or manifest.get("output_dir") != str(root)
         or manifest.get("protocol_sha256") != campaign.protocol_sha256()
         or manifest.get("frozen_protocol_sha256")
         != campaign.frozen_protocol_sha256()
         or manifest.get("coordinate_manifest_sha256")
         != campaign.COORDINATE_MANIFEST_SHA256
         or manifest.get("schedule_sha256") != campaign.schedule_sha256()
-        or manifest.get("schedule") != campaign.expected_schedule()
+        or _canonical_json(manifest.get("schedule"))
+        != _canonical_json(campaign.expected_schedule())
+        or type(manifest.get("expected_jobs")) is not int
         or manifest.get("expected_jobs") != 90
+        or type(manifest.get("expected_child_fits")) is not int
         or manifest.get("expected_child_fits") != 720
+        or type(manifest.get("time_limit_seconds")) is not float
         or manifest.get("time_limit_seconds") != 3_600.0
+        or type(manifest.get("resolved_child_num_cpus")) is not int
         or manifest.get("resolved_child_num_cpus") != 18
         or execution_mode not in {"concurrent", "sequential_recovery"}
         or manifest.get("swap_policy") != "quality_only_swap_in"
@@ -1474,9 +1660,12 @@ def verify_campaign_integrity(
     current_source = campaign.collect_source_provenance(output_dir=root)
     current_runtime = campaign.collect_runtime_provenance()
     if (
-        manifest.get("source_freeze") != current_freeze
-        or manifest.get("source") != current_source
-        or manifest.get("runtime") != current_runtime
+        _canonical_json(manifest.get("source_freeze"))
+        != _canonical_json(current_freeze)
+        or _canonical_json(manifest.get("source"))
+        != _canonical_json(current_source)
+        or _canonical_json(manifest.get("runtime"))
+        != _canonical_json(current_runtime)
     ):
         raise RuntimeError("source, registry, or runtime provenance changed")
     _validate_sequential_recovery(manifest, campaign_root=root)
@@ -1486,7 +1675,7 @@ def verify_campaign_integrity(
         "runtime_provenance_sha256": _sha256(_canonical_json(current_runtime)),
     }
 
-    attestation_path = _confined_regular_path(
+    attestation_path = _campaign_json_path(
         root, campaign.COMPLETION_ATTESTATION_FILENAME, "completion attestation"
     )
     attestation, attestation_bytes = _read_json_file(
@@ -1509,6 +1698,9 @@ def verify_campaign_integrity(
         "expected_result_count",
         "expected_child_fits",
         "result_artifacts",
+        "raw_result_verification",
+        "analysis_boundary",
+        "swap_audit",
         "analysis_payload_artifact",
         "schedule_artifact",
         "preflight_report_artifact",
@@ -1519,8 +1711,13 @@ def verify_campaign_integrity(
     if set(attestation) != attestation_fields:
         raise RuntimeError("completion attestation fields are not exact")
     if (
-        attestation.get("schema_version") != 1
+        type(attestation.get("schema_version")) is not int
+        or attestation.get("schema_version") != campaign.HARNESS_SCHEMA_VERSION
         or attestation.get("kind") != campaign.COMPLETION_KIND
+        or not isinstance(attestation.get("completed_at_utc"), str)
+        or not attestation.get("completed_at_utc")
+        or type(attestation.get("pid")) is not int
+        or attestation.get("pid") <= 0
         or attestation.get("execution_mode") != execution_mode
         or attestation.get("swap_policy") != "quality_only_swap_in"
         or attestation.get("timing_admissible") is not False
@@ -1531,29 +1728,35 @@ def verify_campaign_integrity(
         != campaign.COORDINATE_MANIFEST_SHA256
         or attestation.get("schedule_sha256") != campaign.schedule_sha256()
         or attestation.get("manifest_sha256") != _sha256(manifest_bytes)
+        or type(attestation.get("result_count")) is not int
         or attestation.get("result_count") != 90
+        or type(attestation.get("expected_result_count")) is not int
         or attestation.get("expected_result_count") != 90
+        or type(attestation.get("expected_child_fits")) is not int
         or attestation.get("expected_child_fits") != 720
     ):
         raise RuntimeError("completion attestation does not match the campaign")
 
-    artifacts = _as_mapping(
-        attestation.get("result_artifacts"), "result artifacts"
+    artifacts = _validate_runner_attested_result_manifest(
+        attestation.get("result_artifacts")
     )
-    if len(artifacts) != 90:
-        raise RuntimeError("completion attestation does not bind 90 results")
-    observed = _observed_result_paths(root)
-    if observed != set(artifacts):
-        raise RuntimeError("on-disk raw-result set differs from the attestation")
-    for relative, metadata in artifacts.items():
-        if not isinstance(relative, str) or Path(relative).name != "results.pkl":
-            raise RuntimeError("attested raw-result path is invalid")
-        _artifact_bytes(
-            root,
-            relative,
-            _as_mapping(metadata, f"raw result {relative}"),
-            f"raw result {relative}",
-        )
+    boundary = campaign.analysis_boundary()
+    raw_verification = _as_mapping(
+        attestation.get("raw_result_verification"),
+        "completion raw-result verification",
+    )
+    if (
+        set(raw_verification)
+        != {"authority", "count", "method", "analyzer_access"}
+        or raw_verification.get("authority") != "runner"
+        or _exact_int(raw_verification.get("count"), "raw result count") != 90
+        or raw_verification.get("method")
+        != "sha256_size_and_safe_extraction"
+        or raw_verification.get("analyzer_access") != "forbidden"
+        or _canonical_json(attestation.get("analysis_boundary"))
+        != _canonical_json(boundary)
+    ):
+        raise RuntimeError("completion attestation analysis boundary changed")
 
     schedule_bytes, schedule_digest = _singleton_artifact_bytes(
         root,
@@ -1607,6 +1810,11 @@ def verify_campaign_integrity(
         attestation=attestation,
         output_dir=root,
     )
+    rebuilt_swap_audit = campaign.build_swap_audit(
+        operational["preflight_report_artifact"],
+        operational["concurrency_history_artifact"],
+        execution_mode=str(execution_mode),
+    )
 
     payload_bytes, payload_digest = _singleton_artifact_bytes(
         root,
@@ -1629,15 +1837,18 @@ def verify_campaign_integrity(
         "schedule_sha256",
         "manifest_sha256",
         "result_artifacts_sha256",
+        "analysis_boundary_sha256",
         "swap_policy",
         "timing_admissible",
+        "swap_audit",
         "outer_rows",
         "child_rows",
     }
     if set(payload) != payload_fields:
         raise RuntimeError("safe analysis payload fields are not exact")
     if (
-        payload.get("schema_version") != 1
+        type(payload.get("schema_version")) is not int
+        or payload.get("schema_version") != campaign.HARNESS_SCHEMA_VERSION
         or payload.get("kind") != campaign.PAYLOAD_KIND
         or payload.get("protocol_sha256") != campaign.protocol_sha256()
         or payload.get("frozen_protocol_sha256")
@@ -1648,8 +1859,14 @@ def verify_campaign_integrity(
         or payload.get("manifest_sha256") != _sha256(manifest_bytes)
         or payload.get("result_artifacts_sha256")
         != _sha256(_canonical_json(artifacts))
+        or payload.get("analysis_boundary_sha256")
+        != _sha256(_canonical_json(boundary))
         or payload.get("swap_policy") != "quality_only_swap_in"
         or payload.get("timing_admissible") is not False
+        or _canonical_json(payload.get("swap_audit"))
+        != _canonical_json(attestation.get("swap_audit"))
+        or _canonical_json(payload.get("swap_audit"))
+        != _canonical_json(rebuilt_swap_audit)
     ):
         raise RuntimeError("safe analysis payload does not bind the campaign")
     outer_rows, child_rows = _validate_payload_rows(payload, artifacts)
@@ -1666,6 +1883,7 @@ def verify_campaign_integrity(
         manifest=manifest,
         outer_rows=outer_rows,
         child_rows=child_rows,
+        swap_audit=rebuilt_swap_audit,
     )
 
     digests = {
@@ -1677,14 +1895,8 @@ def verify_campaign_integrity(
         "source_validation_sha256": _sha256(_canonical_json(source_diagnostics)),
     }
     protected = [
-        manifest_path,
-        attestation_path,
-        root / campaign.ANALYSIS_PAYLOAD_FILENAME,
-        root / campaign.SCHEDULE_FILENAME,
-        root / campaign.PREFLIGHT_REPORT_FILENAME,
-        root / campaign.CONCURRENCY_HISTORY_FILENAME,
-        root / campaign.WARMUP_HISTORY_FILENAME,
-        *(_confined_regular_path(root, path, "raw result") for path in artifacts),
+        _campaign_json_path(root, name, f"protected analyzer input {name}")
+        for name in campaign.ANALYZER_CAMPAIGN_JSON_FILENAMES
     ]
     return manifest, attestation, payload, digests, protected
 
@@ -1708,6 +1920,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         execution_mode=str(manifest["execution_mode"]),
         swap_policy=str(manifest["swap_policy"]),
     )
+    swap_audit = _as_mapping(payload.get("swap_audit"), "safe swap audit")
+    preflight_swap = _as_mapping(swap_audit.get("preflight"), "preflight swap audit")
+    production_swap = _as_mapping(
+        swap_audit.get("production"), "production swap audit"
+    )
     summary["integrity"] = {
         "outer_jobs_verified": 90,
         "selected_children_verified": 720,
@@ -1724,6 +1941,23 @@ def main(argv: Sequence[str] | None = None) -> int:
         ),
         "worker_failure_count": 0,
         "recovery_mixing_count": 0,
+        "swap_in_audit_evidence_retained": True,
+        "preflight_worker_lifecycle_swap_in_bytes": preflight_swap[
+            "worker_lifecycle_swap_in_bytes"
+        ],
+        "production_worker_lifecycle_swap_in_bytes": production_swap[
+            "worker_lifecycle_swap_in_bytes"
+        ],
+        "production_measured_phase_swap_in_bytes": production_swap[
+            "measured_phase_swap_in_bytes"
+        ],
+        "production_dispatches_with_swap_in_telemetry": production_swap[
+            "measured_dispatch_count"
+        ],
+        "production_waves_with_swap_in_telemetry": production_swap["wave_count"],
+        "swap_out_bytes": 0,
+        "raw_results_attested_by_runner": True,
+        "raw_results_read_by_analyzer": False,
         "raw_results_deserialized_by_analyzer": False,
     }
     summary["provenance"] = {

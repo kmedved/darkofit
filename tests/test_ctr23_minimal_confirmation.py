@@ -5,8 +5,10 @@ from __future__ import annotations
 import hashlib
 import math
 import subprocess
+import sys
 from copy import deepcopy
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 
@@ -26,6 +28,170 @@ requires_pinned_campaign_stack = pytest.mark.skipif(
     not _pinned_campaign_stack_available(),
     reason="the frozen CTR23 benchmark stack and host are unavailable",
 )
+
+
+def _install_raw_path_tripwire(monkeypatch) -> list[Path]:
+    touched: list[Path] = []
+    for method_name in (
+        "resolve",
+        "stat",
+        "lstat",
+        "exists",
+        "is_file",
+        "open",
+        "read_bytes",
+        "iterdir",
+        "glob",
+        "rglob",
+    ):
+        original = getattr(Path, method_name)
+
+        def guarded(
+            path,
+            *args,
+            _original=original,
+            _method_name=method_name,
+            **kwargs,
+        ):
+            folded = {part.casefold() for part in path.parts}
+            if "experiments" in folded or "results.pkl" in folded:
+                touched.append(path)
+                raise AssertionError(f"raw path {_method_name} touched {path}")
+            return _original(path, *args, **kwargs)
+
+        monkeypatch.setattr(Path, method_name, guarded)
+    return touched
+
+
+def test_source_freeze_rejects_hostile_artifact_key_before_file_access(
+    monkeypatch,
+):
+    document = deepcopy(campaign._coordinate_document())
+    document["source_artifacts"]["../experiments/results.pkl"] = {
+        "file_sha256": "0" * 64,
+    }
+    monkeypatch.setattr(
+        campaign,
+        "_coordinate_document",
+        lambda: deepcopy(document),
+    )
+
+    touched: list[Path] = []
+
+    def forbidden_file_access(path, *_args, **_kwargs):
+        touched.append(Path(path))
+        raise AssertionError(f"source registry touched {path}")
+
+    monkeypatch.setattr(campaign, "_sha256_file", forbidden_file_access)
+    monkeypatch.setattr(campaign, "_read_json_regular", forbidden_file_access)
+    for method_name in (
+        "resolve",
+        "stat",
+        "lstat",
+        "exists",
+        "is_file",
+        "open",
+        "read_bytes",
+        "iterdir",
+        "glob",
+        "rglob",
+    ):
+        original = getattr(Path, method_name)
+
+        def guarded_path_access(
+            path,
+            *args,
+            _original=original,
+            _method_name=method_name,
+            **kwargs,
+        ):
+            if "experiments" in path.parts or path.name == "results.pkl":
+                touched.append(path)
+                raise AssertionError(
+                    f"source registry {_method_name} touched {path}"
+                )
+            return _original(path, *args, **kwargs)
+
+        monkeypatch.setattr(Path, method_name, guarded_path_access)
+
+    with pytest.raises(RuntimeError, match="source artifact registry changed"):
+        campaign.validate_source_freeze()
+    assert touched == []
+
+
+def test_manifest_validator_rejects_hostile_output_before_path_access(
+    tmp_path, monkeypatch,
+):
+    root = (tmp_path / "campaign").resolve()
+    manifest = campaign.build_run_manifest(
+        output_dir=root,
+        execution_mode="concurrent",
+        source_freeze={},
+        source={},
+        runtime={},
+        sequential_recovery=None,
+    )
+    manifest["output_dir"] = str(
+        root / "ExPeRiMeNtS" / "hostile" / "ReSuLtS.PkL"
+    )
+    touched = _install_raw_path_tripwire(monkeypatch)
+
+    with pytest.raises(RuntimeError, match="run manifest"):
+        campaign._validate_manifest_static(
+            manifest, output_dir=root, execution_mode="concurrent"
+        )
+    assert touched == []
+
+
+def test_campaign_namespace_git_ignore_gate_is_case_insensitive(
+    tmp_path, monkeypatch,
+):
+    repository = tmp_path / "Repository"
+    repository.mkdir()
+    monkeypatch.setattr(campaign, "REPOSITORY_ROOT", repository)
+    calls = []
+
+    def fake_run(args, **kwargs):
+        calls.append((args, kwargs))
+        return subprocess.CompletedProcess(args, 0)
+
+    monkeypatch.setattr(campaign.subprocess, "run", fake_run)
+    variant = repository.with_name(repository.name.swapcase()) / ".cache" / "run"
+
+    campaign._validate_campaign_namespace(variant, field="fixture")
+
+    assert len(calls) == 1
+    assert calls[0][0][-1] == str(Path(".cache/run"))
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("schema_version", True),
+        ("expected_jobs", True),
+        ("expected_child_fits", 720.0),
+        ("time_limit_seconds", 3_600),
+        ("resolved_child_num_cpus", 18.0),
+    ],
+)
+def test_manifest_validator_rejects_numeric_type_coercions(
+    tmp_path, field, value,
+):
+    root = tmp_path.resolve()
+    manifest = campaign.build_run_manifest(
+        output_dir=root,
+        execution_mode="concurrent",
+        source_freeze={},
+        source={},
+        runtime={},
+        sequential_recovery=None,
+    )
+    manifest[field] = value
+
+    with pytest.raises(RuntimeError, match="run manifest"):
+        campaign._validate_manifest_static(
+            manifest, output_dir=root, execution_mode="concurrent"
+        )
 
 
 def _candidate_selection(scores=(0.0, 1.0, 2.0), selected=0):
@@ -89,6 +255,67 @@ def _callback_audit(engine: str, *, instances: int = 1, calls: int = 10):
     }
 
 
+def _swap_session(samples: list[tuple[int, int, int]]) -> dict:
+    records = [
+        {
+            "monotonic_ns": monotonic_ns,
+            "swap_in_bytes": swap_in,
+            "swap_out_bytes": swap_out,
+        }
+        for monotonic_ns, swap_in, swap_out in samples
+    ]
+    return {
+        "sample_count": len(records),
+        "samples": records,
+        "swap_in_delta": records[-1]["swap_in_bytes"] - records[0]["swap_in_bytes"],
+        "swap_out_delta": records[-1]["swap_out_bytes"] - records[0]["swap_out_bytes"],
+    }
+
+
+def _failure_swap_telemetry(
+    *, teardown_confirmed: bool = True,
+) -> dict:
+    session = _swap_session([(100, 10, 20), (200, 15, 20)])
+    return {
+        "capture_status": "captured",
+        "teardown_confirmed": teardown_confirmed,
+        "post_teardown_sample_recorded": True,
+        "worker_session_swap_telemetry": session,
+        "swap_in_bytes": 5,
+        "swap_out_bytes": 0,
+        "diagnostic": None if teardown_confirmed else "worker teardown failed",
+    }
+
+
+def _dispatch_swap_telemetry(
+    *,
+    release: int = 1_000_000_000,
+    first_ns: int = 950_000_000,
+    last_ns: int = 1_100_000_000,
+    first_swap_in: int = 112,
+    last_swap_in: int = 120,
+    swap_out: int = 200,
+) -> dict:
+    return {
+        "sample_count": 2,
+        "samples": [
+            {
+                "monotonic_ns": first_ns,
+                "swap_in_bytes": first_swap_in,
+                "swap_out_bytes": swap_out,
+            },
+            {
+                "monotonic_ns": last_ns,
+                "swap_in_bytes": last_swap_in,
+                "swap_out_bytes": swap_out,
+            },
+        ],
+        "swap_in_delta": last_swap_in - first_swap_in,
+        "swap_out_delta": 0,
+        "barrier_release_monotonic_ns": release,
+    }
+
+
 def _persisted_wave_fixture(tmp_path: Path, execution_mode: str):
     expected_wave = deepcopy(campaign.expected_schedule()[0])
     ready_by_slot = {0: {"pid": 10_000}, 1: {"pid": 10_001}}
@@ -146,6 +373,9 @@ def _persisted_wave_fixture(tmp_path: Path, execution_mode: str):
         "wave_index": 0,
         "jobs": deepcopy(expected_wave["jobs"]),
         "reports": reports,
+        "swap_start_sample_index": 2,
+        "swap_end_sample_index": 3 if execution_mode == "concurrent" else 4,
+        "swap_in_delta": 5 if execution_mode == "concurrent" else 10,
         "swap_out_delta": 0,
         "peak_combined_rss_fraction": 0.1,
         "start_skew_ns": max(starts) - min(starts),
@@ -228,8 +458,40 @@ def _persisted_preflight_fixture(tmp_path: Path) -> dict:
         )
     starts = [probe["started_monotonic_ns"] for probe in probes]
     ends = [probe["ended_monotonic_ns"] for probe in probes]
+    session_swap = _swap_session(
+        [
+            (100, 100, 200),
+            (200, 105, 200),
+            (300, 105, 200),
+            (900_000_000, 110, 200),
+            (1_200_000_000, 125, 200),
+            (1_300_000_000, 130, 200),
+        ]
+    )
+    dispatch = _dispatch_swap_telemetry(release=release)
+    measured = {
+        "start_sample_index": 3,
+        "end_sample_index": 4,
+        "sample_count": 2,
+        "swap_in_delta": 15,
+        "swap_out_delta": 0,
+        "dispatches": [
+            {
+                "label": "preflight-synthetic-probe",
+                "sample_index": 4,
+                "resource_first_monotonic_ns": 950_000_000,
+                "resource_last_monotonic_ns": 1_100_000_000,
+                "resource_first_swap_in_bytes": 112,
+                "resource_last_swap_in_bytes": 120,
+                "resource_first_swap_out_bytes": 200,
+                "resource_last_swap_out_bytes": 200,
+                "barrier_release_monotonic_ns": release,
+                "max_report_end_monotonic_ns": max(ends),
+            }
+        ],
+    }
     return {
-        "schema_version": 1,
+        "schema_version": campaign.HARNESS_SCHEMA_VERSION,
         "kind": campaign.CAMPAIGN_KIND + "_preflight",
         "completed_at_utc": "2026-07-16T00:00:01+00:00",
         "status": "passed",
@@ -243,24 +505,24 @@ def _persisted_preflight_fixture(tmp_path: Path) -> dict:
         "overlap_ns": max(0, min(ends) - max(starts)),
         "worker_restarts": False,
         "failure_count": 0,
+        "worker_session_swap_telemetry": session_swap,
+        "measured_phase_swap_window": measured,
+        "synthetic_dispatch_telemetry": dispatch,
+        "swap_in_bytes": 30,
         "swap_out_bytes": 0,
         "peak_combined_rss_fraction": 0.1,
     }
 
 
 def _stub_persisted_warmup_validators(monkeypatch) -> None:
-    from benchmarks import tabarena_comparator_warmup
-
     monkeypatch.setattr(
         campaign.hardened.screen,
         "_validate_followon_warmup_history",
         lambda *args, **kwargs: None,
     )
-    monkeypatch.setattr(
-        tabarena_comparator_warmup,
-        "validate_comparator_warmup_history",
-        lambda *args, **kwargs: None,
-    )
+    module = ModuleType("benchmarks.tabarena_comparator_warmup")
+    module.validate_comparator_warmup_history = lambda *args, **kwargs: None
+    monkeypatch.setitem(sys.modules, module.__name__, module)
 
 
 def test_grid_schedule_and_child_counts_are_exact():
@@ -273,6 +535,452 @@ def test_grid_schedule_and_child_counts_are_exact():
     assert campaign.schedule_sha256() == (
         "0285ca4242bd544f368578519f52f1a7157c1aa0f5c1c0ddcec9fcff5722055e"
     )
+
+
+def test_quality_only_policy_accepts_retained_positive_swap_in():
+    dispatch = _dispatch_swap_telemetry()
+    session = _swap_session([(100, 10, 20), (200, 35, 20)])
+
+    assert campaign._validated_dispatch_swap_deltas(dispatch, "dispatch") == (8, 0)
+    assert campaign._validated_worker_session_swap_telemetry(
+        session, "session"
+    ) == session
+
+
+def test_failed_worker_session_retains_post_teardown_swap_snapshot(
+    tmp_path, monkeypatch,
+):
+    session = _swap_session([(100, 10, 20)])
+    root_error = RuntimeError("root workload failure")
+    monkeypatch.setattr(campaign, "_stop_workers", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        campaign.hardened,
+        "_swap_counter_sample",
+        lambda: {
+            "monotonic_ns": 200,
+            "swap_in_bytes": 15,
+            "swap_out_bytes": 20,
+        },
+    )
+
+    campaign._finalize_worker_session([], session, active_error=root_error)
+
+    retained = getattr(root_error, campaign._FAILURE_SWAP_TELEMETRY_ATTRIBUTE)
+    assert retained == _failure_swap_telemetry()
+    (tmp_path / campaign.MANIFEST_FILENAME).write_text("{}", encoding="utf-8")
+    campaign._write_invalid_attempt(
+        tmp_path, execution_mode="concurrent", error=root_error
+    )
+    marker = campaign._read_json_regular(
+        tmp_path / campaign.INVALID_ATTEMPT_FILENAME, "invalid marker"
+    )
+    assert marker["schema_version"] == campaign.HARNESS_SCHEMA_VERSION
+    assert marker["worker_shutdown_confirmed"] is True
+    assert marker["failure_swap_telemetry"] == retained
+    assert (
+        marker["recovery_policy"]
+        == "fresh_sequential_namespace_from_wave_zero_only"
+    )
+
+
+def test_failed_worker_teardown_does_not_mask_root_error_or_authorize_recovery(
+    tmp_path, monkeypatch,
+):
+    session = _swap_session([(100, 10, 20)])
+    root_error = RuntimeError("root workload failure")
+
+    def fail_stop(*_args, **_kwargs):
+        raise RuntimeError("worker stop failed")
+
+    monkeypatch.setattr(campaign, "_stop_workers", fail_stop)
+    monkeypatch.setattr(
+        campaign.hardened,
+        "_swap_counter_sample",
+        lambda: {
+            "monotonic_ns": 200,
+            "swap_in_bytes": 15,
+            "swap_out_bytes": 20,
+        },
+    )
+
+    campaign._finalize_worker_session([], session, active_error=root_error)
+
+    retained = getattr(root_error, campaign._FAILURE_SWAP_TELEMETRY_ATTRIBUTE)
+    assert retained["capture_status"] == "captured"
+    assert retained["teardown_confirmed"] is False
+    assert "worker stop failed" in retained["diagnostic"]
+    (tmp_path / campaign.MANIFEST_FILENAME).write_text("{}", encoding="utf-8")
+    campaign._write_invalid_attempt(
+        tmp_path, execution_mode="concurrent", error=root_error
+    )
+    marker = campaign._read_json_regular(
+        tmp_path / campaign.INVALID_ATTEMPT_FILENAME, "invalid marker"
+    )
+    assert marker["worker_shutdown_confirmed"] is False
+    assert marker["recovery_policy"] == "not_recoverable"
+
+
+def test_swap_capture_failure_does_not_mask_or_authorize_recovery(
+    tmp_path, monkeypatch,
+):
+    root_error = RuntimeError("root workload failure")
+    monkeypatch.setattr(campaign, "_stop_workers", lambda *args, **kwargs: None)
+
+    def fail_capture(*_args, **_kwargs):
+        raise RuntimeError("counter backend unavailable")
+
+    monkeypatch.setattr(
+        campaign, "_capture_post_teardown_swap_telemetry", fail_capture
+    )
+
+    campaign._finalize_worker_session(
+        [], _swap_session([(100, 10, 20)]), active_error=root_error
+    )
+
+    retained = getattr(root_error, campaign._FAILURE_SWAP_TELEMETRY_ATTRIBUTE)
+    assert retained["capture_status"] == "capture_failed"
+    assert retained["teardown_confirmed"] is True
+    assert retained["worker_session_swap_telemetry"] is None
+    assert "counter backend unavailable" in retained["diagnostic"]
+    (tmp_path / campaign.MANIFEST_FILENAME).write_text("{}", encoding="utf-8")
+    campaign._write_invalid_attempt(
+        tmp_path, execution_mode="concurrent", error=root_error
+    )
+    marker = campaign._read_json_regular(
+        tmp_path / campaign.INVALID_ATTEMPT_FILENAME, "invalid marker"
+    )
+    assert marker["worker_shutdown_confirmed"] is True
+    assert marker["failure_swap_telemetry"]["capture_status"] == "capture_failed"
+    assert marker["recovery_policy"] == "not_recoverable"
+
+
+def test_preflight_cleanup_failure_preserves_workload_error_and_swap_snapshot(
+    tmp_path, monkeypatch,
+):
+    monkeypatch.setattr(
+        campaign,
+        "_new_worker_session_swap_telemetry",
+        lambda: _swap_session([(100, 10, 20)]),
+    )
+
+    def fail_start(_scratch):
+        raise RuntimeError("preflight worker start failed")
+
+    monkeypatch.setattr(campaign, "_start_workers", fail_start)
+    monkeypatch.setattr(campaign, "_stop_workers", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        campaign.hardened,
+        "_swap_counter_sample",
+        lambda: {
+            "monotonic_ns": 200,
+            "swap_in_bytes": 15,
+            "swap_out_bytes": 20,
+        },
+    )
+
+    def fail_cleanup(*_args, **_kwargs):
+        raise OSError("scratch cleanup failed")
+
+    monkeypatch.setattr(campaign.shutil, "rmtree", fail_cleanup)
+
+    with pytest.raises(RuntimeError, match="preflight worker start failed") as raised:
+        campaign.run_preflight(tmp_path)
+
+    retained = getattr(
+        raised.value, campaign._FAILURE_SWAP_TELEMETRY_ATTRIBUTE
+    )
+    assert retained["capture_status"] == "captured"
+    assert retained["teardown_confirmed"] is False
+    assert retained["worker_session_swap_telemetry"]["sample_count"] == 2
+
+
+def test_failure_swap_telemetry_rejects_collapsed_shutdown_boundary():
+    retained = _failure_swap_telemetry()
+    retained["worker_session_swap_telemetry"] = _swap_session([(100, 10, 20)])
+    retained["swap_in_bytes"] = 0
+
+    with pytest.raises(RuntimeError, match="teardown boundary"):
+        campaign._validated_failure_swap_telemetry(retained, "fixture")
+
+
+def test_uncertain_worker_startup_cleanup_never_authorizes_recovery(
+    tmp_path, monkeypatch,
+):
+    samples = iter(
+        [
+            {"monotonic_ns": 100, "swap_in_bytes": 10, "swap_out_bytes": 20},
+            {"monotonic_ns": 200, "swap_in_bytes": 15, "swap_out_bytes": 20},
+        ]
+    )
+    monkeypatch.setattr(
+        campaign.hardened, "_swap_counter_sample", lambda: next(samples)
+    )
+
+    def fail_start(_root):
+        raise RuntimeError("worker startup cleanup could not be confirmed")
+
+    monkeypatch.setattr(campaign, "_start_workers", fail_start)
+    monkeypatch.setattr(campaign, "_stop_workers", lambda *args, **kwargs: None)
+
+    with pytest.raises(RuntimeError, match="startup cleanup") as raised:
+        campaign.execute_production(tmp_path, execution_mode="concurrent")
+
+    retained = getattr(
+        raised.value, campaign._FAILURE_SWAP_TELEMETRY_ATTRIBUTE
+    )
+    assert retained["capture_status"] == "captured"
+    assert retained["teardown_confirmed"] is False
+    (tmp_path / campaign.MANIFEST_FILENAME).write_text("{}", encoding="utf-8")
+    campaign._write_invalid_attempt(
+        tmp_path, execution_mode="concurrent", error=raised.value
+    )
+    marker = campaign._read_json_regular(
+        tmp_path / campaign.INVALID_ATTEMPT_FILENAME, "invalid marker"
+    )
+    assert marker["worker_shutdown_confirmed"] is False
+    assert marker["recovery_policy"] == "not_recoverable"
+
+
+def test_confirmed_hardened_startup_cleanup_authorizes_fresh_recovery(
+    tmp_path, monkeypatch,
+):
+    samples = iter(
+        [
+            {"monotonic_ns": 100, "swap_in_bytes": 10, "swap_out_bytes": 20},
+            {"monotonic_ns": 200, "swap_in_bytes": 15, "swap_out_bytes": 20},
+        ]
+    )
+    monkeypatch.setattr(
+        campaign.hardened, "_swap_counter_sample", lambda: next(samples)
+    )
+
+    def fail_after_confirmed_cleanup(_root, *, worker_count):
+        assert worker_count == campaign.WORKER_COUNT
+        raise RuntimeError("worker readiness timed out")
+
+    monkeypatch.setattr(
+        campaign.hardened, "_start_workers", fail_after_confirmed_cleanup
+    )
+    monkeypatch.setattr(campaign, "_stop_workers", lambda *_args, **_kwargs: None)
+
+    with pytest.raises(RuntimeError, match="worker readiness timed out") as raised:
+        campaign.execute_production(tmp_path, execution_mode="concurrent")
+
+    assert (
+        getattr(
+            raised.value,
+            campaign._WORKER_STARTUP_CLEANUP_CONFIRMED_ATTRIBUTE,
+        )
+        is True
+    )
+    retained = getattr(
+        raised.value, campaign._FAILURE_SWAP_TELEMETRY_ATTRIBUTE
+    )
+    assert retained["capture_status"] == "captured"
+    assert retained["teardown_confirmed"] is True
+    (tmp_path / campaign.MANIFEST_FILENAME).write_text("{}", encoding="utf-8")
+    campaign._write_invalid_attempt(
+        tmp_path, execution_mode="concurrent", error=raised.value
+    )
+    marker = campaign._read_json_regular(
+        tmp_path / campaign.INVALID_ATTEMPT_FILENAME, "invalid marker"
+    )
+    assert (
+        marker["recovery_policy"]
+        == "fresh_sequential_namespace_from_wave_zero_only"
+    )
+
+
+def test_execute_wrapper_attaches_retained_swap_to_post_shutdown_error(
+    monkeypatch,
+):
+    retained = _failure_swap_telemetry()
+
+    def fail_after_shutdown(_output_dir, *, execution_mode, failure_context):
+        assert execution_mode == "concurrent"
+        failure_context["failure_swap_telemetry"] = retained
+        raise RuntimeError("post-shutdown validation failed")
+
+    monkeypatch.setattr(campaign, "_execute_production_impl", fail_after_shutdown)
+
+    with pytest.raises(RuntimeError, match="post-shutdown") as raised:
+        campaign.execute_production(Path("unused"), execution_mode="concurrent")
+
+    assert (
+        getattr(raised.value, campaign._FAILURE_SWAP_TELEMETRY_ATTRIBUTE)
+        == retained
+    )
+
+
+def test_unprintable_teardown_error_does_not_mask_workload_error(monkeypatch):
+    class UnprintableTeardownError(RuntimeError):
+        def __str__(self):
+            raise RuntimeError("stringification failed")
+
+    root_error = RuntimeError("root workload failure")
+
+    def fail_stop(*_args, **_kwargs):
+        raise UnprintableTeardownError()
+
+    monkeypatch.setattr(campaign, "_stop_workers", fail_stop)
+    monkeypatch.setattr(
+        campaign.hardened,
+        "_swap_counter_sample",
+        lambda: {
+            "monotonic_ns": 200,
+            "swap_in_bytes": 15,
+            "swap_out_bytes": 20,
+        },
+    )
+
+    campaign._finalize_worker_session(
+        [], _swap_session([(100, 10, 20)]), active_error=root_error
+    )
+
+    retained = getattr(root_error, campaign._FAILURE_SWAP_TELEMETRY_ATTRIBUTE)
+    assert retained["teardown_confirmed"] is False
+    assert "<unprintable exception>" in retained["diagnostic"]
+
+
+def test_invalid_marker_survives_unprintable_root_exception(tmp_path):
+    class UnprintableRootError(RuntimeError):
+        def __str__(self):
+            raise RuntimeError("stringification failed")
+
+    campaign._write_invalid_attempt(
+        tmp_path,
+        execution_mode="concurrent",
+        error=UnprintableRootError(),
+    )
+
+    marker = campaign._read_json_regular(
+        tmp_path / campaign.INVALID_ATTEMPT_FILENAME, "invalid marker"
+    )
+    assert marker["error_type"] == "UnprintableRootError"
+    assert "<unprintable exception>" in marker["error"]
+    assert marker["recovery_policy"] == "not_recoverable"
+
+
+def test_sequential_failure_marker_preserves_production_identity(
+    tmp_path,
+):
+    (tmp_path / campaign.MANIFEST_FILENAME).write_text("{}", encoding="utf-8")
+    error = RuntimeError("sequential production failed")
+    setattr(
+        error,
+        campaign._FAILURE_SWAP_TELEMETRY_ATTRIBUTE,
+        _failure_swap_telemetry(),
+    )
+
+    campaign._write_invalid_attempt(
+        tmp_path,
+        execution_mode="sequential_recovery",
+        error=error,
+    )
+
+    marker = campaign._read_json_regular(
+        tmp_path / campaign.INVALID_ATTEMPT_FILENAME, "invalid marker"
+    )
+    assert marker["stage"] == "production"
+    assert marker["manifest_sha256"] == campaign._sha256_file(
+        tmp_path / campaign.MANIFEST_FILENAME
+    )
+    assert marker["worker_shutdown_confirmed"] is True
+    assert marker["recovery_policy"] == "not_recoverable"
+
+
+def test_main_retains_production_swap_when_completion_validation_fails(
+    tmp_path, monkeypatch,
+):
+    chimeraboost = tmp_path / "chimeraboost"
+    chimeraboost.mkdir()
+    output = tmp_path / "campaign"
+    monkeypatch.setattr(campaign, "DEFAULT_CHIMERABOOST_PATH", chimeraboost)
+    monkeypatch.setattr(campaign, "validate_source_freeze", lambda: {})
+    monkeypatch.setattr(campaign, "collect_runtime_provenance", lambda: {})
+    monkeypatch.setattr(
+        campaign,
+        "build_runtime_jobs",
+        lambda **kwargs: (None, [object()] * campaign.EXPECTED_JOBS, 18),
+    )
+    monkeypatch.setattr(campaign, "validate_schedule", lambda value: None)
+    monkeypatch.setattr(
+        campaign,
+        "_validate_campaign_namespace",
+        lambda path, **kwargs: path,
+    )
+    monkeypatch.setattr(
+        campaign, "collect_source_provenance", lambda **kwargs: {}
+    )
+    monkeypatch.setattr(campaign, "verify_live_official_splits", lambda: {})
+    monkeypatch.setattr(campaign, "run_preflight", lambda output_dir: {})
+    monkeypatch.setattr(
+        campaign,
+        "execute_production",
+        lambda output_dir, **kwargs: {
+            "worker_session_swap_telemetry": _swap_session(
+                [(100, 10, 20), (200, 15, 20)]
+            )
+        },
+    )
+
+    def fail_completion(*_args, **_kwargs):
+        raise RuntimeError("completion validation failed")
+
+    monkeypatch.setattr(campaign, "write_completion_attestation", fail_completion)
+
+    with pytest.raises(RuntimeError, match="completion validation"):
+        campaign.main(
+            [
+                "--output-dir",
+                str(output),
+                "--chimeraboost-path",
+                str(chimeraboost),
+            ]
+        )
+
+    marker = campaign._read_json_regular(
+        output / campaign.INVALID_ATTEMPT_FILENAME, "invalid marker"
+    )
+    assert marker["worker_shutdown_confirmed"] is True
+    assert marker["failure_swap_telemetry"] == _failure_swap_telemetry()
+    assert (
+        marker["recovery_policy"]
+        == "fresh_sequential_namespace_from_wave_zero_only"
+    )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda value: value.__setitem__(
+            "swap_in_delta", value["swap_in_delta"] + 1
+        ),
+        lambda value: (
+            value["samples"][0].__setitem__("swap_in_bytes", 119),
+            value.__setitem__("swap_in_delta", True),
+        ),
+        lambda value: value["samples"][1].__setitem__("swap_in_bytes", 111),
+        lambda value: value["samples"][0].__setitem__("swap_in_bytes", -1),
+        lambda value: value.__setitem__("sample_count", True),
+        lambda value: (
+            value.__setitem__("samples", value["samples"][:1]),
+            value.__setitem__("sample_count", 1),
+            value.__setitem__("swap_in_delta", 0),
+            value.__setitem__("swap_out_delta", 0),
+        ),
+        lambda value: (
+            value["samples"][1].__setitem__("swap_out_bytes", 201),
+            value.__setitem__("swap_out_delta", 1),
+        ),
+    ],
+)
+def test_dispatch_swap_telemetry_rejects_hostile_mutations(mutation):
+    telemetry = _dispatch_swap_telemetry()
+    mutation(telemetry)
+
+    with pytest.raises(RuntimeError, match="swap"):
+        campaign._validated_dispatch_swap_deltas(telemetry, "dispatch")
 
 
 @pytest.mark.parametrize(
@@ -363,6 +1071,10 @@ def test_persisted_concurrent_wave_recomputes_raw_timing_and_artifact_identity(
         ),
         lambda entry, artifacts: entry["reports"][0].__setitem__(
             "result_sha256", "f" * 64
+        ),
+        lambda entry, artifacts: entry.__setitem__("swap_in_delta", -1),
+        lambda entry, artifacts: entry.__setitem__(
+            "swap_end_sample_index", entry["swap_start_sample_index"]
         ),
         lambda entry, artifacts: entry.__setitem__("unregistered_field", 1),
     ],
@@ -476,7 +1188,18 @@ def test_persisted_preflight_recomputes_probe_concurrency_and_warmup_digest(
             {
                 "worker_slot": 0,
                 "pid": value["worker_ready"][0]["pid"],
-            }
+                }
+            ),
+        lambda value: value.__setitem__(
+            "swap_in_bytes", value["swap_in_bytes"] + 1
+        ),
+        lambda value: value["worker_session_swap_telemetry"].__setitem__(
+            "swap_in_delta",
+            value["worker_session_swap_telemetry"]["swap_in_delta"] + 1,
+        ),
+        lambda value: value["synthetic_dispatch_telemetry"].__setitem__(
+            "swap_in_delta",
+            value["synthetic_dispatch_telemetry"]["swap_in_delta"] + 1,
         ),
         lambda value: value.__setitem__("extra", True),
     ],
@@ -620,8 +1343,8 @@ def test_recovery_requires_invalid_marker_and_rejects_completed_source(
         campaign, "collect_source_provenance", lambda **kwargs: {}
     )
     monkeypatch.setattr(campaign, "collect_runtime_provenance", lambda: {})
-    source = tmp_path / "failed"
-    source.mkdir()
+    source = tmp_path / "experiments" / "failed"
+    source.mkdir(parents=True)
     with pytest.raises(RuntimeError, match="invalid marker"):
         campaign._sequential_recovery_record(source)
     manifest = campaign.build_run_manifest(
@@ -637,7 +1360,7 @@ def test_recovery_requires_invalid_marker_and_rejects_completed_source(
     campaign._atomic_write_json(
         source / campaign.INVALID_ATTEMPT_FILENAME,
         {
-            "schema_version": 1,
+            "schema_version": campaign.HARNESS_SCHEMA_VERSION,
             "kind": campaign.CAMPAIGN_KIND + "_invalid_attempt",
             "invalidated_at_utc": "2026-07-15T00:00:00Z",
             "execution_mode": "concurrent",
@@ -645,15 +1368,132 @@ def test_recovery_requires_invalid_marker_and_rejects_completed_source(
             "reuse_allowed": False,
             "recovery_policy": "fresh_sequential_namespace_from_wave_zero_only",
             "manifest_sha256": manifest_sha,
+            "worker_shutdown_confirmed": True,
+            "failure_swap_telemetry": _failure_swap_telemetry(),
             "error_type": "RuntimeError",
             "error": "fixture",
         },
     )
     record = campaign._sequential_recovery_record(source)
     assert record["reuse_policy"] == "no_results_reused_fresh_wave_zero"
+    completion_path = source / campaign.COMPLETION_ATTESTATION_FILENAME
+    completion_path.symlink_to(source / "missing-completion-target")
+    with pytest.raises(RuntimeError, match="completed"):
+        campaign._sequential_recovery_record(source)
+    completion_path.unlink()
+    marker_path = source / campaign.INVALID_ATTEMPT_FILENAME
+    marker = campaign._read_json_regular(marker_path, "invalid marker")
+    marker["schema_version"] = float(campaign.HARNESS_SCHEMA_VERSION)
+    campaign._atomic_write_json(marker_path, marker)
+    with pytest.raises(RuntimeError, match="invalid marker"):
+        campaign._sequential_recovery_record(source)
     (source / campaign.COMPLETION_ATTESTATION_FILENAME).write_text("{}")
     with pytest.raises(RuntimeError, match="completed"):
         campaign._sequential_recovery_record(source)
+
+
+def test_recovery_rejects_symlink_resolving_into_raw_result_namespace(tmp_path):
+    raw_source = tmp_path / "ExPeRiMeNtS" / "failed-concurrent" / "ReSuLtS.PkL"
+    raw_source.parent.mkdir(parents=True)
+    raw_source.write_bytes(b"opaque raw result")
+    alias = tmp_path / "benign-recovery-source"
+    alias.symlink_to(raw_source)
+
+    with pytest.raises(RuntimeError, match="source path is unsafe"):
+        campaign._sequential_recovery_record(alias)
+
+    with pytest.raises(RuntimeError, match="source path is unsafe"):
+        campaign._sequential_recovery_record(
+            tmp_path / "ReSuLtS.PkL" / "failed-concurrent"
+        )
+
+
+def test_completion_refuses_changed_sequential_recovery_source(
+    tmp_path, monkeypatch,
+):
+    output_dir = tmp_path / "fresh-sequential"
+    output_dir.mkdir()
+    (output_dir / campaign.MANIFEST_FILENAME).write_text("{}")
+    recovery = {"source_output_dir": str(tmp_path / "failed-concurrent")}
+    manifest = {
+        "execution_mode": "sequential_recovery",
+        "sequential_recovery": recovery,
+        "source_freeze": {},
+        "source": {},
+        "runtime": {},
+    }
+    swap_audit = {
+        "preflight": {
+            "worker_lifecycle_swap_in_bytes": 0,
+            "worker_lifecycle_swap_out_bytes": 0,
+        },
+        "production": {
+            "worker_lifecycle_swap_in_bytes": 0,
+            "worker_lifecycle_swap_out_bytes": 0,
+            "measured_dispatch_count": 90,
+            "wave_count": 45,
+        },
+    }
+    operational = {
+        campaign.PREFLIGHT_REPORT_FILENAME: {},
+        campaign.CONCURRENCY_HISTORY_FILENAME: {
+            "peak_combined_rss_fraction": 0.1,
+        },
+        campaign.WARMUP_HISTORY_FILENAME: {},
+    }
+    monkeypatch.setattr(campaign, "collect_result_artifacts", lambda _: {})
+    monkeypatch.setattr(
+        campaign,
+        "validate_completed_results",
+        lambda *_: ({}, [], []),
+    )
+    original_read_json = campaign._read_json_regular
+    monkeypatch.setattr(
+        campaign,
+        "_read_json_regular",
+        lambda path, field: (
+            operational[path.name]
+            if path.name in operational
+            else original_read_json(path, field)
+        ),
+    )
+    monkeypatch.setattr(campaign, "build_swap_audit", lambda *_args, **_kwargs: swap_audit)
+    monkeypatch.setattr(
+        campaign, "validate_completion_for_analysis", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        campaign,
+        "_artifact_metadata",
+        lambda path, _root: {
+            "path": path.name,
+            "sha256": "0" * 64,
+            "size_bytes": 0,
+        },
+    )
+    monkeypatch.setattr(
+        campaign,
+        "validate_operational_artifacts_for_analysis",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(campaign, "validate_source_freeze", lambda: {})
+    monkeypatch.setattr(
+        campaign, "collect_source_provenance", lambda **_kwargs: {}
+    )
+    monkeypatch.setattr(campaign, "collect_runtime_provenance", lambda: {})
+
+    def reject_changed_source(value):
+        assert value is recovery
+        raise RuntimeError("recovery source artifacts changed")
+
+    monkeypatch.setattr(
+        campaign,
+        "validate_sequential_recovery_record",
+        reject_changed_source,
+    )
+
+    with pytest.raises(RuntimeError, match="recovery source artifacts changed"):
+        campaign.write_completion_attestation(output_dir, manifest=manifest)
+    assert not (output_dir / campaign.COMPLETION_ATTESTATION_FILENAME).exists()
 
 
 def test_recovery_rejects_ancestor_or_descendant_destination(tmp_path):
@@ -699,6 +1539,27 @@ def test_campaign_namespaces_inside_repository_must_be_git_ignored(
         )
     with pytest.raises(RuntimeError, match="cannot be the campaign repository"):
         campaign._validate_campaign_namespace(repository, field="output")
+
+
+def test_campaign_output_path_reserves_results_name_but_allows_experiments(
+    tmp_path,
+):
+    allowed = tmp_path / "experiments" / "campaign"
+    assert campaign._validated_campaign_output_path(allowed) == allowed.resolve()
+
+    for rejected in (
+        tmp_path / "ReSuLtS.PkL" / "campaign",
+        tmp_path / "campaign" / ".." / "ReSuLtS.PkL",
+    ):
+        with pytest.raises(RuntimeError, match="reserved raw-result name"):
+            campaign._validated_campaign_output_path(rejected)
+
+    canonical = tmp_path / "ReSuLtS.PkL" / "canonical"
+    canonical.mkdir(parents=True)
+    alias = tmp_path / "benign-output-alias"
+    alias.symlink_to(canonical, target_is_directory=True)
+    with pytest.raises(RuntimeError, match="reserved raw-result name"):
+        campaign._validated_campaign_output_path(alias)
 
 
 def test_recovery_rejects_nonignored_repository_namespaces_before_provenance(

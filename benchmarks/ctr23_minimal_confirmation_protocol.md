@@ -5,6 +5,23 @@ prediction, validation metric, or test metric may be opened until this protocol,
 the runner, the analyzer, and their protocol tests are committed together in a
 clean tree._
 
+## 2026-07-16 forward-only harness amendment
+
+The completed schema-version-1 campaign, its historical verifier, and its
+reviewed publication remain authoritative at commit
+`c3e47d5697826793c097214bb60ce68fd713c443`. The source-freeze status above
+describes that original campaign and must not be read as a claim that the
+post-outcome changes below were preregistered.
+
+Schema version 2 is forward-only harness hardening for any future campaign. It
+retains swap-in telemetry end to end, constrains the analyzer to explicit JSON
+and source-registry allowlists, and fails recovery closed unless shutdown and
+the post-teardown sample are proved. It is intentionally not a replay verifier
+for the published schema-version-1 namespace. These amendments do not rerun,
+reanalyze, requalify, or change the CTR23 evidence, and they do not alter the
+terminal A10 decision: confirmation was not established and no default or
+preset promotion is authorized.
+
 ## Objective and stopping boundary
 
 This campaign asks one narrow question: does the already-frozen DarkoFit `A10`
@@ -259,6 +276,17 @@ precedes that manifest. Production wave count: 45 waves.
 The explicit execution policy is `quality_only_swap_in`:
 
 - swap-in is allowed but measured and retained as operational audit evidence;
+- schema-version-2 operational evidence starts a monotonic host-counter
+  lifecycle before worker creation, retains setup checkpoints, cross-binds
+  every measured dispatch to its lifecycle sample range, and ends only after
+  confirmed worker shutdown;
+- a failed worker session also takes a bounded post-teardown counter snapshot
+  and persists it in the schema-version-2 invalid-attempt marker without
+  replacing the original workload error; the marker distinguishes confirmed
+  shutdown from a failed teardown or failed telemetry capture;
+- every production wave retains its lifecycle sample range and its independently
+  recomputable swap-in and swap-out deltas; the safe payload and completion
+  attestation duplicate the same bounded `swap_audit` summary;
 - any positive swap-out delta over the complete preflight worker lifecycle,
   any measured production dispatch, or the complete production worker
   lifecycle invalidates the attempt;
@@ -283,7 +311,10 @@ arm/task/coordinate identity, completion status, swap boundaries, peak RSS,
 deadline state, result path, and result hash. Any parent interruption
 invalidates that namespace: there is no in-place resume and no result may be
 reused. Only an eligible concurrent production failure with the canonical
-runner-written marker may authorize the fresh full sequential recovery below.
+runner-written marker, a captured post-teardown lifecycle sample, and confirmed
+worker shutdown may authorize the fresh full sequential recovery below. A
+worker-stop failure or unavailable final telemetry is explicitly
+`not_recoverable`.
 
 ### Fresh sequential recovery
 
@@ -294,11 +325,13 @@ analysis.
 
 The sole recovery is a complete sequential rerun of all 90 jobs in a fresh
 namespace. It must be explicitly authorized by the runner-written invalid
-attempt marker, bind the invalid manifest/marker hashes, preserve every model,
-task, coordinate, resource, dependency, threshold, and analysis setting, and
-start with an empty result cache. Concurrent and sequential results may never
-be mixed. Sequential recovery remains `quality_only_swap_in`, requires zero
-swap-out and all other integrity gates, and is disclosed in every result row.
+attempt marker, bind the invalid manifest/marker hashes, prove that the failed
+workers were shut down and that the post-teardown swap sample was retained,
+preserve every model, task, coordinate, resource, dependency, threshold, and
+analysis setting, and start with an empty result cache. Concurrent and
+sequential results may never be mixed. Sequential recovery remains
+`quality_only_swap_in`, requires zero swap-out and all other integrity gates,
+and is disclosed in every result row.
 Any campaign namespace inside the DarkoFit repository, including both the
 invalid concurrent source and fresh sequential destination, must be Git-ignored
 before source provenance is collected; namespaces outside the repository remain
@@ -324,13 +357,44 @@ must have string keys and values must be recursively JSON-safe. The runner
 hashes the payload and every raw result artifact, then writes a completion
 attestation binding those hashes to the zero-start manifest and journal.
 
-The independent analyzer may read only the protocol/registry artifacts, run
-manifest, completion attestation, and safe-analysis payload. It may not open a
-raw result pickle, model cache, prediction, target, or dataset. It must
-revalidate all hashes and integrity gates before calculating a ratio. Its
+The independent analyzer may read source-bound protocol/provenance files. Its
+registry reader is limited, before any path construction or filesystem call,
+to exactly four hard-coded repository-relative JSON paths:
+`benchmarks/ctr23_suite_snapshot.json`,
+`benchmarks/ctr23_contamination_registry.json`,
+`benchmarks/ctr23_partition.json`, and
+`benchmarks/ctr23_manual_evidence_catalog.json`. Registry keys supplied by a
+document never confer filesystem authority.
+
+From the completed campaign root the analyzer may read exactly these seven
+strict JSON files:
+`run_manifest.json`, `completion_attestation.json`,
+`analysis_payload.json`, `wave_schedule.json`, `preflight_report.json`,
+`concurrency_history.json`, and `warmup_history.json`. A sequential recovery
+may additionally read only the exact runner-attested `invalid_attempt.json` and
+source `run_manifest.json` named by its recovery record, and may perform only
+an existence check for source `completion_attestation.json` to reject recovery
+from an already completed campaign.
+
+The completion attestation is the runner-authored root statement and has no
+external signature. It hash-binds the manifest and hash-and-size-binds the five
+other campaign JSON artifacts; the manifest in turn binds source, protocol,
+registry, schedule, runtime, and policy identities. The analyzer independently
+checks that internal chain without overstating it as third-party authentication.
+
+The runner is the sole authority that may enumerate, stat, open, hash, decode,
+or deserialize a raw result. Analyzer raw-result access is
+`forbidden_no_stat_enumerate_open_hash_or_decode`: it must not inspect a
+`results.pkl`, model cache, prediction, target, dataset, or experiments tree.
+It validates the exact 90-entry runner-attested result metadata manifest and
+its safe-payload digest, but does not independently rehash current raw bytes.
+Its campaign-root reader must reject every filename outside the seven-name JSON
+allowlist before filesystem access. It must revalidate all permitted hashes and
+integrity gates before calculating a ratio. Its
 machine-readable summary and tabular exports repeat `execution_mode`,
 `swap_policy`, `timing_admissible=false`, and the performance-evidence
-disposition so detached files cannot be mistaken for speed evidence.
+disposition, plus the retained swap-in audit counts, so detached files cannot
+be mistaken for speed evidence.
 
 Analysis must be deterministic: a second analyzer invocation over unchanged
 inputs must reproduce every decision artifact byte for byte.
