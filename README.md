@@ -265,6 +265,10 @@ safe `.npz` persistence, and fitted diagnostics under
 `model_.auto_params_["linear_leaves"]` are supported. This remains an explicit
 experimental mechanism: validation-selected use must pass the noisy-data and
 cold-player basketball gates before any automatic policy is considered.
+The first frozen basketball screen failed mean, leave-one-fold-out, team, and
+cold-player quality gates, so neither direct use nor that validation selector
+is an automatic default; see
+[`benchmarks/basketball_linear_leaves_result.md`](benchmarks/basketball_linear_leaves_result.md).
 
 Distributional benchmark, mean over three seeds on the synthetic
 heteroscedastic gate. The calibrated DarkoFit row was refreshed after the

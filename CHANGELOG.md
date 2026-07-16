@@ -15,8 +15,10 @@ previous behaviors remain available through explicit parameters.
   persistence with corruption checks, fit diagnostics, and Apache-2.0
   attribution for the adapted ChimeraBoost solver/design. Existing default
   archives keep their prior format and constructor payload. The mechanism is
-  not an automatic policy and must pass the frozen basketball held-team and
-  cold-player gates before broader development validation.
+  not an automatic policy. Its first frozen basketball selector screen failed
+  mean, leave-one-fold-out, held-team, and cold-player quality gates, so it
+  remains opt-in research and does not advance to broader development
+  validation.
 * Fix symmetric/shared split legality so an already-pure leaf's empty child
   contributes zero gain instead of vetoing a useful split for every other
   active leaf. Sparse non-empty children still obey `min_child_weight` and the
