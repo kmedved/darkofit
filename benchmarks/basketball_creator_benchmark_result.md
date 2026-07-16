@@ -78,3 +78,10 @@ Both runs used ChimeraBoost
 `29602d3452b1754042006ad2b14bca320c94b4b7`, CatBoost 1.2.10, Python 3.12.13,
 scikit-learn 1.9.0, and the pinned dataset/fold fingerprints recorded in the
 JSON artifacts.
+
+## Follow-up
+
+The frozen five-arm DarkoFit diagnostic is recorded in
+`basketball_darkofit_ablation_result.md`. No tested candidate passed its
+quality, fold-breadth, held-team, and runtime gates, so the current default was
+left unchanged.
