@@ -6,6 +6,17 @@ Behavior-changing default improvements from a full-repo review, plus targeted
 performance and robustness fixes. These are intentional clean cutovers; the
 previous behaviors remain available through explicit parameters.
 
+* Add experimental, default-off `linear_leaves=True` for scalar RMSE
+  CatBoost/oblivious fits. Each tree can attach Hessian-weighted local ridge
+  models over its numeric split features without changing DarkoFit's split
+  search; small leaves retain their exact constant Newton value. The feature
+  includes a packed prediction forest, weighted feature standardization,
+  deterministic small/all-categorical fallbacks, safe format-v4 `.npz`
+  persistence with corruption checks, fit diagnostics, and Apache-2.0
+  attribution for the adapted ChimeraBoost solver/design. Existing default
+  archives keep their prior format and constructor payload. The mechanism is
+  not an automatic policy and must pass the frozen basketball held-team and
+  cold-player gates before broader development validation.
 * Fix symmetric/shared split legality so an already-pure leaf's empty child
   contributes zero gain instead of vetoing a useful split for every other
   active leaf. Sparse non-empty children still obey `min_child_weight` and the

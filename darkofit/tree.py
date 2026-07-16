@@ -2604,6 +2604,260 @@ def _leaf_values_and_sums_rows(leaf, grad, hess, row_indices, n_leaves, l2, lr):
 
 
 @njit(cache=True)
+def _solve_small(A, b):
+    """Solve a tiny dense system with LU and partial pivoting.
+
+    ``A`` and ``b`` are modified in place. A singular pivot returns an all-NaN
+    vector so the linear-leaf caller can retain the constant Newton fallback.
+    The design is adapted from ChimeraBoost under Apache-2.0; see ``NOTICE``.
+    """
+    d = A.shape[0]
+    x = np.empty(d)
+    for column in range(d):
+        pivot = column
+        maximum = abs(A[column, column])
+        for row in range(column + 1, d):
+            candidate = abs(A[row, column])
+            if candidate > maximum:
+                maximum = candidate
+                pivot = row
+        if maximum < 1e-300:
+            for j in range(d):
+                x[j] = np.nan
+            return x
+        if pivot != column:
+            for j in range(d):
+                temporary = A[column, j]
+                A[column, j] = A[pivot, j]
+                A[pivot, j] = temporary
+            temporary = b[column]
+            b[column] = b[pivot]
+            b[pivot] = temporary
+        inverse = 1.0 / A[column, column]
+        for row in range(column + 1, d):
+            factor = A[row, column] * inverse
+            if factor != 0.0:
+                A[row, column] = 0.0
+                for j in range(column + 1, d):
+                    A[row, j] -= factor * A[column, j]
+                b[row] -= factor * b[column]
+    for row in range(d - 1, -1, -1):
+        total = b[row]
+        for j in range(row + 1, d):
+            total -= A[row, j] * x[j]
+        x[row] = total / A[row, row]
+    return x
+
+
+@njit(cache=True, parallel=True)
+def _fit_linear_leaf_coefficients(
+    leaf,
+    grad,
+    hess,
+    row_indices,
+    use_all_rows,
+    n_leaves,
+    linear_features,
+    linear_bin_values,
+    X_binned,
+    fallback_values,
+    intercept_lambda,
+    linear_lambda,
+    learning_rate,
+):
+    """Fit a hessian-weighted ridge model independently inside each leaf.
+
+    Column zero is the intercept; later columns are slopes over the numeric
+    split features. Ineligible or singular leaves retain ``fallback_values``
+    exactly. The stable counting layout preserves each leaf's original row
+    order and makes the parallel leaf solves thread-count invariant.
+    """
+    n_fit = leaf.shape[0] if use_all_rows else row_indices.shape[0]
+    n_linear = linear_features.shape[0]
+    dimension = 1 + n_linear
+    coefficients = np.zeros((n_leaves, dimension))
+    for leaf_index in range(n_leaves):
+        coefficients[leaf_index, 0] = fallback_values[leaf_index]
+
+    counts = np.zeros(n_leaves, dtype=np.int64)
+    for position in range(n_fit):
+        row = position if use_all_rows else row_indices[position]
+        if hess[row] > 0.0:
+            counts[leaf[row]] += 1
+
+    offsets = np.zeros(n_leaves + 1, dtype=np.int64)
+    for leaf_index in range(n_leaves):
+        offsets[leaf_index + 1] = offsets[leaf_index] + counts[leaf_index]
+    positions = offsets[:n_leaves].copy()
+    order = np.empty(offsets[n_leaves], dtype=np.int64)
+    for position in range(n_fit):
+        row = position if use_all_rows else row_indices[position]
+        if hess[row] > 0.0:
+            leaf_index = leaf[row]
+            order[positions[leaf_index]] = row
+            positions[leaf_index] += 1
+
+    for leaf_index in prange(n_leaves):
+        if counts[leaf_index] < 2 * dimension:
+            continue
+        gram = np.zeros((dimension, dimension))
+        rhs = np.zeros(dimension)
+        row_values = np.empty(n_linear)
+        for position in range(offsets[leaf_index], offsets[leaf_index + 1]):
+            row = order[position]
+            row_hessian = hess[row]
+            row_gradient = grad[row]
+            for j in range(n_linear):
+                feature = linear_features[j]
+                value = linear_bin_values[feature, X_binned[row, feature]]
+                row_values[j] = value if np.isfinite(value) else 0.0
+            gram[0, 0] += row_hessian
+            rhs[0] += -row_gradient
+            for j in range(n_linear):
+                value_j = row_values[j]
+                weighted_value = row_hessian * value_j
+                gram[0, 1 + j] += weighted_value
+                gram[1 + j, 0] += weighted_value
+                rhs[1 + j] += -row_gradient * value_j
+                for other in range(n_linear):
+                    gram[1 + j, 1 + other] += (
+                        weighted_value * row_values[other]
+                    )
+
+        gram[0, 0] += intercept_lambda
+        for j in range(1, dimension):
+            gram[j, j] += linear_lambda
+        for j in range(dimension):
+            gram[j, j] += 1e-9
+        beta = _solve_small(gram, rhs)
+        if np.isnan(beta[0]):
+            continue
+        for j in range(dimension):
+            coefficients[leaf_index, j] = learning_rate * beta[j]
+    return coefficients
+
+
+@njit(cache=True)
+def _linear_tree_predict(
+    X_binned, splits_feat, splits_thr, linear_features,
+    linear_coefficients, linear_bin_values,
+):
+    leaf = _assign_leaves(X_binned, splits_feat, splits_thr)
+    output = np.empty(X_binned.shape[0], dtype=np.float64)
+    for row in range(X_binned.shape[0]):
+        value = linear_coefficients[leaf[row], 0]
+        for j in range(linear_features.shape[0]):
+            feature = linear_features[j]
+            feature_value = linear_bin_values[feature, X_binned[row, feature]]
+            if np.isfinite(feature_value):
+                value += linear_coefficients[leaf[row], 1 + j] * feature_value
+        output[row] = value
+    return output
+
+
+@njit(cache=True)
+def _linear_tree_add(
+    X_binned, splits_feat, splits_thr, linear_features,
+    linear_coefficients, linear_bin_values, output,
+):
+    n_rows = X_binned.shape[0]
+    depth = splits_feat.shape[0]
+    for row in range(n_rows):
+        leaf = 0
+        for level in range(depth):
+            feature = splits_feat[level]
+            bit = 1 if X_binned[row, feature] > splits_thr[level] else 0
+            leaf = leaf * 2 + bit
+        value = linear_coefficients[leaf, 0]
+        for j in range(linear_features.shape[0]):
+            feature = linear_features[j]
+            feature_value = linear_bin_values[feature, X_binned[row, feature]]
+            if np.isfinite(feature_value):
+                value += linear_coefficients[leaf, 1 + j] * feature_value
+        output[row] += value
+
+
+@njit(cache=True, parallel=True)
+def add_linear_leaf_values_inplace(
+    leaf, linear_features, linear_coefficients, linear_bin_values,
+    X_binned, output,
+):
+    """Add fitted local-linear leaf values for already-routed training rows."""
+    for row in prange(leaf.shape[0]):
+        leaf_index = leaf[row]
+        value = linear_coefficients[leaf_index, 0]
+        for j in range(linear_features.shape[0]):
+            feature = linear_features[j]
+            feature_value = linear_bin_values[feature, X_binned[row, feature]]
+            if np.isfinite(feature_value):
+                value += linear_coefficients[leaf_index, 1 + j] * feature_value
+        output[row] += value
+
+
+def attach_oblivious_linear_leaves(
+    tree,
+    leaf,
+    grad,
+    hess,
+    X_binned,
+    linear_bin_values,
+    numeric_features,
+    intercept_lambda,
+    linear_lambda,
+    learning_rate,
+    row_indices=None,
+):
+    """Attach local linear models over this tree's numeric split features.
+
+    Tree structure and constant values are inputs, never recomputed. Returns
+    ``True`` when at least one eligible numeric split feature exists.
+    """
+    if type(tree) is not ObliviousTree:
+        raise TypeError("linear leaves require an ObliviousTree")
+    if not np.isfinite(intercept_lambda) or intercept_lambda < 0.0:
+        raise ValueError("intercept_lambda must be nonnegative and finite")
+    if not np.isfinite(linear_lambda) or linear_lambda < 0.0:
+        raise ValueError("linear_lambda must be nonnegative and finite")
+    numeric_features = np.asarray(numeric_features, dtype=np.bool_)
+    if numeric_features.shape != (X_binned.shape[1],):
+        raise ValueError("numeric feature mask does not match binned features")
+    selected = []
+    for feature in tree.splits_feat:
+        feature = int(feature)
+        if numeric_features[feature] and feature not in selected:
+            selected.append(feature)
+    if not selected:
+        return False
+    linear_features = np.asarray(selected, dtype=np.int64)
+    rows = (
+        np.empty(0, dtype=np.int64)
+        if row_indices is None
+        else np.asarray(row_indices, dtype=np.int64)
+    )
+    coefficients = _fit_linear_leaf_coefficients(
+        np.asarray(leaf),
+        np.asarray(grad, dtype=np.float64),
+        np.asarray(hess, dtype=np.float64),
+        rows,
+        row_indices is None,
+        tree.values.shape[0],
+        linear_features,
+        np.asarray(linear_bin_values, dtype=np.float64),
+        np.asarray(X_binned),
+        np.asarray(tree.values, dtype=np.float64),
+        float(intercept_lambda),
+        float(linear_lambda),
+        float(learning_rate),
+    )
+    if not np.all(np.isfinite(coefficients)):
+        raise RuntimeError("linear leaf fit produced non-finite coefficients")
+    tree.linear_features = linear_features
+    tree.linear_coefficients = coefficients
+    tree.linear_bin_values = linear_bin_values
+    return True
+
+
+@njit(cache=True)
 def _multiclass_leaf_values_and_sums(leaf, grad, hess, n_leaves, l2, lr):
     """Return vector leaf values plus class-major G/H totals."""
     K = grad.shape[0]
@@ -4290,14 +4544,22 @@ def _best_multiclass_splits_counts_for_leaf_ids_with_noise_class_minor_py(
 class ObliviousTree:
     """A single symmetric tree. Stores its splits and leaf values."""
 
-    __slots__ = ("splits_feat", "splits_thr", "values", "gains", "depth")
+    __slots__ = (
+        "splits_feat", "splits_thr", "values", "gains", "depth",
+        "linear_features", "linear_coefficients", "linear_bin_values",
+    )
 
-    def __init__(self, splits_feat, splits_thr, values, gains=None):
+    def __init__(self, splits_feat, splits_thr, values, gains=None,
+                 linear_features=None, linear_coefficients=None,
+                 linear_bin_values=None):
         self.splits_feat = splits_feat
         self.splits_thr = splits_thr
         self.values = values
         self.gains = gains if gains is not None else np.zeros(len(splits_feat))
         self.depth = len(splits_feat)
+        self.linear_features = linear_features
+        self.linear_coefficients = linear_coefficients
+        self.linear_bin_values = linear_bin_values
 
     def apply(self, X_binned):
         """Return the leaf index of each row."""
@@ -4308,14 +4570,27 @@ class ObliviousTree:
     def predict(self, X_binned):
         if self.depth == 0:
             return np.zeros(X_binned.shape[0], dtype=np.float64)
+        if self.linear_coefficients is not None:
+            return _linear_tree_predict(
+                X_binned, self.splits_feat, self.splits_thr,
+                self.linear_features, self.linear_coefficients,
+                self.linear_bin_values,
+            )
         return _predict_tree(X_binned, self.splits_feat, self.splits_thr, self.values)
 
     def add_predict(self, X_binned, out):
         """Add this tree's prediction into an existing output vector."""
         if self.depth > 0:
-            _predict_tree_add(
-                X_binned, self.splits_feat, self.splits_thr, self.values, out
-            )
+            if self.linear_coefficients is not None:
+                _linear_tree_add(
+                    X_binned, self.splits_feat, self.splits_thr,
+                    self.linear_features, self.linear_coefficients,
+                    self.linear_bin_values, out,
+                )
+            else:
+                _predict_tree_add(
+                    X_binned, self.splits_feat, self.splits_thr, self.values, out
+                )
 
 
 class LevelwiseTree:

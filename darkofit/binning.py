@@ -160,6 +160,32 @@ class Binner:
         self.random_state = random_state
         self.borders_ = None       # list of np.ndarray, one per feature
         self.n_bins_ = None        # np.ndarray int, width per feature
+        self.bin_centers_ = None   # representative float value for each bin
+
+    @staticmethod
+    def _centers_for(borders):
+        """Return one representative continuous value per fitted bin.
+
+        Interior buckets use border midpoints, edge buckets extrapolate half
+        an adjacent gap, and the final missing-value bucket is NaN. Adapted
+        from ChimeraBoost under Apache-2.0; see ``NOTICE``.
+        """
+        borders = np.asarray(borders, dtype=np.float64)
+        count = len(borders)
+        centers = np.empty(count + 2, dtype=np.float64)
+        if count == 0:
+            centers[0] = 0.0
+            centers[1] = np.nan
+            return centers
+        if count == 1:
+            centers[0] = borders[0]
+            centers[1] = borders[0]
+        else:
+            centers[0] = borders[0] - 0.5 * (borders[1] - borders[0])
+            centers[1:count] = 0.5 * (borders[:-1] + borders[1:])
+            centers[count] = borders[-1] + 0.5 * (borders[-1] - borders[-2])
+        centers[count + 1] = np.nan
+        return centers
 
     def fit(self, X, sample_weight=None):
         """Learn quantile borders for each column from training data."""

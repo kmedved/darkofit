@@ -4,7 +4,7 @@ The format is a compressed numpy archive holding only plain (non-object)
 arrays plus one JSON header string, so it loads with ``allow_pickle=False``
 and is robust to library-version drift in a way pickled objects are not.
 
-Layout (format_version 2/3):
+Layout (format_version 2/3/4):
   header                 JSON: format/library versions, model class, params,
                          loss, fitted scalars, preprocessor settings
   classes                class labels (numeric or unicode), multiclass only
@@ -14,6 +14,8 @@ Layout (format_version 2/3):
                          with a parallel kind code (0=str, 1=float, 2=int) so
                          exact key types are rebuilt for dict lookups
   cat{j}__code_remap     format v3 only, optional raw-code target-order remap
+  linear__* / trees__linear_*
+                         format v4 only, optional local-linear leaf payload
   enc{t}__*              per-target encoder category sums/counts
   trees__*               concatenated per-tree arrays with offsets
 
@@ -37,7 +39,7 @@ from .tree import (
     ObliviousTree,
 )
 
-FORMAT_VERSION = 3
+FORMAT_VERSION = 4
 BASE_FORMAT_VERSION = 2
 
 _KIND_STR = 0
@@ -52,6 +54,14 @@ _KNOWN_CATEGORY_KINDS = frozenset({
     _KIND_BOOL,
     _KIND_MISSING,
 })
+_LINEAR_PAYLOAD_KEYS = (
+    "trees__linear_counts",
+    "trees__linear_features_flat",
+    "trees__linear_feature_offsets",
+    "trees__linear_coefficients_flat",
+    "trees__linear_coefficient_offsets",
+    "linear__bin_values",
+)
 
 
 def _jsonify(value):
@@ -67,7 +77,29 @@ def _jsonify(value):
     return value
 
 
-def _archive_format_version(prep):
+def _archive_format_version(prep, booster, wrapper_header=None):
+    wrapper_params = (
+        wrapper_header.get("params", {})
+        if isinstance(wrapper_header, dict)
+        else {}
+    )
+    wrapper_uses_linear_params = (
+        isinstance(wrapper_params, dict)
+        and (
+            bool(wrapper_params.get("linear_leaves", False))
+            or float(wrapper_params.get("linear_lambda", 1.0)) != 1.0
+        )
+    )
+    if (
+        wrapper_uses_linear_params
+        or bool(getattr(booster, "linear_leaves", False))
+        or float(getattr(booster, "linear_lambda", 1.0)) != 1.0
+        or any(
+            getattr(tree, "linear_coefficients", None) is not None
+            for tree in booster._iter_tree_objects()
+        )
+    ):
+        return 4
     if (
         getattr(prep, "target_ordered_cat_codes", "off") == "leaky_full"
         and getattr(prep, "include_cat_codes", False)
@@ -302,6 +334,50 @@ def _pack_oblivious(trees, arrays):
     arrays["trees__values_flat"], arrays["trees__value_offsets"] = (
         _concat_with_offsets([t.values for t in trees])
     )
+    linear_trees = [
+        tree for tree in trees if tree.linear_coefficients is not None
+    ]
+    if not linear_trees:
+        return
+    shared_values = linear_trees[0].linear_bin_values
+    for tree in linear_trees[1:]:
+        if (
+            tree.linear_bin_values is not shared_values
+            and not np.array_equal(
+                tree.linear_bin_values, shared_values, equal_nan=True
+            )
+        ):
+            raise ValueError("linear trees do not share fitted bin values")
+    counts = np.array(
+        [
+            0 if tree.linear_coefficients is None else len(tree.linear_features)
+            for tree in trees
+        ],
+        dtype=np.int64,
+    )
+    features, feature_offsets = _concat_with_offsets(
+        [
+            np.empty(0, dtype=np.int64)
+            if tree.linear_coefficients is None
+            else tree.linear_features
+            for tree in trees
+        ],
+        dtype=np.int64,
+    )
+    coefficients, coefficient_offsets = _concat_with_offsets(
+        [
+            np.empty(0, dtype=np.float64)
+            if tree.linear_coefficients is None
+            else tree.linear_coefficients.reshape(-1)
+            for tree in trees
+        ]
+    )
+    arrays["trees__linear_counts"] = counts
+    arrays["trees__linear_features_flat"] = features
+    arrays["trees__linear_feature_offsets"] = feature_offsets
+    arrays["trees__linear_coefficients_flat"] = coefficients
+    arrays["trees__linear_coefficient_offsets"] = coefficient_offsets
+    arrays["linear__bin_values"] = np.asarray(shared_values, dtype=np.float64)
 
 
 def _require_split_bounds(name, feats, thrs, n_bins, allow_inactive=False):
@@ -383,7 +459,7 @@ def _require_nonoblivious_structure(features, thresholds, left, right,
     )
 
 
-def _unpack_oblivious(data, n_bins):
+def _unpack_oblivious(data, n_bins, format_version, n_numeric_features):
     depths = _require_integer_array("oblivious depths", data["trees__depths"])
     feats = _require_integer_array("oblivious features", data["trees__feats_flat"])
     thrs = _require_integer_array("oblivious thresholds", data["trees__thrs_flat"])
@@ -399,6 +475,84 @@ def _unpack_oblivious(data, n_bins):
         "oblivious value", data["trees__value_offsets"],
         len(values), expected_count=len(depths) + 1,
     )
+    present = [key in data.files for key in _LINEAR_PAYLOAD_KEYS]
+    if any(present) and not all(present):
+        _invalid_model("linear leaf payload is incomplete")
+    linear_payload = all(present)
+    if linear_payload and format_version < 4:
+        _invalid_model("linear leaf payload requires format version 4")
+    if linear_payload:
+        linear_counts = _require_integer_array(
+            "linear leaf counts", data["trees__linear_counts"]
+        )
+        if len(linear_counts) != len(depths) or np.any(linear_counts < 0):
+            _invalid_model("linear leaf counts do not match tree count")
+        linear_features = _require_integer_array(
+            "linear leaf features", data["trees__linear_features_flat"]
+        )
+        linear_feature_offsets = _require_offsets(
+            "linear leaf feature",
+            data["trees__linear_feature_offsets"],
+            len(linear_features),
+            expected_count=len(depths) + 1,
+        )
+        if not np.array_equal(np.diff(linear_feature_offsets), linear_counts):
+            _invalid_model("linear leaf feature offsets do not match counts")
+        linear_coefficients = _require_array_ndim(
+            "linear leaf coefficients",
+            data["trees__linear_coefficients_flat"],
+            1,
+        )
+        if not (
+            np.issubdtype(linear_coefficients.dtype, np.integer)
+            or np.issubdtype(linear_coefficients.dtype, np.floating)
+        ):
+            _invalid_model("linear leaf coefficients must be numeric")
+        linear_coefficients = linear_coefficients.astype(
+            np.float64, copy=False
+        )
+        if not np.all(np.isfinite(linear_coefficients)):
+            _invalid_model("linear leaf coefficients must be finite")
+        linear_coefficient_offsets = _require_offsets(
+            "linear leaf coefficient",
+            data["trees__linear_coefficient_offsets"],
+            len(linear_coefficients),
+            expected_count=len(depths) + 1,
+        )
+        linear_bin_values = _require_array_ndim(
+            "linear bin values", data["linear__bin_values"], 2
+        )
+        if not (
+            np.issubdtype(linear_bin_values.dtype, np.integer)
+            or np.issubdtype(linear_bin_values.dtype, np.floating)
+        ):
+            _invalid_model("linear bin values must be numeric")
+        linear_bin_values = linear_bin_values.astype(np.float64, copy=False)
+        expected_shape = (
+            len(n_bins), int(n_bins.max()) if len(n_bins) else 1
+        )
+        if linear_bin_values.shape != expected_shape:
+            _invalid_model("linear bin values do not match fitted bin space")
+        if np.any(np.isinf(linear_bin_values)):
+            _invalid_model("linear bin values must not contain infinity")
+        if n_numeric_features < len(n_bins) and not np.array_equal(
+            linear_bin_values[n_numeric_features:],
+            np.zeros_like(linear_bin_values[n_numeric_features:]),
+        ):
+            _invalid_model("non-numeric linear bin values must be zero")
+        for feature in range(n_numeric_features):
+            missing_bin = int(n_bins[feature]) - 1
+            if not np.isnan(linear_bin_values[feature, missing_bin]):
+                _invalid_model("numeric missing-bin linear value must be NaN")
+            if not np.all(np.isfinite(linear_bin_values[feature, :missing_bin])):
+                _invalid_model("numeric linear bin values must be finite")
+    else:
+        linear_counts = np.zeros(len(depths), dtype=np.int64)
+        linear_features = np.empty(0, dtype=np.int64)
+        linear_feature_offsets = np.zeros(len(depths) + 1, dtype=np.int64)
+        linear_coefficients = np.empty(0, dtype=np.float64)
+        linear_coefficient_offsets = np.zeros(len(depths) + 1, dtype=np.int64)
+        linear_bin_values = None
     trees = []
     for t in range(len(depths)):
         s0, s1 = so[t], so[t + 1]
@@ -410,9 +564,48 @@ def _unpack_oblivious(data, n_bins):
         if value_len != (1 << depth):
             _invalid_model("oblivious value payload does not match depth")
         _require_split_bounds("oblivious", feats[s0:s1], thrs[s0:s1], n_bins)
+        linear_count = int(linear_counts[t])
+        feature_start = int(linear_feature_offsets[t])
+        feature_stop = int(linear_feature_offsets[t + 1])
+        coefficient_start = int(linear_coefficient_offsets[t])
+        coefficient_stop = int(linear_coefficient_offsets[t + 1])
+        expected_coefficients = (
+            0 if linear_count == 0 else (1 << depth) * (1 + linear_count)
+        )
+        if coefficient_stop - coefficient_start != expected_coefficients:
+            _invalid_model(
+                "linear leaf coefficient payload does not match tree shape"
+            )
+        tree_linear_features = None
+        tree_linear_coefficients = None
+        if linear_count:
+            if depth == 0:
+                _invalid_model("depth-zero tree cannot have linear leaves")
+            tree_linear_features = linear_features[
+                feature_start:feature_stop
+            ].copy()
+            if len(np.unique(tree_linear_features)) != linear_count:
+                _invalid_model("linear leaf features must be unique")
+            if np.any(
+                (tree_linear_features < 0)
+                | (tree_linear_features >= int(n_numeric_features))
+            ):
+                _invalid_model("linear leaf features must be numeric")
+            if not set(tree_linear_features.tolist()).issubset(
+                set(feats[s0:s1].tolist())
+            ):
+                _invalid_model("linear leaf feature was not used by its tree")
+            tree_linear_coefficients = linear_coefficients[
+                coefficient_start:coefficient_stop
+            ].reshape(1 << depth, 1 + linear_count).copy()
         trees.append(ObliviousTree(
             feats[s0:s1].copy(), thrs[s0:s1].copy(),
-            values[vo[t]:vo[t + 1]].copy(), gains[s0:s1].copy()
+            values[vo[t]:vo[t + 1]].copy(), gains[s0:s1].copy(),
+            linear_features=tree_linear_features,
+            linear_coefficients=tree_linear_coefficients,
+            linear_bin_values=(
+                None if tree_linear_coefficients is None else linear_bin_values
+            ),
         ))
     return trees
 
@@ -969,7 +1162,9 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
     prep = booster.prep_
     arrays = {}
     header = {
-        "format_version": _archive_format_version(prep),
+        "format_version": _archive_format_version(
+            prep, booster, wrapper_header
+        ),
         "library_version": __version__,
         "model_class": type(booster).__name__,
         "lr": float(booster.lr_),
@@ -1070,6 +1265,8 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
         "ts_permutations", "target_ordered_cat_codes",
         "rho_learning_rate_multiplier", "rho_l2_leaf_reg_multiplier",
     )
+    if header["format_version"] >= 4:
+        param_names += ("linear_leaves", "linear_lambda")
     constructor_inputs = {
         "depth": "_depth_input",
         "num_leaves": "_num_leaves_input",
@@ -1146,6 +1343,13 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
         arrays[f"enc{t}__offsets"] = offsets
 
     if wrapper_header:
+        wrapper_header = dict(wrapper_header)
+        wrapper_params = wrapper_header.get("params")
+        if header["format_version"] < 4 and isinstance(wrapper_params, dict):
+            wrapper_params = dict(wrapper_params)
+            wrapper_params.pop("linear_leaves", None)
+            wrapper_params.pop("linear_lambda", None)
+            wrapper_header["params"] = wrapper_params
         header["wrapper"] = _jsonify(wrapper_header)
     if wrapper_arrays:
         for key, value in wrapper_arrays.items():
@@ -1168,6 +1372,7 @@ def load_booster(path, return_wrapper_payload=False):
         GradientBoosting,
         MulticlassBoosting,
         _normalize_eval_metric,
+        _normalize_tree_mode,
     )
 
     wrapper_header = {}
@@ -1278,6 +1483,85 @@ def load_booster(path, return_wrapper_payload=False):
         booster.auto_params_ = header.get("auto_params", {})
         if not isinstance(booster.auto_params_, dict):
             _invalid_model("auto_params must be an object")
+        saved_linear_metadata = booster.auto_params_.get("linear_leaves")
+        if saved_linear_metadata is not None:
+            if not isinstance(saved_linear_metadata, dict):
+                _invalid_model("linear leaf metadata must be an object")
+            for name in ("requested", "active"):
+                if not isinstance(saved_linear_metadata.get(name), bool):
+                    _invalid_model(
+                        f"linear leaf metadata {name} must be a boolean"
+                    )
+            for name in (
+                "numeric_feature_count",
+                "linear_tree_count",
+                "linear_leaf_count",
+            ):
+                value = saved_linear_metadata.get(name)
+                if (
+                    isinstance(value, bool)
+                    or not isinstance(value, int)
+                    or value < 0
+                ):
+                    _invalid_model(
+                        f"linear leaf metadata {name} must be nonnegative"
+                    )
+        linear_payload_members = [
+            key in data.files for key in _LINEAR_PAYLOAD_KEYS
+        ]
+        linear_payload_complete = all(linear_payload_members)
+        saved_linear_active = (
+            isinstance(saved_linear_metadata, dict)
+            and saved_linear_metadata.get("active") is True
+        )
+        if saved_linear_active and not linear_payload_complete:
+            _invalid_model(
+                "active linear leaf metadata requires a complete payload"
+            )
+        if linear_payload_complete and not saved_linear_active:
+            _invalid_model(
+                "linear leaf payload requires active fitted metadata"
+            )
+        linear_requested = bool(getattr(booster, "linear_leaves", False))
+        if (
+            isinstance(saved_linear_metadata, dict)
+            and saved_linear_metadata["requested"] != linear_requested
+        ):
+            _invalid_model(
+                "linear leaf metadata requested state disagrees with params"
+            )
+        if linear_requested:
+            if not isinstance(booster, GradientBoosting):
+                _invalid_model(
+                    "linear_leaves=True is only valid for scalar regression"
+                )
+            if getattr(booster, "loss_name", None) != "RMSE":
+                _invalid_model("linear_leaves=True requires loss='RMSE'")
+            try:
+                loaded_tree_mode = _normalize_tree_mode(booster.tree_mode)
+            except (TypeError, ValueError) as exc:
+                _invalid_model(f"invalid linear leaf tree mode: {exc}")
+            if loaded_tree_mode != "catboost":
+                _invalid_model(
+                    "linear_leaves=True requires tree_mode='catboost'"
+                )
+            if (
+                booster.ordered_boosting != "auto"
+                and bool(booster.ordered_boosting)
+            ):
+                _invalid_model(
+                    "linear_leaves=True is incompatible with "
+                    "ordered_boosting=True"
+                )
+            tree_metadata = booster.auto_params_.get("tree", {})
+            if isinstance(tree_metadata, dict) and bool(
+                tree_metadata.get("ordered_boosting", False)
+            ):
+                _invalid_model(
+                    "linear leaf archive resolved ordered boosting on"
+                )
+            booster.tree_mode_ = loaded_tree_mode
+            booster.ordered_boosting_ = False
         if isinstance(booster, DistributionalBoosting):
             metric = (
                 booster.auto_params_
@@ -1341,7 +1625,12 @@ def load_booster(path, return_wrapper_payload=False):
                 _invalid_model("empty tree kind has tree payload")
             trees = []
         elif kind.startswith("oblivious"):
-            trees = _unpack_oblivious(data, n_bins)
+            trees = _unpack_oblivious(
+                data,
+                n_bins,
+                format_version,
+                len(num_features),
+            )
         elif kind.startswith("levelwise"):
             trees = _unpack_levelwise(data, n_bins)
         elif kind == "multi":
@@ -1483,6 +1772,104 @@ def load_booster(path, return_wrapper_payload=False):
         prep.binner_ = binner
         prep.n_bins_ = binner.n_bins_
         booster.prep_ = prep
+        linear_trees = [
+            tree
+            for tree in booster._iter_tree_objects()
+            if getattr(tree, "linear_coefficients", None) is not None
+        ]
+        if saved_linear_active != bool(linear_trees):
+            _invalid_model(
+                "linear leaf active metadata disagrees with decoded trees"
+            )
+        if linear_trees:
+            if not isinstance(booster, GradientBoosting):
+                _invalid_model(
+                    "linear leaf payload is only valid for scalar regression"
+                )
+            if not bool(getattr(booster, "linear_leaves", False)):
+                _invalid_model(
+                    "linear leaf payload requires linear_leaves=True"
+                )
+            booster.linear_leaves_active_ = True
+            booster.linear_leaves_inactive_reason_ = None
+            booster.linear_bin_values_ = linear_trees[0].linear_bin_values
+            booster.linear_numeric_features_ = np.zeros(
+                len(n_bins), dtype=np.bool_
+            )
+            booster.linear_numeric_features_[:len(num_features)] = True
+            booster.linear_tree_count_ = len(linear_trees)
+            booster.linear_leaf_count_ = int(sum(
+                tree.linear_coefficients.shape[0]
+                for tree in linear_trees
+            ))
+            for name, observed in (
+                ("numeric_feature_count", len(num_features)),
+                ("linear_tree_count", booster.linear_tree_count_),
+                ("linear_leaf_count", booster.linear_leaf_count_),
+            ):
+                expected = saved_linear_metadata.get(name)
+                if (
+                    isinstance(expected, bool)
+                    or not isinstance(expected, int)
+                    or int(expected) != int(observed)
+                ):
+                    _invalid_model(
+                        f"linear leaf metadata {name} does not match payload"
+                    )
+        else:
+            booster.linear_leaves_active_ = False
+            saved_inactive_reason = (
+                saved_linear_metadata.get("inactive_reason")
+                if isinstance(saved_linear_metadata, dict)
+                else None
+            )
+            booster.linear_leaves_inactive_reason_ = (
+                saved_inactive_reason
+                if (
+                    bool(getattr(booster, "linear_leaves", False))
+                    and isinstance(saved_inactive_reason, str)
+                    and saved_inactive_reason
+                )
+                else (
+                    "no_retained_linear_trees"
+                    if bool(getattr(booster, "linear_leaves", False))
+                    else "disabled"
+                )
+            )
+            booster.linear_bin_values_ = None
+            saved_numeric_feature_count = 0
+            if isinstance(saved_linear_metadata, dict):
+                saved_numeric_feature_count = int(
+                    saved_linear_metadata["numeric_feature_count"]
+                )
+                if saved_numeric_feature_count > len(num_features):
+                    _invalid_model(
+                        "linear leaf numeric feature metadata exceeds the "
+                        "fitted preprocessor"
+                    )
+            booster.linear_numeric_features_ = np.zeros(
+                len(n_bins), dtype=np.bool_
+            )
+            booster.linear_numeric_features_[:saved_numeric_feature_count] = True
+            booster.linear_tree_count_ = 0
+            booster.linear_leaf_count_ = 0
+            if isinstance(saved_linear_metadata, dict):
+                for name in ("linear_tree_count", "linear_leaf_count"):
+                    expected = saved_linear_metadata.get(name, 0)
+                    if (
+                        isinstance(expected, bool)
+                        or not isinstance(expected, int)
+                        or int(expected) != 0
+                    ):
+                        _invalid_model(
+                            f"linear leaf metadata {name} requires payload"
+                        )
+        linear_metadata = booster._linear_leaf_metadata()
+        booster.auto_params_["linear_leaves"] = linear_metadata
+        booster.auto_params_.setdefault("diagnostics", {})
+        booster.auto_params_["diagnostics"]["linear_leaves"] = (
+            linear_metadata
+        )
         _restore_training_metadata(booster)
 
         wrapper_header = header.get("wrapper", {})

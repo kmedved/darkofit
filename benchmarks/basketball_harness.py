@@ -113,14 +113,26 @@ def extract_fit_metadata(model: Any) -> dict[str, Any]:
     core = model.model_
     selection_core = getattr(model, "selection_model_", None)
     linear_active = bool(getattr(model, "linear_residual_active_", False))
+    linear_leaf_metadata = dict(
+        getattr(core, "auto_params_", {}).get("linear_leaves", {}) or {}
+    )
+    linear_leaf_active = bool(linear_leaf_metadata.get("active", False))
+    if linear_active:
+        selected_lane = "linear_residual"
+    elif linear_leaf_active:
+        selected_lane = "linear_leaves"
+    else:
+        selected_lane = "boosting"
     return {
         "best_iteration": int(model.best_n_estimators_),
         "fitted_tree_count": int(model.n_estimators_),
         "resolved_learning_rate": float(model.learning_rate_),
         "requested_tree_mode": str(model.tree_mode),
         "selected_tree_mode": str(core.tree_mode_),
-        "selected_lane": "linear_residual" if linear_active else "boosting",
+        "selected_lane": selected_lane,
         "linear_residual_active": linear_active,
+        "linear_leaves_active": linear_leaf_active,
+        "linear_leaves": linear_leaf_metadata,
         "resolved_thread_count": int(core.n_threads_),
         "refit": bool(getattr(model, "refit_", False)),
         "refit_strategy": getattr(model, "refit_strategy_", None),

@@ -50,6 +50,7 @@ from .tree import (
     _build_multiclass_histograms_counts_into,
     _leaf_values_and_sums,
     _leaf_values_and_sums_rows,
+    add_linear_leaf_values_inplace,
     add_leaf_values_inplace,
     add_multiclass_leaf_values_inplace,
     build_hybrid_tree,
@@ -57,12 +58,14 @@ from .tree import (
     build_leafwise_tree,
     build_levelwise_tree,
     build_oblivious_tree,
+    attach_oblivious_linear_leaves,
     ordered_leaf_update_inplace,
 )
 
 _LEAF_CORRECTION_SORT_MIN_LEAVES = 16
 _LOW_EFFECTIVE_SAMPLE_FRACTION = 0.3
 _MAX_CONSECUTIVE_SAMPLED_DEPTH0_RETRIES = 10
+LINEAR_LEAVES_MIN_SAMPLES = 1000
 _EMITTED_DIAGNOSTIC_WARNING_CODES = set()
 
 
@@ -487,7 +490,8 @@ class _BaseBooster:
                  leaf_dtype="int64", ts_permutations=1,
                  target_ordered_cat_codes="off", eval_metric=None,
                  rho_learning_rate_multiplier=1.0,
-                 rho_l2_leaf_reg_multiplier=1.0):
+                 rho_l2_leaf_reg_multiplier=1.0,
+                 linear_leaves=False, linear_lambda=1.0):
         self.iterations = _normalize_iterations(iterations)
         self.learning_rate = learning_rate
         self._depth_input = depth
@@ -562,12 +566,18 @@ class _BaseBooster:
         self.eval_metric_ = None
         self.rho_learning_rate_multiplier = float(rho_learning_rate_multiplier)
         self.rho_l2_leaf_reg_multiplier = float(rho_l2_leaf_reg_multiplier)
+        if not isinstance(linear_leaves, (bool, np.bool_)):
+            raise TypeError("linear_leaves must be a bool")
+        self.linear_leaves = bool(linear_leaves)
+        self.linear_lambda = float(linear_lambda)
         if self.bagging_temperature < 0.0:
             raise ValueError("bagging_temperature must be nonnegative")
         if self.mvs_reg < 0.0:
             raise ValueError("mvs_reg must be nonnegative")
         if self.random_strength < 0.0:
             raise ValueError("random_strength must be nonnegative")
+        if not np.isfinite(self.linear_lambda) or self.linear_lambda < 0.0:
+            raise ValueError("linear_lambda must be nonnegative and finite")
         if (
             not np.isfinite(self.rho_learning_rate_multiplier)
             or self.rho_learning_rate_multiplier <= 0.0
@@ -1600,6 +1610,124 @@ class _BaseBooster:
         cache[key] = (copy.deepcopy(prep), np.asarray(X_binned).copy())
         return X_binned
 
+    def _prepare_linear_leaf_state(
+        self, X_binned, loss_name, n_samples, sample_weight=None
+    ):
+        """Resolve and, when eligible, build standardized numeric-bin values."""
+        self.linear_leaves_active_ = False
+        self.linear_leaves_inactive_reason_ = "disabled"
+        self.linear_bin_values_ = None
+        self.linear_tree_count_ = 0
+        self.linear_leaf_count_ = 0
+        self.linear_numeric_features_ = np.zeros(
+            X_binned.shape[1], dtype=np.bool_
+        )
+        if not self.linear_leaves:
+            return
+        if loss_name != "RMSE":
+            raise ValueError(
+                "linear_leaves=True is currently supported only for "
+                "loss='RMSE'"
+            )
+        if self.tree_mode_ != "catboost":
+            raise ValueError(
+                "linear_leaves=True currently requires tree_mode='catboost'"
+            )
+        if self.ordered_boosting_:
+            raise ValueError(
+                "linear_leaves=True is incompatible with ordered_boosting=True"
+            )
+        if n_samples < LINEAR_LEAVES_MIN_SAMPLES:
+            self.linear_leaves_inactive_reason_ = "below_min_samples"
+            return
+        n_numeric = len(self.prep_.num_features_)
+        if n_numeric == 0:
+            self.linear_leaves_inactive_reason_ = "no_numeric_features"
+            return
+
+        self.linear_numeric_features_[:n_numeric] = True
+        max_bins = int(self.prep_.n_bins_.max()) if X_binned.shape[1] else 1
+        values = np.zeros((X_binned.shape[1], max_bins), dtype=np.float64)
+        linear_weight = (
+            None
+            if sample_weight is None
+            else np.asarray(sample_weight, dtype=np.float64)
+        )
+        for feature in range(n_numeric):
+            centers = self.prep_.binner_._centers_for(
+                self.prep_.binner_.borders_[feature]
+            )
+            values[feature, : len(centers)] = centers
+            sample_values = centers[X_binned[:, feature]]
+            fit_mask = np.isfinite(sample_values)
+            if linear_weight is not None:
+                fit_mask &= linear_weight > 0.0
+            finite = sample_values[fit_mask]
+            if not finite.size:
+                continue
+            if linear_weight is None:
+                mean = float(np.mean(finite))
+                variance = float(np.mean((finite - mean) ** 2))
+            else:
+                finite_weight = linear_weight[fit_mask]
+                mean = float(np.average(finite, weights=finite_weight))
+                variance = float(
+                    np.average(
+                        (finite - mean) ** 2, weights=finite_weight
+                    )
+                )
+            scale = float(np.sqrt(max(variance, 0.0)))
+            if not np.isfinite(scale) or scale <= 0.0:
+                scale = 1.0
+            values[feature, : len(centers)] = (centers - mean) / scale
+        self.linear_bin_values_ = values
+        self.linear_leaves_active_ = True
+        self.linear_leaves_inactive_reason_ = None
+
+    def _linear_leaf_metadata(self):
+        return {
+            "requested": bool(self.linear_leaves),
+            "active": bool(getattr(self, "linear_leaves_active_", False)),
+            "inactive_reason": getattr(
+                self, "linear_leaves_inactive_reason_", "disabled"
+            ),
+            "min_samples": LINEAR_LEAVES_MIN_SAMPLES,
+            "linear_lambda": float(self.linear_lambda),
+            "numeric_feature_count": int(
+                np.count_nonzero(
+                    getattr(self, "linear_numeric_features_", np.empty(0))
+                )
+            ),
+            "linear_tree_count": int(
+                getattr(self, "linear_tree_count_", 0)
+            ),
+            "linear_leaf_count": int(
+                getattr(self, "linear_leaf_count_", 0)
+            ),
+        }
+
+    def _record_linear_leaf_metadata(self):
+        if hasattr(self, "auto_params_"):
+            metadata = self._linear_leaf_metadata()
+            self.auto_params_["linear_leaves"] = metadata
+            self.auto_params_.setdefault("diagnostics", {})
+            self.auto_params_["diagnostics"]["linear_leaves"] = metadata
+
+    def _finalize_linear_leaf_metadata(self):
+        linear_trees = [
+            tree
+            for tree in self._iter_tree_objects()
+            if getattr(tree, "linear_coefficients", None) is not None
+        ]
+        self.linear_tree_count_ = len(linear_trees)
+        self.linear_leaf_count_ = int(
+            sum(tree.linear_coefficients.shape[0] for tree in linear_trees)
+        )
+        if self.linear_leaves_active_ and not linear_trees:
+            self.linear_leaves_active_ = False
+            self.linear_leaves_inactive_reason_ = "no_retained_linear_trees"
+        self._record_linear_leaf_metadata()
+
     def _include_cat_codes(self):
         return self.tree_mode_ in {"lightgbm", "hybrid"}
 
@@ -2136,6 +2264,9 @@ class GradientBoosting(_BaseBooster):
             X_route_binned if self.n_threads_ > 1 else X_binned
         )
         n_bins = self.prep_.n_bins_
+        self._prepare_linear_leaf_state(
+            X_binned, self.loss_name, n_samples, w
+        )
         self._resolve_fit_auto_params(
             loss_name=self.loss_name,
             n_samples=n_samples,
@@ -2203,6 +2334,7 @@ class GradientBoosting(_BaseBooster):
             eval_sample_weight=wv,
             rowpar_buffers=rowpar_buffers,
         )
+        self._record_linear_leaf_metadata()
         self._emit_auto_param_warnings()
         self._reset_stochastic_diagnostics()
 
@@ -2260,10 +2392,10 @@ class GradientBoosting(_BaseBooster):
                     tree_iteration=m,
                 ),
             )
-            _add_timing(timing, "tree_build", phase)
             # A depth-0 tree found no legal split; subsequent rounds on the same
             # gradients would too, so stop rather than append empty trees.
             if tree.depth == 0:
+                _add_timing(timing, "tree_build", phase)
                 if (
                     row_indices is not None
                     and m + 1 < self.iterations_
@@ -2286,6 +2418,21 @@ class GradientBoosting(_BaseBooster):
                 leaf_G, leaf_H = self._refresh_scalar_leaf_values_float64(
                     tree, leaf, g, h, row_indices
                 )
+            if self.linear_leaves_active_:
+                attach_oblivious_linear_leaves(
+                    tree,
+                    leaf,
+                    g,
+                    h,
+                    X_binned,
+                    self.linear_bin_values_,
+                    self.linear_numeric_features_,
+                    self.l2_leaf_reg,
+                    self.linear_lambda,
+                    self.lr_,
+                    row_indices=row_indices,
+                )
+            _add_timing(timing, "tree_build", phase)
             phase = _start_timing(timing)
             if getattr(self.loss_, "adjusts_leaves", False):
                 correction_weight = self._correction_weight(w, bootstrap_factors)
@@ -2294,7 +2441,16 @@ class GradientBoosting(_BaseBooster):
                 )
             self.trees_.append(tree)
             self._accumulate_importance(tree)
-            if self.ordered_boosting_ and not getattr(self.loss_, "adjusts_leaves", False):
+            if getattr(tree, "linear_coefficients", None) is not None:
+                add_linear_leaf_values_inplace(
+                    leaf,
+                    tree.linear_features,
+                    tree.linear_coefficients,
+                    tree.linear_bin_values,
+                    X_binned,
+                    F,
+                )
+            elif self.ordered_boosting_ and not getattr(self.loss_, "adjusts_leaves", False):
                 # Leave-one-out leaf step: each row's update uses its leaf's
                 # gradient/hessian totals with that row's own contribution
                 # removed, reducing the self-reinforcement of plain boosting.
@@ -2343,6 +2499,7 @@ class GradientBoosting(_BaseBooster):
         rounds_completed = len(self.trees_)
         self.fit_time_ = time.perf_counter() - t0
         self._truncate_to_best_model(best_prefix_iter, self.valid_history_)
+        self._finalize_linear_leaf_metadata()
         self._refresh_stochastic_auto_params(n_samples)
         self.best_iteration_ = len(self.trees_)
         self._finalize_training_metadata(
@@ -2434,6 +2591,11 @@ class MulticlassBoosting(_BaseBooster):
         """Fit K trees per boosting round (one per class) under softmax loss.
         Same `cat_features` / `eval_set` / `sample_weight` semantics as the
         scalar booster."""
+        if self.linear_leaves:
+            raise ValueError(
+                "linear_leaves=True is currently supported only for "
+                "scalar RMSE regression"
+            )
         callbacks = _normalize_callbacks(callbacks)
         n_features = n_features_from_array_like(X)
         cat_features = normalize_cat_features(cat_features, n_features)
@@ -3105,6 +3267,11 @@ class DistributionalBoosting(_BaseBooster):
     def fit(self, X, y, cat_features=None, eval_set=None, sample_weight=None,
             eval_sample_weight=None, callbacks=None):
         """Fit a shared-vector distributional regression model."""
+        if self.linear_leaves:
+            raise ValueError(
+                "linear_leaves=True is currently supported only for "
+                "scalar RMSE regression"
+            )
         callbacks = _normalize_callbacks(callbacks)
         n_features = n_features_from_array_like(X)
         cat_features = normalize_cat_features(cat_features, n_features)

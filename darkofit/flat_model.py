@@ -61,6 +61,64 @@ def _flat_oblivious_add_parallel(X_binned, depths, feats, thrs, value_offsets,
         out[i] = acc
 
 
+@njit(cache=True)
+def _flat_linear_oblivious_add(
+    X_binned, depths, feats, thrs, linear_counts, feature_offsets,
+    linear_features, coefficient_offsets, coefficients, linear_bin_values,
+    out,
+):
+    n_rows = X_binned.shape[0]
+    n_trees = depths.shape[0]
+    for row in range(n_rows):
+        accumulator = out[row]
+        for tree in range(n_trees):
+            leaf = 0
+            for level in range(depths[tree]):
+                feature = feats[tree, level]
+                bit = 1 if X_binned[row, feature] > thrs[tree, level] else 0
+                leaf = leaf * 2 + bit
+            count = linear_counts[tree]
+            coefficient = coefficient_offsets[tree] + leaf * (1 + count)
+            value = coefficients[coefficient]
+            feature_offset = feature_offsets[tree]
+            for j in range(count):
+                feature = linear_features[feature_offset + j]
+                feature_value = linear_bin_values[feature, X_binned[row, feature]]
+                if np.isfinite(feature_value):
+                    value += coefficients[coefficient + 1 + j] * feature_value
+            accumulator += value
+        out[row] = accumulator
+
+
+@njit(cache=True, parallel=True)
+def _flat_linear_oblivious_add_parallel(
+    X_binned, depths, feats, thrs, linear_counts, feature_offsets,
+    linear_features, coefficient_offsets, coefficients, linear_bin_values,
+    out,
+):
+    n_rows = X_binned.shape[0]
+    n_trees = depths.shape[0]
+    for row in prange(n_rows):
+        accumulator = out[row]
+        for tree in range(n_trees):
+            leaf = 0
+            for level in range(depths[tree]):
+                feature = feats[tree, level]
+                bit = 1 if X_binned[row, feature] > thrs[tree, level] else 0
+                leaf = leaf * 2 + bit
+            count = linear_counts[tree]
+            coefficient = coefficient_offsets[tree] + leaf * (1 + count)
+            value = coefficients[coefficient]
+            feature_offset = feature_offsets[tree]
+            for j in range(count):
+                feature = linear_features[feature_offset + j]
+                feature_value = linear_bin_values[feature, X_binned[row, feature]]
+                if np.isfinite(feature_value):
+                    value += coefficients[coefficient + 1 + j] * feature_value
+            accumulator += value
+        out[row] = accumulator
+
+
 # Non-oblivious walks are branchy, so the kernels process rows in blocks and
 # iterate trees outermost within each block: one tree's node path stays in L1
 # while a block of rows walks it (the access pattern of the fast per-tree
@@ -315,6 +373,90 @@ class FlatObliviousEnsemble:
         )
 
 
+class FlatLinearObliviousEnsemble:
+    """Packed constant/local-linear oblivious trees in one row-major walk."""
+
+    __slots__ = (
+        "depths", "feats", "thrs", "linear_counts", "feature_offsets",
+        "linear_features", "coefficient_offsets", "coefficients",
+        "linear_bin_values",
+    )
+
+    def __init__(self, trees):
+        n_trees = len(trees)
+        max_depth = max((tree.depth for tree in trees), default=0)
+        self.depths = np.array([tree.depth for tree in trees], dtype=np.int64)
+        self.feats = np.zeros((n_trees, max(max_depth, 1)), dtype=np.int64)
+        self.thrs = np.zeros((n_trees, max(max_depth, 1)), dtype=np.int64)
+        self.linear_counts = np.zeros(n_trees, dtype=np.int64)
+        self.feature_offsets = np.zeros(n_trees + 1, dtype=np.int64)
+        self.coefficient_offsets = np.zeros(n_trees + 1, dtype=np.int64)
+        feature_chunks = []
+        coefficient_chunks = []
+        linear_bin_values = None
+        for index, tree in enumerate(trees):
+            if tree.depth:
+                self.feats[index, : tree.depth] = tree.splits_feat
+                self.thrs[index, : tree.depth] = tree.splits_thr
+            if tree.linear_coefficients is None:
+                features = np.empty(0, dtype=np.int64)
+                coefficients = np.asarray(tree.values, dtype=np.float64)
+            else:
+                features = np.asarray(tree.linear_features, dtype=np.int64)
+                coefficients = np.asarray(
+                    tree.linear_coefficients, dtype=np.float64
+                ).reshape(-1)
+                if linear_bin_values is None:
+                    linear_bin_values = tree.linear_bin_values
+                elif linear_bin_values is not tree.linear_bin_values and not np.array_equal(
+                    linear_bin_values, tree.linear_bin_values, equal_nan=True
+                ):
+                    raise ValueError(
+                        "linear trees do not share fitted bin values"
+                    )
+            self.linear_counts[index] = len(features)
+            feature_chunks.append(features)
+            coefficient_chunks.append(coefficients)
+            self.feature_offsets[index + 1] = (
+                self.feature_offsets[index] + len(features)
+            )
+            self.coefficient_offsets[index + 1] = (
+                self.coefficient_offsets[index] + len(coefficients)
+            )
+        self.linear_features = (
+            np.concatenate(feature_chunks)
+            if feature_chunks
+            else np.empty(0, dtype=np.int64)
+        )
+        self.coefficients = (
+            np.concatenate(coefficient_chunks)
+            if coefficient_chunks
+            else np.empty(0, dtype=np.float64)
+        )
+        if linear_bin_values is None:
+            raise ValueError("packed linear forest contains no linear tree")
+        self.linear_bin_values = np.asarray(linear_bin_values, dtype=np.float64)
+
+    def add_predict(self, X_binned, out):
+        arguments = (
+            X_binned,
+            self.depths,
+            self.feats,
+            self.thrs,
+            self.linear_counts,
+            self.feature_offsets,
+            self.linear_features,
+            self.coefficient_offsets,
+            self.coefficients,
+            self.linear_bin_values,
+            out,
+        )
+        if get_num_threads() > 1 and X_binned.shape[0] >= _PARALLEL_MIN_ROWS:
+            _flat_linear_oblivious_add_parallel(*arguments)
+        else:
+            _flat_linear_oblivious_add(*arguments)
+
+
 class FlatNonObliviousEnsemble:
     """CSR-style concatenated node arrays for explicit-node trees."""
 
@@ -459,6 +601,8 @@ def flat_predict_preferred(flat):
     return (
         isinstance(flat, FlatObliviousEnsemble) and get_num_threads() > 1
     ) or (
+        isinstance(flat, FlatLinearObliviousEnsemble)
+    ) or (
         isinstance(flat, FlatLevelwiseEnsemble) and get_num_threads() > 1
     )
 
@@ -468,6 +612,8 @@ def build_flat_ensemble(trees):
     if not trees:
         return None
     if all(type(t) is ObliviousTree for t in trees):
+        if any(t.linear_coefficients is not None for t in trees):
+            return FlatLinearObliviousEnsemble(trees)
         return FlatObliviousEnsemble(trees)
     if all(type(t) is NonObliviousTree for t in trees):
         return FlatNonObliviousEnsemble(trees)

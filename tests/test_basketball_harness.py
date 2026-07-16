@@ -5,7 +5,7 @@ import pytest
 from benchmarks import basketball_harness as harness
 
 
-def _core(*, phase=1.0, patience=None):
+def _core(*, phase=1.0, patience=None, linear_leaves=False):
     return SimpleNamespace(
         training_metadata_={
             "iterations_requested": 100,
@@ -19,6 +19,13 @@ def _core(*, phase=1.0, patience=None):
         tree_mode_="catboost",
         n_threads_=8,
         early_stopping_rounds_=patience,
+        auto_params_={
+            "linear_leaves": {
+                "requested": linear_leaves,
+                "active": linear_leaves,
+                "linear_tree_count": 80 if linear_leaves else 0,
+            }
+        },
     )
 
 
@@ -50,6 +57,13 @@ def test_extract_fit_metadata_records_route_stops_and_patience():
     assert metadata["final_fit"]["rounds_retained"] == 80
     assert metadata["selection_early_stopping_rounds"] == 50
     assert metadata["final_early_stopping_rounds"] is None
+
+    linear_model = _model(selection=False)
+    linear_model.model_ = _core(linear_leaves=True)
+    linear = harness.extract_fit_metadata(linear_model)
+    assert linear["selected_lane"] == "linear_leaves"
+    assert linear["linear_leaves_active"] is True
+    assert linear["linear_leaves"]["linear_tree_count"] == 80
 
 
 def test_reciprocal_schedule_and_timing_summary_are_fail_closed():

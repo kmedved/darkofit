@@ -2375,6 +2375,17 @@ class _RefitParamsMixin:
             params["cat_smoothing"] = auto["binning"].get(
                 "cat_smoothing_resolved", params.get("cat_smoothing")
             )
+        if bool(params.get("linear_leaves", False)):
+            linear_metadata = auto.get("linear_leaves", {})
+            if not (
+                isinstance(linear_metadata, dict)
+                and bool(linear_metadata.get("active", False))
+            ):
+                # A full-data refit must not activate a model family that the
+                # validation/selection fit only evaluated through its exact
+                # constant-leaf fallback (most notably around the 1,000-row
+                # eligibility boundary).
+                params["linear_leaves"] = False
         if "refit" in params:
             params["refit"] = False
         return params
@@ -2415,6 +2426,13 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         Fraction of training data to hold out as a validation set when
         *early_stopping* is active and no explicit *eval_set* is passed.
         Ignored when an explicit *eval_set* is given to ``fit``.
+    linear_leaves : bool, default False
+        Experimental local-linear leaves for scalar RMSE CatBoost-mode fits.
+        The option is never selected automatically; small and all-categorical
+        fits retain exact constant leaves and record the fallback reason.
+    linear_lambda : float, default 1.0
+        Nonnegative ridge penalty applied to local-linear slopes. The regular
+        leaf ``l2_leaf_reg`` remains the intercept penalty.
     """
 
     def __init__(self, iterations=1000, learning_rate=None, depth=None,
@@ -2452,7 +2470,8 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                  ts_permutations=1,
                  target_ordered_cat_codes="off",
                  rho_learning_rate_multiplier=1.0,
-                 rho_l2_leaf_reg_multiplier=1.0):
+                 rho_l2_leaf_reg_multiplier=1.0,
+                 linear_leaves=False, linear_lambda=1.0):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -2508,6 +2527,8 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self.target_ordered_cat_codes = target_ordered_cat_codes
         self.rho_learning_rate_multiplier = rho_learning_rate_multiplier
         self.rho_l2_leaf_reg_multiplier = rho_l2_leaf_reg_multiplier
+        self.linear_leaves = linear_leaves
+        self.linear_lambda = linear_lambda
         self.auto_learning_rate_probe = auto_learning_rate_probe
         self.auto_learning_rate_probe_values = auto_learning_rate_probe_values
         self.auto_learning_rate_probe_iterations = auto_learning_rate_probe_iterations
@@ -2583,6 +2604,19 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         linear_residual_enabled = _should_use_linear_residual(
             self.linear_residual
         )
+        if not isinstance(self.linear_leaves, (bool, np.bool_)):
+            raise TypeError("linear_leaves must be a bool")
+        if self.linear_leaves:
+            if self.loss != "RMSE":
+                raise ValueError(
+                    "linear_leaves=True is currently supported only for "
+                    "loss='RMSE'"
+                )
+            if tree_mode_auto or _normalize_tree_mode(self.tree_mode) != "catboost":
+                raise ValueError(
+                    "linear_leaves=True currently requires "
+                    "tree_mode='catboost'"
+                )
         if linear_residual_enabled:
             validate_linear_residual_loss(self.loss)
         dist_calibration_ = _normalize_dist_calibration(
@@ -2979,6 +3013,9 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 self._linear_residual_metadata()
                 if linear_residual_enabled else None
             )
+            selection_linear_leaf_metadata = dict(
+                selection_model.auto_params_.get("linear_leaves", {}) or {}
+            )
             refit_kw = self._refit_params_for_booster(self.refit_strategy)
             refit_model = make_model(refit_kw)
             y_full_refit = self._fit_linear_residual_trend(
@@ -3015,6 +3052,14 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             self._attach_tree_mode_selection_metadata(tree_mode_selection_metadata)
             self._attach_linear_residual_metadata()
             self._attach_dist_calibration_metadata()
+            if selection_linear_leaf_metadata:
+                self.model_.auto_params_["selection_linear_leaves"] = (
+                    selection_linear_leaf_metadata
+                )
+                self.model_.auto_params_.setdefault("diagnostics", {})
+                self.model_.auto_params_["diagnostics"][
+                    "selection_linear_leaves"
+                ] = selection_linear_leaf_metadata
         if preprocessing_cache is not None:
             # Free the binned-matrix copies; fitted models keep a reference
             # to this dict, so an unemptied cache would pin them in memory.

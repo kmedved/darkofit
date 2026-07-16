@@ -243,6 +243,29 @@ distribution variance and does not include ridge coefficient uncertainty.
 Diagnostics are stored under `model_.auto_params_["linear_residual"]`, and the
 plain-array model archive preserves the trend without pickle.
 
+Experimental per-leaf linear models are available for controlled research via
+`linear_leaves=True`:
+
+```
+reg = DarkoRegressor(
+    loss="RMSE",
+    tree_mode="catboost",
+    linear_leaves=True,
+    linear_lambda=1.0,
+)
+```
+
+The option is deliberately off by default. It fits a ridge-regularized local
+linear model over each oblivious tree's numeric split features while leaving
+DarkoFit's split search unchanged. The initial implementation requires scalar
+RMSE, CatBoost/oblivious trees, plain (non-ordered) leaf updates, at least 1,000
+training rows, and at least one numeric feature; ineligible small or
+all-categorical fits record an exact constant-leaf fallback. Packed prediction,
+safe `.npz` persistence, and fitted diagnostics under
+`model_.auto_params_["linear_leaves"]` are supported. This remains an explicit
+experimental mechanism: validation-selected use must pass the noisy-data and
+cold-player basketball gates before any automatic policy is considered.
+
 Distributional benchmark, mean over three seeds on the synthetic
 heteroscedastic gate. The calibrated DarkoFit row was refreshed after the
 0.7.0 target-standardization change; external baselines are retained from the
