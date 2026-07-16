@@ -87,3 +87,7 @@ quality, fold-breadth, held-team, and runtime gates, so the current default was
 left unchanged. Its later cold-player supplement also corrects the held-team
 description: 72.6% of holdout player identities occur in training, so the
 split is overlap-exposed rather than an independent player guardrail.
+
+The isolated current-auto-LR early-stop/exact-refit follow-up is recorded in
+`basketball_auto_lr_refit_result.md`. It failed the broad quality and material
+speed gates, so no configuration or production default changed.

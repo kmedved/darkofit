@@ -113,6 +113,11 @@ smallest defensible next quality experiment is early stopping plus exact refit
 with the current auto-resolved learning rate, isolated from A10's harmful 0.1
 learning rate. Any production policy still requires unseen-dataset validation.
 
+That isolated follow-up is complete in
+`basketball_auto_lr_refit_result.md`. It improved cold-player R² but regressed
+mean fold and overlap-exposed team R² and was only 11.7% faster, so it did not
+advance and the default remains unchanged.
+
 ## Artifacts
 
 - `basketball_darkofit_ablation.json` contains all fold scores, predictions,
