@@ -66,7 +66,8 @@ Execution began from published `main` at `ab86269`.
   The formal target remains open because four of eight public paired-ratio
   stability gates failed. The artifact is final. Next is a preregistered
   seconds-integrated timing protocol and the remaining mixed validation cost,
-  not a packed-core rewrite.
+  not a packed-core rewrite. The post-mechanism complete suite is green at
+  `1,680 passed, 23 skipped`.
 
 ## Standing constraints (inherited, non-negotiable)
 
