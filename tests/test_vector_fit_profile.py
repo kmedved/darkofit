@@ -1,4 +1,18 @@
+import hashlib
+import json
+from pathlib import Path
+
 from benchmarks import run_vector_fit_profile as experiment
+
+
+RECORDED_ARTIFACT = (
+    Path(__file__).resolve().parents[1]
+    / "benchmarks"
+    / "vector_fit_profile.json"
+)
+EXPECTED_ARTIFACT_SHA256 = (
+    "e1ae6facac2a9c465fe0bbde6b99c7c649b3652e9600777935238ca92f8b876f"
+)
 
 
 def _row(case, fit, tree, grad, prediction="same"):
@@ -85,3 +99,30 @@ def test_analysis_rejects_changed_predictions_or_missing_workers():
         assert "does not have" in str(exc)
     else:
         raise AssertionError("incomplete profile was accepted")
+
+
+def test_recorded_profile_is_clean_bound_and_tree_build_limited():
+    raw = RECORDED_ARTIFACT.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == EXPECTED_ARTIFACT_SHA256
+    artifact = json.loads(raw)
+
+    assert artifact["source"]["clean"] is True
+    assert artifact["source"]["head"] == (
+        "447190e044269d3c3f5e3f34c3d5c00cedd90d3c"
+    )
+    assert artifact["protocol"]["sha256"] == hashlib.sha256(
+        experiment.PROTOCOL.read_bytes()
+    ).hexdigest()
+    assert artifact["protocol"]["runner_sha256"] == hashlib.sha256(
+        Path(experiment.__file__).read_bytes()
+    ).hexdigest()
+    assert artifact["protocol"]["lockbox_data_used"] is False
+    assert artifact["analysis"]["selected_opportunity"]["phase"] == (
+        "tree_build"
+    )
+    assert artifact["analysis"]["selected_opportunity"]["case"] == (
+        "gaussian_lightgbm"
+    )
+    for summary in artifact["analysis"]["summaries"].values():
+        assert summary["largest_phase"] == "tree_build"
+        assert summary["fit_iqr_over_median"] < 0.05

@@ -39,9 +39,11 @@ Execution began from published `main` at `ab86269`.
   component excess. Peak RSS was `0.969x`.
 - E4's fixed 50k-row phase-attribution profile now covers scalar control,
   binary, per-class and shared-vector multiclass, Gaussian, and Student-t. The
-  shared-vector and Student-t formal-shape smoke fits produced complete
-  telemetry and retained the expected 40 trees; clean-source results remain
-  to be recorded.
+  clean `447190e` run finds every path tree-build-limited: `73.9%` for binary,
+  `90.7-92.6%` for multiclass/distributional, versus at most `3.5%` for
+  gradient/Hessian work. Gaussian LightGBM is the selected drill-down.
+  Four-class per-class CatBoost was also materially faster per round than the
+  shared-vector LightGBM path on this workload; this is diagnostic only.
 
 ## Standing constraints (inherited, non-negotiable)
 
