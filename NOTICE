@@ -22,3 +22,8 @@ The exact interventional TreeSHAP coalition-enumeration algorithm is adapted
 from ChimeraBoost commit ff6f248d09f92d608ed8cc366463b61f1af04acc.
 DarkoFit modifies it for row-major binned data, its serialized empirical
 background, original-feature grouping, and its local-linear leaf format.
+
+The explicit startup warmup API and opt-in environment dispatch are adapted
+from ChimeraBoost commit 851ab7fa79fbb2a7f698fbc1a00952e1bd18c62d.
+DarkoFit uses its own default-path synthetic fits, thread restoration, and
+coverage boundary.

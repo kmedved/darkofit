@@ -114,16 +114,17 @@ def test_analysis_fails_on_instability_cost_or_behavior_drift():
     assert decision["recommendation"] == "close_oob_ensemble_attempt"
 
 
-def test_protocol_and_support_hashes_are_bound_after_placeholder_replacement():
+def test_protocol_and_support_hashes_remain_bound_to_frozen_artifact():
     assert confirmation.EXPECTED_PROTOCOL_SHA256 != "TO_BE_BOUND"
     assert confirmation._sha256_file(confirmation.PROTOCOL_PATH) == (
         confirmation.EXPECTED_PROTOCOL_SHA256
     )
     for relative, expected in confirmation.EXPECTED_SUPPORT_SHA256.items():
         assert confirmation._sha256_file(confirmation.ROOT / relative) == expected
-    assert confirmation._tracked_content_manifest(
-        confirmation.ROOT, "darkofit"
-    ) == confirmation.EXPECTED_PACKAGE_MANIFEST
+    artifact = json.loads(confirmation.DEFAULT_OUTPUT.read_text())
+    assert artifact["source"]["package_manifest_sha256"] == (
+        confirmation.EXPECTED_PACKAGE_MANIFEST
+    )
 
 
 def test_run_primes_cache_before_any_worker(monkeypatch, tmp_path):

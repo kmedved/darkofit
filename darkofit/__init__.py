@@ -11,6 +11,8 @@ Public API:
   >>> proba = model.predict_proba(X_test)
 """
 
+import os as _os
+
 # Single source of truth for the package version (pyproject reads this).
 # Defined before submodule imports so they may reference it safely.
 __version__ = "0.9.0"
@@ -20,10 +22,15 @@ from .sklearn_api import (
     DarkoClassifier,
 )
 from .callbacks import BoostingProgress, WallClockStopper
+from .warmup import warmup, _warmup_from_env
+
+# Opt-in startup compilation for fresh workers. Ordinary imports remain cold.
+_warmup_from_env(_os.environ.get("DARKOFIT_WARMUP"))
 
 __all__ = [
     "DarkoRegressor",
     "DarkoClassifier",
     "BoostingProgress",
     "WallClockStopper",
+    "warmup",
 ]
