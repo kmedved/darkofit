@@ -81,6 +81,12 @@ def _peak_rss_bytes() -> int:
     return value
 
 
+def _behavior_fingerprint(result: dict[str, Any]) -> str:
+    behavior = dict(result)
+    behavior.pop("peak_rss_bytes", None)
+    return harness.behavior_fingerprint(behavior)
+
+
 def _players(dataset):
     values = dataset.frame.loc[
         dataset.X.index, guardrails.PLAYER_COLUMN
@@ -323,9 +329,7 @@ def run_worker(config: str, cache_path: Path) -> dict[str, Any]:
             ),
         },
     }
-    result["behavior_fingerprint_sha256"] = harness.behavior_fingerprint(
-        result
-    )
+    result["behavior_fingerprint_sha256"] = _behavior_fingerprint(result)
     return result
 
 

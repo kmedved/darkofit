@@ -68,3 +68,27 @@ def test_declared_orders_reverse_candidate_against_control():
 
 def test_selector_threshold_is_three_percent():
     assert experiment.MIN_RELATIVE_IMPROVEMENT == 0.03
+
+
+def test_behavior_fingerprint_excludes_resource_observations():
+    baseline = {
+        "prediction_sha256": "same",
+        "peak_rss_bytes": 100,
+        "fit_seconds": 1.0,
+    }
+    repeated = {
+        "prediction_sha256": "same",
+        "peak_rss_bytes": 200,
+        "fit_seconds": 2.0,
+    }
+    changed = {
+        **repeated,
+        "prediction_sha256": "different",
+    }
+
+    assert experiment._behavior_fingerprint(
+        baseline
+    ) == experiment._behavior_fingerprint(repeated)
+    assert experiment._behavior_fingerprint(
+        baseline
+    ) != experiment._behavior_fingerprint(changed)
