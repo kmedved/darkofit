@@ -30,6 +30,10 @@ Execution began from published `main` at `ab86269`.
   leave-one-fold-out and held-team gates despite small cold-player gains. The
   fatal first block stopped the campaign before timing confirmation, and no
   downstream evidence was consumed.
+- P1's matched throughput protocol is implemented for reciprocal fresh-worker
+  blocks, numeric and mixed inputs, cold/warm/public/binning/core phases, and
+  8k-to-2M batches. Its 8k smoke path is exact within both libraries; formal
+  results require the committed-source run.
 
 ## Standing constraints (inherited, non-negotiable)
 
