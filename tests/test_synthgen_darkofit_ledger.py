@@ -134,6 +134,28 @@ def test_shard_validation_rejects_duplicate_coordinates():
         runner._validate_shard(shard, task, "f" * 64)
 
 
+def test_fit_metadata_enforces_public_small_lightgbm_thread_cap():
+    base = {
+        "iterations_requested": 600,
+        "requested_thread_count": 6,
+        "resolved_thread_count": 6,
+        "selected_tree_mode": "catboost",
+        "refit": False,
+        "early_stopping_rounds": None,
+    }
+    runner._validate_fit_metadata(base, canary=False)
+    lightgbm = dict(
+        base,
+        selected_tree_mode="lightgbm",
+        resolved_thread_count=2,
+    )
+    runner._validate_fit_metadata(lightgbm, canary=False)
+    with pytest.raises(RuntimeError, match="thread resolution"):
+        runner._validate_fit_metadata(
+            dict(lightgbm, resolved_thread_count=6), canary=False
+        )
+
+
 def test_all_frozen_regression_configs_fit_and_report_metadata():
     from darkofit import DarkoRegressor
 
@@ -162,6 +184,7 @@ def test_all_frozen_regression_configs_fit_and_report_metadata():
         assert len(pickle.dumps(model, protocol=pickle.HIGHEST_PROTOCOL)) > 0
         metadata = runner.fitted_metadata(model)
         assert metadata["iterations_requested"] == 2
+        assert metadata["requested_thread_count"] == 1
         assert metadata["resolved_thread_count"] == 1
         assert metadata["refit"] is False
 
@@ -193,6 +216,7 @@ def test_frozen_canary_configs_fit_and_report_metadata():
         assert np.isfinite(probability).all()
         metadata = runner.fitted_metadata(model)
         assert metadata["iterations_requested"] == 2
+        assert metadata["requested_thread_count"] == 1
         assert metadata["resolved_thread_count"] == 1
         assert metadata["early_stopping_rounds"] == 1
 

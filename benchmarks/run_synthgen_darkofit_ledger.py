@@ -341,6 +341,7 @@ def fitted_metadata(model: Any) -> dict[str, Any]:
         "requested_tree_mode": str(model.tree_mode),
         "selected_tree_mode": str(core.tree_mode_),
         "selected_lane": _selected_lane(model),
+        "requested_thread_count": int(model.thread_count),
         "resolved_thread_count": int(core.n_threads_),
         "stop_reason": str(
             training.get("stop_reason", getattr(core, "stop_reason_", "unknown"))
@@ -377,8 +378,15 @@ def _validate_fit_metadata(
     )
     if metadata["iterations_requested"] != expected_iterations:
         raise RuntimeError("fitted model changed the frozen iteration budget")
-    if metadata["resolved_thread_count"] != THREAD_COUNT:
-        raise RuntimeError("fitted model changed the frozen thread count")
+    if metadata["requested_thread_count"] != THREAD_COUNT:
+        raise RuntimeError("fitted model changed the requested thread count")
+    expected_threads = (
+        2
+        if metadata["selected_tree_mode"] in {"lightgbm", "hybrid"}
+        else THREAD_COUNT
+    )
+    if metadata["resolved_thread_count"] != expected_threads:
+        raise RuntimeError("fitted model changed the public thread resolution")
     if metadata["refit"]:
         raise RuntimeError("fitted model unexpectedly refit")
     if not canary and metadata["early_stopping_rounds"] is not None:
