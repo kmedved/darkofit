@@ -58,6 +58,15 @@ Execution began from published `main` at `ab86269`.
   `random_strength` and `rho_*` controls, plus the L/C-track-dependent
   surfaces, do not warn. The complete Wave-1 suite is green at `1,673 passed,
   23 skipped`.
+- P2's first mechanism preserves already-contiguous C/F float64 blocks instead
+  of forcing a C-order copy before binning. The isolated 524k-row binner fell
+  to `0.586x` old numeric and `0.547x` old mixed time with byte-identical bins.
+  In the clean matched campaign, every public median was `0.71-1.015x`
+  ChimeraBoost and RSS was `0.969x`; numeric binning became `0.79-0.99x`.
+  The formal target remains open because four of eight public paired-ratio
+  stability gates failed. The artifact is final. Next is a preregistered
+  seconds-integrated timing protocol and the remaining mixed validation cost,
+  not a packed-core rewrite.
 
 ## Standing constraints (inherited, non-negotiable)
 
