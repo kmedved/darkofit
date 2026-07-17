@@ -121,11 +121,11 @@ high-dimensional adjustment is capped at a 15% LR reduction and recorded under
 LightGBM-mode unweighted fits apply an additional provisional dampening factor
 because the CatBoost coefficients were fitted on symmetric-tree regularization,
 not DarkoFit's leaf-wise stack.
-Set `auto_learning_rate_probe=True` on the sklearn wrappers to run an opt-in
-short validation probe around the final-budget resolved automatic learning
-rate; the selected explicit rate, candidate scores, full-budget base rate, and
-short-budget diagnostic rate are recorded under
-`auto_params_["learning_rate_probe"]`. This is disabled by default.
+The legacy `auto_learning_rate_probe*` parameters can run an opt-in short
+validation probe around the resolved automatic learning rate, but are
+deprecated and will be removed in 1.0. Use a validation-backed explicit
+learning-rate search instead. Existing fits continue to record probe details
+under `auto_params_["learning_rate_probe"]` during the deprecation cycle.
 The default boosting budget is `iterations=1000`, and the default numeric bin
 budget is `max_bins=254`.
 
@@ -136,7 +136,6 @@ DarkoClassifier(tree_mode="catboost")  # symmetric/oblivious default
 DarkoClassifier(tree_mode="lightgbm")  # leaf-wise, non-oblivious
 DarkoClassifier(tree_mode="hybrid")    # experimental shared-prefix then leaf-wise
 DarkoClassifier(tree_mode="auto")      # validation-selected tree mode
-DarkoClassifier(tree_mode="depthwise") # experimental level-wise
 ```
 
 Tree modes:
@@ -152,11 +151,10 @@ Tree modes:
 * `tree_mode="auto"` is opt-in validation selection across `"catboost"`,
   `"lightgbm"`, and `"hybrid"`. Pair it with `refit=True` to train the selected
   concrete tree mode on all rows after selection.
-* `tree_mode="depthwise"` (also accepted as `"levelwise"`) uses the
-  experimental level-wise non-oblivious builder. Current benchmark notes show it
-  can reduce rounds on some medium numeric tasks. For RMSE regression with
-  omitted `depth`, this mode defaults to a shallow depth of 2; explicit depths
-  and classification defaults are unchanged.
+* `tree_mode="depthwise"` (also accepted as `"levelwise"`) remains functional
+  only for migration and emits `FutureWarning`; it will be removed in 1.0.
+  Use `"catboost"` for symmetric trees or `"lightgbm"` for non-oblivious
+  trees.
 
 In LightGBM and hybrid modes, `num_leaves` is the main tree-size control and
 `depth` is a maximum path-depth cap. `ordered_boosting` defaults to off for
@@ -356,28 +354,30 @@ public custom vector-loss protocol.
 
 Row sampling is selectable with `sampling="uniform"` (default),
 `sampling="goss"` plus `top_rate` / `other_rate`,
-`sampling="weighted_goss"` for a sample-weight-aware GOSS variant, or
 experimental `sampling="mvs"` plus `subsample` / `mvs_reg`. MVS ranks rows from
 the current gradient/Hessian magnitude and inverse-probability scales sampled
 rows so the histograms stay on the same expected scale.
+The legacy `sampling="weighted_goss"` path remains available with a
+`FutureWarning` during the 0.10 deprecation cycle; migrate to plain GOSS or
+MVS before 1.0.
 
 CatBoost-like stochastic regularization is opt-in:
 
 ```
 DarkoClassifier(
-    bootstrap_type="bayesian",
-    bagging_temperature=0.5,
     sampling="mvs",
     subsample=0.7,
     random_strength=0.5,
 )
 ```
 
-`bootstrap_type="bayesian"` draws per-tree exponential row weights and
-normalizes them to mean one. `random_strength` adds deterministic, seed-based
-noise only while ordering split candidates; stored split gains and feature
-importances remain based on true unnoised gain. All three mechanisms are off
-by default, preserving deterministic default fits.
+`random_strength` adds deterministic, seed-based noise only while ordering
+split candidates; stored split gains and feature importances remain based on
+true unnoised gain. It remains opt-in: a basketball screen defended the
+capability but found a meaningful operating cost, and no default change is
+authorized. `bootstrap_type="bayesian"` and `bagging_temperature` are
+deprecated for removal in 1.0; migrate to uniform, GOSS, or MVS row sampling.
+All stochastic mechanisms are off by default, preserving deterministic fits.
 
 Large-fit preprocessing samples up to 200,000 rows when learning numeric bin
 borders, similar to LightGBM's `bin_construct_sample_cnt`. Set
@@ -479,10 +479,11 @@ early stopping are unchanged. Set `eval_train_loss=True` to populate
 `train_history_`, or use `verbose=True`, which forces it on for progress
 logging.
 
-`histogram_parallelism="row"` enables an experimental row-parallel histogram
-builder. The default `"auto"` keeps the measured-best feature-parallel path on
-the current benchmark machine; use the row-parallel lane only when profiling
-shows it helps your hardware.
+`histogram_parallelism`, `histogram_dtype`, and `leaf_dtype` are deprecated
+experimental controls and will be removed in 1.0. Remove them to use the
+measured-best automatic feature-parallel, float64-histogram, and int64-leaf-ID
+paths. Non-default selections emit `FutureWarning` during the deprecation
+cycle.
 
 Not implemented in `tree_mode="lightgbm"` or `tree_mode="hybrid"`: native
 LightGBM categorical splits, DART, GPU training, sparse optimization, monotone

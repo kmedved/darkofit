@@ -18,7 +18,7 @@ Execution began from published `main` at `ab86269`.
   the infinity/duplicate-category compatibility policy are explicit
   (`10d0fc3`); background warmup is single-flight, conventional falsy values
   disable it, and unsafe Numba workqueue concurrency is guarded (`ab86269`).
-- Wave 1 is active. New campaign protocols use the forward-only shared
+- Wave 1 is complete. New campaign protocols use the forward-only shared
   paired-ratio stability primitive in `basketball_campaign_harness.py`;
   `basketball_harness.py`, historical frozen runners, and their bound support
   manifests remain unchanged.
@@ -51,6 +51,13 @@ Execution began from published `main` at `ab86269`.
   one-shot wall cost was roughly 50% higher; promotion requires S4's fresh
   sports suite. `1.0` failed. The remaining Z1 parameters proceed to 0.10
   warning preparation without this one.
+- Z1 deprecation preparation is implemented and documented: depthwise,
+  low-level histogram/leaf controls, automatic-LR probes, Bayesian bootstrap,
+  and weighted GOSS now emit caller-located migration warnings when selected.
+  `sigma_calibration` retains its existing alias warning. The defended
+  `random_strength` and `rho_*` controls, plus the L/C-track-dependent
+  surfaces, do not warn. The complete Wave-1 suite is green at `1,673 passed,
+  23 skipped`.
 
 ## Standing constraints (inherited, non-negotiable)
 
@@ -283,11 +290,12 @@ policy. Do this as a **deprecation release (0.10) → 1.0** cycle:
 - `auto_learning_rate_probe*` (three params; superseded);
 - `bootstrap_type="bayesian"` + `bagging_temperature`, and the weighted-GOSS
   uniform-mass variants (evidence-free; keep MVS + plain GOSS);
-- `random_strength` (run one cheap screen first; their cascade killed the
-  analogous knobs — if null here too, deprecate with the evidence cited);
+- `random_strength` is retained default-off: the required basketball screen
+  passed at `0.5`; S4 confirmation, not deprecation, is next;
 - `sigma_calibration` (already warning-deprecated in favor of
   `dist_calibration` — finish it);
-- `rho_*` multipliers unless a distributional test defends them;
+- `rho_*` multipliers are retained because focused distributional tests defend
+  independent head scaling, metadata, and round-trip behavior;
 - `linear_residual` **only if** the L2 comparison arm shows dominance.
 - `hybrid` stays until C3 produces the mode-mix evidence. `target_ordered_
   cat_codes` stays until C1 replaces it properly.

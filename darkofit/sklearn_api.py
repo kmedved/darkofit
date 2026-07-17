@@ -1121,6 +1121,22 @@ def _make_eval_split(X, y, validation_fraction, random_state,
 class _RefitParamsMixin:
     """Shared fitted-model metadata and full-data refit helpers."""
 
+    def _warn_wrapper_deprecated_options(self):
+        if (
+            self.auto_learning_rate_probe
+            or self.auto_learning_rate_probe_values is not None
+            or self.auto_learning_rate_probe_iterations != 80
+        ):
+            warnings.warn(
+                "auto_learning_rate_probe, "
+                "auto_learning_rate_probe_values, and "
+                "auto_learning_rate_probe_iterations are deprecated and will "
+                "be removed in DarkoFit 1.0; use an explicit "
+                "validation-backed learning-rate search instead",
+                FutureWarning,
+                stacklevel=3,
+            )
+
     def __sklearn_is_fitted__(self):
         return hasattr(self, "model_")
 
@@ -2598,6 +2614,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             candidate fits. Callbacks are not supported with automatic
             learning-rate probes or refitting.
         """
+        self._warn_wrapper_deprecated_options()
         callbacks = _normalize_callbacks(callbacks)
         X_input = X
         feature_names = _feature_names_from_input(X_input)
@@ -3592,6 +3609,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
             candidate fits. Callbacks are not supported with automatic
             learning-rate probes or refitting.
         """
+        self._warn_wrapper_deprecated_options()
         callbacks = _normalize_callbacks(callbacks)
         X_input = X
         X, cat_features, n_features = _coerce_fit_X(X, cat_features)

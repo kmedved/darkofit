@@ -10,6 +10,7 @@ import copy
 import ctypes
 import hashlib
 import operator
+import sys
 import time
 import warnings
 import numpy as np
@@ -816,6 +817,59 @@ class _BaseBooster:
                     "top_rate + other_rate must be <= 1 for sampling='goss' "
                     "or sampling='weighted_goss'"
                 )
+
+    def _warn_deprecated_options(self):
+        """Warn only when a retiring non-default option is actually selected."""
+        messages = []
+        if self.tree_mode_ == "depthwise":
+            messages.append(
+                "tree_mode='depthwise' (including the 'levelwise' alias) is "
+                "deprecated and will be removed in DarkoFit 1.0; use "
+                "tree_mode='catboost' or tree_mode='lightgbm'"
+            )
+        if self.histogram_dtype_ != "float64":
+            messages.append(
+                "histogram_dtype is deprecated and will be removed in "
+                "DarkoFit 1.0; remove it to use the supported float64 "
+                "histogram path"
+            )
+        if self.leaf_dtype_ != "int64":
+            messages.append(
+                "leaf_dtype is deprecated and will be removed in DarkoFit "
+                "1.0; remove it to use the supported int64 leaf-ID path"
+            )
+        if self.histogram_parallelism != "auto":
+            messages.append(
+                "histogram_parallelism is deprecated and will be removed in "
+                "DarkoFit 1.0; remove it to use automatic feature-parallel "
+                "histograms"
+            )
+        if self.sampling_ == "weighted_goss":
+            messages.append(
+                "sampling='weighted_goss' is deprecated and will be removed "
+                "in DarkoFit 1.0; use sampling='goss' or sampling='mvs'"
+            )
+        if self.bootstrap_type_ == "bayesian":
+            messages.append(
+                "bootstrap_type='bayesian' is deprecated and will be removed "
+                "in DarkoFit 1.0; use bootstrap_type='none' with uniform, "
+                "GOSS, or MVS row sampling"
+            )
+        if self.bagging_temperature != 0.0:
+            messages.append(
+                "bagging_temperature is deprecated and will be removed in "
+                "DarkoFit 1.0; remove it together with Bayesian bootstrap"
+            )
+        stacklevel = 2
+        frame = sys._getframe(1)
+        while frame is not None and frame.f_globals.get("__name__") in {
+            "darkofit.booster",
+            "darkofit.sklearn_api",
+        }:
+            stacklevel += 1
+            frame = frame.f_back
+        for message in messages:
+            warnings.warn(message, FutureWarning, stacklevel=stacklevel)
 
     def _bayesian_bootstrap_active(self):
         return self.bootstrap_type_ == "bayesian" and self.bagging_temperature > 0.0
@@ -2271,6 +2325,7 @@ class GradientBoosting(_BaseBooster):
         `sample_weight` is a 1-D array of per-sample weights; None means uniform.
         Weights are normalized to mean 1 internally so the gradient scale stays
         comparable to the no-weight case."""
+        self._warn_deprecated_options()
         callbacks = _normalize_callbacks(callbacks)
         X, cat_features, n_features, feature_names = self._coerce_fit_X(
             X, cat_features
@@ -2765,6 +2820,7 @@ class MulticlassBoosting(_BaseBooster):
         """Fit K trees per boosting round (one per class) under softmax loss.
         Same `cat_features` / `eval_set` / `sample_weight` semantics as the
         scalar booster."""
+        self._warn_deprecated_options()
         if self.linear_leaves:
             raise ValueError(
                 "linear_leaves=True is currently supported only for "
@@ -3441,6 +3497,7 @@ class DistributionalBoosting(_BaseBooster):
     def fit(self, X, y, cat_features=None, eval_set=None, sample_weight=None,
             eval_sample_weight=None, callbacks=None):
         """Fit a shared-vector distributional regression model."""
+        self._warn_deprecated_options()
         if self.linear_leaves:
             raise ValueError(
                 "linear_leaves=True is currently supported only for "

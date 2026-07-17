@@ -1,5 +1,37 @@
 # Changelog
 
+## Unreleased
+
+### Deprecations for 1.0
+
+The following evidence-free or concluded experimental surfaces remain
+functional during the 0.10 deprecation cycle and emit `FutureWarning` when a
+non-default value selects them. They will be removed in DarkoFit 1.0:
+
+- `tree_mode="depthwise"` and its `"levelwise"` alias. Migrate to
+  `"catboost"` for symmetric trees or `"lightgbm"` for non-oblivious trees.
+- `histogram_dtype`, `leaf_dtype`, and `histogram_parallelism`. Remove these
+  arguments to use the supported float64 histogram, int64 leaf-ID, and
+  automatically selected feature-parallel paths.
+- `auto_learning_rate_probe`, `auto_learning_rate_probe_values`, and
+  `auto_learning_rate_probe_iterations`. Use a validation-backed explicit
+  learning-rate search outside the estimator instead.
+- `bootstrap_type="bayesian"` and `bagging_temperature`. Use
+  `bootstrap_type="none"` with uniform, GOSS, or MVS row sampling.
+- `sampling="weighted_goss"`. Use plain `"goss"` or `"mvs"`.
+
+The older `sigma_calibration` alias continues to emit `DeprecationWarning`;
+use `dist_calibration` before 1.0.
+
+`random_strength` is deliberately **not** deprecated. Its preregistered cheap
+basketball screen found that `0.5` improved mean creator-fold R² by `0.002124`,
+passed every leave-one-fold-out check, and improved held-team and cold-player
+R². It remains default-off and requires fresh sports confirmation before any
+promotion. The two Gaussian `rho_*` multipliers also remain: focused
+distributional tests defend their independent head-scaling behavior and safe
+serialization. `linear_residual`, `hybrid`, and
+`target_ordered_cat_codes` remain pending their declared comparison campaigns.
+
 ## 0.9.0 - 2026-07-12
 
 Behavior-changing default improvements from a full-repo review, plus targeted
