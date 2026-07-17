@@ -29,8 +29,9 @@ warms its exact path outside timing before the formal fit.
 
 ## Output and decision
 
-The artifact records total fit time, seconds per round, fitted tree count,
-resolved lane, prediction shape/hash, and DarkoFit's phase telemetry:
+The artifact records total fit time, seconds per round, fitted boosting-round
+and component-tree counts, resolved lane, prediction shape/hash, and
+DarkoFit's phase telemetry:
 
 ```text
 preprocess / grad_hess / tree_build / train_update /

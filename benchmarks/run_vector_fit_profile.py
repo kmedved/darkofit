@@ -181,15 +181,26 @@ def run_worker(case: str) -> dict[str, Any]:
     if phase_total <= 0.0:
         raise RuntimeError(f"{case} produced no phase attribution")
     core = model.model_
-    fitted_trees = len(core.trees_)
-    expected_trees = (
+    fitted_rounds = len(core.trees_)
+    if fitted_rounds != ITERATIONS:
+        raise RuntimeError(
+            f"{case} retained {fitted_rounds} rounds, expected {ITERATIONS}"
+        )
+    component_trees = sum(
+        len(round_trees)
+        if isinstance(round_trees, (list, tuple))
+        else 1
+        for round_trees in core.trees_
+    )
+    expected_components = (
         ITERATIONS * 4
         if case == "multiclass_catboost_per_class"
         else ITERATIONS
     )
-    if fitted_trees != expected_trees:
+    if component_trees != expected_components:
         raise RuntimeError(
-            f"{case} retained {fitted_trees} trees, expected {expected_trees}"
+            f"{case} retained {component_trees} component trees, "
+            f"expected {expected_components}"
         )
     auto = dict(getattr(core, "auto_params_", {}) or {})
     return {
@@ -205,7 +216,8 @@ def run_worker(case: str) -> dict[str, Any]:
             name: float(value / phase_total) for name, value in timing.items()
         },
         "unattributed_seconds": max(0.0, float(fit_seconds - phase_total)),
-        "fitted_tree_count": int(fitted_trees),
+        "fitted_round_count": int(fitted_rounds),
+        "fitted_component_tree_count": int(component_trees),
         "selected_tree_mode": str(core.tree_mode_),
         "resolved_thread_count": int(core.n_threads_),
         "multiclass_strategy": auto.get("multiclass_tree_strategy"),
@@ -303,7 +315,10 @@ def analyze(results: list[dict[str, Any]]) -> dict[str, Any]:
             "phase_shares_of_attributed": phase_shares,
             "largest_phase": max(phase_shares, key=phase_shares.get),
             "prediction_sha256": hashes.pop(),
-            "fitted_tree_count": rows[0]["fitted_tree_count"],
+            "fitted_round_count": rows[0]["fitted_round_count"],
+            "fitted_component_tree_count": rows[0][
+                "fitted_component_tree_count"
+            ],
             "selected_tree_mode": rows[0]["selected_tree_mode"],
             "loss": rows[0]["loss"],
             "peak_rss_bytes": [row["peak_rss_bytes"] for row in rows],
