@@ -21,6 +21,9 @@ from synthgen import filters
 from synthgen.suites import CANARIES, SUITES
 
 GOLDEN_PATH = os.path.join(os.path.dirname(__file__), "golden_synthgen.json")
+FREEZE_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "benchmarks", "synthgen_df1_freeze.json"
+)
 
 
 @pytest.fixture(autouse=True)
@@ -238,6 +241,61 @@ def test_suite_nesting_and_registration():
     keys = synthgen.frozen_keys("smoke")
     assert keys and all(k.startswith(f"syn:{synthgen.VERSION}/") for k in keys)
     assert len(synthgen.all_frozen_keys()) == len(set(synthgen.all_frozen_keys()))
+
+
+def test_freeze_evidence_matches_committed_suite_and_goldens():
+    with open(FREEZE_PATH, encoding="utf-8") as handle:
+        evidence = json.load(handle)
+    with open(GOLDEN_PATH, encoding="utf-8") as handle:
+        goldens = json.load(handle)
+    assert evidence["generator_version"] == synthgen.VERSION
+    assert evidence["source"] == {
+        "branch": "main",
+        "clean": True,
+        "commit": "fa1ab2cb790b83c20a39b5e175ad8d6f5c035ebf",
+    }
+    assert evidence["selection"]["suites"] == SUITES
+    assert set(evidence["selection"]["canaries"]) == CANARIES
+    assert evidence["selection"]["goldens"] == goldens
+    records = {record["id"]: record for record in evidence["scan"]["records"]}
+    for dataset_id in CANARIES:
+        record = records[dataset_id]
+        assert record["canary"] is True
+        assert len(record["ceiling_values"]) == 3
+        assert np.isfinite(record["ceiling_values"]).all()
+
+
+def test_decision_slices_meet_frozen_minimum():
+    slices = {
+        "ordinary_regression": [],
+        "noisy_nonlinear": [],
+        "smooth_linear": [],
+        "categorical_regression": [],
+    }
+    for dataset_id in SUITES["screen"]:
+        _, _, _, task, meta = synthgen.build_dataset(
+            synthgen.key_for(dataset_id)
+        )
+        if task != "regression" or meta["saturated"]:
+            continue
+        slices["ordinary_regression"].append(dataset_id)
+        if (
+            meta["noise_level"] >= 0.25
+            and meta["interaction_depth"] >= 2
+            and meta["func_dominant"] != "linear"
+        ):
+            slices["noisy_nonlinear"].append(dataset_id)
+        if meta["func_dominant"] == "linear":
+            slices["smooth_linear"].append(dataset_id)
+        if meta["n_cat"] > 0:
+            slices["categorical_regression"].append(dataset_id)
+        synthgen.build_dataset.cache_clear()
+    assert {name: len(ids) for name, ids in slices.items()} == {
+        "ordinary_regression": 46,
+        "noisy_nonlinear": 8,
+        "smooth_linear": 11,
+        "categorical_regression": 17,
+    }
 
 
 def test_frozen_key_task_registration():

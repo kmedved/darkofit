@@ -49,12 +49,13 @@ in `suites.py`; it is not inferred at benchmark runtime.
 ## Frozen `df1` suites
 
 - smoke: 6 datasets;
-- screen: 148 datasets / 402,275 rows;
-- full: 239 datasets / 1,618,854 rows.
+- screen: 145 datasets / 400,036 rows;
+- full: 240 datasets / 1,600,125 rows.
 
-The suites are nested. The screen has 49 regression datasets, 53 datasets
-with categorical features, and four categorical canaries. The full suite has
-six verified canaries. Exact ids and goldens live in `suites.py` and
+The suites are nested. The screen has 48 regression datasets, 51 datasets
+with categorical features, and four categorical canaries. Its four frozen
+decision slices contain 46, 8, 11, and 17 datasets respectively. The full
+suite has six verified canaries. Exact ids and goldens live in `suites.py` and
 `tests/golden_synthgen.json`.
 
 ## Reproduction

@@ -14,6 +14,7 @@ import argparse
 import hashlib
 import json
 import os
+import subprocess
 import sys
 import time
 from collections import Counter
@@ -317,6 +318,35 @@ def _write_json_atomic(path, payload):
     os.replace(tmp, path)
 
 
+def _clean_git_source():
+    repo = os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__)
+    )))
+    status = subprocess.run(
+        ["git", "-C", repo, "status", "--porcelain=v1", "--untracked-files=all"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    if status:
+        raise RuntimeError(
+            "freeze evidence requires a clean source tree; found:\n" + status
+        )
+    head = subprocess.run(
+        ["git", "-C", repo, "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    branch = subprocess.run(
+        ["git", "-C", repo, "branch", "--show-current"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    return {"commit": head, "branch": branch, "clean": True}
+
+
 def verify_canaries():
     """Re-verify canary status over the ALREADY-FROZEN suites (no membership
     change): re-runs filters.at_ceiling on every saturated frozen id and
@@ -357,6 +387,7 @@ def main():
     if args.canaries_only:
         verify_canaries()
         return
+    source = _clean_git_source() if args.output else None
     print(f"scanning ids {args.start}..{args.start + args.count - 1} "
           f"(generator {synthgen.VERSION})", flush=True)
     records = scan(args.start, args.count)
@@ -370,6 +401,7 @@ def main():
         payload = {
             "schema_version": 1,
             "generator_version": synthgen.VERSION,
+            "source": source,
             "scan": {
                 "start": args.start,
                 "count": args.count,
