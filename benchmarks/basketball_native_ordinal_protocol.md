@@ -99,6 +99,7 @@ The control must report ordinal mode `off`, no ordinal records, and no
 `auto`, no records or indices, and exactly this inactive metadata:
 
 ```text
+mode="auto"
 active=False
 feature_count=0
 feature_indices=[]
