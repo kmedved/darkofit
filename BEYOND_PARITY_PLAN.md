@@ -80,6 +80,13 @@ Execution began from published `main` at `ab86269`.
   geometric-mean fit and tree-build ratios were `0.7870x` and `0.7666x`
   reference, every paired ratio was stable, and peak RSS was about `0.99x`.
   This is an internal exact engine gain, not an external ChimeraBoost claim.
+- S2 is closed as shaped from clean source `d2c14ba`. The complete
+  player-identity bootstrap with group-disjoint OOB early stopping and shared
+  numeric preprocessing lost `0.004182` mean creator-fold R², lost 8/10
+  folds, and failed every leave-one-fold-out check. It did improve the
+  overlap-exposed held-team and cold-player views by `+0.002239` and
+  `+0.014869`, but the fatal primary gate stopped the campaign after one block;
+  there is no timing claim and no ensemble API work.
 
 ## Standing constraints (inherited, non-negotiable)
 
@@ -125,17 +132,10 @@ gain ≥ +0.002 (the screen bar used throughout the closed program). Cost: one
 campaign day; the heads and vector-leaf trees already exist. Even a null
 result is cheap and informative (it bounds how much tail-robustness matters).
 
-**S2. Entity-aware ensemble (materially different from the closed OOB-5).**
-What's different, explicitly: (a) **grouped bootstrap by player** (resample
-player identities, not rows — respects the entity structure that both
-guardrails exist to protect) with per-member group-aware OOB early stopping;
-(b) shared preprocessing/binning across members (the closed candidate paid
-2.41× wall; shared binning should bring K=5 nearer ~2×; measure);
-(c) stability gated on paired ratios per the new template. Quality bar:
-mean ≥ +0.004 (the closed OOB-5 reproduced +0.0039, so an entity-aware
-variant must at least match it), cold-player positive, LOFO nonnegative.
-If it passes basketball, it proceeds to the sports suite (S4) — not to a
-default; ensembles ship as an explicit `n_ensembles` API only after S4.
+**S2. Entity-aware ensemble — closed as shaped.**
+The materially different player bootstrap, group-disjoint OOB validation, and
+shared preprocessing implementation failed the fatal creator-fold primary
+gate despite improving cold-player quality. No ensemble API is authorized.
 
 **S3. Group-aware validation as a first-class option.**
 `validation_strategy` today is `random | weighted_stratified`. Add
