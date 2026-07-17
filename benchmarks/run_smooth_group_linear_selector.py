@@ -110,7 +110,7 @@ def _selection_fit_record(name, model, fit_seconds):
         raise RuntimeError("smooth selector did not use its explicit eval set")
     if fitted["final_fit"]["stop_reason"] not in {
         "early_stopping",
-        "max_iterations",
+        "iteration_limit",
     }:
         raise RuntimeError("smooth selector candidate stopped unexpectedly")
     return {

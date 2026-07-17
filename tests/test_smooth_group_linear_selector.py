@@ -79,7 +79,7 @@ def test_partition_boundary_keeps_lockbox_sealed():
     )
 
 
-@pytest.mark.parametrize("stop_reason", ["early_stopping", "max_iterations"])
+@pytest.mark.parametrize("stop_reason", ["early_stopping", "iteration_limit"])
 def test_selection_record_accepts_valid_early_stopping_outcomes(
     monkeypatch, stop_reason
 ):
