@@ -109,7 +109,10 @@ package versions are NumPy `2.4.6`, Numba `0.66.0`, llvmlite `0.48.0`,
 pandas `3.0.3`, scikit-learn `1.9.0`, SciPy `1.18.0`, joblib `1.5.3`, and
 threadpoolctl `3.6.0`. The strict-test packages provisioned into that
 environment are pytest `9.1.1`, iniconfig `2.3.0`, packaging `26.2`, pluggy
-`1.6.0`, and Pygments `2.20.0`.
+`1.6.0`, and Pygments `2.20.0`. The complete suite's optional tuning stack is
+Optuna `4.9.0`, Alembic `1.18.5`, colorlog `6.10.1`, Mako `1.3.12`,
+MarkupSafe `3.0.3`, PyYAML `6.0.3`, SQLAlchemy `2.0.51`, tqdm `4.68.4`, and
+typing_extensions `4.16.0`.
 
 The formal run must use clean committed `main`, equal to `origin/main`,
 descended from the pre-protocol commit. The runner must bind its final source,
