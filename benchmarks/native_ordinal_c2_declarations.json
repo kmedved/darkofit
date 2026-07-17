@@ -1,0 +1,292 @@
+{
+  "schema_version": 1,
+  "registry_name": "darkofit_native_ordinal_c2_v1",
+  "darkofit_prefreeze_head": "a74299e67307f44675c4f2b73d581a633885387b",
+  "chimeraboost_head": "851ab7fa79fbb2a7f698fbc1a00952e1bd18c62d",
+  "coordinate_folds": [
+    0,
+    1,
+    2
+  ],
+  "development_tasks": [
+    {
+      "task_id": 361236,
+      "dataset_id": 44958,
+      "dataset_name": "auction_verification",
+      "target_name": "verification.time",
+      "lineage_cluster": "auction_verification",
+      "role": "nominal_no_engagement_guardrail",
+      "ordinal_features": {},
+      "semantic_sources": []
+    },
+    {
+      "task_id": 361252,
+      "dataset_id": 44974,
+      "dataset_name": "video_transcoding",
+      "target_name": "utime",
+      "lineage_cluster": "video_transcoding",
+      "role": "nominal_no_engagement_guardrail",
+      "ordinal_features": {},
+      "semantic_sources": []
+    },
+    {
+      "task_id": 361268,
+      "dataset_id": 44992,
+      "dataset_name": "fps_benchmark",
+      "target_name": "FPS",
+      "lineage_cluster": "fps_benchmark",
+      "role": "engaged_development",
+      "ordinal_features": {
+        "GpuBus.interface": [
+          "PCIe 3.0 x16",
+          "PCIe 4.0 x16"
+        ],
+        "GpuDirectX": [
+          "12",
+          "12 Ultimate"
+        ],
+        "GpuOpenCL": [
+          "1.2",
+          "2"
+        ],
+        "GpuShaderModel": [
+          "6.4",
+          "6.5"
+        ],
+        "GpuVulkan": [
+          "1.1.125",
+          "1.1.126",
+          "1.2.131"
+        ],
+        "GameSetting": [
+          "med",
+          "max"
+        ]
+      },
+      "semantic_sources": [
+        "https://www.openml.org/t/361268"
+      ]
+    },
+    {
+      "task_id": 361622,
+      "dataset_id": 44994,
+      "dataset_name": "cars",
+      "target_name": "Price",
+      "lineage_cluster": "cars_ctr23",
+      "role": "numeric_no_engagement_guardrail",
+      "ordinal_features": {},
+      "semantic_sources": []
+    },
+    {
+      "task_id": 363631,
+      "dataset_id": 46923,
+      "dataset_name": "diamonds",
+      "target_name": "price",
+      "lineage_cluster": "diamonds",
+      "role": "engaged_development",
+      "ordinal_features": {
+        "cut": [
+          "Fair",
+          "Good",
+          "Very Good",
+          "Premium",
+          "Ideal"
+        ],
+        "color": [
+          "J",
+          "I",
+          "H",
+          "G",
+          "F",
+          "E",
+          "D"
+        ],
+        "clarity": [
+          "I1",
+          "SI2",
+          "SI1",
+          "VS2",
+          "VS1",
+          "VVS2",
+          "VVS1",
+          "IF"
+        ]
+      },
+      "semantic_sources": [
+        "https://ggplot2.tidyverse.org/reference/diamonds.html"
+      ]
+    },
+    {
+      "task_id": 363372,
+      "dataset_id": 46663,
+      "dataset_name": "bookprice_prediction",
+      "target_name": "Price",
+      "lineage_cluster": "book_price",
+      "role": "nominal_no_engagement_guardrail",
+      "ordinal_features": {},
+      "semantic_sources": []
+    },
+    {
+      "task_id": 363375,
+      "dataset_id": 46656,
+      "dataset_name": "ae_price_prediction",
+      "target_name": "price",
+      "lineage_cluster": "apparel_price",
+      "role": "engaged_development",
+      "ordinal_features": {
+        "mrp": [
+          "7.50 USD",
+          "9.50 USD",
+          "11.50 USD",
+          "12.50 USD",
+          "14.50 USD",
+          "15.50 USD",
+          "22.95 USD",
+          "24.95 USD",
+          "26.95 USD",
+          "29.95 USD",
+          "32.95 USD",
+          "34.95 USD",
+          "36.50 USD",
+          "36.95 USD",
+          "38.50 USD",
+          "39.95 USD",
+          "44.95 USD",
+          "49.95 USD",
+          "66.99 USD",
+          "69.99 USD",
+          "72.99 USD"
+        ]
+      },
+      "semantic_sources": [
+        "https://www.openml.org/t/363375"
+      ]
+    },
+    {
+      "task_id": 363471,
+      "dataset_id": 46772,
+      "dataset_name": "munich-rent-index-1999",
+      "target_name": "rent",
+      "lineage_cluster": "munich_rent",
+      "role": "engaged_development",
+      "ordinal_features": {
+        "location": [
+          "1",
+          "2",
+          "3"
+        ]
+      },
+      "semantic_sources": [
+        "https://rdrr.io/cran/gamlss.data/man/rent99.html"
+      ]
+    }
+  ],
+  "confirmation_tasks": [
+    {
+      "task_id": 363221,
+      "dataset_id": 46165,
+      "dataset_name": "nwtco",
+      "target_name": "time",
+      "lineage_cluster": "national_wilms_tumor_study",
+      "role": "target_unseen_confirmation",
+      "ordinal_features": {
+        "stage": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      },
+      "semantic_sources": [
+        "https://stat.ethz.ch/R-manual/R-devel/library/survival/html/nwtco.html",
+        "https://stat.ethz.ch/CRAN/web/packages/cchs/refman/cchs.html"
+      ]
+    },
+    {
+      "task_id": 363217,
+      "dataset_id": 46161,
+      "dataset_name": "flchain",
+      "target_name": "time",
+      "lineage_cluster": "serum_free_light_chain",
+      "role": "target_unseen_confirmation",
+      "ordinal_features": {
+        "flc.grp": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          "10"
+        ]
+      },
+      "semantic_sources": [
+        "https://stat.ethz.ch/R-manual/R-devel/library/survival/html/flchain.html"
+      ]
+    },
+    {
+      "task_id": 363227,
+      "dataset_id": 46171,
+      "dataset_name": "tumor",
+      "target_name": "time",
+      "lineage_cluster": "stomach_tumor_survival",
+      "role": "target_unseen_confirmation",
+      "ordinal_features": {
+        "charlson_score": [
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8"
+        ]
+      },
+      "semantic_sources": [
+        "https://adibender.github.io/pammtools/articles/data-transformation.html"
+      ]
+    },
+    {
+      "task_id": 363226,
+      "dataset_id": 46170,
+      "dataset_name": "patient",
+      "target_name": "time",
+      "lineage_cluster": "critical_care_icu_survival",
+      "role": "target_unseen_confirmation",
+      "ordinal_features": {
+        "Year": [
+          "2007",
+          "2008",
+          "2009",
+          "2011"
+        ]
+      },
+      "semantic_sources": [
+        "https://adibender.github.io/pammtools/reference/patient.html"
+      ]
+    },
+    {
+      "task_id": 363201,
+      "dataset_id": 46146,
+      "dataset_name": "rdata",
+      "target_name": "time",
+      "lineage_cluster": "relative_survival_diagnosis_cohort",
+      "role": "target_unseen_confirmation",
+      "ordinal_features": {
+        "year": [
+          "82",
+          "83",
+          "84",
+          "85",
+          "86"
+        ]
+      },
+      "semantic_sources": [
+        "https://rdrr.io/cran/relsurv/man/rdata.html"
+      ]
+    }
+  ]
+}
