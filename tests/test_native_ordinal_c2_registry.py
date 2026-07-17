@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import itertools
 import json
 import math
@@ -11,6 +12,15 @@ import pandas as pd
 import pytest
 
 from benchmarks import build_native_ordinal_c2_registry as registry
+from benchmarks import build_ctr23_contamination_registry as ctr
+
+
+REGISTRY_FILE_SHA256 = (
+    "34343d5296698ad7ac728fbef40961f384ca61923e6524afa8a2c7eeda7080d3"
+)
+REGISTRY_CONTENT_SHA256 = (
+    "e7493131eb0cb1da00f1118c39f29130a44381e12f38bd2e2bd972132f953b28"
+)
 
 
 def _git(path: Path, *args: str) -> str:
@@ -58,6 +68,66 @@ def test_native_ordinal_c2_declarations_are_frozen_before_current_head():
         len(row["ordinal_features"]) == 1
         for row in declarations["confirmation_tasks"]
     )
+
+
+def test_native_ordinal_c2_registry_is_immutable_and_target_blind():
+    payload = registry.DEFAULT_OUTPUT.read_bytes()
+    assert hashlib.sha256(payload).hexdigest() == REGISTRY_FILE_SHA256
+    artifact = json.loads(payload)
+    assert payload == ctr.canonical_json_bytes(artifact)
+    content_hash = artifact.pop("registry_sha256")
+    assert content_hash == REGISTRY_CONTENT_SHA256
+    assert ctr.sha256_json(artifact) == REGISTRY_CONTENT_SHA256
+    artifact["registry_sha256"] = content_hash
+
+    assert artifact["sources"] == {
+        "darkofit_execution_head": (
+            "00d28f9c0d6ca731d92caeca9f04e8d938008405"
+        ),
+        "darkofit_prefreeze_head": (
+            "a74299e67307f44675c4f2b73d581a633885387b"
+        ),
+        "chimeraboost_head": (
+            "851ab7fa79fbb2a7f698fbc1a00952e1bd18c62d"
+        ),
+    }
+    assert artifact["coordinate_counts"] == {
+        "development": 24,
+        "confirmation": 15,
+    }
+    assert artifact["development_engaged_task_count"] == 4
+    assert artifact["confirmation_lineage_count"] == 5
+    assert all(
+        row["status"] == "eligible" and not row["exclusion_reasons"]
+        for row in artifact["confirmation_tasks"]
+    )
+    assert artifact["power_analysis"]["pass_probability"] == 1.0
+    assert artifact["power_analysis"]["passes"] is True
+    assert artifact["selection_used_target_statistics"] is False
+    assert artifact["development_outcomes_inspected"] is False
+    assert artifact["confirmation_outcomes_inspected"] is False
+    assert artifact["lockbox_touched"] is False
+    assert artifact["confirmation_run_authorized"] is False
+    assert all(
+        row["target_values_inspected"] is False
+        and row["target_statistics_used"] is False
+        for tier in ("development_tasks", "confirmation_tasks")
+        for row in artifact[tier]
+    )
+
+    assert artifact["builder_source_sha256"] == hashlib.sha256(
+        Path(registry.__file__).read_bytes()
+    ).hexdigest()
+    assert artifact["protocol_sha256"] == hashlib.sha256(
+        registry.PROTOCOL.read_bytes()
+    ).hexdigest()
+    assert artifact["declarations_sha256"] == hashlib.sha256(
+        registry.DECLARATIONS.read_bytes()
+    ).hexdigest()
+    for relative_path, expected_hash in artifact["source_artifacts"].items():
+        assert hashlib.sha256(
+            (registry.ROOT / relative_path).read_bytes()
+        ).hexdigest() == expected_hash
 
 
 def test_exact_five_task_bootstrap_upper_matches_brute_force():
