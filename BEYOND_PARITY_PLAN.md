@@ -68,6 +68,12 @@ Execution began from published `main` at `ab86269`.
   seconds-integrated timing protocol and the remaining mixed validation cost,
   not a packed-core rewrite. The post-mechanism complete suite is green at
   `1,680 passed, 23 skipped`.
+- P2's seconds-integrated successor is also final: DarkoFit's public median
+  beat ChimeraBoost in all eight cases (`0.805-0.987x`), six were stable, and
+  RSS was `0.992x`. The conjunctive proof failed numeric 8k/524k stability at
+  `0.10556`/`0.10032` and one `0.690s` interval missed the `0.75s` floor. The
+  code optimization stays, but P2 certification remains unavailable. No third
+  protocol or further packed/binner optimization will chase this gate.
 
 ## Standing constraints (inherited, non-negotiable)
 

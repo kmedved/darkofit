@@ -1,7 +1,21 @@
 from __future__ import annotations
 
+import hashlib
+import json
+from pathlib import Path
+
 from benchmarks import run_predict_throughput as baseline
 from benchmarks import run_predict_throughput_integrated as integrated
+
+
+RECORDED_ARTIFACT = (
+    Path(__file__).resolve().parents[1]
+    / "benchmarks"
+    / "predict_throughput_integrated.json"
+)
+EXPECTED_ARTIFACT_SHA256 = (
+    "5ec81511e3026f5efadd8623228920da8d154a2f99719ca8f4116cd2c5b3653b"
+)
 
 
 def _case(seconds):
@@ -93,3 +107,35 @@ def test_integrated_repeats_are_frozen_and_seconds_scaled():
     assert set(integrated.INTEGRATED_REPEATS) == set(
         baseline.BATCH_SIZES
     )
+
+
+def test_recorded_artifact_closes_development_without_certification():
+    raw = RECORDED_ARTIFACT.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == EXPECTED_ARTIFACT_SHA256
+    artifact = json.loads(raw)
+
+    assert artifact["sources"][baseline.DARKOFIT]["clean"] is True
+    assert artifact["sources"][baseline.DARKOFIT]["head"] == (
+        "c66279b335ae603719ec3bea346bc88b4edb4c57"
+    )
+    assert artifact["protocol"]["sha256"] == hashlib.sha256(
+        integrated.PROTOCOL.read_bytes()
+    ).hexdigest()
+    assert artifact["protocol"]["runner_sha256"] == hashlib.sha256(
+        Path(integrated.__file__).read_bytes()
+    ).hexdigest()
+    analysis = artifact["analysis"]
+    assert not analysis["passes_all_gates"]
+    assert analysis["recommendation"] == "p2_target_remains_open"
+    assert analysis["stretch_public_cases_at_or_below_chimera"] == 6
+    assert not analysis["gates"]["all_intervals_at_least_0_75_seconds"]
+    assert not analysis["gates"]["basketball_numeric_8192_stable"]
+    assert not analysis["gates"]["basketball_numeric_524288_stable"]
+    for dataset in baseline.DATASETS:
+        for rows in baseline.BATCH_SIZES:
+            assert (
+                analysis["paired_ratios"][dataset][str(rows)][
+                    "median_ratio"
+                ]
+                <= 1.0
+            )
