@@ -121,6 +121,12 @@ Execution began from published `main` at `ab86269`.
   the spent development effect distribution. This authorizes one exact fresh
   confirmation run only; no candidate task has been scored and the CTR23
   lockbox remains sealed.
+- A pre-score dtype audit supersedes I3's descriptive `smooth_numeric` label
+  with registry v2's `smooth_process`: the 14-task primary stratum is 5
+  numeric-only complete, 7 categorical complete, and 2 categorical with
+  missing predictors. Tasks, lineages, coordinates, contamination decisions,
+  and power are unchanged. All confirmation and later claims bind v2 and use
+  the narrower smooth/process wording.
 
 ## Standing constraints (inherited, non-negotiable)
 
