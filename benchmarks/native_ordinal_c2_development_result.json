@@ -1,0 +1,195 @@
+{
+  "aggregate": {
+    "engaged_split_count": 12,
+    "engaged_task_count": 4,
+    "equal_task_test_rmse_ratio": 0.9927548385779557,
+    "fit_ratio": {
+      "count": 24,
+      "iqr": 0.036801282235019106,
+      "iqr_over_median": 0.03650222418680867,
+      "maximum": 1.116953129443045,
+      "median": 1.0081928719378834,
+      "minimum": 0.9154210895016087,
+      "q25": 0.985199827386103,
+      "q75": 1.0220011096211221
+    },
+    "peak_rss_ratio": {
+      "count": 24,
+      "iqr": 0.0055570955464410154,
+      "iqr_over_median": 0.005553368442448791,
+      "maximum": 1.0127003891050583,
+      "median": 1.000671142934392,
+      "minimum": 0.9903486591402828,
+      "q25": 0.9971206244525801,
+      "q75": 1.002677719999021
+    },
+    "predict_ratio": {
+      "count": 24,
+      "iqr": 0.16397045822691325,
+      "iqr_over_median": 0.15755623615831316,
+      "maximum": 1.1857763963294323,
+      "median": 1.0407106835311493,
+      "minimum": 0.789209268631793,
+      "q25": 0.9676883303909958,
+      "q75": 1.131658788617909
+    },
+    "task_rows": [
+      {
+        "dataset_name": "fps_benchmark",
+        "lineage_cluster": "fps_benchmark",
+        "split_count": 3,
+        "task_id": 361268,
+        "test_rmse_ratio": 1.3175103100839682,
+        "test_split_ratios": [
+          0.9627285085384794,
+          0.9751982216331294,
+          2.4359329738234217
+        ],
+        "validation_rmse_ratio": 1.2681056291577575,
+        "validation_split_ratios": [
+          0.8535411141662167,
+          0.983750728601618,
+          2.4286044067519628
+        ]
+      },
+      {
+        "dataset_name": "ae_price_prediction",
+        "lineage_cluster": "apparel_price",
+        "split_count": 3,
+        "task_id": 363375,
+        "test_rmse_ratio": 0.9908219059882927,
+        "test_split_ratios": [
+          0.9933889263000407,
+          0.9936518420341285,
+          0.9854469348024726
+        ],
+        "validation_rmse_ratio": 0.989775849369459,
+        "validation_split_ratios": [
+          0.9823157566872306,
+          0.9928156582067212,
+          0.9942390805785677
+        ]
+      },
+      {
+        "dataset_name": "munich-rent-index-1999",
+        "lineage_cluster": "munich_rent",
+        "split_count": 3,
+        "task_id": 363471,
+        "test_rmse_ratio": 0.9922301245038013,
+        "test_split_ratios": [
+          0.9926735521397144,
+          0.9972328689362323,
+          0.9868114709299658
+        ],
+        "validation_rmse_ratio": 1.0110089538909928,
+        "validation_split_ratios": [
+          1.0325876543325492,
+          1.0036607506571036,
+          0.9971285161215571
+        ]
+      },
+      {
+        "dataset_name": "diamonds",
+        "lineage_cluster": "diamonds",
+        "split_count": 3,
+        "task_id": 363631,
+        "test_rmse_ratio": 0.7499046028828165,
+        "test_split_ratios": [
+          0.8119352450788666,
+          0.7291650184856475,
+          0.7123129476854141
+        ],
+        "validation_rmse_ratio": 0.7438664559141192,
+        "validation_split_ratios": [
+          0.7917382225759622,
+          0.6995676626550705,
+          0.7431450460075654
+        ]
+      }
+    ],
+    "task_wins": 3,
+    "worst_split_ratio": 2.4359329738234217,
+    "worst_task_ratio": 1.3175103100839682,
+    "worst_validation_task_ratio": 1.2681056291577575
+  },
+  "confirmation_outcomes_inspected": false,
+  "confirmation_run_authorized": false,
+  "decision": "close_native_ordinal_c2_development",
+  "development_outcomes_inspected": true,
+  "diagnostics": {
+    "expected_warning_count": 0
+  },
+  "expected_warning_prefixes": [
+    "DarkoFit automatic learning rate clipped to max "
+  ],
+  "gates": {
+    "confirmation_power": {
+      "passes": true,
+      "threshold_at_least": 0.8,
+      "value": 1.0
+    },
+    "equal_task_test_rmse": {
+      "passes": false,
+      "threshold_at_most": 0.98,
+      "value": 0.9927548385779557
+    },
+    "fit_dispersion": {
+      "passes": true,
+      "threshold_at_most": 0.15,
+      "value": 0.03650222418680867
+    },
+    "fit_time": {
+      "passes": true,
+      "threshold_at_most": 1.15,
+      "value": 1.0081928719378834
+    },
+    "integrity": {
+      "failure_count": 0,
+      "passes": true
+    },
+    "peak_rss": {
+      "passes": true,
+      "threshold_at_most": 1.1,
+      "value": 1.000671142934392
+    },
+    "predict_dispersion": {
+      "passes": false,
+      "threshold_at_most": 0.15,
+      "value": 0.15755623615831316
+    },
+    "predict_time": {
+      "passes": true,
+      "threshold_at_most": 1.1,
+      "value": 1.0407106835311493
+    },
+    "task_wins": {
+      "passes": true,
+      "threshold_at_least": 3,
+      "value": 3
+    },
+    "validation": {
+      "passes": false,
+      "threshold_at_most": 1.02,
+      "value": 1.2681056291577575
+    },
+    "worst_split": {
+      "passes": false,
+      "threshold_at_most": 1.05,
+      "value": 2.4359329738234217
+    },
+    "worst_task": {
+      "passes": false,
+      "threshold_at_most": 1.02,
+      "value": 1.3175103100839682
+    }
+  },
+  "integrity_failures": [],
+  "lockbox_touched": false,
+  "name": "darkofit_native_ordinal_c2_development_result_v1",
+  "passes": false,
+  "raw_path": "benchmarks/native_ordinal_c2_development_raw.json",
+  "raw_sha256": "2599029d7f4c8f7464c26af27d0aadf8e8443f47f1a52b0f794b8dd912c10d8a",
+  "registry_sha256": "e7493131eb0cb1da00f1118c39f29130a44381e12f38bd2e2bd972132f953b28",
+  "schema_version": 1,
+  "tier": "development"
+}
