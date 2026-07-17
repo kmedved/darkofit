@@ -96,6 +96,15 @@ Execution began from published `main` at `ab86269`.
   improved only `0.48%`, regressed on space_ga, and lost to local-linear
   leaves on every dataset, satisfying the planned deprecation criterion.
   This used folds 3–9 of spent development tasks only; the lockbox is sealed.
+- The first selector safety gate passes from clean source `1dd1c36`. A frozen
+  3% relative-improvement threshold over player-group-disjoint validation
+  declined linear leaves on all ten basketball folds and the held-team
+  guardrail. Final predictions, canonical model state, fold scores,
+  held-team score, and cold-player score matched the constant-leaf control
+  exactly. Reciprocal wall, fit, prediction, and RSS ratios were stable and
+  within budget. This advances only to the spent smooth development
+  coordinates; no API, automatic policy, default, or lockbox spend is
+  authorized.
 
 ## Standing constraints (inherited, non-negotiable)
 

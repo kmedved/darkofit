@@ -1,8 +1,21 @@
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
+from pathlib import Path
 
 from benchmarks import run_basketball_group_linear_selector as experiment
+
+
+RECORDED_ARTIFACT = (
+    Path(__file__).resolve().parents[1]
+    / "benchmarks"
+    / "basketball_group_linear_selector.json"
+)
+EXPECTED_ARTIFACT_SHA256 = (
+    "cb56ab34769609cd9639245f9ca6ea2012a0ea1a2b532aae458a9e6cfd9f2f25"
+)
 
 
 def _model_hash(value="same"):
@@ -92,3 +105,34 @@ def test_behavior_fingerprint_excludes_resource_observations():
     assert experiment._behavior_fingerprint(
         baseline
     ) != experiment._behavior_fingerprint(changed)
+
+
+def test_recorded_artifact_advances_to_spent_smooth_development():
+    raw = RECORDED_ARTIFACT.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == EXPECTED_ARTIFACT_SHA256
+    artifact = json.loads(raw)
+
+    assert artifact["source"]["clean"] is True
+    assert artifact["source"]["head"] == (
+        "1dd1c365924cd199436d5993e0014563eed5659e"
+    )
+    assert artifact["protocol"]["sha256"] == hashlib.sha256(
+        experiment.PROTOCOL.read_bytes()
+    ).hexdigest()
+    assert artifact["protocol"]["runner_sha256"] == hashlib.sha256(
+        Path(experiment.__file__).read_bytes()
+    ).hexdigest()
+    assert artifact["protocol"]["lockbox_data_used"] is False
+    assert artifact["protocol"]["public_selector_authorized"] is False
+    assert artifact["protocol"]["default_promotion_authorized"] is False
+    assert artifact["exactness"]["passes"] is True
+    assert artifact["timing_gates"] == {
+        "all_paired_ratios_stable": True,
+        "predict_ratio_at_most_1_25": True,
+        "rss_ratio_at_most_2": True,
+        "wall_ratio_at_most_3_5": True,
+    }
+    assert artifact["passes_all_gates"] is True
+    assert artifact["recommendation"] == (
+        "advance_selector_to_spent_smooth_development"
+    )
