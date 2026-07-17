@@ -5217,6 +5217,8 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     fused_lane = (
         bool(fused_oblivious_kernel)
         and get_num_threads() > _LEVEL_SUBTRACTION_MAX_THREADS
+        and row_indices is None
+        and feature_indices is None
         and rowpar_buffers is None
         and not subtract_lane
         and not root_copy_lane

@@ -81,6 +81,15 @@ Execution began from published `main` at `ab86269`.
   geometric-mean fit and tree-build ratios were `0.7870x` and `0.7666x`
   reference, every paired ratio was stable, and peak RSS was about `0.99x`.
   This is an internal exact engine gain, not an external ChimeraBoost claim.
+- E1's subset expansion is closed from clean source `11a72a1`. All eight
+  basketball-scale cells were model-state exact and materially faster, with
+  subset geometric-mean fit/tree ratios of `0.5348x`/`0.5265x`, but weighted
+  row sampling failed the frozen timing-stability gate at `0.2085` fit and
+  `0.2060` tree-build IQR/median (limit `0.15`). Automatic subset dispatch was
+  restored to the reference path. A count-carrying oblivious lane is
+  inapplicable because `min_child_samples` intentionally belongs to leaf-wise
+  and hybrid builders. E1 is closed as shaped and authorizes no kernel
+  deletions.
 - S2 is closed as shaped from clean source `d2c14ba`. The complete
   player-identity bootstrap with group-disjoint OOB early stopping and shared
   numeric preprocessing lost `0.004182` mean creator-fold R², lost 8/10
@@ -268,18 +277,20 @@ retry of P1/P2.
 Parity is proven on the default constant-leaf regression lane. The program
 tested the following engine ceilings:
 
-**E1. Fused-lane expansion (also the deletion enabler).** The shipped fused
-kernel now covers the unit- and variable-Hessian full-row/full-feature float64
-lanes. Continue stepwise, each step bit-identity-gated and each retiring its
-superseded reference variants (keep exactly one oracle pair per family):
+**E1. Fused-lane expansion — closed as shaped.** The shipped fused kernel
+covers the unit- and variable-Hessian full-row/full-feature float64 lanes:
 1. **Complete:** hessian-carrying fused kernel → binary classification and
    weighted RMSE joined the exact fast lane at `0.7870x` total fit and
    `0.7666x` tree-build geometric-mean reference time;
-2. counts-carrying variant → `min_child_samples` lane;
-3. feature-mask and row-subset support via runtime branches (measure branch
-   cost; adopt only where free).
-Expected: several thousand deletable lines with proofs, plus real user-facing
-classification speedups.
+2. **Inapplicable:** counts-carrying oblivious variant → `min_child_samples`
+   is a leaf-wise/hybrid semantic and cannot be added as an exact engine
+   optimization;
+3. **Closed:** feature-mask and row-subset fusion was exact and fast in all
+   cells, but failed the frozen all-cell paired-timing stability requirement.
+   Automatic subset dispatch is off and the selected reference kernels remain.
+
+No kernel deletion is authorized by E1. See
+[`benchmarks/fused_subset_oblivious_result.md`](benchmarks/fused_subset_oblivious_result.md).
 
 **E2. Large-n advantage — closed at the frozen claim threshold.** Profiling
 rejected fused+subtraction at the production thread count. The retained
@@ -329,8 +340,9 @@ wins, the hybrid/depthwise deletion evidence finally exists.
 ## Track Z — Cleanup to 1.0 (bundle every break loudly)
 
 The package grew to ~24.4k lines because deletions were correctly blocked on
-replacement proofs. The proofs now have a pipeline (E1, C3); the rest is
-policy. Do this as a **deprecation release (0.10) → 1.0** cycle:
+replacement proofs. E1 did not authorize its planned kernel deletions; C3 is
+the remaining mode-deletion proof. The rest is policy. Do this as a
+**deprecation release (0.10) → 1.0** cycle:
 
 **Z1. Deprecate now, delete at 1.0** (warnings in 0.10, removal PR pre-staged):
 - `depthwise` tree mode (absent from every selector and campaign; ~800 lines
@@ -352,12 +364,11 @@ policy. Do this as a **deprecation release (0.10) → 1.0** cycle:
 - `hybrid` stays until C3 produces the mode-mix evidence. `target_ordered_
   cat_codes` stays until C1 replaces it properly.
 
-**Z2. Kernel deletions ride E1**, never ahead of it. Bookkeep per-family:
-fused expansion PR lands → superseded variants deleted in the same PR with
-the oracle retained → goldens + suite green. Target trajectory 24.4k → ~15k
-after E1 complete, ~11-12k after mode deletions (C3-gated) — honest numbers,
-not the old ~9k guess, since linear leaves/SHAP/warmup/validation added
-legitimate mass.
+**Z2. E1 kernel deletions — closed without deletion.** The subset fused
+candidate failed its frozen stability gate, so the selected reference kernels
+remain production code rather than removable oracles. Any future size target
+must come from the 1.0 API/mode removals after their own evidence, primarily
+C3; the former E1-driven 24.4k → ~15k trajectory is withdrawn.
 
 **Z3. Review findings — complete.** Categorical predict validation no longer
 does a Python cell scan; infinity, empty prediction batch, and duplicate

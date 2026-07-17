@@ -404,6 +404,8 @@ def test_fused_builder_preserves_complete_tree_and_training_state(
 @pytest.mark.parametrize(
     "ineligible",
     [
+        {"row_indices": np.arange(0, 257, 2, dtype=np.int64)},
+        {"feature_indices": np.array([0, 2, 4], dtype=np.int64)},
         {"level_histogram_subtraction": True},
         {"random_strength": 0.1},
     ],
