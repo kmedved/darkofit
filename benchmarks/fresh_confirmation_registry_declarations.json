@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "registry_name": "darkofit_fresh_confirmation_v1",
+  "darkofit_prefreeze_head": "a3c55d6cfcc62d951b17db7c9be53c1ff0ce6137",
+  "chimeraboost_head": "851ab7fa79fbb2a7f698fbc1a00952e1bd18c62d",
+  "coordinate_folds": [0, 1, 2],
+  "near_match_threshold_source": "benchmarks/ctr23_contamination_sources.json",
+  "candidates": [
+    {
+      "task_id": 363132,
+      "expected_normalized_name": "3d_estimation_using_rssi_of_wlan_dataset",
+      "lineage_cluster": "rssi_3d_localization",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [363132, 363133]
+    },
+    {
+      "task_id": 363242,
+      "expected_normalized_name": "mabbob_ela_as_2d_regression_diagonalcma",
+      "lineage_cluster": "mabbob_ela_algorithm_performance",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [363242, 363243, 363244, 363245, 363246, 363248, 363249, 363250, 363251, 363252]
+    },
+    {
+      "task_id": 363343,
+      "expected_normalized_name": "debutanizer",
+      "lineage_cluster": "debutanizer_process",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [363343]
+    },
+    {
+      "task_id": 363344,
+      "expected_normalized_name": "bng_mv",
+      "lineage_cluster": "bng_mv_generator",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [363344]
+    },
+    {
+      "task_id": 363345,
+      "expected_normalized_name": "bng_stock",
+      "lineage_cluster": "bng_stock_generator",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [363345]
+    },
+    {
+      "task_id": 363399,
+      "expected_normalized_name": "qsar_bioconcentration_regression",
+      "lineage_cluster": "qsar_bioconcentration",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [363399, 363726]
+    },
+    {
+      "task_id": 363418,
+      "expected_normalized_name": "infrared_thermography_temperature",
+      "lineage_cluster": "infrared_thermography_temperature",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [363418]
+    },
+    {
+      "task_id": 363434,
+      "expected_normalized_name": "climate_change_impact_on_agriculture_2024",
+      "lineage_cluster": "climate_agriculture_impact",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [363434]
+    },
+    {
+      "task_id": 363437,
+      "expected_normalized_name": "climate_insights_dataset",
+      "lineage_cluster": "climate_insights",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [363437]
+    },
+    {
+      "task_id": 363439,
+      "expected_normalized_name": "temperature_emissions_environmental_trends_2000_2024",
+      "lineage_cluster": "temperature_emissions_trends",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [363439]
+    },
+    {
+      "task_id": 363447,
+      "expected_normalized_name": "iot_agriculture_2024",
+      "lineage_cluster": "iot_agriculture",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [363447]
+    },
+    {
+      "task_id": 363448,
+      "expected_normalized_name": "coffee_distribution_across_94_counties",
+      "lineage_cluster": "coffee_distribution",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [363448, 363727]
+    },
+    {
+      "task_id": 363791,
+      "expected_normalized_name": "bkd1kmc1",
+      "lineage_cluster": "bkd1kmc1",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [363791, 363792]
+    },
+    {
+      "task_id": 363376,
+      "expected_normalized_name": "news_popularity2",
+      "lineage_cluster": "news_popularity",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [363376]
+    },
+    {
+      "task_id": 363372,
+      "expected_normalized_name": "bookprice_prediction",
+      "lineage_cluster": "book_price",
+      "stratum": "categorical",
+      "related_task_ids": [363372]
+    },
+    {
+      "task_id": 363375,
+      "expected_normalized_name": "ae_price_prediction",
+      "lineage_cluster": "apparel_price",
+      "stratum": "categorical",
+      "related_task_ids": [363375]
+    },
+    {
+      "task_id": 363471,
+      "expected_normalized_name": "munich_rent_index_1999",
+      "lineage_cluster": "munich_rent",
+      "stratum": "categorical",
+      "related_task_ids": [363471]
+    },
+    {
+      "task_id": 363440,
+      "expected_normalized_name": "pakistan_hunger_data",
+      "lineage_cluster": "pakistan_hunger",
+      "stratum": "noisy_tabular",
+      "related_task_ids": [363440]
+    },
+    {
+      "task_id": 363443,
+      "expected_normalized_name": "sustainable_development_report_zero_hunger",
+      "lineage_cluster": "sustainable_development_zero_hunger",
+      "stratum": "noisy_tabular",
+      "related_task_ids": [363443]
+    },
+    {
+      "task_id": 363730,
+      "expected_normalized_name": "trs_scz",
+      "lineage_cluster": "trs_scz",
+      "stratum": "noisy_tabular",
+      "related_task_ids": [363730, 363731, 363732, 363733]
+    }
+  ]
+}
