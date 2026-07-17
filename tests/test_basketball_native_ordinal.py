@@ -15,6 +15,25 @@ from benchmarks import run_basketball_native_ordinal as runner
 from darkofit import DarkoRegressor
 
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+RAW_PATH = REPO_ROOT / "benchmarks" / "basketball_native_ordinal_raw.json"
+RESULT_PATH = (
+    REPO_ROOT / "benchmarks" / "basketball_native_ordinal_result.json"
+)
+REPORT_PATH = (
+    REPO_ROOT / "benchmarks" / "basketball_native_ordinal_result.md"
+)
+EXPECTED_RAW_SHA256 = (
+    "7118d8dad2e0a9f7deb5d2c2425255cadfa8d810404fc8431070e3fa86dc6ea2"
+)
+EXPECTED_RESULT_SHA256 = (
+    "b586cc8a22dd8779723b851f6fa0541e1a4c4e6319244787f30f53e306cb6de9"
+)
+EXPECTED_REPORT_SHA256 = (
+    "6eb8b2c8b2ca055339beeb935e981e0010dd0b169c1d435b1a4738e0aec25c50"
+)
+
+
 def _sha256_values(values) -> str:
     array = np.ascontiguousarray(np.asarray(values, dtype="<f8"))
     return hashlib.sha256(array.tobytes()).hexdigest()
@@ -630,3 +649,22 @@ def test_report_is_deterministic(monkeypatch):
     assert "C1 basketball fatal screen **passed**" in report
     assert "does not authorize a categorical default" in report
     json.dumps(result, allow_nan=False)
+
+
+def test_recorded_native_ordinal_artifacts_are_immutable_and_reproduce():
+    assert hashlib.sha256(RAW_PATH.read_bytes()).hexdigest() == (
+        EXPECTED_RAW_SHA256
+    )
+    assert hashlib.sha256(RESULT_PATH.read_bytes()).hexdigest() == (
+        EXPECTED_RESULT_SHA256
+    )
+    assert hashlib.sha256(REPORT_PATH.read_bytes()).hexdigest() == (
+        EXPECTED_REPORT_SHA256
+    )
+    raw = json.loads(RAW_PATH.read_text(encoding="utf-8"))
+    recorded = json.loads(RESULT_PATH.read_text(encoding="utf-8"))
+    reproduced = analyzer.analyze(raw, EXPECTED_RAW_SHA256)
+    assert reproduced == recorded
+    assert analyzer.render_report(reproduced) == REPORT_PATH.read_text(
+        encoding="utf-8"
+    )

@@ -1,0 +1,230 @@
+{
+  "c2_categorical_development_authorized": true,
+  "categorical_default_authorized": false,
+  "categorical_quality_claim_authorized": false,
+  "decision": "authorize_frozen_c2_categorical_development",
+  "failures": [],
+  "gates": {
+    "all_workers_succeeded": true,
+    "archive_contract_reproduced": true,
+    "behavior_reproduced_across_blocks": true,
+    "cache_isolated_and_warmed": true,
+    "cold_prediction_paired_ratio_stable": true,
+    "fit_paired_ratio_stable": true,
+    "guardrail_score_contract_reproduced": true,
+    "held_prediction_paired_ratio_stable": true,
+    "historical_fit_contract_reproduced": true,
+    "historical_predictions_reproduced": true,
+    "median_cold_prediction_ratio_at_most_1_05": true,
+    "median_held_prediction_ratio_at_most_1_05": true,
+    "median_peak_rss_ratio_at_most_1_05": true,
+    "median_total_fit_ratio_at_most_1_02": true,
+    "no_unexpected_warnings": true,
+    "ordinal_no_engagement_contract": true,
+    "paired_logical_model_state_exact": true,
+    "paired_predictions_bitwise_exact": true,
+    "preprocessing_contract_reproduced": true,
+    "source_runtime_data_bound": true,
+    "timing_values_valid": true
+  },
+  "lockbox_touched": false,
+  "mean_r2": 0.5267495183883605,
+  "name": "darkofit_basketball_native_ordinal_result_v1",
+  "passes": true,
+  "raw": {
+    "analyzer_sha256": "847a0872c297e84cc8f72247aded2a1e6a269323d037cd63fff29c9701900907",
+    "protocol_sha256": "35f260c6fd2403195ce8dfda658bc0bb7ad90af8ee74383a539eb3c1ca491b9b",
+    "runner_normalized_sha256": "fa09739b220201aced753b775826a3f41e814ddeca19a4ecd2a9c3c8d2a3be75",
+    "sha256": "7118d8dad2e0a9f7deb5d2c2425255cadfa8d810404fc8431070e3fa86dc6ea2",
+    "source_commit": "d576b8df1ec29b83851fd151944be93f072add02"
+  },
+  "schema_version": 1,
+  "timing": {
+    "cold_prediction": {
+      "candidate_median": 1.04960725,
+      "candidate_values": [
+        1.152775542,
+        1.04960725,
+        1.004817166
+      ],
+      "control_median": 1.095101834,
+      "control_values": [
+        1.095101834,
+        1.138982958,
+        1.005229
+      ],
+      "iqr_over_median": 0.06559432604456024,
+      "median_ratio": 0.9995903082780144,
+      "paired_ratios": [
+        1.052665155156703,
+        0.9215302499723618,
+        0.9995903082780144
+      ],
+      "q1_ratio": 0.9605602791251882,
+      "q3_ratio": 1.0261277317173587,
+      "ratio_limit": 1.05,
+      "ratio_passed": true,
+      "stability_limit": 0.1,
+      "stable": true
+    },
+    "held_prediction": {
+      "candidate_median": 1.674425542,
+      "candidate_values": [
+        1.756768584,
+        1.674425542,
+        1.569467833
+      ],
+      "control_median": 1.623871916,
+      "control_values": [
+        1.623871916,
+        1.715296125,
+        1.568243167
+      ],
+      "iqr_over_median": 0.05279202778208773,
+      "median_ratio": 1.0007809158845835,
+      "paired_ratios": [
+        1.0818393782727382,
+        0.9761728704424141,
+        1.0007809158845835
+      ],
+      "q1_ratio": 0.9884768931634988,
+      "q3_ratio": 1.041310147078661,
+      "ratio_limit": 1.05,
+      "ratio_passed": true,
+      "stability_limit": 0.1,
+      "stable": true
+    },
+    "peak_rss": {
+      "candidate_median": 370475008.0,
+      "candidate_values": [
+        371343360.0,
+        370475008.0,
+        369639424.0
+      ],
+      "control_median": 370114560.0,
+      "control_values": [
+        367165440.0,
+        372948992.0,
+        370114560.0
+      ],
+      "iqr_over_median": 0.009017786995496536,
+      "median_ratio": 0.9987162461266047,
+      "paired_ratios": [
+        1.0113788487282462,
+        0.9933664279752229,
+        0.9987162461266047
+      ],
+      "q1_ratio": 0.9960413370509138,
+      "q3_ratio": 1.0050475474274254,
+      "ratio_limit": 1.05,
+      "ratio_passed": true,
+      "stability_limit": 0.1,
+      "stable": true
+    },
+    "per_arm_diagnostics": {
+      "candidate": {
+        "cold_prediction_seconds": {
+          "iqr_over_median": 0.07048273342243018,
+          "median": 1.04960725,
+          "values": [
+            1.152775542,
+            1.04960725,
+            1.004817166
+          ]
+        },
+        "held_prediction_seconds": {
+          "iqr_over_median": 0.055929853642904,
+          "median": 1.674425542,
+          "values": [
+            1.756768584,
+            1.674425542,
+            1.569467833
+          ]
+        },
+        "peak_rss_bytes": {
+          "iqr_over_median": 0.002299663895276844,
+          "median": 370475008.0,
+          "values": [
+            371343360.0,
+            370475008.0,
+            369639424.0
+          ]
+        },
+        "total_fit_seconds": {
+          "iqr_over_median": 0.028038777835905904,
+          "median": 12.34101875,
+          "values": [
+            12.462261834,
+            12.34101875,
+            11.770207668
+          ]
+        }
+      },
+      "control": {
+        "cold_prediction_seconds": {
+          "iqr_over_median": 0.06106918728801973,
+          "median": 1.095101834,
+          "values": [
+            1.095101834,
+            1.138982958,
+            1.005229
+          ]
+        },
+        "held_prediction_seconds": {
+          "iqr_over_median": 0.045278496583101124,
+          "median": 1.623871916,
+          "values": [
+            1.623871916,
+            1.715296125,
+            1.568243167
+          ]
+        },
+        "peak_rss_bytes": {
+          "iqr_over_median": 0.00781319167773351,
+          "median": 370114560.0,
+          "values": [
+            367165440.0,
+            372948992.0,
+            370114560.0
+          ]
+        },
+        "total_fit_seconds": {
+          "iqr_over_median": 0.07379182409979942,
+          "median": 12.375190709,
+          "values": [
+            12.375190709,
+            13.563035874,
+            11.736660082
+          ]
+        }
+      }
+    },
+    "total_fit": {
+      "candidate_median": 12.34101875,
+      "candidate_values": [
+        12.462261834,
+        12.34101875,
+        11.770207668
+      ],
+      "control_median": 12.375190709,
+      "control_values": [
+        12.375190709,
+        13.563035874,
+        11.736660082
+      ],
+      "iqr_over_median": 0.048429085903439535,
+      "median_ratio": 1.002858358831696,
+      "paired_ratios": [
+        1.0070359420753554,
+        0.9099009148576701,
+        1.002858358831696
+      ],
+      "q1_ratio": 0.9563796368446831,
+      "q3_ratio": 1.0049471504535257,
+      "ratio_limit": 1.02,
+      "ratio_passed": true,
+      "stability_limit": 0.1,
+      "stable": true
+    }
+  }
+}

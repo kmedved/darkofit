@@ -332,7 +332,8 @@ Safe-ordinal's quality effect was −17…−19% on categorical CTR23 tasks; the
 frozen causal gate failed only on inference time (1.2652 > 1.25) because the
 transform *added* columns. The materially different mechanism:
 
-**C1. Native ordinal-at-binning.** Mark declared-ordinal categoricals and bin
+**C1. Native ordinal-at-binning — complete.** Mark declared-ordinal
+categoricals and bin
 their *codes* directly in the existing numeric pipeline — zero added columns,
 zero extra TS blocks, so the closed failure mode (wider matrix → slower
 predict) is structurally eliminated. The `target_ordered_cat_codes` plumbing
@@ -340,6 +341,13 @@ predict) is structurally eliminated. The `target_ordered_cat_codes` plumbing
 (`ordinal_features={col: ordered_categories}`) plus a safe auto-detection
 rule that only fires on integer-coded or lexicographically-ordered categories
 (the resolver idea from the accuracy-shootout follow-ups).
+
+The frozen basketball no-engagement screen passed all exactness, telemetry,
+runtime, stability, and memory gates: candidate/control medians were 1.0029×
+for eleven fits, 1.0008× for held-team prediction, 0.9996× for cold-player
+prediction, and 0.9987× for peak RSS. This authorizes only C2 categorical
+development; it is not a categorical quality or default claim. See the
+[C1 result](benchmarks/basketball_native_ordinal_result.md).
 
 **C2. Panels.** Dev tier: the four dev-legal categorical CTR23 tasks
 (auction_verification, video_transcoding, fps_benchmark, cars) + spent
