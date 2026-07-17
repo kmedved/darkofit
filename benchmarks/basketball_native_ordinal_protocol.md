@@ -170,10 +170,11 @@ cold    998a14f530ed284865a50726191da067f72d69da3001614d664a4b90e7aa6376
 seen    c9b506afbfb3eb660dd918ee9635d996c0285b0320ba250cbf39c80df9122425
 ```
 
-The creator-fold mean R² must remain `0.5267495183883605`. Each of the ten
-creator-fold fits must retain resolved learning rate `0.052312`; the full
-5,241-row guardrail fit must retain resolved learning rate `0.053192`. Every
-fit must retain 1,000 trees with stop reason `iteration_limit`.
+The creator-fold mean R² must remain `0.5267495183883605`. Fold 0 trains on
+4,716 rows and must retain resolved learning rate `0.052312`; folds 1–9 train
+on 4,717 rows and must retain `0.052314`. The full 5,241-row guardrail fit must
+retain resolved learning rate `0.053192`. Every fit must retain 1,000 trees
+with stop reason `iteration_limit`.
 
 Raw `.npz` archives are intentionally not byte-equal because the candidate
 must persist its inactive ordinal declaration. Instead, the runner constructs
