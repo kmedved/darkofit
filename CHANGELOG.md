@@ -70,6 +70,18 @@ previous behaviors remain available through explicit parameters.
   while mean R² differed by only 0.000232 and DarkoFit led cold-player R² by
   0.00955. This is characterization evidence only and does not change
   DarkoFit's early-stopping, linear-leaf, or selection defaults.
+* Add a bounded packed predictor for scalar LightGBM-mode leafwise forests.
+  The route is limited to exactly two resolved threads, at least five trees,
+  at least 32,768 row-tree work units, and no more than 32,768 rows; other
+  leafwise, multiclass, distributional, hybrid, and large-batch calls retain
+  the per-tree loop. The frozen basketball confirmation reproduced every
+  fitted-state, archive, prediction, staged-output, dispatch, storage, and
+  memory oracle exactly. Public prediction improved 1.44x on the reserved
+  524-row fold, 1.59x on 585 genuinely cold players, 1.66x on 2,409 held-team
+  rows, and 1.98x at 8,192 repeated rows. At 65,536 and 100,000 rows the
+  deliberately retained fallback remained within 1.021x of the reference;
+  see the
+  [basketball confirmation](benchmarks/basketball_leafwise_packed_prediction_result.md).
 * Add experimental, default-off `linear_leaves=True` for scalar RMSE
   CatBoost/oblivious fits. Each tree can attach Hessian-weighted local ridge
   models over its numeric split features without changing DarkoFit's split

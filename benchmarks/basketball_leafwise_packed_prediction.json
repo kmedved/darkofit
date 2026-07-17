@@ -1,0 +1,4712 @@
+{
+  "binding": {
+    "golden_manifest_sha256": "2443509cded5e8ec3a725b50ce9fcc403be4c3ad9339260a9ccb85dec3ca17ff",
+    "imported_darkofit_path": "/Users/kmedved/Code/GitHub/darkofit/darkofit/__init__.py",
+    "oracle_function_sha256": "9b7f61f8ef16be9ec822117afe5cf77b0f2f4b8d7fe0698d07e707862943b787",
+    "runner_normalized_sha256": "7d2abc94d80658bb4ac399e5fd0872f1b200185e608715d1aa19a6f5859e8237",
+    "runtime": {
+      "cpu_brand": "Apple M5 Max",
+      "dependencies": {
+        "Mako": "1.3.12",
+        "MarkupSafe": "3.0.3",
+        "PyYAML": "6.0.3",
+        "Pygments": "2.20.0",
+        "SQLAlchemy": "2.0.51",
+        "alembic": "1.18.5",
+        "colorlog": "6.10.1",
+        "iniconfig": "2.3.0",
+        "joblib": "1.5.3",
+        "llvmlite": "0.48.0",
+        "numba": "0.66.0",
+        "numpy": "2.4.6",
+        "optuna": "4.9.0",
+        "packaging": "26.2",
+        "pandas": "3.0.3",
+        "pluggy": "1.6.0",
+        "pytest": "9.1.1",
+        "scikit-learn": "1.9.0",
+        "scipy": "1.18.0",
+        "threadpoolctl": "3.6.0",
+        "tqdm": "4.68.4",
+        "typing_extensions": "4.16.0"
+      },
+      "logical_cpu_count": 18,
+      "machine": "arm64",
+      "numba_max_threads": 18,
+      "platform": "macOS-26.5.2-arm64-arm-64bit",
+      "python": "3.12.13",
+      "python_executable": "/Users/kmedved/Code/GitHub/darkofit/.cache/basketball-py312/bin/python"
+    },
+    "source": {
+      "branch": "main",
+      "clean": true,
+      "describe": "v0.7.0-89-g82ce33a",
+      "head": "82ce33ad177047ebd02b5bd8304d4b245bad4685",
+      "path": "/Users/kmedved/Code/GitHub/darkofit",
+      "remotes": {
+        "origin": "https://github.com/kmedved/darkofit.git"
+      },
+      "status": [],
+      "tracked_main_refs": {
+        "origin/main": "82ce33ad177047ebd02b5bd8304d4b245bad4685"
+      }
+    },
+    "support_sha256": {
+      "benchmarks/basketball_guardrails.py": "4492a65161b2261e5d437b9733c286368534c54f7fd23b6f6b95a804507fff52",
+      "benchmarks/basketball_harness.py": "40360ca54d1954d540bd72bec47c891a179fb0f764a0cb6061d3a33b8593aba1",
+      "benchmarks/run_basketball_creator_benchmark.py": "9a2d6b3dc8f3a8586cd4ac20bdb3607c17675cab1d89e6bbd7c438d2bba53fec"
+    }
+  },
+  "boundaries": [
+    {
+      "expected_selected": false,
+      "observed_selected": false,
+      "prediction_array_exact": true,
+      "prediction_sha256": "9300026bc645e7712c59c7e06e7d3de1d8374656847f8237ecc1682b1031f8c8",
+      "rows": 32768,
+      "scalar_kernel_calls": 0,
+      "trees": 1
+    },
+    {
+      "expected_selected": true,
+      "observed_selected": true,
+      "prediction_array_exact": true,
+      "prediction_sha256": "6b60f298b14947dc72a53fcb470b36810061b8e4c34719168a21826bd8f33d12",
+      "rows": 8192,
+      "scalar_kernel_calls": 1,
+      "trees": 5
+    },
+    {
+      "expected_selected": true,
+      "observed_selected": true,
+      "prediction_array_exact": true,
+      "prediction_sha256": "d6280f105dbdb0d00f6950b29b3756f8d461d642d7e36142eb06e01f31bc5b5a",
+      "rows": 2409,
+      "scalar_kernel_calls": 1,
+      "trees": 16
+    },
+    {
+      "expected_selected": false,
+      "observed_selected": false,
+      "prediction_array_exact": true,
+      "prediction_sha256": "9c83d3ae5d25bf2fc43ae24d59f7d23ba2f3b473351ab2263dc77cfac40b965a",
+      "rows": 525,
+      "scalar_kernel_calls": 0,
+      "trees": 25
+    },
+    {
+      "expected_selected": false,
+      "observed_selected": false,
+      "prediction_array_exact": true,
+      "prediction_sha256": "d99cafe598e6086fe794fbea3ab63bc8f0a34c5b7c7a2d77c2a065cccf7a31bb",
+      "rows": 525,
+      "scalar_kernel_calls": 0,
+      "trees": 62
+    },
+    {
+      "expected_selected": true,
+      "observed_selected": true,
+      "prediction_array_exact": true,
+      "prediction_sha256": "e37f589d3d1119bdb0229f008626e30d87689de80aa2002365c97caf32bc5c4a",
+      "rows": 525,
+      "scalar_kernel_calls": 1,
+      "trees": 63
+    },
+    {
+      "expected_selected": false,
+      "observed_selected": false,
+      "prediction_array_exact": true,
+      "prediction_sha256": "82ede74e4bc1508ffa75c99623cb1d50908ccd1002fbf3cf2d921d3750b152df",
+      "rows": 127,
+      "scalar_kernel_calls": 0,
+      "trees": 258
+    },
+    {
+      "expected_selected": true,
+      "observed_selected": true,
+      "prediction_array_exact": true,
+      "prediction_sha256": "55e3fa56ff8d3a91e19cb88c5d2d294516bfea1f9e01fc9290aa6fd2e8a5595e",
+      "rows": 127,
+      "scalar_kernel_calls": 1,
+      "trees": 259
+    },
+    {
+      "expected_selected": true,
+      "observed_selected": true,
+      "prediction_array_exact": true,
+      "prediction_sha256": "98bd0a49513d83176ae60f2f478b6451e58a159452d6069156e03a06705299e8",
+      "rows": 32768,
+      "scalar_kernel_calls": 1,
+      "trees": 1000
+    },
+    {
+      "expected_selected": false,
+      "observed_selected": false,
+      "prediction_array_exact": true,
+      "prediction_sha256": "6c4024bb0b2e76f744a46cefe83194e94c4b391d4b56fa9585b31a5cba620182",
+      "rows": 65536,
+      "scalar_kernel_calls": 0,
+      "trees": 1000
+    }
+  ],
+  "cases": {
+    "cold_player_585": {
+      "binned_sha256": "0af091a2fdeb0e459b029220b8a4cf5ff12d1f69a08d4a6571872c652bf90256",
+      "columns": 15,
+      "core_timing": {
+        "blocks": [
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005237565109375,
+                "total_seconds": 0.335204167
+              },
+              "reference": {
+                "per_call_seconds": 0.00847169465625,
+                "total_seconds": 0.542188458
+              }
+            },
+            "block": 0,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005214669921875,
+                "total_seconds": 0.333738875
+              },
+              "reference": {
+                "per_call_seconds": 0.008533294265625,
+                "total_seconds": 0.546130833
+              }
+            },
+            "block": 1,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005283653640625,
+                "total_seconds": 0.338153833
+              },
+              "reference": {
+                "per_call_seconds": 0.008517180328125,
+                "total_seconds": 0.545099541
+              }
+            },
+            "block": 2,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005251653,
+                "total_seconds": 0.336105792
+              },
+              "reference": {
+                "per_call_seconds": 0.0085068860625,
+                "total_seconds": 0.544440708
+              }
+            },
+            "block": 3,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.00521194009375,
+                "total_seconds": 0.333564166
+              },
+              "reference": {
+                "per_call_seconds": 0.008566638671875,
+                "total_seconds": 0.548264875
+              }
+            },
+            "block": 4,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005183626953125,
+                "total_seconds": 0.331752125
+              },
+              "reference": {
+                "per_call_seconds": 0.008508325515625,
+                "total_seconds": 0.544532833
+              }
+            },
+            "block": 5,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.0050746484375,
+                "total_seconds": 0.3247775
+              },
+              "reference": {
+                "per_call_seconds": 0.00839770834375,
+                "total_seconds": 0.537453334
+              }
+            },
+            "block": 6,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.00525521484375,
+                "total_seconds": 0.33633375
+              },
+              "reference": {
+                "per_call_seconds": 0.00826016796875,
+                "total_seconds": 0.52865075
+              }
+            },
+            "block": 7,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.00530087890625,
+                "total_seconds": 0.33925625
+              },
+              "reference": {
+                "per_call_seconds": 0.008509412765625,
+                "total_seconds": 0.544602417
+              }
+            },
+            "block": 8,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.00522289909375,
+                "total_seconds": 0.334265542
+              },
+              "reference": {
+                "per_call_seconds": 0.008573479171875,
+                "total_seconds": 0.548702667
+              }
+            },
+            "block": 9,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005210438796875,
+                "total_seconds": 0.333468083
+              },
+              "reference": {
+                "per_call_seconds": 0.0084551829375,
+                "total_seconds": 0.541131708
+              }
+            },
+            "block": 10,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          }
+        ],
+        "candidate_over_reference": 0.6138574604554654,
+        "inner_calls": 64,
+        "summaries": {
+          "candidate": {
+            "iqr_fraction": 0.008088319495402818,
+            "iqr_seconds": 4.224447656249984e-05,
+            "maximum_seconds": 0.00530087890625,
+            "median_seconds": 0.00522289909375,
+            "minimum_seconds": 0.0050746484375,
+            "p50_seconds": 0.00522289909375,
+            "p95_seconds": 0.0052922662734375,
+            "p99_seconds": 0.0052991563796874995,
+            "seconds_per_call": [
+              0.005237565109375,
+              0.005214669921875,
+              0.005283653640625,
+              0.005251653,
+              0.00521194009375,
+              0.005183626953125,
+              0.0050746484375,
+              0.00525521484375,
+              0.00530087890625,
+              0.00522289909375,
+              0.005210438796875
+            ]
+          },
+          "reference": {
+            "iqr_fraction": 0.007263297565015675,
+            "iqr_seconds": 6.17984999999998e-05,
+            "maximum_seconds": 0.008573479171875,
+            "median_seconds": 0.008508325515625,
+            "minimum_seconds": 0.00826016796875,
+            "p50_seconds": 0.008508325515625,
+            "p95_seconds": 0.008570058921875,
+            "p99_seconds": 0.008572795121875,
+            "seconds_per_call": [
+              0.00847169465625,
+              0.008533294265625,
+              0.008517180328125,
+              0.0085068860625,
+              0.008566638671875,
+              0.008508325515625,
+              0.00839770834375,
+              0.00826016796875,
+              0.008509412765625,
+              0.008573479171875,
+              0.0084551829375
+            ]
+          }
+        }
+      },
+      "exactness": {
+        "packed_core_vs_loop": true,
+        "public_candidate_vs_loop": true,
+        "public_reference_vs_loop": true,
+        "staged_final_vs_public": true
+      },
+      "memory": {
+        "candidate": {
+          "calls": 5,
+          "maximum_peak_bytes": 152489,
+          "peak_bytes_per_call": [
+            152489,
+            152489,
+            152489,
+            152489,
+            152489
+          ]
+        },
+        "candidate_extra_peak_bytes": 0,
+        "reference": {
+          "calls": 5,
+          "maximum_peak_bytes": 152489,
+          "peak_bytes_per_call": [
+            152489,
+            152489,
+            152489,
+            152489,
+            152489
+          ]
+        }
+      },
+      "name": "cold_player_585",
+      "prediction_sha256": "b297d146c9f6b214a9211f18e45c538f3347806c8e77acda53f32d3b5f7345d4",
+      "public_timing": {
+        "blocks": [
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.00561518815625,
+                "total_seconds": 0.359372042
+              },
+              "reference": {
+                "per_call_seconds": 0.008661165375,
+                "total_seconds": 0.554314584
+              }
+            },
+            "block": 0,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005573947265625,
+                "total_seconds": 0.356732625
+              },
+              "reference": {
+                "per_call_seconds": 0.008788561859375,
+                "total_seconds": 0.562467959
+              }
+            },
+            "block": 1,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005556782546875,
+                "total_seconds": 0.355634083
+              },
+              "reference": {
+                "per_call_seconds": 0.008975525390625,
+                "total_seconds": 0.574433625
+              }
+            },
+            "block": 2,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.00557880209375,
+                "total_seconds": 0.357043334
+              },
+              "reference": {
+                "per_call_seconds": 0.008840043625,
+                "total_seconds": 0.565762792
+              }
+            },
+            "block": 3,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.0055473046875,
+                "total_seconds": 0.3550275
+              },
+              "reference": {
+                "per_call_seconds": 0.008815292328125,
+                "total_seconds": 0.564178709
+              }
+            },
+            "block": 4,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.00555223696875,
+                "total_seconds": 0.355343166
+              },
+              "reference": {
+                "per_call_seconds": 0.008663806,
+                "total_seconds": 0.554483584
+              }
+            },
+            "block": 5,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005555864578125,
+                "total_seconds": 0.355575333
+              },
+              "reference": {
+                "per_call_seconds": 0.008923619140625,
+                "total_seconds": 0.571111625
+              }
+            },
+            "block": 6,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.00555674609375,
+                "total_seconds": 0.35563175
+              },
+              "reference": {
+                "per_call_seconds": 0.00884616471875,
+                "total_seconds": 0.566154542
+              }
+            },
+            "block": 7,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005540354171875,
+                "total_seconds": 0.354582667
+              },
+              "reference": {
+                "per_call_seconds": 0.008863903640625,
+                "total_seconds": 0.567289833
+              }
+            },
+            "block": 8,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005367208984375,
+                "total_seconds": 0.343501375
+              },
+              "reference": {
+                "per_call_seconds": 0.0087924329375,
+                "total_seconds": 0.562715708
+              }
+            },
+            "block": 9,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.00557464128125,
+                "total_seconds": 0.356777042
+              },
+              "reference": {
+                "per_call_seconds": 0.00886228971875,
+                "total_seconds": 0.567186542
+              }
+            },
+            "block": 10,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          }
+        ],
+        "candidate_over_reference": 0.6285880850220352,
+        "inner_calls": 64,
+        "summaries": {
+          "candidate": {
+            "iqr_fraction": 0.004413274405336539,
+            "iqr_seconds": 2.452344531250067e-05,
+            "maximum_seconds": 0.00561518815625,
+            "median_seconds": 0.00555674609375,
+            "minimum_seconds": 0.005367208984375,
+            "p50_seconds": 0.00555674609375,
+            "p95_seconds": 0.005596995125,
+            "p99_seconds": 0.00561154955,
+            "seconds_per_call": [
+              0.00561518815625,
+              0.005573947265625,
+              0.005556782546875,
+              0.00557880209375,
+              0.0055473046875,
+              0.00555223696875,
+              0.005555864578125,
+              0.00555674609375,
+              0.005540354171875,
+              0.005367208984375,
+              0.00557464128125
+            ]
+          },
+          "reference": {
+            "iqr_fraction": 0.008212547848144845,
+            "iqr_seconds": 7.25992812500003e-05,
+            "maximum_seconds": 0.008975525390625,
+            "median_seconds": 0.008840043625,
+            "minimum_seconds": 0.008661165375,
+            "p50_seconds": 0.008840043625,
+            "p95_seconds": 0.008949572265625,
+            "p99_seconds": 0.008970334765624999,
+            "seconds_per_call": [
+              0.008661165375,
+              0.008788561859375,
+              0.008975525390625,
+              0.008840043625,
+              0.008815292328125,
+              0.008663806,
+              0.008923619140625,
+              0.00884616471875,
+              0.008863903640625,
+              0.0087924329375,
+              0.00886228971875
+            ]
+          }
+        }
+      },
+      "route": {
+        "outer": [
+          {
+            "rows": 585,
+            "selected": true,
+            "tree_mode": "lightgbm"
+          }
+        ],
+        "scalar_kernel_calls": 1
+      },
+      "rows": 585
+    },
+    "fallback_100000": {
+      "binned_sha256": "73561cb739eefef9d03ac83839e9b2f288529f691dd84c7daca9079ad1c5bec9",
+      "columns": 15,
+      "core_timing": {
+        "blocks": [
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.787528708,
+                "total_seconds": 0.787528708
+              },
+              "reference": {
+                "per_call_seconds": 0.646716542,
+                "total_seconds": 0.646716542
+              }
+            },
+            "block": 0,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.793956084,
+                "total_seconds": 0.793956084
+              },
+              "reference": {
+                "per_call_seconds": 0.653384958,
+                "total_seconds": 0.653384958
+              }
+            },
+            "block": 1,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.775985458,
+                "total_seconds": 0.775985458
+              },
+              "reference": {
+                "per_call_seconds": 0.654130333,
+                "total_seconds": 0.654130333
+              }
+            },
+            "block": 2,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.795837708,
+                "total_seconds": 0.795837708
+              },
+              "reference": {
+                "per_call_seconds": 0.661019375,
+                "total_seconds": 0.661019375
+              }
+            },
+            "block": 3,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.791048792,
+                "total_seconds": 0.791048792
+              },
+              "reference": {
+                "per_call_seconds": 0.671460875,
+                "total_seconds": 0.671460875
+              }
+            },
+            "block": 4,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.798106209,
+                "total_seconds": 0.798106209
+              },
+              "reference": {
+                "per_call_seconds": 0.665343959,
+                "total_seconds": 0.665343959
+              }
+            },
+            "block": 5,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.798340416,
+                "total_seconds": 0.798340416
+              },
+              "reference": {
+                "per_call_seconds": 0.652791375,
+                "total_seconds": 0.652791375
+              }
+            },
+            "block": 6,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.783765084,
+                "total_seconds": 0.783765084
+              },
+              "reference": {
+                "per_call_seconds": 0.692729958,
+                "total_seconds": 0.692729958
+              }
+            },
+            "block": 7,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.7848245,
+                "total_seconds": 0.7848245
+              },
+              "reference": {
+                "per_call_seconds": 0.654965084,
+                "total_seconds": 0.654965084
+              }
+            },
+            "block": 8,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.791574666,
+                "total_seconds": 0.791574666
+              },
+              "reference": {
+                "per_call_seconds": 0.6457685,
+                "total_seconds": 0.6457685
+              }
+            },
+            "block": 9,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.794650542,
+                "total_seconds": 0.794650542
+              },
+              "reference": {
+                "per_call_seconds": 0.647084959,
+                "total_seconds": 0.647084959
+              }
+            },
+            "block": 10,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          }
+        ],
+        "candidate_over_reference": 1.2101176570877659,
+        "inner_calls": 1,
+        "summaries": {
+          "candidate": {
+            "iqr_fraction": 0.011455041942941573,
+            "iqr_seconds": 0.009067520999999967,
+            "maximum_seconds": 0.798340416,
+            "median_seconds": 0.791574666,
+            "minimum_seconds": 0.775985458,
+            "p50_seconds": 0.791574666,
+            "p95_seconds": 0.7982233125,
+            "p99_seconds": 0.7983169953,
+            "seconds_per_call": [
+              0.787528708,
+              0.793956084,
+              0.775985458,
+              0.795837708,
+              0.791048792,
+              0.798106209,
+              0.798340416,
+              0.783765084,
+              0.7848245,
+              0.791574666,
+              0.794650542
+            ]
+          },
+          "reference": {
+            "iqr_fraction": 0.02024596526392847,
+            "iqr_seconds": 0.013243499999999964,
+            "maximum_seconds": 0.692729958,
+            "median_seconds": 0.654130333,
+            "minimum_seconds": 0.6457685,
+            "p50_seconds": 0.654130333,
+            "p95_seconds": 0.6820954164999999,
+            "p99_seconds": 0.6906030497000001,
+            "seconds_per_call": [
+              0.646716542,
+              0.653384958,
+              0.654130333,
+              0.661019375,
+              0.671460875,
+              0.665343959,
+              0.652791375,
+              0.692729958,
+              0.654965084,
+              0.6457685,
+              0.647084959
+            ]
+          }
+        }
+      },
+      "exactness": {
+        "packed_core_vs_loop": true,
+        "public_candidate_vs_loop": true,
+        "public_reference_vs_loop": true,
+        "staged_final_vs_public": true
+      },
+      "memory": {
+        "candidate": {
+          "calls": 5,
+          "maximum_peak_bytes": 25503314,
+          "peak_bytes_per_call": [
+            25503314,
+            25503314,
+            25503314,
+            25503314,
+            25503314
+          ]
+        },
+        "candidate_extra_peak_bytes": 0,
+        "reference": {
+          "calls": 5,
+          "maximum_peak_bytes": 25503314,
+          "peak_bytes_per_call": [
+            25503314,
+            25503314,
+            25503314,
+            25503314,
+            25503314
+          ]
+        }
+      },
+      "name": "fallback_100000",
+      "prediction_sha256": "8c75a1063acaf237270d11d737ff0a4aedabaaf9558e148cf8d11935efc9ab69",
+      "public_timing": {
+        "blocks": [
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.666398708,
+                "total_seconds": 0.666398708
+              },
+              "reference": {
+                "per_call_seconds": 0.658566209,
+                "total_seconds": 0.658566209
+              }
+            },
+            "block": 0,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.663649375,
+                "total_seconds": 0.663649375
+              },
+              "reference": {
+                "per_call_seconds": 0.655519542,
+                "total_seconds": 0.655519542
+              }
+            },
+            "block": 1,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.655954333,
+                "total_seconds": 0.655954333
+              },
+              "reference": {
+                "per_call_seconds": 0.657064166,
+                "total_seconds": 0.657064166
+              }
+            },
+            "block": 2,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.673109333,
+                "total_seconds": 0.673109333
+              },
+              "reference": {
+                "per_call_seconds": 0.665794459,
+                "total_seconds": 0.665794459
+              }
+            },
+            "block": 3,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.6469635,
+                "total_seconds": 0.6469635
+              },
+              "reference": {
+                "per_call_seconds": 0.66232925,
+                "total_seconds": 0.66232925
+              }
+            },
+            "block": 4,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.653019584,
+                "total_seconds": 0.653019584
+              },
+              "reference": {
+                "per_call_seconds": 0.6668825,
+                "total_seconds": 0.6668825
+              }
+            },
+            "block": 5,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.666031834,
+                "total_seconds": 0.666031834
+              },
+              "reference": {
+                "per_call_seconds": 0.65897975,
+                "total_seconds": 0.65897975
+              }
+            },
+            "block": 6,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.662368958,
+                "total_seconds": 0.662368958
+              },
+              "reference": {
+                "per_call_seconds": 0.644882791,
+                "total_seconds": 0.644882791
+              }
+            },
+            "block": 7,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.661676084,
+                "total_seconds": 0.661676084
+              },
+              "reference": {
+                "per_call_seconds": 0.655220709,
+                "total_seconds": 0.655220709
+              }
+            },
+            "block": 8,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.666390833,
+                "total_seconds": 0.666390833
+              },
+              "reference": {
+                "per_call_seconds": 0.669029,
+                "total_seconds": 0.669029
+              }
+            },
+            "block": 9,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.655044459,
+                "total_seconds": 0.655044459
+              },
+              "reference": {
+                "per_call_seconds": 0.664521667,
+                "total_seconds": 0.664521667
+              }
+            },
+            "block": 10,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          }
+        ],
+        "candidate_over_reference": 1.0051431140334737,
+        "inner_calls": 1,
+        "summaries": {
+          "candidate": {
+            "iqr_fraction": 0.016172161105412176,
+            "iqr_seconds": 0.01071193749999999,
+            "maximum_seconds": 0.673109333,
+            "median_seconds": 0.662368958,
+            "minimum_seconds": 0.6469635,
+            "p50_seconds": 0.662368958,
+            "p95_seconds": 0.6697540205,
+            "p99_seconds": 0.6724382704999999,
+            "seconds_per_call": [
+              0.666398708,
+              0.663649375,
+              0.655954333,
+              0.673109333,
+              0.6469635,
+              0.653019584,
+              0.666031834,
+              0.662368958,
+              0.661676084,
+              0.666390833,
+              0.655044459
+            ]
+          },
+          "reference": {
+            "iqr_fraction": 0.013454448334717439,
+            "iqr_seconds": 0.008866209000000014,
+            "maximum_seconds": 0.669029,
+            "median_seconds": 0.65897975,
+            "minimum_seconds": 0.644882791,
+            "p50_seconds": 0.65897975,
+            "p95_seconds": 0.66795575,
+            "p99_seconds": 0.66881435,
+            "seconds_per_call": [
+              0.658566209,
+              0.655519542,
+              0.657064166,
+              0.665794459,
+              0.66232925,
+              0.6668825,
+              0.65897975,
+              0.644882791,
+              0.655220709,
+              0.669029,
+              0.664521667
+            ]
+          }
+        }
+      },
+      "route": {
+        "outer": [
+          {
+            "rows": 100000,
+            "selected": false,
+            "tree_mode": "lightgbm"
+          }
+        ],
+        "scalar_kernel_calls": 0
+      },
+      "rows": 100000
+    },
+    "fallback_65536": {
+      "binned_sha256": "e77f5b3a74182cec739bfb780cadda57c77a66be0ff2ac7ac3ef209a8abc3c4c",
+      "columns": 15,
+      "core_timing": {
+        "blocks": [
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.5241135,
+                "total_seconds": 0.5241135
+              },
+              "reference": {
+                "per_call_seconds": 0.468380792,
+                "total_seconds": 0.468380792
+              }
+            },
+            "block": 0,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.5221765,
+                "total_seconds": 0.5221765
+              },
+              "reference": {
+                "per_call_seconds": 0.466559916,
+                "total_seconds": 0.466559916
+              }
+            },
+            "block": 1,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.516352959,
+                "total_seconds": 0.516352959
+              },
+              "reference": {
+                "per_call_seconds": 0.452606833,
+                "total_seconds": 0.452606833
+              }
+            },
+            "block": 2,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.510210541,
+                "total_seconds": 0.510210541
+              },
+              "reference": {
+                "per_call_seconds": 0.453435625,
+                "total_seconds": 0.453435625
+              }
+            },
+            "block": 3,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.522629083,
+                "total_seconds": 0.522629083
+              },
+              "reference": {
+                "per_call_seconds": 0.467520875,
+                "total_seconds": 0.467520875
+              }
+            },
+            "block": 4,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.514271875,
+                "total_seconds": 0.514271875
+              },
+              "reference": {
+                "per_call_seconds": 0.4582605,
+                "total_seconds": 0.4582605
+              }
+            },
+            "block": 5,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.522895875,
+                "total_seconds": 0.522895875
+              },
+              "reference": {
+                "per_call_seconds": 0.464614,
+                "total_seconds": 0.464614
+              }
+            },
+            "block": 6,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.510897459,
+                "total_seconds": 0.510897459
+              },
+              "reference": {
+                "per_call_seconds": 0.455290875,
+                "total_seconds": 0.455290875
+              }
+            },
+            "block": 7,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.516842291,
+                "total_seconds": 0.516842291
+              },
+              "reference": {
+                "per_call_seconds": 0.471581583,
+                "total_seconds": 0.471581583
+              }
+            },
+            "block": 8,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.534844417,
+                "total_seconds": 0.534844417
+              },
+              "reference": {
+                "per_call_seconds": 0.456701625,
+                "total_seconds": 0.456701625
+              }
+            },
+            "block": 9,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.516719875,
+                "total_seconds": 0.516719875
+              },
+              "reference": {
+                "per_call_seconds": 0.458492542,
+                "total_seconds": 0.458492542
+              }
+            },
+            "block": 10,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          }
+        ],
+        "candidate_over_reference": 1.1272643361775774,
+        "inner_calls": 1,
+        "summaries": {
+          "candidate": {
+            "iqr_fraction": 0.014414575064252973,
+            "iqr_seconds": 0.0074500619999999795,
+            "maximum_seconds": 0.534844417,
+            "median_seconds": 0.516842291,
+            "minimum_seconds": 0.510210541,
+            "p50_seconds": 0.516842291,
+            "p95_seconds": 0.5294789584999999,
+            "p99_seconds": 0.5337713252999999,
+            "seconds_per_call": [
+              0.5241135,
+              0.5221765,
+              0.516352959,
+              0.510210541,
+              0.522629083,
+              0.514271875,
+              0.522895875,
+              0.510897459,
+              0.516842291,
+              0.534844417,
+              0.516719875
+            ]
+          },
+          "reference": {
+            "iqr_fraction": 0.024087950159067124,
+            "iqr_seconds": 0.011044145499999991,
+            "maximum_seconds": 0.471581583,
+            "median_seconds": 0.458492542,
+            "minimum_seconds": 0.452606833,
+            "p50_seconds": 0.458492542,
+            "p95_seconds": 0.4699811875,
+            "p99_seconds": 0.47126150390000004,
+            "seconds_per_call": [
+              0.468380792,
+              0.466559916,
+              0.452606833,
+              0.453435625,
+              0.467520875,
+              0.4582605,
+              0.464614,
+              0.455290875,
+              0.471581583,
+              0.456701625,
+              0.458492542
+            ]
+          }
+        }
+      },
+      "exactness": {
+        "packed_core_vs_loop": true,
+        "public_candidate_vs_loop": true,
+        "public_reference_vs_loop": true,
+        "staged_final_vs_public": true
+      },
+      "memory": {
+        "candidate": {
+          "calls": 5,
+          "maximum_peak_bytes": 16714994,
+          "peak_bytes_per_call": [
+            16714994,
+            16714994,
+            16714994,
+            16714994,
+            16714994
+          ]
+        },
+        "candidate_extra_peak_bytes": 0,
+        "reference": {
+          "calls": 5,
+          "maximum_peak_bytes": 16714994,
+          "peak_bytes_per_call": [
+            16714994,
+            16714994,
+            16714994,
+            16714994,
+            16714994
+          ]
+        }
+      },
+      "name": "fallback_65536",
+      "prediction_sha256": "6c4024bb0b2e76f744a46cefe83194e94c4b391d4b56fa9585b31a5cba620182",
+      "public_timing": {
+        "blocks": [
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.459823625,
+                "total_seconds": 0.459823625
+              },
+              "reference": {
+                "per_call_seconds": 0.457895083,
+                "total_seconds": 0.457895083
+              }
+            },
+            "block": 0,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.475921875,
+                "total_seconds": 0.475921875
+              },
+              "reference": {
+                "per_call_seconds": 0.460132125,
+                "total_seconds": 0.460132125
+              }
+            },
+            "block": 1,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.465017791,
+                "total_seconds": 0.465017791
+              },
+              "reference": {
+                "per_call_seconds": 0.457270417,
+                "total_seconds": 0.457270417
+              }
+            },
+            "block": 2,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.471554833,
+                "total_seconds": 0.471554833
+              },
+              "reference": {
+                "per_call_seconds": 0.470167791,
+                "total_seconds": 0.470167791
+              }
+            },
+            "block": 3,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.464854542,
+                "total_seconds": 0.464854542
+              },
+              "reference": {
+                "per_call_seconds": 0.45913725,
+                "total_seconds": 0.45913725
+              }
+            },
+            "block": 4,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.466875291,
+                "total_seconds": 0.466875291
+              },
+              "reference": {
+                "per_call_seconds": 0.455124375,
+                "total_seconds": 0.455124375
+              }
+            },
+            "block": 5,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.4804415,
+                "total_seconds": 0.4804415
+              },
+              "reference": {
+                "per_call_seconds": 0.460286583,
+                "total_seconds": 0.460286583
+              }
+            },
+            "block": 6,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.472963542,
+                "total_seconds": 0.472963542
+              },
+              "reference": {
+                "per_call_seconds": 0.457071458,
+                "total_seconds": 0.457071458
+              }
+            },
+            "block": 7,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.468584958,
+                "total_seconds": 0.468584958
+              },
+              "reference": {
+                "per_call_seconds": 0.459596833,
+                "total_seconds": 0.459596833
+              }
+            },
+            "block": 8,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.460444458,
+                "total_seconds": 0.460444458
+              },
+              "reference": {
+                "per_call_seconds": 0.456808833,
+                "total_seconds": 0.456808833
+              }
+            },
+            "block": 9,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.475158125,
+                "total_seconds": 0.475158125
+              },
+              "reference": {
+                "per_call_seconds": 0.465078666,
+                "total_seconds": 0.465078666
+              }
+            },
+            "block": 10,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          }
+        ],
+        "candidate_over_reference": 1.0205770888770187,
+        "inner_calls": 1,
+        "summaries": {
+          "candidate": {
+            "iqr_fraction": 0.019472812441409984,
+            "iqr_seconds": 0.009124666999999975,
+            "maximum_seconds": 0.4804415,
+            "median_seconds": 0.468584958,
+            "minimum_seconds": 0.459823625,
+            "p50_seconds": 0.468584958,
+            "p95_seconds": 0.4781816875,
+            "p99_seconds": 0.4799895375,
+            "seconds_per_call": [
+              0.459823625,
+              0.475921875,
+              0.465017791,
+              0.471554833,
+              0.464854542,
+              0.466875291,
+              0.4804415,
+              0.472963542,
+              0.468584958,
+              0.460444458,
+              0.475158125
+            ]
+          },
+          "reference": {
+            "iqr_fraction": 0.006617664979262802,
+            "iqr_seconds": 0.0030384165000000296,
+            "maximum_seconds": 0.470167791,
+            "median_seconds": 0.45913725,
+            "minimum_seconds": 0.455124375,
+            "p50_seconds": 0.45913725,
+            "p95_seconds": 0.4676232285,
+            "p99_seconds": 0.4696588785,
+            "seconds_per_call": [
+              0.457895083,
+              0.460132125,
+              0.457270417,
+              0.470167791,
+              0.45913725,
+              0.455124375,
+              0.460286583,
+              0.457071458,
+              0.459596833,
+              0.456808833,
+              0.465078666
+            ]
+          }
+        }
+      },
+      "route": {
+        "outer": [
+          {
+            "rows": 65536,
+            "selected": false,
+            "tree_mode": "lightgbm"
+          }
+        ],
+        "scalar_kernel_calls": 0
+      },
+      "rows": 65536
+    },
+    "fold_1_524": {
+      "binned_sha256": "bbd54aaa6f892ca9b24a7ee2c90dfb72f85da4fa1766054278e89719db3f6065",
+      "columns": 15,
+      "core_timing": {
+        "blocks": [
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.0051833685,
+                "total_seconds": 0.331735584
+              },
+              "reference": {
+                "per_call_seconds": 0.007691212234375,
+                "total_seconds": 0.492237583
+              }
+            },
+            "block": 0,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005074362640625,
+                "total_seconds": 0.324759209
+              },
+              "reference": {
+                "per_call_seconds": 0.00759046159375,
+                "total_seconds": 0.485789542
+              }
+            },
+            "block": 1,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.00515955728125,
+                "total_seconds": 0.330211666
+              },
+              "reference": {
+                "per_call_seconds": 0.007677298828125,
+                "total_seconds": 0.491347125
+              }
+            },
+            "block": 2,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005205755203125,
+                "total_seconds": 0.333168333
+              },
+              "reference": {
+                "per_call_seconds": 0.007759200515625,
+                "total_seconds": 0.496588833
+              }
+            },
+            "block": 3,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005220796234375,
+                "total_seconds": 0.334130959
+              },
+              "reference": {
+                "per_call_seconds": 0.00766483528125,
+                "total_seconds": 0.490549458
+              }
+            },
+            "block": 4,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.00530369140625,
+                "total_seconds": 0.33943625
+              },
+              "reference": {
+                "per_call_seconds": 0.007659244140625,
+                "total_seconds": 0.490191625
+              }
+            },
+            "block": 5,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.00518237890625,
+                "total_seconds": 0.33167225
+              },
+              "reference": {
+                "per_call_seconds": 0.007742924484375,
+                "total_seconds": 0.495547167
+              }
+            },
+            "block": 6,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.00520278775,
+                "total_seconds": 0.332978416
+              },
+              "reference": {
+                "per_call_seconds": 0.007618994796875,
+                "total_seconds": 0.487615667
+              }
+            },
+            "block": 7,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.0052306516875,
+                "total_seconds": 0.334761708
+              },
+              "reference": {
+                "per_call_seconds": 0.007590265625,
+                "total_seconds": 0.485777
+              }
+            },
+            "block": 8,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.00521014453125,
+                "total_seconds": 0.33344925
+              },
+              "reference": {
+                "per_call_seconds": 0.007609798828125,
+                "total_seconds": 0.487027125
+              }
+            },
+            "block": 9,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005152369140625,
+                "total_seconds": 0.329751625
+              },
+              "reference": {
+                "per_call_seconds": 0.007588259109375,
+                "total_seconds": 0.485648583
+              }
+            },
+            "block": 10,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          }
+        ],
+        "candidate_over_reference": 0.6792821399182412,
+        "inner_calls": 64,
+        "summaries": {
+          "candidate": {
+            "iqr_fraction": 0.008553546906175389,
+            "iqr_seconds": 4.4502289062499714e-05,
+            "maximum_seconds": 0.00530369140625,
+            "median_seconds": 0.00520278775,
+            "minimum_seconds": 0.005074362640625,
+            "p50_seconds": 0.00520278775,
+            "p95_seconds": 0.0052671715468749995,
+            "p99_seconds": 0.005296387434375,
+            "seconds_per_call": [
+              0.0051833685,
+              0.005074362640625,
+              0.00515955728125,
+              0.005205755203125,
+              0.005220796234375,
+              0.00530369140625,
+              0.00518237890625,
+              0.00520278775,
+              0.0052306516875,
+              0.00521014453125,
+              0.005152369140625
+            ]
+          },
+          "reference": {
+            "iqr_fraction": 0.010983501605112031,
+            "iqr_seconds": 8.412532031249961e-05,
+            "maximum_seconds": 0.007759200515625,
+            "median_seconds": 0.007659244140625,
+            "minimum_seconds": 0.007588259109375,
+            "p50_seconds": 0.007659244140625,
+            "p95_seconds": 0.0077510625,
+            "p99_seconds": 0.0077575729125,
+            "seconds_per_call": [
+              0.007691212234375,
+              0.00759046159375,
+              0.007677298828125,
+              0.007759200515625,
+              0.00766483528125,
+              0.007659244140625,
+              0.007742924484375,
+              0.007618994796875,
+              0.007590265625,
+              0.007609798828125,
+              0.007588259109375
+            ]
+          }
+        }
+      },
+      "exactness": {
+        "packed_core_vs_loop": true,
+        "public_candidate_vs_loop": true,
+        "public_reference_vs_loop": true,
+        "staged_final_vs_public": true
+      },
+      "memory": {
+        "candidate": {
+          "calls": 5,
+          "maximum_peak_bytes": 136934,
+          "peak_bytes_per_call": [
+            136934,
+            136934,
+            136934,
+            136934,
+            136934
+          ]
+        },
+        "candidate_extra_peak_bytes": 0,
+        "reference": {
+          "calls": 5,
+          "maximum_peak_bytes": 136934,
+          "peak_bytes_per_call": [
+            136934,
+            136934,
+            136934,
+            136934,
+            136934
+          ]
+        }
+      },
+      "name": "fold_1_524",
+      "prediction_sha256": "2a42bc416f76297a9e6dbe39df73c45e9143bcbf7aa4f1caffdb818882b133e3",
+      "public_timing": {
+        "blocks": [
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.0053805358125,
+                "total_seconds": 0.344354292
+              },
+              "reference": {
+                "per_call_seconds": 0.0079314231875,
+                "total_seconds": 0.507611084
+              }
+            },
+            "block": 0,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.00560189128125,
+                "total_seconds": 0.358521042
+              },
+              "reference": {
+                "per_call_seconds": 0.00804914321875,
+                "total_seconds": 0.515145166
+              }
+            },
+            "block": 1,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005535231109375,
+                "total_seconds": 0.354254791
+              },
+              "reference": {
+                "per_call_seconds": 0.00787833853125,
+                "total_seconds": 0.504213666
+              }
+            },
+            "block": 2,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005562611328125,
+                "total_seconds": 0.356007125
+              },
+              "reference": {
+                "per_call_seconds": 0.0079801015625,
+                "total_seconds": 0.5107265
+              }
+            },
+            "block": 3,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005543560546875,
+                "total_seconds": 0.354787875
+              },
+              "reference": {
+                "per_call_seconds": 0.007890565765625,
+                "total_seconds": 0.504996209
+              }
+            },
+            "block": 4,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.0055224733125,
+                "total_seconds": 0.353438292
+              },
+              "reference": {
+                "per_call_seconds": 0.0078978203125,
+                "total_seconds": 0.5054605
+              }
+            },
+            "block": 5,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.00557477734375,
+                "total_seconds": 0.35678575
+              },
+              "reference": {
+                "per_call_seconds": 0.008362040375,
+                "total_seconds": 0.535170584
+              }
+            },
+            "block": 6,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005427115234375,
+                "total_seconds": 0.347335375
+              },
+              "reference": {
+                "per_call_seconds": 0.00774031575,
+                "total_seconds": 0.495380208
+              }
+            },
+            "block": 7,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005523755859375,
+                "total_seconds": 0.353520375
+              },
+              "reference": {
+                "per_call_seconds": 0.008024068359375,
+                "total_seconds": 0.513540375
+              }
+            },
+            "block": 8,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005493637375,
+                "total_seconds": 0.351592792
+              },
+              "reference": {
+                "per_call_seconds": 0.008043975921875,
+                "total_seconds": 0.514814459
+              }
+            },
+            "block": 9,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.005663112625,
+                "total_seconds": 0.362439208
+              },
+              "reference": {
+                "per_call_seconds": 0.00797263215625,
+                "total_seconds": 0.510248458
+              }
+            },
+            "block": 10,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          }
+        ],
+        "candidate_over_reference": 0.6942790035829958,
+        "inner_calls": 64,
+        "summaries": {
+          "candidate": {
+            "iqr_fraction": 0.010955096723024929,
+            "iqr_seconds": 6.0638992187499706e-05,
+            "maximum_seconds": 0.005663112625,
+            "median_seconds": 0.005535231109375,
+            "minimum_seconds": 0.0053805358125,
+            "p50_seconds": 0.005535231109375,
+            "p95_seconds": 0.005632501953125001,
+            "p99_seconds": 0.0056569904906250005,
+            "seconds_per_call": [
+              0.0053805358125,
+              0.00560189128125,
+              0.005535231109375,
+              0.005562611328125,
+              0.005543560546875,
+              0.0055224733125,
+              0.00557477734375,
+              0.005427115234375,
+              0.005523755859375,
+              0.005493637375,
+              0.005663112625
+            ]
+          },
+          "reference": {
+            "iqr_fraction": 0.017538637030040646,
+            "iqr_seconds": 0.00013982910156249903,
+            "maximum_seconds": 0.008362040375,
+            "median_seconds": 0.00797263215625,
+            "minimum_seconds": 0.00774031575,
+            "p50_seconds": 0.00797263215625,
+            "p95_seconds": 0.008205591796875,
+            "p99_seconds": 0.008330750659374999,
+            "seconds_per_call": [
+              0.0079314231875,
+              0.00804914321875,
+              0.00787833853125,
+              0.0079801015625,
+              0.007890565765625,
+              0.0078978203125,
+              0.008362040375,
+              0.00774031575,
+              0.008024068359375,
+              0.008043975921875,
+              0.00797263215625
+            ]
+          }
+        }
+      },
+      "route": {
+        "outer": [
+          {
+            "rows": 524,
+            "selected": true,
+            "tree_mode": "lightgbm"
+          }
+        ],
+        "scalar_kernel_calls": 1
+      },
+      "rows": 524
+    },
+    "held_team_2409": {
+      "binned_sha256": "40ea3b2a4f178c2ea378b59b589d18cd39f4f09607d0d4643882ebadad24ab54",
+      "columns": 15,
+      "core_timing": {
+        "blocks": [
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.019286373535714284,
+                "total_seconds": 0.540018459
+              },
+              "reference": {
+                "per_call_seconds": 0.0330272485,
+                "total_seconds": 0.924762958
+              }
+            },
+            "block": 0,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.019550325892857146,
+                "total_seconds": 0.547409125
+              },
+              "reference": {
+                "per_call_seconds": 0.03301245089285714,
+                "total_seconds": 0.924348625
+              }
+            },
+            "block": 1,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.01965041517857143,
+                "total_seconds": 0.550211625
+              },
+              "reference": {
+                "per_call_seconds": 0.03288069196428571,
+                "total_seconds": 0.920659375
+              }
+            },
+            "block": 2,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.020456014892857144,
+                "total_seconds": 0.572768417
+              },
+              "reference": {
+                "per_call_seconds": 0.03308155507142857,
+                "total_seconds": 0.926283542
+              }
+            },
+            "block": 3,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.019224529785714286,
+                "total_seconds": 0.538286834
+              },
+              "reference": {
+                "per_call_seconds": 0.03292327528571429,
+                "total_seconds": 0.921851708
+              }
+            },
+            "block": 4,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.019686464285714283,
+                "total_seconds": 0.551221
+              },
+              "reference": {
+                "per_call_seconds": 0.03284479017857143,
+                "total_seconds": 0.919654125
+              }
+            },
+            "block": 5,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.019610715785714283,
+                "total_seconds": 0.549100042
+              },
+              "reference": {
+                "per_call_seconds": 0.033130686,
+                "total_seconds": 0.927659208
+              }
+            },
+            "block": 6,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.019748946428571428,
+                "total_seconds": 0.5529705
+              },
+              "reference": {
+                "per_call_seconds": 0.03303494492857143,
+                "total_seconds": 0.924978458
+              }
+            },
+            "block": 7,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.019688886928571427,
+                "total_seconds": 0.551288834
+              },
+              "reference": {
+                "per_call_seconds": 0.032971666678571425,
+                "total_seconds": 0.923206667
+              }
+            },
+            "block": 8,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.019628654750000002,
+                "total_seconds": 0.549602333
+              },
+              "reference": {
+                "per_call_seconds": 0.033170849714285716,
+                "total_seconds": 0.928783792
+              }
+            },
+            "block": 9,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.019778727678571428,
+                "total_seconds": 0.553804375
+              },
+              "reference": {
+                "per_call_seconds": 0.03332774853571428,
+                "total_seconds": 0.933176959
+              }
+            },
+            "block": 10,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          }
+        ],
+        "candidate_over_reference": 0.5949758478539752,
+        "inner_calls": 28,
+        "summaries": {
+          "candidate": {
+            "iqr_fraction": 0.007042896449161671,
+            "iqr_seconds": 0.00013839583928571333,
+            "maximum_seconds": 0.020456014892857144,
+            "median_seconds": 0.01965041517857143,
+            "minimum_seconds": 0.019224529785714286,
+            "p50_seconds": 0.01965041517857143,
+            "p95_seconds": 0.020117371285714288,
+            "p99_seconds": 0.02038828617142857,
+            "seconds_per_call": [
+              0.019286373535714284,
+              0.019550325892857146,
+              0.01965041517857143,
+              0.020456014892857144,
+              0.019224529785714286,
+              0.019686464285714283,
+              0.019610715785714283,
+              0.019748946428571428,
+              0.019688886928571427,
+              0.019628654750000002,
+              0.019778727678571428
+            ]
+          },
+          "reference": {
+            "iqr_fraction": 0.004803595842124773,
+            "iqr_seconds": 0.00015864955357142163,
+            "maximum_seconds": 0.03332774853571428,
+            "median_seconds": 0.0330272485,
+            "minimum_seconds": 0.03284479017857143,
+            "p50_seconds": 0.0330272485,
+            "p95_seconds": 0.033249299125,
+            "p99_seconds": 0.033312058653571425,
+            "seconds_per_call": [
+              0.0330272485,
+              0.03301245089285714,
+              0.03288069196428571,
+              0.03308155507142857,
+              0.03292327528571429,
+              0.03284479017857143,
+              0.033130686,
+              0.03303494492857143,
+              0.032971666678571425,
+              0.033170849714285716,
+              0.03332774853571428
+            ]
+          }
+        }
+      },
+      "exactness": {
+        "packed_core_vs_loop": true,
+        "public_candidate_vs_loop": true,
+        "public_reference_vs_loop": true,
+        "staged_final_vs_public": true
+      },
+      "memory": {
+        "candidate": {
+          "calls": 5,
+          "maximum_peak_bytes": 617609,
+          "peak_bytes_per_call": [
+            617609,
+            617609,
+            617609,
+            617609,
+            617609
+          ]
+        },
+        "candidate_extra_peak_bytes": 0,
+        "reference": {
+          "calls": 5,
+          "maximum_peak_bytes": 617609,
+          "peak_bytes_per_call": [
+            617609,
+            617609,
+            617609,
+            617609,
+            617609
+          ]
+        }
+      },
+      "name": "held_team_2409",
+      "prediction_sha256": "1073d13f05fe89b8198ade06f1f9b2bcf892b2d34f70e6dbc56239b999085421",
+      "public_timing": {
+        "blocks": [
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.020129927071428574,
+                "total_seconds": 0.563637958
+              },
+              "reference": {
+                "per_call_seconds": 0.03363308482142857,
+                "total_seconds": 0.941726375
+              }
+            },
+            "block": 0,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.02036624407142857,
+                "total_seconds": 0.570254834
+              },
+              "reference": {
+                "per_call_seconds": 0.033310120535714284,
+                "total_seconds": 0.932683375
+              }
+            },
+            "block": 1,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.02029733482142857,
+                "total_seconds": 0.568325375
+              },
+              "reference": {
+                "per_call_seconds": 0.033632485142857146,
+                "total_seconds": 0.941709584
+              }
+            },
+            "block": 2,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.020389572892857144,
+                "total_seconds": 0.570908041
+              },
+              "reference": {
+                "per_call_seconds": 0.03358177382142857,
+                "total_seconds": 0.940289667
+              }
+            },
+            "block": 3,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.020148601178571427,
+                "total_seconds": 0.564160833
+              },
+              "reference": {
+                "per_call_seconds": 0.033629342285714285,
+                "total_seconds": 0.941621584
+              }
+            },
+            "block": 4,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.02036010267857143,
+                "total_seconds": 0.570082875
+              },
+              "reference": {
+                "per_call_seconds": 0.033732687500000004,
+                "total_seconds": 0.94451525
+              }
+            },
+            "block": 5,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.02024661757142857,
+                "total_seconds": 0.566905292
+              },
+              "reference": {
+                "per_call_seconds": 0.03334595685714286,
+                "total_seconds": 0.933686792
+              }
+            },
+            "block": 6,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.020101793142857143,
+                "total_seconds": 0.562850208
+              },
+              "reference": {
+                "per_call_seconds": 0.033752680035714286,
+                "total_seconds": 0.945075041
+              }
+            },
+            "block": 7,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.019861191964285714,
+                "total_seconds": 0.556113375
+              },
+              "reference": {
+                "per_call_seconds": 0.033699311,
+                "total_seconds": 0.943580708
+              }
+            },
+            "block": 8,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.02031474257142857,
+                "total_seconds": 0.568812792
+              },
+              "reference": {
+                "per_call_seconds": 0.03365800296428571,
+                "total_seconds": 0.942424083
+              }
+            },
+            "block": 9,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.019826218750000003,
+                "total_seconds": 0.555134125
+              },
+              "reference": {
+                "per_call_seconds": 0.033307989571428574,
+                "total_seconds": 0.932623708
+              }
+            },
+            "block": 10,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          }
+        ],
+        "candidate_over_reference": 0.6019958824163352,
+        "inner_calls": 28,
+        "summaries": {
+          "candidate": {
+            "iqr_fraction": 0.010943186785421711,
+            "iqr_seconds": 0.00022156251785714412,
+            "maximum_seconds": 0.020389572892857144,
+            "median_seconds": 0.02024661757142857,
+            "minimum_seconds": 0.019826218750000003,
+            "p50_seconds": 0.02024661757142857,
+            "p95_seconds": 0.020377908482142857,
+            "p99_seconds": 0.020387240010714288,
+            "seconds_per_call": [
+              0.020129927071428574,
+              0.02036624407142857,
+              0.02029733482142857,
+              0.020389572892857144,
+              0.020148601178571427,
+              0.02036010267857143,
+              0.02024661757142857,
+              0.020101793142857143,
+              0.019861191964285714,
+              0.02031474257142857,
+              0.019826218750000003
+            ]
+          },
+          "reference": {
+            "iqr_fraction": 0.006386433888093216,
+            "iqr_seconds": 0.00021479164285713448,
+            "maximum_seconds": 0.033752680035714286,
+            "median_seconds": 0.033632485142857146,
+            "minimum_seconds": 0.033307989571428574,
+            "p50_seconds": 0.033632485142857146,
+            "p95_seconds": 0.03374268376785715,
+            "p99_seconds": 0.033750680782142856,
+            "seconds_per_call": [
+              0.03363308482142857,
+              0.033310120535714284,
+              0.033632485142857146,
+              0.03358177382142857,
+              0.033629342285714285,
+              0.033732687500000004,
+              0.03334595685714286,
+              0.033752680035714286,
+              0.033699311,
+              0.03365800296428571,
+              0.033307989571428574
+            ]
+          }
+        }
+      },
+      "route": {
+        "outer": [
+          {
+            "rows": 2409,
+            "selected": true,
+            "tree_mode": "lightgbm"
+          }
+        ],
+        "scalar_kernel_calls": 1
+      },
+      "rows": 2409
+    },
+    "repeated_32768": {
+      "binned_sha256": "9232ae79f0cd980a8c3b8af07baca5a9e663864e36e95c251ca0db789ef5fba4",
+      "columns": 15,
+      "core_timing": {
+        "blocks": [
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.2566410415,
+                "total_seconds": 0.513282083
+              },
+              "reference": {
+                "per_call_seconds": 0.2735440205,
+                "total_seconds": 0.547088041
+              }
+            },
+            "block": 0,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.2568804165,
+                "total_seconds": 0.513760833
+              },
+              "reference": {
+                "per_call_seconds": 0.273394875,
+                "total_seconds": 0.54678975
+              }
+            },
+            "block": 1,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.2553370415,
+                "total_seconds": 0.510674083
+              },
+              "reference": {
+                "per_call_seconds": 0.2781015,
+                "total_seconds": 0.556203
+              }
+            },
+            "block": 2,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.255853021,
+                "total_seconds": 0.511706042
+              },
+              "reference": {
+                "per_call_seconds": 0.2736351875,
+                "total_seconds": 0.547270375
+              }
+            },
+            "block": 3,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.255808271,
+                "total_seconds": 0.511616542
+              },
+              "reference": {
+                "per_call_seconds": 0.2773839375,
+                "total_seconds": 0.554767875
+              }
+            },
+            "block": 4,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.255475896,
+                "total_seconds": 0.510951792
+              },
+              "reference": {
+                "per_call_seconds": 0.268517854,
+                "total_seconds": 0.537035708
+              }
+            },
+            "block": 5,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.258313896,
+                "total_seconds": 0.516627792
+              },
+              "reference": {
+                "per_call_seconds": 0.2771305,
+                "total_seconds": 0.554261
+              }
+            },
+            "block": 6,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.257519146,
+                "total_seconds": 0.515038292
+              },
+              "reference": {
+                "per_call_seconds": 0.2747015,
+                "total_seconds": 0.549403
+              }
+            },
+            "block": 7,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.258106583,
+                "total_seconds": 0.516213166
+              },
+              "reference": {
+                "per_call_seconds": 0.2729458335,
+                "total_seconds": 0.545891667
+              }
+            },
+            "block": 8,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.255689854,
+                "total_seconds": 0.511379708
+              },
+              "reference": {
+                "per_call_seconds": 0.2674012705,
+                "total_seconds": 0.534802541
+              }
+            },
+            "block": 9,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.258762146,
+                "total_seconds": 0.517524292
+              },
+              "reference": {
+                "per_call_seconds": 0.27890825,
+                "total_seconds": 0.5578165
+              }
+            },
+            "block": 10,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          }
+        ],
+        "candidate_over_reference": 0.9378948805697732,
+        "inner_calls": 2,
+        "summaries": {
+          "candidate": {
+            "iqr_fraction": 0.008041589871743112,
+            "iqr_seconds": 0.0020638020000000035,
+            "maximum_seconds": 0.258762146,
+            "median_seconds": 0.2566410415,
+            "minimum_seconds": 0.2553370415,
+            "p50_seconds": 0.2566410415,
+            "p95_seconds": 0.258538021,
+            "p99_seconds": 0.258717321,
+            "seconds_per_call": [
+              0.2566410415,
+              0.2568804165,
+              0.2553370415,
+              0.255853021,
+              0.255808271,
+              0.255475896,
+              0.258313896,
+              0.257519146,
+              0.258106583,
+              0.255689854,
+              0.258762146
+            ]
+          },
+          "reference": {
+            "iqr_fraction": 0.014935449411088455,
+            "iqr_seconds": 0.004086864499999954,
+            "maximum_seconds": 0.27890825,
+            "median_seconds": 0.2736351875,
+            "minimum_seconds": 0.2674012705,
+            "p50_seconds": 0.2736351875,
+            "p95_seconds": 0.278504875,
+            "p99_seconds": 0.27882757500000005,
+            "seconds_per_call": [
+              0.2735440205,
+              0.273394875,
+              0.2781015,
+              0.2736351875,
+              0.2773839375,
+              0.268517854,
+              0.2771305,
+              0.2747015,
+              0.2729458335,
+              0.2674012705,
+              0.27890825
+            ]
+          }
+        }
+      },
+      "exactness": {
+        "packed_core_vs_loop": true,
+        "public_candidate_vs_loop": true,
+        "public_reference_vs_loop": true,
+        "staged_final_vs_public": true
+      },
+      "memory": {
+        "candidate": {
+          "calls": 5,
+          "maximum_peak_bytes": 8359154,
+          "peak_bytes_per_call": [
+            8359154,
+            8359154,
+            8359154,
+            8359154,
+            8359154
+          ]
+        },
+        "candidate_extra_peak_bytes": 0,
+        "reference": {
+          "calls": 5,
+          "maximum_peak_bytes": 8359154,
+          "peak_bytes_per_call": [
+            8359154,
+            8359154,
+            8359154,
+            8359154,
+            8359154
+          ]
+        }
+      },
+      "name": "repeated_32768",
+      "prediction_sha256": "98bd0a49513d83176ae60f2f478b6451e58a159452d6069156e03a06705299e8",
+      "public_timing": {
+        "blocks": [
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.2649955625,
+                "total_seconds": 0.529991125
+              },
+              "reference": {
+                "per_call_seconds": 0.2712710415,
+                "total_seconds": 0.542542083
+              }
+            },
+            "block": 0,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.2593789375,
+                "total_seconds": 0.518757875
+              },
+              "reference": {
+                "per_call_seconds": 0.279717833,
+                "total_seconds": 0.559435666
+              }
+            },
+            "block": 1,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.2581839375,
+                "total_seconds": 0.516367875
+              },
+              "reference": {
+                "per_call_seconds": 0.2727990625,
+                "total_seconds": 0.545598125
+              }
+            },
+            "block": 2,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.262869375,
+                "total_seconds": 0.52573875
+              },
+              "reference": {
+                "per_call_seconds": 0.2783011875,
+                "total_seconds": 0.556602375
+              }
+            },
+            "block": 3,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.2579387085,
+                "total_seconds": 0.515877417
+              },
+              "reference": {
+                "per_call_seconds": 0.275421354,
+                "total_seconds": 0.550842708
+              }
+            },
+            "block": 4,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.2608344375,
+                "total_seconds": 0.521668875
+              },
+              "reference": {
+                "per_call_seconds": 0.278064667,
+                "total_seconds": 0.556129334
+              }
+            },
+            "block": 5,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.2587069585,
+                "total_seconds": 0.517413917
+              },
+              "reference": {
+                "per_call_seconds": 0.2739774165,
+                "total_seconds": 0.547954833
+              }
+            },
+            "block": 6,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.2651015625,
+                "total_seconds": 0.530203125
+              },
+              "reference": {
+                "per_call_seconds": 0.276869396,
+                "total_seconds": 0.553738792
+              }
+            },
+            "block": 7,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.2582103335,
+                "total_seconds": 0.516420667
+              },
+              "reference": {
+                "per_call_seconds": 0.2768756045,
+                "total_seconds": 0.553751209
+              }
+            },
+            "block": 8,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.2584921045,
+                "total_seconds": 0.516984209
+              },
+              "reference": {
+                "per_call_seconds": 0.2723937705,
+                "total_seconds": 0.544787541
+              }
+            },
+            "block": 9,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.260133396,
+                "total_seconds": 0.520266792
+              },
+              "reference": {
+                "per_call_seconds": 0.2818949375,
+                "total_seconds": 0.563789875
+              }
+            },
+            "block": 10,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          }
+        ],
+        "candidate_over_reference": 0.9368277651748842,
+        "inner_calls": 2,
+        "summaries": {
+          "candidate": {
+            "iqr_fraction": 0.01349642065674653,
+            "iqr_seconds": 0.0035006872499999675,
+            "maximum_seconds": 0.2651015625,
+            "median_seconds": 0.2593789375,
+            "minimum_seconds": 0.2579387085,
+            "p50_seconds": 0.2593789375,
+            "p95_seconds": 0.2650485625,
+            "p99_seconds": 0.2650909625,
+            "seconds_per_call": [
+              0.2649955625,
+              0.2593789375,
+              0.2581839375,
+              0.262869375,
+              0.2579387085,
+              0.2608344375,
+              0.2587069585,
+              0.2651015625,
+              0.2582103335,
+              0.2584921045,
+              0.260133396
+            ]
+          },
+          "reference": {
+            "iqr_fraction": 0.017317507168614514,
+            "iqr_seconds": 0.004794687749999971,
+            "maximum_seconds": 0.2818949375,
+            "median_seconds": 0.276869396,
+            "minimum_seconds": 0.2712710415,
+            "p50_seconds": 0.276869396,
+            "p95_seconds": 0.28080638525,
+            "p99_seconds": 0.28167722705,
+            "seconds_per_call": [
+              0.2712710415,
+              0.279717833,
+              0.2727990625,
+              0.2783011875,
+              0.275421354,
+              0.278064667,
+              0.2739774165,
+              0.276869396,
+              0.2768756045,
+              0.2723937705,
+              0.2818949375
+            ]
+          }
+        }
+      },
+      "route": {
+        "outer": [
+          {
+            "rows": 32768,
+            "selected": true,
+            "tree_mode": "lightgbm"
+          }
+        ],
+        "scalar_kernel_calls": 1
+      },
+      "rows": 32768
+    },
+    "repeated_8192": {
+      "binned_sha256": "e587727a868cd79ad1a9be91cd4f561704ee1d094fe8a9198a5cd28741c65654",
+      "columns": 15,
+      "core_timing": {
+        "blocks": [
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.06417328125,
+                "total_seconds": 0.51338625
+              },
+              "reference": {
+                "per_call_seconds": 0.132013302125,
+                "total_seconds": 1.056106417
+              }
+            },
+            "block": 0,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.0655425625,
+                "total_seconds": 0.5243405
+              },
+              "reference": {
+                "per_call_seconds": 0.12401440625,
+                "total_seconds": 0.99211525
+              }
+            },
+            "block": 1,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.063341177125,
+                "total_seconds": 0.506729417
+              },
+              "reference": {
+                "per_call_seconds": 0.125598385375,
+                "total_seconds": 1.004787083
+              }
+            },
+            "block": 2,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.0641433855,
+                "total_seconds": 0.513147084
+              },
+              "reference": {
+                "per_call_seconds": 0.1301431615,
+                "total_seconds": 1.041145292
+              }
+            },
+            "block": 3,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.064383484375,
+                "total_seconds": 0.515067875
+              },
+              "reference": {
+                "per_call_seconds": 0.129613546875,
+                "total_seconds": 1.036908375
+              }
+            },
+            "block": 4,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.066086859375,
+                "total_seconds": 0.528694875
+              },
+              "reference": {
+                "per_call_seconds": 0.126312135375,
+                "total_seconds": 1.010497083
+              }
+            },
+            "block": 5,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.06404206775,
+                "total_seconds": 0.512336542
+              },
+              "reference": {
+                "per_call_seconds": 0.127373421875,
+                "total_seconds": 1.018987375
+              }
+            },
+            "block": 6,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.064206166625,
+                "total_seconds": 0.513649333
+              },
+              "reference": {
+                "per_call_seconds": 0.12865821875,
+                "total_seconds": 1.02926575
+              }
+            },
+            "block": 7,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.065985104125,
+                "total_seconds": 0.527880833
+              },
+              "reference": {
+                "per_call_seconds": 0.130108474,
+                "total_seconds": 1.040867792
+              }
+            },
+            "block": 8,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.06526834375,
+                "total_seconds": 0.52214675
+              },
+              "reference": {
+                "per_call_seconds": 0.12733561975,
+                "total_seconds": 1.018684958
+              }
+            },
+            "block": 9,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.065248166625,
+                "total_seconds": 0.521985333
+              },
+              "reference": {
+                "per_call_seconds": 0.13047174475,
+                "total_seconds": 1.043773958
+              }
+            },
+            "block": 10,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          }
+        ],
+        "candidate_over_reference": 0.5004226313758132,
+        "inner_calls": 8,
+        "summaries": {
+          "candidate": {
+            "iqr_fraction": 0.019370181065942002,
+            "iqr_seconds": 0.0012471197499999975,
+            "maximum_seconds": 0.066086859375,
+            "median_seconds": 0.064383484375,
+            "minimum_seconds": 0.063341177125,
+            "p50_seconds": 0.064383484375,
+            "p95_seconds": 0.06603598175,
+            "p99_seconds": 0.06607668385,
+            "seconds_per_call": [
+              0.06417328125,
+              0.0655425625,
+              0.063341177125,
+              0.0641433855,
+              0.064383484375,
+              0.066086859375,
+              0.06404206775,
+              0.064206166625,
+              0.065985104125,
+              0.06526834375,
+              0.065248166625
+            ]
+          },
+          "reference": {
+            "iqr_fraction": 0.02566443263073694,
+            "iqr_seconds": 0.003301940187499991,
+            "maximum_seconds": 0.132013302125,
+            "median_seconds": 0.12865821875,
+            "minimum_seconds": 0.12401440625,
+            "p50_seconds": 0.12865821875,
+            "p95_seconds": 0.1312425234375,
+            "p99_seconds": 0.13185914638750001,
+            "seconds_per_call": [
+              0.132013302125,
+              0.12401440625,
+              0.125598385375,
+              0.1301431615,
+              0.129613546875,
+              0.126312135375,
+              0.127373421875,
+              0.12865821875,
+              0.130108474,
+              0.12733561975,
+              0.13047174475
+            ]
+          }
+        }
+      },
+      "exactness": {
+        "packed_core_vs_loop": true,
+        "public_candidate_vs_loop": true,
+        "public_reference_vs_loop": true,
+        "staged_final_vs_public": true
+      },
+      "memory": {
+        "candidate": {
+          "calls": 5,
+          "maximum_peak_bytes": 2092274,
+          "peak_bytes_per_call": [
+            2092274,
+            2092274,
+            2092274,
+            2092274,
+            2092274
+          ]
+        },
+        "candidate_extra_peak_bytes": 0,
+        "reference": {
+          "calls": 5,
+          "maximum_peak_bytes": 2092274,
+          "peak_bytes_per_call": [
+            2092274,
+            2092274,
+            2092274,
+            2092274,
+            2092274
+          ]
+        }
+      },
+      "name": "repeated_8192",
+      "prediction_sha256": "2d4200fe3294463c321efc80add2a314cdf0b23fefe2c87337b0cf0a24db7cff",
+      "public_timing": {
+        "blocks": [
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.0671560885,
+                "total_seconds": 0.537248708
+              },
+              "reference": {
+                "per_call_seconds": 0.1297219375,
+                "total_seconds": 1.0377755
+              }
+            },
+            "block": 0,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.065268203125,
+                "total_seconds": 0.522145625
+              },
+              "reference": {
+                "per_call_seconds": 0.13056136975,
+                "total_seconds": 1.044490958
+              }
+            },
+            "block": 1,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.06553334375,
+                "total_seconds": 0.52426675
+              },
+              "reference": {
+                "per_call_seconds": 0.130019484375,
+                "total_seconds": 1.040155875
+              }
+            },
+            "block": 2,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.067513932375,
+                "total_seconds": 0.540111459
+              },
+              "reference": {
+                "per_call_seconds": 0.12871218225,
+                "total_seconds": 1.029697458
+              }
+            },
+            "block": 3,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.065163755125,
+                "total_seconds": 0.521310041
+              },
+              "reference": {
+                "per_call_seconds": 0.129021,
+                "total_seconds": 1.032168
+              }
+            },
+            "block": 4,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.065285375,
+                "total_seconds": 0.522283
+              },
+              "reference": {
+                "per_call_seconds": 0.1316605,
+                "total_seconds": 1.053284
+              }
+            },
+            "block": 5,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.0666913855,
+                "total_seconds": 0.533531084
+              },
+              "reference": {
+                "per_call_seconds": 0.129357890625,
+                "total_seconds": 1.034863125
+              }
+            },
+            "block": 6,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.066046427,
+                "total_seconds": 0.528371416
+              },
+              "reference": {
+                "per_call_seconds": 0.13038,
+                "total_seconds": 1.04304
+              }
+            },
+            "block": 7,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.065648484375,
+                "total_seconds": 0.525187875
+              },
+              "reference": {
+                "per_call_seconds": 0.130016197875,
+                "total_seconds": 1.040129583
+              }
+            },
+            "block": 8,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.0657881875,
+                "total_seconds": 0.5263055
+              },
+              "reference": {
+                "per_call_seconds": 0.131760921875,
+                "total_seconds": 1.054087375
+              }
+            },
+            "block": 9,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.067362505125,
+                "total_seconds": 0.538900041
+              },
+              "reference": {
+                "per_call_seconds": 0.13176999475,
+                "total_seconds": 1.054159958
+              }
+            },
+            "block": 10,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          }
+        ],
+        "candidate_over_reference": 0.5059871435134662,
+        "inner_calls": 8,
+        "summaries": {
+          "candidate": {
+            "iqr_fraction": 0.023018989921253074,
+            "iqr_seconds": 0.0015143776250000074,
+            "maximum_seconds": 0.067513932375,
+            "median_seconds": 0.0657881875,
+            "minimum_seconds": 0.065163755125,
+            "p50_seconds": 0.0657881875,
+            "p95_seconds": 0.06743821875,
+            "p99_seconds": 0.06749878965,
+            "seconds_per_call": [
+              0.0671560885,
+              0.065268203125,
+              0.06553334375,
+              0.067513932375,
+              0.065163755125,
+              0.065285375,
+              0.0666913855,
+              0.066046427,
+              0.065648484375,
+              0.0657881875,
+              0.067362505125
+            ]
+          },
+          "reference": {
+            "iqr_fraction": 0.0120829644883755,
+            "iqr_seconds": 0.001571020812500018,
+            "maximum_seconds": 0.13176999475,
+            "median_seconds": 0.130019484375,
+            "minimum_seconds": 0.12871218225,
+            "p50_seconds": 0.130019484375,
+            "p95_seconds": 0.1317654583125,
+            "p99_seconds": 0.13176908746250002,
+            "seconds_per_call": [
+              0.1297219375,
+              0.13056136975,
+              0.130019484375,
+              0.12871218225,
+              0.129021,
+              0.1316605,
+              0.129357890625,
+              0.13038,
+              0.130016197875,
+              0.131760921875,
+              0.13176999475
+            ]
+          }
+        }
+      },
+      "route": {
+        "outer": [
+          {
+            "rows": 8192,
+            "selected": true,
+            "tree_mode": "lightgbm"
+          }
+        ],
+        "scalar_kernel_calls": 1
+      },
+      "rows": 8192
+    },
+    "tiny_127": {
+      "binned_sha256": "6eb6dd71fc46e0105a6de7e278bb0bec45e1024b8139966d94dba0c95056dac7",
+      "columns": 15,
+      "core_timing": {
+        "blocks": [
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.001220194671875,
+                "total_seconds": 0.078092459
+              },
+              "reference": {
+                "per_call_seconds": 0.0022816451875,
+                "total_seconds": 0.146025292
+              }
+            },
+            "block": 0,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.00110439321875,
+                "total_seconds": 0.070681166
+              },
+              "reference": {
+                "per_call_seconds": 0.00220909375,
+                "total_seconds": 0.141382
+              }
+            },
+            "block": 1,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.001076095703125,
+                "total_seconds": 0.068870125
+              },
+              "reference": {
+                "per_call_seconds": 0.002236328765625,
+                "total_seconds": 0.143125041
+              }
+            },
+            "block": 2,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.001095815109375,
+                "total_seconds": 0.070132167
+              },
+              "reference": {
+                "per_call_seconds": 0.00219329296875,
+                "total_seconds": 0.14037075
+              }
+            },
+            "block": 3,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.00106991796875,
+                "total_seconds": 0.06847475
+              },
+              "reference": {
+                "per_call_seconds": 0.002382283203125,
+                "total_seconds": 0.152466125
+              }
+            },
+            "block": 4,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.001074361328125,
+                "total_seconds": 0.068759125
+              },
+              "reference": {
+                "per_call_seconds": 0.002174081375,
+                "total_seconds": 0.139141208
+              }
+            },
+            "block": 5,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.001061918625,
+                "total_seconds": 0.067962792
+              },
+              "reference": {
+                "per_call_seconds": 0.002253264984375,
+                "total_seconds": 0.144208959
+              }
+            },
+            "block": 6,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.001097280609375,
+                "total_seconds": 0.070225959
+              },
+              "reference": {
+                "per_call_seconds": 0.002211747390625,
+                "total_seconds": 0.141551833
+              }
+            },
+            "block": 7,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.001081014328125,
+                "total_seconds": 0.069184917
+              },
+              "reference": {
+                "per_call_seconds": 0.002247142578125,
+                "total_seconds": 0.143817125
+              }
+            },
+            "block": 8,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.001104636078125,
+                "total_seconds": 0.070696709
+              },
+              "reference": {
+                "per_call_seconds": 0.00234414975,
+                "total_seconds": 0.150025584
+              }
+            },
+            "block": 9,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.0010709231875,
+                "total_seconds": 0.068539084
+              },
+              "reference": {
+                "per_call_seconds": 0.00225185546875,
+                "total_seconds": 0.14411875
+              }
+            },
+            "block": 10,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          }
+        ],
+        "candidate_over_reference": 0.481061744211616,
+        "inner_calls": 64,
+        "summaries": {
+          "candidate": {
+            "iqr_fraction": 0.026081667482523812,
+            "iqr_seconds": 2.8194656250000137e-05,
+            "maximum_seconds": 0.001220194671875,
+            "median_seconds": 0.001081014328125,
+            "minimum_seconds": 0.001061918625,
+            "p50_seconds": 0.001081014328125,
+            "p95_seconds": 0.001162415375,
+            "p99_seconds": 0.0012086388125000002,
+            "seconds_per_call": [
+              0.001220194671875,
+              0.00110439321875,
+              0.001076095703125,
+              0.001095815109375,
+              0.00106991796875,
+              0.001074361328125,
+              0.001061918625,
+              0.001097280609375,
+              0.001081014328125,
+              0.001104636078125,
+              0.0010709231875
+            ]
+          },
+          "reference": {
+            "iqr_fraction": 0.025380906481060693,
+            "iqr_seconds": 5.703451562500024e-05,
+            "maximum_seconds": 0.002382283203125,
+            "median_seconds": 0.002247142578125,
+            "minimum_seconds": 0.002174081375,
+            "p50_seconds": 0.002247142578125,
+            "p95_seconds": 0.0023632164765625,
+            "p99_seconds": 0.0023784698578125,
+            "seconds_per_call": [
+              0.0022816451875,
+              0.00220909375,
+              0.002236328765625,
+              0.00219329296875,
+              0.002382283203125,
+              0.002174081375,
+              0.002253264984375,
+              0.002211747390625,
+              0.002247142578125,
+              0.00234414975,
+              0.00225185546875
+            ]
+          }
+        }
+      },
+      "exactness": {
+        "packed_core_vs_loop": true,
+        "public_candidate_vs_loop": true,
+        "public_reference_vs_loop": true,
+        "staged_final_vs_public": true
+      },
+      "memory": {
+        "candidate": {
+          "calls": 5,
+          "maximum_peak_bytes": 35699,
+          "peak_bytes_per_call": [
+            35699,
+            35699,
+            35699,
+            35699,
+            35699
+          ]
+        },
+        "candidate_extra_peak_bytes": 0,
+        "reference": {
+          "calls": 5,
+          "maximum_peak_bytes": 35699,
+          "peak_bytes_per_call": [
+            35699,
+            35699,
+            35699,
+            35699,
+            35699
+          ]
+        }
+      },
+      "name": "tiny_127",
+      "prediction_sha256": "e97de98c211c562d80b1213e126150a8b34ff2c022aac0fc108943e4da17e542",
+      "public_timing": {
+        "blocks": [
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.001290110671875,
+                "total_seconds": 0.082567083
+              },
+              "reference": {
+                "per_call_seconds": 0.002505109375,
+                "total_seconds": 0.160327
+              }
+            },
+            "block": 0,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.001280665375,
+                "total_seconds": 0.081962584
+              },
+              "reference": {
+                "per_call_seconds": 0.00247499609375,
+                "total_seconds": 0.15839975
+              }
+            },
+            "block": 1,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.00124874675,
+                "total_seconds": 0.079919792
+              },
+              "reference": {
+                "per_call_seconds": 0.00261426171875,
+                "total_seconds": 0.16731275
+              }
+            },
+            "block": 2,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.001219540359375,
+                "total_seconds": 0.078050583
+              },
+              "reference": {
+                "per_call_seconds": 0.002372036453125,
+                "total_seconds": 0.151810333
+              }
+            },
+            "block": 3,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.001212302078125,
+                "total_seconds": 0.077587333
+              },
+              "reference": {
+                "per_call_seconds": 0.0024615390625,
+                "total_seconds": 0.1575385
+              }
+            },
+            "block": 4,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.001274904296875,
+                "total_seconds": 0.081593875
+              },
+              "reference": {
+                "per_call_seconds": 0.002472268234375,
+                "total_seconds": 0.158225167
+              }
+            },
+            "block": 5,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.001227083328125,
+                "total_seconds": 0.078533333
+              },
+              "reference": {
+                "per_call_seconds": 0.002627140625,
+                "total_seconds": 0.168137
+              }
+            },
+            "block": 6,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.001282311203125,
+                "total_seconds": 0.082067917
+              },
+              "reference": {
+                "per_call_seconds": 0.002503705734375,
+                "total_seconds": 0.160237167
+              }
+            },
+            "block": 7,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.001248595046875,
+                "total_seconds": 0.079910083
+              },
+              "reference": {
+                "per_call_seconds": 0.002509919921875,
+                "total_seconds": 0.160634875
+              }
+            },
+            "block": 8,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.001282981765625,
+                "total_seconds": 0.082110833
+              },
+              "reference": {
+                "per_call_seconds": 0.002479856125,
+                "total_seconds": 0.158710792
+              }
+            },
+            "block": 9,
+            "order": [
+              "reference",
+              "candidate"
+            ]
+          },
+          {
+            "arms": {
+              "candidate": {
+                "per_call_seconds": 0.0012536484375,
+                "total_seconds": 0.0802335
+              },
+              "reference": {
+                "per_call_seconds": 0.0025880234375,
+                "total_seconds": 0.1656335
+              }
+            },
+            "block": 10,
+            "order": [
+              "candidate",
+              "reference"
+            ]
+          }
+        ],
+        "candidate_over_reference": 0.5007171650756905,
+        "inner_calls": 64,
+        "summaries": {
+          "candidate": {
+            "iqr_fraction": 0.03481765721300948,
+            "iqr_seconds": 4.3649101562499935e-05,
+            "maximum_seconds": 0.001290110671875,
+            "median_seconds": 0.0012536484375,
+            "minimum_seconds": 0.001212302078125,
+            "p50_seconds": 0.0012536484375,
+            "p95_seconds": 0.0012865462187499998,
+            "p99_seconds": 0.00128939778125,
+            "seconds_per_call": [
+              0.001290110671875,
+              0.001280665375,
+              0.00124874675,
+              0.001219540359375,
+              0.001212302078125,
+              0.001274904296875,
+              0.001227083328125,
+              0.001282311203125,
+              0.001248595046875,
+              0.001282981765625,
+              0.0012536484375
+            ]
+          },
+          "reference": {
+            "iqr_fraction": 0.030091202248976334,
+            "iqr_seconds": 7.533951562499995e-05,
+            "maximum_seconds": 0.002627140625,
+            "median_seconds": 0.002503705734375,
+            "minimum_seconds": 0.002372036453125,
+            "p50_seconds": 0.002503705734375,
+            "p95_seconds": 0.002620701171875,
+            "p99_seconds": 0.002625852734375,
+            "seconds_per_call": [
+              0.002505109375,
+              0.00247499609375,
+              0.00261426171875,
+              0.002372036453125,
+              0.0024615390625,
+              0.002472268234375,
+              0.002627140625,
+              0.002503705734375,
+              0.002509919921875,
+              0.002479856125,
+              0.0025880234375
+            ]
+          }
+        }
+      },
+      "route": {
+        "outer": [
+          {
+            "rows": 127,
+            "selected": true,
+            "tree_mode": "lightgbm"
+          }
+        ],
+        "scalar_kernel_calls": 1
+      },
+      "rows": 127
+    }
+  },
+  "created_at_utc": "2026-07-17T08:54:45.797424+00:00",
+  "data": {
+    "cold_player_guardrail": {
+      "cold_player_holdout_row_rate": 0.24283935242839352,
+      "cold_player_holdout_rows": 585,
+      "cold_player_mask_sha256": "e17887c9240fd95aee21d37d7e1e8a533c38ef87f4492acd28fb3aa496a3dd19",
+      "cold_players_absent_from_training": true,
+      "cold_unique_players": 210,
+      "creator_team_holdout_unchanged": true,
+      "holdout_player_sequence_sha256": "0f7e3b3cd7c4f1a06fb91e7b220d29747517e24f9887d1af13302e37a0d4dfd2",
+      "holdout_rows": 2409,
+      "holdout_unique_players": 767,
+      "name": "alphabetical_team_holdout_with_cold_player_subset",
+      "overlapping_unique_player_rate": 0.7262059973924381,
+      "overlapping_unique_players": 557,
+      "player_identifier_column": "Player",
+      "player_identifier_policy": "exact_source_string",
+      "player_identifier_used_as_model_feature": false,
+      "seen_player_holdout_row_rate": 0.7571606475716065,
+      "seen_player_holdout_rows": 1824,
+      "team_holdout_interpretation": "player_overlap_exposed",
+      "temporal_guardrail_available": false,
+      "temporal_guardrail_unavailable_reason": "source_has_no_season_or_date_column",
+      "test_teams": [
+        "ATL",
+        "BOS",
+        "BRK",
+        "CHA",
+        "CHH",
+        "CHI",
+        "CHO",
+        "CLE",
+        "DAL",
+        "DEN",
+        "DET",
+        "GSW"
+      ],
+      "train_player_sequence_sha256": "1cba92d12aa0c1aa8a856d2fcad3ae902d9839d01c633481a7047a88aeeba92b",
+      "train_rows": 5241,
+      "train_unique_players": 1190
+    },
+    "fold_fingerprint_sha256": "7270350a38a687b6e783d18d9c02e5a45f2c7367faa4a6955e74c710f5e8daea",
+    "fold_test_sizes": [
+      525,
+      524,
+      524,
+      524,
+      524,
+      524,
+      524,
+      524,
+      524,
+      524
+    ],
+    "processed": {
+      "defined_but_unused_weight": "G",
+      "features": [
+        "3P",
+        "3PA",
+        "2P",
+        "2PA",
+        "FT",
+        "FTA",
+        "ORB",
+        "DRB",
+        "AST",
+        "STL",
+        "BLK",
+        "TOV",
+        "PF",
+        "PTS",
+        "Age"
+      ],
+      "filter": "MP > 500",
+      "filtered_rows": 7650,
+      "missing_train_feature_cells": 0,
+      "target": "MPG",
+      "team_count": 37,
+      "test_rows": 2409,
+      "test_team_count": 12,
+      "test_teams": [
+        "ATL",
+        "BOS",
+        "BRK",
+        "CHA",
+        "CHH",
+        "CHI",
+        "CHO",
+        "CLE",
+        "DAL",
+        "DEN",
+        "DET",
+        "GSW"
+      ],
+      "train_rows": 5241,
+      "train_team_count": 25,
+      "x_train_sha256": "05efa554a983942885b72b1b3fdcc97a10ecf4ccbb4b10843ee8b970129fe71b",
+      "y_train_sha256": "7c06b45d4649c392fdb0c3dc91a857650f2f3fc77341fe06ffdbee2b3a44aecf"
+    },
+    "raw": {
+      "bytes": 2549434,
+      "cache_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/basketball-creator-benchmark/basketball_reference_toy_data.csv",
+      "load_source": "cache",
+      "raw_columns": 36,
+      "raw_rows": 11893,
+      "sha256": "43af3be46074da9130a757aa1db643e207e2c0ea5405d2086d698f85555fbcb2",
+      "url": "https://gist.githubusercontent.com/bbstats/16d332857c1d9ebbb439b90a55439270/raw/ab65fac8769cffdbe15221a64ec86d1097a7fe53/basketball_reference_toy_data.csv"
+    }
+  },
+  "decision": {
+    "ctr23_or_lockbox_used": false,
+    "default_policy_change_authorized": false,
+    "gates": {
+      "all_numeric_values_finite": true,
+      "archive_unchanged_after_prediction": true,
+      "boundary_table_exact": true,
+      "core_32768_ratio_at_most_098": true,
+      "core_ratio_at_most_080": true,
+      "fallback_ratio_at_most_110": true,
+      "fitted_state_unchanged_after_prediction": true,
+      "frozen_model_configuration": true,
+      "packed_cache_identity": true,
+      "prechange_archive": true,
+      "prechange_fitted_state": true,
+      "prechange_packed_storage": true,
+      "prechange_train_prediction": true,
+      "predictions_array_exact": true,
+      "public_ratio_at_most_090": true,
+      "routes_observed_exact": true,
+      "timing_stability": true,
+      "transient_memory": true,
+      "zero_persistent_bytes": true
+    },
+    "passes_all_gates": true,
+    "recommendation": "retain_bounded_leafwise_packed_prediction"
+  },
+  "invariants": {
+    "archive_bytes_before": 606056,
+    "archive_length_exact": true,
+    "archive_sha256_before": "eb16c2f24f884f9661debd029897e3e7b1403d9e4189d86ff4f2c7ac4aeaf5bc",
+    "archive_sha256_exact": true,
+    "archive_unchanged_after_prediction": true,
+    "fitted_state_unchanged_after_prediction": true,
+    "packed_cache_identity": true,
+    "packed_storage_after": {
+      "arrays": {
+        "features": {
+          "dtype": "int64",
+          "sha256": "9f58e6d5c1ec91ea3309d7caeefbedb72998d1792c32e78fe94fb29ade16aeb5",
+          "shape": [
+            48332
+          ]
+        },
+        "leaf_index": {
+          "dtype": "int64",
+          "sha256": "6f904f4da34879340835c0934f2676b1240a59f37ce2a254eba15b10b51580cc",
+          "shape": [
+            48332
+          ]
+        },
+        "left_child": {
+          "dtype": "int64",
+          "sha256": "ff2897b5aa5f54b24a8f4943dff37f56157731c3aa9ef0c37fb1a9986799b391",
+          "shape": [
+            48332
+          ]
+        },
+        "node_offsets": {
+          "dtype": "int64",
+          "sha256": "aecf8356ceb90fed992fd9caead7a007067fde6797a66abdd317cefdd18b7c06",
+          "shape": [
+            1001
+          ]
+        },
+        "right_child": {
+          "dtype": "int64",
+          "sha256": "e1bd8427878281bd918523755618c7443ed8dbf732c4eea646e707b6da2ccef1",
+          "shape": [
+            48332
+          ]
+        },
+        "thresholds": {
+          "dtype": "int64",
+          "sha256": "5dad7cc97faceb51972a7e0a878535db1f02dd19bcf5d9d45eb060f336a294ee",
+          "shape": [
+            48332
+          ]
+        },
+        "value_offsets": {
+          "dtype": "int64",
+          "sha256": "a976346ca685380c4ccffdff5bbf725fa19950bdbeb688b31a60039062f4d457",
+          "shape": [
+            1000
+          ]
+        },
+        "values": {
+          "dtype": "float64",
+          "sha256": "b3099ff567ae4a921b25aec38e0c92184efca776cb80bbc1018a7895b783c97b",
+          "shape": [
+            24666
+          ]
+        }
+      },
+      "bytes": 2146616
+    },
+    "packed_storage_before": {
+      "arrays": {
+        "features": {
+          "dtype": "int64",
+          "sha256": "9f58e6d5c1ec91ea3309d7caeefbedb72998d1792c32e78fe94fb29ade16aeb5",
+          "shape": [
+            48332
+          ]
+        },
+        "leaf_index": {
+          "dtype": "int64",
+          "sha256": "6f904f4da34879340835c0934f2676b1240a59f37ce2a254eba15b10b51580cc",
+          "shape": [
+            48332
+          ]
+        },
+        "left_child": {
+          "dtype": "int64",
+          "sha256": "ff2897b5aa5f54b24a8f4943dff37f56157731c3aa9ef0c37fb1a9986799b391",
+          "shape": [
+            48332
+          ]
+        },
+        "node_offsets": {
+          "dtype": "int64",
+          "sha256": "aecf8356ceb90fed992fd9caead7a007067fde6797a66abdd317cefdd18b7c06",
+          "shape": [
+            1001
+          ]
+        },
+        "right_child": {
+          "dtype": "int64",
+          "sha256": "e1bd8427878281bd918523755618c7443ed8dbf732c4eea646e707b6da2ccef1",
+          "shape": [
+            48332
+          ]
+        },
+        "thresholds": {
+          "dtype": "int64",
+          "sha256": "5dad7cc97faceb51972a7e0a878535db1f02dd19bcf5d9d45eb060f336a294ee",
+          "shape": [
+            48332
+          ]
+        },
+        "value_offsets": {
+          "dtype": "int64",
+          "sha256": "a976346ca685380c4ccffdff5bbf725fa19950bdbeb688b31a60039062f4d457",
+          "shape": [
+            1000
+          ]
+        },
+        "values": {
+          "dtype": "float64",
+          "sha256": "b3099ff567ae4a921b25aec38e0c92184efca776cb80bbc1018a7895b783c97b",
+          "shape": [
+            24666
+          ]
+        }
+      },
+      "bytes": 2146616
+    },
+    "packed_storage_sha256_before": "8c43bdcd713e86b3d9fa76ec2d908b7f8ce0669797e64c652c4651b825808135",
+    "persistent_extra_bytes": 0,
+    "prechange_packed_storage_exact": true,
+    "state_sha256_after": "b588ddf2e09857479421bd490d394f7667d29e998b5d931dcff089455672604e",
+    "state_sha256_before": "b588ddf2e09857479421bd490d394f7667d29e998b5d931dcff089455672604e",
+    "state_sha256_exact": true,
+    "train_prediction_sha256": "1544903cc4f52b361dc21327f43f848e9471337c88e44b5d2578f11b9bf515d1",
+    "train_prediction_sha256_exact": true
+  },
+  "literal_chimeraboost_code_copied": false,
+  "model": {
+    "best_iteration": 1000,
+    "fit_seconds_directional": 4.588685375,
+    "frozen_configuration_exact": true,
+    "learning_rate": 0.1,
+    "linear_leaves_active": false,
+    "linear_residual_active": false,
+    "ordered_boosting": false,
+    "refit": false,
+    "requested_params": {
+      "depth": 6,
+      "diagnostic_warnings": "never",
+      "early_stopping": false,
+      "iterations": 1000,
+      "l2_leaf_reg": 1,
+      "learning_rate": 0.1,
+      "max_bins": 128,
+      "ordered_boosting": false,
+      "random_state": 4,
+      "thread_count": 18,
+      "tree_mode": "lightgbm",
+      "use_best_model": false
+    },
+    "resolved_threads": 2,
+    "selection_model_present": false,
+    "stop_reason": "iteration_limit",
+    "tree_count": 1000,
+    "tree_mode": "lightgbm",
+    "tree_types": [
+      "NonObliviousTree"
+    ]
+  },
+  "protocol": {
+    "basketball_is_primary_fatal_boundary": true,
+    "confirmation_fold": 1,
+    "exploratory_fold": 0,
+    "lockbox_data_used": false,
+    "name": "basketball_leafwise_packed_prediction_confirmation",
+    "sha256": "73184115ccf9c208a032df70166f974e51ac5a60d0c8355b1ccf07785fcb1d14",
+    "single_lever": "bounded_64_row_scalar_leafwise_packed_prediction"
+  },
+  "schema_version": 1
+}

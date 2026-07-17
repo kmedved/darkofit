@@ -423,8 +423,17 @@ Neither current Phase 2 mechanism is authorized to enter that larger panel.
 13. **Leafwise path**: keep the segment/subtraction design but collapse its
     variant axes the same way; port the packed row-major predict treatment so
     `tree_mode="lightgbm"` (and the accuracy preset) stops paying the 2.57×
-    inference tax. `flat_model.py`'s empirical router dies; packing becomes
-    unconditional per tree kind.
+    inference tax.
+    **Bounded prediction route shipped 2026-07-17:** the scalar leafwise
+    packed kernel passed the frozen basketball, cold-player, held-team,
+    exactness, persistence, memory, and timing confirmation. Public prediction
+    improved 1.44× on the reserved 524-row fold, 1.59× on 585 cold players,
+    1.66× on 2,409 held-team rows, and 1.98× at 8,192 repeated rows. The route
+    deliberately remains empirical and bounded to two resolved threads and at
+    most 32,768 rows: direct packed execution was 1.127× and 1.210× the
+    per-tree loop at 65,536 and 100,000 rows, while public fallback stayed
+    within 1.021×. Do not make leafwise packing unconditional without a new
+    protocol.
 14. **Exact TreeSHAP** for oblivious (+ linear leaves) — port nearly verbatim;
     it depends only on the packed-forest layout. Ship as
     `model.shap_values(X)`; document leafwise as unsupported initially.
