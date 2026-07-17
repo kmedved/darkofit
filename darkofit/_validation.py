@@ -6,6 +6,11 @@ import warnings
 import numpy as np
 from sklearn.exceptions import DataConversionWarning
 
+try:
+    from numpy.exceptions import ComplexWarning as _ComplexWarning
+except ImportError:  # NumPy < 1.25
+    from numpy import ComplexWarning as _ComplexWarning
+
 
 def reject_masked_array(X, *, name="X"):
     """Reject masked arrays before NumPy can silently discard their mask."""
@@ -199,11 +204,17 @@ def coerce_feature_matrix(
     if cat_features:
         arr = array_like_to_numpy(X, object)
         numeric_raw = arr[:, numeric_indices]
-        if _contains_complex(numeric_raw):
-            raise ValueError("Complex data not supported.")
         try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("error", _ComplexWarning)
+                numeric = np.asarray(numeric_raw, dtype=np.float64)
+        except _ComplexWarning as exc:
+            if _contains_complex(numeric_raw):
+                raise ValueError("Complex data not supported.") from exc
             numeric = np.asarray(numeric_raw, dtype=np.float64)
         except (TypeError, ValueError) as exc:
+            if _contains_complex(numeric_raw):
+                raise ValueError("Complex data not supported.") from exc
             bad = _describe_nonnumeric_columns(X, numeric_indices)
             if bad:
                 raise ValueError(

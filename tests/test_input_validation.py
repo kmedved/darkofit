@@ -149,6 +149,65 @@ def test_wrapper_prediction_coerces_and_scans_only_once(
     assert calls == ["X"]
 
 
+def test_categorical_predict_success_path_avoids_elementwise_complex_scan(
+    monkeypatch,
+):
+    import darkofit._validation as validation_module
+
+    X, y = _regression_data()
+    frame = pd.DataFrame(
+        {
+            "value": X[:, 0],
+            "team": np.where(X[:, 1] > 0, "A", "B"),
+            "z": X[:, 2],
+        }
+    )
+    model = _regressor().fit(frame, y, cat_features=["team"])
+
+    def forbidden_scan(_values):
+        raise AssertionError(
+            "valid categorical prediction must not scan numeric object cells"
+        )
+
+    monkeypatch.setattr(
+        validation_module, "_contains_complex", forbidden_scan
+    )
+    assert model.predict(frame.iloc[:8]).shape == (8,)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        pytest.param(1 + 0j, id="python-complex"),
+        pytest.param(np.complex64(1 + 2j), id="numpy-complex64"),
+        pytest.param(np.complex128(1 + 0j), id="numpy-complex128"),
+    ],
+)
+def test_categorical_predict_rejects_object_boxed_complex_values(value):
+    X, y = _regression_data()
+    mixed = np.asarray(X, dtype=object)
+    mixed[:, 1] = np.where(X[:, 1] > 0, "A", "B")
+    model = _regressor().fit(mixed, y, cat_features=[1])
+    bad = mixed[:4].copy()
+    bad[0, 0] = value
+
+    with pytest.raises(ValueError, match=r"^Complex data not supported\.$"):
+        model.predict(bad)
+
+
+def test_categorical_complex_rejection_precedes_nonnumeric_conversion_error():
+    X, y = _regression_data()
+    mixed = np.asarray(X, dtype=object)
+    mixed[:, 1] = np.where(X[:, 1] > 0, "A", "B")
+    model = _regressor().fit(mixed, y, cat_features=[1])
+    bad = mixed[:4].copy()
+    bad[0, 0] = "not numeric"
+    bad[1, 0] = 1 + 2j
+
+    with pytest.raises(ValueError, match=r"^Complex data not supported\.$"):
+        model.predict(bad)
+
+
 def test_nan_remains_supported_in_numeric_and_categorical_paths():
     X, y = _regression_data()
     X[0, 0] = np.nan
