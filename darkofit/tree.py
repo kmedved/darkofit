@@ -17,9 +17,6 @@ import numpy as np
 from numba import get_num_threads, njit, prange
 
 
-_EMPTY_INDICES = np.empty(0, dtype=np.int64)
-
-
 @njit(cache=True, parallel=True)
 def _build_histograms_into(X_binned, grad, hess, leaf, n_leaves, hg, hh):
     """Fill per-feature gradient/hessian histograms into pre-allocated buffers.
@@ -2287,7 +2284,7 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
 
 
 @njit(cache=True, parallel=True)
-def _build_histograms_and_best_split(
+def _build_histograms_subset_and_best_split(
     X_binned,
     grad,
     hess,
@@ -2419,7 +2416,7 @@ def _build_histograms_and_best_split(
 
 
 @njit(cache=True, parallel=True)
-def _build_histograms_unit_hess_and_best_split(
+def _build_histograms_subset_unit_hess_and_best_split(
     X_binned,
     grad,
     leaf,
@@ -2475,6 +2472,241 @@ def _build_histograms_unit_hess_and_best_split(
                 b = X_binned[i, f]
                 hg[f, l, b] += grad[i]
                 hh[f, l, b] += 1.0
+
+        if feat_mask[f] == 0:
+            continue
+        nb = n_bins_per_feature[f]
+        for l in range(n_leaves):
+            scratch_Gt[f, l] = 0.0
+            scratch_Ht[f, l] = 0.0
+            scratch_last_positive[f, l] = -1
+            for b in range(nb):
+                scratch_Gt[f, l] += hg[f, l, b]
+                scratch_Ht[f, l] += hh[f, l, b]
+                if hh[f, l, b] > 0.0:
+                    scratch_last_positive[f, l] = b
+        for l in range(n_leaves):
+            scratch_GL[f, l] = 0.0
+            scratch_HL[f, l] = 0.0
+            parent_denom = scratch_Ht[f, l] + l2
+            if scratch_Ht[f, l] > 0.0 and parent_denom > 0.0:
+                scratch_parent[f, l] = (
+                    scratch_Gt[f, l] * scratch_Gt[f, l] / parent_denom
+                )
+            else:
+                scratch_parent[f, l] = 0.0
+
+        best_g = -np.inf
+        best_t = -1
+        for t in range(nb - 1):
+            gain = 0.0
+            legal = True
+            any_nonempty = False
+
+            for l in range(n_leaves):
+                scratch_GL[f, l] += hg[f, l, t]
+                scratch_HL[f, l] += hh[f, l, t]
+
+                if scratch_Ht[f, l] > 0.0:
+                    any_nonempty = True
+                    hl = scratch_HL[f, l]
+                    hr = scratch_Ht[f, l] - hl
+                    if hl <= 0.0 or t >= scratch_last_positive[f, l]:
+                        continue
+                    left_denom = hl + l2
+                    right_denom = hr + l2
+                    parent_denom = scratch_Ht[f, l] + l2
+                    if (
+                        hl < min_child_weight
+                        or hr < min_child_weight
+                        or hr <= 0.0
+                        or left_denom <= 0.0
+                        or right_denom <= 0.0
+                        or parent_denom <= 0.0
+                    ):
+                        legal = False
+                    else:
+                        gl = scratch_GL[f, l]
+                        gr = scratch_Gt[f, l] - gl
+                        gain += (
+                            gl * gl / left_denom
+                            + gr * gr / right_denom
+                            - scratch_parent[f, l]
+                        )
+
+            if legal and any_nonempty and gain > best_g:
+                best_g = gain
+                best_t = t
+
+        feat_gain[f] = best_g
+        feat_thr[f] = best_t
+
+    best_f = 0
+    best_gain = -np.inf
+    for f in range(n_features):
+        if feat_gain[f] > best_gain:
+            best_gain = feat_gain[f]
+            best_f = f
+    return best_f, feat_thr[best_f], best_gain
+
+
+@njit(cache=True, parallel=True)
+def _build_histograms_and_best_split(
+    X_binned,
+    grad,
+    hess,
+    leaf,
+    n_leaves,
+    hg,
+    hh,
+    n_bins_per_feature,
+    l2,
+    feat_mask,
+    min_child_weight,
+    scratch_Gt,
+    scratch_Ht,
+    scratch_GL,
+    scratch_HL,
+    scratch_parent,
+    scratch_last_positive,
+):
+    """Fuse full-row variable-Hessian histogram construction and split scan."""
+    n_samples, n_features = X_binned.shape
+    max_bins = hg.shape[2]
+    feat_gain = np.full(n_features, -np.inf)
+    feat_thr = np.full(n_features, -1, dtype=np.int64)
+
+    for f in prange(n_features):
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+        for i in range(n_samples):
+            l = leaf[i]
+            b = X_binned[i, f]
+            hg[f, l, b] += grad[i]
+            hh[f, l, b] += hess[i]
+
+        if feat_mask[f] == 0:
+            continue
+        nb = n_bins_per_feature[f]
+        for l in range(n_leaves):
+            scratch_Gt[f, l] = 0.0
+            scratch_Ht[f, l] = 0.0
+            scratch_last_positive[f, l] = -1
+            for b in range(nb):
+                scratch_Gt[f, l] += hg[f, l, b]
+                scratch_Ht[f, l] += hh[f, l, b]
+                if hh[f, l, b] > 0.0:
+                    scratch_last_positive[f, l] = b
+        for l in range(n_leaves):
+            scratch_GL[f, l] = 0.0
+            scratch_HL[f, l] = 0.0
+            parent_denom = scratch_Ht[f, l] + l2
+            if scratch_Ht[f, l] > 0.0 and parent_denom > 0.0:
+                scratch_parent[f, l] = (
+                    scratch_Gt[f, l] * scratch_Gt[f, l] / parent_denom
+                )
+            else:
+                scratch_parent[f, l] = 0.0
+
+        best_g = -np.inf
+        best_t = -1
+        for t in range(nb - 1):
+            gain = 0.0
+            legal = True
+            any_nonempty = False
+
+            for l in range(n_leaves):
+                scratch_GL[f, l] += hg[f, l, t]
+                scratch_HL[f, l] += hh[f, l, t]
+
+                if scratch_Ht[f, l] > 0.0:
+                    any_nonempty = True
+                    hl = scratch_HL[f, l]
+                    hr = scratch_Ht[f, l] - hl
+                    if hl <= 0.0 or t >= scratch_last_positive[f, l]:
+                        continue
+                    left_denom = hl + l2
+                    right_denom = hr + l2
+                    parent_denom = scratch_Ht[f, l] + l2
+                    if (
+                        hl < min_child_weight
+                        or hr < min_child_weight
+                        or hr <= 0.0
+                        or left_denom <= 0.0
+                        or right_denom <= 0.0
+                        or parent_denom <= 0.0
+                    ):
+                        legal = False
+                    else:
+                        gl = scratch_GL[f, l]
+                        gr = scratch_Gt[f, l] - gl
+                        gain += (
+                            gl * gl / left_denom
+                            + gr * gr / right_denom
+                            - scratch_parent[f, l]
+                        )
+
+            if legal and any_nonempty and gain > best_g:
+                best_g = gain
+                best_t = t
+
+        feat_gain[f] = best_g
+        feat_thr[f] = best_t
+
+    best_f = 0
+    best_gain = -np.inf
+    for f in range(n_features):
+        if feat_gain[f] > best_gain:
+            best_gain = feat_gain[f]
+            best_f = f
+    return best_f, feat_thr[best_f], best_gain
+
+
+@njit(cache=True, parallel=True)
+def _build_histograms_unit_hess_and_best_split(
+    X_binned,
+    grad,
+    leaf,
+    n_leaves,
+    hg,
+    hh,
+    n_bins_per_feature,
+    l2,
+    feat_mask,
+    min_child_weight,
+    scratch_Gt,
+    scratch_Ht,
+    scratch_GL,
+    scratch_HL,
+    scratch_parent,
+    scratch_last_positive,
+):
+    """Fuse the full-row unit-Hessian histogram build and split scan.
+
+    This is the feature-parallel composition of
+    ``_build_histograms_unit_hess_into`` and ``_best_split``. Each feature's
+    histogram is consumed by the same worker immediately after it is built,
+    removing one parallel launch per tree level while preserving the current
+    accumulation, legality, tie-breaking, and floating-point operation order.
+    Adapted from ChimeraBoost's Apache-2.0 fused-kernel design; see ``NOTICE``.
+    """
+    n_samples, n_features = X_binned.shape
+    max_bins = hg.shape[2]
+    feat_gain = np.full(n_features, -np.inf)
+    feat_thr = np.full(n_features, -1, dtype=np.int64)
+
+    for f in prange(n_features):
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+        for i in range(n_samples):
+            l = leaf[i]
+            b = X_binned[i, f]
+            hg[f, l, b] += grad[i]
+            hh[f, l, b] += 1.0
 
         if feat_mask[f] == 0:
             continue
@@ -5082,9 +5314,11 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     full-row/full-feature lane, level 0 copies them instead of scanning.
     fused_oblivious_kernel: private internal dispatch switch for the common
     multithreaded unit- and variable-Hessian lanes. The proven lane is enabled
-    by default and fuses histogram construction and split scanning, including
-    selected rows and features, without changing any public estimator
-    parameter. Ineligible lanes retain the current kernels.
+    by default and fuses histogram construction and split scanning for the
+    full-row/full-feature path without changing any public estimator
+    parameter. Selected-row and selected-feature paths retain their reference
+    kernels because their fused expansion did not pass the timing-stability
+    promotion gate.
     fused_oblivious_counter: optional one-element integer array incremented
     once for every actual fused level invocation. This is benchmark
     observability only; requesting the candidate does not count as engagement.
@@ -5224,16 +5458,6 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
         and not root_copy_lane
         and random_strength <= 0.0
     )
-    if feature_indices is None:
-        fused_feature_indices = (
-            np.arange(n_features, dtype=np.int64)
-            if fused_lane
-            else _EMPTY_INDICES
-        )
-    else:
-        fused_feature_indices = feature_indices
-    fused_row_indices = _EMPTY_INDICES if row_indices is None else row_indices
-
     for d in range(max_depth):
         n_leaves = 1 << d
         subtract_level = subtract_lane and d >= 1
@@ -5264,9 +5488,6 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                     split_scratch[3],
                     split_scratch[4],
                     split_scratch[5],
-                    fused_feature_indices,
-                    fused_row_indices,
-                    row_indices is None,
                 )
             else:
                 f, t, gain = _build_histograms_and_best_split(
@@ -5287,9 +5508,6 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                     split_scratch[3],
                     split_scratch[4],
                     split_scratch[5],
-                    fused_feature_indices,
-                    fused_row_indices,
-                    row_indices is None,
                 )
         elif use_serial_kernels:
             if root_copy:

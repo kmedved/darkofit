@@ -101,9 +101,6 @@ def test_fused_unit_hessian_kernel_is_exact(
             feature_mask,
             min_child_weight,
             *fused_scratch,
-            np.arange(n_features, dtype=np.int64),
-            np.empty(0, dtype=np.int64),
-            True,
         )
 
         assert actual == expected
@@ -169,9 +166,6 @@ def test_fused_variable_hessian_kernel_is_exact(
             feature_mask,
             min_child_weight,
             *fused_scratch,
-            np.arange(n_features, dtype=np.int64),
-            np.empty(0, dtype=np.int64),
-            True,
         )
 
         assert actual == expected
@@ -267,7 +261,7 @@ def test_fused_subset_kernel_is_exact(
             *reference_scratch,
         )
         if constant_hessian:
-            actual = _build_histograms_unit_hess_and_best_split(
+            actual = tree_module._build_histograms_subset_unit_hess_and_best_split(
                 X,
                 grad,
                 leaf,
@@ -292,7 +286,7 @@ def test_fused_subset_kernel_is_exact(
                 row_indices is None,
             )
         else:
-            actual = _build_histograms_and_best_split(
+            actual = tree_module._build_histograms_subset_and_best_split(
                 X,
                 grad,
                 hess,

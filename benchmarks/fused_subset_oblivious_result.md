@@ -23,8 +23,11 @@ made that gate conjunctive and authorized no threshold change or repeat.
 - No fit or tree-build cell regressed; all eight improved materially.
 - Subset-lane geometric-mean ratios were `0.5348x` fit and `0.5265x`
   tree-build time.
-- Full-lane control geometric-mean ratios were `0.5088x` fit and `0.5048x`
-  tree-build time.
+- The recorded full-lane geometric-mean ratios were `0.5088x` fit and
+  `0.5048x` tree-build time, but a post-run audit found that this compared the
+  generalized fused candidate with fusion disabled rather than with the
+  previously shipped dedicated fused kernel. Those ratios are diagnostic and
+  do not establish the protocol's full-lane no-regression control.
 - Every median peak-RSS ratio was below `1.05x`.
 
 ## Failed gate
@@ -44,10 +47,26 @@ This is measurement variability, not evidence of a quality or correctness
 defect. It nevertheless fails the frozen promotion rule, so the subset
 dispatch remains off.
 
+## Post-run audit correction
+
+The benchmark switch correctly compared fused and reference implementations
+for the subset lanes. For the full lane, however, `reference` disabled fusion
+entirely; it did not recover the pre-mechanism dedicated fused kernel required
+by the frozen no-regression control. That full-lane gate is therefore
+unresolved, not passed.
+
+This does not weaken the rejection decision: failure of any conjunctive gate
+was sufficient, and the subset timing-stability gate independently failed.
+The dedicated pre-mechanism full-row/full-feature kernel has been restored so
+the unproven generalized implementation is not shipped on that path. The
+generalized subset kernels remain non-dispatched research code.
+
 ## E1 disposition
 
 - The direct subset fused kernels and exactness tests remain as bounded
   research evidence.
+- The previously certified dedicated full-row/full-feature kernels remain the
+  production implementation; the generalized kernel is not used there.
 - Public `subsample` and `colsample` fits continue to use their existing
   selected histogram builders followed by `_best_split`.
 - The previously certified full-row/full-feature unit- and variable-Hessian

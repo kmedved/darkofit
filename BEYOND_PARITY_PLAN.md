@@ -86,7 +86,12 @@ Execution began from published `main` at `ab86269`.
   subset geometric-mean fit/tree ratios of `0.5348x`/`0.5265x`, but weighted
   row sampling failed the frozen timing-stability gate at `0.2085` fit and
   `0.2060` tree-build IQR/median (limit `0.15`). Automatic subset dispatch was
-  restored to the reference path. A count-carrying oblivious lane is
+  restored to the reference path. A fresh-eyes audit also found that the
+  benchmark's full-lane reference disabled fusion rather than recovering the
+  pre-mechanism dedicated fused kernel, so its full-lane no-regression ratio
+  is non-binding. The dedicated production kernel was restored; this does not
+  change the rejection because the subset stability gate independently
+  failed. A count-carrying oblivious lane is
   inapplicable because `min_child_samples` intentionally belongs to leaf-wise
   and hybrid builders. E1 is closed as shaped and authorizes no kernel
   deletions.
