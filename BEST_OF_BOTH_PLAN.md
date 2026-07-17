@@ -529,8 +529,11 @@ refit (`get_refit_params`); callbacks + WallClockStopper; `groups` support;
 3. **Closed isolated mechanism:** split-conformal quantile offsets failed the
    basketball interval-width gates despite improving coverage and pinball
    loss. Binary temperature scaling independently failed pooled, held-team,
-   cold-player, fold-breadth, and worst-fold quality gates. Do not implement,
-   retune, or enlarge either campaign.
+   cold-player, fold-breadth, and worst-fold quality gates. Existing Gaussian
+   scalar calibration improved NLL, CRPS, and 80% coverage on all basketball
+   boundaries and won all 10 creator folds, but failed the frozen interval
+   width cap by widening intervals roughly 2.1x. Do not retune or enlarge
+   these campaigns, and do not promote a default from them.
 4. **Basketball remains next:** every new mechanism starts on the unchanged
    creator folds, overlap-exposed held-team view, and 585-row cold-player
    subset. A failure on any sports guardrail stops it before broader data.
