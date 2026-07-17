@@ -929,6 +929,7 @@ def _level_scan_plan(leaf, n_parents):
 # bound, the sparse ascending row gather touches the same cache lines as a
 # full scan, and the extra expand/subtract passes made it measurably slower.
 _LEVEL_SUBTRACTION_MAX_THREADS = 2
+_SMALL_LEAF_DESCENT_ROWS = 32_768
 
 
 def _resolve_level_subtraction(level_histogram_subtraction):
@@ -2652,10 +2653,28 @@ def _descend_leaves(leaf, Xf, split_thr):
 
 
 @njit(cache=True, parallel=True)
-def _update_leaves_with_split(X_binned, leaf, split_feat, split_thr):
-    """Append one split bit to existing leaf ids in place."""
+def _update_leaves_with_split_parallel(X_binned, leaf, split_feat, split_thr):
+    """Append one split bit with the existing row-parallel kernel."""
     for i in prange(leaf.shape[0]):
         leaf[i] = (leaf[i] << 1) + (1 if X_binned[i, split_feat] > split_thr else 0)
+
+
+@njit(cache=True)
+def _update_leaves_with_split_serial(X_binned, leaf, split_feat, split_thr):
+    """Append one split bit without parallel launch overhead on small inputs."""
+    for i in range(leaf.shape[0]):
+        leaf[i] = (leaf[i] << 1) + (1 if X_binned[i, split_feat] > split_thr else 0)
+
+
+def _update_leaves_with_split(X_binned, leaf, split_feat, split_thr):
+    """Route the exact in-place leaf update by row count."""
+    if leaf.shape[0] < _SMALL_LEAF_DESCENT_ROWS:
+        return _update_leaves_with_split_serial(
+            X_binned, leaf, split_feat, split_thr
+        )
+    return _update_leaves_with_split_parallel(
+        X_binned, leaf, split_feat, split_thr
+    )
 
 
 @njit(cache=True)
