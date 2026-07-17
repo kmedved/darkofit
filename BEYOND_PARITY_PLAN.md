@@ -105,6 +105,13 @@ Execution began from published `main` at `ab86269`.
   within budget. This advances only to the spent smooth development
   coordinates; no API, automatic policy, default, or lockbox spend is
   authorized.
+- The same frozen 3% selector passes its 21-coordinate spent smooth
+  development gate from clean source `a81e874`. It selected linear leaves on
+  20 coordinates, declined one, improved equal-task RMSE by `7.67%` versus
+  default, won all three datasets, and retained `96.17%` of fixed-linear's
+  benefit. It remains `1.96%` behind ChimeraBoost product defaults. This
+  advances the exact selector only to I3 fresh-confirmation registry and
+  power design; the public API, defaults, and CTR23 lockbox remain sealed.
 
 ## Standing constraints (inherited, non-negotiable)
 

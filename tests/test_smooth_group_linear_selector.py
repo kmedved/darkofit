@@ -1,10 +1,23 @@
 from __future__ import annotations
 
+import hashlib
+import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
 from benchmarks import run_smooth_group_linear_selector as experiment
+
+
+RECORDED_ARTIFACT = (
+    Path(__file__).resolve().parents[1]
+    / "benchmarks"
+    / "smooth_group_linear_selector.json"
+)
+EXPECTED_ARTIFACT_SHA256 = (
+    "13fe1d232843b728388e35585c0e9c9f2322e0e854d896a941ad77db44bade8d"
+)
 
 
 def _result(task_id, config, rmse, selected=True):
@@ -97,3 +110,34 @@ def test_selection_record_accepts_valid_early_stopping_outcomes(
     record = experiment._selection_fit_record("constant", model, 1.0)
 
     assert record["fit_metadata"] == fitted
+
+
+def test_recorded_artifact_advances_to_fresh_confirmation_design():
+    raw = RECORDED_ARTIFACT.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == EXPECTED_ARTIFACT_SHA256
+    artifact = json.loads(raw)
+
+    assert artifact["sources"]["darkofit"]["clean"] is True
+    assert artifact["sources"]["darkofit"]["head"] == (
+        "a81e8741ba08787946fffd6f77c7a33025636534"
+    )
+    assert artifact["sources"]["chimeraboost"]["head"] == (
+        experiment.base.EXPECTED_CHIMERA_HEAD
+    )
+    assert artifact["protocol"]["sha256"] == hashlib.sha256(
+        experiment.PROTOCOL.read_bytes()
+    ).hexdigest()
+    assert artifact["protocol"]["runner_sha256"] == hashlib.sha256(
+        Path(experiment.__file__).read_bytes()
+    ).hexdigest()
+    assert artifact["protocol"]["lockbox_data_used"] is False
+    assert artifact["protocol"]["public_selector_authorized"] is False
+    assert artifact["protocol"]["default_promotion_authorized"] is False
+    analysis = artifact["analysis"]
+    assert analysis["passes_all_gates"] is True
+    assert analysis["selection_count"] == 20
+    assert analysis["decline_count"] == 1
+    assert analysis["fixed_benefit_retention"] > 0.96
+    assert analysis["recommendation"] == (
+        "advance_selector_to_fresh_confirmation_design"
+    )
