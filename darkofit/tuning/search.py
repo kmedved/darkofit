@@ -37,7 +37,7 @@ from .spaces import (
     phase_names,
 )
 from .validation import make_cv_splits, slice_fit_payload, validation_mass
-from ..sklearn_api import _normalize_dist_calibration
+from ..sklearn_api import _normalize_dist_calibration, _resolve_ordinal_features
 
 
 def _validate_search_sample_weight(sample_weight, n_samples, name="sample_weight"):
@@ -406,7 +406,7 @@ class DarkoStepwiseSearchCV(BaseEstimator):
         return "classifier" if is_classifier(self.estimator) else None
 
     def fit(self, X, y, *, cat_features=None, groups=None, sample_weight=None,
-            eval_set=None, eval_sample_weight=None):
+            eval_set=None, eval_sample_weight=None, ordinal_features=None):
         distributional = getattr(self.estimator, "loss", None) in VECTOR_LOSSES
         optuna = import_optuna()
         if self.n_trials is None and self.timeout is None:
@@ -426,6 +426,21 @@ class DarkoStepwiseSearchCV(BaseEstimator):
         self.cat_features_ = (
             None if cat_features is None else list(cat_features_normalized)
         )
+        ordinal_nominal_cat_features, ordinal_mode, ordinal_records = (
+            _resolve_ordinal_features(
+            X, self.cat_features_, ordinal_features
+            )
+        )
+        if ordinal_mode == "explicit":
+            ordinal_features_frozen = {
+                int(record["index"]): list(record["categories"])
+                for record in ordinal_records
+            }
+        elif ordinal_mode == "auto":
+            ordinal_features_frozen = "auto"
+        else:
+            ordinal_features_frozen = None
+        self.ordinal_features_ = ordinal_features_frozen
         self.n_workers_ = max(1, int(self.n_workers))
         _reject_custom_sampler_multiprocessing(self.sampler, self.n_workers_)
         self.trial_thread_count_ = _resolve_trial_thread_count(
@@ -506,7 +521,7 @@ class DarkoStepwiseSearchCV(BaseEstimator):
         self.tree_modes_ = search_tree_modes
         context = SpaceContext(
             estimator_params=self.estimator.get_params(),
-            has_categoricals=bool(cat_features_normalized),
+            has_categoricals=bool(ordinal_nominal_cat_features),
             classifier=classifier,
             tree_modes=search_tree_modes,
         )
@@ -565,6 +580,7 @@ class DarkoStepwiseSearchCV(BaseEstimator):
                     y=y_arr,
                     sample_weight=sample_weight_arr,
                     cat_features=self.cat_features_,
+                    ordinal_features=ordinal_features_frozen,
                     cv_splits=self.cv_splits_,
                     eval_payload=eval_payload,
                     scorer=self.scorer_,
@@ -649,7 +665,13 @@ class DarkoStepwiseSearchCV(BaseEstimator):
         }
 
         if self.refit:
-            self._refit_best(X, y_arr, sample_weight_arr, cat_features)
+            self._refit_best(
+                X,
+                y_arr,
+                sample_weight_arr,
+                cat_features,
+                ordinal_features=ordinal_features_frozen,
+            )
         return self
 
     def predict(self, X):
@@ -720,7 +742,14 @@ class DarkoStepwiseSearchCV(BaseEstimator):
                 "set n_workers=1 or run outside the restricted sandbox"
             ) from exc
 
-    def _refit_best(self, X, y, sample_weight, cat_features):
+    def _refit_best(
+        self,
+        X,
+        y,
+        sample_weight,
+        cat_features,
+        ordinal_features=None,
+    ):
         params = dict(self.best_params_)
         fold_iterations = self.best_trial_.user_attrs.get("fold_best_iterations") or []
         fold_lrs = self.best_trial_.user_attrs.get("fold_learning_rates") or []
@@ -813,7 +842,13 @@ class DarkoStepwiseSearchCV(BaseEstimator):
         params = _filter_params(params, self.estimator)
 
         final = clone(self.estimator).set_params(**params)
-        final.fit(X, y, cat_features=cat_features, sample_weight=sample_weight)
+        fit_kwargs = {
+            "cat_features": cat_features,
+            "sample_weight": sample_weight,
+        }
+        if ordinal_features is not None:
+            fit_kwargs["ordinal_features"] = ordinal_features
+        final.fit(X, y, **fit_kwargs)
         if dist_calibration is not None:
             calibration = _pooled_trial_sigma_calibration(self.best_trial_)
             if calibration is None:
@@ -927,6 +962,7 @@ class _ObjectivePayload:
     random_state: object
     trial_thread_count: int
     error_score: object
+    ordinal_features: object = None
 
 
 class _TrialObjective:
@@ -979,14 +1015,15 @@ class _TrialObjective:
                     w_train = payload.sample_weight
                     mass = float(len(y_valid) if w_valid is None else np.sum(w_valid))
 
-                est.fit(
-                    X_train,
-                    y_train,
-                    cat_features=payload.cat_features,
-                    eval_set=(X_valid, y_valid),
-                    sample_weight=w_train,
-                    eval_sample_weight=w_valid,
-                )
+                fit_kwargs = {
+                    "cat_features": payload.cat_features,
+                    "eval_set": (X_valid, y_valid),
+                    "sample_weight": w_train,
+                    "eval_sample_weight": w_valid,
+                }
+                if payload.ordinal_features is not None:
+                    fit_kwargs["ordinal_features"] = payload.ordinal_features
+                est.fit(X_train, y_train, **fit_kwargs)
                 score, loss = score_estimator(
                     est, payload.scorer, X_valid, y_valid, w_valid
                 )

@@ -2,6 +2,7 @@
 
 import math
 import warnings
+from collections.abc import Mapping
 
 import numpy as np
 from ._validation import (
@@ -11,6 +12,7 @@ from ._validation import (
     n_features_from_array_like,
     n_samples_from_array_like,
     normalize_random_state_seed,
+    resolve_cat_features,
     sklearn_assume_finite,
     validate_feature_names,
     validate_target_vector,
@@ -32,6 +34,7 @@ from .auto_params import (
 from .callbacks import WallClockStopper, _normalize_callbacks
 from .losses import VECTOR_LOSSES
 from .linear_residual import WeightedRidgeTrend, validate_linear_residual_loss
+from .target_encoding import _is_missing_value
 from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin
 from sklearn.utils.multiclass import type_of_target
 from sklearn.utils.validation import check_is_fitted
@@ -935,6 +938,331 @@ def _ensure_dense_eval_set(eval_set):
     return (_ensure_dense(Xv), yv)
 
 
+def _ordinal_category_scalar(value):
+    if isinstance(value, np.generic):
+        value = value.item()
+    if isinstance(value, bytes):
+        value = value.decode("utf-8")
+    if isinstance(value, (str, bool)):
+        return value
+    if isinstance(value, int):
+        return int(value)
+    if isinstance(value, float):
+        value = float(value)
+        if not np.isfinite(value):
+            raise ValueError("ordinal feature categories must be finite")
+        return value
+    raise TypeError(
+        "ordinal feature categories must contain only strings, booleans, "
+        "integers, or finite floats"
+    )
+
+
+def _normalize_ordinal_categories(
+    categories, *, feature, min_categories=2
+):
+    if isinstance(categories, (str, bytes, set, frozenset, Mapping)):
+        raise TypeError(
+            f"ordinal_features[{feature!r}] must be an ordered category sequence"
+        )
+    try:
+        values = list(categories)
+    except TypeError as exc:
+        raise TypeError(
+            f"ordinal_features[{feature!r}] must be an ordered category sequence"
+        ) from exc
+    normalized = [_ordinal_category_scalar(value) for value in values]
+    if len(normalized) < int(min_categories):
+        minimum = (
+            "two" if int(min_categories) == 2 else str(int(min_categories))
+        )
+        raise ValueError(
+            f"ordinal_features[{feature!r}] must declare at least "
+            f"{minimum} categories"
+        )
+    for index, value in enumerate(normalized):
+        if any(value == earlier for earlier in normalized[:index]):
+            raise ValueError(
+                f"ordinal_features[{feature!r}] contains duplicate category "
+                f"{value!r}"
+            )
+    return normalized
+
+
+def _ordinal_column_values(X, index):
+    if hasattr(X, "iloc"):
+        return np.asarray(X.iloc[:, int(index)], dtype=object)
+    return array_like_to_numpy(X, object)[:, int(index)]
+
+
+def _auto_ordinal_categories(X, index, *, allow_integer_codes):
+    if hasattr(X, "dtypes") and hasattr(X, "iloc"):
+        try:
+            import pandas as pd
+
+            dtype = X.dtypes.iloc[int(index)]
+            if isinstance(dtype, pd.CategoricalDtype) and bool(dtype.ordered):
+                categories = _normalize_ordinal_categories(
+                    dtype.categories,
+                    feature=int(index),
+                    min_categories=0,
+                )
+                return categories, "auto_ordered_categorical"
+        except (AttributeError, ImportError):
+            pass
+
+    if not allow_integer_codes:
+        return None
+
+    values = [
+        value.item() if isinstance(value, np.generic) else value
+        for value in _ordinal_column_values(X, index)
+        if not _is_missing_value(value)
+    ]
+    if values and all(
+        isinstance(value, int) and not isinstance(value, bool)
+        for value in values
+    ):
+        categories = sorted(set(int(value) for value in values))
+        if len(categories) >= 2:
+            return categories, "auto_integer_codes"
+    return None
+
+
+def _resolve_ordinal_features(X, cat_features, ordinal_features):
+    if ordinal_features is None or ordinal_features is False:
+        return cat_features, "off", []
+    X = _ensure_dense(X)
+    n_features = n_features_from_array_like(X)
+    names = feature_names_from_input(X)
+    nominal = list(resolve_cat_features(cat_features, X, n_features))
+
+    records = []
+    if isinstance(ordinal_features, str):
+        if ordinal_features.lower().replace("-", "_") != "auto":
+            raise ValueError("ordinal_features must be a mapping, 'auto', or None")
+        mode = "auto"
+        nominal_set = set(nominal)
+        for index in range(n_features):
+            detected = _auto_ordinal_categories(
+                X,
+                index,
+                allow_integer_codes=index in nominal_set,
+            )
+            if detected is None:
+                continue
+            categories, source = detected
+            records.append({
+                "index": int(index),
+                "name": None if names is None else str(names[index]),
+                "categories": categories,
+                "source": source,
+            })
+    elif isinstance(ordinal_features, Mapping):
+        mode = "explicit"
+        for feature, categories in ordinal_features.items():
+            resolved = resolve_cat_features([feature], X, n_features)
+            index = int(resolved[0])
+            records.append({
+                "index": index,
+                "name": None if names is None else str(names[index]),
+                "categories": _normalize_ordinal_categories(
+                    categories, feature=feature
+                ),
+                "source": "explicit",
+            })
+    else:
+        raise TypeError("ordinal_features must be a mapping, 'auto', or None")
+
+    records.sort(key=lambda record: record["index"])
+    indices = [record["index"] for record in records]
+    if len(indices) != len(set(indices)):
+        raise ValueError("ordinal_features contains duplicate feature references")
+    ordinal_set = set(indices)
+    nominal = [index for index in nominal if index not in ordinal_set]
+    return nominal, mode, records
+
+
+def _ordinal_codes(values, categories, *, feature, name):
+    values = np.asarray(
+        [
+            (
+                value.item()
+                if isinstance(value, np.generic)
+                else value
+            )
+            for value in np.asarray(values, dtype=object)
+        ],
+        dtype=object,
+    )
+    for index, value in enumerate(values):
+        if isinstance(value, bytes):
+            values[index] = value.decode("utf-8")
+    try:
+        import pandas as pd
+
+        series = pd.Series(values, dtype=object)
+        missing = pd.isna(series).to_numpy()
+        try:
+            codes = pd.Index(categories).get_indexer(series).astype(np.float64)
+        except TypeError:
+            codes = _ordinal_codes_elementwise(values, categories, missing)
+    except ImportError:
+        missing = np.fromiter(
+            (_is_missing_value(value) for value in values),
+            dtype=bool,
+            count=len(values),
+        )
+        category_map = {value: index for index, value in enumerate(categories)}
+        codes = np.fromiter(
+            (
+                (
+                    -1.0
+                    if is_missing
+                    else _ordinal_hash_lookup(category_map, value)
+                )
+                for value, is_missing in zip(values, missing)
+            ),
+            dtype=np.float64,
+            count=len(values),
+        )
+    unknown = (codes < 0.0) & ~missing
+    if np.any(unknown):
+        first = values[int(np.flatnonzero(unknown)[0])]
+        label = (
+            f"column {feature}"
+            if name is None
+            else f"column {name!r} (index {feature})"
+        )
+        raise ValueError(
+            f"{label} contains unknown ordinal category {first!r}; "
+            "declare the complete ordered category list"
+        )
+    codes[missing] = np.nan
+    return codes
+
+
+def _ordinal_hash_lookup(category_map, value):
+    try:
+        return float(category_map.get(value, -1))
+    except TypeError:
+        return -1.0
+
+
+def _ordinal_codes_elementwise(values, categories, missing):
+    codes = np.full(len(values), -1.0, dtype=np.float64)
+    for row, (value, is_missing) in enumerate(zip(values, missing)):
+        if is_missing:
+            continue
+        for code, category in enumerate(categories):
+            try:
+                equal = value == category
+            except (TypeError, ValueError):
+                continue
+            if isinstance(equal, (bool, np.bool_)) and bool(equal):
+                codes[row] = float(code)
+                break
+    return codes
+
+
+def _transform_ordinal_features(X, records):
+    if not records:
+        return X
+    if hasattr(X, "iloc") and hasattr(X, "copy"):
+        transformed = X.copy()
+        for record in records:
+            index = record["index"]
+            codes = _ordinal_codes(
+                _ordinal_column_values(transformed, index),
+                record["categories"],
+                feature=index,
+                name=record.get("name"),
+            )
+            if hasattr(transformed, "isetitem"):
+                transformed.isetitem(index, codes)
+            else:
+                transformed.iloc[:, index] = codes
+        return transformed
+
+    transformed = array_like_to_numpy(X, object).copy()
+    for record in records:
+        index = record["index"]
+        transformed[:, index] = _ordinal_codes(
+            transformed[:, index],
+            record["categories"],
+            feature=index,
+            name=record.get("name"),
+        )
+    return transformed
+
+
+def _restore_ordinal_records(records, *, n_features, feature_names=None):
+    if not isinstance(records, list):
+        raise ValueError(
+            "invalid DarkoFit model: ordinal feature state must be a list"
+        )
+    restored = []
+    seen = set()
+    allowed_sources = {
+        "explicit",
+        "auto_integer_codes",
+        "auto_ordered_categorical",
+    }
+    for record in records:
+        if not isinstance(record, dict):
+            raise ValueError(
+                "invalid DarkoFit model: ordinal feature record must be an object"
+            )
+        index = record.get("index")
+        if isinstance(index, bool) or not isinstance(index, int):
+            raise ValueError(
+                "invalid DarkoFit model: ordinal feature index must be an integer"
+            )
+        if index < 0 or index >= int(n_features) or index in seen:
+            raise ValueError(
+                "invalid DarkoFit model: ordinal feature index is invalid"
+            )
+        seen.add(index)
+        source = record.get("source")
+        if source not in allowed_sources:
+            raise ValueError(
+                "invalid DarkoFit model: ordinal feature source is invalid"
+            )
+        try:
+            categories = _normalize_ordinal_categories(
+                record.get("categories"),
+                feature=index,
+                min_categories=(
+                    0 if source == "auto_ordered_categorical" else 2
+                ),
+            )
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"invalid DarkoFit model: {exc}") from exc
+        name = record.get("name")
+        if name is not None and not isinstance(name, str):
+            raise ValueError(
+                "invalid DarkoFit model: ordinal feature name must be a string"
+            )
+        if feature_names is not None:
+            if name is None or str(feature_names[index]) != name:
+                raise ValueError(
+                    "invalid DarkoFit model: ordinal feature name does not "
+                    "match its index"
+                )
+        elif name is not None:
+            raise ValueError(
+                "invalid DarkoFit model: unnamed input cannot have an "
+                "ordinal feature name"
+            )
+        restored.append({
+            "index": index,
+            "name": name,
+            "categories": categories,
+            "source": source,
+        })
+    return restored
+
+
 def _feature_names_from_input(X):
     return feature_names_from_input(X)
 
@@ -964,6 +1292,7 @@ def _validate_eval_set_features(
     n_features,
     expected_feature_names=None,
     cat_features=(),
+    feature_names_validated=False,
 ):
     if eval_set is None:
         return None
@@ -974,9 +1303,10 @@ def _validate_eval_set_features(
             f"eval_set[0] has {actual} features, but X has "
             f"{int(n_features)} features"
         )
-    _validate_feature_names(
-        expected_feature_names, Xv, name="eval_set[0]"
-    )
+    if not feature_names_validated:
+        _validate_feature_names(
+            expected_feature_names, Xv, name="eval_set[0]"
+        )
     Xv, _, _ = coerce_feature_matrix(
         Xv,
         cat_features,
@@ -1016,6 +1346,9 @@ def _check_predict_input(estimator, X):
         getattr(estimator, "feature_names_in_", None),
         X,
         name="X",
+    )
+    X = _transform_ordinal_features(
+        X, getattr(estimator, "ordinal_features_", ())
     )
     prep = getattr(estimator.model_, "prep_", None)
     cat_features = getattr(prep, "cat_features_", ())
@@ -1120,6 +1453,97 @@ def _make_eval_split(X, y, validation_fraction, random_state,
 
 class _RefitParamsMixin:
     """Shared fitted-model metadata and full-data refit helpers."""
+
+    def _prepare_ordinal_fit_input(self, X, cat_features, ordinal_features):
+        nominal, mode, records = _resolve_ordinal_features(
+            X, cat_features, ordinal_features
+        )
+        return _transform_ordinal_features(X, records), nominal, mode, records
+
+    def _set_ordinal_fit_state(self, mode, records, nominal_cat_count):
+        self.ordinal_features_mode_ = mode
+        self.ordinal_features_ = records
+        self.ordinal_feature_indices_ = np.asarray(
+            [record["index"] for record in records], dtype=np.int64
+        )
+        self._ordinal_nominal_cat_count_ = int(nominal_cat_count)
+
+    def _attach_ordinal_metadata(self):
+        records = list(getattr(self, "ordinal_features_", ()))
+        if getattr(self, "ordinal_features_mode_", "off") == "off":
+            return
+        metadata = {
+            "mode": getattr(self, "ordinal_features_mode_", "off"),
+            "active": bool(records),
+            "feature_count": len(records),
+            "feature_indices": [int(record["index"]) for record in records],
+            "feature_names": [record.get("name") for record in records],
+            "sources": [record["source"] for record in records],
+            "nominal_categorical_count": int(
+                getattr(self, "_ordinal_nominal_cat_count_", 0)
+            ),
+            "added_columns": 0,
+            "target_stat_blocks_added": 0,
+            "target_used": False,
+            "unknown_policy": "fail_closed",
+            "missing_policy": "numeric_missing_bin",
+        }
+        model = getattr(self, "model_", None)
+        if model is not None:
+            model.auto_params_["ordinal_features"] = metadata
+            model.auto_params_.setdefault("diagnostics", {})
+            model.auto_params_["diagnostics"]["ordinal_features"] = metadata
+
+    def _restore_ordinal_state(self, state):
+        mode = state.get("ordinal_features_mode", "off")
+        if mode not in {"off", "explicit", "auto"}:
+            raise ValueError(
+                "invalid DarkoFit model: ordinal feature mode is invalid"
+            )
+        records = _restore_ordinal_records(
+            state.get("ordinal_features", []),
+            n_features=getattr(self, "n_features_in_", 0),
+            feature_names=getattr(self, "feature_names_in_", None),
+        )
+        if mode == "off" and records:
+            raise ValueError(
+                "invalid DarkoFit model: off ordinal mode has active features"
+            )
+        if mode == "explicit" and any(
+            record["source"] != "explicit" for record in records
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: ordinal feature mode and source "
+                "do not match"
+            )
+        if mode == "auto" and any(
+            record["source"] == "explicit" for record in records
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: ordinal feature mode and source "
+                "do not match"
+            )
+        prep = getattr(getattr(self, "model_", None), "prep_", None)
+        if prep is not None:
+            nominal = set(int(index) for index in prep.cat_features_)
+            numeric = set(int(index) for index in prep.num_features_)
+            if any(
+                record["index"] in nominal
+                or record["index"] not in numeric
+                for record in records
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: ordinal feature index does not "
+                    "match fitted preprocessing"
+                )
+        self.ordinal_features_mode_ = mode
+        self.ordinal_features_ = records
+        self.ordinal_feature_indices_ = np.asarray(
+            [record["index"] for record in records], dtype=np.int64
+        )
+        self._ordinal_nominal_cat_count_ = len(
+            getattr(prep, "cat_features_", ())
+        )
 
     def _warn_wrapper_deprecated_options(self):
         if (
@@ -1742,6 +2166,10 @@ class _RefitParamsMixin:
             state["n_features_in"] = int(self.n_features_in_)
         if hasattr(self, "feature_names_in_"):
             state["feature_names_in"] = self.feature_names_in_.tolist()
+        ordinal_mode = getattr(self, "ordinal_features_mode_", "off")
+        if ordinal_mode != "off":
+            state["ordinal_features_mode"] = ordinal_mode
+            state["ordinal_features"] = list(self.ordinal_features_)
         if getattr(self, "refit_", False):
             state["selection_model_persisted"] = False
         if hasattr(self, "tree_mode_selection_"):
@@ -1938,6 +2366,7 @@ class _RefitParamsMixin:
             self.feature_names_in_ = np.asarray(
                 state["feature_names_in"], dtype=object
             )
+        self._restore_ordinal_state(state)
         self.refit_ = bool(state.get("refit", False))
         self.refit_n_estimators_ = state.get("refit_n_estimators")
         self.refit_strategy_ = state.get("refit_strategy")
@@ -2604,7 +3033,8 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self.auto_learning_rate_probe_iterations = auto_learning_rate_probe_iterations
 
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
-            sample_weight=None, eval_sample_weight=None, callbacks=None):
+            sample_weight=None, eval_sample_weight=None, callbacks=None,
+            ordinal_features=None):
         """Fit the model.
 
         Parameters
@@ -2614,6 +3044,12 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         cat_features : list of int or str, or None
             Column indices or, for named input, column names to treat as
             categoricals.
+        ordinal_features : mapping, {"auto"}, or None
+            Ordered categorical features to encode as rank-valued numeric
+            columns before binning. A mapping declares each feature's complete
+            ordered category sequence. ``"auto"`` recognizes ordered pandas
+            categoricals and integer-coded columns listed in *cat_features*.
+            Unknown categories at prediction time are rejected.
         eval_set : (X_val, y_val) tuple or None
             Explicit validation set.  When provided, automatic splitting is
             skipped regardless of the *early_stopping* setting.
@@ -2639,12 +3075,27 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         callbacks = _normalize_callbacks(callbacks)
         X_input = X
         feature_names = _feature_names_from_input(X_input)
+        X, cat_features, ordinal_mode, ordinal_records = (
+            self._prepare_ordinal_fit_input(
+            X, cat_features, ordinal_features
+            )
+        )
         X, cat_features, n_features = _coerce_fit_X(X, cat_features)
+        ordinal_nominal_cat_count = len(cat_features)
         eval_set = _ensure_dense_eval_set(eval_set)
+        if eval_set is not None:
+            _validate_feature_names(
+                feature_names, eval_set[0], name="eval_set[0]"
+            )
+            eval_set = (
+                _transform_ordinal_features(eval_set[0], ordinal_records),
+                eval_set[1],
+            )
         eval_set = _validate_eval_set_features(
             eval_set, n_features,
             expected_feature_names=feature_names,
             cat_features=cat_features,
+            feature_names_validated=True,
         )
         y = validate_target_vector(y, X.shape[0], dtype=np.float64)
         sample_weight = _validate_wrapper_sample_weight(
@@ -2900,6 +3351,10 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 callbacks=callbacks,
             )
         self.model_ = model
+        self._set_ordinal_fit_state(
+            ordinal_mode, ordinal_records, ordinal_nominal_cat_count
+        )
+        self._attach_ordinal_metadata()
         self._record_input_feature_metadata(X_input, n_features)
         if explicit_eval_set:
             split_source = "explicit_eval_set"
@@ -3140,6 +3595,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             # Free the binned-matrix copies; fitted models keep a reference
             # to this dict, so an unemptied cache would pin them in memory.
             preprocessing_cache.clear()
+        self._attach_ordinal_metadata()
         return self
 
     def _linear_residual_trend(self, X):
@@ -3599,7 +4055,8 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         self.auto_learning_rate_probe_iterations = auto_learning_rate_probe_iterations
 
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
-            sample_weight=None, eval_sample_weight=None, callbacks=None):
+            sample_weight=None, eval_sample_weight=None, callbacks=None,
+            ordinal_features=None):
         """Fit the model.
 
         Parameters
@@ -3609,6 +4066,12 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         cat_features : list of int or str, or None
             Column indices or, for named input, column names to treat as
             categoricals.
+        ordinal_features : mapping, {"auto"}, or None
+            Ordered categorical features to encode as rank-valued numeric
+            columns before binning. A mapping declares each feature's complete
+            ordered category sequence. ``"auto"`` recognizes ordered pandas
+            categoricals and integer-coded columns listed in *cat_features*.
+            Unknown categories at prediction time are rejected.
         eval_set : (X_val, y_val) tuple or None
             Explicit validation set with original class labels.  When provided,
             automatic splitting is skipped.
@@ -3633,12 +4096,28 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         self._warn_wrapper_deprecated_options()
         callbacks = _normalize_callbacks(callbacks)
         X_input = X
+        feature_names = _feature_names_from_input(X_input)
+        X, cat_features, ordinal_mode, ordinal_records = (
+            self._prepare_ordinal_fit_input(
+            X, cat_features, ordinal_features
+            )
+        )
         X, cat_features, n_features = _coerce_fit_X(X, cat_features)
+        ordinal_nominal_cat_count = len(cat_features)
         eval_set = _ensure_dense_eval_set(eval_set)
+        if eval_set is not None:
+            _validate_feature_names(
+                feature_names, eval_set[0], name="eval_set[0]"
+            )
+            eval_set = (
+                _transform_ordinal_features(eval_set[0], ordinal_records),
+                eval_set[1],
+            )
         eval_set = _validate_eval_set_features(
             eval_set, n_features,
-            expected_feature_names=_feature_names_from_input(X_input),
+            expected_feature_names=feature_names,
             cat_features=cat_features,
+            feature_names_validated=True,
         )
         y = validate_target_vector(y, X.shape[0])
         target_type = type_of_target(y)
@@ -3851,6 +4330,10 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         self._multiclass = multiclass
         self.classes_ = classes
         self.n_classes_ = len(classes)
+        self._set_ordinal_fit_state(
+            ordinal_mode, ordinal_records, ordinal_nominal_cat_count
+        )
+        self._attach_ordinal_metadata()
         self._record_input_feature_metadata(X_input, n_features)
         if explicit_eval_set:
             split_source = "explicit_eval_set"
@@ -3932,6 +4415,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
             # Free the binned-matrix copies; fitted models keep a reference
             # to this dict, so an unemptied cache would pin them in memory.
             preprocessing_cache.clear()
+        self._attach_ordinal_metadata()
         return self
 
     def predict_proba(self, X):
