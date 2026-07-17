@@ -31,6 +31,15 @@ previous behaviors remain available through explicit parameters.
   time is down about 62.0% from 28.93s without changing R² or any public API.
   The serial-twin design and cutoff are adapted from Apache-2.0 ChimeraBoost
   commit `a04430657fb82c806ee2a039506c99944a27accc`, recorded in `NOTICE`.
+* Confirm the optimized constant-leaf training engine against synced
+  ChimeraBoost 0.15.0 on the frozen basketball boundary. With identical
+  1,000-tree core parameters, every fold and player-guardrail prediction was
+  byte-identical; DarkoFit median fit and wall time were 2.5% and 2.4% lower,
+  respectively, with 0.8% higher RSS. Current product defaults answer a
+  different question: DarkoFit took 1.312× as long while ChimeraBoost retained 64–163 trees,
+  while mean R² differed by only 0.000232 and DarkoFit led cold-player R² by
+  0.00955. This is characterization evidence only and does not change
+  DarkoFit's early-stopping, linear-leaf, or selection defaults.
 * Add experimental, default-off `linear_leaves=True` for scalar RMSE
   CatBoost/oblivious fits. Each tree can attach Hessian-weighted local ridge
   models over its numeric split features without changing DarkoFit's split

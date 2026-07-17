@@ -54,6 +54,14 @@ claims until independently reproduced here.*
   time by about 62% from 28.93s. This clears the aspirational 13-second target
   but remains above ChimeraBoost's diagnostic 7.52-second run. Basketball stays
   the first fast fatal gate for subsequent engine or quality work.
+- A source-frozen same-machine comparison against ChimeraBoost 0.15.0 now
+  resolves that remaining diagnostic gap. With the same 1,000 constant-leaf
+  trees and common core parameters, every fold and player-guardrail prediction
+  was byte-identical; DarkoFit's median fit and wall ratios were 0.975 and
+  0.976. Low-level default-tree fit parity is achieved. Under current product
+  defaults DarkoFit took 1.312× as long because ChimeraBoost retained only 64–163 trees,
+  but mean R² differed by just 0.000232 and DarkoFit led cold-player R² by
+  0.00955. That is a policy trade-off, not permission to promote early stopping.
 
 ## 0. Thesis
 
@@ -208,7 +216,7 @@ Engine facts that matter for us:
 | Ceiling quality | A10 (auto-mode+10k+l2=3) = 0.9756 vs live Chimera (−2.44%); mode selection is the lever (A10/B10 −2.78%, 11/2); but 2.57× inference | We can beat them at 2–3× cost; not shippable as-is |
 | Unseen-data check (CTR23, 9 tasks) | A10/M point −5.80%, gate FAIL on power; wins are categorical tasks (−19…−23%), losses are smooth numerics (+2…+6%) where their linear leaves rule | Two named gaps: smooth data (theirs), categorical representation (ours to bank) |
 | Categorical representation | Safe ordinal was −18.4% RMSE vs product default and +2.2% deployment-lane inference, but the causal `O/B` inference ratio was 1.265 versus a 1.25 ceiling | Strong mechanism; frozen policy decision failed |
-| Speed (basketball steady, 10 folds) | Two exact engine ports reduced DarkoFit from 29.46 s to 11.59 s wall and from 28.93 s to 11.01 s fit; every held-team/cold-player output stayed exact. Synced Chimera's separate diagnostic was ~7.52 s. | Engine work cleared the 13-second target without a policy tradeoff; parity remains open |
+| Speed (basketball steady, 10 folds) | Two exact engine ports reduced DarkoFit from 29.46 s to ~12 s. In a frozen matched 1,000-tree lane, DarkoFit/Chimera fit and wall ratios were 0.975/0.976 with byte-identical predictions. Under product defaults DarkoFit took 1.312× as long because Chimera retained 64–163 trees. | Default-tree fit parity achieved; remaining product gap is policy, while packed prediction remains slower |
 | Small-noisy-data quality | Basketball: DarkoFit 0.5267 ≈ Chimera 0.5248; CatBoost 0.5363; Chimera ens-5 0.5402 | Bagging, not tuning, is the quality lever there |
 | Engine numerics | 70/165 bit-identical splits vs Chimera in catboost mode | Same algorithm family; the fight is policy + features, not math |
 
@@ -328,6 +336,10 @@ separate fresh-data gate. Only then may the one-shot lockbox be considered.
     behavior-exact ports reduced basketball fit time by about 62% and cleared
     the 13-second target. Broader kernel unification and deletion remain
     unearned; unsupported lanes still retain their reference implementations.
+    A subsequent matched-core comparison against ChimeraBoost 0.15.0 produced
+    byte-identical predictions and slightly favored DarkoFit fit time. Stop
+    optimizing this training path absent a newly measured regression; do not
+    delete fallback kernels merely to reduce code size.
 13. **Leafwise path**: keep the segment/subtraction design but collapse its
     variant axes the same way; port the packed row-major predict treatment so
     `tree_mode="lightgbm"` (and the accuracy preset) stops paying the 2.57×
