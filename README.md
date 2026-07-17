@@ -448,6 +448,13 @@ is not feasible. Weighted target stratification is supported for ungrouped
 regression splits; classification and grouped splits use their own explicit
 class/group-aware split policies and reject this regression-only strategy.
 
+For automatic early-stopping or selector holdouts on entity data, pass
+`groups=` to `fit` and set `validation_strategy="group"`. Regression uses a
+group-shuffled holdout; classification uses a stratified group split. No group
+may appear on both sides. Supplying `groups=` with the historical
+`validation_strategy="random"` remains grouped for backward compatibility,
+while the explicit strategy fails if `groups` is missing.
+
 `l2_leaf_reg` defaults to `"auto"` on the sklearn estimators. The resolver is
 conservative: CatBoost-mode fits usually resolve near the historical `3.0`
 default, while LightGBM-mode fits use that mode's lower regularization base.

@@ -6736,6 +6736,86 @@ def test_weighted_stratified_rejects_silent_noop_split_modes():
         ).fit(X, y_cls)
 
 
+def test_group_validation_strategy_is_explicit_and_matches_legacy_group_split():
+    from darkofit.sklearn_api import _make_eval_split
+
+    X = np.arange(240, dtype=np.float64).reshape(80, 3)
+    y = np.linspace(-1.0, 1.0, 80)
+    groups = np.repeat(np.arange(20), 4)
+
+    explicit_train, explicit_val, explicit_policy = _make_eval_split(
+        X,
+        y,
+        0.2,
+        random_state=17,
+        groups=groups,
+        validation_strategy="group",
+    )
+    legacy_train, legacy_val, legacy_policy = _make_eval_split(
+        X,
+        y,
+        0.2,
+        random_state=17,
+        groups=groups,
+        validation_strategy="random",
+    )
+
+    assert np.array_equal(explicit_train, legacy_train)
+    assert np.array_equal(explicit_val, legacy_val)
+    assert explicit_policy == legacy_policy == "group_shuffle"
+    assert set(groups[explicit_train]).isdisjoint(groups[explicit_val])
+
+
+def test_group_validation_strategy_requires_groups_and_records_intent():
+    X = np.arange(240, dtype=np.float64).reshape(80, 3)
+    y = np.linspace(-1.0, 1.0, 80)
+    groups = np.repeat(np.arange(20), 4)
+
+    with pytest.raises(
+        ValueError, match="validation_strategy='group' requires groups"
+    ):
+        DarkoRegressor(
+            iterations=2,
+            early_stopping=True,
+            validation_strategy="group",
+        ).fit(X, y)
+
+    model = DarkoRegressor(
+        iterations=3,
+        early_stopping=True,
+        validation_strategy="group",
+        random_state=17,
+    ).fit(X, y, groups=groups)
+
+    split = model.model_.auto_params_["validation_split"]
+    assert split["validation_strategy"] == "group"
+    assert split["realized_validation_strategy"] == "group_shuffle"
+    assert split["groups_provided"] is True
+
+
+def test_group_validation_strategy_stratifies_classification_without_leakage():
+    from darkofit.sklearn_api import _make_eval_split
+
+    X = np.arange(240, dtype=np.float64).reshape(80, 3)
+    groups = np.repeat(np.arange(20), 4)
+    y = np.tile(np.array([0, 0, 1, 1]), 20)
+
+    train, val, policy = _make_eval_split(
+        X,
+        y,
+        0.2,
+        random_state=19,
+        groups=groups,
+        stratify=y,
+        validation_strategy="group",
+    )
+
+    assert policy == "class_stratified_group"
+    assert set(groups[train]).isdisjoint(groups[val])
+    assert set(y[train]) == {0, 1}
+    assert set(y[val]) == {0, 1}
+
+
 def test_weighted_stratified_default_fraction_caps_small_regression_strata():
     rng = np.random.default_rng(107)
     X = rng.normal(size=(40, 4))

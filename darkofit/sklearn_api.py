@@ -109,10 +109,10 @@ def _should_early_stop(setting):
 
 def _normalize_validation_strategy(strategy):
     mode = str(strategy).lower().replace("-", "_")
-    if mode in {"random", "weighted_stratified"}:
+    if mode in {"random", "weighted_stratified", "group"}:
         return mode
     raise ValueError(
-        "validation_strategy must be 'random' or 'weighted_stratified'"
+        "validation_strategy must be 'random', 'weighted_stratified', or 'group'"
     )
 
 
@@ -1052,6 +1052,8 @@ def _make_eval_split(X, y, validation_fraction, random_state,
     )
 
     validation_strategy = _normalize_validation_strategy(validation_strategy)
+    if validation_strategy == "group" and groups is None:
+        raise ValueError("validation_strategy='group' requires groups")
     if groups is not None:
         groups = np.asarray(groups)
         if stratify is not None:
@@ -2582,7 +2584,8 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             Group labels for the samples (e.g. ``df['subject_id']``).  When
             supplied and *early_stopping* triggers an automatic split, groups
             are kept intact across the train/validation boundary using
-            ``GroupShuffleSplit``.
+            ``GroupShuffleSplit``. Set ``validation_strategy='group'`` to
+            require this behavior explicitly.
         sample_weight : array-like of shape (n_samples,) or None
             Per-sample weights.  Normalized to mean 1 internally.
         eval_sample_weight : array-like of shape (n_validation_samples,) or None
@@ -2715,6 +2718,8 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         if self.refit:
             self._refit_strategy_exponent(self.refit_strategy)
         es_active = _should_early_stop(self.early_stopping)
+        if validation_strategy_ == "group" and groups is None:
+            raise ValueError("validation_strategy='group' requires groups")
         if (
             (es_active or tree_mode_auto)
             and eval_set is None
@@ -3573,6 +3578,8 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
             Group labels (e.g. ``df['subject_id']``).  When supplied and early
             stopping triggers an automatic split, ``StratifiedGroupKFold`` keeps
             groups intact and class proportions balanced across the split.
+            Set ``validation_strategy='group'`` to require this behavior
+            explicitly.
         sample_weight : array-like of shape (n_samples,) or None
             Per-sample weights.  Normalized to mean 1 internally.
         eval_sample_weight : array-like of shape (n_validation_samples,) or None
@@ -3634,6 +3641,8 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         if self.refit:
             self._refit_strategy_exponent(self.refit_strategy)
         es_active = _should_early_stop(self.early_stopping)
+        if validation_strategy_ == "group" and groups is None:
+            raise ValueError("validation_strategy='group' requires groups")
         if (
             (es_active or tree_mode_auto)
             and eval_set is None

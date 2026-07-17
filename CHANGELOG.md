@@ -61,6 +61,13 @@ This hardening preserves the frozen basketball campaign's blocking-warmup
 timing and exactness evidence; its background completion check did not exercise
 concurrent DarkoFit work.
 
+### Group-aware automatic validation
+
+Add explicit `validation_strategy="group"` support to the sklearn wrappers.
+It requires `groups=` and records the requested strategy. Supplying `groups=`
+with the historical default `validation_strategy="random"` remains grouped for
+backward compatibility.
+
 * Harden the shared wrapper/core input boundary: reject masked, complex,
   infinite-by-default, sparse, empty training/evaluation, and malformed inputs
   before lossy conversion while preserving shape-correct empty prediction;
