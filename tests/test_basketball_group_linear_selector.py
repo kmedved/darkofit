@@ -6,7 +6,7 @@ from benchmarks import run_basketball_group_linear_selector as experiment
 
 
 def _model_hash(value="same"):
-    return {"canonical_payload_sha256": value, "archive_bytes": 1}
+    return {"canonical_payload_sha256": value}
 
 
 def _record(prediction="same", model="same", selected=False, margin=0.01):

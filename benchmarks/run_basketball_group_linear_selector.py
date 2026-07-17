@@ -129,7 +129,6 @@ def _save_state(model) -> dict[str, Any]:
             "canonical_payload_sha256": (
                 _canonical_model_payload_sha256(path)
             ),
-            "archive_bytes": int(path.stat().st_size),
         }
 
 
