@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from benchmarks import build_native_ordinal_c2_registry as registry
@@ -85,6 +86,20 @@ def test_power_analysis_is_deterministic_and_covers_full_confirmation_gate():
     assert first["gates"]["task_bootstrap_method"] == (
         "exact_multinomial_count_vectors_higher"
     )
+
+
+def test_model_categorical_policy_unions_metadata_and_nonnumeric_columns():
+    frame = pd.DataFrame({
+        "numeric": [1.0, 2.0],
+        "marked_numeric_codes": [1, 2],
+        "unmarked_labels": ["low", "high"],
+        "numeric_strings": ["3.0", "4.0"],
+    })
+    categorical, inferred = registry._model_categorical_indices(
+        frame, [False, True, False, False]
+    )
+    assert inferred == [2]
+    assert categorical == [1, 2]
 
 
 def test_structured_repository_scan_ignores_unkeyed_numeric_collisions(

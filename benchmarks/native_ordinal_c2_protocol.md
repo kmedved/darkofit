@@ -37,6 +37,15 @@ indices, and opaque target digests. It must not print, summarize, rank, or use
 target values. Registry selection and ordered-category declarations are
 target-blind.
 
+The model categorical set is the union of OpenML's categorical indicator and
+columns that fail a target-blind `float64` conversion. This is necessary for
+two source datasets whose nonnumeric object columns are not marked categorical
+by OpenML. The rule is fixed for both arms; the candidate removes only its
+declared ordinal columns from this shared nominal set. The rule was made
+explicit after the second target-blind registry attempt found that Apparel's
+currency-valued `mrp` is an unmarked object column. No model was fit and no C2
+target outcome was inspected.
+
 Every task uses official OpenML repeat `0`, folds `0`, `1`, and `2`, sample
 `0`. The builder must bind task ID, dataset ID/name, default target name,
 feature-only fingerprint, opaque target digest, exact feature domains, and
@@ -71,8 +80,9 @@ identical.
 FPS orders only explicitly versioned or intensity-like fields. CPU/GPU names,
 architectures, memory types, and game names remain nominal. Diamonds uses the
 published orders already frozen in the prior ordinal campaign. Apparel `mrp`
-uses numeric currency order. Munich location is source-defined as average,
-good, and top.
+uses numeric currency order; its source object column enters the shared model
+categorical set through the frozen nonnumeric-conversion rule. Munich location
+is source-defined as average, good, and top.
 
 ## Target-unseen confirmation registry
 

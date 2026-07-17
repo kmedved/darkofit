@@ -169,6 +169,32 @@ def _canonical_domain(values: Any) -> list[Any]:
     return result
 
 
+def _model_categorical_indices(
+    X: Any, openml_categorical: list[bool]
+) -> tuple[list[int], list[int]]:
+    if len(openml_categorical) != int(X.shape[1]):
+        raise RuntimeError("OpenML categorical indicator length changed")
+    inferred = []
+    for index, is_categorical in enumerate(openml_categorical):
+        if is_categorical:
+            continue
+        try:
+            np.asarray(X.iloc[:, index], dtype=np.float64)
+        except (TypeError, ValueError):
+            inferred.append(int(index))
+    categorical = sorted(
+        {
+            *inferred,
+            *(
+                int(index)
+                for index, is_categorical in enumerate(openml_categorical)
+                if is_categorical
+            ),
+        }
+    )
+    return categorical, inferred
+
+
 def _feature_record(
     declaration: dict[str, Any],
     task_record: dict[str, Any],
@@ -191,6 +217,10 @@ def _feature_record(
         raise RuntimeError("OpenML feature names and dataframe columns differ")
     if len(set(str(name) for name in names)) != len(names):
         raise RuntimeError("OpenML feature names are not unique")
+    categorical_indices, inferred_categorical_indices = (
+        _model_categorical_indices(X, categorical)
+    )
+    categorical_set = set(categorical_indices)
 
     declaration_map = declaration["ordinal_features"]
     if not isinstance(declaration_map, dict):
@@ -206,9 +236,9 @@ def _feature_record(
                 f"declared ordinal feature {feature!r} is absent"
             )
         index = name_to_index[feature]
-        if not categorical[index]:
+        if index not in categorical_set:
             raise RuntimeError(
-                f"declared ordinal feature {feature!r} is not categorical"
+                f"declared ordinal feature {feature!r} is numeric"
             )
         declared = _canonical_domain(categories)
         observed = _canonical_domain(
@@ -240,11 +270,18 @@ def _feature_record(
         "feature_names_sha256": ctr.sha256_json(
             [str(name) for name in names]
         ),
-        "categorical_indices": [
+        "openml_categorical_indices": [
             int(index)
             for index, is_categorical in enumerate(categorical)
             if is_categorical
         ],
+        "inferred_nonnumeric_categorical_indices": (
+            inferred_categorical_indices
+        ),
+        "categorical_indices": categorical_indices,
+        "categorical_policy": (
+            "openml_indicator_union_target_blind_float64_cast_failures"
+        ),
         "ordinal_features": ordered,
         "ordinal_feature_count": len(ordered),
         "target_values_inspected": False,
