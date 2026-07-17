@@ -258,8 +258,13 @@ Calibration applies to
 `refit=True`, the calibration is frozen from the selection-phase validation
 model and then applied to the full-data refit.
 
-`DarkoRegressor` also has opt-in linear residual boosting via
-`linear_residual=True`. Before fitting trees, the wrapper fits a weighted ridge
+`DarkoRegressor` also retains opt-in linear residual boosting via
+`linear_residual=True` for the 0.10 migration cycle. This family is deprecated
+for removal in 1.0: local `linear_leaves=True` was materially more accurate on
+the frozen smooth-development comparison. For non-RMSE losses, migrate by
+fitting an explicit trend outside DarkoFit, training on residuals, and adding
+the trend back to location predictions. Before fitting trees, the current
+wrapper fits a weighted ridge
 trend on selected numeric raw input columns, trains the booster on residuals,
 and adds the deterministic trend back at public prediction time:
 

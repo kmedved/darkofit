@@ -326,7 +326,8 @@ policy. Do this as a **deprecation release (0.10) → 1.0** cycle:
   `dist_calibration` — finish it);
 - `rho_*` multipliers are retained because focused distributional tests defend
   independent head scaling, metadata, and round-trip behavior;
-- `linear_residual` **only if** the L2 comparison arm shows dominance.
+- `linear_residual`: the L2 comparison arm established local-linear
+  dominance, so the 0.10 warning cycle is active; delete at 1.0.
 - `hybrid` stays until C3 produces the mode-mix evidence. `target_ordered_
   cat_codes` stays until C1 replaces it properly.
 

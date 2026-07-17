@@ -62,11 +62,42 @@ def test_wrapper_defaults_do_not_warn():
         model.fit(X, Y)
 
 
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"linear_residual": True},
+        {"linear_residual_alpha": 2.0},
+        {"linear_residual_features": [0]},
+        {"linear_residual_fit_intercept": False},
+        {"linear_residual_standardize": False},
+    ],
+)
+def test_wrapper_warns_for_linear_residual_family(kwargs):
+    model = DarkoRegressor(
+        iterations=1,
+        learning_rate=0.1,
+        **kwargs,
+    )
+    with pytest.warns(FutureWarning, match="linear_residual"):
+        model.fit(X, Y)
+
+
 def test_wrapper_core_warning_points_to_caller():
     model = DarkoRegressor(
         iterations=0,
         tree_mode="depthwise",
         learning_rate=0.1,
+    )
+    with pytest.warns(FutureWarning) as recorded:
+        model.fit(X, Y)
+    assert recorded[0].filename == __file__
+
+
+def test_linear_residual_warning_points_to_caller():
+    model = DarkoRegressor(
+        iterations=1,
+        learning_rate=0.1,
+        linear_residual=True,
     )
     with pytest.warns(FutureWarning) as recorded:
         model.fit(X, Y)

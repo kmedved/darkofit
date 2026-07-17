@@ -19,6 +19,12 @@ non-default value selects them. They will be removed in DarkoFit 1.0:
 - `bootstrap_type="bayesian"` and `bagging_temperature`. Use
   `bootstrap_type="none"` with uniform, GOSS, or MVS row sampling.
 - `sampling="weighted_goss"`. Use plain `"goss"` or `"mvs"`.
+- `linear_residual`, `linear_residual_alpha`, `linear_residual_features`,
+  `linear_residual_fit_intercept`, and `linear_residual_standardize`. For
+  scalar RMSE smooth data, use the more accurate local
+  `linear_leaves=True`. For other supported losses, explicitly detrend the
+  target before fitting and add the deterministic trend back to location
+  predictions.
 
 The older `sigma_calibration` alias continues to emit `DeprecationWarning`;
 use `dist_calibration` before 1.0.
@@ -29,8 +35,15 @@ passed every leave-one-fold-out check, and improved held-team and cold-player
 R². It remains default-off and requires fresh sports confirmation before any
 promotion. The two Gaussian `rho_*` multipliers also remain: focused
 distributional tests defend their independent head-scaling behavior and safe
-serialization. `linear_residual`, `hybrid`, and
-`target_ordered_cat_codes` remain pending their declared comparison campaigns.
+serialization. `hybrid` and `target_ordered_cat_codes` remain pending their
+declared comparison campaigns.
+
+The `linear_residual` deprecation follows the frozen smooth development
+campaign: local linear leaves improved equal-task RMSE by 7.97% versus
+DarkoFit default, beat global residual on all three datasets and 20 of 21
+splits, while global residual improved only 0.48% and regressed on space_ga.
+The comparison is development evidence and does not promote linear leaves as
+a default.
 
 ## 0.9.0 - 2026-07-12
 

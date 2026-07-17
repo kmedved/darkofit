@@ -1136,6 +1136,27 @@ class _RefitParamsMixin:
                 FutureWarning,
                 stacklevel=3,
             )
+        if (
+            bool(getattr(self, "linear_residual", False))
+            or float(getattr(self, "linear_residual_alpha", 1.0)) != 1.0
+            or getattr(self, "linear_residual_features", "auto") != "auto"
+            or not bool(
+                getattr(self, "linear_residual_fit_intercept", True)
+            )
+            or not bool(
+                getattr(self, "linear_residual_standardize", True)
+            )
+        ):
+            warnings.warn(
+                "linear_residual, linear_residual_alpha, "
+                "linear_residual_features, linear_residual_fit_intercept, "
+                "and linear_residual_standardize are deprecated and will be "
+                "removed in DarkoFit 1.0; use local linear_leaves=True for "
+                "scalar RMSE or detrend explicitly before fitting other "
+                "losses",
+                FutureWarning,
+                stacklevel=3,
+            )
 
     def __sklearn_is_fitted__(self):
         return hasattr(self, "model_")
