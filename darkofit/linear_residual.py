@@ -514,7 +514,7 @@ class WeightedRidgeTrend:
 
     def _selected_matrix(self, X):
         cols = []
-        n_samples = n_samples_from_array_like(X)
+        n_samples = n_samples_from_array_like(X, allow_empty=True)
         numeric_matrix = _numeric_matrix_or_none(X)
         for offset, index in enumerate(self.feature_indices_):
             try:
@@ -534,7 +534,10 @@ class WeightedRidgeTrend:
 
     def predict(self, X):
         if not getattr(self, "active_", False):
-            return np.zeros(n_samples_from_array_like(X), dtype=np.float64)
+            return np.zeros(
+                n_samples_from_array_like(X, allow_empty=True),
+                dtype=np.float64,
+            )
         matrix = self._selected_matrix(X)
         return self.intercept_ + matrix @ self.coef_
 

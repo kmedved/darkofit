@@ -100,18 +100,59 @@ def test_invalid_eval_and_predict_input_is_rejected(factory, kind):
         next(staged)
 
 
-def test_assume_finite_skips_only_predict_time_infinity_scan():
+@pytest.mark.parametrize(
+    "factory",
+    [
+        _regressor,
+        lambda: GradientBoosting(
+            iterations=3, thread_count=1, diagnostic_warnings="never"
+        ),
+    ],
+)
+def test_assume_finite_skips_all_feature_infinity_checks(factory):
     X, y = _regression_data()
-    model = _regressor().fit(X, y)
-    bad = X[:2].copy()
-    bad[0, 0] = np.inf
+    X_inf = X.copy()
+    X_inf[0, 0] = np.inf
+    X_inf[8, 1] = -np.inf
+    X_nan = X_inf.copy()
+    X_nan[~np.isfinite(X_nan)] = np.nan
+
     with pytest.raises(ValueError, match="infinity"):
-        model.predict(bad)
+        factory().fit(X_inf, y)
+    model = factory().fit(X, y)
+    with pytest.raises(ValueError, match="infinity"):
+        (
+            model.predict_raw(X_inf[:2])
+            if isinstance(model, GradientBoosting)
+            else model.predict(X_inf[:2])
+        )
+
     with config_context(assume_finite=True):
-        prediction = model.predict(bad)
-        assert prediction.shape == (2,)
-        with pytest.raises(ValueError, match="infinity"):
-            _regressor().fit(bad, y[:2])
+        inf_model = factory().fit(
+            X_inf[8:],
+            y[8:],
+            eval_set=(X_inf[:8], y[:8]),
+        )
+        nan_model = factory().fit(
+            X_nan[8:],
+            y[8:],
+            eval_set=(X_nan[:8], y[:8]),
+        )
+        inf_prediction = (
+            inf_model.predict_raw(X_inf)
+            if isinstance(inf_model, GradientBoosting)
+            else inf_model.predict(X_inf)
+        )
+        nan_prediction = (
+            nan_model.predict_raw(X_nan)
+            if isinstance(nan_model, GradientBoosting)
+            else nan_model.predict(X_nan)
+        )
+        y_inf = y.copy()
+        y_inf[0] = np.inf
+        with pytest.raises(ValueError, match="finite"):
+            factory().fit(X, y_inf)
+    np.testing.assert_array_equal(inf_prediction, nan_prediction)
 
 
 @pytest.mark.parametrize("categorical", [False, True])
@@ -355,6 +396,95 @@ def test_distributional_and_multiclass_core_prediction_boundaries():
         dist.predict_dist(bad)
     with pytest.raises(ValueError, match="infinity"):
         multiclass.predict_raw(bad)
+    assert dist.predict_raw(X[:0]).shape == (0, 2)
+    assert all(
+        parameter.shape == (0,)
+        for parameter in dist.predict_dist(X[:0])
+    )
+    assert multiclass.predict_raw(X[:0]).shape == (0, 3)
+
+
+def test_zero_row_prediction_returns_empty_outputs():
+    X, y = _regression_data(64)
+    empty = X[:0]
+
+    regressor = _regressor().fit(X, y)
+    assert regressor.predict(empty).shape == (0,)
+    assert all(
+        prediction.shape == (0,)
+        for prediction in regressor.staged_predict(empty)
+    )
+    with pytest.raises(ValueError, match="expecting 3 features"):
+        regressor.predict(np.empty((0, 2)))
+    with pytest.raises(ValueError, match="0 sample"):
+        _regressor().fit(X, y, eval_set=(empty, y[:0]))
+
+    core = GradientBoosting(
+        iterations=3,
+        thread_count=1,
+        diagnostic_warnings="never",
+    ).fit(X, y)
+    assert core.predict_raw(empty).shape == (0,)
+    assert all(
+        prediction.shape == (0,)
+        for prediction in core.staged_predict_raw(empty)
+    )
+
+    binary = DarkoClassifier(
+        iterations=3,
+        thread_count=1,
+        diagnostic_warnings="never",
+    ).fit(X, np.arange(len(X)) % 2)
+    assert binary.predict(empty).shape == (0,)
+    assert binary.predict_proba(empty).shape == (0, 2)
+    assert all(
+        probability.shape == (0, 2)
+        for probability in binary.staged_predict_proba(empty)
+    )
+
+    multiclass = DarkoClassifier(
+        iterations=3,
+        thread_count=1,
+        diagnostic_warnings="never",
+    ).fit(X, np.arange(len(X)) % 3)
+    assert multiclass.predict(empty).shape == (0,)
+    assert multiclass.predict_proba(empty).shape == (0, 3)
+
+    distributional = DarkoRegressor(
+        loss="Gaussian",
+        tree_mode="lightgbm",
+        iterations=3,
+        thread_count=1,
+        diagnostic_warnings="never",
+    ).fit(X, y)
+    assert distributional.predict(empty).shape == (0,)
+    assert distributional.predict_variance(empty).shape == (0,)
+    assert all(
+        parameter.shape == (0,)
+        for parameter in distributional.predict_dist(empty)
+    )
+    assert all(
+        bound.shape == (0,)
+        for bound in distributional.predict_interval(empty)
+    )
+    assert distributional.sample(
+        empty, n_samples=4, random_state=0
+    ).shape == (0, 4)
+
+
+def test_zero_row_categorical_prediction_preserves_feature_schema():
+    X, y = _regression_data()
+    frame = pd.DataFrame(
+        {
+            "value": X[:, 0],
+            "team": np.where(X[:, 1] > 0, "A", "B"),
+            "z": X[:, 2],
+        }
+    )
+    model = _regressor().fit(frame, y, cat_features=["team"])
+
+    prediction = model.predict(frame.iloc[:0])
+    assert prediction.shape == (0,)
 
 
 def test_archive_round_trip_retains_input_metadata(tmp_path):

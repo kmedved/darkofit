@@ -1521,7 +1521,7 @@ class _BaseBooster:
             name="X",
             fitted_name=type(self).__name__,
         )
-        actual = n_features_from_array_like(X)
+        actual = n_features_from_array_like(X, allow_empty=True)
         expected = getattr(self, "n_features_in_", None)
         if expected is None:
             expected = getattr(self.prep_, "n_input_features_", None)
@@ -1535,6 +1535,7 @@ class _BaseBooster:
             self.prep_.cat_features_,
             name="X",
             check_infinite=not sklearn_assume_finite(),
+            allow_empty=True,
         )
         return X
 
@@ -1545,6 +1546,7 @@ class _BaseBooster:
             cat_features,
             name="X",
             resolve_names=True,
+            check_infinite=not sklearn_assume_finite(),
         )
         return X, cat_features, int(n_features), feature_names
 
@@ -1573,6 +1575,7 @@ class _BaseBooster:
             X,
             cat_features,
             name="eval_set[0]",
+            check_infinite=not sklearn_assume_finite(),
         )
         if int(n_features) != int(expected_n_features):
             raise ValueError(

@@ -2,12 +2,13 @@
 
 Borders are learned once on the training data (quantile based). Every feature
 is mapped to a small integer bin index, which is what the tree builder consumes.
-NaNs are routed to a dedicated bin so a split can isolate missing values, the
-way CatBoost/LightGBM do.
+NaNs—and unchecked infinity from an explicit validation escape hatch—are
+routed to a dedicated bin so a split can isolate missing values, the way
+CatBoost/LightGBM do.
 
 Bin layout per feature:
-    real values -> 0 .. n_borders        (via searchsorted on borders)
-    NaN         -> n_borders + 1          (the highest bin, "missing")
+    finite values        -> 0 .. n_borders  (via searchsorted on borders)
+    unchecked non-finite -> n_borders + 1   (the highest bin, "missing")
 The histogram width for a feature is therefore (n_borders + 2).
 
 Border-finding sorts every column, which dominates preprocessing time on

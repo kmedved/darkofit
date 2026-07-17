@@ -35,10 +35,10 @@ def _array_shape(X, *, name):
     return int(shape[0]), int(shape[1])
 
 
-def n_features_from_array_like(X, *, name="X"):
+def n_features_from_array_like(X, *, name="X", allow_empty=False):
     """Return the second dimension for a 2D array-like without coercing dtype."""
     n_samples, n_features = _array_shape(X, name=name)
-    if n_samples == 0:
+    if n_samples == 0 and not allow_empty:
         raise ValueError(
             f"{name} has 0 sample(s) (shape=(0, {n_features})) while a "
             "minimum of 1 is required; pass at least one sample and at least "
@@ -73,10 +73,10 @@ def array_like_to_numpy(X, dtype=None):
     return np.asarray(X, dtype=dtype)
 
 
-def n_samples_from_array_like(X, *, name="X"):
+def n_samples_from_array_like(X, *, name="X", allow_empty=False):
     """Return the first dimension for a 2D array-like without coercing dtype."""
     n_samples, n_features = _array_shape(X, name=name)
-    if n_samples == 0:
+    if n_samples == 0 and not allow_empty:
         raise ValueError(
             f"{name} has 0 sample(s) (shape=(0, {n_features})) while a "
             "minimum of 1 is required; pass at least one sample and at least "
@@ -186,12 +186,15 @@ def coerce_feature_matrix(
     name="X",
     check_infinite=True,
     resolve_names=False,
+    allow_empty=False,
 ):
     """Validate and coerce a public feature matrix without lossy conversion."""
     reject_masked_array(X, name=name)
     if hasattr(X, "tocoo") and hasattr(X, "format"):
         raise ValueError("sparse matrices are not supported; pass a dense array")
-    n_features = n_features_from_array_like(X, name=name)
+    n_features = n_features_from_array_like(
+        X, name=name, allow_empty=allow_empty
+    )
     if resolve_names:
         cat_features = resolve_cat_features(cat_features, X, n_features)
     else:
@@ -250,7 +253,7 @@ def coerce_feature_matrix(
 
 
 def sklearn_assume_finite():
-    """Return scikit-learn's serving-time finite-check escape hatch."""
+    """Return scikit-learn's feature finite-check escape hatch."""
     try:
         from sklearn import get_config
 

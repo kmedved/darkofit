@@ -946,6 +946,7 @@ def _coerce_fit_X(X, cat_features):
         cat_features,
         name="X",
         resolve_names=True,
+        check_infinite=not sklearn_assume_finite(),
     )
 
 
@@ -980,6 +981,7 @@ def _validate_eval_set_features(
         Xv,
         cat_features,
         name="eval_set[0]",
+        check_infinite=not sklearn_assume_finite(),
     )
     yv = validate_target_vector(
         yv, n_samples_from_array_like(Xv, name="eval_set[0]"),
@@ -999,7 +1001,7 @@ def _infer_model_n_features(model):
 def _check_predict_input(estimator, X):
     check_is_fitted(estimator, "model_")
     X = _ensure_dense(X)
-    actual = n_features_from_array_like(X)
+    actual = n_features_from_array_like(X, allow_empty=True)
     expected = getattr(estimator, "n_features_in_", None)
     if expected is None:
         expected = _infer_model_n_features(estimator.model_)
@@ -1022,6 +1024,7 @@ def _check_predict_input(estimator, X):
         cat_features,
         name="X",
         check_infinite=not sklearn_assume_finite(),
+        allow_empty=True,
     )
     return X
 

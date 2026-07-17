@@ -3,14 +3,50 @@
 ## 0.9.0 - 2026-07-12
 
 Behavior-changing default improvements from a full-repo review, plus targeted
-performance and robustness fixes. These are intentional clean cutovers; the
-previous behaviors remain available through explicit parameters.
+performance and robustness fixes. Compatibility exceptions and migration
+paths are called out explicitly below.
+
+### Input compatibility decisions
+
+The shared input-validation layer intentionally changes some previously
+accepted inputs. The final compatibility posture is:
+
+1. **Infinity is rejected by default at fit, explicit evaluation, and
+   prediction.** This is a breaking safety default: infinity usually signals
+   an upstream arithmetic or data-cleaning error. Migrate by clipping it or
+   replacing it with NaN. Trusted legacy pipelines may instead wrap fitting
+   (including an explicit evaluation set) and prediction in
+   `sklearn.config_context(assume_finite=True)`; this disables feature-matrix
+   infinity checks at all three boundaries. Unchecked positive and negative
+   infinity in numeric features use DarkoFit's existing missing-value bin
+   rather than a finite extreme bin. The escape hatch does not relax
+   finite-value requirements for targets, weights, or other non-feature
+   inputs.
+2. **Zero-row prediction batches are supported.** The temporary rejection has
+   been removed: prediction, probability, staged, multiclass, distributional,
+   categorical, and linear-residual paths return outputs with zero rows and
+   their normal trailing dimensions. Fit and explicit evaluation sets remain
+   non-empty, and empty prediction batches must still have the fitted feature
+   count and column schema.
+3. **Duplicate `cat_features` entries remain rejected.** This is an intentional
+   breaking change because duplicates—especially a name and index resolving
+   to the same column—often reveal caller mistakes. Migrate by fixing the
+   caller or applying stable deduplication such as
+   `list(dict.fromkeys(cat_features))` before fitting.
+
+These policy decisions refine the behavior authorized by the frozen
+[basketball input-validation campaign](benchmarks/basketball_input_validation_result.md).
+They do not change its valid-input prediction, archive, or timing evidence.
+The campaign's prediction-only `assume_finite` wording is superseded by the
+consistent fit/evaluation/prediction escape hatch above.
 
 * Harden the shared wrapper/core input boundary: reject masked, complex,
-  infinite, sparse, empty, and malformed inputs before lossy conversion;
+  infinite-by-default, sparse, empty training/evaluation, and malformed inputs
+  before lossy conversion while preserving shape-correct empty prediction;
   preserve nullable frame missing values; resolve named categorical columns;
   enforce fit-time feature names and order; publish NaN/sparse sklearn tags;
-  and honor `assume_finite=True` only for the prediction-time infinity scan.
+  and honor `assume_finite=True` for feature infinity checks at fit, explicit
+  evaluation, and prediction.
   Full sklearn estimator checks retain only the documented sample-weight row-
   replication deviation. The layer adapts Apache-2.0 ChimeraBoost 0.15.0
   validation behavior, recorded in `NOTICE`.

@@ -248,6 +248,20 @@ def test_regressor_predict_adds_linear_trend_to_residual_booster():
     )
 
 
+def test_regressor_linear_residual_predicts_empty_batch():
+    rng = np.random.default_rng(4)
+    X = rng.normal(size=(80, 3))
+    y = 1.5 + 2.0 * X[:, 0] - X[:, 1] + 0.25 * np.sin(X[:, 2])
+    model = DarkoRegressor(**_wrapper_params()).fit(X, y)
+
+    assert model.linear_residual_active_
+    assert model.predict(X[:0]).shape == (0,)
+    assert all(
+        prediction.shape == (0,)
+        for prediction in model.staged_predict(X[:0])
+    )
+
+
 def test_regressor_staged_predict_adds_same_linear_trend_each_stage():
     rng = np.random.default_rng(5)
     X = rng.normal(size=(70, 2))
