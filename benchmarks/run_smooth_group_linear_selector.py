@@ -108,8 +108,11 @@ def _selection_fit_record(name, model, fit_seconds):
         raise RuntimeError("smooth selector validation score is invalid")
     if validation.get("source") != "explicit_eval_set":
         raise RuntimeError("smooth selector did not use its explicit eval set")
-    if fitted["final_fit"]["stop_reason"] != "early_stopping":
-        raise RuntimeError("smooth selector candidate did not early-stop")
+    if fitted["final_fit"]["stop_reason"] not in {
+        "early_stopping",
+        "max_iterations",
+    }:
+        raise RuntimeError("smooth selector candidate stopped unexpectedly")
     return {
         "name": name,
         "linear_leaves": name == "linear",

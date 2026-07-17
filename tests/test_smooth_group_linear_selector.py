@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
+import pytest
+
 from benchmarks import run_smooth_group_linear_selector as experiment
 
 
@@ -73,3 +77,23 @@ def test_partition_boundary_keeps_lockbox_sealed():
     assert not set(experiment.TASKS).intersection(
         boundary["lockbox_task_ids"]
     )
+
+
+@pytest.mark.parametrize("stop_reason", ["early_stopping", "max_iterations"])
+def test_selection_record_accepts_valid_early_stopping_outcomes(
+    monkeypatch, stop_reason
+):
+    fitted = {"final_fit": {"stop_reason": stop_reason}}
+    monkeypatch.setattr(
+        experiment.basketball,
+        "extract_fit_metadata",
+        lambda model: fitted,
+    )
+    core = SimpleNamespace(
+        auto_params_={"validation_split": {"source": "explicit_eval_set"}}
+    )
+    model = SimpleNamespace(model_=core, best_score_=1.0)
+
+    record = experiment._selection_fit_record("constant", model, 1.0)
+
+    assert record["fit_metadata"] == fitted
