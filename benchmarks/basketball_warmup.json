@@ -1,0 +1,1618 @@
+{
+  "campaign": "basketball_fresh_worker_warmup",
+  "canonical_results": [
+    {
+      "arm": "control",
+      "cache": {
+        "after_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_warmup": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_worker": {
+          "bytes": 265160,
+          "compiled_file_count": 12,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi"
+          ],
+          "file_count": 12
+        },
+        "before_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        }
+      },
+      "cold_player_rows": 585,
+      "compiled_before_explicit_warmup": false,
+      "first_fit_seconds": 3.434068,
+      "first_predict_seconds": 0.103145417,
+      "fit_metadata": {
+        "best_iteration": 1000,
+        "final_early_stopping_rounds": null,
+        "final_fit": {
+          "iterations_attempted": 1000,
+          "iterations_requested": 1000,
+          "phase_seconds": {
+            "grad_hess": 0.017208328004926443,
+            "loss_eval": 0.0,
+            "preprocess": 0.3884735000319779,
+            "train_update": 0.060174399288371205,
+            "tree_build": 2.9648694740608335,
+            "validation_predict": 0.0
+          },
+          "rounds_completed": 1000,
+          "rounds_retained": 1000,
+          "stop_reason": "iteration_limit"
+        },
+        "fitted_tree_count": 1000,
+        "linear_leaves": {
+          "active": false,
+          "inactive_reason": "disabled",
+          "linear_lambda": 1.0,
+          "linear_leaf_count": 0,
+          "linear_tree_count": 0,
+          "min_samples": 1000,
+          "numeric_feature_count": 0,
+          "requested": false
+        },
+        "linear_leaves_active": false,
+        "linear_residual_active": false,
+        "refit": false,
+        "refit_strategy": null,
+        "requested_tree_mode": "catboost",
+        "resolved_learning_rate": 0.052312,
+        "resolved_thread_count": 18,
+        "selected_lane": "boosting",
+        "selected_tree_mode": "catboost",
+        "selection_early_stopping_rounds": null,
+        "selection_fit": null
+      },
+      "fold": 0,
+      "fold_rows": 525,
+      "fresh_cache_unique": true,
+      "held_team_rows": 2409,
+      "import_seconds": 0.217587834,
+      "model_behavior_fingerprint_sha256": "7e9ac4672ac89d215cb11e1089b011d2f56431c8fa664bfab93c54d9b74f63a2",
+      "prediction_hashes": {
+        "cold_player": "b9dc899fcabc5a3a7892da41d839bac70f7d50da9553e2e57770501f71694c82",
+        "creator_fold_0": "6200db22da190d8c0787d7794c1fb8d859af737ab7e3026716e23aa1be95125f",
+        "held_team": "1693ff2070b05bb705810aba0d9b27b5a0a01dc6f4ee51939a3ee30af3698cdf"
+      },
+      "thread_environment": {
+        "BLIS_NUM_THREADS": "18",
+        "MKL_NUM_THREADS": "18",
+        "NUMBA_CACHE_DIR": "/Users/kmedved/Code/GitHub/darkofit/.cache/basketball-warmup/block00-position0-control-96de51z8",
+        "NUMBA_NUM_THREADS": "18",
+        "NUMEXPR_NUM_THREADS": "18",
+        "OMP_NUM_THREADS": "18",
+        "OPENBLAS_NUM_THREADS": "18",
+        "TBB_NUM_THREADS": "18",
+        "VECLIB_MAXIMUM_THREADS": "18"
+      },
+      "threads_after_warmup": 18,
+      "train_rows": 4716,
+      "warmup_seconds": 0.0,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "warmup",
+      "cache": {
+        "after_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_warmup": {
+          "bytes": 840879,
+          "compiled_file_count": 36,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.nbi"
+          ],
+          "file_count": 36
+        },
+        "after_worker": {
+          "bytes": 840879,
+          "compiled_file_count": 36,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.nbi"
+          ],
+          "file_count": 36
+        },
+        "before_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        }
+      },
+      "cold_player_rows": 585,
+      "compiled_before_explicit_warmup": false,
+      "first_fit_seconds": 1.674985458,
+      "first_predict_seconds": 0.003904167,
+      "fit_metadata": {
+        "best_iteration": 1000,
+        "final_early_stopping_rounds": null,
+        "final_fit": {
+          "iterations_attempted": 1000,
+          "iterations_requested": 1000,
+          "phase_seconds": {
+            "grad_hess": 0.016694494988769293,
+            "loss_eval": 0.0,
+            "preprocess": 0.002968417014926672,
+            "train_update": 0.014412161894142628,
+            "tree_build": 1.6378062444273382,
+            "validation_predict": 0.0
+          },
+          "rounds_completed": 1000,
+          "rounds_retained": 1000,
+          "stop_reason": "iteration_limit"
+        },
+        "fitted_tree_count": 1000,
+        "linear_leaves": {
+          "active": false,
+          "inactive_reason": "disabled",
+          "linear_lambda": 1.0,
+          "linear_leaf_count": 0,
+          "linear_tree_count": 0,
+          "min_samples": 1000,
+          "numeric_feature_count": 0,
+          "requested": false
+        },
+        "linear_leaves_active": false,
+        "linear_residual_active": false,
+        "refit": false,
+        "refit_strategy": null,
+        "requested_tree_mode": "catboost",
+        "resolved_learning_rate": 0.052312,
+        "resolved_thread_count": 18,
+        "selected_lane": "boosting",
+        "selected_tree_mode": "catboost",
+        "selection_early_stopping_rounds": null,
+        "selection_fit": null
+      },
+      "fold": 0,
+      "fold_rows": 525,
+      "fresh_cache_unique": true,
+      "held_team_rows": 2409,
+      "import_seconds": 0.125245333,
+      "model_behavior_fingerprint_sha256": "7e9ac4672ac89d215cb11e1089b011d2f56431c8fa664bfab93c54d9b74f63a2",
+      "prediction_hashes": {
+        "cold_player": "b9dc899fcabc5a3a7892da41d839bac70f7d50da9553e2e57770501f71694c82",
+        "creator_fold_0": "6200db22da190d8c0787d7794c1fb8d859af737ab7e3026716e23aa1be95125f",
+        "held_team": "1693ff2070b05bb705810aba0d9b27b5a0a01dc6f4ee51939a3ee30af3698cdf"
+      },
+      "thread_environment": {
+        "BLIS_NUM_THREADS": "18",
+        "MKL_NUM_THREADS": "18",
+        "NUMBA_CACHE_DIR": "/Users/kmedved/Code/GitHub/darkofit/.cache/basketball-warmup/block00-position1-warmup-cxkbwbzx",
+        "NUMBA_NUM_THREADS": "18",
+        "NUMEXPR_NUM_THREADS": "18",
+        "OMP_NUM_THREADS": "18",
+        "OPENBLAS_NUM_THREADS": "18",
+        "TBB_NUM_THREADS": "18",
+        "VECLIB_MAXIMUM_THREADS": "18"
+      },
+      "threads_after_warmup": 18,
+      "train_rows": 4716,
+      "warmup_seconds": 5.050327042,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    }
+  ],
+  "created_at_utc": "2026-07-17T03:35:29.663606+00:00",
+  "decision": {
+    "candidate_over_control_median_first_fit": 0.5143813655743723,
+    "candidate_over_control_median_first_predict": 0.03836009590062855,
+    "gates": {
+      "caller_state_preserved": true,
+      "candidate_predict_stable": true,
+      "first_fit_speedup": true,
+      "first_fit_stable": true,
+      "first_predict_speedup": true,
+      "fresh_caches_isolated": true,
+      "model_behavior_repeat_exact": true,
+      "ordinary_import_stays_cold": true,
+      "outputs_array_exact": true,
+      "paired_fit_ratio_stable": true,
+      "warmup_within_budget": true
+    },
+    "hidden_import_warmup_authorized": false,
+    "model_default_change_authorized": false,
+    "passed": true,
+    "recommendation": "ship_explicit_warmup"
+  },
+  "model_behavior_fingerprints": [
+    "7e9ac4672ac89d215cb11e1089b011d2f56431c8fa664bfab93c54d9b74f63a2"
+  ],
+  "paired_first_fit_ratio": {
+    "iqr_fraction": 0.04443219682675553,
+    "iqr_seconds": 0.022532499439553544,
+    "maximum_seconds": 0.5332538653591802,
+    "median_seconds": 0.5071209854288647,
+    "minimum_seconds": 0.47984144331052825,
+    "values_seconds": [
+      0.4877554719359081,
+      0.5111561141370905,
+      0.5151087187164957,
+      0.5030858567206389,
+      0.5332538653591802,
+      0.47984144331052825
+    ]
+  },
+  "protocol": {
+    "cold_player_guardrail": true,
+    "creator_fold": 0,
+    "ctr23_used": false,
+    "fresh_numba_cache_per_arm": true,
+    "import_warmup_environment": "0",
+    "path": "/Users/kmedved/Code/GitHub/darkofit/benchmarks/basketball_warmup_protocol.md",
+    "primary_dataset": "basketball",
+    "schedule": [
+      [
+        "control",
+        "warmup"
+      ],
+      [
+        "warmup",
+        "control"
+      ],
+      [
+        "control",
+        "warmup"
+      ],
+      [
+        "warmup",
+        "control"
+      ],
+      [
+        "control",
+        "warmup"
+      ],
+      [
+        "warmup",
+        "control"
+      ]
+    ],
+    "sha256": "06a965820b237ce56b31465c002deb3b3eb230a4268e434c7957adeb7705764d",
+    "threads": 18,
+    "timing_blocks": 6
+  },
+  "runner_sha256": "e5060c6981e80951043f56007bb9934a84619ceaa2c07d93cd64306158ca1cd5",
+  "schema_version": 1,
+  "source": {
+    "branch": "main",
+    "head": "705b3677eb33b6b94d469f78616843a8fb686676",
+    "origin_main": "705b3677eb33b6b94d469f78616843a8fb686676",
+    "package_manifest_sha256": "157a660db4e3f14d3f0cac0bad8d527bdb9268d0b2339285c71e04925c8da1bd",
+    "repository": "/Users/kmedved/Code/GitHub/darkofit",
+    "status_porcelain": "",
+    "support_sha256": {
+      "NOTICE": "c245b425c96e7b43a9c8762d6effdb7857659d053978b9c0106084c60ee94ca3",
+      "benchmarks/basketball_guardrails.py": "4492a65161b2261e5d437b9733c286368534c54f7fd23b6f6b95a804507fff52",
+      "benchmarks/basketball_harness.py": "40360ca54d1954d540bd72bec47c891a179fb0f764a0cb6061d3a33b8593aba1",
+      "benchmarks/run_basketball_creator_benchmark.py": "9a2d6b3dc8f3a8586cd4ac20bdb3607c17675cab1d89e6bbd7c438d2bba53fec",
+      "tests/test_warmup.py": "eefc7afa503d447d1fb4ba2d6acf9878afbdc69afa7e79e471105335149f993b"
+    }
+  },
+  "timing": {
+    "first_fit": {
+      "control": {
+        "iqr_fraction": 0.06674667377060249,
+        "iqr_seconds": 0.20849103099999988,
+        "maximum_seconds": 3.434068,
+        "median_seconds": 3.123616792,
+        "minimum_seconds": 3.07737825,
+        "values_seconds": [
+          3.434068,
+          3.07737825,
+          3.113278292,
+          3.133955292,
+          3.083728625,
+          3.354824333
+        ]
+      },
+      "warmup": {
+        "iqr_fraction": 0.032580427433796556,
+        "iqr_seconds": 0.05234795899999978,
+        "maximum_seconds": 1.674985458,
+        "median_seconds": 1.606730271,
+        "minimum_seconds": 1.573020708,
+        "values_seconds": [
+          1.674985458,
+          1.573020708,
+          1.603676792,
+          1.576648583,
+          1.644410209,
+          1.60978375
+        ]
+      }
+    },
+    "first_predict": {
+      "control": {
+        "iqr_fraction": 0.0754666310625193,
+        "iqr_seconds": 0.007521479250000004,
+        "maximum_seconds": 0.10661075,
+        "median_seconds": 0.0996662915,
+        "minimum_seconds": 0.084606334,
+        "values_seconds": [
+          0.103145417,
+          0.094769667,
+          0.102145625,
+          0.097186958,
+          0.084606334,
+          0.10661075
+        ]
+      },
+      "warmup": {
+        "iqr_fraction": 0.12046766478992725,
+        "iqr_seconds": 0.0004605730000000006,
+        "maximum_seconds": 0.004230083,
+        "median_seconds": 0.0038232085,
+        "minimum_seconds": 0.003542834,
+        "values_seconds": [
+          0.003904167,
+          0.003580375,
+          0.00374225,
+          0.003542834,
+          0.004230083,
+          0.0041405
+        ]
+      }
+    },
+    "import": {
+      "control": {
+        "iqr_fraction": 0.07683334385132663,
+        "iqr_seconds": 0.011398146500000012,
+        "maximum_seconds": 0.217587834,
+        "median_seconds": 0.14834895799999998,
+        "minimum_seconds": 0.128594333,
+        "values_seconds": [
+          0.217587834,
+          0.15006825,
+          0.128594333,
+          0.146629666,
+          0.143126208,
+          0.157177542
+        ]
+      },
+      "warmup": {
+        "iqr_fraction": 0.09435373250889173,
+        "iqr_seconds": 0.012738750500000007,
+        "maximum_seconds": 0.147797542,
+        "median_seconds": 0.1350105625,
+        "minimum_seconds": 0.125245333,
+        "values_seconds": [
+          0.125245333,
+          0.133157625,
+          0.147191792,
+          0.1368635,
+          0.147797542,
+          0.131442083
+        ]
+      }
+    },
+    "warmup": {
+      "warmup": {
+        "iqr_fraction": 0.04266015659699906,
+        "iqr_seconds": 0.201295,
+        "maximum_seconds": 5.050327042,
+        "median_seconds": 4.718571520999999,
+        "minimum_seconds": 4.629586708,
+        "values_seconds": [
+          5.050327042,
+          4.629586708,
+          4.630437083,
+          4.741968334,
+          4.883232541,
+          4.695174708
+        ]
+      }
+    }
+  },
+  "timing_repeats": [
+    {
+      "arm": "control",
+      "block": 0,
+      "cache": {
+        "after_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_warmup": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_worker": {
+          "bytes": 265160,
+          "compiled_file_count": 12,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi"
+          ],
+          "file_count": 12
+        },
+        "before_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        }
+      },
+      "first_fit_seconds": 3.434068,
+      "first_predict_seconds": 0.103145417,
+      "import_seconds": 0.217587834,
+      "model_behavior_fingerprint_sha256": "7e9ac4672ac89d215cb11e1089b011d2f56431c8fa664bfab93c54d9b74f63a2",
+      "outputs_array_exact": {
+        "cold_player": true,
+        "creator_fold_0": true,
+        "held_team": true
+      },
+      "position": 0,
+      "prediction_hashes": {
+        "cold_player": "b9dc899fcabc5a3a7892da41d839bac70f7d50da9553e2e57770501f71694c82",
+        "creator_fold_0": "6200db22da190d8c0787d7794c1fb8d859af737ab7e3026716e23aa1be95125f",
+        "held_team": "1693ff2070b05bb705810aba0d9b27b5a0a01dc6f4ee51939a3ee30af3698cdf"
+      },
+      "warmup_seconds": 0.0,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "warmup",
+      "block": 0,
+      "cache": {
+        "after_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_warmup": {
+          "bytes": 840879,
+          "compiled_file_count": 36,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.nbi"
+          ],
+          "file_count": 36
+        },
+        "after_worker": {
+          "bytes": 840879,
+          "compiled_file_count": 36,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.nbi"
+          ],
+          "file_count": 36
+        },
+        "before_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        }
+      },
+      "first_fit_seconds": 1.674985458,
+      "first_predict_seconds": 0.003904167,
+      "import_seconds": 0.125245333,
+      "model_behavior_fingerprint_sha256": "7e9ac4672ac89d215cb11e1089b011d2f56431c8fa664bfab93c54d9b74f63a2",
+      "outputs_array_exact": {
+        "cold_player": true,
+        "creator_fold_0": true,
+        "held_team": true
+      },
+      "position": 1,
+      "prediction_hashes": {
+        "cold_player": "b9dc899fcabc5a3a7892da41d839bac70f7d50da9553e2e57770501f71694c82",
+        "creator_fold_0": "6200db22da190d8c0787d7794c1fb8d859af737ab7e3026716e23aa1be95125f",
+        "held_team": "1693ff2070b05bb705810aba0d9b27b5a0a01dc6f4ee51939a3ee30af3698cdf"
+      },
+      "warmup_seconds": 5.050327042,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "warmup",
+      "block": 1,
+      "cache": {
+        "after_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_warmup": {
+          "bytes": 840879,
+          "compiled_file_count": 36,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.nbi"
+          ],
+          "file_count": 36
+        },
+        "after_worker": {
+          "bytes": 840879,
+          "compiled_file_count": 36,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.nbi"
+          ],
+          "file_count": 36
+        },
+        "before_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        }
+      },
+      "first_fit_seconds": 1.573020708,
+      "first_predict_seconds": 0.003580375,
+      "import_seconds": 0.133157625,
+      "model_behavior_fingerprint_sha256": "7e9ac4672ac89d215cb11e1089b011d2f56431c8fa664bfab93c54d9b74f63a2",
+      "outputs_array_exact": {
+        "cold_player": true,
+        "creator_fold_0": true,
+        "held_team": true
+      },
+      "position": 0,
+      "prediction_hashes": {
+        "cold_player": "b9dc899fcabc5a3a7892da41d839bac70f7d50da9553e2e57770501f71694c82",
+        "creator_fold_0": "6200db22da190d8c0787d7794c1fb8d859af737ab7e3026716e23aa1be95125f",
+        "held_team": "1693ff2070b05bb705810aba0d9b27b5a0a01dc6f4ee51939a3ee30af3698cdf"
+      },
+      "warmup_seconds": 4.629586708,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "control",
+      "block": 1,
+      "cache": {
+        "after_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_warmup": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_worker": {
+          "bytes": 265160,
+          "compiled_file_count": 12,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi"
+          ],
+          "file_count": 12
+        },
+        "before_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        }
+      },
+      "first_fit_seconds": 3.07737825,
+      "first_predict_seconds": 0.094769667,
+      "import_seconds": 0.15006825,
+      "model_behavior_fingerprint_sha256": "7e9ac4672ac89d215cb11e1089b011d2f56431c8fa664bfab93c54d9b74f63a2",
+      "outputs_array_exact": {
+        "cold_player": true,
+        "creator_fold_0": true,
+        "held_team": true
+      },
+      "position": 1,
+      "prediction_hashes": {
+        "cold_player": "b9dc899fcabc5a3a7892da41d839bac70f7d50da9553e2e57770501f71694c82",
+        "creator_fold_0": "6200db22da190d8c0787d7794c1fb8d859af737ab7e3026716e23aa1be95125f",
+        "held_team": "1693ff2070b05bb705810aba0d9b27b5a0a01dc6f4ee51939a3ee30af3698cdf"
+      },
+      "warmup_seconds": 0.0,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "control",
+      "block": 2,
+      "cache": {
+        "after_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_warmup": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_worker": {
+          "bytes": 265160,
+          "compiled_file_count": 12,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi"
+          ],
+          "file_count": 12
+        },
+        "before_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        }
+      },
+      "first_fit_seconds": 3.113278292,
+      "first_predict_seconds": 0.102145625,
+      "import_seconds": 0.128594333,
+      "model_behavior_fingerprint_sha256": "7e9ac4672ac89d215cb11e1089b011d2f56431c8fa664bfab93c54d9b74f63a2",
+      "outputs_array_exact": {
+        "cold_player": true,
+        "creator_fold_0": true,
+        "held_team": true
+      },
+      "position": 0,
+      "prediction_hashes": {
+        "cold_player": "b9dc899fcabc5a3a7892da41d839bac70f7d50da9553e2e57770501f71694c82",
+        "creator_fold_0": "6200db22da190d8c0787d7794c1fb8d859af737ab7e3026716e23aa1be95125f",
+        "held_team": "1693ff2070b05bb705810aba0d9b27b5a0a01dc6f4ee51939a3ee30af3698cdf"
+      },
+      "warmup_seconds": 0.0,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "warmup",
+      "block": 2,
+      "cache": {
+        "after_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_warmup": {
+          "bytes": 840879,
+          "compiled_file_count": 36,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.nbi"
+          ],
+          "file_count": 36
+        },
+        "after_worker": {
+          "bytes": 840879,
+          "compiled_file_count": 36,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.nbi"
+          ],
+          "file_count": 36
+        },
+        "before_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        }
+      },
+      "first_fit_seconds": 1.603676792,
+      "first_predict_seconds": 0.00374225,
+      "import_seconds": 0.147191792,
+      "model_behavior_fingerprint_sha256": "7e9ac4672ac89d215cb11e1089b011d2f56431c8fa664bfab93c54d9b74f63a2",
+      "outputs_array_exact": {
+        "cold_player": true,
+        "creator_fold_0": true,
+        "held_team": true
+      },
+      "position": 1,
+      "prediction_hashes": {
+        "cold_player": "b9dc899fcabc5a3a7892da41d839bac70f7d50da9553e2e57770501f71694c82",
+        "creator_fold_0": "6200db22da190d8c0787d7794c1fb8d859af737ab7e3026716e23aa1be95125f",
+        "held_team": "1693ff2070b05bb705810aba0d9b27b5a0a01dc6f4ee51939a3ee30af3698cdf"
+      },
+      "warmup_seconds": 4.630437083,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "warmup",
+      "block": 3,
+      "cache": {
+        "after_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_warmup": {
+          "bytes": 840879,
+          "compiled_file_count": 36,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.nbi"
+          ],
+          "file_count": 36
+        },
+        "after_worker": {
+          "bytes": 840879,
+          "compiled_file_count": 36,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.nbi"
+          ],
+          "file_count": 36
+        },
+        "before_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        }
+      },
+      "first_fit_seconds": 1.576648583,
+      "first_predict_seconds": 0.003542834,
+      "import_seconds": 0.1368635,
+      "model_behavior_fingerprint_sha256": "7e9ac4672ac89d215cb11e1089b011d2f56431c8fa664bfab93c54d9b74f63a2",
+      "outputs_array_exact": {
+        "cold_player": true,
+        "creator_fold_0": true,
+        "held_team": true
+      },
+      "position": 0,
+      "prediction_hashes": {
+        "cold_player": "b9dc899fcabc5a3a7892da41d839bac70f7d50da9553e2e57770501f71694c82",
+        "creator_fold_0": "6200db22da190d8c0787d7794c1fb8d859af737ab7e3026716e23aa1be95125f",
+        "held_team": "1693ff2070b05bb705810aba0d9b27b5a0a01dc6f4ee51939a3ee30af3698cdf"
+      },
+      "warmup_seconds": 4.741968334,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "control",
+      "block": 3,
+      "cache": {
+        "after_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_warmup": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_worker": {
+          "bytes": 265160,
+          "compiled_file_count": 12,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi"
+          ],
+          "file_count": 12
+        },
+        "before_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        }
+      },
+      "first_fit_seconds": 3.133955292,
+      "first_predict_seconds": 0.097186958,
+      "import_seconds": 0.146629666,
+      "model_behavior_fingerprint_sha256": "7e9ac4672ac89d215cb11e1089b011d2f56431c8fa664bfab93c54d9b74f63a2",
+      "outputs_array_exact": {
+        "cold_player": true,
+        "creator_fold_0": true,
+        "held_team": true
+      },
+      "position": 1,
+      "prediction_hashes": {
+        "cold_player": "b9dc899fcabc5a3a7892da41d839bac70f7d50da9553e2e57770501f71694c82",
+        "creator_fold_0": "6200db22da190d8c0787d7794c1fb8d859af737ab7e3026716e23aa1be95125f",
+        "held_team": "1693ff2070b05bb705810aba0d9b27b5a0a01dc6f4ee51939a3ee30af3698cdf"
+      },
+      "warmup_seconds": 0.0,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "control",
+      "block": 4,
+      "cache": {
+        "after_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_warmup": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_worker": {
+          "bytes": 265160,
+          "compiled_file_count": 12,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi"
+          ],
+          "file_count": 12
+        },
+        "before_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        }
+      },
+      "first_fit_seconds": 3.083728625,
+      "first_predict_seconds": 0.084606334,
+      "import_seconds": 0.143126208,
+      "model_behavior_fingerprint_sha256": "7e9ac4672ac89d215cb11e1089b011d2f56431c8fa664bfab93c54d9b74f63a2",
+      "outputs_array_exact": {
+        "cold_player": true,
+        "creator_fold_0": true,
+        "held_team": true
+      },
+      "position": 0,
+      "prediction_hashes": {
+        "cold_player": "b9dc899fcabc5a3a7892da41d839bac70f7d50da9553e2e57770501f71694c82",
+        "creator_fold_0": "6200db22da190d8c0787d7794c1fb8d859af737ab7e3026716e23aa1be95125f",
+        "held_team": "1693ff2070b05bb705810aba0d9b27b5a0a01dc6f4ee51939a3ee30af3698cdf"
+      },
+      "warmup_seconds": 0.0,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "warmup",
+      "block": 4,
+      "cache": {
+        "after_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_warmup": {
+          "bytes": 840879,
+          "compiled_file_count": 36,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.nbi"
+          ],
+          "file_count": 36
+        },
+        "after_worker": {
+          "bytes": 840879,
+          "compiled_file_count": 36,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.nbi"
+          ],
+          "file_count": 36
+        },
+        "before_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        }
+      },
+      "first_fit_seconds": 1.644410209,
+      "first_predict_seconds": 0.004230083,
+      "import_seconds": 0.147797542,
+      "model_behavior_fingerprint_sha256": "7e9ac4672ac89d215cb11e1089b011d2f56431c8fa664bfab93c54d9b74f63a2",
+      "outputs_array_exact": {
+        "cold_player": true,
+        "creator_fold_0": true,
+        "held_team": true
+      },
+      "position": 1,
+      "prediction_hashes": {
+        "cold_player": "b9dc899fcabc5a3a7892da41d839bac70f7d50da9553e2e57770501f71694c82",
+        "creator_fold_0": "6200db22da190d8c0787d7794c1fb8d859af737ab7e3026716e23aa1be95125f",
+        "held_team": "1693ff2070b05bb705810aba0d9b27b5a0a01dc6f4ee51939a3ee30af3698cdf"
+      },
+      "warmup_seconds": 4.883232541,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "warmup",
+      "block": 5,
+      "cache": {
+        "after_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_warmup": {
+          "bytes": 840879,
+          "compiled_file_count": 36,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.nbi"
+          ],
+          "file_count": 36
+        },
+        "after_worker": {
+          "bytes": 840879,
+          "compiled_file_count": 36,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add_parallel-47.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_class_add_parallel-175.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_eval-96.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._logloss_grad_hess_into-75.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_eval_labels-1356.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/losses._softmax_class_major_grad_hess_into-1288.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/target_encoding._ordered_ts-82.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._best_split-2173.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_into-20.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_multiclass_histograms_counts_into-3787.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._predict_tree_add-3090.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.ordered_leaf_update_inplace-3051.py312.nbi"
+          ],
+          "file_count": 36
+        },
+        "before_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        }
+      },
+      "first_fit_seconds": 1.60978375,
+      "first_predict_seconds": 0.0041405,
+      "import_seconds": 0.131442083,
+      "model_behavior_fingerprint_sha256": "7e9ac4672ac89d215cb11e1089b011d2f56431c8fa664bfab93c54d9b74f63a2",
+      "outputs_array_exact": {
+        "cold_player": true,
+        "creator_fold_0": true,
+        "held_team": true
+      },
+      "position": 0,
+      "prediction_hashes": {
+        "cold_player": "b9dc899fcabc5a3a7892da41d839bac70f7d50da9553e2e57770501f71694c82",
+        "creator_fold_0": "6200db22da190d8c0787d7794c1fb8d859af737ab7e3026716e23aa1be95125f",
+        "held_team": "1693ff2070b05bb705810aba0d9b27b5a0a01dc6f4ee51939a3ee30af3698cdf"
+      },
+      "warmup_seconds": 4.695174708,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "control",
+      "block": 5,
+      "cache": {
+        "after_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_warmup": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        },
+        "after_worker": {
+          "bytes": 265160,
+          "compiled_file_count": 12,
+          "compiled_files": [
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/binning._bin_rows_into-116.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/flat_model._flat_oblivious_add-30.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._build_histograms_unit_hess_and_best_split-2286.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._leaf_values_and_sums-2717.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree._update_leaves_with_split_serial-2662.py312.nbi",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.1.nbc",
+            "darkofit_591562337747ac28a3a2df8c496539a50b50838f/tree.add_leaf_values_inplace-3044.py312.nbi"
+          ],
+          "file_count": 12
+        },
+        "before_import": {
+          "bytes": 0,
+          "compiled_file_count": 0,
+          "compiled_files": [],
+          "file_count": 0
+        }
+      },
+      "first_fit_seconds": 3.354824333,
+      "first_predict_seconds": 0.10661075,
+      "import_seconds": 0.157177542,
+      "model_behavior_fingerprint_sha256": "7e9ac4672ac89d215cb11e1089b011d2f56431c8fa664bfab93c54d9b74f63a2",
+      "outputs_array_exact": {
+        "cold_player": true,
+        "creator_fold_0": true,
+        "held_team": true
+      },
+      "position": 1,
+      "prediction_hashes": {
+        "cold_player": "b9dc899fcabc5a3a7892da41d839bac70f7d50da9553e2e57770501f71694c82",
+        "creator_fold_0": "6200db22da190d8c0787d7794c1fb8d859af737ab7e3026716e23aa1be95125f",
+        "held_team": "1693ff2070b05bb705810aba0d9b27b5a0a01dc6f4ee51939a3ee30af3698cdf"
+      },
+      "warmup_seconds": 0.0,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    }
+  ]
+}

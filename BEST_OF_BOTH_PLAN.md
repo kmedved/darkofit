@@ -296,6 +296,15 @@ Code-mass comparison:
 7. **`darkofit.warmup()`** + `DARKOFIT_WARMUP=1`: three tiny synthetic fits
    covering default fit/predict kernels. Directly fixes the fresh-worker
    timing tax we've measured on TabArena-style harnesses.
+   **Shipped 2026-07-17:** a frozen six-block basketball campaign passed every
+   correctness, isolation, stability, and timing gate. Array-exact
+   creator-fold, held-team, and 585-row cold-player predictions were preserved
+   across all 12 fresh workers. Median first fit fell from 3.1236 s to
+   1.6067 s (0.5144x), and first prediction from 99.67 ms to 3.82 ms
+   (0.0384x). Median explicit warmup cost 4.7186 s, so this is an opt-in API
+   for reusable or overlap-capable workers, not a lower-work one-shot cold
+   start. Ordinary imports remain cold; no model default changed; CTR23 was
+   not used.
 8. **Input-validation/compliance layer**: compare their `_validate_fit_input`,
    `_check_predict_input`, feature-name enforcement, and nullable-dtype
    handling against ours; port or adapt only missing behavior with focused
