@@ -36,3 +36,15 @@ def test_power_analysis_is_deterministic_and_requires_all_gates():
     assert first == second
     assert first["passes"] is True
     assert first["pass_probability"] == 1.0
+
+
+def test_repository_grep_does_not_treat_numeric_substrings_as_task_ids():
+    task = {
+        "openml_task_id": 363132,
+        "openml_dataset_id": 45718,
+        "dataset_name": "3D_Estimation_using_RSSI_of_WLAN_dataset",
+    }
+
+    assert registry._repository_literals(task) == (
+        "3D_Estimation_using_RSSI_of_WLAN_dataset",
+    )

@@ -73,6 +73,10 @@ def _git_grep(path: Path, revision: str, literal: str) -> list[str]:
     return sorted(line for line in completed.stdout.splitlines() if line)
 
 
+def _repository_literals(task: dict[str, Any]) -> tuple[str, ...]:
+    return (str(task["dataset_name"]),)
+
+
 def _load_chimera_benchmark_module():
     bench = CHIMERA_ROOT / "benchmarks"
     for path in (CHIMERA_ROOT, bench):
@@ -274,10 +278,7 @@ def build() -> dict[str, Any]:
             (ROOT, declarations["darkofit_prefreeze_head"], "darkofit"),
             (CHIMERA_ROOT, declarations["chimeraboost_head"], "chimeraboost"),
         ):
-            for literal in (
-                str(task_id),
-                str(task["dataset_name"]),
-            ):
+            for literal in _repository_literals(task):
                 matches = _git_grep(repository, revision, literal)
                 if matches:
                     reasons.append(
