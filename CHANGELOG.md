@@ -6,6 +6,14 @@ Behavior-changing default improvements from a full-repo review, plus targeted
 performance and robustness fixes. These are intentional clean cutovers; the
 previous behaviors remain available through explicit parameters.
 
+* Harden the shared wrapper/core input boundary: reject masked, complex,
+  infinite, sparse, empty, and malformed inputs before lossy conversion;
+  preserve nullable frame missing values; resolve named categorical columns;
+  enforce fit-time feature names and order; publish NaN/sparse sklearn tags;
+  and honor `assume_finite=True` only for the prediction-time infinity scan.
+  Full sklearn estimator checks retain only the documented sample-weight row-
+  replication deviation. The layer adapts Apache-2.0 ChimeraBoost 0.15.0
+  validation behavior, recorded in `NOTICE`.
 * Add exact interventional TreeSHAP for scalar oblivious-tree regressors and
   binary classifiers, including constant and local-linear leaves, original-
   feature grouping for categorical expansions, caller-supplied or bounded

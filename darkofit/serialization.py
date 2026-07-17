@@ -1215,6 +1215,17 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
             ],
         },
     }
+    if wrapper_header is None and hasattr(booster, "feature_names_in_"):
+        feature_names = np.asarray(
+            booster.feature_names_in_, dtype=object
+        )
+        if (
+            feature_names.ndim != 1
+            or len(feature_names) != int(prep.n_input_features_)
+            or not all(isinstance(value, str) for value in feature_names)
+        ):
+            raise ValueError("invalid fitted feature names")
+        header["feature_names_in"] = feature_names.tolist()
 
     if isinstance(booster, MulticlassBoosting):
         header["init"] = [float(v) for v in booster.init_]
@@ -1818,6 +1829,18 @@ def load_booster(path, return_wrapper_payload=False):
         prep.binner_ = binner
         prep.n_bins_ = binner.n_bins_
         booster.prep_ = prep
+        booster.n_features_in_ = int(prep.n_input_features_)
+        feature_names = header.get("feature_names_in")
+        if feature_names is not None:
+            if (
+                not isinstance(feature_names, list)
+                or len(feature_names) != booster.n_features_in_
+                or not all(isinstance(value, str) for value in feature_names)
+            ):
+                _invalid_model("feature_names_in must match input features")
+            booster.feature_names_in_ = np.asarray(
+                feature_names, dtype=object
+            )
         linear_trees = [
             tree
             for tree in booster._iter_tree_objects()

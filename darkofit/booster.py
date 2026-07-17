@@ -15,10 +15,12 @@ import warnings
 import numpy as np
 
 from ._validation import (
-    array_like_to_numpy,
+    coerce_feature_matrix,
+    feature_names_from_input,
     n_features_from_array_like,
     normalize_random_state_seed,
-    normalize_cat_features,
+    sklearn_assume_finite,
+    validate_feature_names,
     validate_target_vector,
 )
 from .auto_params import (
@@ -423,7 +425,9 @@ def _validate_sample_weight(sample_weight, n_samples, name="sample_weight"):
         raise ValueError(f"{name} must be nonnegative")
     total = w.sum()
     if total <= 0.0:
-        raise ValueError(f"{name} must have positive total weight")
+        raise ValueError(
+            f"{name} sums to zero; at least one weight must be positive"
+        )
     return w * (n_samples / total)
 
 
@@ -1510,17 +1514,71 @@ class _BaseBooster:
         return tuple(np.zeros(shape) for _ in range(n_arrays))
 
     def _coerce_predict_X(self, X):
+        validate_feature_names(
+            getattr(self, "feature_names_in_", None),
+            X,
+            name="X",
+            fitted_name=type(self).__name__,
+        )
         actual = n_features_from_array_like(X)
         expected = getattr(self, "n_features_in_", None)
         if expected is None:
             expected = getattr(self.prep_, "n_input_features_", None)
-        if expected is not None and actual != int(expected):
+        if expected is not None and int(actual) != int(expected):
             raise ValueError(
                 f"X has {actual} features, but {type(self).__name__} "
                 f"is expecting {int(expected)} features as input"
             )
-        return (array_like_to_numpy(X, object) if self.prep_.cat_features_
-                else array_like_to_numpy(X, np.float64))
+        X, _, _ = coerce_feature_matrix(
+            X,
+            self.prep_.cat_features_,
+            name="X",
+            check_infinite=not sklearn_assume_finite(),
+        )
+        return X
+
+    def _coerce_fit_X(self, X, cat_features):
+        feature_names = feature_names_from_input(X)
+        X, cat_features, n_features = coerce_feature_matrix(
+            X,
+            cat_features,
+            name="X",
+            resolve_names=True,
+        )
+        return X, cat_features, int(n_features), feature_names
+
+    def _record_input_feature_metadata(self, n_features, feature_names):
+        self.n_features_in_ = int(n_features)
+        if feature_names is not None:
+            self.feature_names_in_ = feature_names
+        elif hasattr(self, "feature_names_in_"):
+            delattr(self, "feature_names_in_")
+
+    def _coerce_eval_X(
+        self,
+        X,
+        cat_features,
+        *,
+        expected_n_features,
+        expected_feature_names,
+    ):
+        validate_feature_names(
+            expected_feature_names,
+            X,
+            name="eval_set[0]",
+            fitted_name=type(self).__name__,
+        )
+        X, _, n_features = coerce_feature_matrix(
+            X,
+            cat_features,
+            name="eval_set[0]",
+        )
+        if int(n_features) != int(expected_n_features):
+            raise ValueError(
+                f"eval_set[0] has {n_features} features, but X has "
+                f"{expected_n_features} features"
+            )
+        return X
 
     def _restore_thread_count(self):
         """Restore this model's fitted Numba thread mask."""
@@ -1528,10 +1586,10 @@ class _BaseBooster:
         if fitted_threads is not None:
             _apply_thread_count(fitted_threads)
 
-    def _prepare_predict_X(self, X):
+    def _prepare_predict_X(self, X, *, validated=False):
         """Restore fitted threading and validate prediction input."""
         self._restore_thread_count()
-        return self._coerce_predict_X(X)
+        return X if validated else self._coerce_predict_X(X)
 
     def _alloc_multiclass_hist_buffers(self, n_classes, n_features, n_bins):
         """Allocate reusable class-minor LightGBM-mode histogram buffers."""
@@ -2208,16 +2266,29 @@ class GradientBoosting(_BaseBooster):
         Weights are normalized to mean 1 internally so the gradient scale stays
         comparable to the no-weight case."""
         callbacks = _normalize_callbacks(callbacks)
-        n_features = n_features_from_array_like(X)
-        cat_features = normalize_cat_features(cat_features, n_features)
-        X = (array_like_to_numpy(X, object) if cat_features
-             else array_like_to_numpy(X, np.float64))
+        X, cat_features, n_features, feature_names = self._coerce_fit_X(
+            X, cat_features
+        )
         n_samples = X.shape[0]
         y = validate_target_vector(
             y, n_samples, dtype=np.float64
         )
         _reject_eval_sample_weight_without_eval_set(eval_sample_weight, eval_set)
-        self.n_features_in_ = int(X.shape[1])
+        Xv = yv = wv = None
+        if eval_set is not None:
+            Xv, yv = eval_set
+            Xv = self._coerce_eval_X(
+                Xv,
+                cat_features,
+                expected_n_features=n_features,
+                expected_feature_names=feature_names,
+            )
+            yv = validate_target_vector(
+                yv, Xv.shape[0], name="eval_set[1]", dtype=np.float64
+            )
+            wv = _validate_sample_weight(
+                eval_sample_weight, len(yv), name="eval_sample_weight"
+            )
 
         # Normalize weights to mean=1. np.ones(n) stays np.ones(n), so
         # sample_weight=np.ones(n) is bitwise-equivalent to sample_weight=None
@@ -2303,25 +2374,8 @@ class GradientBoosting(_BaseBooster):
         )
         self._importance = np.zeros(self.prep_.n_input_features_)
 
-        Xv_binned = yv = Fv = wv = None
-        if eval_set is not None:
-            Xv, yv = eval_set
-            eval_n_features = n_features_from_array_like(
-                Xv, name="eval_set[0]"
-            )
-            if eval_n_features != self.n_features_in_:
-                raise ValueError(
-                    f"eval_set[0] has {eval_n_features} features, but X has "
-                    f"{self.n_features_in_} features"
-                )
-            Xv = (array_like_to_numpy(Xv, object) if cat_features
-                  else array_like_to_numpy(Xv, np.float64))
-            yv = validate_target_vector(
-                yv, Xv.shape[0], name="eval_set[1]", dtype=np.float64
-            )
-            wv = _validate_sample_weight(
-                eval_sample_weight, len(yv), name="eval_sample_weight"
-            )
+        Xv_binned = Fv = None
+        if Xv is not None:
             Xv_binned = self.prep_.transform(Xv)
         _add_timing(timing, "preprocess", phase)
 
@@ -2536,6 +2590,7 @@ class GradientBoosting(_BaseBooster):
             self.best_score_ = self.train_history_[-1]
         else:
             self.best_score_ = self.loss_.eval(y, F, w)
+        self._record_input_feature_metadata(n_features, feature_names)
         return self
 
     def _correction_weight(self, sample_weight, bootstrap_factors):
@@ -2576,10 +2631,10 @@ class GradientBoosting(_BaseBooster):
     def _build_flat_ensemble(self):
         return build_flat_ensemble(self.trees_)
 
-    def predict_raw(self, X):
+    def predict_raw(self, X, *, _validated=False):
         """Return raw additive scores (pre-link): the regression prediction, or
         the log-odds for binary classification."""
-        X = self._prepare_predict_X(X)
+        X = self._prepare_predict_X(X, validated=_validated)
         X_binned = self.prep_.transform(X)
         F = np.full(X_binned.shape[0], self.init_, dtype=np.float64)
         flat = self._flat_ensemble()
@@ -2590,9 +2645,9 @@ class GradientBoosting(_BaseBooster):
                 tree.add_predict(X_binned, F)
         return F
 
-    def staged_predict_raw(self, X):
+    def staged_predict_raw(self, X, *, _validated=False):
         """Yield the cumulative raw prediction after each tree (1..n_trees)."""
-        X = self._prepare_predict_X(X)
+        X = self._prepare_predict_X(X, validated=_validated)
         X_binned = self.prep_.transform(X)
         F = np.full(X_binned.shape[0], self.init_, dtype=np.float64)
         for stage, tree in enumerate(self.trees_):
@@ -2607,6 +2662,8 @@ class GradientBoosting(_BaseBooster):
         background=None,
         max_background=SHAP_BACKGROUND_SIZE,
         random_state=0,
+        _validated=False,
+        _background_validated=False,
     ):
         """Return exact interventional TreeSHAP in raw-score space.
 
@@ -2616,7 +2673,7 @@ class GradientBoosting(_BaseBooster):
         floating-point tolerance.
         """
         max_background = normalize_max_background(max_background)
-        X = self._prepare_predict_X(X)
+        X = self._prepare_predict_X(X, validated=_validated)
         X_binned = self.prep_.transform(X)
         if self.tree_mode_ != "catboost":
             raise NotImplementedError(
@@ -2642,7 +2699,9 @@ class GradientBoosting(_BaseBooster):
                     "background explicitly"
                 )
         else:
-            background = self._prepare_predict_X(background)
+            background = self._prepare_predict_X(
+                background, validated=_background_validated
+            )
             background_binned = self.prep_.transform(background)
         if background_binned.shape[0] == 0:
             raise ValueError("SHAP background must contain at least one row")
@@ -2701,13 +2760,12 @@ class MulticlassBoosting(_BaseBooster):
                 "scalar RMSE regression"
             )
         callbacks = _normalize_callbacks(callbacks)
-        n_features = n_features_from_array_like(X)
-        cat_features = normalize_cat_features(cat_features, n_features)
-        X = (array_like_to_numpy(X, object) if cat_features
-             else array_like_to_numpy(X, np.float64))
+        X, cat_features, n_features, feature_names = self._coerce_fit_X(
+            X, cat_features
+        )
         y = validate_target_vector(y, X.shape[0])
-        self.classes_ = np.unique(y)
-        K = self.classes_.size
+        classes = np.unique(y)
+        K = classes.size
         self.histogram_dtype_ = _normalize_histogram_dtype(self.histogram_dtype)
         self.leaf_dtype_ = _normalize_leaf_dtype_name(self.leaf_dtype)
         if self.histogram_dtype_ != "float64":
@@ -2716,12 +2774,30 @@ class MulticlassBoosting(_BaseBooster):
                 "scalar GradientBoosting fits; multiclass support lands with "
                 "the R6 shared-vector layout"
             )
-        self.n_classes_ = K
-        y_idx = np.searchsorted(self.classes_, y)
+        y_idx = np.searchsorted(classes, y)
         Y_class = _one_hot_class_major(y_idx, K)  # class-major (K, n)
         n_samples = X.shape[0]
         _reject_eval_sample_weight_without_eval_set(eval_sample_weight, eval_set)
-        self.n_features_in_ = int(X.shape[1])
+        Xv = yv_idx = wv = None
+        if eval_set is not None:
+            Xv, yv = eval_set
+            Xv = self._coerce_eval_X(
+                Xv,
+                cat_features,
+                expected_n_features=n_features,
+                expected_feature_names=feature_names,
+            )
+            yv_arr = validate_target_vector(
+                yv, Xv.shape[0], name="eval_set[1]"
+            )
+            if np.any(~np.isin(yv_arr, classes)):
+                raise ValueError(
+                    "eval_set contains labels not present in training data"
+                )
+            yv_idx = np.searchsorted(classes, yv_arr)
+            wv = _validate_sample_weight(
+                eval_sample_weight, len(yv_idx), name="eval_sample_weight"
+            )
 
         self.tree_mode_ = _normalize_tree_mode(self.tree_mode)
         fit_random_state = normalize_random_state_seed(self.random_state)
@@ -2734,6 +2810,8 @@ class MulticlassBoosting(_BaseBooster):
             loss_name="MultiClass",
         )
         w = _validate_sample_weight(sample_weight, n_samples)
+        self.classes_ = classes
+        self.n_classes_ = K
         self.loss_ = MultiSoftmax(K)
         self._resolve_auto_structure_params(
             loss_name="MultiClass",
@@ -2818,28 +2896,8 @@ class MulticlassBoosting(_BaseBooster):
             root_leaf = np.zeros(n_samples, dtype=np.int64)
         self._importance = np.zeros(self.prep_.n_input_features_)
 
-        Xv_binned = Fv = yv_idx = wv = None
-        if eval_set is not None:
-            Xv, yv = eval_set
-            eval_n_features = n_features_from_array_like(
-                Xv, name="eval_set[0]"
-            )
-            if eval_n_features != self.n_features_in_:
-                raise ValueError(
-                    f"eval_set[0] has {eval_n_features} features, but X has "
-                    f"{self.n_features_in_} features"
-                )
-            Xv = (array_like_to_numpy(Xv, object) if cat_features
-                  else array_like_to_numpy(Xv, np.float64))
-            yv_arr = validate_target_vector(
-                yv, Xv.shape[0], name="eval_set[1]"
-            )
-            if np.any(~np.isin(yv_arr, self.classes_)):
-                raise ValueError("eval_set contains labels not present in training data")
-            yv_idx = np.searchsorted(self.classes_, yv_arr)
-            wv = _validate_sample_weight(
-                eval_sample_weight, len(yv_idx), name="eval_sample_weight"
-            )
+        Xv_binned = Fv = None
+        if Xv is not None:
             Xv_binned = self.prep_.transform(Xv)
         _add_timing(timing, "preprocess", phase)
 
@@ -3181,15 +3239,16 @@ class MulticlassBoosting(_BaseBooster):
             self.best_score_ = self.train_history_[-1]
         else:
             self.best_score_ = self.loss_.eval_class_major_labels(y_idx, F, w)
+        self._record_input_feature_metadata(n_features, feature_names)
         return self
 
     def _build_flat_ensemble(self):
         return build_flat_multiclass_ensemble(self.trees_, self.n_classes_)
 
-    def predict_raw(self, X):
+    def predict_raw(self, X, *, _validated=False):
         """Return the (n_samples, n_classes) matrix of raw per-class scores
         (pre-softmax)."""
-        X = self._prepare_predict_X(X)
+        X = self._prepare_predict_X(X, validated=_validated)
         X_binned = self.prep_.transform(X)
         F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
         flat = self._flat_ensemble()
@@ -3204,9 +3263,9 @@ class MulticlassBoosting(_BaseBooster):
                         round_trees[k].add_predict(X_binned, F[k])
         return F.T
 
-    def staged_predict_raw(self, X):
+    def staged_predict_raw(self, X, *, _validated=False):
         """Yield raw scores after each complete multiclass boosting round."""
-        X = self._prepare_predict_X(X)
+        X = self._prepare_predict_X(X, validated=_validated)
         X_binned = self.prep_.transform(X)
         F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
         for stage, round_trees in enumerate(self.trees_):
@@ -3377,14 +3436,12 @@ class DistributionalBoosting(_BaseBooster):
                 "scalar RMSE regression"
             )
         callbacks = _normalize_callbacks(callbacks)
-        n_features = n_features_from_array_like(X)
-        cat_features = normalize_cat_features(cat_features, n_features)
-        X = (array_like_to_numpy(X, object) if cat_features
-             else array_like_to_numpy(X, np.float64))
+        X, cat_features, n_features, feature_names = self._coerce_fit_X(
+            X, cat_features
+        )
         n_samples = X.shape[0]
         y = validate_target_vector(y, n_samples, dtype=np.float64)
         _reject_eval_sample_weight_without_eval_set(eval_sample_weight, eval_set)
-        self.n_features_in_ = int(X.shape[1])
         try:
             self.loss_ = VECTOR_LOSSES[self.loss_name](**self.loss_kwargs)
         except KeyError as exc:
@@ -3394,6 +3451,22 @@ class DistributionalBoosting(_BaseBooster):
                 f"losses are: {valid}"
             ) from exc
         self.loss_.validate_target(y)
+        Xv = yv = yv_fit = wv = None
+        if eval_set is not None:
+            Xv, yv = eval_set
+            Xv = self._coerce_eval_X(
+                Xv,
+                cat_features,
+                expected_n_features=n_features,
+                expected_feature_names=feature_names,
+            )
+            yv = validate_target_vector(
+                yv, Xv.shape[0], name="eval_set[1]", dtype=np.float64
+            )
+            self.loss_.validate_target(yv)
+            wv = _validate_sample_weight(
+                eval_sample_weight, len(yv), name="eval_sample_weight"
+            )
 
         self.tree_mode_ = _normalize_tree_mode(self.tree_mode)
         fit_random_state = normalize_random_state_seed(self.random_state)
@@ -3485,27 +3558,9 @@ class DistributionalBoosting(_BaseBooster):
         )
         self._importance = np.zeros(self.prep_.n_input_features_)
 
-        Xv_binned = yv = yv_fit = Fv = wv = None
-        if eval_set is not None:
-            Xv, yv = eval_set
-            eval_n_features = n_features_from_array_like(
-                Xv, name="eval_set[0]"
-            )
-            if eval_n_features != self.n_features_in_:
-                raise ValueError(
-                    f"eval_set[0] has {eval_n_features} features, but X has "
-                    f"{self.n_features_in_} features"
-                )
-            Xv = (array_like_to_numpy(Xv, object) if cat_features
-                  else array_like_to_numpy(Xv, np.float64))
-            yv = validate_target_vector(
-                yv, Xv.shape[0], name="eval_set[1]", dtype=np.float64
-            )
-            self.loss_.validate_target(yv)
+        Xv_binned = Fv = None
+        if Xv is not None:
             yv_fit = self._apply_target_transform(yv)
-            wv = _validate_sample_weight(
-                eval_sample_weight, len(yv), name="eval_sample_weight"
-            )
             Xv_binned = self.prep_.transform(Xv)
         _add_timing(timing, "preprocess", phase)
 
@@ -3778,6 +3833,7 @@ class DistributionalBoosting(_BaseBooster):
             self.best_score_ = self.train_history_[-1]
         else:
             self.best_score_ = self._eval_metric_class_major(y_fit, F, w)
+        self._record_input_feature_metadata(n_features, feature_names)
         return self
 
     def _rescore_class_major_prefix_history(self, X_binned, y, sample_weight):
@@ -3811,9 +3867,9 @@ class DistributionalBoosting(_BaseBooster):
     def _build_flat_ensemble(self):
         return build_flat_multiclass_ensemble(self.trees_, self.n_outputs_)
 
-    def predict_raw(self, X):
+    def predict_raw(self, X, *, _validated=False):
         """Return sample-major raw scores for the fitted distribution head."""
-        X = self._prepare_predict_X(X)
+        X = self._prepare_predict_X(X, validated=_validated)
         X_binned = self.prep_.transform(X)
         F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
         flat = self._flat_ensemble()
@@ -3832,9 +3888,9 @@ class DistributionalBoosting(_BaseBooster):
         raw = self.predict_raw(X)
         return self.variance_from_raw(raw)
 
-    def staged_predict_raw(self, X):
+    def staged_predict_raw(self, X, *, _validated=False):
         """Yield sample-major raw scores after each vector-tree round."""
-        X = self._prepare_predict_X(X)
+        X = self._prepare_predict_X(X, validated=_validated)
         X_binned = self.prep_.transform(X)
         F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
         for stage, tree in enumerate(self.trees_):

@@ -6,10 +6,13 @@ import warnings
 import numpy as np
 from ._validation import (
     array_like_to_numpy,
+    coerce_feature_matrix,
+    feature_names_from_input,
     n_features_from_array_like,
     n_samples_from_array_like,
     normalize_random_state_seed,
-    normalize_cat_features,
+    sklearn_assume_finite,
+    validate_feature_names,
     validate_target_vector,
 )
 from .booster import (
@@ -810,7 +813,9 @@ def _validate_wrapper_sample_weight(sample_weight, n_samples, name="sample_weigh
     if np.any(w < 0.0):
         raise ValueError(f"{name} must be nonnegative")
     if float(np.sum(w)) <= 0.0:
-        raise ValueError(f"{name} must have positive total weight")
+        raise ValueError(
+            f"{name} sums to zero; at least one weight must be positive"
+        )
     return w
 
 
@@ -931,39 +936,34 @@ def _ensure_dense_eval_set(eval_set):
 
 
 def _feature_names_from_input(X):
-    columns = getattr(X, "columns", None)
-    if columns is None:
-        return None
-    names = np.asarray(columns, dtype=object)
-    if names.ndim == 1 and all(isinstance(name, str) for name in names):
-        return names
-    return None
+    return feature_names_from_input(X)
 
 
 def _coerce_fit_X(X, cat_features):
     X = _ensure_dense(X)
-    n_features = n_features_from_array_like(X)
-    cat_features = normalize_cat_features(cat_features, n_features)
-    X_arr = (array_like_to_numpy(X, object) if cat_features
-             else array_like_to_numpy(X, np.float64))
-    if X_arr.ndim != 2:
-        raise ValueError("X must be a 2-dimensional array")
-    return X_arr, cat_features, n_features
+    return coerce_feature_matrix(
+        X,
+        cat_features,
+        name="X",
+        resolve_names=True,
+    )
 
 
 def _validate_feature_names(expected_names, X, *, name="X"):
-    if expected_names is None:
-        return
-    actual_names = _feature_names_from_input(X)
-    if actual_names is None:
-        return
-    if not np.array_equal(actual_names, expected_names):
-        raise ValueError(
-            f"{name} feature names must match fit feature names in the same order"
-        )
+    validate_feature_names(
+        expected_names,
+        X,
+        name=name,
+        fitted_name="DarkoFit",
+    )
 
 
-def _validate_eval_set_features(eval_set, n_features, expected_feature_names=None):
+def _validate_eval_set_features(
+    eval_set,
+    n_features,
+    expected_feature_names=None,
+    cat_features=(),
+):
     if eval_set is None:
         return None
     Xv, yv = eval_set
@@ -975,6 +975,11 @@ def _validate_eval_set_features(eval_set, n_features, expected_feature_names=Non
         )
     _validate_feature_names(
         expected_feature_names, Xv, name="eval_set[0]"
+    )
+    Xv, _, _ = coerce_feature_matrix(
+        Xv,
+        cat_features,
+        name="eval_set[0]",
     )
     yv = validate_target_vector(
         yv, n_samples_from_array_like(Xv, name="eval_set[0]"),
@@ -1009,6 +1014,14 @@ def _check_predict_input(estimator, X):
         getattr(estimator, "feature_names_in_", None),
         X,
         name="X",
+    )
+    prep = getattr(estimator.model_, "prep_", None)
+    cat_features = getattr(prep, "cat_features_", ())
+    X, _, _ = coerce_feature_matrix(
+        X,
+        cat_features,
+        name="X",
+        check_infinite=not sklearn_assume_finite(),
     )
     return X
 
@@ -1102,6 +1115,21 @@ def _make_eval_split(X, y, validation_fraction, random_state,
 
 class _RefitParamsMixin:
     """Shared fitted-model metadata and full-data refit helpers."""
+
+    def __sklearn_is_fitted__(self):
+        return hasattr(self, "model_")
+
+    def __sklearn_tags__(self):
+        parent = getattr(super(), "__sklearn_tags__", None)
+        if parent is None:
+            return self._more_tags()
+        tags = parent()
+        tags.input_tags.allow_nan = True
+        tags.input_tags.sparse = False
+        return tags
+
+    def _more_tags(self):
+        return {"allow_nan": True, "X_types": ["2darray"]}
 
     def _clear_refit_selection_metadata(self):
         for name in (
@@ -2541,8 +2569,9 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         ----------
         X, y : array-like
             Training data.
-        cat_features : list of int or None
-            Column indices to treat as categoricals.
+        cat_features : list of int or str, or None
+            Column indices or, for named input, column names to treat as
+            categoricals.
         eval_set : (X_val, y_val) tuple or None
             Explicit validation set.  When provided, automatic splitting is
             skipped regardless of the *early_stopping* setting.
@@ -2571,6 +2600,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         eval_set = _validate_eval_set_features(
             eval_set, n_features,
             expected_feature_names=feature_names,
+            cat_features=cat_features,
         )
         y = validate_target_vector(y, X.shape[0], dtype=np.float64)
         sample_weight = _validate_wrapper_sample_weight(
@@ -3119,7 +3149,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         X = _check_predict_input(self, X)
         self._check_fitted_loss_matches_params("predict")
         trend = self._linear_residual_trend(X)
-        raw = self.model_.predict_raw(X)
+        raw = self.model_.predict_raw(X, _validated=True)
         if self._fitted_distributional():
             loss = self.model_.loss_
             if hasattr(loss, "mean_from_params"):
@@ -3152,7 +3182,10 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         if X_background is not None:
             X_background = _check_predict_input(self, X_background)
         contributions, expected_value = self.model_.shap_values(
-            X, background=X_background
+            X,
+            background=X_background,
+            _validated=True,
+            _background_validated=X_background is not None,
         )
         self.expected_value_ = expected_value
         return contributions
@@ -3164,7 +3197,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         trend = self._linear_residual_trend(X)
         if self._fitted_distributional():
             loss = self.model_.loss_
-            for raw in self.model_.staged_predict_raw(X):
+            for raw in self.model_.staged_predict_raw(X, _validated=True):
                 if hasattr(loss, "mean_from_params"):
                     params = self._linear_residual_shift_params(
                         self._calibrated_params_from_raw(raw, X), trend
@@ -3173,7 +3206,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 else:
                     yield loss.mean_from_raw(raw)
         else:
-            for raw in self.model_.staged_predict_raw(X):
+            for raw in self.model_.staged_predict_raw(X, _validated=True):
                 yield raw if trend is None else raw + trend
 
     def _require_distributional(self, method_name, capability=None):
@@ -3293,7 +3326,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
     def _predict_dist_checked(self, X, method_name):
         X = _check_predict_input(self, X)
         self._require_distributional(method_name)
-        raw = self.model_.predict_raw(X)
+        raw = self.model_.predict_raw(X, _validated=True)
         params = self._calibrated_params_from_raw(raw, X)
         return self._linear_residual_shift_params(
             params, self._linear_residual_trend(X)
@@ -3307,7 +3340,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         """Return predictive variance for a fitted distributional model."""
         X = _check_predict_input(self, X)
         loss = self._require_distributional("predict_variance")
-        raw = self.model_.predict_raw(X)
+        raw = self.model_.predict_raw(X, _validated=True)
         if self._active_dist_calibration() is None:
             if hasattr(self.model_, "variance_from_raw"):
                 return self.model_.variance_from_raw(raw)
@@ -3332,7 +3365,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             "predict_interval", capability="interval"
         )
         trend = self._linear_residual_trend(X)
-        raw = self.model_.predict_raw(X)
+        raw = self.model_.predict_raw(X, _validated=True)
         params = self._calibrated_params_from_raw(raw, X)
         if hasattr(loss, "interval_from_params"):
             return self._linear_residual_shift_interval(
@@ -3351,7 +3384,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         X = _check_predict_input(self, X)
         loss = self._require_distributional("sample", capability="sample")
         trend = self._linear_residual_trend(X)
-        raw = self.model_.predict_raw(X)
+        raw = self.model_.predict_raw(X, _validated=True)
         rng = np.random.default_rng(random_state)
         params = self._calibrated_params_from_raw(raw, X)
         if hasattr(loss, "sample_from_params"):
@@ -3527,8 +3560,9 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         ----------
         X, y : array-like
             Training data.
-        cat_features : list of int or None
-            Column indices to treat as categoricals.
+        cat_features : list of int or str, or None
+            Column indices or, for named input, column names to treat as
+            categoricals.
         eval_set : (X_val, y_val) tuple or None
             Explicit validation set with original class labels.  When provided,
             automatic splitting is skipped.
@@ -3555,6 +3589,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         eval_set = _validate_eval_set_features(
             eval_set, n_features,
             expected_feature_names=_feature_names_from_input(X_input),
+            cat_features=cat_features,
         )
         y = validate_target_vector(y, X.shape[0])
         target_type = type_of_target(y)
@@ -3563,7 +3598,9 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         classes = np.unique(y)
         n_classes = classes.size
         if n_classes < 2:
-            raise ValueError("Need at least 2 classes.")
+            raise ValueError(
+                f"Need at least 2 classes; got {int(n_classes)} class."
+            )
         sample_weight = _validate_wrapper_sample_weight(
             sample_weight, X.shape[0]
         )
@@ -3848,7 +3885,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
 
     def predict_proba(self, X):
         X = _check_predict_input(self, X)
-        raw = self.model_.predict_raw(X)
+        raw = self.model_.predict_raw(X, _validated=True)
         if self._multiclass:
             return self.model_.loss_.transform(raw)            # (n, K)
         p1 = self.model_.loss_.transform(raw)
@@ -3856,7 +3893,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
 
     def predict(self, X):
         X = _check_predict_input(self, X)
-        raw = self.model_.predict_raw(X)
+        raw = self.model_.predict_raw(X, _validated=True)
         if self._multiclass:
             return self.classes_[np.argmax(raw, axis=1)]
         p1 = self.model_.loss_.transform(raw)
@@ -3872,7 +3909,10 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         if X_background is not None:
             X_background = _check_predict_input(self, X_background)
         contributions, expected_value = self.model_.shap_values(
-            X, background=X_background
+            X,
+            background=X_background,
+            _validated=True,
+            _background_validated=X_background is not None,
         )
         self.expected_value_ = expected_value
         return contributions
@@ -3880,7 +3920,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
     def staged_predict_proba(self, X):
         """Yield class probabilities after each successive boosting round."""
         X = _check_predict_input(self, X)
-        for raw in self.model_.staged_predict_raw(X):
+        for raw in self.model_.staged_predict_raw(X, _validated=True):
             if self._multiclass:
                 yield self.model_.loss_.transform(raw)
             else:
@@ -3890,7 +3930,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
     def staged_predict(self, X):
         """Yield class labels after each successive boosting round."""
         X = _check_predict_input(self, X)
-        for raw in self.model_.staged_predict_raw(X):
+        for raw in self.model_.staged_predict_raw(X, _validated=True):
             if self._multiclass:
                 yield self.classes_[np.argmax(raw, axis=1)]
             else:
@@ -3900,7 +3940,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
     def staged_predict_raw(self, X):
         """Yield raw margins after each successive boosting round."""
         X = _check_predict_input(self, X)
-        yield from self.model_.staged_predict_raw(X)
+        yield from self.model_.staged_predict_raw(X, _validated=True)
 
     def save_model(self, path):
         """Serialize the fitted model to a single ``.npz`` file."""

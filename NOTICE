@@ -27,3 +27,11 @@ The explicit startup warmup API and opt-in environment dispatch are adapted
 from ChimeraBoost commit 851ab7fa79fbb2a7f698fbc1a00952e1bd18c62d.
 DarkoFit uses its own default-path synthetic fits, thread restoration, and
 coverage boundary.
+
+The public input-validation and scikit-learn compliance layer adapts the
+masked/complex/non-finite checks, named categorical resolution, feature-name
+enforcement, nullable frame coercion, and ``assume_finite`` serving escape
+hatch from ChimeraBoost commit
+851ab7fa79fbb2a7f698fbc1a00952e1bd18c62d. DarkoFit centralizes those
+behaviors across its sklearn wrappers, scalar and multiclass boosters, and
+distributional heads while preserving its existing model format.

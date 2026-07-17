@@ -39,6 +39,15 @@ clf.save_model("model.npz")
 clf2 = DarkoClassifier.load_model("model.npz")
 ```
 
+Pandas, Polars, and PyArrow-style named tables are accepted without making
+those libraries mandatory dependencies. Named inputs may pass categorical
+columns by name (for example, `cat_features=["team", "position"]`), and
+prediction enforces the fit-time column names and order. NaN is treated as
+missing; masked arrays, complex values, infinity, sparse matrices, and
+undeclared nonnumeric columns raise clear errors. Latency-sensitive serving
+may skip only the prediction-time infinity scan with
+`sklearn.config_context(assume_finite=True)`.
+
 Exact interventional TreeSHAP is available for scalar oblivious-tree
 regressors and binary classifiers. Contributions are reported in the original
 input-feature space; classifier values explain raw log-odds. The call sets
