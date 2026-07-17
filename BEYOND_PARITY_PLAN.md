@@ -164,6 +164,27 @@ Execution began from published `main` at `ab86269`.
   R²; held-team and cold-player positive) but lost to CatBoost 1.2.10 on 8/9
   (`-0.016703`; held-team `-0.023511`, cold-player `-0.022997`). The panel is
   now spent for selection.
+- C2 native ordinal development is closed from clean source `7bce022`.
+  The complete 48-worker campaign passed every integrity and mechanism
+  engagement check with exact no-engagement controls, but missed the frozen
+  quality gates: equal-task test RMSE was `0.992755x`, the worst task was
+  FPS at `1.317510x`, and its worst split was `2.435933x`. Diamonds retained
+  a large `0.749905x` benefit, while Apparel and Munich were approximately
+  neutral. Median fit/predict/RSS ratios were `1.0082x`/`1.0407x`/`1.0007x`;
+  prediction-ratio dispersion narrowly missed at `0.1576`. The target-unseen
+  five-lineage confirmation registry remains outcome-unseen and was not run.
+  No ordinal default, confirmation spend, mode-mix rerun, or C3 deletion is
+  authorized.
+- E3 is closed without a new default or auto lane. The existing isolated
+  feature-mode throughput harness already measured float32 histogram streams
+  at only `1.001x` on the 200k-wide numeric case and `1.011x` on the 100k
+  categorical case, with higher peak RSS in both rows. Its exactness coverage
+  passed, but the later default audit explicitly excluded float32 because it
+  remained scalar-only, paid float64-to-float32 refresh cost, and lacked
+  weighted/high-dynamic-range regret coverage. That evidence fails the
+  program's material large-n prerequisite before a size-gated auto policy is
+  considered. The deprecated public knob proceeds toward 1.0 removal; no
+  hidden automatic float32 lane is authorized.
 
 ## Standing constraints (inherited, non-negotiable)
 
@@ -318,9 +339,12 @@ quality neutrality and every non-speed gate passing. That misses the frozen
 authorized. See
 [`benchmarks/large_n_engine_result.md`](benchmarks/large_n_engine_result.md).
 
-**E3. Float32 histogram streams** (ROADMAP R5, opt-in, already implemented):
-measure on the throughput harness; promote to a size-gated auto lane only
-behind regret gates.
+**E3. Float32 histogram streams — closed.** The existing throughput harness
+and default-flip audit already supply the required decision evidence: exact
+behavior on the measured cases, but only `1.001x`/`1.011x` fit speedups with
+higher RSS and incomplete regret coverage. This does not meet the material
+large-n prerequisite for an automatic lane. Keep float64 as the supported
+path and remove the deprecated public float32 control at 1.0.
 
 **E4. Multiclass/distributional attribution — complete.** The fixed 50k-row
 profile found every measured path tree-build-limited. Gaussian LightGBM is the
@@ -356,11 +380,13 @@ stratum as development-only. Confirmation requires a new target-unseen,
 contamination-screened categorical panel frozen before C1 outcome inspection;
 I3 cannot serve as confirmation again.
 
-**C3. Ladder.** Basketball first (should be a no-op there — no declared
-ordinals; gate is exactness + no-engagement proof), then dev tier, then
-fresh confirmation. Success also unblocks re-running the deferred mode-mix
-diagnostic (plan item 11): if oblivious+ordinal absorbs the Diamonds-class
-wins, the hybrid/depthwise deletion evidence finally exists.
+**C3. Ladder — closed before confirmation.** Basketball no-engagement passed,
+but the frozen C2 development panel failed its quality, worst-task,
+worst-split, validation, and prediction-dispersion gates. The target-unseen
+confirmation panel therefore remains unscored. Native ordinal handling stays
+an explicit capability; no automatic nominal ordering, default promotion,
+mode-mix rerun, hybrid/depthwise deletion, or lockbox access follows. See the
+[C2 result](benchmarks/native_ordinal_c2_development_result.md).
 
 ## Track Z — Cleanup to 1.0 (bundle every break loudly)
 
