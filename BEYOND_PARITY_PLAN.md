@@ -37,6 +37,11 @@ Execution began from published `main` at `ab86269`.
   failed, so the all-case target is not formally certified. The packed core is
   generally faster; binning is the selected P2 target at a median `+33.8%`
   component excess. Peak RSS was `0.969x`.
+- E4's fixed 50k-row phase-attribution profile now covers scalar control,
+  binary, per-class and shared-vector multiclass, Gaussian, and Student-t. The
+  shared-vector and Student-t formal-shape smoke fits produced complete
+  telemetry and retained the expected 40 trees; clean-source results remain
+  to be recorded.
 
 ## Standing constraints (inherited, non-negotiable)
 
