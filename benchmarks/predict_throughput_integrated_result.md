@@ -40,11 +40,13 @@ value is 6. The eight stored median ratios establish the separate 8/8
 no-slower statement above. Release status tooling reports both counts without
 rewriting this frozen artifact.
 
-One DarkoFit numeric-8k interval completed in `0.690` seconds, below the
-preregistered `0.75`-second minimum; ChimeraBoost's shortest canonical interval
-was `0.751` seconds. Paired peak RSS was stable at `0.992x`. All warm versus
-integrated-loop predictions were array-identical and each library retained one
-behavior fingerprint across the three blocks.
+The canonical DarkoFit numeric-524k interval completed in `0.690` seconds,
+below the preregistered `0.75`-second minimum; its other two blocks were
+`0.685` and `0.681` seconds. ChimeraBoost's canonical interval for that case
+was `0.751` seconds, although another block was `0.735`. Paired peak RSS was
+stable at `0.992x`. All warm versus integrated-loop predictions were
+array-identical and each library retained one behavior fingerprint across the
+three blocks.
 
 ## Product interpretation
 

@@ -60,10 +60,11 @@ Execution began from published `main` at `ab86269`.
   surfaces, do not warn. The complete Wave-1 suite is green at `1,673 passed,
   23 skipped`.
 - P2's first mechanism preserves already-contiguous C/F float64 blocks instead
-  of forcing a C-order copy before binning. The isolated 524k-row binner fell
-  to `0.586x` old numeric and `0.547x` old mixed time with byte-identical bins.
-  In the clean matched campaign, every public median was `0.71-1.015x`
-  ChimeraBoost and RSS was `0.969x`; numeric binning became `0.79-0.99x`.
+  of forcing a C-order copy before binning. Focused correctness tests prove
+  the copy removal and byte-identical bins; the isolated local timing
+  diagnostic was not retained and is not part of the bound evidence. In the
+  clean matched campaign, every public median was `0.71-1.015x` ChimeraBoost
+  and RSS was `0.969x`; numeric binning became `0.79-0.99x`.
   The formal target remains open because four of eight public paired-ratio
   stability gates failed. The artifact is final. Next is a preregistered
   seconds-integrated timing protocol and the remaining mixed validation cost,
@@ -72,9 +73,10 @@ Execution began from published `main` at `ab86269`.
 - P2's seconds-integrated successor is also final: DarkoFit's public median
   beat ChimeraBoost in all eight cases (`0.805-0.987x`), six were stable, and
   RSS was `0.992x`. The conjunctive proof failed numeric 8k/524k stability at
-  `0.10556`/`0.10032` and one `0.690s` interval missed the `0.75s` floor. The
-  code optimization stays, but P2 certification remains unavailable. No third
-  protocol or further packed/binner optimization will chase this gate.
+  `0.10556`/`0.10032`, and one numeric-524k `0.690s` interval missed the
+  `0.75s` floor. The code optimization stays, but P2 certification remains
+  unavailable. No third protocol or further packed/binner optimization will
+  chase this gate.
 - E1's first expansion is retained from clean source `1016e7e`: the
   variable-Hessian fused histogram/split lane is canonical-model-state exact
   for binary Logloss and weighted RMSE. Across reciprocal fresh-worker blocks,

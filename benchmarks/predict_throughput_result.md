@@ -12,10 +12,10 @@ and binds the frozen
 Start P2 with preprocessing/binning. Do not optimize or replace the packed
 forest core.
 
-DarkoFit's median public prediction time was already below ChimeraBoost's in
-every case and below the `1.30x` ceiling target. The full formal claim did not
-pass only because three small-batch paired ratios exceeded the preregistered
-stability threshold.
+DarkoFit's median public prediction time was below ChimeraBoost's in six of
+eight cases, and all eight were below the `1.30x` ceiling target. The full
+formal claim did not pass because three small-batch paired ratios exceeded the
+preregistered stability threshold.
 
 | Input | Rows | Public ratio | Stable | Binning ratio | Packed-core ratio |
 | --- | ---: | ---: | :---: | ---: | ---: |
@@ -36,8 +36,8 @@ fresh-worker blocks. Stability requires paired-ratio IQR / median at most
 
 The earlier 1.83x matched-lane prediction gap does not survive the current
 large-batch protocol after the packed prediction and validation work. At
-512k–2M rows, DarkoFit is 3.6–16.0% faster publicly while using slightly less
-peak memory.
+512k–2M rows, DarkoFit was 3.6–16.0% faster publicly in three of four cases;
+the 524k mixed case was 2.0% slower. It used slightly less peak memory.
 
 The component breakdown still exposes a durable opportunity: DarkoFit's
 adaptive-`uint8` packed core is generally faster than ChimeraBoost's

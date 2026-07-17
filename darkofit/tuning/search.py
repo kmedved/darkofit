@@ -37,7 +37,11 @@ from .spaces import (
     phase_names,
 )
 from .validation import make_cv_splits, slice_fit_payload, validation_mass
-from ..sklearn_api import _normalize_dist_calibration, _resolve_ordinal_features
+from ..sklearn_api import (
+    _FrozenAutoOrdinalFeatures,
+    _normalize_dist_calibration,
+    _resolve_ordinal_features,
+)
 
 
 def _validate_search_sample_weight(sample_weight, n_samples, name="sample_weight"):
@@ -446,7 +450,9 @@ class DarkoStepwiseSearchCV(BaseEstimator):
             # then rejected as unknown. An inactive full-data resolution must
             # likewise remain inactive in every fold.
             ordinal_features_frozen = (
-                resolved_ordinal_features if ordinal_records else None
+                _FrozenAutoOrdinalFeatures(resolved_ordinal_features)
+                if ordinal_records
+                else None
             )
             ordinal_features_refit = "auto"
             ordinal_features_public = "auto"

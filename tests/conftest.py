@@ -58,9 +58,9 @@ def pytest_ignore_collect(collection_path, config):
         return None
     partition = _requested_partition(config)
     if partition == "campaign":
-        return not is_campaign_module(path)
+        return True if not is_campaign_module(path) else None
     if partition == "library":
-        return is_campaign_module(path)
+        return True if is_campaign_module(path) else None
     return None
 
 

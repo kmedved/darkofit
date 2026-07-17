@@ -994,6 +994,10 @@ def _normalize_ordinal_categories(
     return normalized
 
 
+class _FrozenAutoOrdinalFeatures(dict):
+    """Internal full-data auto resolution passed unchanged to CV folds."""
+
+
 def _ordinal_column_values(X, index):
     if hasattr(X, "iloc"):
         return np.asarray(X.iloc[:, int(index)], dtype=object)
@@ -1072,7 +1076,15 @@ def _resolve_ordinal_features(X, cat_features, ordinal_features):
                 "index": index,
                 "name": None if names is None else str(names[index]),
                 "categories": _normalize_ordinal_categories(
-                    categories, feature=feature
+                    categories,
+                    feature=feature,
+                    min_categories=(
+                        0
+                        if isinstance(
+                            ordinal_features, _FrozenAutoOrdinalFeatures
+                        )
+                        else 2
+                    ),
                 ),
                 "source": "explicit",
             })
@@ -1319,16 +1331,12 @@ def _validate_eval_set_features(
     if eval_set is None:
         return None
     Xv, yv = eval_set
-    actual = n_features_from_array_like(Xv, name="eval_set[0]")
-    if actual != int(n_features):
-        raise ValueError(
-            f"eval_set[0] has {actual} features, but X has "
-            f"{int(n_features)} features"
-        )
-    if not feature_names_validated:
-        _validate_feature_names(
-            expected_feature_names, Xv, name="eval_set[0]"
-        )
+    _validate_eval_set_feature_schema(
+        Xv,
+        n_features,
+        expected_feature_names=expected_feature_names,
+        feature_names_validated=feature_names_validated,
+    )
     Xv, _, _ = coerce_feature_matrix(
         Xv,
         cat_features,
@@ -1340,6 +1348,24 @@ def _validate_eval_set_features(
         name="eval_set[1]",
     )
     return (Xv, yv)
+
+
+def _validate_eval_set_feature_schema(
+    Xv,
+    n_features,
+    expected_feature_names=None,
+    feature_names_validated=False,
+):
+    actual = n_features_from_array_like(Xv, name="eval_set[0]")
+    if actual != int(n_features):
+        raise ValueError(
+            f"eval_set[0] has {actual} features, but X has "
+            f"{int(n_features)} features"
+        )
+    if not feature_names_validated:
+        _validate_feature_names(
+            expected_feature_names, Xv, name="eval_set[0]"
+        )
 
 
 def _infer_model_n_features(model):
@@ -3106,8 +3132,10 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         ordinal_nominal_cat_count = len(cat_features)
         eval_set = _ensure_dense_eval_set(eval_set)
         if eval_set is not None:
-            _validate_feature_names(
-                feature_names, eval_set[0], name="eval_set[0]"
+            _validate_eval_set_feature_schema(
+                eval_set[0],
+                n_features,
+                expected_feature_names=feature_names,
             )
             eval_set = (
                 _transform_ordinal_features(eval_set[0], ordinal_records),
@@ -4128,8 +4156,10 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         ordinal_nominal_cat_count = len(cat_features)
         eval_set = _ensure_dense_eval_set(eval_set)
         if eval_set is not None:
-            _validate_feature_names(
-                feature_names, eval_set[0], name="eval_set[0]"
+            _validate_eval_set_feature_schema(
+                eval_set[0],
+                n_features,
+                expected_feature_names=feature_names,
             )
             eval_set = (
                 _transform_ordinal_features(eval_set[0], ordinal_records),

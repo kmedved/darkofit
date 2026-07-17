@@ -311,6 +311,25 @@ def test_ordinal_eval_set_and_classifier_paths():
     assert np.allclose(probabilities.sum(axis=1), 1.0)
     assert classifier.model_.auto_params_["ordinal_features"]["active"] is True
 
+    wrong_width = X.iloc[140:, :1].to_numpy()
+    error = r"eval_set\[0\] has 1 features, but X has 3 features"
+    with pytest.raises(ValueError, match=error):
+        DarkoRegressor(**params).fit(
+            X.iloc[:140],
+            y[:140],
+            cat_features=["region"],
+            ordinal_features={"level": ["low", "medium", "high"]},
+            eval_set=(wrong_width, y[140:]),
+        )
+    with pytest.raises(ValueError, match=error):
+        DarkoClassifier(**params).fit(
+            X.iloc[:140],
+            labels[:140],
+            cat_features=["region"],
+            ordinal_features={"level": ["low", "medium", "high"]},
+            eval_set=(wrong_width, labels[140:]),
+        )
+
 
 def test_eval_feature_names_are_checked_before_ordinal_transformation():
     X, y = _frame()
@@ -717,3 +736,35 @@ def test_stepwise_search_freezes_inactive_auto_resolution_across_folds():
     assert search.best_estimator_.model_.prep_.cat_features_ == [1]
     fold_metadata = search.best_trial_.user_attrs["fold_auto_params"]
     assert all("ordinal_features" not in metadata for metadata in fold_metadata)
+
+    one_category = pd.DataFrame({
+        "x": np.arange(8.0),
+        "level": pd.Categorical(
+            ["only"] * 8,
+            categories=["only"],
+            ordered=True,
+        ),
+    })
+    one_category_search = DarkoStepwiseSearchCV(
+        DarkoRegressor(**PARAMS),
+        phases=("probe",),
+        tree_modes=("catboost",),
+        n_trials={"probe": 1},
+        cv=splits,
+        refit=True,
+        random_state=4,
+        resume=False,
+        error_score="raise",
+    )
+    one_category_search.fit(
+        one_category,
+        np.arange(8.0),
+        cat_features=[1],
+        ordinal_features="auto",
+    )
+    assert one_category_search.best_estimator_.ordinal_features_[0][
+        "categories"
+    ] == ["only"]
+    assert one_category_search.best_estimator_.ordinal_features_[0][
+        "source"
+    ] == "auto_ordered_categorical"

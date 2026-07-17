@@ -50,6 +50,21 @@ mkdocs build --strict
 All internal links must resolve. Archived plans are retained for provenance
 but should not be used as current API documentation.
 
+## Release tags
+
+Before creating a release tag, verify both local and remote lineage:
+
+```bash
+git fetch --tags origin
+git rev-parse --verify --quiet refs/tags/vX.Y.Z
+git ls-remote --exit-code --tags origin refs/tags/vX.Y.Z
+```
+
+An existing tag must point to the intended DarkoFit release commit and that
+commit must be an ancestor of the release branch. Never reuse a
+ChimeraBoost-era tag name or force-update a published release tag; preserve a
+conflicting historical ref under an explicit archive name first.
+
 ## Benchmark discipline
 
 New promotion protocols use alternating fresh-worker blocks and paired timing

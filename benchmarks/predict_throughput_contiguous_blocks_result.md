@@ -44,11 +44,12 @@ behavior fingerprint were stable. Paired peak RSS was stable at `0.969x`.
 
 ## Interpretation
 
-The copy removal is a clear mechanism success. On the same 524k-row matrices,
-the isolated binner ran at `0.586x` its old time for numeric input and `0.547x`
-for mixed input with identical bin bytes. In the full matched campaign,
-numeric preprocessing/binning is now at or faster than ChimeraBoost at every
-size.
+The copy removal is a clear mechanism success: focused correctness tests prove
+that already-contiguous inputs are not copied and that their bin bytes remain
+identical. An isolated local diagnostic also indicated a large binner speedup,
+but its raw timing artifact was not retained and is therefore not formal
+evidence. In the bound matched campaign, numeric preprocessing/binning is now
+at or faster than ChimeraBoost at every size.
 
 The mixed 65k–2M component remains `1.18–1.33x` because the phase includes
 public input validation and categorical mapping/encoding, not just the now

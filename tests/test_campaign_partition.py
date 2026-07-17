@@ -52,9 +52,9 @@ def test_core_library_modules_stay_out_of_campaign_partition():
         pytest_ignore_collect(
             Path("test_basketball_guardrails.py"), campaign
         )
-        is False
+        is None
     )
-    assert pytest_ignore_collect(Path("test_darkofit.py"), library) is False
+    assert pytest_ignore_collect(Path("test_darkofit.py"), library) is None
     assert (
         pytest_ignore_collect(
             Path("test_basketball_guardrails.py"), library

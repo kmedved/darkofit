@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Preserve zero- and one-category ordered pandas vocabularies under
+  `ordinal_features="auto"` during stepwise cross-validation, and validate
+  explicit evaluation-set width before ordinal transformation so malformed
+  inputs raise the documented `ValueError` instead of a raw `IndexError`.
+- Correct non-decision-changing prose errors in the frozen prediction and
+  fused-subset benchmark reports without rewriting their hash-bound artifacts.
+- Make the campaign collection hook composable with pytest and third-party
+  ignore hooks by returning `None` for modules included in the selected
+  partition.
 - Make generated release benchmark status fail closed when any of its five
   frozen source artifacts changes, rather than merely recording a new hash in
   regenerated output.
@@ -40,57 +49,22 @@
   passed the paired-ratio stability gate. The immutable artifact is preserved
   and current status tooling labels both counts.
 
-### Deprecations for 1.0
+### Product and engine changes
 
-The following evidence-free or concluded experimental surfaces remain
-functional during the 0.10 deprecation cycle and emit `FutureWarning` when a
-non-default value selects them. They will be removed in DarkoFit 1.0:
-
-- `tree_mode="depthwise"` and its `"levelwise"` alias. Migrate to
-  `"catboost"` for symmetric trees or `"lightgbm"` for non-oblivious trees.
-- `histogram_dtype`, `leaf_dtype`, and `histogram_parallelism`. Remove these
-  arguments to use the supported float64 histogram, int64 leaf-ID, and
-  automatically selected feature-parallel paths.
-- `auto_learning_rate_probe`, `auto_learning_rate_probe_values`, and
-  `auto_learning_rate_probe_iterations`. Use a validation-backed explicit
-  learning-rate search outside the estimator instead.
-- `bootstrap_type="bayesian"` and `bagging_temperature`. Use
-  `bootstrap_type="none"` with uniform, GOSS, or MVS row sampling.
-- `sampling="weighted_goss"`. Use plain `"goss"` or `"mvs"`.
-- `linear_residual`, `linear_residual_alpha`, `linear_residual_features`,
-  `linear_residual_fit_intercept`, and `linear_residual_standardize`. For
-  scalar RMSE smooth data, use the more accurate local
-  `linear_leaves=True`. For other supported losses, explicitly detrend the
-  target before fitting and add the deterministic trend back to location
-  predictions.
-
-The older `sigma_calibration` alias continues to emit `DeprecationWarning`;
-use `dist_calibration` before 1.0.
-
-`random_strength` is deliberately **not** deprecated because its
-preregistered retirement screen defended the public capability. The broader
-three-target, three-season S4 confirmation did not validate `0.5` as a sports
-recommendation: equal-cell R² changed by only `+0.000036`, 6 of 9 cells lost,
-the leave-one-cell-out gate failed, and fit cost was `1.835x`. That candidate
-is closed without retuning, and `random_strength=0.0` remains the global
-default. The same S4 run put current DarkoFit defaults above ChimeraBoost
-0.15.0 on all nine cells but below CatBoost 1.2.10 on 8 of 9. The two Gaussian
-`rho_*` multipliers also remain: focused distributional tests defend their
-independent head-scaling behavior and safe serialization. `hybrid` and
-`target_ordered_cat_codes` remain pending their declared comparison campaigns.
-
-The `linear_residual` deprecation follows the frozen smooth development
-campaign: local linear leaves improved equal-task RMSE by 7.97% versus
-DarkoFit default, beat global residual on all three datasets and 20 of 21
-splits, while global residual improved only 0.48% and regressed on space_ga.
-The comparison is development evidence and does not promote linear leaves as
-a default.
-
-## 0.9.0 - 2026-07-12
-
-Behavior-changing default improvements from a full-repo review, plus targeted
-performance and robustness fixes. Compatibility exceptions and migration
-paths are called out explicitly below.
+- Add `ordinal_features` to `DarkoRegressor.fit`,
+  `DarkoClassifier.fit`, and `DarkoStepwiseSearchCV.fit`. Explicit mappings
+  encode declared ranks as numeric features; `"auto"` recognizes ordered
+  pandas categoricals and integer-coded categorical columns. The fitted
+  resolution is recorded, unknown prediction categories fail closed, and safe
+  model round trips preserve the declaration.
+- Preserve already-contiguous C- and Fortran-order float64 feature blocks
+  through preprocessing instead of forcing a row-major copy. The matched
+  campaign retained byte-identical bins and predictions; its formal
+  all-case throughput claim remained closed on timing stability.
+- Add exact fused histogram/split construction for eligible variable-Hessian
+  oblivious fits, including binary Logloss and weighted RMSE. Ineligible
+  sampled, noisy, low-thread, and other lanes retain their reference kernels.
+  The later generalized subset-lane experiment was not promoted.
 
 ### Input compatibility decisions
 
@@ -153,6 +127,54 @@ Add explicit `validation_strategy="group"` support to the sklearn wrappers.
 It requires `groups=` and records the requested strategy. Supplying `groups=`
 with the historical default `validation_strategy="random"` remains grouped for
 backward compatibility.
+
+### Deprecations for 1.0
+
+The following evidence-free or concluded experimental surfaces remain
+functional during the 0.10 deprecation cycle and emit `FutureWarning` when a
+non-default value selects them. They will be removed in DarkoFit 1.0:
+
+- `tree_mode="depthwise"` and its `"levelwise"` alias. Migrate to
+  `"catboost"` for symmetric trees or `"lightgbm"` for non-oblivious trees.
+- `histogram_dtype`, `leaf_dtype`, and `histogram_parallelism`. Remove these
+  arguments to use the supported float64 histogram, int64 leaf-ID, and
+  automatically selected feature-parallel paths.
+- `auto_learning_rate_probe`, `auto_learning_rate_probe_values`, and
+  `auto_learning_rate_probe_iterations`. Use a validation-backed explicit
+  learning-rate search outside the estimator instead.
+- `bootstrap_type="bayesian"` and `bagging_temperature`. Use
+  `bootstrap_type="none"` with uniform, GOSS, or MVS row sampling.
+- `sampling="weighted_goss"`. Use plain `"goss"` or `"mvs"`.
+- `linear_residual`, `linear_residual_alpha`, `linear_residual_features`,
+  `linear_residual_fit_intercept`, and `linear_residual_standardize`. For
+  scalar RMSE smooth data, use the more accurate local
+  `linear_leaves=True`. For other supported losses, explicitly detrend the
+  target before fitting and add the deterministic trend back to location
+  predictions.
+
+The older `sigma_calibration` alias continues to emit `DeprecationWarning`;
+use `dist_calibration` before 1.0.
+
+`random_strength` is deliberately **not** deprecated because its
+preregistered retirement screen defended the public capability. The broader
+three-target, three-season S4 confirmation did not validate `0.5` as a sports
+recommendation: equal-cell R² changed by only `+0.000036`, 6 of 9 cells lost,
+the leave-one-cell-out gate failed, and fit cost was `1.835x`. That candidate
+is closed without retuning, and `random_strength=0.0` remains the global
+default. The same S4 run put current DarkoFit defaults above ChimeraBoost
+0.15.0 on all nine cells but below CatBoost 1.2.10 on 8 of 9. The two Gaussian
+`rho_*` multipliers also remain: focused distributional tests defend their
+independent head-scaling behavior and safe serialization. `hybrid` and
+`target_ordered_cat_codes` remain pending their declared comparison campaigns.
+
+The `linear_residual` deprecation follows the frozen smooth development
+campaign: local linear leaves improved equal-task RMSE by 7.97% versus
+DarkoFit default, beat global residual on all three datasets and 20 of 21
+splits, while global residual improved only 0.48% and regressed on space_ga.
+The comparison is development evidence and does not promote linear leaves as
+a default.
+
+### Detailed 0.10 implementation and campaign record
 
 * Harden the shared wrapper/core input boundary: reject masked, complex,
   infinite-by-default, sparse, empty training/evaluation, and malformed inputs
@@ -274,21 +296,6 @@ backward compatibility.
   advances the candidate to a broader dataset gate rather than changing the
   automatic defaults. See
   [the multisplit report](benchmarks/tabarena_regression_multisplit_ablation.md).
-* Make `ordered_boosting="auto"` task-aware in CatBoost/depthwise modes: the
-  ordered leave-one-out leaf update stays on for classification and turns off
-  for scalar regression. Categorical regression continues to use ordered
-  target-statistic preprocessing to prevent leakage. On the real-data
-  guardrail matrix plain boosting improved three of four numeric case means;
-  weighted Diabetes was effectively neutral. It also improved every Abalone
-  split. On House Prices, ordered boosting was catastrophically unstable on
-  one of three splits (2.6x test RMSE with a healthy-looking validation score)
-  while mildly better on the other two — a tail-risk failure a small
-  validation set cannot catch. The numeric result also closes ~93% of the
-  QSAR TabArena gap in `docs/archive/HANDOFF.md`. `MAE`/`Quantile` recompute leaf values
-  from residual statistics and never applied the ordered update; `"auto"`
-  now resolves off for them and explicit `ordered_boosting=True` raises
-  instead of being silently ignored. The resolved rule is recorded under
-  `auto_params_["tree"]["ordered_boosting_rule"]`.
 * Add public fit-time boosting callbacks, including a monotonic soft
   `WallClockStopper`, across scalar, multiclass, and distributional boosters.
   Fitted models now record requested, attempted, completed, retained, and best
@@ -351,6 +358,28 @@ backward compatibility.
   memory-performance evidence is inadmissible. The profile freezes unchanged
   for unseen confirmation and does not change defaults. See the
   [accuracy-shootout result](benchmarks/tabarena_regression_accuracy_shootout_result.md).
+
+## 0.9.0 - 2026-07-12
+
+Behavior-changing default improvements from a full-repo review, plus targeted
+performance and robustness fixes. These are intentional clean cutovers; the
+previous behaviors remain available through explicit parameters.
+
+* Make `ordered_boosting="auto"` task-aware in CatBoost/depthwise modes: the
+  ordered leave-one-out leaf update stays on for classification and turns off
+  for scalar regression. Categorical regression continues to use ordered
+  target-statistic preprocessing to prevent leakage. On the real-data
+  guardrail matrix plain boosting improved three of four numeric case means;
+  weighted Diabetes was effectively neutral. It also improved every Abalone
+  split. On House Prices, ordered boosting was catastrophically unstable on
+  one of three splits (2.6x test RMSE with a healthy-looking validation score)
+  while mildly better on the other two — a tail-risk failure a small
+  validation set cannot catch. The numeric result also closes ~93% of the
+  QSAR TabArena gap in `docs/archive/HANDOFF.md`. `MAE`/`Quantile` recompute
+  leaf values from residual statistics and never applied the ordered update;
+  `"auto"` now resolves off for them and explicit `ordered_boosting=True`
+  raises instead of being silently ignored. The resolved rule is recorded
+  under `auto_params_["tree"]["ordered_boosting_rule"]`.
 * Default `eval_train_loss=False` on the boosters and sklearn wrappers. The
   per-round training-loss pass is diagnostic-only (early stopping watches the
   eval set) and cost about 15% of multiclass fit time; `verbose=True` still
@@ -367,8 +396,8 @@ backward compatibility.
   filtered before the median.
 * Allocate small stepwise tuning budgets across phases by largest remainder
   instead of dumping rounding leftovers into the last (lowest-priority)
-  phase, and warn when requested trials cannot be scheduled by the
-  configured phases.
+  phase, and warn when requested trials cannot be scheduled by the configured
+  phases.
 * Parallelize the Gaussian/StudentT/LogNormal/Poisson/NegativeBinomial NLL
   and Gaussian CRPS eval kernels with `prange`, keeping zero-weight rows
   unevaluated so extreme values cannot poison the metric with `0 * inf`.

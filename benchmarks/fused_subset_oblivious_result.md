@@ -55,6 +55,12 @@ entirely; it did not recover the pre-mechanism dedicated fused kernel required
 by the frozen no-regression control. That full-lane gate is therefore
 unresolved, not passed.
 
+The immutable JSON still records
+`full_fit_geomean_at_most_0_95=true` and
+`full_tree_geomean_at_most_0_90=true`. Those labels predate the audit and are
+stale, non-binding results because their full-lane comparator was invalid. The
+artifact remains unchanged to preserve its published hash.
+
 This does not weaken the rejection decision: failure of any conjunctive gate
 was sufficient, and the subset timing-stability gate independently failed.
 The dedicated pre-mechanism full-row/full-feature kernel has been restored so
