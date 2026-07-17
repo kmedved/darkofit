@@ -91,6 +91,13 @@ claims until independently reproduced here.*
   spend broader evidence on it. `cat_combinations` remains a separate
   categorical research question; see
   `basketball_cross_features_donor_screen_result.md`.
+- Binary temperature scaling is also closed before implementation. On the
+  frozen starter target it improved log loss on only 5 of 10 creator folds,
+  worsened pooled log loss/Brier/ECE, and worsened all three metrics on both
+  held teams and the 585 cold-player rows. Runtime and exact monotonicity
+  passed, but the external sports guards did their job: no classifier
+  calibration API or broader panel is authorized; see
+  `basketball_temperature_scaling_result.md`.
 
 ## 0. Thesis
 
@@ -320,9 +327,14 @@ Code-mass comparison:
    interval coverage on pooled, held-team, and cold-player views. It failed
    the fatal width budget on all three views, widening intervals by 35.7%,
    41.6%, and 43.7% against a 25% ceiling. Do not implement or retune this
-   candidate, and do not spend broader evidence on it. Classifier temperature
-   scaling and distributional-interval calibration remain separate,
-   untested mechanisms.
+   candidate, and do not spend broader evidence on it.
+   **Classifier-temperature candidate closed 2026-07-17:** validation-fitted
+   positive temperatures improved only 5 of 10 creator folds and worsened
+   pooled, held-team, and cold-player log loss, Brier score, and ECE. The
+   candidate also exceeded the frozen worst-fold limit. Exact class decisions,
+   within-model ranking, runtime, and memory gates passed, but no product
+   implementation or broader evidence is authorized. Distributional-interval
+   calibration remains a separate, untested mechanism.
 7. **`darkofit.warmup()`** + `DARKOFIT_WARMUP=1`: three tiny synthetic fits
    covering default fit/predict kernels. Directly fixes the fresh-worker
    timing tax we've measured on TabArena-style harnesses.
@@ -516,7 +528,9 @@ refit (`get_refit_params`); callbacks + WallClockStopper; `groups` support;
    mode-mix rerun. Do not repeat or enlarge those campaigns.
 3. **Closed isolated mechanism:** split-conformal quantile offsets failed the
    basketball interval-width gates despite improving coverage and pinball
-   loss. Do not implement, retune, or enlarge that campaign.
+   loss. Binary temperature scaling independently failed pooled, held-team,
+   cold-player, fold-breadth, and worst-fold quality gates. Do not implement,
+   retune, or enlarge either campaign.
 4. **Basketball remains next:** every new mechanism starts on the unchanged
    creator folds, overlap-exposed held-team view, and 585-row cold-player
    subset. A failure on any sports guardrail stops it before broader data.
