@@ -315,6 +315,14 @@ Code-mass comparison:
    quantile offset for `loss="Quantile"` — both natural fits for our
    uncertainty brand and nearly free. Evaluate the conformal idea against our
    distributional heads too (`predict_interval` + conformal correction).
+   **Quantile-offset candidate closed 2026-07-17:** the frozen basketball
+   screen improved summed pinball loss on all 10 creator folds and repaired
+   interval coverage on pooled, held-team, and cold-player views. It failed
+   the fatal width budget on all three views, widening intervals by 35.7%,
+   41.6%, and 43.7% against a 25% ceiling. Do not implement or retune this
+   candidate, and do not spend broader evidence on it. Classifier temperature
+   scaling and distributional-interval calibration remain separate,
+   untested mechanisms.
 7. **`darkofit.warmup()`** + `DARKOFIT_WARMUP=1`: three tiny synthetic fits
    covering default fit/predict kernels. Directly fixes the fresh-worker
    timing tax we've measured on TabArena-style harnesses.
@@ -506,16 +514,19 @@ refit (`get_refit_params`); callbacks + WallClockStopper; `groups` support;
 2. **Closed:** current-auto-LR early-stop/refit, OOB-5 API work, automatic
    linear-leaf selection, automatic numeric cross features, and the dependent
    mode-mix rerun. Do not repeat or enlarge those campaigns.
-3. **Next isolated mechanism:** calibration, screened first on the unchanged
-   basketball folds, held-team view, and cold-player subset. Temperature
-   scaling and quantile/conformal calibration are separate candidates.
-4. **Separate categorical track:** safe ordinal and all-categorical
+3. **Closed isolated mechanism:** split-conformal quantile offsets failed the
+   basketball interval-width gates despite improving coverage and pinball
+   loss. Do not implement, retune, or enlarge that campaign.
+4. **Basketball remains next:** every new mechanism starts on the unchanged
+   creator folds, overlap-exposed held-team view, and 585-row cold-player
+   subset. A failure on any sports guardrail stops it before broader data.
+5. **Separate categorical track:** safe ordinal and all-categorical
    `cat_combinations` each require their own protocol; numeric basketball
    evidence cannot promote or reject them.
-5. Only a basketball survivor may enter the 243 development coordinates,
+6. Only a basketball survivor may enter the 243 development coordinates,
    then a genuinely fresh preregistered gate with sufficient simulated power;
    only then consider the one-shot lockbox.
-6. Resume kernel work only for a newly measured regression. Phase 4 deletions
+7. Resume kernel work only for a newly measured regression. Phase 4 deletions
    remain blocked on replacement behavior proof, not line-count targets.
-7. Phase 5 R&D infrastructure can proceed independently where it does not
+8. Phase 5 R&D infrastructure can proceed independently where it does not
    consume promotion evidence.
