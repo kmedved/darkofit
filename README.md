@@ -39,6 +39,28 @@ clf.save_model("model.npz")
 clf2 = DarkoClassifier.load_model("model.npz")
 ```
 
+Exact interventional TreeSHAP is available for scalar oblivious-tree
+regressors and binary classifiers. Contributions are reported in the original
+input-feature space; classifier values explain raw log-odds. The call sets
+`expected_value_`, so each row satisfies the additive identity against the
+corresponding raw prediction:
+
+```
+import numpy as np
+
+phi = clf.shap_values(X_test, X_background=X_reference)
+raw_margin = clf.model_.predict_raw(X_test)
+np.allclose(phi.sum(axis=1) + clf.expected_value_, raw_margin)
+```
+
+Constant and local-linear leaves are supported, and the deterministic fitted
+background is preserved by safe `.npz` serialization. Multiclass,
+distributional, global-linear-residual, and non-oblivious models currently
+raise `NotImplementedError` instead of returning partial explanations. The
+[basketball confirmation](benchmarks/basketball_tree_shap_result.md) matched
+ChimeraBoost 0.15.0 attributions exactly and ran at comparable speed on the
+frozen sports-data gate.
+
 For wrappers fitted with `refit=True`, scalar refit metadata is preserved on
 load, while the fold-selection model itself is intentionally not persisted;
 loaded wrappers expose `selection_model_persisted_=False`.

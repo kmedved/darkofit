@@ -6,6 +6,19 @@ Behavior-changing default improvements from a full-repo review, plus targeted
 performance and robustness fixes. These are intentional clean cutovers; the
 previous behaviors remain available through explicit parameters.
 
+* Add exact interventional TreeSHAP for scalar oblivious-tree regressors and
+  binary classifiers, including constant and local-linear leaves, original-
+  feature grouping for categorical expansions, caller-supplied or bounded
+  deterministic fitted backgrounds, and safe `.npz` persistence. Unsupported
+  multiclass, distributional, global-linear-residual, non-oblivious, and
+  over-16-player cases fail explicitly. The independent-oracle tests and full
+  suite pass. On the frozen basketball fold plus corrected cold-player
+  guardrail, DarkoFit and ChimeraBoost 0.15.0 produced byte-identical
+  attributions, expected values, and predictions. Median SHAP time was 33.581ms
+  versus 32.686ms (1.027x), with both timing series stable. The implementation
+  is adapted from Apache-2.0 ChimeraBoost commit
+  `ff6f248d09f92d608ed8cc366463b61f1af04acc`, recorded in `NOTICE`; see the
+  [basketball confirmation](benchmarks/basketball_tree_shap_result.md).
 * Fuse unit-Hessian oblivious histogram construction and shared-split scanning
   into one feature-parallel launch for the proven full-row/full-feature lane
   at three or more threads. Weighted RMSE, classification, sampled rows or

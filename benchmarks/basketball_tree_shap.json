@@ -1,0 +1,448 @@
+{
+  "analysis": {
+    "gates": {
+      "basketball_is_primary_gate": true,
+      "darkofit_efficiency": true,
+      "darkofit_repeat_array_exact": true,
+      "default_background_efficiency": true,
+      "default_background_storage_bounded": true,
+      "expected_values_close": true,
+      "fold_and_cold_attributions_close": true,
+      "fold_and_guardrail_predictions_array_exact": true,
+      "frozen_model_metadata": true,
+      "runtime_at_chimera_parity": true,
+      "timing_stability": true
+    },
+    "passed": true,
+    "recommendation": "promote_exact_tree_shap_api",
+    "runtime_ratio_darkofit_over_chimeraboost": 1.0273554557177538
+  },
+  "campaign": "basketball_tree_shap",
+  "cases": {
+    "cold_player": {
+      "attribution_sha256": {
+        "chimeraboost": "e362a20dca0d981f404f1a1b72a89e0ac4464eb9814f10f3f796f83a63302b72",
+        "darkofit": "e362a20dca0d981f404f1a1b72a89e0ac4464eb9814f10f3f796f83a63302b72"
+      },
+      "attributions_close": true,
+      "background_baseline_error": {
+        "chimeraboost": 0.0,
+        "darkofit": 0.0
+      },
+      "background_rows": 32,
+      "background_sha256": "c9bcae40589811276523db187680d65f7d627e6293540ba24b7030076209dd65",
+      "columns": 15,
+      "darkofit_repeat_array_exact": true,
+      "efficiency_error": {
+        "chimeraboost": 1.3500311979441904e-13,
+        "darkofit": 1.3500311979441904e-13
+      },
+      "expected_value": {
+        "chimeraboost": 26.35284765274146,
+        "darkofit": 26.35284765274146
+      },
+      "expected_value_difference": 0.0,
+      "input_sha256": "4395be8e414186b250af46e21b2c6b3a99fa1e196463b4af87b9ac9434a440c6",
+      "maximum_attribution_difference": 0.0,
+      "name": "cold_player",
+      "prediction_sha256": {
+        "chimeraboost": "ad2c4b335852d597539421452cff8be80c8132adcbe5e71a03ae2fb91777940c",
+        "darkofit": "ad2c4b335852d597539421452cff8be80c8132adcbe5e71a03ae2fb91777940c"
+      },
+      "predictions_array_exact": true,
+      "rows": 8
+    },
+    "confirmation_fold": {
+      "attribution_sha256": {
+        "chimeraboost": "7baf26e3049424de92b3f1970fca07cf2e761b4627aa82f69f51ad68ff19f291",
+        "darkofit": "7baf26e3049424de92b3f1970fca07cf2e761b4627aa82f69f51ad68ff19f291"
+      },
+      "attributions_close": true,
+      "background_baseline_error": {
+        "chimeraboost": 0.0,
+        "darkofit": 0.0
+      },
+      "background_rows": 32,
+      "background_sha256": "c9bcae40589811276523db187680d65f7d627e6293540ba24b7030076209dd65",
+      "columns": 15,
+      "darkofit_repeat_array_exact": true,
+      "efficiency_error": {
+        "chimeraboost": 1.5987211554602254e-13,
+        "darkofit": 1.5987211554602254e-13
+      },
+      "expected_value": {
+        "chimeraboost": 26.35284765274146,
+        "darkofit": 26.35284765274146
+      },
+      "expected_value_difference": 0.0,
+      "input_sha256": "22745316efc34068cb6bffe4aa4167c2cf31df36072cc52718fb0c973988972f",
+      "maximum_attribution_difference": 0.0,
+      "name": "confirmation_fold",
+      "prediction_sha256": {
+        "chimeraboost": "b202d938f5d6998de3f2662a1867e5049d13cfb2dea01a2bf003c53656357ab3",
+        "darkofit": "b202d938f5d6998de3f2662a1867e5049d13cfb2dea01a2bf003c53656357ab3"
+      },
+      "predictions_array_exact": true,
+      "rows": 8
+    }
+  },
+  "created_at_utc": "2026-07-17T02:19:38.686568+00:00",
+  "data": {
+    "cold_request_rows_sha256": "503ac1e23794c2e8e57f6bf8d1122c52b4bc2edeb994a708134b9ae0b10cc457",
+    "confirmation_test_indices_sha256": "606cff5ba073a3ae87f7b9f2b447fa533cfc4eff7e7aa52d3561cfc58b278810",
+    "confirmation_train_indices_sha256": "d9f5992a8bad65beda58b54ffdbec37cd09cf6531a43ec85641f0e7148ff637f",
+    "fold_fingerprint_sha256": "7270350a38a687b6e783d18d9c02e5a45f2c7367faa4a6955e74c710f5e8daea",
+    "fold_test_sizes": [
+      525,
+      524,
+      524,
+      524,
+      524,
+      524,
+      524,
+      524,
+      524,
+      524
+    ],
+    "guardrail": {
+      "cold_player_holdout_row_rate": 0.24283935242839352,
+      "cold_player_holdout_rows": 585,
+      "cold_player_mask_sha256": "e17887c9240fd95aee21d37d7e1e8a533c38ef87f4492acd28fb3aa496a3dd19",
+      "cold_players_absent_from_training": true,
+      "cold_unique_players": 210,
+      "creator_team_holdout_unchanged": true,
+      "holdout_player_sequence_sha256": "0f7e3b3cd7c4f1a06fb91e7b220d29747517e24f9887d1af13302e37a0d4dfd2",
+      "holdout_rows": 2409,
+      "holdout_unique_players": 767,
+      "name": "alphabetical_team_holdout_with_cold_player_subset",
+      "overlapping_unique_player_rate": 0.7262059973924381,
+      "overlapping_unique_players": 557,
+      "player_identifier_column": "Player",
+      "player_identifier_policy": "exact_source_string",
+      "player_identifier_used_as_model_feature": false,
+      "seen_player_holdout_row_rate": 0.7571606475716065,
+      "seen_player_holdout_rows": 1824,
+      "team_holdout_interpretation": "player_overlap_exposed",
+      "temporal_guardrail_available": false,
+      "temporal_guardrail_unavailable_reason": "source_has_no_season_or_date_column",
+      "test_teams": [
+        "ATL",
+        "BOS",
+        "BRK",
+        "CHA",
+        "CHH",
+        "CHI",
+        "CHO",
+        "CLE",
+        "DAL",
+        "DEN",
+        "DET",
+        "GSW"
+      ],
+      "train_player_sequence_sha256": "1cba92d12aa0c1aa8a856d2fcad3ae902d9839d01c633481a7047a88aeeba92b",
+      "train_rows": 5241,
+      "train_unique_players": 1190
+    },
+    "processed": {
+      "defined_but_unused_weight": "G",
+      "features": [
+        "3P",
+        "3PA",
+        "2P",
+        "2PA",
+        "FT",
+        "FTA",
+        "ORB",
+        "DRB",
+        "AST",
+        "STL",
+        "BLK",
+        "TOV",
+        "PF",
+        "PTS",
+        "Age"
+      ],
+      "filter": "MP > 500",
+      "filtered_rows": 7650,
+      "missing_train_feature_cells": 0,
+      "target": "MPG",
+      "team_count": 37,
+      "test_rows": 2409,
+      "test_team_count": 12,
+      "test_teams": [
+        "ATL",
+        "BOS",
+        "BRK",
+        "CHA",
+        "CHH",
+        "CHI",
+        "CHO",
+        "CLE",
+        "DAL",
+        "DEN",
+        "DET",
+        "GSW"
+      ],
+      "train_rows": 5241,
+      "train_team_count": 25,
+      "x_train_sha256": "05efa554a983942885b72b1b3fdcc97a10ecf4ccbb4b10843ee8b970129fe71b",
+      "y_train_sha256": "7c06b45d4649c392fdb0c3dc91a857650f2f3fc77341fe06ffdbee2b3a44aecf"
+    },
+    "raw": {
+      "bytes": 2549434,
+      "cache_path": "/Users/kmedved/Code/GitHub/darkofit/.cache/basketball-creator-benchmark/basketball_reference_toy_data.csv",
+      "load_source": "cache",
+      "raw_columns": 36,
+      "raw_rows": 11893,
+      "sha256": "43af3be46074da9130a757aa1db643e207e2c0ea5405d2086d698f85555fbcb2",
+      "url": "https://gist.githubusercontent.com/bbstats/16d332857c1d9ebbb439b90a55439270/raw/ab65fac8769cffdbe15221a64ec86d1097a7fe53/basketball_reference_toy_data.csv"
+    }
+  },
+  "default_background": {
+    "attribution_sha256": "80626475f21fbc7102b2ca5089467fb0ffc957ca47c3129683fd80c3ad8709f2",
+    "efficiency_error": 1.4210854715202004e-13,
+    "expected_value": 25.60922552946048,
+    "maximum_allowed_values": 3000,
+    "storage_bounded": true,
+    "stored_dtype": "uint8",
+    "stored_nbytes": 3000,
+    "stored_shape": [
+      200,
+      15
+    ]
+  },
+  "environment": {
+    "machine": "arm64",
+    "numba": "0.66.0",
+    "numpy": "2.4.6",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.12.13 (main, Jun 11 2026, 03:55:21) [Clang 22.1.3 ]",
+    "threads": 18
+  },
+  "fit_seconds": {
+    "chimeraboost": 2.448923125,
+    "darkofit": 2.669841791
+  },
+  "metadata": {
+    "chimeraboost": {
+      "all_constant_leaves": true,
+      "arm": "chimeraboost",
+      "fitted_tree_count": 1000,
+      "requested_params": {
+        "alpha": 0.5,
+        "cat_combinations": false,
+        "cat_features": null,
+        "cat_n_permutations": 4,
+        "cat_smoothing": 1.0,
+        "colsample": 1.0,
+        "cross_features": false,
+        "depth": 6,
+        "early_stopping": false,
+        "early_stopping_rounds": null,
+        "ensemble_n_jobs": 1,
+        "l2_leaf_reg": 1.0,
+        "leaf_estimation_iterations": 1,
+        "learning_rate": 0.1,
+        "linear_lambda": 1.0,
+        "linear_leaves": false,
+        "loss": "RMSE",
+        "max_bins": 128,
+        "min_child_weight": 1.0,
+        "n_ensembles": null,
+        "n_estimators": 1000,
+        "ordered_boosting": false,
+        "random_state": 4,
+        "selection_rounds": 100,
+        "subsample": 1.0,
+        "thread_count": 18,
+        "validation_fraction": 0.2,
+        "verbose": false
+      },
+      "requested_params_sha256": "181539d6aa97ae810beaaa4a667353713a4b4e728efe24c769d90cb4420bab32",
+      "resolved_learning_rate": 0.1,
+      "resolved_thread_count": 18,
+      "tree_depths_sha256": "aaac2145e6280e11d215db21e46a09b4020096f2b05c4054b30916ccbae25b28",
+      "tree_depths_unique": [
+        6
+      ]
+    },
+    "darkofit": {
+      "all_constant_leaves": true,
+      "arm": "darkofit",
+      "fitted_tree_count": 1000,
+      "requested_params": {
+        "alpha": 0.5,
+        "auto_learning_rate_probe": false,
+        "auto_learning_rate_probe_iterations": 80,
+        "auto_learning_rate_probe_values": null,
+        "bagging_temperature": 0.0,
+        "bin_sample_count": 200000,
+        "bootstrap_type": "none",
+        "cat_smoothing": 1.0,
+        "colsample": 1.0,
+        "depth": 6,
+        "diagnostic_warnings": "never",
+        "dist_calibration": null,
+        "dist_calibration_feature": "metric_code",
+        "dist_params": null,
+        "early_stopping": false,
+        "early_stopping_min_delta": null,
+        "early_stopping_rounds": null,
+        "eval_metric": null,
+        "eval_train_loss": false,
+        "histogram_dtype": "float64",
+        "histogram_parallelism": "auto",
+        "iterations": 1000,
+        "l2_leaf_reg": 1.0,
+        "leaf_dtype": "int64",
+        "learning_rate": 0.1,
+        "linear_lambda": 1.0,
+        "linear_leaves": false,
+        "linear_residual": false,
+        "linear_residual_alpha": 1.0,
+        "linear_residual_features": "auto",
+        "linear_residual_fit_intercept": true,
+        "linear_residual_standardize": true,
+        "loss": "RMSE",
+        "max_bins": 128,
+        "min_child_samples": 1,
+        "min_child_weight": 1.0,
+        "min_gain_to_split": 0.0,
+        "mvs_reg": 1.0,
+        "num_leaves": null,
+        "ordered_boosting": false,
+        "other_rate": 0.1,
+        "random_state": 4,
+        "random_strength": 0.0,
+        "refit": false,
+        "refit_strategy": "exact",
+        "rho_l2_leaf_reg_multiplier": 1.0,
+        "rho_learning_rate_multiplier": 1.0,
+        "sampling": "uniform",
+        "sigma_calibration": null,
+        "subsample": 1.0,
+        "target_ordered_cat_codes": "off",
+        "thread_count": 18,
+        "top_rate": 0.2,
+        "tree_mode": "catboost",
+        "ts_permutations": 1,
+        "use_best_model": true,
+        "validation_fraction": 0.1,
+        "validation_strategy": "random",
+        "verbose": false,
+        "verbose_timing": false
+      },
+      "requested_params_sha256": "4410482d0e7c74b8dca299733850f98880111648dbd85d00338da3efc58c6089",
+      "resolved_learning_rate": 0.1,
+      "resolved_thread_count": 18,
+      "tree_depths_sha256": "aaac2145e6280e11d215db21e46a09b4020096f2b05c4054b30916ccbae25b28",
+      "tree_depths_unique": [
+        6
+      ]
+    }
+  },
+  "prediction_exactness": {
+    "cold_player": {
+      "array_exact": true,
+      "rows": 585,
+      "sha256": {
+        "chimeraboost": "0291a8990a260ccada8cc73d5447901c7b16433d5fc677561885c2d8802facea",
+        "darkofit": "0291a8990a260ccada8cc73d5447901c7b16433d5fc677561885c2d8802facea"
+      }
+    },
+    "confirmation_fold": {
+      "array_exact": true,
+      "rows": 524,
+      "sha256": {
+        "chimeraboost": "75ce7bd5b38883679e2bd9a5eab2f193f9f84b9b0ee64cbbab89f4f4f2bb7db7",
+        "darkofit": "75ce7bd5b38883679e2bd9a5eab2f193f9f84b9b0ee64cbbab89f4f4f2bb7db7"
+      }
+    },
+    "team_holdout": {
+      "array_exact": true,
+      "rows": 2409,
+      "sha256": {
+        "chimeraboost": "9bd0e7c474cf40162bb803e9f6a81b2a84474537270546ef039d34babe21ac6a",
+        "darkofit": "9bd0e7c474cf40162bb803e9f6a81b2a84474537270546ef039d34babe21ac6a"
+      }
+    }
+  },
+  "protocol": {
+    "background_rows": 32,
+    "cold_player_guardrail": true,
+    "confirmation_fold": 1,
+    "ctr23_used": false,
+    "explained_rows": 8,
+    "path": "/Users/kmedved/Code/GitHub/darkofit/benchmarks/basketball_tree_shap_protocol.md",
+    "primary_dataset": "basketball",
+    "sha256": "8462fa78107a23a4c184f17866898bbd3d06e7b405d34a4010fec3a9cb5ffc12"
+  },
+  "runner_sha256": "18f4acb1690504d51645f527917b9d56d4237d825a7da1cf9d69832ced5f39e9",
+  "schema_version": 1,
+  "source": {
+    "chimeraboost": {
+      "branch": "main",
+      "head": "851ab7fa79fbb2a7f698fbc1a00952e1bd18c62d",
+      "repository": "/Users/kmedved/Code/GitHub/chimeraboost",
+      "status_porcelain": ""
+    },
+    "darkofit": {
+      "branch": "main",
+      "head": "daa2c1ee777f3273bf3b66fbcc4058888875b5f4",
+      "package_manifest_sha256": "4fe4830c9c36de36ce29e626743c83fa0f20e60db8f15e2c7ccd5c96d3226068",
+      "repository": "/Users/kmedved/Code/GitHub/darkofit",
+      "status_porcelain": "",
+      "support_sha256": {
+        "benchmarks/basketball_guardrails.py": "4492a65161b2261e5d437b9733c286368534c54f7fd23b6f6b95a804507fff52",
+        "benchmarks/basketball_harness.py": "40360ca54d1954d540bd72bec47c891a179fb0f764a0cb6061d3a33b8593aba1",
+        "benchmarks/run_basketball_creator_benchmark.py": "9a2d6b3dc8f3a8586cd4ac20bdb3607c17675cab1d89e6bbd7c438d2bba53fec"
+      }
+    }
+  },
+  "timing": {
+    "arms": {
+      "chimeraboost": {
+        "iqr_fraction": 0.11018730448642948,
+        "iqr_seconds": 0.0036016208000000036,
+        "maximum_seconds": 0.0397766418,
+        "median_seconds": 0.032686349999999996,
+        "minimum_seconds": 0.028020033399999998,
+        "seconds_per_call": [
+          0.031588475,
+          0.029699700000000002,
+          0.0364928,
+          0.0397766418,
+          0.033777800000000004,
+          0.0316883834,
+          0.0348943416,
+          0.032686349999999996,
+          0.0355857584,
+          0.028020033399999998,
+          0.0317002584
+        ]
+      },
+      "darkofit": {
+        "iqr_fraction": 0.06935634371138001,
+        "iqr_seconds": 0.0023290206999999966,
+        "maximum_seconds": 0.0409749418,
+        "median_seconds": 0.0335805,
+        "minimum_seconds": 0.0318047166,
+        "seconds_per_call": [
+          0.034436625,
+          0.0329436168,
+          0.035270625,
+          0.0409749418,
+          0.0348378582,
+          0.0335805,
+          0.03329435,
+          0.0318047166,
+          0.03770725,
+          0.032506825,
+          0.0319225166
+        ]
+      }
+    },
+    "blocks": 11,
+    "inner_calls": 5
+  }
+}
