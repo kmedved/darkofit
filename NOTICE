@@ -17,3 +17,8 @@ serial leaf-descent dispatch are adapted from ChimeraBoost commit
 a04430657fb82c806ee2a039506c99944a27accc. DarkoFit preserves its own
 row-major buffers, split-legality semantics, floating-point order, and
 existing kernels as exact-equality references.
+
+The exact interventional TreeSHAP coalition-enumeration algorithm is adapted
+from ChimeraBoost commit ff6f248d09f92d608ed8cc366463b61f1af04acc.
+DarkoFit modifies it for row-major binned data, its serialized empirical
+background, original-feature grouping, and its local-linear leaf format.

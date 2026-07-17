@@ -16,6 +16,7 @@ Layout (format_version 2/3/4):
   cat{j}__code_remap     format v3 only, optional raw-code target-order remap
   linear__* / trees__linear_*
                          format v4 only, optional local-linear leaf payload
+  shap__background      optional binned empirical background for scalar SHAP
   enc{t}__*              per-target encoder category sums/counts
   trees__*               concatenated per-tree arrays with offsets
 
@@ -31,6 +32,7 @@ import numpy as np
 from .binning import Binner, DEFAULT_BIN_SAMPLE_COUNT
 from .losses import LOSSES, MultiSoftmax, VECTOR_LOSSES
 from .preprocessing import FeaturePreprocessor
+from .shap import SHAP_BACKGROUND_SIZE
 from .target_encoding import OrderedTargetEncoder, _MISSING_CATEGORY
 from .tree import (
     LevelwiseTree,
@@ -1322,6 +1324,21 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
     arrays["bin__n_bins"] = binner.n_bins_
     arrays["bin__block_widths"] = np.asarray(binner._block_widths_,
                                              dtype=np.int64)
+    shap_background = getattr(booster, "_shap_background_", None)
+    if isinstance(booster, GradientBoosting) and shap_background is not None:
+        shap_background = np.asarray(shap_background)
+        if (
+            shap_background.ndim != 2
+            or not 1 <= shap_background.shape[0] <= SHAP_BACKGROUND_SIZE
+            or shap_background.shape[1] != len(binner.n_bins_)
+            or not np.issubdtype(shap_background.dtype, np.integer)
+        ):
+            raise ValueError("invalid fitted SHAP background")
+        for feature, n_feature_bins in enumerate(binner.n_bins_):
+            column = shap_background[:, feature]
+            if np.any(column < 0) or np.any(column >= int(n_feature_bins)):
+                raise ValueError("fitted SHAP background contains invalid bins")
+        arrays["shap__background"] = np.ascontiguousarray(shap_background)
     for j, cats in enumerate(getattr(prep, "cat_categories_", [])):
         vals, kinds = _encode_categories(cats)
         arrays[f"cat{j}__values"] = vals
@@ -1606,6 +1623,35 @@ def load_booster(path, return_wrapper_payload=False):
             data, prep_cfg, header["n_input_features"]
         )
         n_bins = np.asarray(binner.n_bins_, dtype=np.int64)
+        if "shap__background" in data.files:
+            if not isinstance(booster, GradientBoosting):
+                _invalid_model(
+                    "stored SHAP background requires a scalar booster"
+                )
+            shap_background = _require_array_ndim(
+                "SHAP background", data["shap__background"], 2
+            )
+            if not np.issubdtype(shap_background.dtype, np.integer):
+                _invalid_model("SHAP background must contain integer values")
+            if not 1 <= shap_background.shape[0] <= SHAP_BACKGROUND_SIZE:
+                _invalid_model(
+                    "SHAP background row count is outside the supported range"
+                )
+            if shap_background.shape[1] != len(n_bins):
+                _invalid_model(
+                    "SHAP background width does not match fitted features"
+                )
+            for feature, n_feature_bins in enumerate(n_bins):
+                column = shap_background[:, feature]
+                if np.any(column < 0) or np.any(
+                    column >= int(n_feature_bins)
+                ):
+                    _invalid_model(
+                        "SHAP background contains out-of-range bins"
+                    )
+            booster._shap_background_ = np.ascontiguousarray(shap_background)
+        else:
+            booster._shap_background_ = None
 
         # ---- trees ----------------------------------------------------------
         kind = header["tree_kind"]

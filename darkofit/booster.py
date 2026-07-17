@@ -46,6 +46,15 @@ from .flat_model import (
 )
 from .losses import LOSSES, MultiSoftmax, VECTOR_LOSSES
 from .preprocessing import FeaturePreprocessor, _normalize_target_ordered_cat_codes
+from .shap import (
+    SHAP_BACKGROUND_SIZE,
+    SHAP_MAX_PLAYERS,
+    factorials,
+    max_original_players,
+    normalize_max_background,
+    pack_oblivious_shap_forest,
+    shap_forest_linear,
+)
 from .tree import (
     _build_multiclass_histograms_counts_into,
     _leaf_values_and_sums,
@@ -2259,6 +2268,16 @@ class GradientBoosting(_BaseBooster):
         X_binned = self._fit_transform_preprocessor(
             X, [preprocessing_target], cat_features, w,
         )
+        self._shap_background_ = None
+        if self.tree_mode_ == "catboost":
+            shap_background_size = min(n_samples, SHAP_BACKGROUND_SIZE)
+            shap_seed = 0 if fit_random_state is None else fit_random_state
+            shap_indices = np.random.default_rng(shap_seed).choice(
+                n_samples, shap_background_size, replace=False
+            )
+            self._shap_background_ = np.ascontiguousarray(
+                X_binned[shap_indices]
+            )
         X_route_binned = np.asfortranarray(X_binned)
         X_hist_binned = (
             X_route_binned if self.n_threads_ > 1 else X_binned
@@ -2581,6 +2600,91 @@ class GradientBoosting(_BaseBooster):
                 self._restore_thread_count()
             tree.add_predict(X_binned, F)
             yield F.copy()
+
+    def shap_values(
+        self,
+        X,
+        background=None,
+        max_background=SHAP_BACKGROUND_SIZE,
+        random_state=0,
+    ):
+        """Return exact interventional TreeSHAP in raw-score space.
+
+        Returns ``(contributions, expected_value)``. Contributions are in the
+        original input-feature space and include local-linear leaf slopes.
+        Their row sums plus ``expected_value`` equal :meth:`predict_raw` to
+        floating-point tolerance.
+        """
+        max_background = normalize_max_background(max_background)
+        X = self._prepare_predict_X(X)
+        X_binned = self.prep_.transform(X)
+        if self.tree_mode_ != "catboost":
+            raise NotImplementedError(
+                "TreeSHAP currently supports only oblivious trees"
+            )
+        n_original_features = int(self.prep_.n_input_features_)
+        packed = None
+        if self.trees_:
+            packed = pack_oblivious_shap_forest(self.trees_)
+            player_count = max_original_players(
+                self.trees_, self.prep_.feature_map_
+            )
+            if player_count > SHAP_MAX_PLAYERS:
+                raise NotImplementedError(
+                    "TreeSHAP supports at most "
+                    f"{SHAP_MAX_PLAYERS} distinct features per tree"
+                )
+        if background is None:
+            background_binned = getattr(self, "_shap_background_", None)
+            if background_binned is None:
+                raise ValueError(
+                    "this model has no stored SHAP background; pass "
+                    "background explicitly"
+                )
+        else:
+            background = self._prepare_predict_X(background)
+            background_binned = self.prep_.transform(background)
+        if background_binned.shape[0] == 0:
+            raise ValueError("SHAP background must contain at least one row")
+        if background_binned.shape[0] > max_background:
+            seed = normalize_random_state_seed(
+                random_state, name="random_state"
+            )
+            selected = np.random.default_rng(seed).choice(
+                background_binned.shape[0],
+                max_background,
+                replace=False,
+            )
+            background_binned = np.ascontiguousarray(
+                background_binned[selected]
+            )
+        else:
+            background_binned = np.ascontiguousarray(background_binned)
+
+        if not self.trees_:
+            return (
+                np.zeros(
+                    (X_binned.shape[0], n_original_features),
+                    dtype=np.float64,
+                ),
+                float(self.init_),
+            )
+        contributions = shap_forest_linear(
+            np.ascontiguousarray(X_binned),
+            background_binned,
+            *packed,
+            np.asarray(self.prep_.feature_map_, dtype=np.int64),
+            n_original_features,
+            factorials(player_count),
+        )
+        background_prediction = np.full(
+            background_binned.shape[0], self.init_, dtype=np.float64
+        )
+        flat = self._flat_ensemble()
+        if flat is None:
+            raise RuntimeError("failed to pack the fitted SHAP forest")
+        flat.add_predict(background_binned, background_prediction)
+        return contributions, float(background_prediction.mean())
 
 
 class MulticlassBoosting(_BaseBooster):

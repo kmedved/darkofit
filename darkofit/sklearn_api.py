@@ -3130,6 +3130,33 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             return loss.mean_from_raw(raw)
         return raw if trend is None else raw + trend
 
+    def shap_values(self, X, X_background=None):
+        """Return exact interventional SHAP contributions to predictions.
+
+        The returned array has shape ``(n_samples, n_features)``. Its rows sum
+        to ``predict(X) - expected_value_``. Constant and local-linear
+        oblivious leaves are supported; distributional heads and active global
+        linear residuals are intentionally outside this scalar explanation.
+        """
+        X = _check_predict_input(self, X)
+        self._check_fitted_loss_matches_params("shap_values")
+        if self._fitted_distributional():
+            raise NotImplementedError(
+                "shap_values() is not implemented for distributional losses"
+            )
+        if getattr(self, "linear_residual_active_", False):
+            raise NotImplementedError(
+                "shap_values() is not implemented with an active "
+                "linear_residual"
+            )
+        if X_background is not None:
+            X_background = _check_predict_input(self, X_background)
+        contributions, expected_value = self.model_.shap_values(
+            X, background=X_background
+        )
+        self.expected_value_ = expected_value
+        return contributions
+
     def staged_predict(self, X):
         """Yield the prediction after each successive tree."""
         X = _check_predict_input(self, X)
@@ -3834,6 +3861,21 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
             return self.classes_[np.argmax(raw, axis=1)]
         p1 = self.model_.loss_.transform(raw)
         return self.classes_[(p1 > 0.5).astype(np.int64)]
+
+    def shap_values(self, X, X_background=None):
+        """Return exact interventional SHAP contributions in log-odds space."""
+        X = _check_predict_input(self, X)
+        if self._multiclass:
+            raise NotImplementedError(
+                "shap_values() currently supports only binary classifiers"
+            )
+        if X_background is not None:
+            X_background = _check_predict_input(self, X_background)
+        contributions, expected_value = self.model_.shap_values(
+            X, background=X_background
+        )
+        self.expected_value_ = expected_value
+        return contributions
 
     def staged_predict_proba(self, X):
         """Yield class probabilities after each successive boosting round."""
