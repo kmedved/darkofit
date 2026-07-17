@@ -45,9 +45,15 @@ claims until independently reproduced here.*
   callbacks, and early-stop/exact-refit fits. Weighted RMSE, binary
   classification, and one- or two-thread fits proved they remain on the
   reference fallbacks.
-- This closes roughly one third of DarkoFit's basketball runtime, but it does
-  not reach the aspirational 13-second target or ChimeraBoost's diagnostic
-  7.52-second run. The next engine work must again pass basketball first.
+- The second engine port now dispatches leaf-ID descent to an exact serial
+  twin below 32,768 rows. On the same basketball boundary it matched every
+  model and sports guardrail byte-for-byte while reducing median fit time from
+  20.00s to 11.01s and wall time from 20.57s to 11.59s. The strict suite
+  produced 1,479 passes and 23 skips before timing.
+- Together, the fused kernel and serial descent reduce median basketball fit
+  time by about 62% from 28.93s. This clears the aspirational 13-second target
+  but remains above ChimeraBoost's diagnostic 7.52-second run. Basketball stays
+  the first fast fatal gate for subsequent engine or quality work.
 
 ## 0. Thesis
 
@@ -66,7 +72,7 @@ Target end state:
 | DarkoRegressor constructor params | 58 | ~28, only if evidence supports deletion |
 | Tree modes | 4 (catboost/lightgbm/hybrid/depthwise) | 2 (oblivious/leafwise) |
 | Default regression posture | fixed 1000 rounds, no ES | unchanged until a candidate passes basketball and broader gates |
-| Basketball steady fit (10 folds) | 27.2–28.3 s | aspirational ≤ 13 s only with quality preserved |
+| Basketball steady fit (10 folds) | 11.59 s after two exact engine ports | achieved ≤ 13 s with quality preserved; next target is same-machine parity |
 | Distributional heads | 5 losses + predict_dist/interval/sample | kept, hardened, promoted |
 
 ---
@@ -202,7 +208,7 @@ Engine facts that matter for us:
 | Ceiling quality | A10 (auto-mode+10k+l2=3) = 0.9756 vs live Chimera (−2.44%); mode selection is the lever (A10/B10 −2.78%, 11/2); but 2.57× inference | We can beat them at 2–3× cost; not shippable as-is |
 | Unseen-data check (CTR23, 9 tasks) | A10/M point −5.80%, gate FAIL on power; wins are categorical tasks (−19…−23%), losses are smooth numerics (+2…+6%) where their linear leaves rule | Two named gaps: smooth data (theirs), categorical representation (ours to bank) |
 | Categorical representation | Safe ordinal was −18.4% RMSE vs product default and +2.2% deployment-lane inference, but the causal `O/B` inference ratio was 1.265 versus a 1.25 ceiling | Strong mechanism; frozen policy decision failed |
-| Speed (basketball steady, 10 folds) | Historical DarkoFit 28.30 s / Chimera 9.29 s / CatBoost 6.60 s; 99% in tree building. Fixed-LR ES+exact-refit reached 12.72 s but hurt quality; current-auto-LR ES+exact-refit reached 24.01 s median and also failed quality | Policy can buy speed, but no tested policy preserves the sports guardrail; engine work remains necessary |
+| Speed (basketball steady, 10 folds) | Two exact engine ports reduced DarkoFit from 29.46 s to 11.59 s wall and from 28.93 s to 11.01 s fit; every held-team/cold-player output stayed exact. Synced Chimera's separate diagnostic was ~7.52 s. | Engine work cleared the 13-second target without a policy tradeoff; parity remains open |
 | Small-noisy-data quality | Basketball: DarkoFit 0.5267 ≈ Chimera 0.5248; CatBoost 0.5363; Chimera ens-5 0.5402 | Bagging, not tuning, is the quality lever there |
 | Engine numerics | 70/165 bit-identical splits vs Chimera in catboost mode | Same algorithm family; the fight is policy + features, not math |
 
@@ -316,6 +322,12 @@ separate fresh-data gate. Only then may the one-shot lockbox be considered.
     Keep exactly one readable reference pair as the test oracle. Delete the
     current ~60-variant histogram/split kernel matrix; runtime branches
     replace compile-time forks wherever the branch is measurably free.
+    **Partially shipped 2026-07-16:** the proven unit-Hessian full-row/full-
+    feature lane now fuses histogram construction and shared-split scanning,
+    and leaf descent uses an exact serial twin below 32,768 rows. The two
+    behavior-exact ports reduced basketball fit time by about 62% and cleared
+    the 13-second target. Broader kernel unification and deletion remain
+    unearned; unsupported lanes still retain their reference implementations.
 13. **Leafwise path**: keep the segment/subtraction design but collapse its
     variant axes the same way; port the packed row-major predict treatment so
     `tree_mode="lightgbm"` (and the accuracy preset) stops paying the 2.57×

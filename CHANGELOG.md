@@ -20,6 +20,17 @@ previous behaviors remain available through explicit parameters.
   MAE, Quantile, callbacks, and exact refit; ineligible weighted and binary
   lanes prove fallback. The design is adapted from Apache-2.0 ChimeraBoost
   commit `a04430657fb82c806ee2a039506c99944a27accc`, recorded in `NOTICE`.
+* Route oblivious-tree leaf-ID updates through an exact serial kernel below
+  32,768 training rows, avoiding one parallel launch per tree level while
+  retaining the previous parallel implementation at and above the cutoff.
+  The frozen basketball campaign matched all ten folds, serialized models,
+  fitted metadata, held-team predictions, and the 585-row cold-player subset
+  byte-for-byte. Median fit time fell 45.0% (20.00s to 11.01s) and steady wall
+  time fell 43.7% (20.57s to 11.59s), with stable reciprocal blocks and flat
+  RSS. Combined with the preceding fused-kernel change, median basketball fit
+  time is down about 62.0% from 28.93s without changing R² or any public API.
+  The serial-twin design and cutoff are adapted from Apache-2.0 ChimeraBoost
+  commit `a04430657fb82c806ee2a039506c99944a27accc`, recorded in `NOTICE`.
 * Add experimental, default-off `linear_leaves=True` for scalar RMSE
   CatBoost/oblivious fits. Each tree can attach Hessian-weighted local ridge
   models over its numeric split features without changing DarkoFit's split
