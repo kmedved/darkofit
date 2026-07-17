@@ -82,6 +82,15 @@ claims until independently reproduced here.*
   This closes the compatibility item without changing a model default or
   spending CTR23/TabArena evidence; see
   `basketball_input_validation_result.md`.
+- The donor's automatic numeric cross-feature selector was screened before
+  any DarkoFit port. Against the same ChimeraBoost defaults, automatic crosses
+  reduced mean basketball R² by 0.001042 and cold-player R² by 0.013881; the
+  selector activated on four folds and improved only one. The slight
+  +0.000476 overlap-exposed team-holdout gain does not rescue a sports
+  candidate that fails unseen players. Do not port the automatic selector or
+  spend broader evidence on it. `cat_combinations` remains a separate
+  categorical research question; see
+  `basketball_cross_features_donor_screen_result.md`.
 
 ## 0. Thesis
 
@@ -280,15 +289,18 @@ Code-mass comparison:
    that survives sports/noisy data may enter broader regression,
    classification, weighted, and alternate-loss gates. A default flip is a
    later decision, not part of this implementation item.
-4. **Generic validation-selection framework** in `sklearn_api`: fit variants,
-   compare best validation loss, record `*_selected_`. First clients, in
-   order of evidence strength:
+4. **Generic validation-selection framework** in `sklearn_api`: defer this
+   abstraction until a concrete client proves that internal validation
+   decisions generalize across the external basketball and cold-player
+   boundaries. The linear-leaf selector chose its candidate on every fold but
+   failed four of five quality gates; the donor's cross-feature selector chose
+   four folds but improved only one and materially hurt cold players. Do not
+   build a generic framework around those rejected policies. Remaining
+   research is scoped separately:
    - **safe-ordinal categorical lane**, only after eliminating its failed
-     causal inference overhead and expanding beyond two declared datasets,
-   - **linear leaves** (once Phase 2 lands),
-   - **cross_features** (port),
-   - opt-in preset: `preset="accuracy"` = today's A10 (auto tree-mode at 2–3×
-     cost) for users who ask.
+     causal inference overhead and expanding beyond two declared datasets;
+   - opt-in `preset="accuracy"` = today's A10 (auto tree-mode at 2–3× cost)
+     for users who explicitly request it.
 5. **`n_ensembles` bagging with OOB early stopping** (port ~80 lines from
    their `_fit_bagged`). Basketball evidence says this is the quality ceiling
    on small noisy data (0.5402 vs our 0.5267).
@@ -337,29 +349,38 @@ fresh preregistered panel for any promotion claim. Require sign tests and
 inference within 1.10× of today's default unless a narrower feature-specific
 gate is frozen in advance.
 
-### Phase 2 — Port the two quality features that beat us
+### Phase 2 — Screen donor quality mechanisms before any port
 
 9. **Linear leaves** into the oblivious path: hessian-weighted per-leaf ridge
    over the tree's numeric split features on standardized bin centers,
    min-1000-rows guard, constant fallback, hand-rolled LU (JIT hygiene),
-   packed linear-forest predict kernel. Default `None` = validation-selected
-   for RMSE regression and binary classification, exactly like theirs.
-   *This is the named fix for our smooth-data losses (kin8nm/grid/space_ga
-   class — and the lockbox's naval/wave_energy/sarcos class).*
-10. **cross_features + cat_combinations** in preprocessing (we already have
-    the ordered-TS encoder and a `feature_map_`-equivalent need): diff/prod
-    columns for top-6-importance numeric pairs, validation-selected;
-    pairwise cat combos auto-on only for all-categorical data.
-11. **Re-run the mode-mix diagnostic** (A10 selector shares) with linear
-    leaves + ordinal lane active. Hypothesis: the 54.5% non-oblivious share
-    collapses once oblivious trees get local slopes and honest categorical
-    codes. This measurement decides Phase 4's mode deletions.
+   packed linear-forest predict kernel.
+   **Closed for automatic use 2026-07-17:** the mechanism is implemented as
+   explicit, default-off research, with safe persistence and prediction
+   fallbacks. Its validation selector failed mean-fold, held-team, and
+   cold-player basketball gates. Do not expose the selector, change a default,
+   or advance it to the 243-coordinate development panel. A future smooth-data
+   study would be a new research question, not continuation of this candidate.
+10. **Treat numeric crosses and categorical combinations separately.**
+    **Numeric automatic selector closed 2026-07-17:** an isolated screen of
+    the donor's top-pair diff/prod implementation lost 0.001042 mean R² and
+    0.013881 cold-player R² on basketball, with only one external improvement
+    among four selected folds. Do not port or promote it.
+    All-categorical `cat_combinations` remains unresolved and needs its own
+    future categorical protocol; the numeric basketball screen supplies no
+    evidence for or against that distinct mechanism.
+11. **Mode-mix diagnostic deferred.** Do not rerun A10 selector shares with
+    linear leaves or the ordinal lane while their automatic policies remain
+    rejected. Reopen this diagnostic only if a materially different mechanism
+    first passes basketball and the appropriate categorical or smooth-data
+    confirmation gate.
 
 Gate for Phase 2: basketball first, then the 243 unused CTR23 confirmation
 coordinates as development data under a new frozen protocol. Before any
 lockbox shot, preregister a design whose simulated pass probability is at
 least 80% under the confirmed development effect distribution and satisfy a
 separate fresh-data gate. Only then may the one-shot lockbox be considered.
+Neither current Phase 2 mechanism is authorized to enter that larger panel.
 
 ### Phase 3 — Engine consolidation (speed parity, bit-identity throughout)
 
@@ -394,16 +415,19 @@ separate fresh-data gate. Only then may the one-shot lockbox be considered.
 
 ### Phase 4 — Deletion sweep
 
-With selector-share evidence from (11) in hand:
+This sweep is not currently authorized. Item 11's selector-share diagnostic
+was deferred because both proposed automatic mechanisms failed basketball;
+therefore none of the mechanism-dependent deletions below may proceed. Treat
+the table as a review ledger, not an execution queue.
 
 | Delete | Where | ~Lines | Rationale |
 | --- | --- | ---: | --- |
 | `depthwise`/levelwise mode | tree.py builders/classes, serialization pack/unpack, flat_model | ~800 | Not even in the A10 candidate set; no evidence it ever wins |
-| `hybrid` mode | tree.py + selector slot | ~300 | Decide on post-linear-leaves selector share; expected to collapse |
+| `hybrid` mode | tree.py + selector slot | ~300 | Retain: the required selector-share evidence is unavailable and the linear-leaf selector was rejected |
 | Kernel matrix | tree.py | ~2,500–3,000 | Replaced by fused kernels (Phase 3) |
 | `random_strength` noise kernels | tree.py `_with_noise_py` ×5, booster plumbing | ~450 | Evidence-free; their cascade killed the analogous knobs |
 | `bootstrap_type` bayesian + `bagging_temperature`, weighted-GOSS variants | booster.py | ~400 | Keep MVS + plain GOSS only |
-| `linear_residual` (5 params, module) | linear_residual.py + sklearn_api | ~900 | Superseded by linear leaves (basketball +0.0004 mean; panel −1.07% with QSAR-TID-11 harm). Deprecate in the release that ships linear leaves, delete one release later |
+| `linear_residual` (5 params, module) | linear_residual.py + sklearn_api | ~900 | Retain pending a separate review; rejected automatic linear leaves do not supersede it |
 | `histogram_dtype`/`leaf_dtype`/`histogram_parallelism` params | booster.py | ~200 | Concluded experiments; fix the winning defaults |
 | `auto_learning_rate_probe*` (3 params) | sklearn_api/booster | ~250 | Delete only if a promoted policy proves it has no remaining unique value |
 | `target_ordered_cat_codes` experiment param | booster/preprocessing | ~150 | Replaced by the ordinal validation lane |
@@ -414,9 +438,10 @@ Constructor target ≈ 28 params: iterations, learning_rate, depth, l2_leaf_reg,
 max_bins, subsample, colsample, sampling(MVS/GOSS/uniform), cat_smoothing,
 ts_permutations, cat_features, loss, alpha, dist_params, min_child_weight,
 min_child_samples, num_leaves, tree_mode(oblivious/leafwise), linear_leaves,
-linear_lambda, cross_features, cat_combinations, early_stopping,
-validation_fraction, early_stopping_rounds, n_ensembles, thread_count,
-random_state, verbose (+ refit, eval_metric under review).
+linear_lambda, cat_combinations, early_stopping,
+validation_fraction, early_stopping_rounds, thread_count, random_state,
+verbose (+ refit, eval_metric under review). Rejected OOB-ensemble and numeric
+cross-feature parameters are not part of this target.
 
 **Explicitly kept** (our moat, hardened with dedicated goldens before any
 engine work): the five distributional heads + CRPS eval +
@@ -453,13 +478,14 @@ refit (`get_refit_params`); callbacks + WallClockStopper; `groups` support;
   gates. If it ever earns promotion, ship a migration release with a loud
   CHANGELOG and an escape hatch restoring today's exact behavior. Decide
   `max_bins` 254→128 by measurement, not imitation.
-- **Selection lanes double fit time when they engage.** Accept (they did):
-  guards restrict to RMSE/binary, ≥1000/2000 rows; document
-  `linear_leaves=True/False` to skip the double fit. Measure whether an
-  accepted early-stopping candidate offsets the cost; do not assume it.
+- **Selection lanes double fit time and can select the wrong sports model.**
+  Do not add a generic automatic lane from the rejected linear-leaf or
+  cross-feature policies. Keep `linear_leaves=True/False` explicit and
+  default-off; require external basketball and cold-player proof before any
+  new selector is considered.
 - **Mode deletion sacrifices real accuracy.** Keep leafwise permanently;
-  delete hybrid/depthwise only after the Phase 2 selector-share measurement;
-  the accuracy preset keeps auto-selection available regardless.
+  retain hybrid/depthwise while the Phase 2 selector-share measurement is
+  deferred; the accuracy preset keeps opt-in auto-selection available.
 - **Distributional heads break during kernel consolidation.** They ride the
   vector-leaf paths — freeze goldens for all five heads first (Phase 0), and
   land Phase 3 behind exact-equality tests.
@@ -474,15 +500,22 @@ refit (`get_refit_params`); callbacks + WallClockStopper; `groups` support;
 
 ## 5. Suggested execution order (Codex-sized chunks)
 
-1. Phase 0 goldens (1 PR) → basketball harness boundary (1 PR) → broader
-   harness extraction only where duplication is proven (1–2 PRs).
-2. Phase 1: ES candidate framework (1 PR), ordinal lane (1 PR),
-   bagging + OOB-ES (1 PR), calibrations (1 PR), warmup + validation layer
-   (1 PR).
-3. Phase 2: linear leaves (2 PRs: kernels+booster, then selection+API),
-   cross features (1 PR), mode-mix rerun (campaign config, cheap).
-4. Development on the 243 unused-but-spent CTR23 coordinates → fresh-data and
-   preregistered power gates → only then consider the lockbox one-shot.
-5. Phase 3 kernels (3–4 PRs, each bit-identity-gated).
-6. Phase 4 deletions (mechanical once 11's evidence is in).
-7. Phase 5 R&D infra (parallel-izable with 3–6).
+1. **Completed:** Phase 0 goldens and the shared basketball boundary; exact
+   fused/serial engine ports; same-machine engine parity; TreeSHAP; warmup;
+   input validation and sklearn compliance.
+2. **Closed:** current-auto-LR early-stop/refit, OOB-5 API work, automatic
+   linear-leaf selection, automatic numeric cross features, and the dependent
+   mode-mix rerun. Do not repeat or enlarge those campaigns.
+3. **Next isolated mechanism:** calibration, screened first on the unchanged
+   basketball folds, held-team view, and cold-player subset. Temperature
+   scaling and quantile/conformal calibration are separate candidates.
+4. **Separate categorical track:** safe ordinal and all-categorical
+   `cat_combinations` each require their own protocol; numeric basketball
+   evidence cannot promote or reject them.
+5. Only a basketball survivor may enter the 243 development coordinates,
+   then a genuinely fresh preregistered gate with sufficient simulated power;
+   only then consider the one-shot lockbox.
+6. Resume kernel work only for a newly measured regression. Phase 4 deletions
+   remain blocked on replacement behavior proof, not line-count targets.
+7. Phase 5 R&D infrastructure can proceed independently where it does not
+   consume promotion evidence.

@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "evidence_class": "exploratory_post_observation_characterization",
+  "decision": "do_not_port_automatic_cross_feature_selector",
+  "decision_scope": "ChimeraBoost's automatic numeric cross-feature selector and default policy",
+  "basketball_policy": {
+    "role": "primary_fatal_development_screen",
+    "reason": "fast and directly representative of noisy sports data",
+    "broader_panel_authorized": false
+  },
+  "source": {
+    "darkofit_repository": "/Users/kmedved/Code/GitHub/darkofit",
+    "darkofit_commit": "28142ec661df35023b7e722ad6ed1d2294ed35ce",
+    "chimeraboost_repository": "/Users/kmedved/Code/GitHub/chimeraboost",
+    "chimeraboost_commit": "851ab7fa79fbb2a7f698fbc1a00952e1bd18c62d",
+    "chimeraboost_version": "0.15.0",
+    "literal_code_copied": false
+  },
+  "provenance": {
+    "candidate_source_artifact": "benchmarks/basketball_chimera_v015.json",
+    "candidate_source_artifact_sha256": "02836ad777a76ef12cd635e30eacb55d007e2c5c1a1d28d6e53a429504c27cc9",
+    "control_replayed_from_synced_donor": true,
+    "independent_review_reproduced_control_scores": true
+  },
+  "data": {
+    "path": ".cache/basketball-creator-benchmark/basketball_reference_toy_data.csv",
+    "sha256": "43af3be46074da9130a757aa1db643e207e2c0ea5405d2086d698f85555fbcb2",
+    "filter": "MP > 500",
+    "filtered_rows": 7650,
+    "features": [
+      "3P",
+      "3PA",
+      "2P",
+      "2PA",
+      "FT",
+      "FTA",
+      "ORB",
+      "DRB",
+      "AST",
+      "STL",
+      "BLK",
+      "TOV",
+      "PF",
+      "PTS",
+      "Age"
+    ],
+    "target": "MPG",
+    "creator_x_train_sha256": "05efa554a983942885b72b1b3fdcc97a10ecf4ccbb4b10843ee8b970129fe71b",
+    "creator_y_train_sha256": "7c06b45d4649c392fdb0c3dc91a857650f2f3fc77341fe06ffdbee2b3a44aecf",
+    "creator_cv": {
+      "kind": "KFold",
+      "n_splits": 10,
+      "shuffle": false
+    },
+    "team_holdout": {
+      "train_rows": 5241,
+      "test_rows": 2409,
+      "interpretation": "player_overlap_exposed"
+    },
+    "cold_player": {
+      "rows": 585,
+      "mask_sha256": "e17887c9240fd95aee21d37d7e1e8a533c38ef87f4492acd28fb3aa496a3dd19",
+      "players_absent_from_training": true
+    }
+  },
+  "comparison": {
+    "common_estimator": "ChimeraBoostRegressor(random_state=4, thread_count=18)",
+    "resolved_thread_count": 18,
+    "control_override": {
+      "cross_features": false
+    },
+    "candidate_override": {
+      "cross_features": null
+    },
+    "all_other_parameters": "ChimeraBoost 0.15.0 product defaults",
+    "fold_mean_r2": {
+      "control": 0.5280232720733398,
+      "candidate": 0.5269811943515669,
+      "candidate_minus_control": -0.0010420777217728938
+    },
+    "fold_r2_deltas": [
+      0.0,
+      -0.010884881823898684,
+      -0.005850150414753008,
+      0.0,
+      0.0,
+      0.0,
+      0.014120643387768972,
+      -0.0078063883668461065,
+      0.0,
+      0.0
+    ],
+    "candidate_cross_features_selected": [
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false
+    ],
+    "selected_fold_wins": 1,
+    "selected_fold_count": 4,
+    "tree_counts": {
+      "control": [
+        89,
+        70,
+        87,
+        107,
+        145,
+        116,
+        168,
+        206,
+        116,
+        163
+      ],
+      "candidate": [
+        89,
+        64,
+        85,
+        107,
+        145,
+        116,
+        132,
+        126,
+        116,
+        163
+      ]
+    },
+    "guardrails": {
+      "overlap_exposed_team_holdout": {
+        "control_r2": 0.5339463140607186,
+        "candidate_r2": 0.5344226583277079,
+        "candidate_minus_control": 0.00047634426698928145
+      },
+      "seen_player_subset": {
+        "control_r2": 0.5324601082576459,
+        "candidate_r2": 0.5375250611622786,
+        "candidate_minus_control": 0.0050649529046327135
+      },
+      "cold_player_subset": {
+        "control_r2": 0.5047622247573191,
+        "candidate_r2": 0.4908811306886892,
+        "candidate_minus_control": -0.013881094068629918
+      }
+    },
+    "directional_elapsed_seconds": {
+      "control": 7.689268625108525,
+      "candidate": 8.407319750171155,
+      "candidate_over_control": 1.0933835401091212
+    }
+  },
+  "environment": {
+    "python": "3.12.13",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "machine": "arm64",
+    "numpy": "2.4.6",
+    "numba": "0.66.0",
+    "pandas": "3.0.3",
+    "scikit_learn": "1.9.0"
+  },
+  "limitations": [
+    "The screen was exploratory and recorded after observing the outcomes; it is not a preregistered promotion experiment.",
+    "The two arms ran sequentially once, so elapsed time is directional and not a formal timing claim.",
+    "The screen used numeric basketball data and does not resolve categorical-combination research.",
+    "The candidate's predictions remain in the cited source-bound artifact, but the exploratory control arrays were not retained; no cross-arm byte-identity claim is made."
+  ]
+}
