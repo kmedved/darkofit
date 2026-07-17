@@ -2284,6 +2284,121 @@ def _best_split(hg, hh, n_bins_per_feature, l2, feat_mask, min_child_weight,
 
 
 @njit(cache=True, parallel=True)
+def _build_histograms_and_best_split(
+    X_binned,
+    grad,
+    hess,
+    leaf,
+    n_leaves,
+    hg,
+    hh,
+    n_bins_per_feature,
+    l2,
+    feat_mask,
+    min_child_weight,
+    scratch_Gt,
+    scratch_Ht,
+    scratch_GL,
+    scratch_HL,
+    scratch_parent,
+    scratch_last_positive,
+):
+    """Fuse variable-Hessian histogram construction and shared split scan."""
+    n_samples, n_features = X_binned.shape
+    max_bins = hg.shape[2]
+    feat_gain = np.full(n_features, -np.inf)
+    feat_thr = np.full(n_features, -1, dtype=np.int64)
+
+    for f in prange(n_features):
+        # Match _build_histograms_into exactly, including masked features.
+        for l in range(n_leaves):
+            for b in range(max_bins):
+                hg[f, l, b] = 0.0
+                hh[f, l, b] = 0.0
+        for i in range(n_samples):
+            l = leaf[i]
+            b = X_binned[i, f]
+            hg[f, l, b] += grad[i]
+            hh[f, l, b] += hess[i]
+
+        if feat_mask[f] == 0:
+            continue
+        nb = n_bins_per_feature[f]
+        for l in range(n_leaves):
+            scratch_Gt[f, l] = 0.0
+            scratch_Ht[f, l] = 0.0
+            scratch_last_positive[f, l] = -1
+            for b in range(nb):
+                scratch_Gt[f, l] += hg[f, l, b]
+                scratch_Ht[f, l] += hh[f, l, b]
+                if hh[f, l, b] > 0.0:
+                    scratch_last_positive[f, l] = b
+        for l in range(n_leaves):
+            scratch_GL[f, l] = 0.0
+            scratch_HL[f, l] = 0.0
+            parent_denom = scratch_Ht[f, l] + l2
+            if scratch_Ht[f, l] > 0.0 and parent_denom > 0.0:
+                scratch_parent[f, l] = (
+                    scratch_Gt[f, l] * scratch_Gt[f, l] / parent_denom
+                )
+            else:
+                scratch_parent[f, l] = 0.0
+
+        best_g = -np.inf
+        best_t = -1
+        for t in range(nb - 1):
+            gain = 0.0
+            legal = True
+            any_nonempty = False
+
+            for l in range(n_leaves):
+                scratch_GL[f, l] += hg[f, l, t]
+                scratch_HL[f, l] += hh[f, l, t]
+
+                if scratch_Ht[f, l] > 0.0:
+                    any_nonempty = True
+                    hl = scratch_HL[f, l]
+                    hr = scratch_Ht[f, l] - hl
+                    if hl <= 0.0 or t >= scratch_last_positive[f, l]:
+                        continue
+                    left_denom = hl + l2
+                    right_denom = hr + l2
+                    parent_denom = scratch_Ht[f, l] + l2
+                    if (
+                        hl < min_child_weight
+                        or hr < min_child_weight
+                        or hr <= 0.0
+                        or left_denom <= 0.0
+                        or right_denom <= 0.0
+                        or parent_denom <= 0.0
+                    ):
+                        legal = False
+                    else:
+                        gl = scratch_GL[f, l]
+                        gr = scratch_Gt[f, l] - gl
+                        gain += (
+                            gl * gl / left_denom
+                            + gr * gr / right_denom
+                            - scratch_parent[f, l]
+                        )
+
+            if legal and any_nonempty and gain > best_g:
+                best_g = gain
+                best_t = t
+
+        feat_gain[f] = best_g
+        feat_thr[f] = best_t
+
+    best_f = 0
+    best_gain = -np.inf
+    for f in range(n_features):
+        if feat_gain[f] > best_gain:
+            best_gain = feat_gain[f]
+            best_f = f
+    return best_f, feat_thr[best_f], best_gain
+
+
+@njit(cache=True, parallel=True)
 def _build_histograms_unit_hess_and_best_split(
     X_binned,
     grad,
@@ -5070,7 +5185,6 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     fused_lane = (
         bool(fused_oblivious_kernel)
         and get_num_threads() > _LEVEL_SUBTRACTION_MAX_THREADS
-        and constant_hessian
         and row_indices is None
         and feature_indices is None
         and rowpar_buffers is None
@@ -5091,24 +5205,45 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
         if fused_lane:
             if fused_oblivious_counter is not None:
                 fused_oblivious_counter[0] += 1
-            f, t, gain = _build_histograms_unit_hess_and_best_split(
-                X_hist_binned,
-                grad,
-                leaf,
-                n_leaves,
-                hg,
-                hh,
-                n_bins_per_feature,
-                l2,
-                feature_mask,
-                min_child_weight,
-                split_scratch[0],
-                split_scratch[1],
-                split_scratch[2],
-                split_scratch[3],
-                split_scratch[4],
-                split_scratch[5],
-            )
+            if constant_hessian:
+                f, t, gain = _build_histograms_unit_hess_and_best_split(
+                    X_hist_binned,
+                    grad,
+                    leaf,
+                    n_leaves,
+                    hg,
+                    hh,
+                    n_bins_per_feature,
+                    l2,
+                    feature_mask,
+                    min_child_weight,
+                    split_scratch[0],
+                    split_scratch[1],
+                    split_scratch[2],
+                    split_scratch[3],
+                    split_scratch[4],
+                    split_scratch[5],
+                )
+            else:
+                f, t, gain = _build_histograms_and_best_split(
+                    X_hist_binned,
+                    grad,
+                    hess,
+                    leaf,
+                    n_leaves,
+                    hg,
+                    hh,
+                    n_bins_per_feature,
+                    l2,
+                    feature_mask,
+                    min_child_weight,
+                    split_scratch[0],
+                    split_scratch[1],
+                    split_scratch[2],
+                    split_scratch[3],
+                    split_scratch[4],
+                    split_scratch[5],
+                )
         elif use_serial_kernels:
             if root_copy:
                 pass

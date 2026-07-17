@@ -138,7 +138,7 @@ def test_fused_categorical_rmse_is_archive_exact(monkeypatch, tmp_path):
 
 
 @pytest.mark.parametrize("lane", ["weighted_rmse", "binary_logloss"])
-def test_nonconstant_hessian_lanes_fall_back_exactly(
+def test_nonconstant_hessian_lanes_are_fused_and_archive_exact(
     monkeypatch, tmp_path, lane
 ):
     X, y = _regression_data(seed=79)
@@ -157,7 +157,8 @@ def test_nonconstant_hessian_lanes_fall_back_exactly(
         monkeypatch, X, y, fused=True, params=params, fit_kwargs=fit_kwargs
     )
 
-    assert reference_count == candidate_count == 0
+    assert reference_count == 0
+    assert candidate_count > 0
     _assert_exact_models(reference, candidate, X, tmp_path, lane)
 
 

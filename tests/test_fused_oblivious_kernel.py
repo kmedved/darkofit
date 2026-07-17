@@ -4,6 +4,8 @@ import pytest
 import darkofit.tree as tree_module
 from darkofit.tree import (
     _best_split,
+    _build_histograms_and_best_split,
+    _build_histograms_into,
     _build_histograms_unit_hess_and_best_split,
     _build_histograms_unit_hess_into,
     build_oblivious_tree,
@@ -108,18 +110,91 @@ def test_fused_unit_hessian_kernel_is_exact(
         _set_threads(previous)
 
 
+@pytest.mark.parametrize("l2", [0.0, 3.0])
+@pytest.mark.parametrize("min_child_weight", [0.0, 1.0, 8.0])
 @pytest.mark.parametrize(
     "feature_mask",
     [
         np.ones(5, dtype=np.int64),
-        np.array([1, 0, 1, 1, 0], dtype=np.int64),
+        np.array([1, 0, 1, 0, 1], dtype=np.int64),
     ],
 )
-def test_fused_builder_preserves_complete_tree_and_training_state(feature_mask):
+def test_fused_variable_hessian_kernel_is_exact(
+    l2, min_child_weight, feature_mask
+):
+    previous = _set_threads(4)
+    try:
+        X, grad, leaf, n_bins = _varied_bin_case(seed=13)
+        rng = np.random.default_rng(29)
+        hess = rng.uniform(0.0, 2.0, size=len(X))
+        hess[::17] = 0.0
+        n_features = X.shape[1]
+        n_leaves = 8
+        max_bins = int(n_bins.max())
+        reference_g, reference_h = _hist_buffers(
+            n_features, n_leaves, max_bins, fill=17.0
+        )
+        fused_g, fused_h = _hist_buffers(
+            n_features, n_leaves, max_bins, fill=-23.0
+        )
+        reference_scratch = _split_buffers(n_features, n_leaves)
+        fused_scratch = _split_buffers(n_features, n_leaves)
+
+        _build_histograms_into(
+            X, grad, hess, leaf, n_leaves, reference_g, reference_h
+        )
+        expected = _best_split(
+            reference_g,
+            reference_h,
+            n_bins,
+            l2,
+            feature_mask,
+            min_child_weight,
+            n_leaves,
+            *reference_scratch,
+        )
+        actual = _build_histograms_and_best_split(
+            X,
+            grad,
+            hess,
+            leaf,
+            n_leaves,
+            fused_g,
+            fused_h,
+            n_bins,
+            l2,
+            feature_mask,
+            min_child_weight,
+            *fused_scratch,
+        )
+
+        assert actual == expected
+        np.testing.assert_array_equal(fused_g, reference_g)
+        np.testing.assert_array_equal(fused_h, reference_h)
+    finally:
+        _set_threads(previous)
+
+
+@pytest.mark.parametrize(
+    ("feature_mask", "constant_hessian"),
+    [
+        (np.ones(5, dtype=np.int64), True),
+        (np.array([1, 0, 1, 1, 0], dtype=np.int64), True),
+        (np.ones(5, dtype=np.int64), False),
+        (np.array([1, 0, 1, 1, 0], dtype=np.int64), False),
+    ],
+)
+def test_fused_builder_preserves_complete_tree_and_training_state(
+    feature_mask, constant_hessian
+):
     previous = _set_threads(4)
     try:
         X, grad, _leaf, n_bins = _varied_bin_case(seed=19)
-        hess = np.ones(len(X), dtype=np.float64)
+        hess = (
+            np.ones(len(X), dtype=np.float64)
+            if constant_hessian
+            else np.random.default_rng(37).uniform(0.1, 2.0, size=len(X))
+        )
         n_features = X.shape[1]
         max_depth = 5
         max_leaves = 1 << max_depth
@@ -134,7 +209,7 @@ def test_fused_builder_preserves_complete_tree_and_training_state(feature_mask):
             "return_training_state": True,
             "X_hist_binned": np.asfortranarray(X),
             "X_route_binned": X,
-            "constant_hessian": True,
+            "constant_hessian": constant_hessian,
             "level_histogram_subtraction": False,
         }
 
@@ -179,7 +254,6 @@ def test_fused_builder_preserves_complete_tree_and_training_state(feature_mask):
 @pytest.mark.parametrize(
     "ineligible",
     [
-        {"constant_hessian": False},
         {"row_indices": np.arange(0, 257, 2, dtype=np.int64)},
         {"feature_indices": np.array([0, 2, 4], dtype=np.int64)},
         {"level_histogram_subtraction": True},
@@ -200,6 +274,11 @@ def test_ineligible_builder_lanes_do_not_call_fused_kernel(
         monkeypatch.setattr(
             tree_module,
             "_build_histograms_unit_hess_and_best_split",
+            fail_if_called,
+        )
+        monkeypatch.setattr(
+            tree_module,
+            "_build_histograms_and_best_split",
             fail_if_called,
         )
         kwargs = {
@@ -244,6 +323,11 @@ def test_fused_builder_requires_at_least_three_threads(
         monkeypatch.setattr(
             tree_module,
             "_build_histograms_unit_hess_and_best_split",
+            fail_if_called,
+        )
+        monkeypatch.setattr(
+            tree_module,
+            "_build_histograms_and_best_split",
             fail_if_called,
         )
         fused_counter = np.zeros(1, dtype=np.int64)
