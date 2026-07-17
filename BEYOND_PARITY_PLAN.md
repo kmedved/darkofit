@@ -74,6 +74,12 @@ Execution began from published `main` at `ab86269`.
   `0.10556`/`0.10032` and one `0.690s` interval missed the `0.75s` floor. The
   code optimization stays, but P2 certification remains unavailable. No third
   protocol or further packed/binner optimization will chase this gate.
+- E1's first expansion is retained from clean source `1016e7e`: the
+  variable-Hessian fused histogram/split lane is canonical-model-state exact
+  for binary Logloss and weighted RMSE. Across reciprocal fresh-worker blocks,
+  geometric-mean fit and tree-build ratios were `0.7870x` and `0.7666x`
+  reference, every paired ratio was stable, and peak RSS was about `0.99x`.
+  This is an internal exact engine gain, not an external ChimeraBoost claim.
 
 ## Standing constraints (inherited, non-negotiable)
 
@@ -235,10 +241,9 @@ advantages are available that ChimeraBoost structurally lacks:
 kernel covers only the unit-Hessian, full-row, full-feature float64 lane.
 Extend stepwise, each step bit-identity-gated and each retiring its
 superseded reference variants (keep exactly one oracle pair per family):
-1. hessian-carrying fused kernel → binary classification and weighted RMSE
-   join the fast lane (classification fit time was never profiled — measure
-   the opportunity first; their stop-rule applied only to the default
-   regression path);
+1. **Complete:** hessian-carrying fused kernel → binary classification and
+   weighted RMSE joined the exact fast lane at `0.7870x` total fit and
+   `0.7666x` tree-build geometric-mean reference time;
 2. counts-carrying variant → `min_child_samples` lane;
 3. feature-mask and row-subset support via runtime branches (measure branch
    cost; adopt only where free).

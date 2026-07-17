@@ -1,10 +1,22 @@
 from __future__ import annotations
 
+import hashlib
 import json
+from pathlib import Path
 
 import numpy as np
 
 from benchmarks import run_fused_variable_hessian as experiment
+
+
+RECORDED_ARTIFACT = (
+    Path(__file__).resolve().parents[1]
+    / "benchmarks"
+    / "fused_variable_hessian.json"
+)
+EXPECTED_ARTIFACT_SHA256 = (
+    "8af5c94a8561013c94be5d1a9997dbb7b84b9e19733a9dcd4988a1dfc4b4a6cf"
+)
 
 
 def _result(case, config, fit, tree, rss=100.0):
@@ -95,3 +107,30 @@ def test_model_payload_hash_ignores_only_runtime_timing(tmp_path):
     assert experiment._canonical_model_payload_sha256(
         first
     ) != experiment._canonical_model_payload_sha256(changed)
+
+
+def test_recorded_artifact_retains_exact_fused_lane():
+    raw = RECORDED_ARTIFACT.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == EXPECTED_ARTIFACT_SHA256
+    artifact = json.loads(raw)
+
+    assert artifact["source"]["clean"] is True
+    assert artifact["source"]["head"] == (
+        "1016e7e8d70c403a70feab7762de8837ea8fd09c"
+    )
+    assert artifact["protocol"]["sha256"] == hashlib.sha256(
+        experiment.PROTOCOL.read_bytes()
+    ).hexdigest()
+    assert artifact["protocol"]["runner_sha256"] == hashlib.sha256(
+        Path(experiment.__file__).read_bytes()
+    ).hexdigest()
+    assert artifact["protocol"]["lockbox_data_used"] is False
+    analysis = artifact["analysis"]
+    assert analysis["passes_all_gates"] is True
+    assert analysis["recommendation"] == (
+        "retain_fused_variable_hessian_lane"
+    )
+    assert analysis["fit_geomean_ratio"] < 0.79
+    assert analysis["tree_build_geomean_ratio"] < 0.77
+    for case in experiment.CASES:
+        assert analysis["cases"][case]["exact"] is True
