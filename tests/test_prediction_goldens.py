@@ -78,15 +78,20 @@ def test_prediction_goldens_match_stable_outputs(
                 case_name,
                 output_name,
             )
+            assert observed["stable_decimals"] == expected["stable_decimals"], (
+                case_name,
+                output_name,
+            )
             assert observed["stable_sha256"] == expected["stable_sha256"], (
                 case_name,
                 output_name,
             )
+            stable_decimals = int(expected["stable_decimals"])
             np.testing.assert_allclose(
                 observed["stable_values"],
                 expected["stable_values"],
                 rtol=0.0,
-                atol=0.5 * 10 ** (-prediction_goldens.STABLE_DECIMALS),
+                atol=0.5 * 10 ** (-stable_decimals),
                 err_msg=f"{case_name}/{output_name}",
             )
             if strict:

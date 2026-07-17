@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Generate the Phase-0 public-prediction golden suite.
 
-The stable digest rounds public outputs to twelve decimal places so the normal
-CI gate remains portable across supported Python, NumPy, SciPy, Numba, CPU, and
-OS combinations. The artifact also records an exact byte digest. Set
+The normal stable digest rounds public outputs to twelve decimal places.
+Student-t interval endpoints use eight places because SciPy's inverse-t
+implementation differs below that precision across supported releases. Every
+output records its own comparison precision and an exact byte digest. Set
 ``DARKOFIT_STRICT_GOLDENS=1`` in a controlled before/after optimization lane to
-make the test enforce that exact digest as well.
+make the test enforce the exact digest as well.
 """
 
 from __future__ import annotations
@@ -30,8 +31,9 @@ if str(REPO_ROOT) not in sys.path:
 from darkofit import DarkoClassifier, DarkoRegressor  # noqa: E402
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 STABLE_DECIMALS = 12
+STUDENT_T_INTERVAL_STABLE_DECIMALS = 8
 DEFAULT_OUTPUT = REPO_ROOT / "tests" / "golden_predictions.json"
 PREDICTION_ROWS = 12
 
@@ -113,20 +115,23 @@ def _array_digest(value: Any) -> str:
     return hashlib.sha256(shape.tobytes() + array.tobytes()).hexdigest()
 
 
-def _stable_array(value: Any) -> np.ndarray:
+def _stable_array(value: Any, decimals: int = STABLE_DECIMALS) -> np.ndarray:
     array = np.asarray(value, dtype=np.float64)
     if not np.all(np.isfinite(array)):
         raise RuntimeError("prediction golden output contains a non-finite value")
-    stable = np.round(array, decimals=STABLE_DECIMALS)
+    stable = np.round(array, decimals=int(decimals))
     stable[stable == 0.0] = 0.0
     return stable
 
 
-def _record(value: Any) -> dict[str, Any]:
+def _record(
+    value: Any, stable_decimals: int = STABLE_DECIMALS
+) -> dict[str, Any]:
     array = np.asarray(value, dtype=np.float64)
-    stable = _stable_array(array)
+    stable = _stable_array(array, stable_decimals)
     return {
         "shape": list(array.shape),
+        "stable_decimals": int(stable_decimals),
         "stable_sha256": _array_digest(stable),
         "exact_sha256": _array_digest(array),
         "stable_values": stable.tolist(),
@@ -180,8 +185,17 @@ def _record_model_outputs(model: Any, X_predict: Any) -> dict[str, Any]:
         interval = _repeatable_output(
             lambda: model.predict_interval(X_predict, alpha=0.2)
         )
-        outputs["predict_interval_lower"] = _record(interval[0])
-        outputs["predict_interval_upper"] = _record(interval[1])
+        interval_decimals = (
+            STUDENT_T_INTERVAL_STABLE_DECIMALS
+            if model.loss == "StudentT"
+            else STABLE_DECIMALS
+        )
+        outputs["predict_interval_lower"] = _record(
+            interval[0], interval_decimals
+        )
+        outputs["predict_interval_upper"] = _record(
+            interval[1], interval_decimals
+        )
         outputs["sample"] = _record(
             _repeatable_output(
                 lambda: model.sample(

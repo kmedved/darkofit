@@ -84,7 +84,9 @@ def test_reused_comparator_rows_form_exact_39_coordinate_grid():
     )
 
 
-def test_complete_reused_evidence_contract_revalidates_frozen_inputs(tmp_path):
+def test_complete_reused_evidence_contract_revalidates_frozen_inputs(
+    tmp_path, monkeypatch
+):
     repository = Path(analysis.__file__).resolve().parents[1]
     frozen_repository = tmp_path / "frozen-source"
     subprocess.run(
@@ -115,6 +117,22 @@ def test_complete_reused_evidence_contract_revalidates_frozen_inputs(tmp_path):
             frozen_repository
             / "benchmarks/tabarena_regression_same_machine_run_manifest.json"
         ).read_text(encoding="utf-8")
+    )
+    original_manifest_path = analysis.hardened._manifest_path
+    frozen_paths = {
+        source_manifest["source"]["tabarena"][field]: (
+            tmp_path / f"frozen-tabarena-{field}"
+        )
+        for field in ("module_file", "repository")
+    }
+
+    def resolve_frozen_path(value, field):
+        if value in frozen_paths:
+            return frozen_paths[value]
+        return original_manifest_path(value, field)
+
+    monkeypatch.setattr(
+        analysis.hardened, "_manifest_path", resolve_frozen_path
     )
     manifest = {
         "reused_evidence": analysis.REUSED_EVIDENCE_CONTRACT,
@@ -248,7 +266,7 @@ def test_common_dependency_lock_rejects_unknown_or_changed_package():
 
 
 @pytest.mark.parametrize("field", ["git_head", "git_tree", "git_remote_origin"])
-def test_reused_tabarena_provenance_is_exact(field):
+def test_reused_tabarena_provenance_is_exact(field, monkeypatch, tmp_path):
     repository = Path(analysis.__file__).resolve().parents[1]
     source_manifest = json.loads(
         (
@@ -257,6 +275,15 @@ def test_reused_tabarena_provenance_is_exact(field):
         ).read_text(encoding="utf-8")
     )
     source = source_manifest["source"]
+    frozen_paths = {
+        source["tabarena"][path_field]: tmp_path / f"tabarena-{path_field}"
+        for path_field in ("module_file", "repository")
+    }
+    monkeypatch.setattr(
+        analysis.hardened,
+        "_manifest_path",
+        lambda value, _field: frozen_paths[value],
+    )
     current = {"tabarena": deepcopy(source["tabarena"])}
     diagnostics = analysis._validate_reused_tabarena_provenance(source, current)
     assert diagnostics["git_head"] == source["tabarena"]["git_head"]

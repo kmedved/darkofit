@@ -380,7 +380,10 @@ def test_full_sklearn_estimator_compliance(estimator):
         "check_sample_weight_equivalence_on_dense_data": (
             "weights reweight the loss but are not bit-exactly equivalent to "
             "integer row repetition"
-        )
+        ),
+        "check_sample_weight_equivalence_on_sparse_data": (
+            "sparse matrices are intentionally unsupported"
+        ),
     }
     check_estimator(
         estimator(thread_count=1, diagnostic_warnings="never"),

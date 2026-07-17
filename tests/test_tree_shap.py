@@ -93,7 +93,7 @@ def _brute_force_tree_shap(tree, X_binned, background_binned, feature_map):
                 for mask in range(1 << count):
                     if mask & bit:
                         continue
-                    size = mask.bit_count()
+                    size = bin(mask).count("1")
                     weight = (
                         math.factorial(size)
                         * math.factorial(count - size - 1)

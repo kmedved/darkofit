@@ -1249,10 +1249,11 @@ def prepare_paired_resume(
         archived_analysis_payload = str(destination.relative_to(output_dir))
 
     archived_analysis_outputs = []
+    if len(DEFAULT_ANALYSIS_OUTPUT_FILENAMES) != len(stale_analysis_outputs):
+        raise RuntimeError("analysis output archive lists have different lengths")
     for filename, source in zip(
         DEFAULT_ANALYSIS_OUTPUT_FILENAMES,
         stale_analysis_outputs,
-        strict=True,
     ):
         if not source.exists():
             continue

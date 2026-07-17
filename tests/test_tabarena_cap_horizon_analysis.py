@@ -418,7 +418,7 @@ def test_output_targets_reject_symlink_escape_and_protected_hard_link(tmp_path):
 
     targets["report_md"] = input_dir / "report.md"
     protected_alias = input_dir / "manifest-alias.json"
-    protected_alias.hardlink_to(artifacts["manifest"])
+    cap_analysis.os.link(artifacts["manifest"], protected_alias)
     targets["summary_json"] = protected_alias
     with pytest.raises(RuntimeError, match="aliases a protected"):
         _canonical_output_targets(input_dir, targets, protected_paths=protected)
