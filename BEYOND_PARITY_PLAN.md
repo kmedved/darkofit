@@ -152,6 +152,18 @@ Execution began from published `main` at `ab86269`.
   equal-size geometric-mean speedup was `1.2793x`, below the frozen `1.30x`
   claim threshold. All other gates passed. The raw artifact remains immutable;
   the post-run analyzer audit reproduces the same failure decision.
+- S4's durable sports panel is complete from clean source `f13587a`: three
+  targets across the complete 2017-2019 seasons, nine equal-weight cells,
+  90 creator-style folds per arm, 369 held-team rows, and 342 genuinely
+  cold-player rows. The preregistered power design was `81.2595%`.
+  `random_strength=0.5` failed confirmation: equal-cell R² was only
+  `+0.000036`, it lost 6/9 cells, minimum leave-one-cell-out delta was
+  `-0.000702`, and its stable fit-time ratio was `1.835x`. It is closed
+  without retuning and the global default remains `0.0`. Current DarkoFit
+  defaults beat ChimeraBoost 0.15.0 on all nine cells (`+0.024646` equal-cell
+  R²; held-team and cold-player positive) but lost to CatBoost 1.2.10 on 8/9
+  (`-0.016703`; held-team `-0.023511`, cold-player `-0.022997`). The panel is
+  now spent for selection.
 
 ## Standing constraints (inherited, non-negotiable)
 
@@ -205,16 +217,16 @@ the existing `groups=` fit argument. It is infrastructure, not a default
 change, and preserves exact behavior when unused. Future entity-data selectors
 may use it without reopening the closed selector shapes.
 
-**S4. The sports confirmation suite (durable asset).**
-One frozen basketball dataset cannot support promotion claims. Build a
-preregistered multi-target, multi-season DARKO-derived panel: 3+ box-score
-targets × 3+ seasons, each with creator-style folds plus held-team,
-seen-player, and cold-player guardrails, contamination-documented, with a
-declared primary aggregate and power analysis *before* first use. This is the
-confirmation bed for materially new S-track candidates and every future sports
-claim. It is
-also the panel where "beats ChimeraBoost where the owner actually works"
-becomes a certified sentence.
+**S4. The sports confirmation suite — complete and spent.**
+The preregistered DARKO-derived panel contains three targets across three
+complete seasons, with creator-style folds plus held-team, seen-player, and
+cold-player guardrails. Its first and only selection use closed
+`random_strength=0.5`; current defaults nevertheless certified a nine-of-nine
+quality win over ChimeraBoost 0.15.0, while CatBoost 1.2.10 remained the clear
+quality ceiling. See
+[`benchmarks/basketball_sports_panel_result.md`](benchmarks/basketball_sports_panel_result.md).
+The panel is now spent. Future materially new S-track candidates require a new
+target-unseen sports confirmation boundary rather than retuning here.
 
 ## Track L — The smooth-data campaign (linear leaves' real test)
 
@@ -358,8 +370,9 @@ the remaining mode-deletion proof. The rest is policy. Do this as a
 - `auto_learning_rate_probe*` (three params; superseded);
 - `bootstrap_type="bayesian"` + `bagging_temperature`, and the weighted-GOSS
   uniform-mass variants (evidence-free; keep MVS + plain GOSS);
-- `random_strength` is retained default-off: the required basketball screen
-  passed at `0.5`; S4 confirmation, not deprecation, is next;
+- `random_strength` is retained default-off because the retirement screen
+  defended the public capability, but `0.5` failed S4 confirmation and is
+  closed as a sports recommendation. No automatic or global policy follows;
 - `sigma_calibration` (already warning-deprecated in favor of
   `dist_calibration` — finish it);
 - `rho_*` multipliers are retained because focused distributional tests defend
@@ -435,7 +448,8 @@ verdict) · P2 predict mechanisms · E1 fused expansion (+ paired deletions) ·
 I2 SynthGen · I3 registry construction.
 
 **Wave 3 (confirmation + ceiling claims):**
-S4 sports suite + S-track confirmation · ~~L3 fresh-panel confirmation~~
+~~S4 sports suite + S-track confirmation~~ (complete; candidate closed,
+DarkoFit > ChimeraBoost < CatBoost) · ~~L3 fresh-panel confirmation~~
 (closed; no lockbox) · ~~E2 large-n beat-their-engine protocol~~ (closed below
 the claim bar) · C1–C3 categorical program with a new confirmation panel →
 mode-mix rerun → C3-gated deletions · 1.0 release.

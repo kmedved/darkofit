@@ -378,11 +378,13 @@ DarkoClassifier(
 
 `random_strength` adds deterministic, seed-based noise only while ordering
 split candidates; stored split gains and feature importances remain based on
-true unnoised gain. It remains opt-in: a basketball screen defended the
-capability but found a meaningful operating cost, and no default change is
-authorized. `bootstrap_type="bayesian"` and `bagging_temperature` are
-deprecated for removal in 1.0; migrate to uniform, GOSS, or MVS row sampling.
-All stochastic mechanisms are off by default, preserving deterministic fits.
+true unnoised gain. It remains opt-in: an initial basketball screen defended
+the capability, but the broader three-target, three-season confirmation found
+only `+0.000036` equal-cell R² at `1.835x` fit cost and closed the tested
+`0.5` sports recommendation. No default change is authorized.
+`bootstrap_type="bayesian"` and `bagging_temperature` are deprecated for
+removal in 1.0; migrate to uniform, GOSS, or MVS row sampling. All stochastic
+mechanisms are off by default, preserving deterministic fits.
 
 Large-fit preprocessing samples up to 200,000 rows when learning numeric bin
 borders, similar to LightGBM's `bin_construct_sample_cnt`. Set

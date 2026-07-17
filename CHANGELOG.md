@@ -29,14 +29,17 @@ non-default value selects them. They will be removed in DarkoFit 1.0:
 The older `sigma_calibration` alias continues to emit `DeprecationWarning`;
 use `dist_calibration` before 1.0.
 
-`random_strength` is deliberately **not** deprecated. Its preregistered cheap
-basketball screen found that `0.5` improved mean creator-fold R² by `0.002124`,
-passed every leave-one-fold-out check, and improved held-team and cold-player
-R². It remains default-off and requires fresh sports confirmation before any
-promotion. The two Gaussian `rho_*` multipliers also remain: focused
-distributional tests defend their independent head-scaling behavior and safe
-serialization. `hybrid` and `target_ordered_cat_codes` remain pending their
-declared comparison campaigns.
+`random_strength` is deliberately **not** deprecated because its
+preregistered retirement screen defended the public capability. The broader
+three-target, three-season S4 confirmation did not validate `0.5` as a sports
+recommendation: equal-cell R² changed by only `+0.000036`, 6 of 9 cells lost,
+the leave-one-cell-out gate failed, and fit cost was `1.835x`. That candidate
+is closed without retuning, and `random_strength=0.0` remains the global
+default. The same S4 run put current DarkoFit defaults above ChimeraBoost
+0.15.0 on all nine cells but below CatBoost 1.2.10 on 8 of 9. The two Gaussian
+`rho_*` multipliers also remain: focused distributional tests defend their
+independent head-scaling behavior and safe serialization. `hybrid` and
+`target_ordered_cat_codes` remain pending their declared comparison campaigns.
 
 The `linear_residual` deprecation follows the frozen smooth development
 campaign: local linear leaves improved equal-task RMSE by 7.97% versus

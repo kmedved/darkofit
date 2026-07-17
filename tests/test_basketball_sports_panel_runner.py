@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
 from pathlib import Path
 
 import pytest
@@ -8,6 +10,23 @@ import pytest
 from benchmarks import analyze_basketball_sports_panel as analyzer
 from benchmarks import build_basketball_sports_panel as panel
 from benchmarks import run_basketball_sports_panel as runner
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+RAW_PATH = REPO_ROOT / "benchmarks" / "basketball_sports_panel_raw.json"
+RESULT_PATH = REPO_ROOT / "benchmarks" / "basketball_sports_panel_result.json"
+REPORT_PATH = REPO_ROOT / "benchmarks" / "basketball_sports_panel_result.md"
+EXPECTED_RAW_SHA256 = "de1a22ad42a98fe44136aba002806d6fbbe19139f7763eeb5e594a2bd8e42299"
+EXPECTED_RESULT_SHA256 = (
+    "4f20aed49ef0936a9442111b106aa5004b342c1924837a53c46e8010b2ae7189"
+)
+EXPECTED_REPORT_SHA256 = (
+    "eb9f8cf11d7b9d89faf8754951c83f9c8c2eda012d83a0843d454ccff02bac10"
+)
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _cell(season: int, target: str, score: float, guard: float) -> dict:
@@ -148,3 +167,14 @@ def test_analyzer_rejects_ambiguous_paths(tmp_path: Path):
     raw.write_text("{}", encoding="utf-8")
     with pytest.raises(RuntimeError, match="must be distinct"):
         analyzer._validate_paths(raw, raw, tmp_path / "report.md")
+
+
+def test_recorded_s4_artifacts_are_immutable_and_reproduce():
+    assert _sha256(RAW_PATH) == EXPECTED_RAW_SHA256
+    assert _sha256(RESULT_PATH) == EXPECTED_RESULT_SHA256
+    assert _sha256(REPORT_PATH) == EXPECTED_REPORT_SHA256
+    raw = json.loads(RAW_PATH.read_text(encoding="utf-8"))
+    recorded = json.loads(RESULT_PATH.read_text(encoding="utf-8"))
+    reproduced = analyzer.analyze(raw, EXPECTED_RAW_SHA256)
+    assert reproduced == recorded
+    assert analyzer.render_report(reproduced) == REPORT_PATH.read_text(encoding="utf-8")
