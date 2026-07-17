@@ -136,3 +136,8 @@ def test_split_identity_is_bound_to_frozen_indices():
             np.asarray([0, 2, 4]),
             np.asarray([1, 4]),
         )
+
+
+def test_catboost_report_only_best_iteration_can_be_absent():
+    assert experiment._optional_int(None) is None
+    assert experiment._optional_int(np.int64(7)) == 7

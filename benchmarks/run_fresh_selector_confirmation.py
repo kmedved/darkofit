@@ -78,6 +78,10 @@ def _peak_rss_bytes() -> int:
     return value
 
 
+def _optional_int(value):
+    return None if value is None else int(value)
+
+
 def _registries():
     if _sha256(REGISTRY_V1) != EXPECTED_REGISTRY_V1_SHA256:
         raise RuntimeError("fresh registry v1 identity changed")
@@ -359,7 +363,7 @@ def _fit_catboost(X_train, y_train, cat, X_test, threads):
     return prediction, float(fit_seconds), float(predict_seconds), {
         "kind": CATBOOST,
         "fitted_tree_count": int(model.tree_count_),
-        "best_iteration": int(model.get_best_iteration()),
+        "best_iteration": _optional_int(model.get_best_iteration()),
     }
 
 
