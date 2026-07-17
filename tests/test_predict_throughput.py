@@ -1,4 +1,18 @@
+import hashlib
+import json
+from pathlib import Path
+
 from benchmarks import run_predict_throughput as experiment
+
+
+RECORDED_ARTIFACT = (
+    Path(__file__).resolve().parents[1]
+    / "benchmarks"
+    / "predict_throughput.json"
+)
+EXPECTED_ARTIFACT_SHA256 = (
+    "cf25311f3364f4f939cf0324eb97f08641e92b68a0e82eac54c390d0b64e71c9"
+)
 
 
 def _case(public, binning, core):
@@ -90,3 +104,34 @@ def test_block_orders_are_reciprocal_and_batch_repeats_are_frozen():
     )
     assert set(experiment.WARM_REPEATS) == set(experiment.BATCH_SIZES)
     assert all(value >= 2 for value in experiment.WARM_REPEATS.values())
+
+
+def test_recorded_artifact_selects_binning_without_spending_lockbox():
+    raw = RECORDED_ARTIFACT.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == EXPECTED_ARTIFACT_SHA256
+    artifact = json.loads(raw)
+
+    assert artifact["sources"][experiment.DARKOFIT]["clean"] is True
+    assert artifact["sources"][experiment.DARKOFIT]["head"] == (
+        "27ff54eb7c4f8cfeee8f1db1a17691c1f866e14d"
+    )
+    assert artifact["sources"][experiment.CHIMERABOOST]["head"] == (
+        experiment.EXPECTED_CHIMERA_HEAD
+    )
+    assert artifact["protocol"]["sha256"] == hashlib.sha256(
+        experiment.PROTOCOL.read_bytes()
+    ).hexdigest()
+    assert artifact["protocol"]["runner_sha256"] == hashlib.sha256(
+        Path(experiment.__file__).read_bytes()
+    ).hexdigest()
+    assert artifact["protocol"]["lockbox_data_used"] is False
+    assert artifact["analysis"]["largest_excess_component"] == "binning"
+    assert artifact["analysis"]["recommendation"] == "start_p2_with_binning"
+    for dataset in experiment.DATASETS:
+        for rows in experiment.BATCH_SIZES:
+            assert (
+                artifact["analysis"]["paired_ratios"][dataset][str(rows)][
+                    "warm_public"
+                ]["median_ratio"]
+                <= experiment.TARGET_PUBLIC_RATIO
+            )

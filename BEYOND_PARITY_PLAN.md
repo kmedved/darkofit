@@ -32,8 +32,11 @@ Execution began from published `main` at `ab86269`.
   downstream evidence was consumed.
 - P1's matched throughput protocol is implemented for reciprocal fresh-worker
   blocks, numeric and mixed inputs, cold/warm/public/binning/core phases, and
-  8k-to-2M batches. Its 8k smoke path is exact within both libraries; formal
-  results require the committed-source run.
+  8k-to-2M batches. The clean `27ff54e` run found public median ratios of
+  `0.84-1.03x` ChimeraBoost, but three 8k/64k paired-ratio stability gates
+  failed, so the all-case target is not formally certified. The packed core is
+  generally faster; binning is the selected P2 target at a median `+33.8%`
+  component excess. Peak RSS was `0.969x`.
 
 ## Standing constraints (inherited, non-negotiable)
 
