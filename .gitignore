@@ -120,6 +120,9 @@ ipython_config.py
 # Local review handoffs can contain private filesystem paths.
 fable_supervisor_handoff.md
 
+# Re-downloadable OpenML metadata used to build the committed SynthGen corpus.
+/benchmarks/data_cache/
+
 # pixi
 #   Similar to Pipfile.lock, it is generally recommended to include pixi.lock in version control.
 # pixi.lock

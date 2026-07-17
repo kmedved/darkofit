@@ -35,3 +35,11 @@ hatch from ChimeraBoost commit
 851ab7fa79fbb2a7f698fbc1a00952e1bd18c62d. DarkoFit centralizes those
 behaviors across its sklearn wrappers, scalar and multiclass boosters, and
 distributional heads while preserving its existing model format.
+
+The benchmark-only ``benchmarks/synthgen`` structural-causal-model generator,
+calibration sampler, deterministic dataset emission, freeze-time filters,
+suite selection, and generator contract tests are modified from ChimeraBoost
+0.15.0 commit 851ab7fa79fbb2a7f698fbc1a00952e1bd18c62d. DarkoFit adds its own
+version namespace, removes TabArena and all declared CTR23 identities before
+calibration reduction, verifies canaries with DarkoFit, and uses a separate
+project-specific decision ledger and adoption protocol.
