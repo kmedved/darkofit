@@ -438,7 +438,7 @@ and `mkdocs build --strict` is the documentation gate.
 **Z5. Tests — complete for 0.10**: mark campaign verifiers (`-m campaign`), split CI jobs
 (library suite vs campaign suite), prove identical coverage before/after —
 this was deferred pending exactly that proof; do it as its own PR. The
-partition now covers the full 1,912-item union: 786 library tests and 1,126
+partition now covers the full 1,913-item union: 767 library tests and 1,146
 campaign verifiers.
 
 **1.0 criteria**: Z1 deletions executed, Z3 decisions shipped and documented,

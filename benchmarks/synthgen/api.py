@@ -9,6 +9,8 @@ Modified by the DarkoFit project from ChimeraBoost 0.15.0 commit 851ab7f.
 """
 import functools
 import hashlib
+import json
+from dataclasses import asdict
 
 import numpy as np
 
@@ -64,6 +66,45 @@ def make_builder(key):
 def recipe_meta(key):
     """Recipe/realized factors for the datasets-meta JSON (LRU-cheap)."""
     return dict(build_dataset(key)[4])
+
+
+def _canonical_recipe_value(value):
+    if isinstance(value, dict):
+        return {
+            key: _canonical_recipe_value(item)
+            for key, item in sorted(value.items())
+        }
+    if isinstance(value, (list, tuple)):
+        return [_canonical_recipe_value(item) for item in value]
+    if isinstance(value, float):
+        rounded = round(value, 12)
+        return 0.0 if rounded == 0.0 else rounded
+    return value
+
+
+def hash_recipe(key):
+    """Cross-platform SHA-256 of the sampled recipe and versioned seed state.
+
+    Dataset-content hashes intentionally include floating transforms and are
+    therefore reference-platform tripwires. This narrower hash covers the
+    NumPy distribution draws that select every recipe factor without treating
+    architecture-level floating reduction differences as generator drift.
+    """
+    _, dataset_id = parse_key(key)
+    recipe = sample_recipe(dataset_id)
+    payload = {
+        "hash_schema": "synthgen-recipe-v1",
+        "key": key,
+        "recipe": _canonical_recipe_value(asdict(recipe)),
+        "seed_entropy": [_recipe.VERSION_SEED, dataset_id],
+    }
+    canonical = json.dumps(
+        payload,
+        allow_nan=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
 
 
 def task_of(key):

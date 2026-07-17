@@ -1,14 +1,17 @@
 """SynthGen generator contracts: determinism, goldens, meta, structure, suites.
 
-The golden-hash test is the numpy-RNG-stream-drift tripwire: if it fails after
-a numpy upgrade (NEP 19 does not guarantee distribution-method streams), bump
-synthgen.recipe.VERSION and re-freeze the suite -- never re-pin goldens under
-the same version.
+Recipe goldens are the cross-platform NumPy-RNG-stream-drift tripwire. Dataset
+goldens additionally cover floating transforms but are restricted to the
+Darwin/arm64 platform on which the immutable df1 freeze was created. If either
+fails after a NumPy upgrade on its declared platform (NEP 19 does not
+guarantee distribution-method streams), bump synthgen.recipe.VERSION and
+re-freeze the suite -- never re-pin goldens under the same version.
 
 Modified by the DarkoFit project from ChimeraBoost 0.15.0 commit 851ab7f.
 """
 import json
 import os
+import platform
 import sys
 
 import numpy as np
@@ -21,6 +24,9 @@ from synthgen import filters
 from synthgen.suites import CANARIES, SUITES
 
 GOLDEN_PATH = os.path.join(os.path.dirname(__file__), "golden_synthgen.json")
+RECIPE_GOLDEN_PATH = os.path.join(
+    os.path.dirname(__file__), "golden_synthgen_recipes.json"
+)
 FREEZE_PATH = os.path.join(
     os.path.dirname(__file__), "..", "benchmarks", "synthgen_df1_freeze.json"
 )
@@ -80,7 +86,11 @@ def test_frozen_regression_target_is_feature_dependent():
     assert ok, detail
 
 
-def test_golden_hashes():
+@pytest.mark.skipif(
+    sys.platform != "darwin" or platform.machine() != "arm64",
+    reason="df1 dataset-byte goldens are frozen on Darwin arm64",
+)
+def test_reference_platform_dataset_goldens():
     goldens = json.load(open(GOLDEN_PATH, encoding="utf-8"))
     assert goldens, "golden_synthgen.json is empty"
     for key, expected in goldens.items():
@@ -88,6 +98,14 @@ def test_golden_hashes():
             f"{key} content drifted -- if this is a numpy upgrade, bump "
             "synthgen VERSION and re-freeze (see module docstring)")
         synthgen.build_dataset.cache_clear()
+
+
+def test_cross_platform_recipe_goldens():
+    goldens = json.load(open(RECIPE_GOLDEN_PATH, encoding="utf-8"))
+    assert goldens, "golden_synthgen_recipes.json is empty"
+    assert {
+        key: synthgen.hash_recipe(key) for key in goldens
+    } == goldens
 
 
 def test_meta_and_dtype_contracts():

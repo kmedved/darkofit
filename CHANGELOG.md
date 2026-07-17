@@ -8,9 +8,14 @@ No changes yet.
 
 ### Release infrastructure
 
-- Split the full 1,912-test union into an explicit 786-test library lane and
-  1,126 frozen campaign verifiers. CI runs the library lane across Python
+- Split the full 1,913-test union into an explicit 767-test library lane and
+  1,146 frozen campaign verifiers. CI runs the library lane across Python
   3.9, 3.11, and 3.13 and the campaign lane separately on Python 3.11.
+- Correct SynthGen's inherited cross-platform golden contract. Immutable
+  dataset-byte goldens now run only on their Darwin/arm64 reference platform;
+  a separate canonical recipe/RNG-stream hash runs everywhere, so Linux CI
+  still detects versioned recipe drift without mistaking floating reduction
+  differences for changed synthetic data.
 - Add a strict MkDocs user guide and archive superseded planning documents
   without presenting them as current API contracts.
 - Add generated release benchmark status and Pareto tooling. It keeps the

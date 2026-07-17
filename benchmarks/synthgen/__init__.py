@@ -6,7 +6,7 @@ dataset metadata (TabArena and CTR23 excluded).
 Modified by the DarkoFit project from ChimeraBoost 0.15.0 commit 851ab7f.
 See ``NOTICE`` and ``benchmarks/synthgen_darkofit_protocol.md``.
 """
-from .api import (build_dataset, hash_dataset, key_for, make_builder,  # noqa: F401
-                  parse_key, recipe_meta, sample_recipe, task_of)
+from .api import (build_dataset, hash_dataset, hash_recipe, key_for,  # noqa: F401
+                  make_builder, parse_key, recipe_meta, sample_recipe, task_of)
 from .recipe import VERSION  # noqa: F401
 from .suites import SUITES, all_frozen_keys, frozen_keys  # noqa: F401
