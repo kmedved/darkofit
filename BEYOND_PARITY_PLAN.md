@@ -20,8 +20,9 @@ Execution began from published `main` at `ab86269`.
   disable it, and unsafe Numba workqueue concurrency is guarded (`ab86269`).
 - Wave 1 is complete. New campaign protocols use the forward-only shared
   paired-ratio stability primitive in `basketball_campaign_harness.py`;
-  `basketball_harness.py`, historical frozen runners, and their bound support
-  manifests remain unchanged.
+  `basketball_harness.py` and bound support manifests remain unchanged, while
+  attested run-time versions of later-hardened runners remain recoverable at
+  their source commits and hashes.
 - `validation_strategy="group"` and the basketball robust-head protocol are
   the first Wave-1 implementation units. S3 and I1 pass the complete suite
   (`1,647 passed, 23 skipped`).
@@ -127,6 +128,16 @@ Execution began from published `main` at `ab86269`.
   missing predictors. Tasks, lineages, coordinates, contamination decisions,
   and power are unchanged. All confirmation and later claims bind v2 and use
   the narrower smooth/process wording.
+- The sole fresh selector confirmation is complete and closed from clean
+  source `29bd30c`: selector/default was `0.9893x`, only 2/14 primary
+  lineages won, and selector/ChimeraBoost was `1.1196x`. Categorical and noisy
+  guardrails passed, but the promotion gates did not. No power calculation,
+  default change, or lockbox spend is authorized.
+- E2's matched large-n certification is complete and closed from clean source
+  `d77dc8b`. DarkoFit was quality-neutral and faster at both sizes, but its
+  equal-size geometric-mean speedup was `1.2793x`, below the frozen `1.30x`
+  claim threshold. All other gates passed. The raw artifact remains immutable;
+  the post-run analyzer audit reproduces the same failure decision.
 
 ## Standing constraints (inherited, non-negotiable)
 
@@ -153,7 +164,9 @@ Execution began from published `main` at `ab86269`.
   IQR/median on millisecond-scale series. Two of the strongest candidates died
   on environment noise; new protocols must not repeat that. Absolute-time
   gates remain for wall-clock budgets only, at seconds scale.
-- No frozen artifact is rewritten; historical runners stay as attested.
+- No frozen artifact is rewritten. Attested run-time code stays recoverable at
+  its bound source commit and hash; later harness hardening must be labeled
+  post-run and must reproduce the immutable artifact's decision.
 
 ## Track S — Win the creator's benchmark outright
 
@@ -162,31 +175,21 @@ CatBoost 0.5363, ChimeraBoost ens-5 0.5402. Target: **beat 0.5363, then 0.5402,
 single-library**, with cold-player quality preserved. This is the trophy and it
 plays to our differentiators (distributional heads, entity structure).
 
-**S1. Robust-head screen (zero new code — run first).**
-Basketball targets are noisy and heavy-tailed; RMSE chases tails. Arms:
-`loss="StudentT"` location prediction (learned ν), `loss="MAE"`, and RMSE
-default, all under the frozen creator protocol with paired-ratio gates.
-StudentT is a mechanism neither ChimeraBoost nor CatBoost defaults own.
-Success = mean + LOFO + held-team + cold-player all non-regressing and mean
-gain ≥ +0.002 (the screen bar used throughout the closed program). Cost: one
-campaign day; the heads and vector-leaf trees already exist. Even a null
-result is cheap and informative (it bounds how much tail-robustness matters).
+**S1. Robust-head screen — closed.**
+Student-t location and MAE both failed the fatal creator-fold,
+leave-one-fold-out, and held-team gates despite small cold-player gains. No
+robust-head default or follow-on confirmation is authorized from this screen.
 
 **S2. Entity-aware ensemble — closed as shaped.**
 The materially different player bootstrap, group-disjoint OOB validation, and
 shared preprocessing implementation failed the fatal creator-fold primary
 gate despite improving cold-player quality. No ensemble API is authorized.
 
-**S3. Group-aware validation as a first-class option.**
-`validation_strategy` today is `random | weighted_stratified`. Add
-`"group"` (GroupShuffleSplit semantics driven by the existing `groups=` fit
-argument). This is infrastructure, not a default change: it unblocks every
-future selector on entity data. The linear-leaves selector failed precisely
-because its random internal split shares players between train and val; a
-group split is the honest version. Gate: exactness (no behavior change when
-unused) + a focused unit suite. Then any future selection mechanism (linear
-leaves, ensembles, calibration) may specify group-aware selection as part of
-its design.
+**S3. Group-aware validation — complete.**
+`validation_strategy="group"` now provides GroupShuffleSplit semantics through
+the existing `groups=` fit argument. It is infrastructure, not a default
+change, and preserves exact behavior when unused. Future entity-data selectors
+may use it without reopening the closed selector shapes.
 
 **S4. The sports confirmation suite (durable asset).**
 One frozen basketball dataset cannot support promotion claims. Build a
@@ -194,7 +197,8 @@ preregistered multi-target, multi-season DARKO-derived panel: 3+ box-score
 targets × 3+ seasons, each with creator-style folds plus held-team,
 seen-player, and cold-player guardrails, contamination-documented, with a
 declared primary aggregate and power analysis *before* first use. This is the
-confirmation bed for S1/S2 survivors and every future sports claim. It is
+confirmation bed for materially new S-track candidates and every future sports
+claim. It is
 also the panel where "beats ChimeraBoost where the owner actually works"
 becomes a certified sentence.
 
@@ -208,9 +212,9 @@ primary panel. See
 [`benchmarks/fresh_selector_confirmation_result.md`](benchmarks/fresh_selector_confirmation_result.md).
 Do not open the CTR23 lockbox or retune this selector on the fresh panel.
 
-The mechanism is shipped, default-off, exact in its fallbacks. Its motivating
-class (kin8nm/grid_stability/space_ga; lockbox naval/wave_energy/sarcos) was
-never tested — basketball cannot test it. This campaign does.
+The mechanism is shipped, default-off, and exact in its fallbacks. Its
+motivating class was tested through the development and fresh-confirmation
+tiers below; it did not generalize strongly enough for policy promotion.
 
 **L1. Panels.**
 - *Mechanism-probe tier (optional but cheap)*: synthetic smooth suite with
@@ -239,55 +243,34 @@ never tested — basketball cannot test it. This campaign does.
    dominates it everywhere, deprecate `linear_residual` in Track Z;
 5. ChimeraBoost 0.15.0 (`851ab7f`) as external comparator, its own defaults.
 
-**L3. Gate ladder.** Basketball exactness first (mechanism is default-off, so
-the fatal screen is: selector arms must not regress basketball when they
-decline to engage; fixed-on arm is research-only there). Then L1 development
-tier with sign tests. A promotion claim (opt-in default `linear_leaves=None`
-= selected) needs the fresh confirmation tier. The lockbox shot happens only
-if the confirmed effect distribution simulates ≥80% pass probability — and it
-should target the certified sentence "DarkoFit beats ChimeraBoost 0.15 on the
-sealed smooth-simulation panel."
+**L3. Gate ladder (completed).** Basketball exactness passed, the L1
+development tier passed, and the sole fresh confirmation failed. Therefore no
+promotion claim, power simulation, or lockbox shot follows from this selector.
 
 ## Track P — Predict throughput (the last engine gap)
 
-Matched-lane predict is 1.83× ChimeraBoost; product-lane 2.91×. The closed
-router died on noise gates while beating their core on small batches (0.88–
-1.04×), so the capability is demonstrably there.
+**Status: optimization retained; certification closed as scoped.** The
+program began at 1.83× ChimeraBoost matched-lane and 2.91× product-lane
+prediction time. P1 established the 8k/64k/512k/2M reciprocal fresh-worker
+protocol. P2 then removed an unnecessary contiguous-block copy before binning
+with byte-identical results.
 
-**P1. A real throughput protocol.** Dedicated harness: batch sizes 8k / 64k /
-512k / 2M rows on synthetic + dev-real matrices (numeric-only and categorical
-variants), fresh workers, cold and warm phases separated, paired-ratio gates,
-seconds-scale absolute budgets only. The tiny basketball folds are guardrails
-here, not the measurement.
-
-**P2. Mechanisms, in order:**
-1. **Row-major packed predict consuming the binner's output directly** (their
-   0.14.2 trick): eliminate the transpose/copy between binning and the packed
-   kernel; keep per-sample tree walks. Bit-identity oracle against the
-   per-tree loop.
-2. **Pack at fit time** (kill routing entirely for oblivious scalar models):
-   the packed arrays become part of the fitted model; predict has no
-   dispatch decision to make. Serialization already stores packed manifests
-   for the leafwise lane; extend to oblivious.
-3. **uint8 advantage**: our adaptive uint8 bins (≤255) already halve bin-row
-   bandwidth vs their fixed uint16 — make sure the packed kernels exploit it
-   (no widening loads), then measure whether we can *beat* their predict at
-   equal tree counts, not just match.
-4. Product-lane extras: cache the packed forest across predict calls (their
-   `_forest_` lazy cache), and skip re-validation cost via the existing
-   `assume_finite` path once the Track Z validation decisions land.
-
-Target: ≤1.30× ChimeraBoost matched-lane predict to close the plan's Phase-3
-line; stretch goal ≤1.0×. All behavior-exact.
+The seconds-integrated successor measured DarkoFit public medians at
+`0.805-0.987×` ChimeraBoost in all eight cases, but failed the conjunctive
+stability/absolute-duration proof. The optimization stays; the all-case
+≤1.30× certification does not. The frozen result explicitly closes a third
+protocol and further packed/binner work under this track. Any future predict
+claim needs a materially new question and preregistered protocol, not another
+retry of P1/P2.
 
 ## Track E — Fit-engine ceiling (beat their engine, not just match it)
 
-Parity is proven on the default constant-leaf regression lane. Two honest
-advantages are available that ChimeraBoost structurally lacks:
+Parity is proven on the default constant-leaf regression lane. The program
+tested the following engine ceilings:
 
 **E1. Fused-lane expansion (also the deletion enabler).** The shipped fused
-kernel covers only the unit-Hessian, full-row, full-feature float64 lane.
-Extend stepwise, each step bit-identity-gated and each retiring its
+kernel now covers the unit- and variable-Hessian full-row/full-feature float64
+lanes. Continue stepwise, each step bit-identity-gated and each retiring its
 superseded reference variants (keep exactly one oracle pair per family):
 1. **Complete:** hessian-carrying fused kernel → binary classification and
    weighted RMSE joined the exact fast lane at `0.7870x` total fit and
@@ -298,24 +281,22 @@ superseded reference variants (keep exactly one oracle pair per family):
 Expected: several thousand deletable lines with proofs, plus real user-facing
 classification speedups.
 
-**E2. Histogram subtraction × fused (large-n advantage).** ChimeraBoost
-rescans every sample at every level; DarkoFit already owns level-subtraction
-kernels. A fused+subtraction lane for the oblivious path can be *faster than
-their engine* on large data (target: ≥1.3× their matched-core fit at ≥200k
-rows). This is the cleanest "ceiling not floor" engine claim available.
-Protocol: matched-core lane like `basketball_chimera_v015` but on large-n
-dev data; exactness against our own reference kernels (subtraction is
-float64-rounding-equivalent, not bit-exact — so gate it as its own lane with
-the documented equivalence class, exactly as the existing subtraction lanes
-are handled today).
+**E2. Large-n advantage — closed at the frozen claim threshold.** Profiling
+rejected fused+subtraction at the production thread count. The retained
+fused/uint8/capped-border system reached a `1.2793x` equal-size geometric-mean
+fit speedup over ChimeraBoost 0.15 on the matched 500k/1M numeric lane, with
+quality neutrality and every non-speed gate passing. That misses the frozen
+`1.30x` claim bar, so no large-n advantage claim or threshold retry is
+authorized. See
+[`benchmarks/large_n_engine_result.md`](benchmarks/large_n_engine_result.md).
 
 **E3. Float32 histogram streams** (ROADMAP R5, opt-in, already implemented):
 measure on the throughput harness; promote to a size-gated auto lane only
 behind regret gates.
 
-**E4. Profile the unprofiled**: multiclass and distributional fits have never
-had an attribution profile. Measure before touching; their 2× class-minor
-layouts (R6) may already be fine.
+**E4. Multiclass/distributional attribution — complete.** The fixed 50k-row
+profile found every measured path tree-build-limited. Gaussian LightGBM is the
+only selected drill-down; no loss-kernel optimization is justified.
 
 ## Track C — The categorical program (bank the −18% class)
 
@@ -334,9 +315,10 @@ rule that only fires on integer-coded or lexicographically-ordered categories
 
 **C2. Panels.** Dev tier: the four dev-legal categorical CTR23 tasks
 (auction_verification, video_transcoding, fps_benchmark, cars) + spent
-TabArena categorical sets (Diamonds class) as development-only + fresh
-cat-heavy OpenML sets found during I3. Confirmation: the I3 fresh panel's
-categorical stratum.
+TabArena categorical sets (Diamonds class) and I3's now-spent categorical
+stratum as development-only. Confirmation requires a new target-unseen,
+contamination-screened categorical panel frozen before C1 outcome inspection;
+I3 cannot serve as confirmation again.
 
 **C3. Ladder.** Basketball first (should be a no-op there — no declared
 ordinals; gate is exactness + no-engagement proof), then dev tier, then
@@ -377,11 +359,10 @@ after E1 complete, ~11-12k after mode deletions (C3-gated) — honest numbers,
 not the old ~9k guess, since linear leaves/SHAP/warmup/validation added
 legitimate mass.
 
-**Z3. Fold in the review findings** (chips already filed): the categorical
-predict validation overhead fix; the inf/empty-batch/duplicate-cat
-compatibility decision (whatever is chosen, CHANGELOG it as breaking with
-migration notes — 1.0 is the moment); `DARKOFIT_WARMUP` falsy parsing and the
-background thread-count race.
+**Z3. Review findings — complete.** Categorical predict validation no longer
+does a Python cell scan; infinity, empty prediction batch, and duplicate
+categorical-index semantics are explicit and documented; warmup parses
+conventional falsy values and prevents unsafe concurrent Numba workqueue use.
 
 **Z4. Docs**: root planning docs (KALMAN_READINESS_PLAN,
 LINEAR_RESIDUAL_BOOSTING_PLAN, DISTRIBUTIONAL_*SPEC, fable_supervisor_handoff,
@@ -394,8 +375,9 @@ shap, faq); README gets the Pareto headline (I4).
 this was deferred pending exactly that proof; do it as its own PR.
 
 **1.0 criteria**: Z1 deletions executed, Z3 decisions shipped and documented,
-P1 target met, suite green on the version matrix, NOTICE current, CHANGELOG
-in Keep-a-Changelog form with every break enumerated.
+the retained P2 optimization and its non-certification stated accurately,
+suite green on the version matrix, NOTICE current, and CHANGELOG in
+Keep-a-Changelog form with every break enumerated.
 
 ## Track I — Infrastructure (parallel, never consumes promotion evidence)
 
@@ -414,12 +396,10 @@ Bayes floors, earned canaries. Before it may gate anything, it must reproduce
 the TabArena campaigns to backtest against — a better ledger than they had).
 Use: mechanism-probe tier for L/C/S direction-finding, never promotion.
 
-**I3. Fresh confirmation registry.** One contamination-screened, fingerprinted
-registry of ~20 unused regression datasets stratified smooth / categorical /
-noisy-tabular, with lineage clusters atomic (the CTR23 v3 methodology,
-reused). This is the durable confirmation asset every track's ladder ends in,
-and it gets built once, before anyone needs it in anger. Power-analyze at
-freeze time.
+**I3. Fresh confirmation registry — complete and spent for Track L.** The
+contamination-screened, fingerprinted 20-lineage registry is frozen and
+stratified smooth/process, categorical, and noisy-tabular. Its Track-L outcomes
+are now spent; any reuse must follow the registry's declared evidence rules.
 
 **I4. Pareto + status.** `benchmarks/make_pareto.py` equivalent: blended
 quality vs fit-slowdown vs ChimeraBoost 0.15 / CatBoost / LightGBM,
@@ -439,10 +419,10 @@ verdict) · P2 predict mechanisms · E1 fused expansion (+ paired deletions) ·
 I2 SynthGen · I3 registry construction.
 
 **Wave 3 (confirmation + ceiling claims):**
-S4 sports suite + S-track confirmation · L3 fresh-panel confirmation →
-lockbox power simulation → (if ≥80%) the one lockbox shot · E2 large-n
-beat-their-engine protocol · C1–C3 categorical program → mode-mix rerun →
-C3-gated deletions · 1.0 release.
+S4 sports suite + S-track confirmation · ~~L3 fresh-panel confirmation~~
+(closed; no lockbox) · ~~E2 large-n beat-their-engine protocol~~ (closed below
+the claim bar) · C1–C3 categorical program with a new confirmation panel →
+mode-mix rerun → C3-gated deletions · 1.0 release.
 
 **Explicitly not in this program:** reopening any closed candidate as shaped;
 touching the lockbox before its preconditions; TabArena as anything but
@@ -453,10 +433,11 @@ report-only; rewriting frozen artifacts; deleting ahead of proofs.
 1. A certified sports claim on a preregistered multi-season panel: DarkoFit
    (single model or explicit ensemble API) above CatBoost's 0.5363-class
    scores with cold-player quality intact.
-2. A certified smooth-panel claim over ChimeraBoost 0.15 with linear leaves —
-   optionally sealed with the lockbox.
-3. Engine: predict ≤1.3× (stretch ≤1.0×) and large-n fit ≥1.3× *faster* than
-   their matched core.
+2. A certified smooth-panel claim over ChimeraBoost 0.15 from a materially new
+   selector and fresh evidence; the closed 3% selector cannot supply it.
+3. A future engine claim beyond the closed P2/E2 protocols; current evidence
+   supports the retained exact optimizations but not the frozen all-case
+   predict or ≥1.3× large-n certifications.
 4. A 1.0 release: ~28-param constructor, ~12-15k-line package, every break
    documented, docs site, Pareto headline — the library their creator would
    recognize as disciplined, doing things theirs cannot (distributions,

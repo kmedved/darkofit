@@ -28,6 +28,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from benchmarks import basketball_harness as basketball  # noqa: E402
+from benchmarks import build_ctr23_contamination_registry as registry  # noqa: E402
 from benchmarks import run_basketball_creator_benchmark as creator  # noqa: E402
 from benchmarks import run_smooth_linear_leaves_development as smooth  # noqa: E402
 
@@ -82,6 +83,21 @@ def _optional_int(value):
     return None if value is None else int(value)
 
 
+def _behavior_metadata(value):
+    if isinstance(value, dict):
+        return {
+            key: (
+                None
+                if key in {"fit_seconds", "final_fit_seconds", "phase_seconds"}
+                else _behavior_metadata(item)
+            )
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_behavior_metadata(item) for item in value]
+    return value
+
+
 def _registries():
     if _sha256(REGISTRY_V1) != EXPECTED_REGISTRY_V1_SHA256:
         raise RuntimeError("fresh registry v1 identity changed")
@@ -117,6 +133,8 @@ def _load_task(task_id: int, registry_row: dict[str, Any]):
         or str(dataset.md5_checksum) != str(expected["openml_declared_md5"])
     ):
         raise RuntimeError(f"fresh task {task_id} metadata changed")
+    if registry.dataset_fingerprint(X, y) != expected["fingerprint"]:
+        raise RuntimeError(f"fresh task {task_id} data fingerprint changed")
     y = pd.to_numeric(y, errors="raise").astype(np.float64)
     if not np.all(np.isfinite(y.to_numpy())):
         raise RuntimeError(f"fresh task {task_id} target is nonfinite")
@@ -334,20 +352,33 @@ def _fit_chimera(X_train, y_train, cat, X_test, threads):
     }
 
 
-def _catboost_frame(X, categorical_indices):
-    frame = X.copy()
+def _catboost_frames(X_train, X_test, categorical_indices):
+    train = X_train.copy()
+    test = X_test.copy()
     for index in categorical_indices:
-        series = frame.iloc[:, index]
-        values = series.astype(object).where(~series.isna(), "__MISSING__")
-        frame[frame.columns[index]] = values.astype(str)
-    return frame
+        combined = pd.concat(
+            (train.iloc[:, index], test.iloc[:, index]),
+            ignore_index=True,
+        )
+        codes, _uniques = pd.factorize(combined, sort=False)
+        tokens = np.asarray(
+            [
+                "__DARKOFIT_MISSING_CATEGORY__"
+                if code < 0
+                else f"__DARKOFIT_CATEGORY_{code}__"
+                for code in codes
+            ],
+            dtype=object,
+        )
+        train[train.columns[index]] = tokens[: len(train)]
+        test[test.columns[index]] = tokens[len(train) :]
+    return train, test
 
 
 def _fit_catboost(X_train, y_train, cat, X_test, threads):
     from catboost import CatBoostRegressor
 
-    train = _catboost_frame(X_train, cat)
-    test = _catboost_frame(X_test, cat)
+    train, test = _catboost_frames(X_train, X_test, cat)
     model = CatBoostRegressor(
         random_seed=creator.RANDOM_STATE,
         thread_count=int(threads),
@@ -438,7 +469,7 @@ def run_worker(task_id: int, config: str, threads: int):
                 "fold": row["fold"],
                 "rmse": row["rmse"],
                 "prediction_sha256": row["prediction_sha256"],
-                "metadata": row["metadata"],
+                "metadata": _behavior_metadata(row["metadata"]),
             }
             for row in folds
         ],
@@ -503,35 +534,82 @@ def _worker_command(task_id, config):
     ]
 
 
+def _stop_workers(processes):
+    for _task_id, process in processes:
+        if process.poll() is None:
+            process.terminate()
+    for _task_id, process in processes:
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait()
+
+
 def _run_batch(task_ids, config):
-    processes = [
-        (
-            task_id,
-            subprocess.Popen(
+    processes = []
+    try:
+        for task_id in task_ids:
+            process = subprocess.Popen(
                 _worker_command(task_id, config),
                 cwd=ROOT,
                 env=_worker_environment(),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-            ),
-        )
-        for task_id in task_ids
+            )
+            processes.append((task_id, process))
+    except BaseException:
+        _stop_workers(processes)
+        raise
+
+    completed = []
+    try:
+        for task_id, process in processes:
+            stdout, stderr = process.communicate()
+            completed.append((task_id, process.returncode, stdout, stderr))
+    except BaseException:
+        _stop_workers(processes)
+        raise
+
+    failures = [
+        (task_id, returncode, stdout, stderr)
+        for task_id, returncode, stdout, stderr in completed
+        if returncode
     ]
+    if failures:
+        task_id, returncode, stdout, stderr = failures[0]
+        raise RuntimeError(
+            f"fresh worker {config}/{task_id} failed with "
+            f"{returncode}\nstdout:\n{stdout}\nstderr:\n{stderr}"
+        )
+
     results = []
-    for task_id, process in processes:
-        stdout, stderr = process.communicate()
+    for task_id, _returncode, stdout, stderr in completed:
         lines = [
             line
             for line in stdout.splitlines()
             if line.startswith(WORKER_RESULT_PREFIX)
         ]
-        if process.returncode or len(lines) != 1:
+        if len(lines) != 1:
             raise RuntimeError(
                 f"fresh worker {config}/{task_id} failed with "
-                f"{process.returncode}\nstdout:\n{stdout}\nstderr:\n{stderr}"
+                f"invalid result count {len(lines)}\n"
+                f"stdout:\n{stdout}\nstderr:\n{stderr}"
             )
-        result = json.loads(lines[0][len(WORKER_RESULT_PREFIX):])
+        try:
+            result = json.loads(lines[0][len(WORKER_RESULT_PREFIX) :])
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(
+                f"fresh worker {config}/{task_id} returned invalid JSON"
+            ) from exc
+        if (
+            int(result.get("task_id", -1)) != int(task_id)
+            or result.get("config") != config
+        ):
+            raise RuntimeError(
+                f"fresh worker {config}/{task_id} returned the wrong identity"
+            )
         result["worker_stdout"] = (
             "\n".join(
                 line
@@ -612,9 +690,47 @@ def analyze(results, task_strata):
     expected = len(task_strata) * len(CONFIGS)
     if len(results) != expected:
         raise RuntimeError(f"fresh confirmation requires {expected} workers")
-    for config in CONFIGS:
-        if sum(row["config"] == config for row in results) != len(task_strata):
-            raise RuntimeError(f"fresh config incomplete: {config}")
+    expected_coordinates = {
+        (task_id, config) for task_id in task_strata for config in CONFIGS
+    }
+    observed_coordinates = set()
+    task_identity = {}
+    for row in results:
+        coordinate = (int(row["task_id"]), str(row["config"]))
+        if coordinate not in expected_coordinates:
+            raise RuntimeError(
+                f"fresh confirmation has an unexpected worker: {coordinate}"
+            )
+        if coordinate in observed_coordinates:
+            raise RuntimeError(
+                f"fresh confirmation has a duplicate worker: {coordinate}"
+            )
+        observed_coordinates.add(coordinate)
+        if tuple(int(fold["fold"]) for fold in row["folds"]) != FOLDS:
+            raise RuntimeError(
+                f"fresh confirmation fold order changed at {coordinate}"
+            )
+        if row["stratum"] != task_strata[coordinate[0]]:
+            raise RuntimeError(
+                f"fresh confirmation stratum changed at {coordinate}"
+            )
+        identity = (str(row["lineage_cluster"]), str(row["dataset_name"]))
+        previous_identity = task_identity.setdefault(coordinate[0], identity)
+        if identity != previous_identity:
+            raise RuntimeError(
+                f"fresh confirmation task identity changed at {coordinate}"
+            )
+        for fold in row["folds"]:
+            rmse = float(fold["rmse"])
+            if not math.isfinite(rmse) or rmse <= 0.0:
+                raise RuntimeError(
+                    f"fresh confirmation RMSE is invalid at {coordinate}"
+                )
+    if observed_coordinates != expected_coordinates:
+        raise RuntimeError("fresh confirmation is missing a worker")
+    lineages = [identity[0] for identity in task_identity.values()]
+    if len(set(lineages)) != len(lineages):
+        raise RuntimeError("fresh confirmation lineage identity is not unique")
     ids = {
         stratum: [
             task_id

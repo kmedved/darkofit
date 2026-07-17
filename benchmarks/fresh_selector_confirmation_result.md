@@ -73,6 +73,25 @@ defaults legitimately report no best iteration without an eval set. The
 documents the report-only metadata correction. No outcome from that launch
 was inspected and the complete unchanged campaign was rerun.
 
+## Post-run harness audit
+
+A fresh-eyes pass found four harness weaknesses that do not change this
+decision: failed concurrent batches could leave sibling processes running;
+behavior fingerprints included observational fit timings; the live-data check
+bound OpenML metadata and split hashes but did not recompute the registry's
+full dataset fingerprint; and the report-only CatBoost string transport could
+collapse a real sentinel-like value or values with the same string form.
+
+The current runner reaps every worker on all error paths, excludes timing from
+behavior hashes, recomputes the full registry fingerprint, and gives CatBoost
+joint collision-free categorical codes. A post-run read-only audit recomputed
+all 20 full fingerprints exactly. It also inspected all 46 categorical
+columns in the panel and found no collision under the original transport, so
+even the report-only CatBoost rows are unaffected here. The immutable artifact
+continues to attest the original runner at source `29bd30c` and runner hash
+`ae127d7`; the selector closure depends only on DarkoFit and ChimeraBoost
+quality gates.
+
 ## Evidence
 
 - Raw artifact:

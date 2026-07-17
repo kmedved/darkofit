@@ -309,18 +309,56 @@ def analyze(results):
     expected = len(TRAIN_ROWS) * len(ARMS) * len(BLOCK_ORDERS)
     if len(results) != expected:
         raise RuntimeError(f"large-n gate requires {expected} workers")
+    expected_coordinates = {
+        (block, rows, arm)
+        for block in range(len(BLOCK_ORDERS))
+        for rows in TRAIN_ROWS
+        for arm in ARMS
+    }
+    by_coordinate = {}
+    for row in results:
+        coordinate = (
+            int(row["block"]),
+            int(row["train_rows"]),
+            str(row["arm"]),
+        )
+        if coordinate not in expected_coordinates:
+            raise RuntimeError(
+                f"large-n gate has an unexpected coordinate: {coordinate}"
+            )
+        if coordinate in by_coordinate:
+            raise RuntimeError(
+                f"large-n gate has a duplicate coordinate: {coordinate}"
+            )
+        expected_position = BLOCK_ORDERS[coordinate[0]].index(coordinate[2])
+        if int(row["position"]) != expected_position:
+            raise RuntimeError(
+                f"large-n gate arm order changed at {coordinate}"
+            )
+        if "worker_stderr" not in row:
+            raise RuntimeError(
+                f"large-n gate stderr record is missing at {coordinate}"
+            )
+        by_coordinate[coordinate] = row
+    if set(by_coordinate) != expected_coordinates:
+        raise RuntimeError("large-n gate is missing a worker coordinate")
     sizes = {}
     for rows in TRAIN_ROWS:
         darko = [
-            row for row in results
-            if row["train_rows"] == rows and row["arm"] == DARKO
+            by_coordinate[(block, rows, DARKO)]
+            for block in range(len(BLOCK_ORDERS))
         ]
         chimera = [
-            row for row in results
-            if row["train_rows"] == rows and row["arm"] == CHIMERA
+            by_coordinate[(block, rows, CHIMERA)]
+            for block in range(len(BLOCK_ORDERS))
         ]
-        if len(darko) != 3 or len(chimera) != 3:
-            raise RuntimeError("large-n gate is missing an arm repeat")
+        data_probes = {
+            row["data_probe_sha256"] for row in (*darko, *chimera)
+        }
+        if len(data_probes) != 1:
+            raise RuntimeError(
+                f"large-n gate data identity differs at {rows} rows"
+            )
         fit = campaign.paired_ratio_summary(
             [row["fit_seconds"] for row in darko],
             [row["fit_seconds"] for row in chimera],
@@ -383,6 +421,9 @@ def analyze(results):
         "rss_at_most_1_10": all(
             row["rss_ratio"]["median_ratio"] <= MAX_RSS_RATIO
             for row in sizes.values()
+        ),
+        "no_worker_stderr": all(
+            not row.get("worker_stderr") for row in results
         ),
     }
     passed = all(gates.values())

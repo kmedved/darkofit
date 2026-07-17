@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from benchmarks import run_fresh_selector_confirmation as experiment
@@ -29,6 +30,7 @@ def _result(task_id, stratum, config, rmse, selected=False):
         "config": config,
         "folds": [
             {
+                "fold": fold,
                 "rmse": float(rmse),
                 "metadata": (
                     {"selected_linear_leaves": selected}
@@ -36,7 +38,7 @@ def _result(task_id, stratum, config, rmse, selected=False):
                     else {}
                 ),
             }
-            for _ in experiment.FOLDS
+            for fold in experiment.FOLDS
         ],
     }
 
@@ -157,6 +159,192 @@ def test_catboost_report_only_best_iteration_can_be_absent():
     assert experiment._optional_int(np.int64(7)) == 7
 
 
+def test_behavior_fingerprint_metadata_excludes_observational_timing():
+    metadata = {
+        "fit_seconds": 1.2,
+        "final_fit_seconds": 2.3,
+        "fit_metadata": {
+            "final_fit": {
+                "stop_reason": "iteration_limit",
+                "phase_seconds": {"tree_build": 0.9},
+            }
+        },
+    }
+
+    behavior = experiment._behavior_metadata(metadata)
+
+    assert behavior["fit_seconds"] is None
+    assert behavior["final_fit_seconds"] is None
+    assert behavior["fit_metadata"]["final_fit"]["phase_seconds"] is None
+    assert (
+        behavior["fit_metadata"]["final_fit"]["stop_reason"]
+        == "iteration_limit"
+    )
+    assert metadata["fit_seconds"] == 1.2
+
+
+def test_catboost_transport_keeps_missing_and_string_collisions_distinct():
+    train = pd.DataFrame(
+        {
+            "category": [None, "__MISSING__", 1, "1", "shared"],
+            "numeric": [0, 1, 2, 3, 4],
+        }
+    )
+    test = pd.DataFrame(
+        {"category": ["shared", None, 1, "1"], "numeric": [5, 6, 7, 8]}
+    )
+
+    transported_train, transported_test = experiment._catboost_frames(
+        train, test, [0]
+    )
+
+    assert transported_train.iloc[0, 0] != transported_train.iloc[1, 0]
+    assert transported_train.iloc[2, 0] != transported_train.iloc[3, 0]
+    assert transported_train.iloc[4, 0] == transported_test.iloc[0, 0]
+    assert transported_train.iloc[0, 0] == transported_test.iloc[1, 0]
+    assert transported_train["numeric"].equals(train["numeric"])
+    assert transported_test["numeric"].equals(test["numeric"])
+
+
+def test_run_batch_reaps_every_started_worker_before_failure(monkeypatch):
+    class Process:
+        def __init__(self, returncode, stdout):
+            self.returncode = returncode
+            self.stdout = stdout
+            self.communicated = False
+
+        def communicate(self):
+            self.communicated = True
+            return self.stdout, ""
+
+        def poll(self):
+            return self.returncode if self.communicated else None
+
+        def terminate(self):
+            self.returncode = -15
+
+        def wait(self, timeout=None):
+            self.communicated = True
+            return self.returncode
+
+        def kill(self):
+            self.returncode = -9
+
+    processes = [
+        Process(1, "failed"),
+        Process(
+            0,
+            experiment.WORKER_RESULT_PREFIX
+            + json.dumps({"task_id": 2, "config": experiment.CONTROL}),
+        ),
+    ]
+    iterator = iter(processes)
+    monkeypatch.setattr(
+        experiment.subprocess,
+        "Popen",
+        lambda *args, **kwargs: next(iterator),
+    )
+
+    with pytest.raises(RuntimeError, match="fresh worker"):
+        experiment._run_batch([1, 2], experiment.CONTROL)
+
+    assert all(process.communicated for process in processes)
+
+
+def test_run_batch_rejects_wrong_worker_identity(monkeypatch):
+    class Process:
+        returncode = 0
+
+        def communicate(self):
+            return (
+                experiment.WORKER_RESULT_PREFIX
+                + json.dumps(
+                    {"task_id": 99, "config": experiment.CONTROL}
+                ),
+                "",
+            )
+
+    monkeypatch.setattr(
+        experiment.subprocess,
+        "Popen",
+        lambda *args, **kwargs: Process(),
+    )
+
+    with pytest.raises(RuntimeError, match="returned the wrong identity"):
+        experiment._run_batch([1], experiment.CONTROL)
+
+
+def test_run_batch_stops_started_workers_when_launch_fails(monkeypatch):
+    class Process:
+        def __init__(self):
+            self.returncode = None
+            self.terminated = False
+            self.waited = False
+
+        def poll(self):
+            return self.returncode
+
+        def terminate(self):
+            self.terminated = True
+            self.returncode = -15
+
+        def wait(self, timeout=None):
+            self.waited = True
+            return self.returncode
+
+        def kill(self):
+            self.returncode = -9
+
+    process = Process()
+    calls = iter((process, OSError("launch failed")))
+
+    def popen(*args, **kwargs):
+        value = next(calls)
+        if isinstance(value, BaseException):
+            raise value
+        return value
+
+    monkeypatch.setattr(experiment.subprocess, "Popen", popen)
+
+    with pytest.raises(OSError, match="launch failed"):
+        experiment._run_batch([1, 2], experiment.CONTROL)
+
+    assert process.terminated is True
+    assert process.waited is True
+
+
+def test_analysis_rejects_duplicate_worker_or_changed_fold_order():
+    results, strata = _results()
+    duplicate = list(results)
+    duplicate[-1] = dict(duplicate[0])
+    with pytest.raises(RuntimeError, match="duplicate worker"):
+        experiment.analyze(duplicate, strata)
+
+    changed = _results()[0]
+    changed[0]["folds"] = list(reversed(changed[0]["folds"]))
+    with pytest.raises(RuntimeError, match="fold order changed"):
+        experiment.analyze(changed, strata)
+
+
+def test_analysis_rejects_changed_lineage_or_invalid_rmse():
+    results, strata = _results()
+    results[1]["lineage_cluster"] = "changed"
+    with pytest.raises(RuntimeError, match="task identity changed"):
+        experiment.analyze(results, strata)
+
+    results, strata = _results()
+    for row in results:
+        if row["task_id"] == 19:
+            row["lineage_cluster"] = results[0]["lineage_cluster"]
+    with pytest.raises(RuntimeError, match="lineage identity is not unique"):
+        experiment.analyze(results, strata)
+
+    results, strata = _results()
+    results[0]["folds"][0]["rmse"] = float("nan")
+    with pytest.raises(RuntimeError, match="RMSE is invalid"):
+        experiment.analyze(results, strata)
+
+
 def test_recorded_artifact_closes_fresh_selector():
     raw = RECORDED_ARTIFACT.read_bytes()
     assert hashlib.sha256(raw).hexdigest() == EXPECTED_ARTIFACT_SHA256
@@ -186,3 +374,10 @@ def test_recorded_artifact_closes_fresh_selector():
     assert analysis["recommendation"] == (
         "close_fresh_smooth_margin_selector"
     )
+
+    audited = experiment.analyze(
+        artifact["results"],
+        {int(key): value for key, value in artifact["task_strata"].items()},
+    )
+    assert audited["recommendation"] == analysis["recommendation"]
+    assert audited["selector_selection_count"] == 11
