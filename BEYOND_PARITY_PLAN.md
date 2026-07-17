@@ -87,6 +87,15 @@ Execution began from published `main` at `ab86269`.
   overlap-exposed held-team and cold-player views by `+0.002239` and
   `+0.014869`, but the fatal primary gate stopped the campaign after one block;
   there is no timing claim and no ensemble API work.
+- L1/L2's 21-coordinate smooth development screen advances current-default
+  fixed linear leaves to selector design. They improved equal-task RMSE by
+  `7.97%` versus DarkoFit default, won all 21 splits, and beat ChimeraBoost's
+  linear-only lane by `3.63%`; the matched-policy variant was slightly worse.
+  ChimeraBoost product defaults remain `1.62%` better because their separate
+  cross-feature selector contributed `5.46%`. Global `linear_residual`
+  improved only `0.48%`, regressed on space_ga, and lost to local-linear
+  leaves on every dataset, satisfying the planned deprecation criterion.
+  This used folds 3–9 of spent development tasks only; the lockbox is sealed.
 
 ## Standing constraints (inherited, non-negotiable)
 
