@@ -33,6 +33,17 @@ remain upstream claims until independently reproduced here.*
 
 ### Current execution status (2026-07-17)
 
+- The scoped best-of-both execution program is complete and closed for the
+  mechanisms selected and authorized during this execution. Each has a
+  terminal decision at its declared frozen gate: basketball was the primary
+  fast screen, while safe ordinal retained its already-frozen 33-coordinate
+  TabArena decision and was not mischaracterized as basketball evidence. No
+  current candidate is authorized for the 243 development coordinates or
+  CTR23 lockbox. Untested calibration lanes, the generic validation
+  framework, broader campaign-library work, and Phase-5 infrastructure remain
+  separate future work. The requirement-by-requirement evidence ledger is
+  `benchmarks/best_of_both_completion_audit.md`; any future model mechanism
+  starts a new basketball-first protocol.
 - The first fused engine port is complete. DarkoFit now combines its existing
   unit-Hessian histogram builder and shared split scan in one feature-parallel
   launch for the narrow proven lane; all unsupported paths retain their exact
