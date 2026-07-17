@@ -43,6 +43,14 @@ def _bin_dtype_for_n_bins(n_bins):
     return np.uint32
 
 
+def _coerce_transform_block(block):
+    """Return float64 input without copying an already contiguous layout."""
+    block = np.asarray(block, dtype=np.float64)
+    if not (block.flags.c_contiguous or block.flags.f_contiguous):
+        block = np.ascontiguousarray(block)
+    return block
+
+
 def _feature_borders(col, max_bins):
     """Quantile borders for one numeric column, ignoring NaNs."""
     finite = col[np.isfinite(col)]
@@ -280,7 +288,7 @@ class Binner:
         for block in blocks:
             width = block.shape[1]
             if width:
-                block = np.ascontiguousarray(block, dtype=np.float64)
+                block = _coerce_transform_block(block)
                 _bin_rows_into(
                     block,
                     self._borders_flat_,
