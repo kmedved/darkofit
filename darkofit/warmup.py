@@ -11,13 +11,33 @@ Apache-2.0 warmup helper at commit
 851ab7fa79fbb2a7f698fbc1a00952e1bd18c62d. See ``NOTICE``.
 """
 
-import threading
 import time
+import warnings
 
 import numba
 import numpy as np
 
+from ._numba_runtime import start_background_warmup
 from .sklearn_api import DarkoClassifier, DarkoRegressor
+
+
+_FALSE_ENV_VALUES = {"", "0", "false", "off", "no"}
+_TRUE_ENV_VALUES = {"1", "true", "on", "yes"}
+_BACKGROUND_ENV_VALUES = {"background", "thread", "bg"}
+
+
+def _background_preflight():
+    try:
+        active_layer = numba.threading_layer()
+    except ValueError:
+        return
+    if active_layer == "workqueue":
+        raise RuntimeError(
+            "background warmup cannot start after Numba's non-threadsafe "
+            "workqueue layer has been initialized; start it during process "
+            "import, call warmup() synchronously, or configure a thread-safe "
+            "Numba threading layer such as TBB before import"
+        )
 
 
 def warmup(verbose=False, background=False):
@@ -29,10 +49,17 @@ def warmup(verbose=False, background=False):
     prediction. Call it during worker startup, outside latency that should
     represent a real fit or prediction.
 
-    Set ``DARKOFIT_WARMUP=1`` to run this function while importing
-    :mod:`darkofit`, or ``DARKOFIT_WARMUP=background`` to start it in a
-    daemon thread. Unset, empty, and ``0`` values leave ordinary imports
-    unchanged.
+    ``DARKOFIT_WARMUP`` accepts ``1``, ``true``, ``on``, or ``yes`` for a
+    blocking import-time warmup; ``background``, ``thread``, or ``bg`` for a
+    daemon-thread warmup; and ``0``, ``false``, ``off``, ``no``, or an empty
+    value to disable warmup. Values are case-insensitive and surrounding
+    whitespace is ignored.
+
+    Background mode is a single-flight startup operation. DarkoFit fit and
+    prediction calls wait before entering Numba until it finishes, avoiding
+    concurrent access to Numba's non-threadsafe ``workqueue`` backend. Start
+    it before the first Numba-backed fit; after ``workqueue`` is active, use
+    blocking warmup instead.
 
     Parameters
     ----------
@@ -47,14 +74,11 @@ def warmup(verbose=False, background=False):
         Elapsed wall-clock seconds, or the started thread in background mode.
     """
     if background:
-        thread = threading.Thread(
-            target=warmup,
+        return start_background_warmup(
+            warmup,
             kwargs={"verbose": verbose},
-            name="darkofit-warmup",
-            daemon=True,
+            preflight=_background_preflight,
         )
-        thread.start()
-        return thread
 
     started = time.perf_counter()
     rng = np.random.default_rng(0)
@@ -124,8 +148,28 @@ def warmup(verbose=False, background=False):
 
 def _warmup_from_env(value):
     """Dispatch the opt-in ``DARKOFIT_WARMUP`` import setting."""
-    if not value or value.strip() == "0":
+    if value is None:
         return None
-    if value.strip().lower() in {"background", "thread", "bg"}:
-        return warmup(background=True)
-    return warmup()
+    normalized = str(value).strip().lower()
+    if normalized in _FALSE_ENV_VALUES:
+        return None
+    if normalized in _TRUE_ENV_VALUES:
+        return warmup()
+    if normalized in _BACKGROUND_ENV_VALUES:
+        try:
+            return warmup(background=True)
+        except RuntimeError as exc:
+            warnings.warn(
+                f"DARKOFIT_WARMUP={normalized!r} was skipped: {exc}",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            return None
+    warnings.warn(
+        "unrecognized DARKOFIT_WARMUP value "
+        f"{value!r}; expected one of 0/false/off/no, 1/true/on/yes, "
+        "or background/thread/bg; warmup was skipped",
+        RuntimeWarning,
+        stacklevel=2,
+    )
+    return None

@@ -39,6 +39,15 @@ clf.save_model("model.npz")
 clf2 = DarkoClassifier.load_model("model.npz")
 ```
 
+Fresh workers can move Numba compilation out of their first real request with
+`darkofit.warmup()`. `DARKOFIT_WARMUP` accepts `1`/`true`/`on`/`yes` for
+blocking import-time warmup, `background`/`thread`/`bg` for single-flight
+background warmup, and `0`/`false`/`off`/`no`/empty to disable it; values are
+case-insensitive. Start background warmup before the first Numba-backed fit.
+DarkoFit fits and predictions wait for it to finish, preventing unsafe
+concurrent access to Numba's default `workqueue` backend. Once that backend is
+active, call blocking `warmup()` instead.
+
 Pandas, Polars, and PyArrow-style named tables are accepted without making
 those libraries mandatory dependencies. Named inputs may pass categorical
 columns by name (for example, `cat_features=["team", "position"]`), and

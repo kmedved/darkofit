@@ -9,6 +9,7 @@ import threading
 
 import numba
 import numpy as np
+import pytest
 
 from darkofit import DarkoClassifier, warmup
 
@@ -68,12 +69,98 @@ def test_warmup_compiles_representative_default_path_kernels():
         ), "full-machine contiguous-histogram signature was not compiled"
 
 
-def test_background_warmup_returns_daemon_thread_and_finishes():
-    thread = warmup(background=True)
-    assert isinstance(thread, threading.Thread)
-    assert thread.daemon
-    thread.join(timeout=300)
-    assert not thread.is_alive()
+def test_background_warmup_is_single_flight_and_safe_with_immediate_fit(
+    tmp_path,
+):
+    cache = tmp_path / "numba-cache"
+    cache.mkdir()
+    env = os.environ.copy()
+    env["DARKOFIT_WARMUP"] = "0"
+    env["NUMBA_CACHE_DIR"] = str(cache)
+    env["NUMBA_NUM_THREADS"] = "4"
+    env["PYTHONPATH"] = str(REPO_ROOT)
+    code = """
+import threading
+import numpy as np
+from darkofit import DarkoRegressor, warmup
+
+first = warmup(background=True)
+second = warmup(background=True)
+assert first is second
+assert isinstance(first, threading.Thread)
+assert first.daemon
+
+X = np.random.default_rng(7).normal(size=(4000, 8))
+y = X[:, 0] - 0.3 * X[:, 1]
+params = dict(
+    iterations=20,
+    learning_rate=0.1,
+    thread_count=4,
+    random_state=0,
+    diagnostic_warnings="never",
+)
+model = DarkoRegressor(**params).fit(X, y)
+prediction = model.predict(X[:8])
+assert prediction.shape == (8,)
+
+first.join(timeout=300)
+assert not first.is_alive()
+reference = DarkoRegressor(**params).fit(X, y).predict(X[:8])
+np.testing.assert_array_equal(prediction, reference)
+"""
+    subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=REPO_ROOT,
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+
+
+def test_background_env_is_safe_with_immediate_fit(tmp_path):
+    cache = tmp_path / "numba-cache"
+    cache.mkdir()
+    env = os.environ.copy()
+    env["DARKOFIT_WARMUP"] = "background"
+    env["NUMBA_CACHE_DIR"] = str(cache)
+    env["NUMBA_NUM_THREADS"] = "4"
+    env["PYTHONPATH"] = str(REPO_ROOT)
+    code = """
+import numpy as np
+import darkofit
+
+X = np.random.default_rng(7).normal(size=(4000, 8))
+y = X[:, 0] - 0.3 * X[:, 1]
+model = darkofit.DarkoRegressor(
+    iterations=20,
+    learning_rate=0.1,
+    thread_count=4,
+    random_state=0,
+    diagnostic_warnings="never",
+).fit(X, y)
+assert model.predict(X[:8]).shape == (8,)
+"""
+    completed = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=REPO_ROOT,
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    assert completed.stdout == ""
+    assert completed.stderr == ""
+
+
+def test_background_warmup_rejects_active_workqueue():
+    numba.get_num_threads()
+    if numba.threading_layer() != "workqueue":
+        pytest.skip("active Numba layer is thread-safe")
+    with pytest.raises(RuntimeError, match="workqueue.*initialized"):
+        warmup(background=True)
 
 
 def test_warmup_env_dispatch(monkeypatch):
@@ -84,13 +171,96 @@ def test_warmup_env_dispatch(monkeypatch):
         return "result"
 
     monkeypatch.setattr(warmup_module, "warmup", fake_warmup)
-    assert warmup_module._warmup_from_env(None) is None
-    assert warmup_module._warmup_from_env("") is None
-    assert warmup_module._warmup_from_env("0") is None
-    assert warmup_module._warmup_from_env(" 0 ") is None
-    assert warmup_module._warmup_from_env("1") == "result"
-    assert warmup_module._warmup_from_env("background") == "result"
-    assert calls == [{}, {"background": True}]
+    for value in (None, "", "0", " 0 ", "false", " FALSE ", "off", "No"):
+        assert warmup_module._warmup_from_env(value) is None
+    for value in ("1", " true ", "ON", "yes"):
+        assert warmup_module._warmup_from_env(value) == "result"
+    for value in ("background", " Thread ", "BG"):
+        assert warmup_module._warmup_from_env(value) == "result"
+    with pytest.warns(RuntimeWarning, match="unrecognized DARKOFIT_WARMUP"):
+        assert warmup_module._warmup_from_env("sometimes") is None
+    assert calls == [
+        {},
+        {},
+        {},
+        {},
+        {"background": True},
+        {"background": True},
+        {"background": True},
+    ]
+
+
+def test_warmup_env_background_failure_warns_and_skips(monkeypatch):
+    def unsafe_warmup(**kwargs):
+        assert kwargs == {"background": True}
+        raise RuntimeError("unsafe background")
+
+    monkeypatch.setattr(warmup_module, "warmup", unsafe_warmup)
+    with pytest.warns(RuntimeWarning, match="was skipped.*unsafe background"):
+        assert warmup_module._warmup_from_env("background") is None
+
+
+def test_numba_thread_masks_are_thread_local():
+    if numba.config.NUMBA_NUM_THREADS < 2:
+        pytest.skip("thread-local mask check requires at least two threads")
+    original = numba.get_num_threads()
+    main_threads = min(2, numba.config.NUMBA_NUM_THREADS)
+    worker_threads = min(3, numba.config.NUMBA_NUM_THREADS)
+    observed = []
+
+    try:
+        numba.set_num_threads(main_threads)
+
+        def set_worker_threads():
+            observed.append(numba.get_num_threads())
+            numba.set_num_threads(worker_threads)
+            observed.append(numba.get_num_threads())
+
+        thread = threading.Thread(target=set_worker_threads)
+        thread.start()
+        thread.join()
+
+        assert observed == [numba.config.NUMBA_NUM_THREADS, worker_threads]
+        assert numba.get_num_threads() == main_threads
+    finally:
+        numba.set_num_threads(original)
+
+
+def test_darkofit_thread_setup_waits_for_background_single_flight():
+    from darkofit._numba_runtime import start_background_warmup
+    from darkofit.booster import _apply_thread_count
+
+    background_started = threading.Event()
+    release_background = threading.Event()
+    foreground_started = threading.Event()
+    foreground_finished = threading.Event()
+    original = numba.get_num_threads()
+
+    def held_background():
+        background_started.set()
+        assert release_background.wait(timeout=30)
+
+    def apply_foreground_threads():
+        foreground_started.set()
+        _apply_thread_count(min(2, numba.config.NUMBA_NUM_THREADS))
+        foreground_finished.set()
+
+    background = start_background_warmup(held_background)
+    foreground = threading.Thread(target=apply_foreground_threads)
+    try:
+        assert background_started.wait(timeout=30)
+        foreground.start()
+        assert foreground_started.wait(timeout=30)
+        assert not foreground_finished.wait(timeout=0.1)
+    finally:
+        release_background.set()
+        background.join(timeout=30)
+        if foreground.ident is not None:
+            foreground.join(timeout=30)
+        numba.set_num_threads(original)
+    assert not background.is_alive()
+    assert not foreground.is_alive()
+    assert foreground_finished.is_set()
 
 
 def test_warmup_preserves_rng_threads_and_deterministic_output():
@@ -118,11 +288,15 @@ def test_warmup_preserves_rng_threads_and_deterministic_output():
     np.testing.assert_array_equal(reference, candidate)
 
 
-def test_ordinary_import_does_not_run_warmup(tmp_path):
+@pytest.mark.parametrize("env_value", [None, "false", " OFF ", "No"])
+def test_ordinary_import_does_not_run_warmup(tmp_path, env_value):
     cache = tmp_path / "numba-cache"
     cache.mkdir()
     env = os.environ.copy()
-    env.pop("DARKOFIT_WARMUP", None)
+    if env_value is None:
+        env.pop("DARKOFIT_WARMUP", None)
+    else:
+        env["DARKOFIT_WARMUP"] = env_value
     env["NUMBA_CACHE_DIR"] = str(cache)
     env["PYTHONPATH"] = str(REPO_ROOT)
     code = (

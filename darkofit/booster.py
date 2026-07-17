@@ -14,6 +14,7 @@ import time
 import warnings
 import numpy as np
 
+from ._numba_runtime import numba_thread_setup
 from ._validation import (
     coerce_feature_matrix,
     feature_names_from_input,
@@ -91,14 +92,15 @@ def _apply_thread_count(thread_count):
 
     Returns the effective thread count so callers can record it.
     """
-    import numba
-    max_threads = numba.config.NUMBA_NUM_THREADS
-    if thread_count is None or thread_count < 0:
-        n = max_threads
-    else:
-        n = max(1, min(int(thread_count), max_threads))
-    numba.set_num_threads(n)
-    return n
+    with numba_thread_setup():
+        import numba
+        max_threads = numba.config.NUMBA_NUM_THREADS
+        if thread_count is None or thread_count < 0:
+            n = max_threads
+        else:
+            n = max(1, min(int(thread_count), max_threads))
+        numba.set_num_threads(n)
+        return n
 
 
 def _fit_thread_count(thread_count, tree_mode_, n_samples):

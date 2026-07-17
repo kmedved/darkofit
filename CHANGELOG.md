@@ -40,6 +40,27 @@ They do not change its valid-input prediction, archive, or timing evidence.
 The campaign's prediction-only `assume_finite` wording is superseded by the
 consistent fit/evaluation/prediction escape hatch above.
 
+### Warmup environment safety
+
+`DARKOFIT_WARMUP` now has an explicit, case-insensitive grammar:
+`0`/`false`/`off`/`no`/empty disable it; `1`/`true`/`on`/`yes` run blocking
+warmup; and `background`/`thread`/`bg` request background warmup. Surrounding
+whitespace is ignored. Unknown values warn and skip warmup instead of
+accidentally doing expensive import work.
+
+Background warmup is now single-flight. DarkoFit fit and prediction calls wait
+before entering Numba until it completes, preventing the default non-threadsafe
+Numba `workqueue` backend from terminating the process on concurrent parallel
+execution. A programmatic background request made after `workqueue` is active
+raises with migration guidance; the environment dispatcher warns and skips so
+package import remains usable. Start background warmup during import/startup,
+use blocking `warmup()` after Numba is active, or configure a thread-safe Numba
+backend such as TBB before import. Numba thread masks are thread-local, so the
+warmup thread's existing snapshot/restore does not mutate a caller thread.
+This hardening preserves the frozen basketball campaign's blocking-warmup
+timing and exactness evidence; its background completion check did not exercise
+concurrent DarkoFit work.
+
 * Harden the shared wrapper/core input boundary: reject masked, complex,
   infinite-by-default, sparse, empty training/evaluation, and malformed inputs
   before lossy conversion while preserving shape-correct empty prediction;
