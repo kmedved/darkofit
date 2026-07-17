@@ -1,10 +1,22 @@
 from __future__ import annotations
 
+import hashlib
 import json
+from pathlib import Path
 
 import pytest
 
 from benchmarks import run_basketball_random_strength as experiment
+
+
+RECORDED_ARTIFACT = (
+    Path(__file__).resolve().parents[1]
+    / "benchmarks"
+    / "basketball_random_strength.json"
+)
+EXPECTED_ARTIFACT_SHA256 = (
+    "e8f98c47191c19fa1a20d5133ed2c071c6c36511e7d4b6380ec0cf998a94e906"
+)
 
 
 def _scores(mean: float) -> list[float]:
@@ -91,3 +103,28 @@ def test_worker_process_requires_one_result(monkeypatch, tmp_path):
         ["--output", str(tmp_path / "out.json"), "--threads", "2"]
     )
     assert experiment._run_worker_process(args, experiment.CONTROL)["ok"]
+
+
+def test_recorded_artifact_keeps_half_strength_on_clean_bound_source():
+    raw = RECORDED_ARTIFACT.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == EXPECTED_ARTIFACT_SHA256
+    artifact = json.loads(raw)
+
+    assert artifact["source"]["clean"] is True
+    assert artifact["source"]["head"] == (
+        "a7519f2942ccd2eba9d9b9c3a26c78f0220ef4c9"
+    )
+    assert artifact["protocol"]["protocol_sha256"] == hashlib.sha256(
+        experiment.PROTOCOL_PATH.read_bytes()
+    ).hexdigest()
+    assert artifact["protocol"]["runner_sha256"] == hashlib.sha256(
+        Path(experiment.__file__).read_bytes()
+    ).hexdigest()
+    assert artifact["advancing_candidate"] == "random_strength_0_5"
+    assert artifact["conclusion"] == "keep_and_confirm_random_strength_0_5"
+    assert artifact["decisions"]["random_strength_0_5"][
+        "passes_quality_gates"
+    ]
+    assert not artifact["decisions"]["random_strength_1_0"][
+        "passes_quality_gates"
+    ]

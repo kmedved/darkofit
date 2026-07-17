@@ -44,6 +44,13 @@ Execution began from published `main` at `ab86269`.
   gradient/Hessian work. Gaussian LightGBM is the selected drill-down.
   Four-class per-class CatBoost was also materially faster per round than the
   shared-vector LightGBM path on this workload; this is diagnostic only.
+- Z1's required cheap `random_strength` screen found evidence to retain the
+  knob: `0.5` gained `+0.002124` mean creator-fold R², passed every
+  leave-one-fold-out check, and improved overlap-exposed held-team and
+  cold-player R² by `+0.006087` and `+0.007300`. It stays opt-in because the
+  one-shot wall cost was roughly 50% higher; promotion requires S4's fresh
+  sports suite. `1.0` failed. The remaining Z1 parameters proceed to 0.10
+  warning preparation without this one.
 
 ## Standing constraints (inherited, non-negotiable)
 
