@@ -95,6 +95,16 @@ previous behaviors remain available through explicit parameters.
   mean, leave-one-fold-out, held-team, and cold-player quality gates, so it
   remains opt-in research and does not advance to broader development
   validation.
+* Close ChimeraBoost 0.15.0's pairwise categorical-combinations donor
+  mechanism before any DarkoFit port. In the frozen four-feature categorical
+  basketball view, six pair columns reduced mean ten-fold R² by 0.001024,
+  held-team R² by 0.046489, and genuinely cold-player R² by 0.091404. They
+  also made held-team prediction 2.843x slower and cold-player prediction
+  1.653x slower. Exact routing, repeatability, numeric non-engagement, timing
+  stability, and memory gates passed, so this is a mechanism rejection rather
+  than a harness failure. No API, default, donor code, broader campaign, or
+  lockbox spend is authorized; see the
+  [basketball result](benchmarks/basketball_categorical_combinations_result.md).
 * Fix symmetric/shared split legality so an already-pure leaf's empty child
   contributes zero gain instead of vetoing a useful split for every other
   active leaf. Sparse non-empty children still obey `min_child_weight` and the

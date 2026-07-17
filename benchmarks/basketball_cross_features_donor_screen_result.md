@@ -54,8 +54,9 @@ this is not a formal runtime claim and did not affect the decision.
 - Do not implement the automatic numeric selector in DarkoFit.
 - Do not spend a broader development panel or any lockbox evidence on this
   candidate.
-- Keep `cat_combinations` as a separate categorical research question. This
-  all-numeric basketball screen cannot resolve it.
+- This all-numeric basketball screen did not resolve `cat_combinations`. The
+  separate all-categorical mechanism was subsequently tested and closed in
+  [`basketball_categorical_combinations_result.md`](basketball_categorical_combinations_result.md).
 - Continue to use basketball first for the next isolated candidate, with mean
   folds, held-team, and cold-player outcomes all treated as fatal gates.
 

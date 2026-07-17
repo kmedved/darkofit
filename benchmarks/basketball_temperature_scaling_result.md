@@ -50,6 +50,7 @@ metric bins, or thresholds after observing the result.
 - No product source changed and no ChimeraBoost code was copied.
 
 Basketball remains the primary fatal development screen for mechanisms that
-can activate on its numeric sports features. All-categorical
-`cat_combinations` still requires a genuinely categorical boundary and gains
-no evidence from this result.
+can activate on its numeric sports features. This result supplied no evidence
+about all-categorical `cat_combinations`; that separate mechanism was
+subsequently tested and closed in
+[`basketball_categorical_combinations_result.md`](basketball_categorical_combinations_result.md).

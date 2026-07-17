@@ -2,11 +2,12 @@
 
 *Drafted 2026-07-16 from a review of ChimeraBoost @ `29602d3` (the frozen
 basketball comparator; version 0.14.2 + ~40 commits) against DarkoFit @
-`20e6ee8`. Reviewed and corrected against DarkoFit @ `3295f70` and the synced
-ChimeraBoost local/origin/upstream heads, all still exactly `29602d3`. Numbers
-described as DarkoFit evidence below come from frozen artifacts in
-`benchmarks/`; claims attributed to ChimeraBoost's research remain upstream
-claims until independently reproduced here.*
+`20e6ee8`. Initial corrections were checked against DarkoFit @ `3295f70` and
+that comparator. Subsequent donor screens use the synced ChimeraBoost 0.15.0
+local/origin/upstream head at `851ab7f` and bind it in their own frozen
+protocols. Numbers described as DarkoFit evidence below come from frozen
+artifacts in `benchmarks/`; claims attributed to ChimeraBoost's research
+remain upstream claims until independently reproduced here.*
 
 ### Review corrections that govern execution
 
@@ -88,9 +89,16 @@ claims until independently reproduced here.*
   selector activated on four folds and improved only one. The slight
   +0.000476 overlap-exposed team-holdout gain does not rescue a sports
   candidate that fails unseen players. Do not port the automatic selector or
-  spend broader evidence on it. `cat_combinations` remains a separate
-  categorical research question; see
+  spend broader evidence on it; see
   `basketball_cross_features_donor_screen_result.md`.
+- The separate all-categorical `cat_combinations` donor screen is also closed.
+  Six pair columns reduced mean creator-fold R² by 0.001024, held-team R² by
+  0.046489, and genuinely cold-player R² by 0.091404. Prediction was 2.843x
+  slower on held teams and 1.653x slower on cold players. Exact routing,
+  repeats, numeric non-engagement, timing stability, and memory checks passed,
+  confirming a mechanism failure rather than a harness failure. Do not port,
+  retune, or broaden it; see
+  `basketball_categorical_combinations_result.md`.
 - Binary temperature scaling is also closed before implementation. On the
   frozen starter target it improved log loss on only 5 of 10 creator folds,
   worsened pooled log loss/Brier/ECE, and worsened all three metrics on both
@@ -386,9 +394,11 @@ gate is frozen in advance.
     the donor's top-pair diff/prod implementation lost 0.001042 mean R² and
     0.013881 cold-player R² on basketball, with only one external improvement
     among four selected folds. Do not port or promote it.
-    All-categorical `cat_combinations` remains unresolved and needs its own
-    future categorical protocol; the numeric basketball screen supplies no
-    evidence for or against that distinct mechanism.
+    **All-categorical combinations closed 2026-07-17:** the separately frozen
+    four-feature basketball screen lost 0.001024 mean-fold R², 0.046489
+    held-team R², and 0.091404 cold-player R², while making held-team
+    prediction 2.843x slower. Do not port, retune, or advance it. A future
+    categorical proposal must be a materially different mechanism.
 11. **Mode-mix diagnostic deferred.** Do not rerun A10 selector shares with
     linear leaves or the ordinal lane while their automatic policies remain
     rejected. Reopen this diagnostic only if a materially different mechanism
@@ -546,9 +556,12 @@ refit (`get_refit_params`); callbacks + WallClockStopper; `groups` support;
 4. **Basketball remains next:** every new mechanism starts on the unchanged
    creator folds, overlap-exposed held-team view, and 585-row cold-player
    subset. A failure on any sports guardrail stops it before broader data.
-5. **Separate categorical track:** safe ordinal and all-categorical
-   `cat_combinations` each require their own protocol; numeric basketball
-   evidence cannot promote or reject them.
+5. **Closed categorical candidates:** safe ordinal failed its frozen causal
+   inference-time gate, and the separately frozen all-categorical
+   `cat_combinations` mechanism failed every basketball quality gate plus both
+   prediction-cost gates. Do not retune or broaden either observed candidate.
+   Reopen categorical work only for a materially different mechanism under a
+   new protocol.
 6. Only a basketball survivor may enter the 243 development coordinates,
    then a genuinely fresh preregistered gate with sufficient simulated power;
    only then consider the one-shot lockbox.
