@@ -28,6 +28,27 @@ def test_native_ordinal_c2_declarations_are_frozen_before_current_head():
     assert len(declarations["development_tasks"]) == 8
     assert len(declarations["confirmation_tasks"]) == 5
     assert declarations["coordinate_folds"] == [0, 1, 2]
+    dimensions = declarations["official_split_dimensions"]
+    assert set(dimensions) == {
+        str(row["task_id"])
+        for tier in ("development_tasks", "confirmation_tasks")
+        for row in declarations[tier]
+    }
+    assert dimensions["363631"] == {
+        "repeats": 10,
+        "folds": 3,
+        "samples": 1,
+    }
+    assert dimensions["361622"] == {
+        "repeats": 10,
+        "folds": 10,
+        "samples": 1,
+    }
+    assert sum(value == {
+        "repeats": 1,
+        "folds": 10,
+        "samples": 1,
+    } for value in dimensions.values()) == 11
     assert sum(
         bool(row["ordinal_features"])
         for row in declarations["development_tasks"]

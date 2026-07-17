@@ -40,7 +40,12 @@ target-blind.
 Every task uses official OpenML repeat `0`, folds `0`, `1`, and `2`, sample
 `0`. The builder must bind task ID, dataset ID/name, default target name,
 feature-only fingerprint, opaque target digest, exact feature domains, and
-official split hashes. Any drift fails closed.
+official split hashes. The declarations bind the full official split
+dimensions per task: Diamonds has 10 repeats by 3 folds, cars has 10 repeats
+by 10 folds, and the other 11 tasks have 1 repeat by 10 folds. Any drift fails
+closed. This dimension table was added after the first target-blind registry
+attempt correctly failed on Diamonds' 10-by-3 shape; no model was fit and no
+C2 target outcome was inspected.
 
 ## Development panel
 

@@ -8,6 +8,73 @@
     1,
     2
   ],
+  "official_split_dimensions": {
+    "361236": {
+      "repeats": 1,
+      "folds": 10,
+      "samples": 1
+    },
+    "361252": {
+      "repeats": 1,
+      "folds": 10,
+      "samples": 1
+    },
+    "361268": {
+      "repeats": 1,
+      "folds": 10,
+      "samples": 1
+    },
+    "361622": {
+      "repeats": 10,
+      "folds": 10,
+      "samples": 1
+    },
+    "363631": {
+      "repeats": 10,
+      "folds": 3,
+      "samples": 1
+    },
+    "363372": {
+      "repeats": 1,
+      "folds": 10,
+      "samples": 1
+    },
+    "363375": {
+      "repeats": 1,
+      "folds": 10,
+      "samples": 1
+    },
+    "363471": {
+      "repeats": 1,
+      "folds": 10,
+      "samples": 1
+    },
+    "363221": {
+      "repeats": 1,
+      "folds": 10,
+      "samples": 1
+    },
+    "363217": {
+      "repeats": 1,
+      "folds": 10,
+      "samples": 1
+    },
+    "363227": {
+      "repeats": 1,
+      "folds": 10,
+      "samples": 1
+    },
+    "363226": {
+      "repeats": 1,
+      "folds": 10,
+      "samples": 1
+    },
+    "363201": {
+      "repeats": 1,
+      "folds": 10,
+      "samples": 1
+    }
+  },
   "development_tasks": [
     {
       "task_id": 361236,

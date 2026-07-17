@@ -482,12 +482,15 @@ def build() -> dict[str, Any]:
     task_ids = [int(row["task_id"]) for row in all_declarations]
     dataset_ids = [int(row["dataset_id"]) for row in all_declarations]
     clusters = [str(row["lineage_cluster"]) for row in all_declarations]
+    split_dimensions = declarations.get("official_split_dimensions")
     if (
         len(development_declarations) != 8
         or len(confirmation_declarations) != POWER_LINEAGES
         or len(set(task_ids)) != len(task_ids)
         or len(set(dataset_ids)) != len(dataset_ids)
         or len(set(clusters)) != len(clusters)
+        or not isinstance(split_dimensions, dict)
+        or set(split_dimensions) != {str(task_id) for task_id in task_ids}
     ):
         raise RuntimeError("native-ordinal C2 panel composition changed")
 
@@ -506,10 +509,8 @@ def build() -> dict[str, Any]:
             raise RuntimeError(f"task {task_id} target drifted")
         if int(task_record["openml_task_type_id"]) != 2:
             raise RuntimeError(f"task {task_id} is not regression")
-        if task_record["official_splits"]["dimensions"] not in (
-            {"repeats": 1, "folds": 10, "samples": 1},
-            {"repeats": 10, "folds": 10, "samples": 1},
-        ):
+        expected_dimensions = split_dimensions[str(task_id)]
+        if task_record["official_splits"]["dimensions"] != expected_dimensions:
             raise RuntimeError(f"task {task_id} split shape changed")
         task_records[task_id] = task_record
         feature_records[task_id] = _feature_record(
