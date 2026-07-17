@@ -126,6 +126,7 @@ def _flat_linear_oblivious_add_parallel(
 # into each out[i] still happen in ascending tree order, so results remain
 # bitwise identical to per-tree add_predict calls.
 _ROW_BLOCK = 256
+_SCALAR_NONOBLIVIOUS_ROW_BLOCK = 64
 
 
 @njit(cache=True)
@@ -170,6 +171,43 @@ def _flat_nonoblivious_add_parallel(X_binned, node_offsets, features,
                     else:
                         node = left_child[base + node]
                 out[i] += values[voff + leaf_index[base + node]]
+
+
+@njit(cache=True, parallel=True)
+def _flat_nonoblivious_scalar_add_parallel(
+    X_binned,
+    node_offsets,
+    features,
+    thresholds,
+    left_child,
+    right_child,
+    leaf_index,
+    value_offsets,
+    values,
+    out,
+):
+    """Scalar explicit-node forest walk with basketball-sized row blocks."""
+    n = X_binned.shape[0]
+    n_trees = node_offsets.shape[0] - 1
+    block_size = _SCALAR_NONOBLIVIOUS_ROW_BLOCK
+    n_blocks = (n + block_size - 1) // block_size
+    for block in prange(n_blocks):
+        start = block * block_size
+        end = min(n, start + block_size)
+        for tree in range(n_trees):
+            base = node_offsets[tree]
+            value_offset = value_offsets[tree]
+            for row in range(start, end):
+                node = 0
+                while left_child[base + node] >= 0:
+                    if (
+                        X_binned[row, features[base + node]]
+                        > thresholds[base + node]
+                    ):
+                        node = right_child[base + node]
+                    else:
+                        node = left_child[base + node]
+                out[row] += values[value_offset + leaf_index[base + node]]
 
 
 @njit(cache=True, parallel=True)
@@ -510,6 +548,14 @@ class FlatNonObliviousEnsemble:
                 self.value_offsets, self.values, out
             )
 
+    def add_predict_scalar_packed(self, X_binned, out):
+        """Use the dedicated two-thread scalar packed kernel."""
+        _flat_nonoblivious_scalar_add_parallel(
+            X_binned, self.node_offsets, self.features, self.thresholds,
+            self.left_child, self.right_child, self.leaf_index,
+            self.value_offsets, self.values, out
+        )
+
     def add_predict_class_major(self, X_binned, out):
         if self.class_ids is not None:
             _flat_nonoblivious_class_add_parallel(
@@ -587,23 +633,41 @@ class FlatLevelwiseEnsemble:
         )
 
 
-def flat_predict_preferred(flat):
+def flat_predict_preferred(flat, n_rows=None, tree_mode=None):
     """Empirical routing for batch prediction.
 
     The fused kernel is a clear win for oblivious ensembles with threads
     (branch-free fixed-depth walks; the per-tree oblivious kernel is serial).
-    For explicit-node leaf-wise trees the per-tree parallel loop measured at
-    parity or better at every thread count tried, and single-threaded the
-    per-tree loop won for every family, so those keep the loop. Level-wise trees
-    have only serial per-tree kernels, so the flattened row-parallel kernel is
-    preferred when multiple threads are available.
+    Scalar LightGBM explicit-node forests use a separately confirmed packed
+    lane only for bounded two-thread work. Other explicit-node routes keep the
+    per-tree loop. Level-wise trees have only serial per-tree kernels, so the
+    flattened row-parallel kernel is preferred when multiple threads are
+    available.
     """
-    return (
+    standard_route = (
         isinstance(flat, FlatObliviousEnsemble) and get_num_threads() > 1
     ) or (
         isinstance(flat, FlatLinearObliviousEnsemble)
     ) or (
         isinstance(flat, FlatLevelwiseEnsemble) and get_num_threads() > 1
+    )
+    if standard_route:
+        return True
+    if (
+        not isinstance(flat, FlatNonObliviousEnsemble)
+        or n_rows is None
+        or tree_mode != "lightgbm"
+        or get_num_threads() != 2
+        or flat.class_ids is not None
+        or flat.values.ndim != 1
+    ):
+        return False
+    tree_count = flat.node_offsets.shape[0] - 1
+    row_count = int(n_rows)
+    return (
+        tree_count >= 5
+        and row_count * tree_count >= 32768
+        and row_count <= 32768
     )
 
 

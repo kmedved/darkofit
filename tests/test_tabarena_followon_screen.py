@@ -325,7 +325,16 @@ def _valid_followon_warmup_history(thread_count=18):
     for spec in screen.WARMUP_STAGE_SPECS:
         input_kind = spec["input_kind"]
         mode = spec["tree_mode"]
-        router = mode == "catboost" and thread_count > 1
+        resolved_threads = (
+            min(thread_count, 2)
+            if mode in {"lightgbm", "hybrid"}
+            else thread_count
+        )
+        router = (
+            mode == "catboost" and resolved_threads > 1
+        ) or (
+            mode == "lightgbm" and resolved_threads == 2
+        )
         encoding = "kfold" if mode in {"lightgbm", "hybrid"} else "ordered"
         width = 12 if input_kind == "numeric" else 13
         stages.append(
@@ -353,11 +362,7 @@ def _valid_followon_warmup_history(thread_count=18):
                 "linear_residual_active": spec["linear_residual"],
                 "resolved_learning_rate": 0.1,
                 "resolved_ordered_boosting": False,
-                "resolved_thread_count": (
-                    min(thread_count, 2)
-                    if mode in {"lightgbm", "hybrid"}
-                    else thread_count
-                ),
+                "resolved_thread_count": resolved_threads,
                 "resolved_target_encoding_mode": encoding,
                 "resolved_include_cat_codes": mode in {"lightgbm", "hybrid"},
                 "resolved_ts_permutations": spec["ts_permutations"],
@@ -375,7 +380,11 @@ def _valid_followon_warmup_history(thread_count=18):
                 "prediction_batches": [
                     {
                         "name": "serial_subthreshold",
-                        "route": "flat_serial" if router else "tree_loop",
+                        "route": (
+                            "flat_parallel"
+                            if router and mode == "lightgbm"
+                            else ("flat_serial" if router else "tree_loop")
+                        ),
                         "input_shape": [8_191, width],
                         "prediction_shape": [8_191],
                         "predict_seconds": 0.01,
@@ -441,6 +450,16 @@ def test_followon_warmup_and_inherited_provenance_are_source_frozen():
     history = _valid_followon_warmup_history()
     screen._validate_followon_warmup_history(
         history, expected_thread_count=18, expected_latest_pid=123
+    )
+    legacy_history = deepcopy(history)
+    legacy_history[0]["warmup"]["schema_version"] = 1
+    for stage in legacy_history[0]["warmup"]["stages"]:
+        if stage["resolved_tree_mode"] == "lightgbm":
+            stage["flat_prediction_router_selected"] = False
+            for batch in stage["prediction_batches"]:
+                batch["route"] = "tree_loop"
+    screen._validate_followon_warmup_history(
+        legacy_history, expected_thread_count=18, expected_latest_pid=123
     )
     with pytest.raises(RuntimeError, match="not produced by this run"):
         screen._validate_followon_warmup_history(

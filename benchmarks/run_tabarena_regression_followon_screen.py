@@ -2292,8 +2292,11 @@ def _validate_followon_warmup_history(
             "stages",
         }:
             raise RuntimeError("follow-on warmup metadata fields are incomplete")
+        warmup_schema = hardened._exact_int(
+            warmup["schema_version"], "follow-on warmup schema"
+        )
         if (
-            warmup["schema_version"] != WARMUP_SCHEMA_VERSION
+            warmup_schema not in {1, WARMUP_SCHEMA_VERSION}
             or warmup["kind"] != WARMUP_KIND
             or warmup["clock"] != "time.monotonic_ns"
         ):
@@ -2405,7 +2408,14 @@ def _validate_followon_warmup_history(
                 if expected_mode == "catboost"
                 else "FlatNonObliviousEnsemble"
             )
-            expected_router = expected_mode == "catboost" and expected_thread_count > 1
+            expected_router = (
+                expected_mode == "catboost" and expected_resolved_threads > 1
+            )
+            if warmup_schema >= 2:
+                expected_router = expected_router or (
+                    expected_mode == "lightgbm"
+                    and expected_resolved_threads == 2
+                )
             if (
                 stage["flat_ensemble_type"] != expected_flat_type
                 or flat_selected is not expected_router
@@ -2428,7 +2438,16 @@ def _validate_followon_warmup_history(
                 name = "serial_subthreshold" if batch_index == 0 else "parallel_at_threshold"
                 route = "tree_loop"
                 if expected_router:
-                    route = "flat_serial" if batch_index == 0 else "flat_parallel"
+                    route = (
+                        "flat_parallel"
+                        if warmup_schema >= 2
+                        and expected_mode == "lightgbm"
+                        else (
+                            "flat_serial"
+                            if batch_index == 0
+                            else "flat_parallel"
+                        )
+                    )
                 width = 12 if input_kind == "numeric" else 13
                 if (
                     batch["name"] != name

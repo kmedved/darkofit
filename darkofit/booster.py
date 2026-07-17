@@ -42,6 +42,7 @@ from .callbacks import (
     _normalize_callbacks,
 )
 from .flat_model import (
+    FlatNonObliviousEnsemble,
     build_flat_ensemble,
     build_flat_multiclass_ensemble,
     flat_predict_preferred,
@@ -2638,8 +2639,13 @@ class GradientBoosting(_BaseBooster):
         X_binned = self.prep_.transform(X)
         F = np.full(X_binned.shape[0], self.init_, dtype=np.float64)
         flat = self._flat_ensemble()
-        if flat is not None and flat_predict_preferred(flat):
-            flat.add_predict(X_binned, F)
+        if flat is not None and flat_predict_preferred(
+            flat, X_binned.shape[0], self.tree_mode_
+        ):
+            if isinstance(flat, FlatNonObliviousEnsemble):
+                flat.add_predict_scalar_packed(X_binned, F)
+            else:
+                flat.add_predict(X_binned, F)
         else:
             for tree in self.trees_:
                 tree.add_predict(X_binned, F)

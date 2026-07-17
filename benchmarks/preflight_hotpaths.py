@@ -96,7 +96,9 @@ def _flat_preflight(seed: int, threads: int) -> dict:
     X_predict = np.random.default_rng(seed + 1).normal(size=(100_000, 20))
     X_binned = booster.prep_.transform(X_predict)
     flat = booster._flat_ensemble()
-    router_selected = flat is not None and flat_predict_preferred(flat)
+    router_selected = flat is not None and flat_predict_preferred(
+        flat, X_binned.shape[0], booster.tree_mode_
+    )
 
     def optimized():
         out = np.full(X_binned.shape[0], booster.init_, dtype=np.float64)

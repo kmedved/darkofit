@@ -19,7 +19,11 @@ import numba
 import numpy as np
 
 from darkofit import DarkoRegressor
-from darkofit.flat_model import _PARALLEL_MIN_ROWS, flat_predict_preferred
+from darkofit.flat_model import (
+    _PARALLEL_MIN_ROWS,
+    FlatNonObliviousEnsemble,
+    flat_predict_preferred,
+)
 
 try:
     from benchmarks.tabarena_warmup import _make_warmup_data, _prediction_batch
@@ -27,7 +31,9 @@ except ModuleNotFoundError:  # Direct execution from ``benchmarks``.
     from tabarena_warmup import _make_warmup_data, _prediction_batch
 
 
-WARMUP_SCHEMA_VERSION = 1
+# Version 2 records the row-dependent scalar LightGBM packed route. Version 1
+# histories remain valid legacy artifacts and are handled by the runner.
+WARMUP_SCHEMA_VERSION = 2
 WARMUP_KIND = "darkofit_tabarena_followon_screen_warmup"
 WARMUP_STAGE_SPECS: tuple[dict[str, Any], ...] = (
     {
@@ -161,10 +167,13 @@ def _run_stage(
 
     fitted = model.model_
     flat = fitted._flat_ensemble()
-    flat_selected = flat is not None and flat_predict_preferred(flat)
     batches = []
+    selected_routes = []
     for case_name, n_rows in _PREDICTION_CASES:
         prediction_input = _prediction_batch(X_validation, n_rows)
+        flat_selected = flat is not None and flat_predict_preferred(
+            flat, n_rows, fitted.tree_mode_
+        )
         predict_started_ns = time.monotonic_ns()
         prediction = np.asarray(model.predict(prediction_input), dtype=np.float64)
         predict_seconds = _elapsed_seconds(predict_started_ns)
@@ -172,7 +181,15 @@ def _run_stage(
             raise RuntimeError(f"follow-on warmup prediction failed for {spec['name']}")
         route = "tree_loop"
         if flat_selected:
-            route = "flat_parallel" if n_rows >= _PARALLEL_MIN_ROWS else "flat_serial"
+            if isinstance(flat, FlatNonObliviousEnsemble):
+                route = "flat_parallel"
+            else:
+                route = (
+                    "flat_parallel"
+                    if n_rows >= _PARALLEL_MIN_ROWS
+                    else "flat_serial"
+                )
+        selected_routes.append(flat_selected)
         batches.append(
             {
                 "name": case_name,
@@ -215,7 +232,7 @@ def _run_stage(
             int(encoder.ts_permutations) for encoder in encoders
         ],
         "flat_ensemble_type": type(flat).__name__,
-        "flat_prediction_router_selected": bool(flat_selected),
+        "flat_prediction_router_selected": any(selected_routes),
         "prediction_parallel_min_rows": int(_PARALLEL_MIN_ROWS),
         "prediction_batches": batches,
     }

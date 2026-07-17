@@ -185,14 +185,18 @@ def _run_stage(
 
     fitted = model.model_
     flat = fitted._flat_ensemble()
-    router_selected = flat is not None and flat_predict_preferred(flat)
 
     prediction_batches: list[dict[str, Any]] = []
+    selected_routes = []
     for case_name, n_rows in _PREDICTION_CASES:
         prediction_input = _prediction_batch(X_validation, n_rows)
+        router_selected = flat is not None and flat_predict_preferred(
+            flat, n_rows, fitted.tree_mode_
+        )
         predict_started_ns = time.monotonic_ns()
         prediction = model.predict(prediction_input)
         predict_seconds = _elapsed_seconds(predict_started_ns)
+        selected_routes.append(router_selected)
         prediction_batches.append(
             {
                 "name": case_name,
@@ -220,7 +224,7 @@ def _run_stage(
         "resolved_ordered_boosting": bool(fitted.ordered_boosting_),
         "resolved_thread_count": int(fitted.n_threads_),
         "flat_ensemble_type": type(flat).__name__,
-        "flat_prediction_router_selected": bool(router_selected),
+        "flat_prediction_router_selected": any(selected_routes),
         "prediction_parallel_min_rows": int(_PARALLEL_MIN_ROWS),
         "prediction_batches": prediction_batches,
     }
