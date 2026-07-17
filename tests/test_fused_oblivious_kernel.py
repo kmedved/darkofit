@@ -101,6 +101,9 @@ def test_fused_unit_hessian_kernel_is_exact(
             feature_mask,
             min_child_weight,
             *fused_scratch,
+            np.arange(n_features, dtype=np.int64),
+            np.empty(0, dtype=np.int64),
+            True,
         )
 
         assert actual == expected
@@ -166,7 +169,154 @@ def test_fused_variable_hessian_kernel_is_exact(
             feature_mask,
             min_child_weight,
             *fused_scratch,
+            np.arange(n_features, dtype=np.int64),
+            np.empty(0, dtype=np.int64),
+            True,
         )
+
+        assert actual == expected
+        np.testing.assert_array_equal(fused_g, reference_g)
+        np.testing.assert_array_equal(fused_h, reference_h)
+    finally:
+        _set_threads(previous)
+
+
+@pytest.mark.parametrize("constant_hessian", [True, False])
+@pytest.mark.parametrize(
+    ("feature_indices", "row_indices"),
+    [
+        (np.array([4, 0, 2], dtype=np.int64), None),
+        (None, np.arange(1, 257, 2, dtype=np.int64)),
+        (
+            np.array([4, 0, 2], dtype=np.int64),
+            np.arange(1, 257, 2, dtype=np.int64),
+        ),
+    ],
+)
+def test_fused_subset_kernel_is_exact(
+    constant_hessian, feature_indices, row_indices
+):
+    previous = _set_threads(4)
+    try:
+        X, grad, leaf, n_bins = _varied_bin_case(seed=17)
+        hess = np.random.default_rng(41).uniform(0.1, 2.0, size=len(X))
+        n_features = X.shape[1]
+        n_leaves = 8
+        max_bins = int(n_bins.max())
+        feature_mask = np.ones(n_features, dtype=np.int64)
+        if feature_indices is not None:
+            feature_mask[:] = 0
+            feature_mask[feature_indices] = 1
+        reference_g, reference_h = _hist_buffers(
+            n_features, n_leaves, max_bins, fill=17.0
+        )
+        fused_g, fused_h = _hist_buffers(
+            n_features, n_leaves, max_bins, fill=17.0
+        )
+        reference_scratch = _split_buffers(n_features, n_leaves)
+        fused_scratch = tuple(buffer.copy() for buffer in reference_scratch)
+
+        if constant_hessian:
+            if feature_indices is None:
+                _build = tree_module._build_histograms_rows_unit_hess_into
+                _build(
+                    X, grad, leaf, n_leaves, reference_g, reference_h,
+                    row_indices
+                )
+            elif row_indices is None:
+                _build = tree_module._build_histograms_selected_unit_hess_into
+                _build(
+                    X, grad, leaf, n_leaves, reference_g, reference_h,
+                    feature_indices
+                )
+            else:
+                _build = (
+                    tree_module._build_histograms_selected_rows_unit_hess_into
+                )
+                _build(
+                    X, grad, leaf, n_leaves, reference_g, reference_h,
+                    feature_indices, row_indices
+                )
+        elif feature_indices is None:
+            _build = tree_module._build_histograms_rows_into
+            _build(
+                X, grad, hess, leaf, n_leaves, reference_g, reference_h,
+                row_indices
+            )
+        elif row_indices is None:
+            _build = tree_module._build_histograms_selected_into
+            _build(
+                X, grad, hess, leaf, n_leaves, reference_g, reference_h,
+                feature_indices
+            )
+        else:
+            _build = tree_module._build_histograms_selected_rows_into
+            _build(
+                X, grad, hess, leaf, n_leaves, reference_g, reference_h,
+                feature_indices, row_indices
+            )
+
+        expected = _best_split(
+            reference_g,
+            reference_h,
+            n_bins,
+            3.0,
+            feature_mask,
+            1.0,
+            n_leaves,
+            *reference_scratch,
+        )
+        if constant_hessian:
+            actual = _build_histograms_unit_hess_and_best_split(
+                X,
+                grad,
+                leaf,
+                n_leaves,
+                fused_g,
+                fused_h,
+                n_bins,
+                3.0,
+                feature_mask,
+                1.0,
+                *fused_scratch,
+                (
+                    np.arange(n_features, dtype=np.int64)
+                    if feature_indices is None
+                    else feature_indices
+                ),
+                (
+                    np.empty(0, dtype=np.int64)
+                    if row_indices is None
+                    else row_indices
+                ),
+                row_indices is None,
+            )
+        else:
+            actual = _build_histograms_and_best_split(
+                X,
+                grad,
+                hess,
+                leaf,
+                n_leaves,
+                fused_g,
+                fused_h,
+                n_bins,
+                3.0,
+                feature_mask,
+                1.0,
+                *fused_scratch,
+                (
+                    np.arange(n_features, dtype=np.int64)
+                    if feature_indices is None
+                    else feature_indices
+                ),
+                (
+                    np.empty(0, dtype=np.int64)
+                    if row_indices is None
+                    else row_indices
+                ),
+                row_indices is None,
+            )
 
         assert actual == expected
         np.testing.assert_array_equal(fused_g, reference_g)
@@ -254,8 +404,6 @@ def test_fused_builder_preserves_complete_tree_and_training_state(
 @pytest.mark.parametrize(
     "ineligible",
     [
-        {"row_indices": np.arange(0, 257, 2, dtype=np.int64)},
-        {"feature_indices": np.array([0, 2, 4], dtype=np.int64)},
         {"level_histogram_subtraction": True},
         {"random_strength": 0.1},
     ],

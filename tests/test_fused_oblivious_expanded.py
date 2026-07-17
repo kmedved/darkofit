@@ -235,3 +235,29 @@ def test_default_internal_dispatch_engages_proven_fused_lane(monkeypatch):
     GradientBoosting(**_core_params()).fit(X, y)
 
     assert int(counter[0]) > 0
+
+
+@pytest.mark.parametrize(
+    "sampling_params",
+    [
+        {"colsample": 2 / 3},
+        {"subsample": 0.8},
+        {"colsample": 2 / 3, "subsample": 0.8},
+    ],
+)
+def test_fused_subset_dispatch_is_archive_exact(
+    monkeypatch, tmp_path, sampling_params
+):
+    X, y = _regression_data(seed=101, n=320)
+    params = _core_params(**sampling_params)
+    reference, reference_count = _fit_core(
+        monkeypatch, X, y, fused=False, params=params
+    )
+    candidate, candidate_count = _fit_core(
+        monkeypatch, X, y, fused=True, params=params
+    )
+
+    assert reference_count == 0
+    assert candidate_count > 0
+    name = "-".join(sorted(sampling_params))
+    _assert_exact_models(reference, candidate, X, tmp_path, name)

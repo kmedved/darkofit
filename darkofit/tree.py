@@ -17,6 +17,9 @@ import numpy as np
 from numba import get_num_threads, njit, prange
 
 
+_EMPTY_INDICES = np.empty(0, dtype=np.int64)
+
+
 @njit(cache=True, parallel=True)
 def _build_histograms_into(X_binned, grad, hess, leaf, n_leaves, hg, hh):
     """Fill per-feature gradient/hessian histograms into pre-allocated buffers.
@@ -2302,24 +2305,41 @@ def _build_histograms_and_best_split(
     scratch_HL,
     scratch_parent,
     scratch_last_positive,
+    feature_indices,
+    row_indices,
+    all_rows,
 ):
-    """Fuse variable-Hessian histogram construction and shared split scan."""
+    """Fuse variable-Hessian histogram construction and shared split scan.
+
+    Work-feature indices plus the optional row selection preserve the selected
+    histogram builders' iteration order and leave unselected regions untouched.
+    """
     n_samples, n_features = X_binned.shape
     max_bins = hg.shape[2]
     feat_gain = np.full(n_features, -np.inf)
     feat_thr = np.full(n_features, -1, dtype=np.int64)
+    n_work_features = feature_indices.shape[0]
 
-    for f in prange(n_features):
-        # Match _build_histograms_into exactly, including masked features.
+    for jj in prange(n_work_features):
+        f = feature_indices[jj]
+        # Match the selected or full reference histogram builder exactly.
         for l in range(n_leaves):
             for b in range(max_bins):
                 hg[f, l, b] = 0.0
                 hh[f, l, b] = 0.0
-        for i in range(n_samples):
-            l = leaf[i]
-            b = X_binned[i, f]
-            hg[f, l, b] += grad[i]
-            hh[f, l, b] += hess[i]
+        if all_rows:
+            for i in range(n_samples):
+                l = leaf[i]
+                b = X_binned[i, f]
+                hg[f, l, b] += grad[i]
+                hh[f, l, b] += hess[i]
+        else:
+            for pp in range(row_indices.shape[0]):
+                i = row_indices[pp]
+                l = leaf[i]
+                b = X_binned[i, f]
+                hg[f, l, b] += grad[i]
+                hh[f, l, b] += hess[i]
 
         if feat_mask[f] == 0:
             continue
@@ -2416,6 +2436,9 @@ def _build_histograms_unit_hess_and_best_split(
     scratch_HL,
     scratch_parent,
     scratch_last_positive,
+    feature_indices,
+    row_indices,
+    all_rows,
 ):
     """Fuse the common unit-Hessian histogram build and shared split scan.
 
@@ -2430,19 +2453,28 @@ def _build_histograms_unit_hess_and_best_split(
     max_bins = hg.shape[2]
     feat_gain = np.full(n_features, -np.inf)
     feat_thr = np.full(n_features, -1, dtype=np.int64)
+    n_work_features = feature_indices.shape[0]
 
-    for f in prange(n_features):
-        # Build every feature exactly like the reference histogram kernel,
-        # including masked features, so the reusable buffers remain exact.
+    for jj in prange(n_work_features):
+        f = feature_indices[jj]
+        # Match the selected or full reference histogram builder exactly.
         for l in range(n_leaves):
             for b in range(max_bins):
                 hg[f, l, b] = 0.0
                 hh[f, l, b] = 0.0
-        for i in range(n_samples):
-            l = leaf[i]
-            b = X_binned[i, f]
-            hg[f, l, b] += grad[i]
-            hh[f, l, b] += 1.0
+        if all_rows:
+            for i in range(n_samples):
+                l = leaf[i]
+                b = X_binned[i, f]
+                hg[f, l, b] += grad[i]
+                hh[f, l, b] += 1.0
+        else:
+            for pp in range(row_indices.shape[0]):
+                i = row_indices[pp]
+                l = leaf[i]
+                b = X_binned[i, f]
+                hg[f, l, b] += grad[i]
+                hh[f, l, b] += 1.0
 
         if feat_mask[f] == 0:
             continue
@@ -5049,10 +5081,10 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     class-major pass in the multiclass booster). When supplied in the
     full-row/full-feature lane, level 0 copies them instead of scanning.
     fused_oblivious_kernel: private internal dispatch switch for the common
-    multithreaded full-row/full-feature unit-Hessian lane. The proven lane is
-    enabled by default and fuses histogram construction and split scanning
-    without changing any public estimator parameter. Ineligible lanes retain
-    the current kernels.
+    multithreaded unit- and variable-Hessian lanes. The proven lane is enabled
+    by default and fuses histogram construction and split scanning, including
+    selected rows and features, without changing any public estimator
+    parameter. Ineligible lanes retain the current kernels.
     fused_oblivious_counter: optional one-element integer array incremented
     once for every actual fused level invocation. This is benchmark
     observability only; requesting the candidate does not count as engagement.
@@ -5185,13 +5217,20 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     fused_lane = (
         bool(fused_oblivious_kernel)
         and get_num_threads() > _LEVEL_SUBTRACTION_MAX_THREADS
-        and row_indices is None
-        and feature_indices is None
         and rowpar_buffers is None
         and not subtract_lane
         and not root_copy_lane
         and random_strength <= 0.0
     )
+    if feature_indices is None:
+        fused_feature_indices = (
+            np.arange(n_features, dtype=np.int64)
+            if fused_lane
+            else _EMPTY_INDICES
+        )
+    else:
+        fused_feature_indices = feature_indices
+    fused_row_indices = _EMPTY_INDICES if row_indices is None else row_indices
 
     for d in range(max_depth):
         n_leaves = 1 << d
@@ -5223,6 +5262,9 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                     split_scratch[3],
                     split_scratch[4],
                     split_scratch[5],
+                    fused_feature_indices,
+                    fused_row_indices,
+                    row_indices is None,
                 )
             else:
                 f, t, gain = _build_histograms_and_best_split(
@@ -5243,6 +5285,9 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                     split_scratch[3],
                     split_scratch[4],
                     split_scratch[5],
+                    fused_feature_indices,
+                    fused_row_indices,
+                    row_indices is None,
                 )
         elif use_serial_kernels:
             if root_copy:
