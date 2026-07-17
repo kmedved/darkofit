@@ -112,6 +112,15 @@ Execution began from published `main` at `ab86269`.
   benefit. It remains `1.96%` behind ChimeraBoost product defaults. This
   advances the exact selector only to I3 fresh-confirmation registry and
   power design; the public API, defaults, and CTR23 lockbox remain sealed.
+- I3's target-blind fresh registry is frozen from clean source `8664f7c`: 20
+  outcome-unseen lineages, stratified 14 smooth numeric / 3 categorical / 3
+  noisy tabular, with 60 immutable coordinates. Every candidate passed
+  pre-program DarkoFit, ChimeraBoost benchmark-universe, TabArena-name,
+  exact-ID/name/fingerprint, and CTR23-v3 near-lineage checks. A 200,000-draw
+  preregistered bootstrap gives `99.9965%` conditional pass probability under
+  the spent development effect distribution. This authorizes one exact fresh
+  confirmation run only; no candidate task has been scored and the CTR23
+  lockbox remains sealed.
 
 ## Standing constraints (inherited, non-negotiable)
 
