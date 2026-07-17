@@ -33,6 +33,13 @@ target. The two unstable cases miss the `0.10` ceiling by `0.00032` and
 `0.00556`, respectively, but the protocol is conjunctive and has no rounding
 exception.
 
+The immutable JSON field
+`stretch_public_cases_at_or_below_chimera` has a historically ambiguous name:
+its runner counted cases that were both stable and no slower, so its stored
+value is 6. The eight stored median ratios establish the separate 8/8
+no-slower statement above. Release status tooling reports both counts without
+rewriting this frozen artifact.
+
 One DarkoFit numeric-8k interval completed in `0.690` seconds, below the
 preregistered `0.75`-second minimum; ChimeraBoost's shortest canonical interval
 was `0.751` seconds. Paired peak RSS was stable at `0.992x`. All warm versus

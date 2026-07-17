@@ -35,9 +35,15 @@ Issues = "https://github.com/kmedved/darkofit/issues"
 [project.optional-dependencies]
 dev = ["pytest", "optuna>=4", "pandas"]
 tuning = ["optuna>=4"]
+docs = ["mkdocs>=1.6"]
 
 [tool.setuptools.packages.find]
 include = ["darkofit*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "darkofit.__version__"}
+
+[tool.pytest.ini_options]
+markers = [
+    "campaign: frozen benchmark, evidence, and campaign-harness verifiers",
+]

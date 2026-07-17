@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+No changes yet.
+
+## 0.10.0 - 2026-07-17
+
+### Release infrastructure
+
+- Split the full 1,912-test union into an explicit 786-test library lane and
+  1,126 frozen campaign verifiers. CI runs the library lane across Python
+  3.9, 3.11, and 3.13 and the campaign lane separately on Python 3.11.
+- Add a strict MkDocs user guide and archive superseded planning documents
+  without presenting them as current API contracts.
+- Add generated release benchmark status and Pareto tooling. It keeps the
+  frozen 13-dataset general-regression and nine-cell sports panels separate,
+  binds every source artifact by SHA-256, and records the honest conclusion:
+  ship the deprecation/docs/infrastructure release without promoting a new
+  quality policy or claiming a certified all-case engine win.
+- Close native-ordinal C2 development without opening its target-unseen
+  confirmation panel. The candidate improved equal-task RMSE by 0.72%, but a
+  categorical FPS task regressed by 31.75% and its worst split by 143.59%;
+  no default, mode mix, deletion, or lockbox action follows.
+- Clarify an ambiguous frozen prediction-artifact counter: all eight public
+  prediction medians were no slower than ChimeraBoost, while six of eight also
+  passed the paired-ratio stability gate. The immutable artifact is preserved
+  and current status tooling labels both counts.
+
 ### Deprecations for 1.0
 
 The following evidence-free or concluded experimental surfaces remain
@@ -246,7 +271,7 @@ backward compatibility.
   one of three splits (2.6x test RMSE with a healthy-looking validation score)
   while mildly better on the other two — a tail-risk failure a small
   validation set cannot catch. The numeric result also closes ~93% of the
-  QSAR TabArena gap in `HANDOFF.md`. `MAE`/`Quantile` recompute leaf values
+  QSAR TabArena gap in `docs/archive/HANDOFF.md`. `MAE`/`Quantile` recompute leaf values
   from residual statistics and never applied the ordered update; `"auto"`
   now resolves off for them and explicit `ordered_boosting=True` raises
   instead of being silently ignored. The resolved rule is recorded under

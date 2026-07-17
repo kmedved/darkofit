@@ -204,7 +204,8 @@ converging, so their `xLGB` and round-gap figures **understate** CB's true cost.
 R3 did not flip `leafwise_row_layout="auto"` to segmented. The implementation now
 routes automatic row-layout selection through `_resolve_leafwise_row_layout`, but
 the resolver deliberately returns `prefix` until the full profile-labeled matrix
-in `ROADMAP.md` is run and a threshold is chosen from measured evidence.
+in the archived [`ROADMAP.md`](../docs/archive/ROADMAP.md) is run and a
+threshold is chosen from measured evidence.
 
 The resolver also keeps automatic selection on prefix whenever segmented
 preconditions fail or a current `not use_segmented_rows` fast lane would be

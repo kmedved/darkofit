@@ -39,6 +39,32 @@ clf.save_model("model.npz")
 clf2 = DarkoClassifier.load_model("model.npz")
 ```
 
+## Documentation
+
+The user guide is organized under [`docs/`](docs/index.md):
+[getting started](docs/getting-started.md),
+[parameters](docs/parameters.md),
+[core concepts](docs/concepts.md),
+[distributional regression](docs/uncertainty.md),
+[TreeSHAP](docs/shap.md),
+[benchmarks](docs/benchmarks.md), and
+[development](docs/development.md).
+Historical implementation plans are retained in
+[`docs/archive/`](docs/archive/README.md).
+
+## Current benchmark frontier
+
+On the frozen same-machine 13-dataset regression panel, DarkoFit 0.9.0 had
+1.0538× CatBoost's RMSE while using 0.3729× its fit time and 0.1526× its
+incremental memory; ChimeraBoost 0.14.1 had 1.0408× RMSE and 0.4101× fit
+time. On the nine-cell basketball panel, DarkoFit beat ChimeraBoost 0.15.0 on
+quality but CatBoost was both more accurate and faster than DarkoFit.
+
+These are separate descriptive panels, not a blended score or a universal
+ranking. The generated [benchmark status](benchmarks/benchmark_status.md)
+contains the full quality/fit/predict/memory frontier, exact versions, formal
+gate failures, and source artifacts.
+
 Fresh workers can move Numba compilation out of their first real request with
 `darkofit.warmup()`. `DARKOFIT_WARMUP` accepts `1`/`true`/`on`/`yes` for
 blocking import-time warmup, `background`/`thread`/`bg` for single-flight

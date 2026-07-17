@@ -1,0 +1,34 @@
+site_name: DarkoFit
+site_description: Fast, flexible tabular machine learning with a Numba backend
+site_url: https://kmedved.github.io/darkofit/
+repo_url: https://github.com/kmedved/darkofit
+docs_dir: docs
+theme:
+  name: readthedocs
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Parameters: parameters.md
+  - Core concepts: concepts.md
+  - Distributional regression: uncertainty.md
+  - TreeSHAP: shap.md
+  - Benchmarks: benchmarks.md
+  - FAQ: faq.md
+  - Development: development.md
+  - Archive:
+      - Index: archive/README.md
+      - Best-of-both plan: archive/BEST_OF_BOTH_PLAN.md
+      - Practical wishlist: archive/DARKOFIT_PRACTICAL_WISHLIST.md
+      - Distribution-head specification: archive/DISTRIBUTIONAL_HEADS_SPEC.md
+      - Gaussian specification: archive/DISTRIBUTIONAL_REGRESSION_SPEC.md
+      - TabArena handoff: archive/HANDOFF.md
+      - Kalman-readiness plan: archive/KALMAN_READINESS_PLAN.md
+      - Linear residual plan: archive/LINEAR_RESIDUAL_BOOSTING_PLAN.md
+      - Distributional handoff: archive/fable_supervisor_handoff.md
+      - Superseded implementation roadmap: archive/ROADMAP.md
+markdown_extensions:
+  - tables
+  - fenced_code
+  - toc:
+      permalink: true
+strict: true

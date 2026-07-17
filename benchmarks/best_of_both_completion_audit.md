@@ -39,7 +39,7 @@ confirmation.
 
 | Program requirement | Authoritative evidence | Terminal status |
 | --- | --- | --- |
-| Critically validate the proposal and establish safe execution boundaries | [`best_of_both_phase0_result.md`](best_of_both_phase0_result.md), [`BEST_OF_BOTH_PLAN.md`](../BEST_OF_BOTH_PLAN.md) | Complete |
+| Critically validate the proposal and establish safe execution boundaries | [`best_of_both_phase0_result.md`](best_of_both_phase0_result.md), [`BEST_OF_BOTH_PLAN.md`](../docs/archive/BEST_OF_BOTH_PLAN.md) | Complete |
 | Freeze representative direct-prediction behavior, including all five distributional heads | `prediction_goldens.py`, `golden_predictions.json`, and strict `test_prediction_goldens.py` | Complete for the declared Phase-0 manifest |
 | Retain exact/readable kernel oracles | `test_darkofit.py`, `test_fused_oblivious_kernel.py`, `test_fused_oblivious_expanded.py`, `test_serial_leaf_descent.py`, `test_linear_leaves_core.py`, and `test_tree_shap.py` | Complete |
 | Use a shared forward-only basketball/cold-player boundary and audit larger runners for copy drift | `basketball_harness.py`, `basketball_guardrails.py`, their focused tests, and the runner audit below | Shared basketball boundary complete; historical runners remain frozen and forward-only generalization is deferred |
@@ -55,7 +55,7 @@ confirmation.
 | Establish same-machine low-level parity with current ChimeraBoost | [`basketball_chimera_v015_result.md`](basketball_chimera_v015_result.md) | Complete; matched-core fit parity achieved |
 | Improve packed prediction only where measured | [`basketball_packed_prediction_result.md`](basketball_packed_prediction_result.md) and [`basketball_leafwise_packed_prediction_result.md`](basketball_leafwise_packed_prediction_result.md) | New oblivious router rejected; bounded scalar leafwise route shipped |
 | Add exact TreeSHAP without changing modeling defaults | [`basketball_tree_shap_result.md`](basketball_tree_shap_result.md) | Shipped for the supported scalar-oblivious lanes |
-| Delete or consolidate complexity only after replacement proof | Phase 3 and Phase 4 decisions in [`BEST_OF_BOTH_PLAN.md`](../BEST_OF_BOTH_PLAN.md) | No speculative deletion authorized; unsupported fallbacks retained |
+| Delete or consolidate complexity only after replacement proof | Phase 3 and Phase 4 decisions in [`BEST_OF_BOTH_PLAN.md`](../docs/archive/BEST_OF_BOTH_PLAN.md) | No speculative deletion authorized; unsupported fallbacks retained |
 | Preserve DarkoFit's differentiators | Public API and focused suites for distributional regression, serialization, tuning, callbacks, auto-LR with ES off, and exact refit | Complete |
 | Keep noisy-data defaults unchanged unless basketball passes | Constructor defaults plus every rejection artifact above | Complete; early stopping, linear leaves, crosses, combinations, and calibration were not promoted |
 | Protect the CTR23 lockbox | [`tabarena_ctr23_minimal_confirmation_result.md`](tabarena_ctr23_minimal_confirmation_result.md) and its independent review | Lockbox sealed; confirmation result cannot authorize tuning or promotion |

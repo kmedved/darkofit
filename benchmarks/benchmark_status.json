@@ -1,0 +1,117 @@
+{
+  "evidence_policy": "same-machine panels remain separate; no cross-panel composite score or unmatched timing is used",
+  "general_pareto": {
+    "baseline": "CatBoost 1.2.10",
+    "decision": "descriptive_only",
+    "rows": [
+      {
+        "engine": "DarkoFit 0.9.0",
+        "fit_time_ratio": 0.3728788616412098,
+        "incremental_memory_ratio": 0.15257315392671877,
+        "pareto": true,
+        "predict_time_ratio": 1.2561272572686548,
+        "test_rmse_ratio": 1.053834301478093
+      },
+      {
+        "engine": "ChimeraBoost 0.14.1",
+        "fit_time_ratio": 0.4100799608204249,
+        "incremental_memory_ratio": 0.2695816467778202,
+        "pareto": true,
+        "predict_time_ratio": 0.876458946068471,
+        "test_rmse_ratio": 1.0407999807559591
+      },
+      {
+        "engine": "CatBoost 1.2.10",
+        "fit_time_ratio": 1.0,
+        "incremental_memory_ratio": 1.0,
+        "pareto": true,
+        "predict_time_ratio": 1.0,
+        "test_rmse_ratio": 1.0
+      }
+    ],
+    "scope": "13 TabArena regression datasets, r0f0/r1f1/r2f2"
+  },
+  "large_n": {
+    "certified": false,
+    "decision": "do_not_claim_large_n_engine_advantage",
+    "fit_ratio": 0.7816785029298103,
+    "fit_speedup": 1.2792983256567738,
+    "rmse_ratio_max": 1.0008479649149764,
+    "rmse_ratio_min": 0.9999847468806878,
+    "scope": "matched numeric core at 500k and 1M training rows"
+  },
+  "native_ordinal_c2": {
+    "candidate_over_default_fit": 1.0081928719378834,
+    "candidate_over_default_predict": 1.0407106835311493,
+    "candidate_over_default_rmse": 0.9927548385779557,
+    "confirmation_run": false,
+    "decision": "close_native_ordinal_c2_development",
+    "scope": "native-ordinal C2 development panel"
+  },
+  "prediction": {
+    "case_count": 8,
+    "certified": false,
+    "decision": "p2_target_remains_open",
+    "legacy_counter_name_is_ambiguous": true,
+    "median_at_or_below_chimera_count": 8,
+    "median_ratio_max": 0.9869563682000011,
+    "median_ratio_min": 0.8046490653412373,
+    "scope": "eight numeric/mixed public prediction cases",
+    "stable_and_at_or_below_chimera_count": 6
+  },
+  "release_conclusion": "Ship the deprecation/docs/infrastructure release; do not promote a new quality policy or claim a certified all-case engine win.",
+  "schema_version": 1,
+  "sources": {
+    "general_panel": {
+      "path": "benchmarks/tabarena_regression_same_machine_summary.json",
+      "sha256": "ca23618bdc3d9e0ab38557e7738c66e95827945ad34e3eb63005f253c92ccf01"
+    },
+    "large_n": {
+      "path": "benchmarks/large_n_engine.json",
+      "sha256": "ac9e6e9f136117b7b1db7488b38f660561195f86b29ae2f87868a5d293c62508"
+    },
+    "native_ordinal_c2": {
+      "path": "benchmarks/native_ordinal_c2_development_result.json",
+      "sha256": "7aeb83131bb7604a3eaabc2789f048d40dabb58791b6ab6aad0ac26f0f0f566f"
+    },
+    "prediction": {
+      "path": "benchmarks/predict_throughput_integrated.json",
+      "sha256": "5ec81511e3026f5efadd8623228920da8d154a2f99719ca8f4116cd2c5b3653b"
+    },
+    "sports_panel": {
+      "path": "benchmarks/basketball_sports_panel_result.json",
+      "sha256": "4f20aed49ef0936a9442111b106aa5004b342c1924837a53c46e8010b2ae7189"
+    }
+  },
+  "sports_pareto": {
+    "baseline": "ChimeraBoost 0.15.0",
+    "decision": "close_random_strength_0_5_without_s4_confirmation",
+    "rows": [
+      {
+        "cold_player_r2": 0.7937287047246449,
+        "engine": "DarkoFit 0.9.0",
+        "equal_cell_r2": 0.7865685115299594,
+        "fit_time_ratio": 5.923420642690842,
+        "pareto": false,
+        "predict_time_ratio": 1.4784410237659251
+      },
+      {
+        "cold_player_r2": 0.7872895544951378,
+        "engine": "ChimeraBoost 0.15.0",
+        "equal_cell_r2": 0.7619229577245255,
+        "fit_time_ratio": 1.0,
+        "pareto": true,
+        "predict_time_ratio": 1.0
+      },
+      {
+        "cold_player_r2": 0.8167254690652918,
+        "engine": "CatBoost 1.2.10",
+        "equal_cell_r2": 0.8032719224364084,
+        "fit_time_ratio": 2.3450505028104427,
+        "pareto": true,
+        "predict_time_ratio": 1.0125052075485381
+      }
+    ],
+    "scope": "nine target-season basketball cells plus cold-player guardrail"
+  }
+}

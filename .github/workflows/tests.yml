@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  pytest:
+  library:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -38,5 +38,52 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install ".[dev,tuning]"
-      - name: Run tests
-        run: python -m pytest -q
+      - name: Run library tests
+        run: python -m pytest -q -m "not campaign"
+
+  campaign:
+    runs-on: ubuntu-latest
+    env:
+      NUMBA_NUM_THREADS: "4"
+      OMP_NUM_THREADS: "4"
+      OPENBLAS_NUM_THREADS: "4"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Set Numba cache dir
+        run: echo "NUMBA_CACHE_DIR=$HOME/.cache/numba" >> "$GITHUB_ENV"
+      - name: Cache Numba kernels
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/numba
+          key: ${{ runner.os }}-numba-campaign-py3.11-${{ hashFiles('darkofit/**/*.py', 'pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-numba-campaign-py3.11-
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[dev,tuning]"
+      - name: Run campaign verifiers
+        run: python -m pytest -q -m campaign
+
+  docs-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install documentation and build tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[docs]" build
+      - name: Build documentation
+        run: python -m mkdocs build --strict
+      - name: Verify generated benchmark status
+        run: python benchmarks/make_pareto.py --check
+      - name: Build source and wheel distributions
+        run: python -m build

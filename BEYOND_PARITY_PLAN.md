@@ -427,15 +427,19 @@ does a Python cell scan; infinity, empty prediction batch, and duplicate
 categorical-index semantics are explicit and documented; warmup parses
 conventional falsy values and prevents unsafe concurrent Numba workqueue use.
 
-**Z4. Docs**: root planning docs (KALMAN_READINESS_PLAN,
+**Z4. Docs — complete for 0.10**: root planning docs (KALMAN_READINESS_PLAN,
 LINEAR_RESIDUAL_BOOSTING_PLAN, DISTRIBUTIONAL_*SPEC, fable_supervisor_handoff,
 BEST_OF_BOTH_PLAN once superseded) → `docs/archive/`; stand up an mkdocs site
 (their docs/ layout is a good template: getting-started, parameters, concepts,
-shap, faq); README gets the Pareto headline (I4).
+shap, faq); README gets the Pareto headline (I4). The superseded implementation
+roadmap and handoffs are archived, the current ceiling ledger stays at root,
+and `mkdocs build --strict` is the documentation gate.
 
-**Z5. Tests**: mark campaign verifiers (`-m campaign`), split CI jobs
+**Z5. Tests — complete for 0.10**: mark campaign verifiers (`-m campaign`), split CI jobs
 (library suite vs campaign suite), prove identical coverage before/after —
-this was deferred pending exactly that proof; do it as its own PR.
+this was deferred pending exactly that proof; do it as its own PR. The
+partition now covers the full 1,912-item union: 786 library tests and 1,126
+campaign verifiers.
 
 **1.0 criteria**: Z1 deletions executed, Z3 decisions shipped and documented,
 the retained P2 optimization and its non-certification stated accurately,
@@ -464,11 +468,14 @@ contamination-screened, fingerprinted 20-lineage registry is frozen and
 stratified smooth/process, categorical, and noisy-tabular. Its Track-L outcomes
 are now spent; any reuse must follow the registry's declared evidence rules.
 
-**I4. Pareto + status.** `benchmarks/make_pareto.py` equivalent: blended
+**I4. Pareto + status — complete.** `benchmarks/make_pareto.py` equivalent: blended
 quality vs fit-slowdown vs ChimeraBoost 0.15 / CatBoost / LightGBM,
 regenerated per release, README headline. Plus a `bench_status.py` that
 prints the latest aggregate table after every campaign (their CLAUDE.md rule
-is right).
+is right). The implementation keeps the frozen 13-dataset and sports panels
+separate rather than inventing a cross-panel composite, reports the available
+same-machine DarkoFit/ChimeraBoost/CatBoost frontier, and explicitly leaves
+LightGBM out until a matching current multi-engine artifact exists.
 
 ## Sequencing
 
