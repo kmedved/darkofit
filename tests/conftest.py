@@ -43,6 +43,27 @@ def is_campaign_module(path: str | Path) -> bool:
     return name in CAMPAIGN_EXACT or name.startswith(CAMPAIGN_PREFIXES)
 
 
+def _requested_partition(config) -> str | None:
+    markexpr = " ".join(config.getoption("markexpr").split())
+    if markexpr == "campaign":
+        return "campaign"
+    if markexpr == "not campaign":
+        return "library"
+    return None
+
+
+def pytest_ignore_collect(collection_path, config):
+    path = Path(collection_path)
+    if path.suffix != ".py" or not path.name.startswith("test_"):
+        return None
+    partition = _requested_partition(config)
+    if partition == "campaign":
+        return not is_campaign_module(path)
+    if partition == "library":
+        return is_campaign_module(path)
+    return None
+
+
 def pytest_collection_modifyitems(items):
     marker = pytest.mark.campaign
     for item in items:

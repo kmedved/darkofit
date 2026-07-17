@@ -2,7 +2,15 @@
 
 ## Unreleased
 
-No changes yet.
+- Make generated release benchmark status fail closed when any of its five
+  frozen source artifacts changes, rather than merely recording a new hash in
+  regenerated output.
+- Keep all five optional TabArena adapter-integration tests collectable without
+  AutoGluon, so the documented 1,913-test library/campaign partition is stable
+  across development and CI environments.
+- Apply the exact `campaign` and `not campaign` pytest partitions before module
+  import, preventing optional or Python-3.10-only campaign tooling from leaking
+  skips and compatibility requirements into the library matrix.
 
 ## 0.10.0 - 2026-07-17
 

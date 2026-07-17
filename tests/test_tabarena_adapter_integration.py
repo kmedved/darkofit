@@ -2,16 +2,31 @@
 
 from __future__ import annotations
 
+import importlib.util
 import inspect
 
 import numpy as np
 import pytest
 
-pd = pytest.importorskip("pandas")
-pytest.importorskip("autogluon.core")
+INTEGRATION_DEPS_AVAILABLE = (
+    importlib.util.find_spec("pandas") is not None
+    and importlib.util.find_spec("autogluon") is not None
+    and importlib.util.find_spec("autogluon.core") is not None
+)
+pytestmark = pytest.mark.skipif(
+    not INTEGRATION_DEPS_AVAILABLE,
+    reason="pandas and AutoGluon are required for adapter integration tests",
+)
 
-from benchmarks.tabarena_adapter import DarkoFitModel  # noqa: E402
-from darkofit import DarkoRegressor  # noqa: E402
+if INTEGRATION_DEPS_AVAILABLE:
+    import pandas as pd
+
+    from benchmarks.tabarena_adapter import DarkoFitModel
+    from darkofit import DarkoRegressor
+else:
+    pd = None
+    DarkoFitModel = None
+    DarkoRegressor = None
 
 
 FIXED_HYPERPARAMETERS = {

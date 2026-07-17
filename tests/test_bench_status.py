@@ -69,9 +69,21 @@ def test_pareto_rejects_strictly_dominated_row():
     assert flags == {"a": True, "b": False, "c": True}
 
 
-def test_source_hashes_bind_existing_repo_relative_files():
+def test_source_hashes_bind_and_fail_closed(
+    tmp_path, monkeypatch
+):
     status = bench_status.build_status()
-    for source in status["sources"].values():
+    assert set(status["sources"]) == set(bench_status.EXPECTED_SOURCE_SHA256)
+    for name, source in status["sources"].items():
         path = bench_status.ROOT / Path(source["path"])
         assert path.is_file()
-        assert len(source["sha256"]) == 64
+        assert source["sha256"] == bench_status.EXPECTED_SOURCE_SHA256[name]
+
+    changed = tmp_path / bench_status.TABARENA_SUMMARY.name
+    changed.write_bytes(bench_status.TABARENA_SUMMARY.read_bytes() + b"\n")
+    monkeypatch.setattr(bench_status, "TABARENA_SUMMARY", changed)
+
+    with pytest.raises(
+        ValueError, match="general_panel frozen source hash changed"
+    ):
+        bench_status.build_status()

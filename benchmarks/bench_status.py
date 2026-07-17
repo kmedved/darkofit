@@ -19,6 +19,13 @@ PREDICT_SUMMARY = BENCHMARKS / "predict_throughput_integrated.json"
 C2_SUMMARY = BENCHMARKS / "native_ordinal_c2_development_result.json"
 OUTPUT_JSON = BENCHMARKS / "benchmark_status.json"
 OUTPUT_MARKDOWN = BENCHMARKS / "benchmark_status.md"
+EXPECTED_SOURCE_SHA256 = {
+    "general_panel": "ca23618bdc3d9e0ab38557e7738c66e95827945ad34e3eb63005f253c92ccf01",
+    "sports_panel": "4f20aed49ef0936a9442111b106aa5004b342c1924837a53c46e8010b2ae7189",
+    "large_n": "ac9e6e9f136117b7b1db7488b38f660561195f86b29ae2f87868a5d293c62508",
+    "prediction": "5ec81511e3026f5efadd8623228920da8d154a2f99719ca8f4116cd2c5b3653b",
+    "native_ordinal_c2": "7aeb83131bb7604a3eaabc2789f048d40dabb58791b6ab6aad0ac26f0f0f566f",
+}
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -341,6 +348,14 @@ def build_status() -> dict[str, Any]:
         "prediction": PREDICT_SUMMARY,
         "native_ordinal_c2": C2_SUMMARY,
     }
+    actual_hashes = {name: _sha256(path) for name, path in sources.items()}
+    for name, actual in actual_hashes.items():
+        expected = EXPECTED_SOURCE_SHA256[name]
+        if actual != expected:
+            raise ValueError(
+                f"{name} frozen source hash changed: expected {expected}, "
+                f"found {actual}"
+            )
     loaded = {name: _read_json(path) for name, path in sources.items()}
     return {
         "schema_version": 1,
@@ -351,7 +366,7 @@ def build_status() -> dict[str, Any]:
         "sources": {
             name: {
                 "path": str(path.relative_to(ROOT)),
-                "sha256": _sha256(path),
+                "sha256": actual_hashes[name],
             }
             for name, path in sources.items()
         },
