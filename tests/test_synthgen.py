@@ -268,3 +268,33 @@ def test_filters_behave():
     assert not ok
     ok, _ = filters.tractable({"n_cat": 3, "cat_fraction": 1.0, "max_cardinality": 16})
     assert ok
+
+
+def test_canary_verifier_preserves_each_seed_metric(monkeypatch):
+    import darkofit
+
+    class ConstantRegressor:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+        def fit(self, X, y, cat_features=None):
+            return self
+
+        def predict(self, X):
+            return np.zeros(len(X), dtype=np.float64)
+
+    monkeypatch.setattr(darkofit, "DarkoRegressor", ConstantRegressor)
+    X = np.arange(120, dtype=np.float64).reshape(40, 3)
+    y = np.zeros(40, dtype=np.float64)
+    ok, detail = filters.at_ceiling(
+        X,
+        y,
+        None,
+        "regression",
+        {"noise_sigma": 1.0, "bayes_brier": None},
+    )
+    assert ok
+    assert detail["ceiling_metric"] == "rmse_ratio"
+    assert detail["ceiling_values"] == [0.0, 0.0, 0.0]
+    assert detail["ceiling_mean"] == 0.0
+    assert detail["ceiling_worst"] == 0.0

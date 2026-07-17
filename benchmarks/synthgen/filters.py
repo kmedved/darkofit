@@ -124,9 +124,22 @@ def at_ceiling(X, y, cat_idx, task, meta, seeds=CANARY_SEEDS):
             vals.append(brier - float(meta["bayes_brier"] or 0.0))
     mean, worst = float(np.mean(vals)), float(np.max(vals))
     if task == "regression":
-        return mean <= CANARY_RMSE_RATIO, {"rmse_ratio": round(mean, 3)}
+        return mean <= CANARY_RMSE_RATIO, {
+            "ceiling_metric": "rmse_ratio",
+            "ceiling_values": [float(value) for value in vals],
+            "ceiling_mean": mean,
+            "ceiling_worst": worst,
+            "rmse_ratio": round(mean, 3),
+        }
     ok = mean <= CANARY_XS_BRIER_MEAN and worst <= CANARY_XS_BRIER_MAX
-    return ok, {"excess_brier": round(mean, 4), "excess_max": round(worst, 4)}
+    return ok, {
+        "ceiling_metric": "excess_brier",
+        "ceiling_values": [float(value) for value in vals],
+        "ceiling_mean": mean,
+        "ceiling_worst": worst,
+        "excess_brier": round(mean, 4),
+        "excess_max": round(worst, 4),
+    }
 
 
 def tractable(meta):
