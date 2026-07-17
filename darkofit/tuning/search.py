@@ -431,16 +431,30 @@ class DarkoStepwiseSearchCV(BaseEstimator):
             X, self.cat_features_, ordinal_features
             )
         )
+        resolved_ordinal_features = {
+            int(record["index"]): list(record["categories"])
+            for record in ordinal_records
+        }
         if ordinal_mode == "explicit":
-            ordinal_features_frozen = {
-                int(record["index"]): list(record["categories"])
-                for record in ordinal_records
-            }
+            ordinal_features_frozen = resolved_ordinal_features
+            ordinal_features_refit = resolved_ordinal_features
+            ordinal_features_public = resolved_ordinal_features
         elif ordinal_mode == "auto":
-            ordinal_features_frozen = "auto"
+            # Resolve once against the full, target-free feature matrix. If
+            # each CV fold re-runs auto detection, an integer rank that occurs
+            # only in validation is omitted from the training vocabulary and
+            # then rejected as unknown. An inactive full-data resolution must
+            # likewise remain inactive in every fold.
+            ordinal_features_frozen = (
+                resolved_ordinal_features if ordinal_records else None
+            )
+            ordinal_features_refit = "auto"
+            ordinal_features_public = "auto"
         else:
             ordinal_features_frozen = None
-        self.ordinal_features_ = ordinal_features_frozen
+            ordinal_features_refit = None
+            ordinal_features_public = None
+        self.ordinal_features_ = ordinal_features_public
         self.n_workers_ = max(1, int(self.n_workers))
         _reject_custom_sampler_multiprocessing(self.sampler, self.n_workers_)
         self.trial_thread_count_ = _resolve_trial_thread_count(
@@ -670,7 +684,7 @@ class DarkoStepwiseSearchCV(BaseEstimator):
                 y_arr,
                 sample_weight_arr,
                 cat_features,
-                ordinal_features=ordinal_features_frozen,
+                ordinal_features=ordinal_features_refit,
             )
         return self
 

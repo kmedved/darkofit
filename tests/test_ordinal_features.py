@@ -245,6 +245,44 @@ def test_byte_categories_match_their_json_safe_normalized_declaration():
     assert model.ordinal_features_[0]["categories"] == ["low", "high"]
 
 
+def test_invalid_utf8_ordinal_bytes_fail_closed():
+    X = np.asarray(
+        [[0.0, b"low"], [1.0, b"high"], [2.0, b"low"]],
+        dtype=object,
+    )
+    with pytest.raises(ValueError, match="byte categories must be valid UTF-8"):
+        DarkoRegressor(**PARAMS).fit(
+            X,
+            np.arange(3.0),
+            ordinal_features={1: [b"\xff", b"high"]},
+        )
+
+    model = DarkoRegressor(**PARAMS).fit(
+        X,
+        np.arange(3.0),
+        ordinal_features={1: [b"low", b"high"]},
+    )
+    invalid = np.asarray([[3.0, b"\xff"]], dtype=object)
+    with pytest.raises(ValueError, match="unknown ordinal category"):
+        model.predict(invalid)
+
+
+def test_numpy_extended_float_categories_are_normalized():
+    X = np.asarray(
+        [[0.0, np.longdouble(1.0)], [1.0, np.longdouble(2.0)]] * 4,
+        dtype=object,
+    )
+    model = DarkoRegressor(**PARAMS).fit(
+        X,
+        np.arange(8.0),
+        ordinal_features={
+            1: [np.longdouble(1.0), np.longdouble(2.0)]
+        },
+    )
+    assert model.ordinal_features_[0]["categories"] == [1.0, 2.0]
+    assert np.isfinite(model.predict(X)).all()
+
+
 def test_ordinal_eval_set_and_classifier_paths():
     X, y = _frame()
     params = {
@@ -348,6 +386,63 @@ def test_corrupt_ordinal_wrapper_state_is_rejected(tmp_path):
     arrays["header"] = np.asarray(json.dumps(header))
     np.savez_compressed(corrupt, **arrays)
     with pytest.raises(ValueError, match="ordinal feature index is invalid"):
+        DarkoRegressor.load_model(corrupt)
+
+
+def test_corrupt_ordinal_feature_name_state_is_rejected(tmp_path):
+    X, y = _frame()
+    model = DarkoRegressor(**PARAMS).fit(
+        X,
+        y,
+        cat_features=["region"],
+        ordinal_features={"level": ["low", "medium", "high"]},
+    )
+    valid = tmp_path / "valid.npz"
+    corrupt = tmp_path / "corrupt.npz"
+    model.save_model(valid)
+    with np.load(valid, allow_pickle=False) as archive:
+        arrays = {name: archive[name] for name in archive.files}
+    header = json.loads(arrays["header"].item())
+    header["wrapper"]["state"]["feature_names_in"] = []
+    arrays["header"] = np.asarray(json.dumps(header))
+    np.savez_compressed(corrupt, **arrays)
+    with pytest.raises(ValueError, match="feature name state does not match"):
+        DarkoRegressor.load_model(corrupt)
+
+
+@pytest.mark.parametrize(
+    ("state_path", "error"),
+    [
+        (("ordinal_features_mode",), "ordinal feature mode is invalid"),
+        (
+            ("ordinal_features", 0, "source"),
+            "ordinal feature source is invalid",
+        ),
+    ],
+)
+def test_unhashable_ordinal_state_discriminators_are_rejected(
+    tmp_path, state_path, error
+):
+    X, y = _frame()
+    model = DarkoRegressor(**PARAMS).fit(
+        X,
+        y,
+        cat_features=["region"],
+        ordinal_features={"level": ["low", "medium", "high"]},
+    )
+    valid = tmp_path / "valid.npz"
+    corrupt = tmp_path / "corrupt.npz"
+    model.save_model(valid)
+    with np.load(valid, allow_pickle=False) as archive:
+        arrays = {name: archive[name] for name in archive.files}
+    header = json.loads(arrays["header"].item())
+    target = header["wrapper"]["state"]
+    for key in state_path[:-1]:
+        target = target[key]
+    target[state_path[-1]] = []
+    arrays["header"] = np.asarray(json.dumps(header))
+    np.savez_compressed(corrupt, **arrays)
+    with pytest.raises(ValueError, match=error):
         DarkoRegressor.load_model(corrupt)
 
 
@@ -545,3 +640,80 @@ def test_stepwise_search_freezes_one_shot_explicit_category_iterables():
         "medium",
         "high",
     ]
+
+
+def test_stepwise_search_freezes_auto_integer_vocabulary_across_folds():
+    X = pd.DataFrame(
+        {
+            "x": np.arange(12.0),
+            "level": [0] * 5 + [1] * 5 + [2] * 2,
+        }
+    )
+    y = X["x"].to_numpy() + X["level"].to_numpy()
+    splits = [
+        (np.arange(10), np.arange(10, 12)),
+        (np.r_[0:5, 10:12], np.arange(5, 10)),
+    ]
+    search = DarkoStepwiseSearchCV(
+        DarkoRegressor(**PARAMS),
+        phases=("probe",),
+        tree_modes=("catboost",),
+        n_trials={"probe": 1},
+        cv=splits,
+        refit=True,
+        random_state=4,
+        resume=False,
+        error_score="raise",
+    )
+    search.fit(
+        X,
+        y,
+        cat_features=[1],
+        ordinal_features="auto",
+    )
+    assert search.ordinal_features_ == "auto"
+    assert search.best_estimator_.ordinal_features_[0]["categories"] == [
+        0,
+        1,
+        2,
+    ]
+    assert (
+        search.best_estimator_.ordinal_features_[0]["source"]
+        == "auto_integer_codes"
+    )
+
+
+def test_stepwise_search_freezes_inactive_auto_resolution_across_folds():
+    X = pd.DataFrame(
+        {
+            "x": np.arange(8.0),
+            "level": [0, 1, 0, 1, 0, 1, 0, "nominal"],
+        }
+    )
+    splits = [
+        (np.arange(7), np.asarray([7])),
+        (np.asarray([0, 1, 2, 3, 7]), np.asarray([4, 5, 6])),
+    ]
+    search = DarkoStepwiseSearchCV(
+        DarkoRegressor(**PARAMS),
+        phases=("probe",),
+        tree_modes=("catboost",),
+        n_trials={"probe": 1},
+        cv=splits,
+        refit=True,
+        random_state=4,
+        resume=False,
+        error_score="raise",
+    )
+    search.fit(
+        X,
+        np.arange(8.0),
+        cat_features=[1],
+        ordinal_features="auto",
+    )
+    assert search.ordinal_features_ == "auto"
+    assert search.best_estimator_.ordinal_features_mode_ == "auto"
+    assert search.best_estimator_.ordinal_features_ == []
+    assert search.best_estimator_.model_.prep_.cat_features_ == [1]
+    fold_metadata = search.best_trial_.user_attrs["fold_auto_params"]
+    assert all("ordinal_features" not in metadata for metadata in fold_metadata)

@@ -942,12 +942,17 @@ def _ordinal_category_scalar(value):
     if isinstance(value, np.generic):
         value = value.item()
     if isinstance(value, bytes):
-        value = value.decode("utf-8")
+        try:
+            value = value.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ValueError(
+                "ordinal feature byte categories must be valid UTF-8"
+            ) from exc
     if isinstance(value, (str, bool)):
         return value
     if isinstance(value, int):
         return int(value)
-    if isinstance(value, float):
+    if isinstance(value, (float, np.floating)):
         value = float(value)
         if not np.isfinite(value):
             raise ValueError("ordinal feature categories must be finite")
@@ -1097,7 +1102,13 @@ def _ordinal_codes(values, categories, *, feature, name):
     )
     for index, value in enumerate(values):
         if isinstance(value, bytes):
-            values[index] = value.decode("utf-8")
+            try:
+                values[index] = value.decode("utf-8")
+            except UnicodeDecodeError:
+                # A declared byte category must have been normalized from
+                # valid UTF-8. Leave invalid observed bytes unmatched so the
+                # documented fail-closed unknown-category error is raised.
+                pass
     try:
         import pandas as pd
 
@@ -1201,6 +1212,17 @@ def _restore_ordinal_records(records, *, n_features, feature_names=None):
         raise ValueError(
             "invalid DarkoFit model: ordinal feature state must be a list"
         )
+    if records and feature_names is not None:
+        feature_names = np.asarray(feature_names, dtype=object)
+        if (
+            feature_names.ndim != 1
+            or feature_names.shape[0] != int(n_features)
+            or not all(isinstance(name, str) for name in feature_names)
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: feature name state does not match "
+                "the ordinal feature state"
+            )
     restored = []
     seen = set()
     allowed_sources = {
@@ -1224,7 +1246,7 @@ def _restore_ordinal_records(records, *, n_features, feature_names=None):
             )
         seen.add(index)
         source = record.get("source")
-        if source not in allowed_sources:
+        if not isinstance(source, str) or source not in allowed_sources:
             raise ValueError(
                 "invalid DarkoFit model: ordinal feature source is invalid"
             )
@@ -1496,7 +1518,7 @@ class _RefitParamsMixin:
 
     def _restore_ordinal_state(self, state):
         mode = state.get("ordinal_features_mode", "off")
-        if mode not in {"off", "explicit", "auto"}:
+        if not isinstance(mode, str) or mode not in {"off", "explicit", "auto"}:
             raise ValueError(
                 "invalid DarkoFit model: ordinal feature mode is invalid"
             )
