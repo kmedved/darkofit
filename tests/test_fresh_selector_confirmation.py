@@ -1,9 +1,23 @@
 from __future__ import annotations
 
+import hashlib
+import json
+from pathlib import Path
+
 import numpy as np
 import pytest
 
 from benchmarks import run_fresh_selector_confirmation as experiment
+
+
+RECORDED_ARTIFACT = (
+    Path(__file__).parents[1]
+    / "benchmarks"
+    / "fresh_selector_confirmation.json"
+)
+EXPECTED_ARTIFACT_SHA256 = (
+    "4dc158ec4fd11cf29a5822dc2a09aa76715ce9446773673fa9a2828da1b71a7d"
+)
 
 
 def _result(task_id, stratum, config, rmse, selected=False):
@@ -141,3 +155,34 @@ def test_split_identity_is_bound_to_frozen_indices():
 def test_catboost_report_only_best_iteration_can_be_absent():
     assert experiment._optional_int(None) is None
     assert experiment._optional_int(np.int64(7)) == 7
+
+
+def test_recorded_artifact_closes_fresh_selector():
+    raw = RECORDED_ARTIFACT.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == EXPECTED_ARTIFACT_SHA256
+    artifact = json.loads(raw)
+
+    assert artifact["sources"]["darkofit"]["clean"] is True
+    assert artifact["sources"]["darkofit"]["head"] == (
+        "29bd30cdcf476139c30efe4e09773ca812ba443f"
+    )
+    assert artifact["sources"]["chimeraboost"]["clean"] is True
+    assert artifact["sources"]["chimeraboost"]["head"] == (
+        experiment.EXPECTED_CHIMERA_HEAD
+    )
+    assert artifact["protocol"]["task_count"] == 20
+    assert artifact["protocol"]["coordinate_count"] == 60
+    assert artifact["protocol"]["lockbox_data_used"] is False
+    assert artifact["protocol"]["task_drop_allowed"] is False
+    assert artifact["protocol"]["task_imputation_allowed"] is False
+    assert len(artifact["results"]) == 100
+    analysis = artifact["analysis"]
+    assert analysis["passes_all_gates"] is False
+    assert analysis["selector_selection_count"] == 11
+    assert analysis["selector_decline_count"] == 49
+    assert analysis["gates"]["primary_ratio_at_most_0_98"] is False
+    assert analysis["gates"]["primary_at_least_9_lineage_wins"] is False
+    assert analysis["gates"]["primary_beats_chimeraboost_product"] is False
+    assert analysis["recommendation"] == (
+        "close_fresh_smooth_margin_selector"
+    )

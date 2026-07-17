@@ -200,6 +200,14 @@ becomes a certified sentence.
 
 ## Track L — The smooth-data campaign (linear leaves' real test)
 
+**Status (2026-07-17): closed for policy promotion.** The frozen 3% selector
+passed basketball and spent-development gates but failed fresh confirmation:
+`0.9893×` default, only 2/14 primary lineage wins, and `1.1196×`
+ChimeraBoost product. Fixed linear leaves were `1.0069×` default on the fresh
+primary panel. See
+[`benchmarks/fresh_selector_confirmation_result.md`](benchmarks/fresh_selector_confirmation_result.md).
+Do not open the CTR23 lockbox or retune this selector on the fresh panel.
+
 The mechanism is shipped, default-off, exact in its fallbacks. Its motivating
 class (kin8nm/grid_stability/space_ga; lockbox naval/wave_energy/sarcos) was
 never tested — basketball cannot test it. This campaign does.
