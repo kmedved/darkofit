@@ -1,0 +1,52 @@
+{
+  "campaign": "basketball_input_validation_sklearn17_compliance",
+  "created_at_utc": "2026-07-17T04:47:26Z",
+  "decision": {
+    "expected_failure_count": 1,
+    "protocol_gate_4_passed": true,
+    "sklearn_1_7_compliance_passed": true,
+    "unexpected_failure_count": 0
+  },
+  "environment": {
+    "machine": "arm64",
+    "numba": "0.66.0",
+    "numpy": "2.4.6",
+    "pandas": "3.0.3",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.12.13",
+    "python_implementation": "CPython",
+    "scikit_learn": "1.7.2",
+    "scipy": "1.18.0"
+  },
+  "expected_failed_checks": {
+    "check_sample_weight_equivalence_on_dense_data": "weights reweight the loss but are not bit-exactly equivalent to integer row repetition"
+  },
+  "focused_suite": {
+    "command": "PYTHONPATH=. .cache/sklearn17-py312/bin/python -m pytest -q tests/test_input_validation.py",
+    "duration_seconds": 50.3,
+    "exit_code": 0,
+    "passed": 28,
+    "skipped": 1
+  },
+  "protocol_check": {
+    "command": "PYTHONPATH=. .cache/sklearn17-py312/bin/python -m pytest -q tests/test_input_validation.py::test_full_sklearn_estimator_compliance",
+    "duration_seconds": 20.4,
+    "estimators": [
+      "DarkoRegressor",
+      "DarkoClassifier"
+    ],
+    "exit_code": 0,
+    "failed": 0,
+    "passed": 2,
+    "skipped": 0
+  },
+  "schema_version": 1,
+  "source": {
+    "code_or_test_diff_against_head": false,
+    "head": "f48ec4dd9d85c7c9e69b5cd683998450527bd3f4",
+    "origin_main": "f48ec4dd9d85c7c9e69b5cd683998450527bd3f4",
+    "package_manifest_sha256": "3fed959b87aa3334a8214a073bacad9e7c0482249d1b04da5b52655e0fdb0121",
+    "test_input_validation_git_blob": "b429b689a1c9dd4e54cb24d4293b177846bf2c00",
+    "test_input_validation_sha256": "55ed72ec7070bb8bf55ece74ead73b9a1c522d03a3e9a796ab6ca2a8eee2f87f"
+  }
+}

@@ -72,6 +72,16 @@ claims until independently reproduced here.*
   wall cost. However, default prediction IQR/median was 0.235 versus the frozen
   0.20 limit. The no-rerun rule therefore rejects API work despite every other
   gate passing; see `basketball_oob_ensemble_confirmation_result.md`.
+- The shared input-validation and sklearn-compliance layer is shipped. Its
+  frozen six-block basketball campaign reproduced creator-fold, held-team,
+  and cold-player predictions, feature importance, fitted metadata, and the
+  serialized model exactly in all 12 fresh workers. Validated prediction was
+  1.025x the `assume_finite` arm by ratio of medians, and every timing and
+  stability gate passed. Both wrappers also passed the frozen scikit-learn
+  1.7.2 `check_estimator` gate with only the preregistered expected failure.
+  This closes the compatibility item without changing a model default or
+  spending CTR23/TabArena evidence; see
+  `basketball_input_validation_result.md`.
 
 ## 0. Thesis
 
@@ -309,6 +319,16 @@ Code-mass comparison:
    `_check_predict_input`, feature-name enforcement, and nullable-dtype
    handling against ours; port or adapt only missing behavior with focused
    compatibility tests. Attribute substantial literal ports in `NOTICE`.
+   **Shipped 2026-07-17:** the shared wrapper/core boundary now rejects masked,
+   complex, infinite, sparse, empty, and malformed inputs with compatible
+   messages; handles nullable frame-like inputs and named categorical
+   features; enforces fitted feature names; publishes sklearn tags; and
+   preserves metadata across safe serialization. The frozen basketball gate
+   passed all exactness and timing conditions across ordinary, held-team, and
+   cold-player views. Median validated prediction was 2.6245 ms versus
+   2.5600 ms with `assume_finite` (`1.0252x`); both wrappers passed the frozen
+   scikit-learn 1.7.2 compliance gate. No model default changed and no broad
+   quality claim is authorized.
 
 Gate for Phase 1: basketball first, including cold-player and clean timing.
 Survivors proceed to the spent 13-task TabArena development panel and the 243
