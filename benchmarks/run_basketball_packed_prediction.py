@@ -33,7 +33,6 @@ from darkofit.flat_model import (  # noqa: E402
     _PARALLEL_MIN_ROWS,
     _flat_oblivious_add,
     _flat_oblivious_add_parallel,
-    _oblivious_parallel_min_rows,
 )
 
 
@@ -261,6 +260,13 @@ def _packed_nbytes(flat: FlatObliviousEnsemble) -> int:
         + flat.value_offsets.nbytes
         + flat.values.nbytes
     )
+
+
+def _candidate_parallel_min_rows(n_trees: int) -> int:
+    """Reproduce the rejected candidate cutoff for the pinned campaign."""
+    if n_trees <= 0:
+        return _PARALLEL_MIN_ROWS
+    return min(8192, max(128, (131_072 + n_trees - 1) // n_trees))
 
 
 def _candidate_output(flat, X_binned, initial: float) -> np.ndarray:
@@ -555,7 +561,7 @@ def _case_result(
     chimera_median = core_timing["chimeraboost"]["median_seconds"]
     darko_public_median = public_timing["darkofit"]["median_seconds"]
     chimera_public_median = public_timing["chimeraboost"]["median_seconds"]
-    cutoff = _oblivious_parallel_min_rows(flat.depths.shape[0])
+    cutoff = _candidate_parallel_min_rows(flat.depths.shape[0])
     return {
         "name": name,
         "rows": int(len(X)),
@@ -707,7 +713,7 @@ def run(args) -> dict[str, Any]:
     # Build the comparator's lazy packed forest before measured calls.
     fold_X = dataset.X.iloc[split["test_indices"]]
     chimera_model.predict(fold_X)
-    cutoff = _oblivious_parallel_min_rows(len(darko_core.trees_))
+    cutoff = _candidate_parallel_min_rows(len(darko_core.trees_))
     if cutoff != EXPECTED_CUTOFF_ROWS:
         raise RuntimeError(f"candidate cutoff is {cutoff}, expected 132")
 

@@ -7837,50 +7837,6 @@ def test_flat_kernels_direct_parity_all_families():
         assert np.array_equal(got, want), kw
 
 
-def test_flat_oblivious_parallel_cutoff_scales_with_forest_work(monkeypatch):
-    import darkofit.flat_model as flat_model
-    from darkofit.tree import ObliviousTree
-
-    assert flat_model._oblivious_parallel_min_rows(0) == 8192
-    assert flat_model._oblivious_parallel_min_rows(5) == 8192
-    assert flat_model._oblivious_parallel_min_rows(1000) == 132
-    assert flat_model._oblivious_parallel_min_rows(2000) == 128
-
-    tree = ObliviousTree(
-        np.array([0], dtype=np.int64),
-        np.array([0], dtype=np.int64),
-        np.array([0.0, 1.0], dtype=np.float64),
-    )
-    flat = flat_model.FlatObliviousEnsemble([tree] * 1000)
-    calls = []
-
-    def record_serial(*args):
-        calls.append(("serial", int(args[0].shape[0])))
-
-    def record_parallel(*args):
-        calls.append(("parallel", int(args[0].shape[0])))
-
-    monkeypatch.setattr(flat_model, "_flat_oblivious_add", record_serial)
-    monkeypatch.setattr(
-        flat_model, "_flat_oblivious_add_parallel", record_parallel
-    )
-    monkeypatch.setattr(flat_model, "get_num_threads", lambda: 18)
-
-    for n_rows in (131, 132):
-        flat.add_predict(
-            np.zeros((n_rows, 1), dtype=np.uint8),
-            np.zeros(n_rows, dtype=np.float64),
-        )
-
-    monkeypatch.setattr(flat_model, "get_num_threads", lambda: 1)
-    flat.add_predict(
-        np.zeros((132, 1), dtype=np.uint8),
-        np.zeros(132, dtype=np.float64),
-    )
-
-    assert calls == [("serial", 131), ("parallel", 132), ("serial", 132)]
-
-
 def _cat_dataset(n=1500, seed=0, with_nan=True):
     rng = np.random.default_rng(seed)
     region = rng.choice(["north", "south", "east"], n).astype(object)

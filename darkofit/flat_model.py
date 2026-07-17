@@ -24,28 +24,7 @@ from .tree import (
     ObliviousTree,
 )
 
-# Small forests need a large batch before Numba's parallel scheduler pays for
-# itself, while the fixed 8,192-row boundary needlessly serialized large
-# forests.  Keep that boundary as a cap (and for the separately measured
-# linear/non-oblivious families), but scale constant-leaf oblivious forests by
-# their tree-row work.  The 128-row floor avoids scheduler overhead on truly
-# tiny requests even for very large ensembles.
 _PARALLEL_MIN_ROWS = 8192
-_PARALLEL_MIN_TREE_ROWS = 131_072
-_PARALLEL_FLOOR_ROWS = 128
-
-
-def _oblivious_parallel_min_rows(n_trees):
-    """Return the conservative parallel cutoff for an oblivious forest."""
-    if n_trees <= 0:
-        return _PARALLEL_MIN_ROWS
-    work_cutoff = (
-        _PARALLEL_MIN_TREE_ROWS + int(n_trees) - 1
-    ) // int(n_trees)
-    return min(
-        _PARALLEL_MIN_ROWS,
-        max(_PARALLEL_FLOOR_ROWS, work_cutoff),
-    )
 
 
 @njit(cache=True)
@@ -376,10 +355,7 @@ class FlatObliviousEnsemble:
         self.class_ids = class_ids
 
     def add_predict(self, X_binned, out):
-        parallel_min_rows = _oblivious_parallel_min_rows(
-            self.depths.shape[0]
-        )
-        if get_num_threads() > 1 and X_binned.shape[0] >= parallel_min_rows:
+        if get_num_threads() > 1 and X_binned.shape[0] >= _PARALLEL_MIN_ROWS:
             _flat_oblivious_add_parallel(
                 X_binned, self.depths, self.feats, self.thrs,
                 self.value_offsets, self.values, out
