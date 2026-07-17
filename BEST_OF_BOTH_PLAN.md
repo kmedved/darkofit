@@ -30,7 +30,7 @@ claims until independently reproduced here.*
   has 27 constructor parameters; DarkoFit contains 22,057 package lines and
   its regressor has 58 parameters.
 
-### Current execution status (2026-07-16)
+### Current execution status (2026-07-17)
 
 - The first fused engine port is complete. DarkoFit now combines its existing
   unit-Hessian histogram builder and shared split scan in one feature-parallel
@@ -62,6 +62,16 @@ claims until independently reproduced here.*
   defaults DarkoFit took 1.312× as long because ChimeraBoost retained only 64–163 trees,
   but mean R² differed by just 0.000232 and DarkoFit led cold-player R² by
   0.00955. That is a policy trade-off, not permission to promote early stopping.
+- Exact interventional TreeSHAP is shipped for the supported scalar-oblivious
+  regression and binary-classification lanes. On the frozen basketball fold
+  and cold-player guardrail it matched ChimeraBoost predictions, expected
+  values, and attributions byte-for-byte at a 1.027x median runtime ratio.
+- The separately frozen OOB-5 stable confirmation is complete and closes the
+  ensemble attempt. It reproduced the original +0.003876 mean R² and +0.019349
+  cold-player R² gains, exact behavior, stable wall timing, and a 2.414x median
+  wall cost. However, default prediction IQR/median was 0.235 versus the frozen
+  0.20 limit. The no-rerun rule therefore rejects API work despite every other
+  gate passing; see `basketball_oob_ensemble_confirmation_result.md`.
 
 ## 0. Thesis
 
@@ -272,12 +282,12 @@ Code-mass comparison:
 5. **`n_ensembles` bagging with OOB early stopping** (port ~80 lines from
    their `_fit_bagged`). Basketball evidence says this is the quality ceiling
    on small noisy data (0.5402 vs our 0.5267).
-   **Screened 2026-07-16:** an independent five-member DarkoFit prototype
-   passed all five basketball quality gates (mean +0.003876 R²; cold-player
-   +0.019349) but both arms failed the frozen timing-stability gate after a
-   shared final-block slowdown. Formal decision: `advance_none`; preserve as
-   promising evidence and do not add the API without a separately frozen,
-   stable confirmation campaign.
+   **Closed 2026-07-17:** the separately frozen six-block confirmation
+   reproduced all prediction hashes and quality gains, passed wall stability,
+   paired-ratio stability, and cost gates, but failed the absolute prediction
+   stability gate because default IQR/median was 0.235 against a 0.20 limit.
+   The preregistered decision is `close_oob_ensemble_attempt`: do not add the
+   API or rerun this candidate. Preserve the result only as research evidence.
 6. **Calibration ports**: temperature scaling for `DarkoClassifier`
    (validation split, monotonic, predict unchanged) and the split-conformal
    quantile offset for `loss="Quantile"` — both natural fits for our

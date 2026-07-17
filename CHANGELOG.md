@@ -19,6 +19,15 @@ previous behaviors remain available through explicit parameters.
   is adapted from Apache-2.0 ChimeraBoost commit
   `ff6f248d09f92d608ed8cc366463b61f1af04acc`, recorded in `NOTICE`; see the
   [basketball confirmation](benchmarks/basketball_tree_shap_result.md).
+* Close the experimental five-member OOB-ensemble promotion attempt without
+  adding an API or changing defaults. A frozen six-block basketball
+  confirmation reproduced every prediction fingerprint and all quality gains:
+  mean ten-fold R² improved by 0.003876, held-team R² by 0.006126, and the
+  585-row cold-player R² by 0.019349. Wall timing and paired cost were stable at
+  a 2.414x median wall ratio, but the default arm's summed prediction timing
+  had IQR/median 0.235 against the preregistered 0.20 limit. The protocol's
+  no-rerun rule therefore closes the attempt; see the
+  [confirmation result](benchmarks/basketball_oob_ensemble_confirmation_result.md).
 * Fuse unit-Hessian oblivious histogram construction and shared-split scanning
   into one feature-parallel launch for the proven full-row/full-feature lane
   at three or more threads. Weighted RMSE, classification, sampled rows or
