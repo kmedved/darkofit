@@ -24,8 +24,12 @@ Execution began from published `main` at `ab86269`.
   manifests remain unchanged.
 - `validation_strategy="group"` and the basketball robust-head protocol are
   the first Wave-1 implementation units. S3 and I1 pass the complete suite
-  (`1,647 passed, 23 skipped`); S1 results enter this ledger only after a clean
-  committed-source run.
+  (`1,647 passed, 23 skipped`).
+- S1 is closed from clean source `f10b449`: Student-t location lost `0.007982`
+  mean creator-fold R² and MAE lost `0.008461`; both also failed the
+  leave-one-fold-out and held-team gates despite small cold-player gains. The
+  fatal first block stopped the campaign before timing confirmation, and no
+  downstream evidence was consumed.
 
 ## Standing constraints (inherited, non-negotiable)
 
