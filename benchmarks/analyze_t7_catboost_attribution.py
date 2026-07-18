@@ -433,11 +433,10 @@ def _markdown(summary):
         if candidate_rows
         else "| — | — | — | — | — |"
     )
+    anchor_ratio_key = "equal_dataset_darkofit_over_catboost_ratio"
     candidate_anchor_rows = "\n".join(
         f"| `{name}` | "
-        f"{summary['darkofit_anchors'][name][
-            'equal_dataset_darkofit_over_catboost_ratio'
-        ]:.6f} |"
+        f"{summary['darkofit_anchors'][name][anchor_ratio_key]:.6f} |"
         for name in candidates
     )
     candidate_anchor_table = (

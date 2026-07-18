@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from benchmarks import run_t7_catboost_attribution as runner
 from benchmarks.analyze_t7_catboost_attribution import depth_policy_arm
@@ -51,8 +52,7 @@ def test_depth_policy_is_fixed_by_samples_per_feature():
 
 
 def test_catboost_warmup_target_is_nonconstant():
-    import numpy as np
-
+    pytest.importorskip("catboost")
     assert runner._warmup() > 0
 
 
