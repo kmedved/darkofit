@@ -21,9 +21,11 @@ the agenda. Companion to the execution ledger in `BEYOND_PARITY_PLAN.md`.*
 | T6b smooth cross features | Complete | exact mechanism + 5% T5 nominee |
 | T5 composite confirmation | Closed | fail-closed on two non-finite-target tasks before candidate wave |
 | T7 CatBoost attribution | Complete | one frozen `(n,p)` depth-policy research candidate |
+| T7b CatBoost attribution | Complete | fixed-LR, three-seed follow-on; no gap contributor identified |
 | T8 distributional flagship | Complete | 75/75; conformal coverage/width reported jointly |
 | T9 SynthGen corrected ledger | Complete | 8/9; probe-tier direction finder only |
 | T10 sports panel #2 | Closed | OOB-5 lost 8/9 fresh player-disjoint lineages |
+| Panel 3 lockbox | Preparing | exact-policy spent-data power decision required before fresh access |
 
 Status in this table is operational only. It cannot amend a frozen protocol or
 promote a Tier-D candidate.
@@ -123,7 +125,8 @@ The complete binding policy is `benchmarks/SHIPPING_POLICY.md`.
   for confirmation.
 - **T6. Smooth/geometry cross features.** Develop diff/product features on
   spent smooth tasks, beginning with a 3D-RSSI diagnosis. The closed sports
-  application remains closed. Confirmation belongs inside the T5 panel. T6a
+  application remains closed. Confirmation belongs inside the prospective
+  Panel 3 dual-candidate campaign. T6a
   found byte-exact matched linear-leaf engines: the RSSI gap was validation
   and selection policy, the 100-round linear audition chose the wrong
   full-budget lane, and cross features were not selected. T6b therefore uses
@@ -132,8 +135,8 @@ The complete binding policy is `benchmarks/SHIPPING_POLICY.md`.
   full-budget cross path exactly on 21 coordinates. Its raw selector had a
   1.0708× worst split; a development-derived 5% validation margin retained a
   0.9591× equal-dataset ratio with exact declines and no observed split harm.
-  That guarded mechanism is the frozen nominee for fresh T5 confirmation, not
-  a promoted default.
+  That guarded mechanism is the second, separately adjudicated Panel 3
+  candidate, not a promoted default.
 - **T7. CatBoost attribution.** On development data, isolate ordered
   boosting, border count, leaf estimation/backtracking, combinations, and
   depth policy by `(n, p)`. The output is an attribution table and at most
@@ -144,6 +147,14 @@ The complete binding policy is `benchmarks/SHIPPING_POLICY.md`.
   equal-dataset RMSE by 3.78% with three wins, no losses, and five exact
   defaults; it is frozen as the sole research candidate. See
   `benchmarks/t7_catboost_attribution_result.md`.
+- **T7b. CatBoost attribution follow-on.** Freeze the per-coordinate default
+  learning rate and use three model seeds while testing stochastic
+  regularization, sampling, L2, one-hot thresholds, and extra leaf-estimation
+  steps. The completed campaign attributed none of the gap. `l2_leaf_reg=1`
+  was the sole promising configuration. One-hot 255 produced a large mean
+  improvement but failed the Bonferroni upper and worst-task gates, so it does
+  not support a broad policy. See
+  `benchmarks/t7b_catboost_gap_attribution_result.md`.
 - **T8. Distributional flagship.** Benchmark CRPS, coverage, width, and NLL
   against NGBoost, CatBoost uncertainty, and quantile LightGBM. Add
   `predict_interval(..., calibrate="conformal")` as an opt-in, evaluated
@@ -185,10 +196,13 @@ The complete binding policy is `benchmarks/SHIPPING_POLICY.md`.
 1. **Immediate Tier-E wave:** G1–G4 · subset fusion · measurements page · T1
    preset · T2 ensemble API · T3 recipes · T4 selection rounds.
 2. **Development wave:** T6a RSSI diagnosis · T5 panel construction and
-   composite · T6 cross features · T9 SynthGen re-backtest.
-3. **Ceiling wave:** T7 CatBoost attribution · T8 distributional flagship ·
-   T10 sports panel #2.
-4. **Closeout:** independent review, complete test partitions, packaging,
+   composite · T6 cross features · T7/T7b CatBoost attribution · T9 SynthGen
+   re-backtest.
+3. **Ceiling wave:** T8 distributional flagship · T10 sports panel #2.
+4. **Panel 3 decision:** run the exact-policy calibration only on spent
+   coordinates; publish its preregistered power go/no-go before any fresh
+   target access; open the lockbox only if at least one candidate survives.
+5. **Closeout:** independent review, complete test partitions, packaging,
    documentation build, multi-Python CI, canonical commit and push.
 
 ## 6. What failure would actually look like

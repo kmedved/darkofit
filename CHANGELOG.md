@@ -37,6 +37,11 @@
   Current DarkoFit remained 2.81% better than ChimeraBoost 0.15.0 and 5.26%
   worse than CatBoost 1.2.10 in equal-lineage aggregate RMSE on the same
   coordinates; no global or sports-profile default changes.
+- Complete T7b, the fixed-learning-rate, three-seed CatBoost attribution
+  follow-on. None of the tested stochastic, sampling, one-hot, L2, or
+  leaf-estimation directions explains the historical DarkoFit gap.
+  `l2_leaf_reg=1` remains a promising development configuration; one-hot 255's
+  large mean improvement failed its uncertainty and worst-task gates.
 - Add the Tier-E `n_ensembles` API for deterministic row or group bootstrap
   bagging. Members select their horizons on OOB rows; regression averages
   predictions, classification soft-votes, SHAP values are averaged, and
