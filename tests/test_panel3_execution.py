@@ -766,17 +766,79 @@ def _synthetic_inner_split():
     }
 
 
-def _synthetic_source_state(path, head):
+def _synthetic_source_state(repository, head):
     return {
-        "path": str(Path(path).absolute()),
+        "repository": repository,
         "head": head,
         "branch": "main",
         "clean": True,
         "status": [],
         "describe": head[:7],
-        "remotes": {"origin": "https://example.test/repository.git"},
         "tracked_main_refs": {"origin/main": head},
     }
+
+
+def test_panel3_public_attestations_redact_host_paths(
+    monkeypatch,
+):
+    source = {
+        "path": "/Users/private-user/Code/private-checkout",
+        "head": "a" * 40,
+        "branch": "main",
+        "clean": True,
+        "status": [],
+        "describe": "aaaaaaa",
+        "remotes": {
+            "origin": "file:///Users/private-user/private-remote.git"
+        },
+        "tracked_main_refs": {"origin/main": "a" * 40},
+    }
+    darkofit = runner._public_source_state(source, "darkofit")
+    chimeraboost = runner._public_source_state(
+        {**source, "head": "b" * 40},
+        "chimeraboost",
+    )
+    monkeypatch.setattr(
+        runner.creator,
+        "_machine_details",
+        lambda: {
+            "platform": "test-platform",
+            "machine": "arm64",
+            "cpu_brand": "test-cpu",
+            "logical_cpu_count": 8,
+            "python": "3.12.13",
+            "python_executable": (
+                "/Users/private-user/.venvs/darkofit/bin/python"
+            ),
+        },
+    )
+    machine = runner._public_machine_details()
+    encoded = json.dumps(
+        {
+            "sources": [darkofit, chimeraboost],
+            "machine": machine,
+        },
+        sort_keys=True,
+    )
+
+    assert "/Users/private-user" not in encoded
+    assert "private-remote" not in encoded
+    assert darkofit["repository"] == "kmedved/darkofit"
+    assert chimeraboost["repository"] == "bbstats/chimeraboost"
+    assert "python_executable" not in machine
+
+    attestation = {
+        "registry_file_sha256": "0" * 64,
+        "registry_canonical_sha256": "1" * 64,
+        "darkofit": darkofit,
+        "chimeraboost": chimeraboost,
+    }
+    analyzer._validate_source_attestation(
+        {
+            "before": copy.deepcopy(attestation),
+            "after": copy.deepcopy(attestation),
+        }
+    )
 
 
 def _synthetic_result(coordinate, arm, ratio):
@@ -879,20 +941,20 @@ def _synthetic_result(coordinate, arm, ratio):
                 "registry_file_sha256": "0" * 64,
                 "registry_canonical_sha256": "a" * 64,
                 "darkofit": _synthetic_source_state(
-                    "/synthetic/darkofit", "a" * 40
+                    runner.SOURCE_REPOSITORY_IDS["darkofit"], "a" * 40
                 ),
                 "chimeraboost": _synthetic_source_state(
-                    "/synthetic/chimeraboost", "b" * 40
+                    runner.SOURCE_REPOSITORY_IDS["chimeraboost"], "b" * 40
                 ),
             },
             "after": {
                 "registry_file_sha256": "0" * 64,
                 "registry_canonical_sha256": "a" * 64,
                 "darkofit": _synthetic_source_state(
-                    "/synthetic/darkofit", "a" * 40
+                    runner.SOURCE_REPOSITORY_IDS["darkofit"], "a" * 40
                 ),
                 "chimeraboost": _synthetic_source_state(
-                    "/synthetic/chimeraboost", "b" * 40
+                    runner.SOURCE_REPOSITORY_IDS["chimeraboost"], "b" * 40
                 ),
             },
         },
@@ -1048,10 +1110,10 @@ def _synthetic_raw(tmp_path, monkeypatch):
                 "registry_file_sha256": common.sha256_file(registry_path),
                 "registry_canonical_sha256": registry["registry_sha256"],
                 "darkofit": _synthetic_source_state(
-                    "/synthetic/darkofit", "a" * 40
+                    runner.SOURCE_REPOSITORY_IDS["darkofit"], "a" * 40
                 ),
                 "chimeraboost": _synthetic_source_state(
-                    "/synthetic/chimeraboost", "b" * 40
+                    runner.SOURCE_REPOSITORY_IDS["chimeraboost"], "b" * 40
                 ),
             }
             result["source_attestation"] = {
@@ -1108,10 +1170,10 @@ def _synthetic_raw(tmp_path, monkeypatch):
         },
         "sources": {
             "darkofit": _synthetic_source_state(
-                "/synthetic/darkofit", "a" * 40
+                runner.SOURCE_REPOSITORY_IDS["darkofit"], "a" * 40
             ),
             "chimeraboost": _synthetic_source_state(
-                "/synthetic/chimeraboost", "b" * 40
+                runner.SOURCE_REPOSITORY_IDS["chimeraboost"], "b" * 40
             ),
         },
         "environment": {
@@ -1753,8 +1815,14 @@ def test_parent_validates_complete_raw_before_publication(
         "coordinates": [],
     }
     source = {
+        "path": str(tmp_path),
         "head": "b" * 40,
+        "branch": "main",
         "clean": True,
+        "status": [],
+        "describe": "bbbbbbb",
+        "remotes": {"origin": "file:///private/source"},
+        "tracked_main_refs": {"origin/main": "b" * 40},
     }
     events = []
     monkeypatch.setattr(

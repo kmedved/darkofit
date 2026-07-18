@@ -486,21 +486,27 @@ def _validate_source_attestation(value: Any) -> None:
     ):
         raise RuntimeError("panel-3 worker source attestation changed")
     source_fields = {
-        "path",
+        "repository",
         "head",
         "branch",
         "clean",
         "status",
         "describe",
-        "remotes",
         "tracked_main_refs",
     }
-    for source in (attestation["darkofit"], attestation["chimeraboost"]):
+    expected_repositories = (
+        runner.SOURCE_REPOSITORY_IDS["darkofit"],
+        runner.SOURCE_REPOSITORY_IDS["chimeraboost"],
+    )
+    for source, expected_repository in zip(
+        (attestation["darkofit"], attestation["chimeraboost"]),
+        expected_repositories,
+        strict=True,
+    ):
         if (
             not isinstance(source, dict)
             or set(source) != source_fields
-            or not isinstance(source["path"], str)
-            or not Path(source["path"]).is_absolute()
+            or source["repository"] != expected_repository
             or not isinstance(source["head"], str)
             or len(source["head"]) != 40
             or any(
@@ -513,14 +519,6 @@ def _validate_source_attestation(value: Any) -> None:
             or (
                 source["describe"] is not None
                 and not isinstance(source["describe"], str)
-            )
-            or not isinstance(source["remotes"], dict)
-            or any(
-                not isinstance(key, str)
-                or not key
-                or not isinstance(remote, str)
-                or not remote
-                for key, remote in source["remotes"].items()
             )
             or not isinstance(source["tracked_main_refs"], dict)
             or any(

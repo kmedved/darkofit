@@ -29,6 +29,10 @@ from sklearn.model_selection import ShuffleSplit
 
 ROOT = Path(__file__).resolve().parents[1]
 CHIMERA_ROOT = ROOT.parent / "chimeraboost"
+SOURCE_REPOSITORY_IDS = {
+    "darkofit": "kmedved/darkofit",
+    "chimeraboost": "bbstats/chimeraboost",
+}
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -788,6 +792,51 @@ def _machine_fingerprint() -> dict[str, Any]:
     return {
         **payload,
         "sha256": _json_sha256(payload),
+    }
+
+
+def _public_machine_details() -> dict[str, Any]:
+    """Return machine evidence without publishing the interpreter's host path."""
+    details = dict(creator._machine_details())
+    executable = details.pop("python_executable", None)
+    if executable is not None and (
+        not isinstance(executable, str) or not executable
+    ):
+        raise RuntimeError("panel-3 Python executable identity is invalid")
+    return details
+
+
+def _public_source_state(
+    source: dict[str, Any],
+    repository: str,
+) -> dict[str, Any]:
+    """Bind source identity without publishing checkout paths or remote URLs."""
+    required = {
+        "path",
+        "head",
+        "branch",
+        "clean",
+        "status",
+        "describe",
+        "remotes",
+        "tracked_main_refs",
+    }
+    if (
+        repository not in SOURCE_REPOSITORY_IDS
+        or not isinstance(source, dict)
+        or set(source) != required
+        or not isinstance(source["path"], str)
+        or not isinstance(source["remotes"], dict)
+    ):
+        raise RuntimeError("panel-3 source identity is invalid")
+    return {
+        "repository": SOURCE_REPOSITORY_IDS[repository],
+        "head": source["head"],
+        "branch": source["branch"],
+        "clean": source["clean"],
+        "status": source["status"],
+        "describe": source["describe"],
+        "tracked_main_refs": source["tracked_main_refs"],
     }
 
 
@@ -2750,12 +2799,15 @@ def _campaign_source_attestation(
     )
     if observed_registry != registry:
         raise RuntimeError("panel-3 registry changed during execution")
-    darko_source, chimera_source = _source_state(registry)
+    darko_state, chimera_state = _source_state(registry)
     return {
         "registry_file_sha256": registry_file_sha256,
         "registry_canonical_sha256": registry["registry_sha256"],
-        "darkofit": darko_source,
-        "chimeraboost": chimera_source,
+        "darkofit": _public_source_state(darko_state, "darkofit"),
+        "chimeraboost": _public_source_state(
+            chimera_state,
+            "chimeraboost",
+        ),
     }
 
 
@@ -3474,7 +3526,12 @@ def run_parent(args: argparse.Namespace) -> dict[str, Any]:
     if not isinstance(registry, dict):
         raise RuntimeError("panel-3 registry is not an object")
     validate_registry(registry, registry_path=args.registry)
-    darko_source, chimera_source = _source_state(registry)
+    darko_state, chimera_state = _source_state(registry)
+    darko_source = _public_source_state(darko_state, "darkofit")
+    chimera_source = _public_source_state(
+        chimera_state,
+        "chimeraboost",
+    )
     runtime = _validate_runtime_contract(registry["candidate_contract"])
     runtime_contract_normalized_sha256 = _json_sha256(runtime)
     machine_fingerprint = _machine_fingerprint()
@@ -3661,7 +3718,7 @@ def run_parent(args: argparse.Namespace) -> dict[str, Any]:
                 runtime_contract_normalized_sha256
             ),
             "machine_fingerprint": machine_fingerprint,
-            "machine": creator._machine_details(),
+            "machine": _public_machine_details(),
             "dependencies": creator._dependency_versions(),
         },
         "spool": {
