@@ -124,10 +124,12 @@ def test_arm_manifest_has_no_duplicate_or_undeclared_lane():
     }
 
 
-def test_recorded_artifact_reproduces_binding_diagnosis():
+def test_recorded_artifact_reproduces_binding_diagnosis(
+    assert_analysis_equal,
+):
     artifact = json.loads(ARTIFACT.read_text())
     analysis = diagnosis.analyze(artifact["results"])
-    assert analysis == artifact["analysis"]
+    assert_analysis_equal(artifact["analysis"], analysis)
     assert artifact["spent_boundary"]["fresh_claim_eligible"] is False
     assert artifact["protocol"]["timing_claim_eligible"] is False
     assert analysis["capped_selector_disagrees_with_full"] is True

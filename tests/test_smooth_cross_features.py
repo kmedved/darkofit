@@ -87,9 +87,12 @@ def test_analysis_rejects_inexact_or_incomplete_artifacts():
         experiment.analyze(incomplete)
 
 
-def test_recorded_artifact_reproduces_raw_analysis():
+def test_recorded_artifact_reproduces_raw_analysis(assert_analysis_equal):
     artifact = json.loads(ARTIFACT.read_text())
-    assert experiment.analyze(artifact["results"]) == artifact["analysis"]
+    assert_analysis_equal(
+        artifact["analysis"],
+        experiment.analyze(artifact["results"]),
+    )
     assert artifact["partition_boundary"]["lockbox_data_used"] is False
     assert artifact["analysis"]["external_native_exact"] is True
     assert artifact["analysis"]["fresh_claim_eligible"] is False

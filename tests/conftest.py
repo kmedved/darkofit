@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 import pytest
@@ -71,3 +73,47 @@ def pytest_collection_modifyitems(items):
     for item in items:
         if is_campaign_module(item.path):
             item.add_marker(marker)
+
+
+def _assert_analysis_equal(stored, regenerated, path="result"):
+    """Compare an analysis exactly except for platform-level FP rounding."""
+    if isinstance(stored, float) and isinstance(regenerated, float):
+        assert math.isclose(
+            stored,
+            regenerated,
+            rel_tol=1e-14,
+            abs_tol=1e-15,
+        ), f"{path}: {stored!r} != {regenerated!r}"
+        return
+    if isinstance(stored, Mapping) and isinstance(regenerated, Mapping):
+        assert stored.keys() == regenerated.keys(), path
+        for key in stored:
+            _assert_analysis_equal(
+                stored[key],
+                regenerated[key],
+                f"{path}.{key}",
+            )
+        return
+    if (
+        isinstance(stored, Sequence)
+        and not isinstance(stored, (str, bytes))
+        and isinstance(regenerated, Sequence)
+        and not isinstance(regenerated, (str, bytes))
+    ):
+        assert len(stored) == len(regenerated), path
+        for index, (stored_item, regenerated_item) in enumerate(
+            zip(stored, regenerated)
+        ):
+            _assert_analysis_equal(
+                stored_item,
+                regenerated_item,
+                f"{path}[{index}]",
+            )
+        return
+    assert stored == regenerated, path
+
+
+@pytest.fixture
+def assert_analysis_equal():
+    """Assert artifact reproduction without requiring cross-platform FP ULPs."""
+    return _assert_analysis_equal

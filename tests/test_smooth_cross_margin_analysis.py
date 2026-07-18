@@ -77,10 +77,15 @@ def test_geomean_rejects_nonpositive_values():
         analysis._geomean([1.0, 0.0])
 
 
-def test_recorded_analysis_nominates_five_percent_for_fresh_confirmation():
+def test_recorded_analysis_nominates_five_percent_for_fresh_confirmation(
+    assert_analysis_equal,
+):
     artifact = json.loads(ARTIFACT.read_text())
     source = json.loads(analysis.SOURCE.read_text())
-    assert analysis.analyze(source) == artifact["analysis"]
+    assert_analysis_equal(
+        artifact["analysis"],
+        analysis.analyze(source),
+    )
     nominee = artifact["analysis"]["nominee"]
     assert nominee["minimum_validation_improvement"] == 0.05
     assert nominee["worst_split_ratio"] == 1.0

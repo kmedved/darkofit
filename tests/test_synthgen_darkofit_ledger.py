@@ -1,7 +1,6 @@
 import json
 import math
 import pickle
-from collections.abc import Mapping, Sequence
 
 import numpy as np
 import pytest
@@ -240,69 +239,33 @@ def test_t9_corrected_ledger_changes_only_superseded_outcomes():
     assert all(result["adoption_gates"].values())
 
 
-def test_t9_result_matches_frozen_analyzer():
+def test_t9_result_matches_frozen_analyzer(assert_analysis_equal):
     stored = json.loads(
         corrected.OUTPUT_JSON.read_text(encoding="utf-8")
     )
     regenerated = corrected.analyze()
-    _assert_analysis_equal(stored, regenerated)
+    assert_analysis_equal(stored, regenerated)
 
 
-def test_analysis_comparison_allows_only_machine_precision_float_drift():
+def test_analysis_comparison_allows_only_machine_precision_float_drift(
+    assert_analysis_equal,
+):
     value = 1.0135136999647203
     adjacent = float(np.nextafter(value, math.inf))
-    _assert_analysis_equal(
+    assert_analysis_equal(
         {"decision": True, "ratio": value},
         {"decision": True, "ratio": adjacent},
     )
     with pytest.raises(AssertionError, match=r"result\.ratio"):
-        _assert_analysis_equal(
+        assert_analysis_equal(
             {"decision": True, "ratio": value},
             {"decision": True, "ratio": value + 1e-6},
         )
     with pytest.raises(AssertionError, match=r"result\.decision"):
-        _assert_analysis_equal(
+        assert_analysis_equal(
             {"decision": True, "ratio": value},
             {"decision": False, "ratio": value},
         )
-
-
-def _assert_analysis_equal(stored, regenerated, path="result"):
-    """Compare an analysis exactly except for platform-level FP rounding."""
-    if isinstance(stored, float) and isinstance(regenerated, float):
-        assert math.isclose(
-            stored,
-            regenerated,
-            rel_tol=1e-14,
-            abs_tol=1e-15,
-        ), f"{path}: {stored!r} != {regenerated!r}"
-        return
-    if isinstance(stored, Mapping) and isinstance(regenerated, Mapping):
-        assert stored.keys() == regenerated.keys(), path
-        for key in stored:
-            _assert_analysis_equal(
-                stored[key],
-                regenerated[key],
-                f"{path}.{key}",
-            )
-        return
-    if (
-        isinstance(stored, Sequence)
-        and not isinstance(stored, (str, bytes))
-        and isinstance(regenerated, Sequence)
-        and not isinstance(regenerated, (str, bytes))
-    ):
-        assert len(stored) == len(regenerated), path
-        for index, (stored_item, regenerated_item) in enumerate(
-            zip(stored, regenerated)
-        ):
-            _assert_analysis_equal(
-                stored_item,
-                regenerated_item,
-                f"{path}[{index}]",
-            )
-        return
-    assert stored == regenerated, path
 
 
 class _null:
