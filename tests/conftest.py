@@ -21,6 +21,8 @@ CAMPAIGN_EXACT = frozenset({
     "test_large_n_engine.py",
     "test_native_ordinal_c2.py",
     "test_native_ordinal_c2_registry.py",
+    "test_panel3_execution.py",
+    "test_panel3_registry.py",
     "test_predict_throughput.py",
     "test_predict_throughput_contiguous_blocks.py",
     "test_predict_throughput_integrated.py",
@@ -39,6 +41,7 @@ CAMPAIGN_EXACT = frozenset({
     "test_t5_composite_confirmation_failure.py",
     "test_t5_composite_registry.py",
     "test_t7_catboost_attribution.py",
+    "test_t7b_catboost_gap_attribution.py",
     "test_t8_distributional_flagship.py",
     "test_vector_fit_profile.py",
 })
