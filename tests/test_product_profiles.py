@@ -92,6 +92,35 @@ def test_accuracy_preset_matches_the_frozen_a10_configuration(tmp_path):
     assert np.array_equal(loaded.predict(X), preset.predict(X))
 
 
+def test_accuracy_preset_temporarily_overrides_only_managed_fields():
+    X, y = _regression_data(seed=20, n=80)
+    model = DarkoRegressor(
+        preset="accuracy",
+        iterations=3,
+        learning_rate=0.4,
+        max_bins=16,
+        tree_mode="lightgbm",
+        depth=2,
+        min_child_samples=2,
+        early_stopping_rounds=2,
+        validation_fraction=0.25,
+        thread_count=1,
+        random_state=7,
+        diagnostic_warnings="never",
+    ).fit(X, y)
+
+    resolved = model.model_.auto_params_["preset"]["resolved"]
+    assert resolved["iterations"] == 10_000
+    assert resolved["learning_rate"] == 0.1
+    assert resolved["max_bins"] == 128
+    assert resolved["tree_mode"] == "auto"
+    assert model.model_.depth == 2
+    assert model.iterations == 3
+    assert model.learning_rate == 0.4
+    assert model.max_bins == 16
+    assert model.tree_mode == "lightgbm"
+
+
 @pytest.mark.parametrize("preset", ["fast", object()])
 def test_unknown_regression_preset_is_rejected(preset):
     X, y = _regression_data(seed=3, n=40)

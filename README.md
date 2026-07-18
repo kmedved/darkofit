@@ -17,6 +17,12 @@ inspired by CatBoost.
       trailed CatBoost. It ships only as a Tier-E opt-in; that spent evidence
       cannot support a default promotion
       ([benchmark notes](BENCHMARK_NOTES.md))
+    * Opt-in split-conformal Gaussian intervals had the smallest mean absolute
+      90%-coverage gap on the frozen five-dataset T8 panel (`0.0110`, versus
+      `0.0824` for NGBoost) while remaining `0.9831×` as wide as DarkoFit's
+      parametric interval. This is descriptive marginal-coverage evidence on
+      that panel, not a conditional-coverage or universal-superiority claim
+      ([coverage and width](benchmarks/t8_distributional_flagship_result.md))
     * Supports sample weights and automatic early stopping
 
 * **Why?**

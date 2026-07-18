@@ -35,10 +35,11 @@ Pass `groups=` to `fit` for entity-disjoint validation. Use
 `preset="accuracy"` manages `iterations=10000`, `tree_mode="auto"`,
 `l2_leaf_reg=3`, `max_bins=128`, `learning_rate=0.1`,
 `ts_permutations=1`, `linear_residual=False`, `early_stopping=True`, and
-`use_best_model=True` during fit. Other explicit parameters remain user
-overrides. The constructor values are restored after fitting; the resolved
-profile is stored in fitted metadata, and `get_refit_params()` returns its
-concrete selected mode with `preset=None`.
+`use_best_model=True` during fit. The preset deliberately overrides
+constructor values for those managed fields; explicit parameters outside that
+list remain user overrides. The constructor values are restored after fitting;
+the resolved profile is stored in fitted metadata, and `get_refit_params()`
+returns its concrete selected mode with `preset=None`.
 
 `selection_rounds` currently applies only to `tree_mode="auto"`. The capped
 auditions choose a mode; DarkoFit then starts a fresh full-budget fit of that

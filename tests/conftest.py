@@ -34,6 +34,7 @@ CAMPAIGN_EXACT = frozenset({
     "test_synthgen_darkofit_ledger.py",
     "test_synthgen_harvest.py",
     "test_synthgen.py",
+    "test_confirmation_target_preflight.py",
     "test_t5_composite_confirmation.py",
     "test_t5_composite_confirmation_failure.py",
     "test_t5_composite_registry.py",

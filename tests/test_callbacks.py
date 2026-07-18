@@ -362,6 +362,35 @@ def test_tree_mode_auto_shares_wall_clock_stopper_and_audits_candidates():
     assert model.model_.auto_params_["tree_mode_selection"] == selection
 
 
+def test_selection_rounds_retains_audition_when_deadline_blocks_refit():
+    X, y = _regression_data(seed=181)
+    model = DarkoRegressor(
+        iterations=5,
+        selection_rounds=2,
+        learning_rate=0.1,
+        tree_mode="auto",
+        depth=2,
+        min_child_samples=2,
+        thread_count=1,
+        random_state=0,
+        diagnostic_warnings="never",
+    ).fit(
+        X[:90],
+        y[:90],
+        eval_set=(X[90:], y[90:]),
+        callbacks=WallClockStopper(0.0),
+    )
+
+    selection = model.tree_mode_selection_
+    selected = selection["candidates"][selection["selected_candidate_index"]]
+    assert selection["selection_rounds"] == 2
+    assert selection["final_refit_performed"] is False
+    assert selection["final_refit_status"] == "skipped_deadline"
+    assert selection["deadline_hit"] is True
+    assert model.model_.tree_mode_ == selected["tree_mode"]
+    assert model.model_.auto_params_["tree_mode_selection"] == selection
+
+
 def test_tree_mode_auto_reuses_callback_objects_for_classifier_candidates():
     X, y = _regression_data(seed=19)
     labels = (y > np.median(y)).astype(int)
