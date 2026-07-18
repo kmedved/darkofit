@@ -8,6 +8,7 @@ from benchmarks import run_rssi_linear_leaf_diagnosis as diagnosis
 
 
 ROOT = Path(__file__).resolve().parents[1]
+ARTIFACT = ROOT / "benchmarks" / "rssi_linear_leaf_diagnosis.json"
 
 
 def _row(arm, *, marker="same", best=1.0, selected=None, cross=None):
@@ -121,3 +122,19 @@ def test_arm_manifest_has_no_duplicate_or_undeclared_lane():
         "chimera_full_product",
         "chimera_product",
     }
+
+
+def test_recorded_artifact_reproduces_binding_diagnosis():
+    artifact = json.loads(ARTIFACT.read_text())
+    analysis = diagnosis.analyze(artifact["results"])
+    assert analysis == artifact["analysis"]
+    assert artifact["spent_boundary"]["fresh_claim_eligible"] is False
+    assert artifact["protocol"]["timing_claim_eligible"] is False
+    assert analysis["capped_selector_disagrees_with_full"] is True
+    assert analysis["chimera_product_cross_selected"] is False
+    assert (
+        analysis["test_rmse_ratios"][
+            "darko_shared_constant_over_chimera_product"
+        ]
+        < 1.0
+    )

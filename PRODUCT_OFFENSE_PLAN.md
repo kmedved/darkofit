@@ -17,7 +17,8 @@ the agenda. Companion to the execution ledger in `BEYOND_PARITY_PLAN.md`.*
 | T2 ensemble v2 | Complete | row/group OOB, safe preprocessing, SHAP, persistence, docs |
 | T3 feature recipes | Complete | docs tied to immutable evidence |
 | T4 capped selection | Complete | final-refit exactness + metadata |
-| T5–T10 campaigns | Pending | frozen protocols, contamination and power checks |
+| T6a RSSI diagnosis | Complete | `benchmarks/rssi_linear_leaf_diagnosis_result.md` |
+| T5 and T6b–T10 campaigns | Pending | frozen protocols, contamination and power checks |
 
 Status in this table is operational only. It cannot amend a frozen protocol or
 promote a Tier-D candidate.
@@ -111,7 +112,12 @@ The complete binding policy is `benchmarks/SHIPPING_POLICY.md`.
   outcomes.
 - **T6. Smooth/geometry cross features.** Develop diff/product features on
   spent smooth tasks, beginning with a 3D-RSSI diagnosis. The closed sports
-  application remains closed. Confirmation belongs inside the T5 panel.
+  application remains closed. Confirmation belongs inside the T5 panel. T6a
+  found byte-exact matched linear-leaf engines: the RSSI gap was validation
+  and selection policy, the 100-round linear audition chose the wrong
+  full-budget lane, and cross features were not selected. T6b therefore uses
+  other spent smooth tasks for cross-feature development rather than
+  reimplementing linear leaves.
 - **T7. CatBoost attribution.** On development data, isolate ordered
   boosting, border count, leaf estimation/backtracking, combinations, and
   depth policy by `(n, p)`. The output is an attribution table and at most
