@@ -188,8 +188,15 @@ def load_raw_source(path: Path) -> tuple[pd.DataFrame, dict[str, Any]]:
     return frame, metadata
 
 
-def prepare_panel(frame: pd.DataFrame) -> pd.DataFrame:
+def prepare_panel(
+    frame: pd.DataFrame,
+    *,
+    seasons: tuple[int, ...] | None = None,
+) -> pd.DataFrame:
     """Return the canonical player-team-season panel from a raw-like frame."""
+    selected_seasons = SEASONS if seasons is None else tuple(seasons)
+    if not selected_seasons or len(set(selected_seasons)) != len(selected_seasons):
+        raise ValueError("seasons must contain distinct values")
     missing = sorted(set(RAW_COLUMNS).difference(frame.columns))
     if missing:
         raise RuntimeError(f"basketball sports frame lost columns: {missing}")
@@ -198,7 +205,7 @@ def prepare_panel(frame: pd.DataFrame) -> pd.DataFrame:
     work["year"] = pd.to_numeric(work["year"], errors="coerce")
     work["Minutes"] = pd.to_numeric(work["Minutes"], errors="coerce")
     work = work.loc[
-        work["year"].isin(SEASONS)
+        work["year"].isin(selected_seasons)
         & np.isfinite(work["Minutes"])
         & (work["Minutes"] > 0.0)
         & work["bref_id"].notna()
@@ -281,9 +288,11 @@ def prepare_panel(frame: pd.DataFrame) -> pd.DataFrame:
     )
     if not np.all(np.isfinite(values)):
         raise RuntimeError("canonical basketball panel contains non-finite values")
-    if tuple(sorted(panel["year"].unique().tolist())) != SEASONS:
+    if tuple(sorted(panel["year"].unique().tolist())) != tuple(
+        sorted(selected_seasons)
+    ):
         raise RuntimeError("canonical basketball panel lost a frozen season")
-    for season in SEASONS:
+    for season in selected_seasons:
         if panel.loc[panel["year"] == season, "Tm"].nunique() != 30:
             raise RuntimeError(f"season {season} does not contain 30 teams")
     return panel
