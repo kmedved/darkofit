@@ -970,6 +970,8 @@ def _validate_fitted_metadata(
 ) -> None:
     metadata = result["metadata"]
     arm = result["arm"]
+    if strict and metadata.get("kind") != arm:
+        raise RuntimeError("panel-3 fitted metadata arm changed")
     if arm == runner.CONTROL_ARM:
         if (
             metadata.get("engaged") is not False
@@ -1431,6 +1433,8 @@ def _validate_fitted_metadata_strict(result: dict[str, Any]) -> None:
             raise RuntimeError("panel-3 current-default fields changed")
         return
     if arm == "t5_composite_policy":
+        if metadata.get("size_gate") != 2_000:
+            raise RuntimeError("panel-3 T5 size gate changed")
         if metadata["decline_reason"] == "below_size_gate":
             expected = {
                 "kind",
@@ -1443,7 +1447,11 @@ def _validate_fitted_metadata_strict(result: dict[str, Any]) -> None:
                 "final_fit_seconds",
                 "final_fit",
             }
-            if set(metadata) != expected:
+            if (
+                set(metadata) != expected
+                or metadata["selected_configuration"] != "product_default"
+                or metadata["total_selection_fit_seconds"] != 0.0
+            ):
                 raise RuntimeError("panel-3 T5 size-gate fields changed")
             final_seconds = _positive_float(
                 metadata["final_fit_seconds"],
@@ -1689,6 +1697,10 @@ def _validate_fitted_metadata_strict(result: dict[str, Any]) -> None:
         ):
             raise RuntimeError(
                 "panel-3 guarded-cross producer fields changed"
+            )
+        if metadata["final_refit_parameters"]["learning_rate"] != 0.1:
+            raise RuntimeError(
+                "panel-3 guarded-cross fixed learning rate changed"
             )
         _validate_inner_split(
             metadata["split"],

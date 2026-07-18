@@ -1718,6 +1718,82 @@ def test_t5_strict_metadata_rejects_selection_ledger_mutations(
 
 
 @pytest.mark.parametrize(
+    "arm",
+    [
+        runner.CONTROL_ARM,
+        "t5_composite_policy",
+        "guarded_cross_features_policy",
+    ],
+)
+def test_strict_fitted_metadata_requires_kind_to_match_arm(arm):
+    result = _synthetic_result(
+        {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0},
+        arm,
+        1.0,
+    )
+    result["metadata"]["kind"] = "changed"
+
+    with pytest.raises(RuntimeError, match="metadata arm changed"):
+        analyzer._validate_fitted_metadata(result, strict=True)
+
+
+@pytest.mark.parametrize("engaged", [False, True])
+def test_t5_strict_metadata_requires_frozen_size_gate_on_both_paths(
+    engaged,
+):
+    result = (
+        _synthetic_engaged_t5_result()
+        if engaged
+        else _synthetic_result(
+            {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0},
+            "t5_composite_policy",
+            1.0,
+        )
+    )
+    result["metadata"]["size_gate"] = 2_001
+
+    with pytest.raises(RuntimeError, match="size gate changed"):
+        analyzer._validate_fitted_metadata(result, strict=True)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("selected_configuration", "challenger"),
+        ("total_selection_fit_seconds", 0.1),
+    ],
+)
+def test_t5_strict_metadata_binds_below_gate_decline_fields(field, value):
+    result = _synthetic_result(
+        {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0},
+        "t5_composite_policy",
+        1.0,
+    )
+    result["metadata"][field] = value
+
+    with pytest.raises(RuntimeError, match="size-gate fields changed"):
+        analyzer._validate_fitted_metadata(result, strict=True)
+
+
+def test_guarded_strict_metadata_binds_fixed_refit_learning_rate():
+    result = _synthetic_result(
+        {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0},
+        "guarded_cross_features_policy",
+        1.0,
+    )
+    metadata = result["metadata"]
+    metadata["selected_resolved_learning_rate"] = 0.2
+    metadata["final_refit_parameters"]["learning_rate"] = 0.2
+    metadata["selected_selection_fit"]["fit_metadata"][
+        "resolved_learning_rate"
+    ] = 0.2
+    metadata["final_fit"]["resolved_learning_rate"] = 0.2
+
+    with pytest.raises(RuntimeError, match="fixed learning rate changed"):
+        analyzer._validate_fitted_metadata(result, strict=True)
+
+
+@pytest.mark.parametrize(
     ("field", "value", "message"),
     [
         ("uncrossed_validation_rmse", 1.01, "uncrossed score"),
