@@ -1,0 +1,286 @@
+{
+  "schema_version": 1,
+  "registry_name": "darkofit_t5_composite_confirmation_v1",
+  "darkofit_prefreeze_head": "da5e2d313e522fb9da0abe3c93853bbc8a052512",
+  "chimeraboost_head": "851ab7fa79fbb2a7f698fbc1a00952e1bd18c62d",
+  "coordinate_folds": [0, 1, 2],
+  "candidates": [
+    {
+      "task_id": 363721,
+      "dataset_id": 46994,
+      "expected_normalized_name": "bike_sharing_domain_generalization",
+      "expected_target_name": "cnt",
+      "lineage_cluster": "uci_bike_sharing_domain_generalization",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [363721],
+      "semantic_sources": ["https://archive.ics.uci.edu/dataset/275/bike+sharing+dataset"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 363652,
+      "dataset_id": 46946,
+      "expected_normalized_name": "nhanes_age",
+      "expected_target_name": "age",
+      "lineage_cluster": "nhanes_age",
+      "stratum": "mixed_categorical",
+      "related_task_ids": [363652, 363690],
+      "semantic_sources": ["https://doi.org/10.24432/C5BS66"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 363600,
+      "dataset_id": 46890,
+      "expected_normalized_name": "ucc",
+      "expected_target_name": "hostile_confidence",
+      "lineage_cluster": "unhealthy_comments_corpus",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [363600],
+      "semantic_sources": ["https://github.com/conversationai/unhealthy-conversations"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 363595,
+      "dataset_id": 46885,
+      "expected_normalized_name": "women_clothing_review",
+      "expected_target_name": "Rating",
+      "lineage_cluster": "womens_ecommerce_clothing_reviews",
+      "stratum": "mixed_categorical",
+      "related_task_ids": [363595],
+      "semantic_sources": ["https://www.kaggle.com/nicapotato/womens-ecommerce-clothing-reviews"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 363431,
+      "dataset_id": 46723,
+      "expected_normalized_name": "violent_crime_by_county_1975_to_2016",
+      "expected_target_name": "PROPERTY_CRIME_TOTALS",
+      "lineage_cluster": "us_county_crime_1975_2016",
+      "stratum": "applied_noisy",
+      "related_task_ids": [363431],
+      "semantic_sources": ["https://www.kaggle.com/datasets/kingabzpro/violent-crime-by-countries"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 363373,
+      "dataset_id": 46661,
+      "expected_normalized_name": "jc_penney_products",
+      "expected_target_name": "sale_price",
+      "lineage_cluster": "jc_penney_products",
+      "stratum": "mixed_categorical",
+      "related_task_ids": [363373],
+      "semantic_sources": ["https://www.kaggle.com/PromptCloudHQ/all-jc-penny-products"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 363348,
+      "dataset_id": 41187,
+      "expected_normalized_name": "mauna_loa_atmospheric_co2",
+      "expected_target_name": "co2",
+      "lineage_cluster": "mauna_loa_weekly_co2",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [360050, 363348],
+      "semantic_sources": ["https://gml.noaa.gov/ccgg/trends/"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 363223,
+      "dataset_id": 46167,
+      "expected_normalized_name": "hdfail",
+      "expected_target_name": "time",
+      "lineage_cluster": "frailtysurv_hard_drive_failure",
+      "stratum": "mixed_categorical",
+      "related_task_ids": [363223],
+      "semantic_sources": ["https://cran.r-project.org/package=frailtySurv"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 363220,
+      "dataset_id": 46164,
+      "expected_normalized_name": "nafld1",
+      "expected_target_name": "time",
+      "lineage_cluster": "survival_nafld1",
+      "stratum": "mixed_categorical",
+      "related_task_ids": [363220],
+      "semantic_sources": ["https://stat.ethz.ch/R-manual/R-devel/library/survival/html/nafld.html"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 363214,
+      "dataset_id": 46158,
+      "expected_normalized_name": "aids2",
+      "expected_target_name": "time",
+      "lineage_cluster": "mass_aids2",
+      "stratum": "mixed_categorical",
+      "related_task_ids": [363214],
+      "semantic_sources": ["https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/Aids2.html"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 363202,
+      "dataset_id": 46147,
+      "expected_normalized_name": "child",
+      "expected_target_name": "time",
+      "lineage_cluster": "eha_child_mortality",
+      "stratum": "mixed_categorical",
+      "related_task_ids": [363202],
+      "semantic_sources": ["https://cran.r-project.org/package=eha"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 363198,
+      "dataset_id": 46142,
+      "expected_normalized_name": "metabric",
+      "expected_target_name": "time",
+      "lineage_cluster": "pycox_metabric",
+      "stratum": "applied_noisy",
+      "related_task_ids": [363198],
+      "semantic_sources": ["https://github.com/havakv/pycox"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 362589,
+      "dataset_id": 44311,
+      "expected_normalized_name": "job_profitability",
+      "expected_target_name": "Jobs_Gross_Margin_Percentage",
+      "lineage_cluster": "job_profitability",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [362589],
+      "semantic_sources": ["https://www.openml.org/d/44311"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 362548,
+      "dataset_id": 44179,
+      "expected_normalized_name": "ieee80211aa_gats_ns3_35",
+      "expected_target_name": "norm_gd_downlink_multicast",
+      "lineage_cluster": "ieee80211aa_gats_ns335",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [362548],
+      "semantic_sources": ["https://www.openml.org/d/44179"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 362418,
+      "dataset_id": 43927,
+      "expected_normalized_name": "avocado_sales",
+      "expected_target_name": "AveragePrice",
+      "lineage_cluster": "us_avocado_sales",
+      "stratum": "mixed_categorical",
+      "related_task_ids": [362418],
+      "semantic_sources": ["https://www.kaggle.com/datasets/neuromusic/avocado-prices"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 362395,
+      "dataset_id": 43853,
+      "expected_normalized_name": "nintendo3ds_games",
+      "expected_target_name": "metacritic",
+      "lineage_cluster": "nintendo_3ds_games",
+      "stratum": "applied_noisy",
+      "related_task_ids": [362395],
+      "semantic_sources": ["https://www.openml.org/d/43853"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 362390,
+      "dataset_id": 43785,
+      "expected_normalized_name": "goodreads_computer_books",
+      "expected_target_name": "Avg_Rating",
+      "lineage_cluster": "goodreads_computer_books",
+      "stratum": "applied_noisy",
+      "related_task_ids": [362390],
+      "semantic_sources": ["https://www.openml.org/d/43785"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 362389,
+      "dataset_id": 43747,
+      "expected_normalized_name": "minneapolis_air_quality_survey",
+      "expected_target_name": "Results",
+      "lineage_cluster": "minneapolis_air_quality",
+      "stratum": "applied_noisy",
+      "related_task_ids": [362389],
+      "semantic_sources": ["https://opendata.minneapolismn.gov/"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 362387,
+      "dataset_id": 43714,
+      "expected_normalized_name": "1000_cameras_dataset",
+      "expected_target_name": "Price",
+      "lineage_cluster": "camera_specs_price",
+      "stratum": "applied_noisy",
+      "related_task_ids": [362387],
+      "semantic_sources": ["https://www.openml.org/d/43714"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 362367,
+      "dataset_id": 43462,
+      "expected_normalized_name": "riga_real_estate_dataset",
+      "expected_target_name": "price",
+      "lineage_cluster": "riga_real_estate",
+      "stratum": "applied_noisy",
+      "related_task_ids": [362367],
+      "semantic_sources": ["https://www.openml.org/d/43462"],
+      "ordinal_features": {
+        "condition": ["Without amenities", "Partial amenities", "All amenities"]
+      }
+    },
+    {
+      "task_id": 362088,
+      "dataset_id": 46284,
+      "expected_normalized_name": "bengaluru_real_estate_price",
+      "expected_target_name": "price",
+      "lineage_cluster": "bengaluru_house_prices",
+      "stratum": "mixed_categorical",
+      "related_task_ids": [362088],
+      "semantic_sources": ["https://www.kaggle.com/datasets/amitabhajoy/bengaluru-house-price-data"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 362086,
+      "dataset_id": 46283,
+      "expected_normalized_name": "appliances_energy_prediction",
+      "expected_target_name": "Appliances",
+      "lineage_cluster": "uci_appliances_energy",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [362086],
+      "semantic_sources": ["https://archive.ics.uci.edu/dataset/374/appliances+energy+prediction"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 361131,
+      "dataset_id": 44212,
+      "expected_normalized_name": "reading_hydro",
+      "expected_target_name": "upstream",
+      "lineage_cluster": "reading_hydro_generator",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [361131],
+      "semantic_sources": ["https://www.openml.org/d/44212"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 363040,
+      "dataset_id": 45002,
+      "expected_normalized_name": "fifa",
+      "expected_target_name": "wage_eur",
+      "lineage_cluster": "fifa_22_player_wages",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [363040],
+      "semantic_sources": ["https://www.kaggle.com/stefanoleone992/fifa-22-complete-player-dataset"],
+      "ordinal_features": {}
+    },
+    {
+      "task_id": 168887,
+      "dataset_id": 41542,
+      "expected_normalized_name": "cd4",
+      "expected_target_name": "Future_CD4",
+      "lineage_cluster": "cd4_count_prediction",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [168887],
+      "semantic_sources": ["https://www.openml.org/d/41542"],
+      "ordinal_features": {}
+    }
+  ]
+}
