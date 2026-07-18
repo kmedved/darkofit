@@ -30,6 +30,13 @@
   exactly the random-strength and fixed-linear development labels are
   superseded. It is admitted only as a retrospective probe-tier direction
   finder and remains inadmissible as confirmation or promotion evidence.
+- Close the five-member row-OOB ensemble as a sports automatic policy on the
+  fresh 2014–2016 basketball panel. It passed the frozen 3× fit/predict/RSS
+  budgets but worsened player-disjoint aggregate RMSE by 2.31%, lost eight of
+  nine target-season lineages, and worsened cold-player RMSE by 2.87%.
+  Current DarkoFit remained 2.81% better than ChimeraBoost 0.15.0 and 5.26%
+  worse than CatBoost 1.2.10 in equal-lineage aggregate RMSE on the same
+  coordinates; no global or sports-profile default changes.
 - Add the Tier-E `n_ensembles` API for deterministic row or group bootstrap
   bagging. Members select their horizons on OOB rows; regression averages
   predictions, classification soft-votes, SHAP values are averaged, and

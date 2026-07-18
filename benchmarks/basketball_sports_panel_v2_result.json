@@ -1,0 +1,701 @@
+{
+  "arm_summary": {
+    "catboost_1_2_10": {
+      "geometric_mean_cold_player_rmse": 1.7119591341544214,
+      "geometric_mean_held_team_rmse": 1.7012676149847046,
+      "geometric_mean_primary_rmse": 1.8651139943381763,
+      "median_peak_rss_bytes": 268910592.0,
+      "median_total_fit_seconds": 59.09486016800002,
+      "median_total_predict_seconds": 0.07434737100000001
+    },
+    "chimeraboost_0_15_0": {
+      "geometric_mean_cold_player_rmse": 1.8403810254598851,
+      "geometric_mean_held_team_rmse": 1.8286815319951233,
+      "geometric_mean_primary_rmse": 2.0200696346147438,
+      "median_peak_rss_bytes": 311787520.0,
+      "median_total_fit_seconds": 26.08621792300001,
+      "median_total_predict_seconds": 0.09330145100000004
+    },
+    "darkofit_control": {
+      "geometric_mean_cold_player_rmse": 1.807505757020559,
+      "geometric_mean_held_team_rmse": 1.7957389145016431,
+      "geometric_mean_primary_rmse": 1.9632567462359993,
+      "median_peak_rss_bytes": 371556352.0,
+      "median_total_fit_seconds": 142.70294632899996,
+      "median_total_predict_seconds": 0.14420849800000005
+    },
+    "darkofit_sports_oob_ensemble5": {
+      "geometric_mean_cold_player_rmse": 1.8594402337870735,
+      "geometric_mean_held_team_rmse": 1.8429256970562407,
+      "geometric_mean_primary_rmse": 2.0086368863892408,
+      "median_peak_rss_bytes": 392478720.0,
+      "median_total_fit_seconds": 416.34433129600023,
+      "median_total_predict_seconds": 0.3859749579999999
+    }
+  },
+  "candidate": {
+    "comparison": {
+      "aggregate_rmse_ratio": 1.0231147251831658,
+      "bootstrap_95_upper": 1.0401148668737175,
+      "candidate_arm": "darkofit_sports_oob_ensemble5",
+      "cells": [
+        {
+          "candidate_rmse": 3.610007123196517,
+          "control_rmse": 3.5803284671686892,
+          "ratio": 1.008289366827647,
+          "season": 2014,
+          "target": "minutes_per_game"
+        },
+        {
+          "candidate_rmse": 1.5204423927971658,
+          "control_rmse": 1.490561472728582,
+          "ratio": 1.0200467546057557,
+          "season": 2014,
+          "target": "game_score"
+        },
+        {
+          "candidate_rmse": 1.3183109904873995,
+          "control_rmse": 1.2532476866192614,
+          "ratio": 1.0519157582039123,
+          "season": 2014,
+          "target": "box_plus_minus"
+        },
+        {
+          "candidate_rmse": 3.665988563876224,
+          "control_rmse": 3.636370202086105,
+          "ratio": 1.0081450347858223,
+          "season": 2015,
+          "target": "minutes_per_game"
+        },
+        {
+          "candidate_rmse": 1.6668254207039028,
+          "control_rmse": 1.588273660841238,
+          "ratio": 1.0494573207371956,
+          "season": 2015,
+          "target": "game_score"
+        },
+        {
+          "candidate_rmse": 1.2786548432370626,
+          "control_rmse": 1.2350401269165054,
+          "ratio": 1.0353144123579603,
+          "season": 2015,
+          "target": "box_plus_minus"
+        },
+        {
+          "candidate_rmse": 4.01720513845335,
+          "control_rmse": 4.244394828818052,
+          "ratio": 0.9464730074539346,
+          "season": 2016,
+          "target": "minutes_per_game"
+        },
+        {
+          "candidate_rmse": 1.778259413446882,
+          "control_rmse": 1.7285847748943242,
+          "ratio": 1.028737172323871,
+          "season": 2016,
+          "target": "game_score"
+        },
+        {
+          "candidate_rmse": 1.3178419478076224,
+          "control_rmse": 1.2379504408229127,
+          "ratio": 1.0645353031512335,
+          "season": 2016,
+          "target": "box_plus_minus"
+        }
+      ],
+      "control_arm": "darkofit_control",
+      "guardrail_gates": {
+        "cold_player_aggregate_at_most_1_005": false,
+        "cold_player_worst_at_most_1_020": false,
+        "held_team_aggregate_at_most_1_005": false,
+        "held_team_worst_at_most_1_020": false
+      },
+      "guardrails": {
+        "cold_player": {
+          "aggregate_ratio": 1.0287326757133664,
+          "ratios": [
+            0.9955489575875803,
+            1.0981484891102407,
+            1.0607600395628085,
+            0.984062061618522,
+            1.0891040861592158,
+            1.0324438493969097,
+            1.0013383877937738,
+            1.0049257050265499,
+            0.9993297841297736
+          ],
+          "worst_ratio": 1.0981484891102407
+        },
+        "held_team": {
+          "aggregate_ratio": 1.0262770841426538,
+          "ratios": [
+            0.992783105789034,
+            1.0979413797916886,
+            1.0540102953541495,
+            0.9895128623007816,
+            1.0768834093502189,
+            1.0231865090776187,
+            1.0019054209448848,
+            1.006094224914948,
+            1.0002141222918306
+          ],
+          "worst_ratio": 1.0979413797916886
+        },
+        "seen_player": {
+          "aggregate_ratio": 0.970718736824427,
+          "ratios": [
+            0.9396767700160537,
+            1.0949948871470199,
+            0.7417400052888093,
+            1.0764459121573555,
+            0.8919437534229057,
+            0.6338559180731225,
+            1.1070072464232614,
+            1.3590007235367934,
+            1.0952368428378492
+          ],
+          "worst_ratio": 1.3590007235367934
+        }
+      },
+      "leave_one_out_ratios": [
+        1.0249831567176917,
+        1.0234988697429621,
+        1.0195704902821048,
+        1.0250014984048328,
+        1.019868737896465,
+        1.0215999070427506,
+        1.0331213774651578,
+        1.0224140833659896,
+        1.018051782484972
+      ],
+      "passes_quality": false,
+      "primary_gates": {
+        "aggregate_ratio_at_most_1_000": false,
+        "bootstrap_upper_at_most_1_002": false,
+        "remove_most_favorable_at_most_1_003": false,
+        "worst_lineage_at_most_1_020": false
+      },
+      "remove_most_favorable_ratio": 1.0331213774651578,
+      "wins_ties_losses": {
+        "losses": 8,
+        "ties": 0,
+        "wins": 1
+      },
+      "worst_lineage_ratio": 1.0645353031512335
+    },
+    "cost_gates": {
+      "behavior_reproduced": true,
+      "fit_ratio_at_most_3": true,
+      "fit_ratio_stable": true,
+      "predict_ratio_at_most_3": true,
+      "predict_ratio_stable": true,
+      "rss_ratio_at_most_3": true
+    },
+    "decision": "close_oob_ensemble5_as_sports_automatic_policy",
+    "global_default_change_authorized": false,
+    "passes": false,
+    "sports_profile_change_authorized": false
+  },
+  "eligible_darkofit_arm": "darkofit_control",
+  "external_context": {
+    "catboost_1_2_10": {
+      "aggregate_rmse_ratio": 1.0526202431571203,
+      "bootstrap_95_upper": 1.069552703099164,
+      "candidate_arm": "darkofit_control",
+      "cells": [
+        {
+          "candidate_rmse": 3.5803284671686892,
+          "control_rmse": 3.555235376543699,
+          "ratio": 1.0070580673196903,
+          "season": 2014,
+          "target": "minutes_per_game"
+        },
+        {
+          "candidate_rmse": 1.490561472728582,
+          "control_rmse": 1.4034353569972515,
+          "ratio": 1.0620806047795055,
+          "season": 2014,
+          "target": "game_score"
+        },
+        {
+          "candidate_rmse": 1.2532476866192614,
+          "control_rmse": 1.1457756605220712,
+          "ratio": 1.09379848935543,
+          "season": 2014,
+          "target": "box_plus_minus"
+        },
+        {
+          "candidate_rmse": 3.636370202086105,
+          "control_rmse": 3.4864606865944,
+          "ratio": 1.0429976210740348,
+          "season": 2015,
+          "target": "minutes_per_game"
+        },
+        {
+          "candidate_rmse": 1.588273660841238,
+          "control_rmse": 1.536487157280093,
+          "ratio": 1.0337044818863426,
+          "season": 2015,
+          "target": "game_score"
+        },
+        {
+          "candidate_rmse": 1.2350401269165054,
+          "control_rmse": 1.2260315378031348,
+          "ratio": 1.0073477629535637,
+          "season": 2015,
+          "target": "box_plus_minus"
+        },
+        {
+          "candidate_rmse": 4.244394828818052,
+          "control_rmse": 3.919623531406148,
+          "ratio": 1.0828577782559117,
+          "season": 2016,
+          "target": "minutes_per_game"
+        },
+        {
+          "candidate_rmse": 1.7285847748943242,
+          "control_rmse": 1.6323447853462612,
+          "ratio": 1.0589581260111345,
+          "season": 2016,
+          "target": "game_score"
+        },
+        {
+          "candidate_rmse": 1.2379504408229127,
+          "control_rmse": 1.1368848004143075,
+          "ratio": 1.0888969932325374,
+          "season": 2016,
+          "target": "box_plus_minus"
+        }
+      ],
+      "control_arm": "catboost_1_2_10",
+      "guardrail_gates": {
+        "cold_player_aggregate_at_most_1_005": false,
+        "cold_player_worst_at_most_1_020": false,
+        "held_team_aggregate_at_most_1_005": false,
+        "held_team_worst_at_most_1_020": false
+      },
+      "guardrails": {
+        "cold_player": {
+          "aggregate_ratio": 1.055811275491299,
+          "ratios": [
+            1.0996720003532838,
+            0.988994670707769,
+            1.0170917406046076,
+            1.0616134195597635,
+            1.0655629098995605,
+            1.0721032642755568,
+            1.0076478946657859,
+            1.0687225675791534,
+            1.1285050841235642
+          ],
+          "worst_ratio": 1.1285050841235642
+        },
+        "held_team": {
+          "aggregate_ratio": 1.0555299464263228,
+          "ratios": [
+            1.1047108190924544,
+            0.9968875117959487,
+            1.0153622202274843,
+            1.0563956630965292,
+            1.0660499581390819,
+            1.0748312057365028,
+            1.0012302107610977,
+            1.0660131110435922,
+            1.125844328083794
+          ],
+          "worst_ratio": 1.125844328083794
+        },
+        "seen_player": {
+          "aggregate_ratio": 0.9274085068792123,
+          "ratios": [
+            1.2136066944348904,
+            1.134334084229082,
+            0.9537003617690586,
+            0.9792745982870271,
+            1.0728182147125276,
+            1.181735142305801,
+            0.5368966248619149,
+            0.6372157586098632,
+            0.910082628306227
+          ],
+          "worst_ratio": 1.2136066944348904
+        }
+      },
+      "leave_one_out_ratios": [
+        1.0584585816351368,
+        1.0514436384418515,
+        1.0475831819536165,
+        1.0538292963697478,
+        1.055008922460409,
+        1.0584205275703649,
+        1.0489004094247467,
+        1.051830679586892,
+        1.0481714654749656
+      ],
+      "passes_quality": false,
+      "primary_gates": {
+        "aggregate_ratio_at_most_1_000": false,
+        "bootstrap_upper_at_most_1_002": false,
+        "remove_most_favorable_at_most_1_003": false,
+        "worst_lineage_at_most_1_020": false
+      },
+      "remove_most_favorable_ratio": 1.0584585816351368,
+      "wins_ties_losses": {
+        "losses": 9,
+        "ties": 0,
+        "wins": 0
+      },
+      "worst_lineage_ratio": 1.09379848935543
+    },
+    "chimeraboost_0_15_0": {
+      "aggregate_rmse_ratio": 0.9718757772478572,
+      "bootstrap_95_upper": 0.9934946836732337,
+      "candidate_arm": "darkofit_control",
+      "cells": [
+        {
+          "candidate_rmse": 3.5803284671686892,
+          "control_rmse": 3.5456492086680913,
+          "ratio": 1.0097807923061923,
+          "season": 2014,
+          "target": "minutes_per_game"
+        },
+        {
+          "candidate_rmse": 1.490561472728582,
+          "control_rmse": 1.489500620478798,
+          "ratio": 1.0007122200791316,
+          "season": 2014,
+          "target": "game_score"
+        },
+        {
+          "candidate_rmse": 1.2532476866192614,
+          "control_rmse": 1.3174667281908636,
+          "ratio": 0.951255663465758,
+          "season": 2014,
+          "target": "box_plus_minus"
+        },
+        {
+          "candidate_rmse": 3.636370202086105,
+          "control_rmse": 3.8720760415054043,
+          "ratio": 0.9391267534798566,
+          "season": 2015,
+          "target": "minutes_per_game"
+        },
+        {
+          "candidate_rmse": 1.588273660841238,
+          "control_rmse": 1.6362232471009694,
+          "ratio": 0.9706949608834322,
+          "season": 2015,
+          "target": "game_score"
+        },
+        {
+          "candidate_rmse": 1.2350401269165054,
+          "control_rmse": 1.2838999710936672,
+          "ratio": 0.9619441971514795,
+          "season": 2015,
+          "target": "box_plus_minus"
+        },
+        {
+          "candidate_rmse": 4.244394828818052,
+          "control_rmse": 4.07002833441943,
+          "ratio": 1.0428415922621568,
+          "season": 2016,
+          "target": "minutes_per_game"
+        },
+        {
+          "candidate_rmse": 1.7285847748943242,
+          "control_rmse": 1.7732940736416596,
+          "ratio": 0.974787431249054,
+          "season": 2016,
+          "target": "game_score"
+        },
+        {
+          "candidate_rmse": 1.2379504408229127,
+          "control_rmse": 1.3712768126083505,
+          "ratio": 0.9027720949121619,
+          "season": 2016,
+          "target": "box_plus_minus"
+        }
+      ],
+      "control_arm": "chimeraboost_0_15_0",
+      "guardrail_gates": {
+        "cold_player_aggregate_at_most_1_005": true,
+        "cold_player_worst_at_most_1_020": false,
+        "held_team_aggregate_at_most_1_005": true,
+        "held_team_worst_at_most_1_020": false
+      },
+      "guardrails": {
+        "cold_player": {
+          "aggregate_ratio": 0.9821367053971277,
+          "ratios": [
+            0.9883937916263998,
+            0.945175191265568,
+            1.0406724292373994,
+            0.9057361345090411,
+            0.9947827916779106,
+            0.9786247120720883,
+            0.9603794472777997,
+            0.9836239134671617,
+            1.0499606814249807
+          ],
+          "worst_ratio": 1.0499606814249807
+        },
+        "held_team": {
+          "aggregate_ratio": 0.9819855907564512,
+          "ratios": [
+            0.993719737816462,
+            0.9381797192102922,
+            1.0412105032377086,
+            0.9036376295909057,
+            1.0048813870031177,
+            0.9760004309982638,
+            0.9561234096076071,
+            0.9836023843682785,
+            1.049457597742215
+          ],
+          "worst_ratio": 1.049457597742215
+        },
+        "seen_player": {
+          "aggregate_ratio": 0.9311965628354314,
+          "ratios": [
+            1.1121619080103775,
+            0.8530631551784121,
+            1.0630324487019398,
+            0.8706255908766682,
+            1.1848431192830209,
+            0.8978811967113113,
+            0.5791324856804817,
+            0.9760438300601988,
+            0.9970527893737307
+          ],
+          "worst_ratio": 1.1848431192830209
+        }
+      },
+      "leave_one_out_ratios": [
+        0.9672388112028854,
+        0.9683301457637141,
+        0.9744845228121026,
+        0.9760488996589515,
+        0.9720234802559957,
+        0.9731244128895694,
+        0.9633515706129034,
+        0.9715124325392088,
+        0.9808776455968224
+      ],
+      "passes_quality": false,
+      "primary_gates": {
+        "aggregate_ratio_at_most_1_000": true,
+        "bootstrap_upper_at_most_1_002": true,
+        "remove_most_favorable_at_most_1_003": true,
+        "worst_lineage_at_most_1_020": false
+      },
+      "remove_most_favorable_ratio": 0.9808776455968224,
+      "wins_ties_losses": {
+        "losses": 3,
+        "ties": 0,
+        "wins": 6
+      },
+      "worst_lineage_ratio": 1.0428415922621568
+    }
+  },
+  "name": "darkofit_basketball_sports_panel_result_v2",
+  "panel_spent": true,
+  "raw": {
+    "analyzer_sha256": "1752214e0451b44823557d03fd6e498fecdd8711ceacad95552c0e0dbd0d1e77",
+    "panel_sha256": "8f7eab3765b4166740b150ed372f9607bcd6dd9673e0e73cc6541583230a59e6",
+    "protocol_sha256": "1e9e4996ccc0255b0db7f9cec98fb4758587375448218e88a837e9347a1b0aed",
+    "runner_sha256": "b51105a9150525fe073407e1be445319088a6f9886fcdc9ea763c8da81cdf362",
+    "sha256": "787f7f34bf1e5207d231b01bc402c7a32174e24892b2118bb71d5ff4412517b3"
+  },
+  "retuning_on_panel_authorized": false,
+  "schema_version": 1,
+  "timing": {
+    "arms": {
+      "catboost_1_2_10": {
+        "peak_rss_bytes": {
+          "median": 268910592.0,
+          "values": [
+            265519104.0,
+            268910592.0,
+            270434304.0
+          ]
+        },
+        "steady_wall_seconds": {
+          "median": 59.425343708,
+          "values": [
+            60.021890667,
+            59.425343708,
+            49.839082667
+          ]
+        },
+        "total_fit_seconds": {
+          "median": 59.09486016800002,
+          "values": [
+            59.68856278800002,
+            59.09486016800002,
+            49.529437127000016
+          ]
+        },
+        "total_predict_seconds": {
+          "median": 0.07434737100000001,
+          "values": [
+            0.07434737100000001,
+            0.07453308700000001,
+            0.06709971199999999
+          ]
+        }
+      },
+      "chimeraboost_0_15_0": {
+        "peak_rss_bytes": {
+          "median": 311787520.0,
+          "values": [
+            313556992.0,
+            307838976.0,
+            311787520.0
+          ]
+        },
+        "steady_wall_seconds": {
+          "median": 26.364232917,
+          "values": [
+            26.837902458,
+            26.364232917,
+            26.102079125
+          ]
+        },
+        "total_fit_seconds": {
+          "median": 26.08621792300001,
+          "values": [
+            26.552876672000004,
+            26.08621792300001,
+            25.830974995000002
+          ]
+        },
+        "total_predict_seconds": {
+          "median": 0.09330145100000004,
+          "values": [
+            0.096753368,
+            0.09330145100000004,
+            0.092256454
+          ]
+        }
+      },
+      "darkofit_control": {
+        "peak_rss_bytes": {
+          "median": 371556352.0,
+          "values": [
+            324796416.0,
+            371556352.0,
+            373637120.0
+          ]
+        },
+        "steady_wall_seconds": {
+          "median": 143.062865208,
+          "values": [
+            104.46605475,
+            166.3586565,
+            143.062865208
+          ]
+        },
+        "total_fit_seconds": {
+          "median": 142.70294632899996,
+          "values": [
+            104.20093854,
+            165.923848916,
+            142.70294632899996
+          ]
+        },
+        "total_predict_seconds": {
+          "median": 0.14420849800000005,
+          "values": [
+            0.10331154200000002,
+            0.172868919,
+            0.14420849800000005
+          ]
+        }
+      },
+      "darkofit_sports_oob_ensemble5": {
+        "peak_rss_bytes": {
+          "median": 392478720.0,
+          "values": [
+            386318336.0,
+            392478720.0,
+            394543104.0
+          ]
+        },
+        "steady_wall_seconds": {
+          "median": 417.059094,
+          "values": [
+            361.514516583,
+            474.620423792,
+            417.059094
+          ]
+        },
+        "total_fit_seconds": {
+          "median": 416.34433129600023,
+          "values": [
+            360.895190712,
+            473.81391637800004,
+            416.34433129600023
+          ]
+        },
+        "total_predict_seconds": {
+          "median": 0.3859749579999999,
+          "values": [
+            0.3318697950000001,
+            0.42436625099999986,
+            0.3859749579999999
+          ]
+        }
+      }
+    },
+    "candidate_over_control": {
+      "peak_rss_bytes": {
+        "iqr_over_median": 0.06317473863627202,
+        "median": 1.0563100802539906,
+        "q25": 1.056131361109236,
+        "q75": 1.1228634743481414,
+        "stable": true,
+        "values": [
+          1.189416868442292,
+          1.0563100802539906,
+          1.0559526419644816
+        ]
+      },
+      "steady_wall_seconds": {
+        "iqr_over_median": 0.10421152583965333,
+        "median": 2.915215582979099,
+        "q25": 2.884105317309614,
+        "q75": 3.1879043813634005,
+        "stable": true,
+        "values": [
+          3.460593179747702,
+          2.852995051640129,
+          2.915215582979099
+        ]
+      },
+      "total_fit_seconds": {
+        "iqr_over_median": 0.10416987890329776,
+        "median": 2.9175594618496756,
+        "q25": 2.886585074983218,
+        "q75": 3.1905068908172693,
+        "stable": true,
+        "values": [
+          3.463454319784863,
+          2.85561068811676,
+          2.9175594618496756
+        ]
+      },
+      "total_predict_seconds": {
+        "iqr_over_median": 0.14150470436059334,
+        "median": 2.6765063318251867,
+        "q25": 2.5656752307199744,
+        "q75": 2.9444134679241536,
+        "stable": true,
+        "values": [
+          3.212320604023121,
+          2.454844129614762,
+          2.6765063318251867
+        ]
+      }
+    }
+  }
+}

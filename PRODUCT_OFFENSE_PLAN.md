@@ -23,7 +23,7 @@ the agenda. Companion to the execution ledger in `BEYOND_PARITY_PLAN.md`.*
 | T7 CatBoost attribution | Complete | one frozen `(n,p)` depth-policy research candidate |
 | T8 distributional flagship | Complete | 75/75; conformal coverage/width reported jointly |
 | T9 SynthGen corrected ledger | Complete | 8/9; probe-tier direction finder only |
-| T10 sports panel #2 | Pending | fresh protocol and confirmation bed |
+| T10 sports panel #2 | Closed | OOB-5 lost 8/9 fresh player-disjoint lineages |
 
 Status in this table is operational only. It cannot amend a frozen protocol or
 promote a Tier-D candidate.
@@ -169,6 +169,16 @@ The complete binding policy is `benchmarks/SHIPPING_POLICY.md`.
 - **T10. Sports panel #2.** Build a fresh multi-season/multi-target
   confirmation bed for the sports profile. It is the only route by which
   ensemble/random-strength composites can become a sports automatic policy.
+  The source-frozen 2014–2016 panel used nine equally weighted target-season
+  lineages, player-disjoint primary folds, and held-team/cold-player
+  guardrails. The row-OOB five-member ensemble passed every declared cost gate
+  (`2.92×` fit, `2.68×` prediction, `1.06×` RSS) but failed every primary
+  quality gate: `1.0231×` aggregate RMSE, `1.0401×` bootstrap upper bound,
+  eight losses, and a `1.0645×` worst lineage. Cold-player RMSE was
+  `1.0287×`. The sports automatic-policy path is closed without retuning.
+  Current DarkoFit control was `0.9719×` ChimeraBoost 0.15.0 but `1.0526×`
+  CatBoost 1.2.10 on the same player-disjoint coordinates. See the frozen
+  [`result`](benchmarks/basketball_sports_panel_v2_result.md).
 
 ## 5. Sequencing
 
