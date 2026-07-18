@@ -1,0 +1,59 @@
+{
+  "catboost_version": "1.2.10",
+  "darkofit_model_head": "3b12d0a1bcbfbe2cb8bc09030d87e8dc09ca87ea",
+  "environment": {
+    "dependencies": {
+      "catboost": "1.2.10",
+      "numba": "0.66.0",
+      "numpy": "2.4.6",
+      "openml": "0.15.1",
+      "pandas": "2.3.3",
+      "scikit-learn": "1.7.2",
+      "scipy": "1.16.3"
+    },
+    "python": {
+      "implementation": "CPython",
+      "version": "3.12.13"
+    }
+  },
+  "freeze_sha256": "601e06d2cb5fb25ae5926999ae4ab9f7983954dca0f20b57e88af071de4226f2",
+  "name": "darkofit_t7b_catboost_gap_attribution_freeze_v1",
+  "runtime": {
+    "arms": [
+      "baseline",
+      "random_strength_0",
+      "bootstrap_no",
+      "no_split_noise_or_row_sampling",
+      "l2_leaf_reg_1",
+      "one_hot_max_size_0",
+      "one_hot_max_size_255",
+      "leaf10_any_improvement"
+    ],
+    "concurrent_workers": 3,
+    "iterations": 1000,
+    "seeds": [
+      4,
+      17,
+      29
+    ],
+    "task_type": "CPU",
+    "threads_per_worker": 6
+  },
+  "schema_version": 1,
+  "source_sha256": {
+    "analyzer": "e751ff009e51838bf21e129794b295834a0564c801add312cae5ae78f100d68f",
+    "basketball_harness": "40360ca54d1954d540bd72bec47c891a179fb0f764a0cb6061d3a33b8593aba1",
+    "c2_registry_builder": "1c46213614d1c5f7bd612aa9307b6d679f7c7e01d7ed136d65a3554cff5d77e5",
+    "c2_runner": "8da023ee1c6ab1311d0b8b152c8bcd82f80d6f323020efb4e86c71870caa8952",
+    "catboost_frame_provider": "5645c4fba31b302457766a56f553b33292d2fb7443afd52d398879c6df01ac64",
+    "coordinates": "d6219d55ae52fc59cea7112592e7716dc6bd9ed6b65565a03fbaf6e30e443a71",
+    "creator_harness": "9a2d6b3dc8f3a8586cd4ac20bdb3607c17675cab1d89e6bbd7c438d2bba53fec",
+    "fingerprint_provider": "90f2e62d771a686ef86bf4c959e89acdc9785ebb3266fc005a59b9e8a6c54476",
+    "protocol": "371d54110a0a8e4a4c229a0418cac746a6d6be3603337af8421fc0834ce4665c",
+    "runner": "ae78a922d51375b4e7e62f8f3df360dc33751f1b003e636265a5ed5c137a8d81",
+    "t7_analyzer": "4de5a7c36b4cfb8792d6a0517e80ef2c2747d4458c9fb78dbc9d71bb88947921",
+    "t7_runner": "71d55bb9db9970754fe77f41cc595d5078921b637a1c53ff32d459f3889cc310",
+    "tests": "1861ae6e9fec1b2579d0a416307af7a588cffaf67d7390b28d53f594e78c1b7f"
+  },
+  "status": "frozen_not_executed"
+}
