@@ -2423,15 +2423,22 @@ def validate_raw(
                 "attempt_filename",
                 "attempt_sha256",
                 "attempt_file_sha256",
+                "claim_filename",
+                "claim_sha256",
+                "claim_file_sha256",
                 "resumed",
             }
             or record.get("filename") != f"{record.get('worker_key')}.json"
             or record.get("attempt_filename")
             != f"{record.get('worker_key')}.attempt.json"
+            or record.get("claim_filename")
+            != f"{record.get('worker_key')}.claim.json"
             or not _is_sha256(record.get("spool_record_sha256"))
             or not _is_sha256(record.get("spool_file_sha256"))
             or not _is_sha256(record.get("attempt_sha256"))
             or not _is_sha256(record.get("attempt_file_sha256"))
+            or not _is_sha256(record.get("claim_sha256"))
+            or not _is_sha256(record.get("claim_file_sha256"))
             or type(record.get("resumed")) is not bool
             for record in records
         )
@@ -2520,6 +2527,13 @@ def validate_raw(
             coordinate,
             payload["arm"],
         )
+        reconstructed_claim = runner._claim_payload(
+            binding,
+            coordinate,
+            payload["arm"],
+            reconstructed_attempt["attempt_sha256"],
+            runner._json_file_sha256(reconstructed_attempt),
+        )
         if (
             reconstructed["spool_record_sha256"]
             != record_by_worker[worker_key]["spool_record_sha256"]
@@ -2529,6 +2543,10 @@ def validate_raw(
             != record_by_worker[worker_key]["attempt_sha256"]
             or runner._json_file_sha256(reconstructed_attempt)
             != record_by_worker[worker_key]["attempt_file_sha256"]
+            or reconstructed_claim["claim_sha256"]
+            != record_by_worker[worker_key]["claim_sha256"]
+            or runner._json_file_sha256(reconstructed_claim)
+            != record_by_worker[worker_key]["claim_file_sha256"]
         ):
             raise RuntimeError(
                 "panel-3 offline worker ledger digest changed"
@@ -2571,11 +2589,23 @@ def validate_raw(
                 directory
                 / record_by_worker[worker_key]["attempt_filename"]
             )
+            claim_path = (
+                directory
+                / record_by_worker[worker_key]["claim_filename"]
+            )
             attempt_digest, attempt_file_digest = runner._load_attempt(
                 attempt_path,
                 binding,
                 coordinate,
                 payload["arm"],
+            )
+            claim_digest, claim_file_digest = runner._load_claim(
+                claim_path,
+                binding,
+                coordinate,
+                payload["arm"],
+                attempt_digest,
+                attempt_file_digest,
             )
             observed, digest, spool_file_digest = runner._load_spool(
                 path,
@@ -2593,6 +2623,10 @@ def validate_raw(
                 != record_by_worker[worker_key]["attempt_sha256"]
                 or attempt_file_digest
                 != record_by_worker[worker_key]["attempt_file_sha256"]
+                or claim_digest
+                != record_by_worker[worker_key]["claim_sha256"]
+                or claim_file_digest
+                != record_by_worker[worker_key]["claim_file_sha256"]
             ):
                 raise RuntimeError(
                     "panel-3 spool record differs from raw artifact"

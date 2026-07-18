@@ -1168,6 +1168,13 @@ def _synthetic_raw(tmp_path, monkeypatch):
             coordinate,
             result["arm"],
         )
+        claim = runner._claim_payload(
+            binding,
+            coordinate,
+            result["arm"],
+            attempt["attempt_sha256"],
+            runner._json_file_sha256(attempt),
+        )
         records.append(
             {
                 "worker_key": result["worker_key"],
@@ -1182,6 +1189,9 @@ def _synthetic_raw(tmp_path, monkeypatch):
                 "attempt_file_sha256": runner._json_file_sha256(
                     attempt
                 ),
+                "claim_filename": result["worker_key"] + ".claim.json",
+                "claim_sha256": claim["claim_sha256"],
+                "claim_file_sha256": runner._json_file_sha256(claim),
                 "resumed": False,
             }
         )
@@ -1354,6 +1364,59 @@ def test_worker_cli_rejects_mismatched_parent_binding_before_claim_load(
         )
 
 
+def test_worker_attempt_can_be_consumed_only_once(tmp_path, monkeypatch):
+    monkeypatch.setattr(runner, "ROOT", tmp_path)
+    coordinate = {
+        "task_id": 1,
+        "repeat": 0,
+        "fold": 0,
+        "sample": 0,
+    }
+    arm = runner.CONTROL_ARM
+    registry = {"registry_sha256": "a" * 64}
+    registry_path = tmp_path / "registry.json"
+    registry_path.write_text(json.dumps(registry))
+    binding = {
+        "registry_file_sha256": common.sha256_file(registry_path),
+        "registry_canonical_sha256": registry["registry_sha256"],
+    }
+    runner._create_attempt(
+        runner._attempt_path(tmp_path, coordinate, arm),
+        binding,
+        coordinate,
+        arm,
+        allowed_root=tmp_path,
+    )
+    monkeypatch.setenv(
+        runner.WORKER_SPOOL_DIRECTORY_ENV,
+        str(tmp_path),
+    )
+    monkeypatch.setenv(
+        runner.WORKER_BINDING_JSON_ENV,
+        json.dumps(binding, sort_keys=True, separators=(",", ":")),
+    )
+    monkeypatch.setenv(
+        runner.WORKER_BINDING_SHA256_ENV,
+        runner._json_sha256(binding),
+    )
+
+    assert runner._validate_worker_claim(
+        registry,
+        registry_path,
+        tmp_path,
+        coordinate,
+        arm,
+    ) == binding
+    with pytest.raises(RuntimeError, match="already consumed"):
+        runner._validate_worker_claim(
+            registry,
+            registry_path,
+            tmp_path,
+            coordinate,
+            arm,
+        )
+
+
 def test_analysis_cli_rejects_noncanonical_paths(tmp_path, monkeypatch):
     monkeypatch.setattr(
         analyzer,
@@ -1436,6 +1499,11 @@ def test_malformed_comparator_result_becomes_nonbinding_failure(
         "_create_attempt",
         lambda *_args, **_kwargs: ("b" * 64, "d" * 64),
     )
+    monkeypatch.setattr(
+        runner,
+        "_load_claim",
+        lambda *_args, **_kwargs: ("e" * 64, "f" * 64),
+    )
 
     def create(
         _path,
@@ -1456,6 +1524,8 @@ def test_malformed_comparator_result_becomes_nonbinding_failure(
         file_digest,
         attempt_digest,
         attempt_file_digest,
+        claim_digest,
+        claim_file_digest,
         resumed,
     ) = runner._run_one(
         tmp_path / "registry.json",
@@ -1472,6 +1542,8 @@ def test_malformed_comparator_result_becomes_nonbinding_failure(
     assert file_digest == "c" * 64
     assert attempt_digest == "b" * 64
     assert attempt_file_digest == "d" * 64
+    assert claim_digest == "e" * 64
+    assert claim_file_digest == "f" * 64
     assert resumed is False
     assert persisted == [result]
 
@@ -1776,6 +1848,23 @@ def test_historical_raw_reconstructs_attempt_digest_offline(
 ):
     registry, registry_path, raw = _synthetic_raw(tmp_path, monkeypatch)
     raw["spool"]["records"][0]["attempt_sha256"] = "f" * 64
+    _refresh_raw_digest(raw)
+
+    with pytest.raises(RuntimeError, match="worker ledger digest"):
+        analyzer.validate_raw(
+            raw,
+            registry,
+            registry_path=registry_path,
+            verify_current_files=False,
+        )
+
+
+def test_historical_raw_reconstructs_consumed_claim_digest_offline(
+    tmp_path,
+    monkeypatch,
+):
+    registry, registry_path, raw = _synthetic_raw(tmp_path, monkeypatch)
+    raw["spool"]["records"][0]["claim_sha256"] = "f" * 64
     _refresh_raw_digest(raw)
 
     with pytest.raises(RuntimeError, match="worker ledger digest"):
@@ -2239,6 +2328,30 @@ def test_worker_crash_leaves_permanent_attempt_and_restart_refuses(
 
     def crash(*_args, **_kwargs):
         calls.append("launched")
+        attempt_digest, attempt_file_digest = runner._load_attempt(
+            runner._attempt_path(
+                tmp_path,
+                coordinate,
+                runner.CONTROL_ARM,
+            ),
+            binding,
+            coordinate,
+            runner.CONTROL_ARM,
+            allowed_root=tmp_path,
+        )
+        runner._create_claim(
+            runner._claim_path(
+                tmp_path,
+                coordinate,
+                runner.CONTROL_ARM,
+            ),
+            binding,
+            coordinate,
+            runner.CONTROL_ARM,
+            attempt_digest,
+            attempt_file_digest,
+            allowed_root=tmp_path,
+        )
         return SimpleNamespace(
             returncode=9,
             stdout="",
@@ -2259,6 +2372,9 @@ def test_worker_crash_leaves_permanent_attempt_and_restart_refuses(
     assert runner._attempt_path(
         tmp_path, coordinate, runner.CONTROL_ARM
     ).is_file()
+    assert runner._claim_path(
+        tmp_path, coordinate, runner.CONTROL_ARM
+    ).is_file()
     assert not runner._spool_path(
         tmp_path, coordinate, runner.CONTROL_ARM
     ).exists()
@@ -2277,6 +2393,94 @@ def test_worker_crash_leaves_permanent_attempt_and_restart_refuses(
             tmp_path,
             binding,
         )
+
+
+def test_parent_refuses_worker_output_without_consumed_claim(
+    tmp_path,
+    monkeypatch,
+):
+    coordinate = {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0}
+    arm = runner.CONTROL_ARM
+    binding = {"campaign": "panel3"}
+    result = _synthetic_result(coordinate, arm, 1.0)
+    monkeypatch.setattr(
+        runner,
+        "_guard_parent_campaign_boundary",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(runner, "_worker_environment", lambda: {})
+    monkeypatch.setattr(
+        runner.subprocess,
+        "run",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            returncode=0,
+            stdout=runner.WORKER_PREFIX
+            + json.dumps(result, sort_keys=True)
+            + "\n",
+            stderr="",
+        ),
+    )
+    monkeypatch.setattr(
+        runner,
+        "_create_spool",
+        lambda *_args, **_kwargs: pytest.fail(
+            "unclaimed output reached spool publication"
+        ),
+    )
+
+    with pytest.raises(RuntimeError, match="invalid panel-3 worker claim"):
+        runner._run_one(
+            tmp_path / "registry.json",
+            coordinate,
+            arm,
+            tmp_path,
+            binding,
+        )
+
+
+def test_comparator_launch_failure_consumes_claim_and_persists_failure(
+    tmp_path,
+    monkeypatch,
+):
+    coordinate = {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0}
+    arm = "chimeraboost_0_15_0"
+    binding = {"campaign": "panel3"}
+    monkeypatch.setattr(
+        runner,
+        "_guard_parent_campaign_boundary",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(runner, "_worker_environment", lambda: {})
+    monkeypatch.setattr(
+        runner.subprocess,
+        "run",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            OSError("synthetic launch failure")
+        ),
+    )
+
+    (
+        result,
+        _spool_digest,
+        _spool_file_digest,
+        _attempt_digest,
+        _attempt_file_digest,
+        _claim_digest,
+        _claim_file_digest,
+        resumed,
+    ) = runner._run_one(
+        tmp_path / "registry.json",
+        coordinate,
+        arm,
+        tmp_path,
+        binding,
+    )
+
+    assert result["status"] == "failed"
+    assert result["failure_kind"] == "worker_launch_failure"
+    assert resumed is False
+    assert runner._claim_path(tmp_path, coordinate, arm).is_file()
+    assert runner._spool_path(tmp_path, coordinate, arm).is_file()
 
 
 def test_concurrent_worker_attempt_claim_refuses_second_parent(
@@ -2331,6 +2535,15 @@ def test_completed_worker_resumes_only_with_matching_attempt(
         arm,
         allowed_root=tmp_path,
     )
+    claim_digest, claim_file_digest = runner._create_claim(
+        runner._claim_path(tmp_path, coordinate, arm),
+        binding,
+        coordinate,
+        arm,
+        attempt_digest,
+        attempt_file_digest,
+        allowed_root=tmp_path,
+    )
     _created, spool_digest, spool_file_digest = runner._create_spool(
         runner._spool_path(tmp_path, coordinate, arm),
         binding,
@@ -2358,6 +2571,8 @@ def test_completed_worker_resumes_only_with_matching_attempt(
         observed_spool_file,
         observed_attempt,
         observed_attempt_file,
+        observed_claim,
+        observed_claim_file,
         resumed,
     ) = runner._run_one(
         tmp_path / "registry.json",
@@ -2372,6 +2587,8 @@ def test_completed_worker_resumes_only_with_matching_attempt(
     assert observed_spool_file == spool_file_digest
     assert observed_attempt == attempt_digest
     assert observed_attempt_file == attempt_file_digest
+    assert observed_claim == claim_digest
+    assert observed_claim_file == claim_file_digest
     assert resumed is True
 
 

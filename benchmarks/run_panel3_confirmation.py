@@ -2538,6 +2538,14 @@ def _attempt_path(
     return spool_directory / f"{_worker_key(coordinate, arm)}.attempt.json"
 
 
+def _claim_path(
+    spool_directory: Path,
+    coordinate: dict[str, int],
+    arm: str,
+) -> Path:
+    return spool_directory / f"{_worker_key(coordinate, arm)}.claim.json"
+
+
 def _campaign_invalidation_path(spool_directory: Path) -> Path:
     return spool_directory / CAMPAIGN_INVALIDATION_FILENAME
 
@@ -2608,6 +2616,95 @@ def _create_attempt(
     encoded = _json_file_bytes(payload)
     common.atomic_create(path, encoded, allowed_root=allowed_root)
     return payload["attempt_sha256"], hashlib.sha256(encoded).hexdigest()
+
+
+def _claim_payload(
+    binding: dict[str, Any],
+    coordinate: dict[str, int],
+    arm: str,
+    attempt_sha256: str,
+    attempt_file_sha256: str,
+) -> dict[str, Any]:
+    if (
+        not _is_sha256(attempt_sha256)
+        or not _is_sha256(attempt_file_sha256)
+    ):
+        raise RuntimeError("panel-3 worker claim attempt binding changed")
+    payload = {
+        "schema_version": 1,
+        "name": "darkofit_panel3_worker_claim_v1",
+        "binding": binding,
+        "worker_key": _worker_key(coordinate, arm),
+        "coordinate": {
+            key: int(coordinate[key])
+            for key in ("task_id", "repeat", "fold", "sample")
+        },
+        "arm": arm,
+        "attempt_sha256": attempt_sha256,
+        "attempt_file_sha256": attempt_file_sha256,
+    }
+    payload["claim_sha256"] = _json_sha256(payload)
+    return payload
+
+
+def _load_claim(
+    path: Path,
+    binding: dict[str, Any],
+    coordinate: dict[str, int],
+    arm: str,
+    attempt_sha256: str,
+    attempt_file_sha256: str,
+    *,
+    allowed_root: Path = ROOT,
+) -> tuple[str, str]:
+    try:
+        encoded = common.secure_read_bytes(
+            path,
+            allowed_root=allowed_root,
+        ).decode("utf-8")
+    except (RuntimeError, UnicodeDecodeError) as exc:
+        raise RuntimeError(
+            f"invalid panel-3 worker claim: {path}"
+        ) from exc
+    payload = _json_loads(encoded, "worker claim")
+    expected = _claim_payload(
+        binding,
+        coordinate,
+        arm,
+        attempt_sha256,
+        attempt_file_sha256,
+    )
+    if payload != expected:
+        raise RuntimeError(f"panel-3 worker claim changed: {path}")
+    return expected["claim_sha256"], hashlib.sha256(
+        encoded.encode("utf-8")
+    ).hexdigest()
+
+
+def _create_claim(
+    path: Path,
+    binding: dict[str, Any],
+    coordinate: dict[str, int],
+    arm: str,
+    attempt_sha256: str,
+    attempt_file_sha256: str,
+    *,
+    allowed_root: Path = ROOT,
+) -> tuple[str, str]:
+    if path.is_symlink():
+        raise RuntimeError(
+            f"refusing symlink panel-3 worker claim: {path}"
+        )
+    payload = _claim_payload(
+        binding,
+        coordinate,
+        arm,
+        attempt_sha256,
+        attempt_file_sha256,
+    )
+    encoded = _json_file_bytes(payload)
+    common.atomic_create(path, encoded, allowed_root=allowed_root)
+    return payload["claim_sha256"], hashlib.sha256(encoded).hexdigest()
 
 
 def _refuse_invalidated_campaign(spool_directory: Path) -> None:
@@ -2741,7 +2838,8 @@ def _validate_worker_claim(
         raise RuntimeError("panel-3 worker parent binding changed")
     _refuse_invalidated_campaign(spool_directory)
     registry_snapshot, registry_file_sha256 = common.secure_load_json(
-        registry_path
+        registry_path,
+        allowed_root=ROOT,
     )
     if (
         registry_snapshot != registry
@@ -2756,13 +2854,37 @@ def _validate_worker_claim(
         raise RuntimeError(
             "panel-3 worker attempt already has a completed spool"
         )
-    _load_attempt(
+    attempt_sha256, attempt_file_sha256 = _load_attempt(
         attempt,
         binding,
         coordinate,
         arm,
         allowed_root=spool_directory,
     )
+    claim = _claim_path(spool_directory, coordinate, arm)
+    try:
+        _create_claim(
+            claim,
+            binding,
+            coordinate,
+            arm,
+            attempt_sha256,
+            attempt_file_sha256,
+            allowed_root=spool_directory,
+        )
+    except FileExistsError:
+        _load_claim(
+            claim,
+            binding,
+            coordinate,
+            arm,
+            attempt_sha256,
+            attempt_file_sha256,
+            allowed_root=spool_directory,
+        )
+        raise RuntimeError(
+            "panel-3 worker attempt was already consumed"
+        ) from None
     return binding
 
 
@@ -2915,9 +3037,10 @@ def _run_one(
     arm: str,
     spool_directory: Path,
     binding: dict[str, Any],
-) -> tuple[dict[str, Any], str, str, str, str, bool]:
+) -> tuple[dict[str, Any], str, str, str, str, str, str, bool]:
     path = _spool_path(spool_directory, coordinate, arm)
     attempt_path = _attempt_path(spool_directory, coordinate, arm)
+    claim_path = _claim_path(spool_directory, coordinate, arm)
     _refuse_invalidated_campaign(spool_directory)
     if path.exists() or path.is_symlink():
         if not (attempt_path.exists() or attempt_path.is_symlink()):
@@ -2929,6 +3052,19 @@ def _run_one(
             binding,
             coordinate,
             arm,
+            allowed_root=spool_directory,
+        )
+        if not (claim_path.exists() or claim_path.is_symlink()):
+            raise RuntimeError(
+                "panel-3 completed spool has no consumed worker claim"
+            )
+        claim_hash, claim_file_hash = _load_claim(
+            claim_path,
+            binding,
+            coordinate,
+            arm,
+            attempt_hash,
+            attempt_file_hash,
             allowed_root=spool_directory,
         )
         _guard_parent_campaign_boundary(
@@ -2953,16 +3089,28 @@ def _run_one(
             spool_file_hash,
             attempt_hash,
             attempt_file_hash,
+            claim_hash,
+            claim_file_hash,
             True,
         )
     if attempt_path.exists() or attempt_path.is_symlink():
-        _load_attempt(
+        existing_attempt_hash, existing_attempt_file_hash = _load_attempt(
             attempt_path,
             binding,
             coordinate,
             arm,
             allowed_root=spool_directory,
         )
+        if claim_path.exists() or claim_path.is_symlink():
+            _load_claim(
+                claim_path,
+                binding,
+                coordinate,
+                arm,
+                existing_attempt_hash,
+                existing_attempt_file_hash,
+                allowed_root=spool_directory,
+            )
         raise RuntimeError(
             "panel-3 worker attempt exists without a valid completed spool; "
             "this v1 coordinate is permanently invalid"
@@ -3006,6 +3154,17 @@ def _run_one(
         }
     )
 
+    def load_consumed_claim() -> tuple[str, str]:
+        return _load_claim(
+            claim_path,
+            binding,
+            coordinate,
+            arm,
+            attempt_hash,
+            attempt_file_hash,
+            allowed_root=spool_directory,
+        )
+
     def publish(
         result: dict[str, Any],
     ) -> tuple[dict[str, Any], str, str]:
@@ -3014,6 +3173,7 @@ def _run_one(
             spool_directory,
             binding,
         )
+        load_consumed_claim()
         return _create_spool(
             path,
             binding,
@@ -3039,6 +3199,15 @@ def _run_one(
         )
         if arm not in COMPARATOR_ARMS:
             raise
+        claim_hash, claim_file_hash = _create_claim(
+            claim_path,
+            binding,
+            coordinate,
+            arm,
+            attempt_hash,
+            attempt_file_hash,
+            allowed_root=spool_directory,
+        )
         failure = _comparator_failure(
             coordinate,
             arm,
@@ -3055,6 +3224,8 @@ def _run_one(
             spool_file_hash,
             attempt_hash,
             attempt_file_hash,
+            claim_hash,
+            claim_file_hash,
             False,
         )
     _guard_parent_campaign_boundary(
@@ -3062,6 +3233,7 @@ def _run_one(
         spool_directory,
         binding,
     )
+    claim_hash, claim_file_hash = load_consumed_claim()
     worker_key = _worker_key(coordinate, arm)
     if completed.returncode:
         message = (
@@ -3087,6 +3259,8 @@ def _run_one(
             spool_file_hash,
             attempt_hash,
             attempt_file_hash,
+            claim_hash,
+            claim_file_hash,
             False,
         )
     lines = [
@@ -3117,6 +3291,8 @@ def _run_one(
             spool_file_hash,
             attempt_hash,
             attempt_file_hash,
+            claim_hash,
+            claim_file_hash,
             False,
         )
     try:
@@ -3142,6 +3318,8 @@ def _run_one(
             spool_file_hash,
             attempt_hash,
             attempt_file_hash,
+            claim_hash,
+            claim_file_hash,
             False,
         )
     if (
@@ -3168,6 +3346,8 @@ def _run_one(
             spool_file_hash,
             attempt_hash,
             attempt_file_hash,
+            claim_hash,
+            claim_file_hash,
             False,
         )
     result["worker_stdout"] = (
@@ -3200,6 +3380,8 @@ def _run_one(
             spool_file_hash,
             attempt_hash,
             attempt_file_hash,
+            claim_hash,
+            claim_file_hash,
             False,
         )
     result, spool_hash, spool_file_hash = publish(result)
@@ -3209,6 +3391,8 @@ def _run_one(
         spool_file_hash,
         attempt_hash,
         attempt_file_hash,
+        claim_hash,
+        claim_file_hash,
         False,
     )
 
@@ -3243,6 +3427,8 @@ def _run_wave(
                 spool_file_hash,
                 attempt_hash,
                 attempt_file_hash,
+                claim_hash,
+                claim_file_hash,
                 resumed,
             ) = future.result()
             results.append(result)
@@ -3259,6 +3445,11 @@ def _run_wave(
                     ).name,
                     "attempt_sha256": attempt_hash,
                     "attempt_file_sha256": attempt_file_hash,
+                    "claim_filename": _claim_path(
+                        spool_directory, coordinate, arm
+                    ).name,
+                    "claim_sha256": claim_hash,
+                    "claim_file_sha256": claim_file_hash,
                     "resumed": bool(resumed),
                 }
             )
