@@ -1,0 +1,2281 @@
+{
+  "analysis": {
+    "caveats": [
+      "margin chosen on spent development outcomes",
+      "three datasets are insufficient for a shipping claim",
+      "full crossed audition cost is paid even when the guard declines",
+      "zero observed harm is not a population guarantee"
+    ],
+    "claim_tier": "development_policy_nomination",
+    "fresh_claim_eligible": false,
+    "grid_results": [
+      {
+        "dataset_ratios": {
+          "grid_stability": 0.943105832893258,
+          "kin8nm": 0.9268640952364293,
+          "space_ga": 0.9793908269267345
+        },
+        "engaged_coordinates": 20,
+        "equal_dataset_geomean_ratio": 0.9495347005962401,
+        "leave_one_out_equal_dataset_ratios": {
+          "grid_stability": 0.9527655496932633,
+          "kin8nm": 0.9610771048967688,
+          "space_ga": 0.9349496962493804
+        },
+        "minimum_validation_improvement": 0.0,
+        "split_records": [
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 3,
+            "task_id": 361251,
+            "test_ratio": 0.9531563038231914,
+            "validation_improvement": 0.013835073581031709
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361251,
+            "test_ratio": 0.9787811577535735,
+            "validation_improvement": 0.10353769067576997
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361251,
+            "test_ratio": 0.9609886592275491,
+            "validation_improvement": 0.01676484561473272
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361251,
+            "test_ratio": 0.9212814588306588,
+            "validation_improvement": 0.05632182451303275
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 7,
+            "task_id": 361251,
+            "test_ratio": 0.9091834521031699,
+            "validation_improvement": 0.04427734212201291
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361251,
+            "test_ratio": 0.8969228829343101,
+            "validation_improvement": 0.07497701509614443
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 9,
+            "task_id": 361251,
+            "test_ratio": 0.9852718416546719,
+            "validation_improvement": 0.015237265411077259
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 3,
+            "task_id": 361258,
+            "test_ratio": 0.9601353326537927,
+            "validation_improvement": 0.014154535692111387
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361258,
+            "test_ratio": 0.9033986245005025,
+            "validation_improvement": 0.06466465381812717
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361258,
+            "test_ratio": 0.9318863526095367,
+            "validation_improvement": 0.0901556832723149
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361258,
+            "test_ratio": 0.8707014470472202,
+            "validation_improvement": 0.08465928706140609
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 7,
+            "task_id": 361258,
+            "test_ratio": 0.9864113528659625,
+            "validation_improvement": 0.016108250032537335
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361258,
+            "test_ratio": 0.9094440881753894,
+            "validation_improvement": 0.08822503797411507
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 9,
+            "task_id": 361258,
+            "test_ratio": 0.9307525847604567,
+            "validation_improvement": 0.06998303559570267
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 3,
+            "task_id": 361623,
+            "test_ratio": 1.0707628651200054,
+            "validation_improvement": 0.016036514612846765
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361623,
+            "test_ratio": 0.9615337394621544,
+            "validation_improvement": 0.03241544965288725
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361623,
+            "test_ratio": 0.987027370556751,
+            "validation_improvement": 0.08893965332394309
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361623,
+            "test_ratio": 0.902001597475359,
+            "validation_improvement": 0.05224971660205885
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 7,
+            "task_id": 361623,
+            "test_ratio": 0.9319464427226196,
+            "validation_improvement": 0.06734606538483875
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361623,
+            "test_ratio": 1.0118285695384275,
+            "validation_improvement": 0.046339088414758624
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.0
+          }
+        ],
+        "worst_dataset_ratio": 0.9793908269267345,
+        "worst_split_ratio": 1.0707628651200054
+      },
+      {
+        "dataset_ratios": {
+          "grid_stability": 0.943105832893258,
+          "kin8nm": 0.9268640952364293,
+          "space_ga": 0.9793908269267345
+        },
+        "engaged_coordinates": 20,
+        "equal_dataset_geomean_ratio": 0.9495347005962401,
+        "leave_one_out_equal_dataset_ratios": {
+          "grid_stability": 0.9527655496932633,
+          "kin8nm": 0.9610771048967688,
+          "space_ga": 0.9349496962493804
+        },
+        "minimum_validation_improvement": 0.01,
+        "split_records": [
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 3,
+            "task_id": 361251,
+            "test_ratio": 0.9531563038231914,
+            "validation_improvement": 0.013835073581031709
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361251,
+            "test_ratio": 0.9787811577535735,
+            "validation_improvement": 0.10353769067576997
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361251,
+            "test_ratio": 0.9609886592275491,
+            "validation_improvement": 0.01676484561473272
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361251,
+            "test_ratio": 0.9212814588306588,
+            "validation_improvement": 0.05632182451303275
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 7,
+            "task_id": 361251,
+            "test_ratio": 0.9091834521031699,
+            "validation_improvement": 0.04427734212201291
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361251,
+            "test_ratio": 0.8969228829343101,
+            "validation_improvement": 0.07497701509614443
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 9,
+            "task_id": 361251,
+            "test_ratio": 0.9852718416546719,
+            "validation_improvement": 0.015237265411077259
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 3,
+            "task_id": 361258,
+            "test_ratio": 0.9601353326537927,
+            "validation_improvement": 0.014154535692111387
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361258,
+            "test_ratio": 0.9033986245005025,
+            "validation_improvement": 0.06466465381812717
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361258,
+            "test_ratio": 0.9318863526095367,
+            "validation_improvement": 0.0901556832723149
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361258,
+            "test_ratio": 0.8707014470472202,
+            "validation_improvement": 0.08465928706140609
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 7,
+            "task_id": 361258,
+            "test_ratio": 0.9864113528659625,
+            "validation_improvement": 0.016108250032537335
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361258,
+            "test_ratio": 0.9094440881753894,
+            "validation_improvement": 0.08822503797411507
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 9,
+            "task_id": 361258,
+            "test_ratio": 0.9307525847604567,
+            "validation_improvement": 0.06998303559570267
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 3,
+            "task_id": 361623,
+            "test_ratio": 1.0707628651200054,
+            "validation_improvement": 0.016036514612846765
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361623,
+            "test_ratio": 0.9615337394621544,
+            "validation_improvement": 0.03241544965288725
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361623,
+            "test_ratio": 0.987027370556751,
+            "validation_improvement": 0.08893965332394309
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361623,
+            "test_ratio": 0.902001597475359,
+            "validation_improvement": 0.05224971660205885
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 7,
+            "task_id": 361623,
+            "test_ratio": 0.9319464427226196,
+            "validation_improvement": 0.06734606538483875
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361623,
+            "test_ratio": 1.0118285695384275,
+            "validation_improvement": 0.046339088414758624
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.0
+          }
+        ],
+        "worst_dataset_ratio": 0.9793908269267345,
+        "worst_split_ratio": 1.0707628651200054
+      },
+      {
+        "dataset_ratios": {
+          "grid_stability": 0.9570317929130819,
+          "kin8nm": 0.9340902577557246,
+          "space_ga": 0.9698713532053218
+        },
+        "engaged_coordinates": 14,
+        "equal_dataset_geomean_ratio": 0.9535492157363956,
+        "leave_one_out_equal_dataset_ratios": {
+          "grid_stability": 0.9518126823621613,
+          "kin8nm": 0.9634301843170194,
+          "space_ga": 0.9454914458220148
+        },
+        "minimum_validation_improvement": 0.02,
+        "split_records": [
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.013835073581031709
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361251,
+            "test_ratio": 0.9787811577535735,
+            "validation_improvement": 0.10353769067576997
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 5,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.01676484561473272
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361251,
+            "test_ratio": 0.9212814588306588,
+            "validation_improvement": 0.05632182451303275
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 7,
+            "task_id": 361251,
+            "test_ratio": 0.9091834521031699,
+            "validation_improvement": 0.04427734212201291
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361251,
+            "test_ratio": 0.8969228829343101,
+            "validation_improvement": 0.07497701509614443
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.015237265411077259
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.014154535692111387
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361258,
+            "test_ratio": 0.9033986245005025,
+            "validation_improvement": 0.06466465381812717
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361258,
+            "test_ratio": 0.9318863526095367,
+            "validation_improvement": 0.0901556832723149
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361258,
+            "test_ratio": 0.8707014470472202,
+            "validation_improvement": 0.08465928706140609
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 7,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.016108250032537335
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361258,
+            "test_ratio": 0.9094440881753894,
+            "validation_improvement": 0.08822503797411507
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 9,
+            "task_id": 361258,
+            "test_ratio": 0.9307525847604567,
+            "validation_improvement": 0.06998303559570267
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.016036514612846765
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361623,
+            "test_ratio": 0.9615337394621544,
+            "validation_improvement": 0.03241544965288725
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361623,
+            "test_ratio": 0.987027370556751,
+            "validation_improvement": 0.08893965332394309
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361623,
+            "test_ratio": 0.902001597475359,
+            "validation_improvement": 0.05224971660205885
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 7,
+            "task_id": 361623,
+            "test_ratio": 0.9319464427226196,
+            "validation_improvement": 0.06734606538483875
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361623,
+            "test_ratio": 1.0118285695384275,
+            "validation_improvement": 0.046339088414758624
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.0
+          }
+        ],
+        "worst_dataset_ratio": 0.9698713532053218,
+        "worst_split_ratio": 1.0118285695384275
+      },
+      {
+        "dataset_ratios": {
+          "grid_stability": 0.9570317929130819,
+          "kin8nm": 0.9340902577557246,
+          "space_ga": 0.9698713532053218
+        },
+        "engaged_coordinates": 14,
+        "equal_dataset_geomean_ratio": 0.9535492157363956,
+        "leave_one_out_equal_dataset_ratios": {
+          "grid_stability": 0.9518126823621613,
+          "kin8nm": 0.9634301843170194,
+          "space_ga": 0.9454914458220148
+        },
+        "minimum_validation_improvement": 0.03,
+        "split_records": [
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.013835073581031709
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361251,
+            "test_ratio": 0.9787811577535735,
+            "validation_improvement": 0.10353769067576997
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 5,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.01676484561473272
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361251,
+            "test_ratio": 0.9212814588306588,
+            "validation_improvement": 0.05632182451303275
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 7,
+            "task_id": 361251,
+            "test_ratio": 0.9091834521031699,
+            "validation_improvement": 0.04427734212201291
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361251,
+            "test_ratio": 0.8969228829343101,
+            "validation_improvement": 0.07497701509614443
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.015237265411077259
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.014154535692111387
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361258,
+            "test_ratio": 0.9033986245005025,
+            "validation_improvement": 0.06466465381812717
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361258,
+            "test_ratio": 0.9318863526095367,
+            "validation_improvement": 0.0901556832723149
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361258,
+            "test_ratio": 0.8707014470472202,
+            "validation_improvement": 0.08465928706140609
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 7,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.016108250032537335
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361258,
+            "test_ratio": 0.9094440881753894,
+            "validation_improvement": 0.08822503797411507
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 9,
+            "task_id": 361258,
+            "test_ratio": 0.9307525847604567,
+            "validation_improvement": 0.06998303559570267
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.016036514612846765
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361623,
+            "test_ratio": 0.9615337394621544,
+            "validation_improvement": 0.03241544965288725
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361623,
+            "test_ratio": 0.987027370556751,
+            "validation_improvement": 0.08893965332394309
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361623,
+            "test_ratio": 0.902001597475359,
+            "validation_improvement": 0.05224971660205885
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 7,
+            "task_id": 361623,
+            "test_ratio": 0.9319464427226196,
+            "validation_improvement": 0.06734606538483875
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361623,
+            "test_ratio": 1.0118285695384275,
+            "validation_improvement": 0.046339088414758624
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.0
+          }
+        ],
+        "worst_dataset_ratio": 0.9698713532053218,
+        "worst_split_ratio": 1.0118285695384275
+      },
+      {
+        "dataset_ratios": {
+          "grid_stability": 0.9570317929130819,
+          "kin8nm": 0.9340902577557246,
+          "space_ga": 0.9753214390379983
+        },
+        "engaged_coordinates": 13,
+        "equal_dataset_geomean_ratio": 0.95533200229322,
+        "leave_one_out_equal_dataset_ratios": {
+          "grid_stability": 0.9544832394472352,
+          "kin8nm": 0.9661333373138009,
+          "space_ga": 0.9454914458220148
+        },
+        "minimum_validation_improvement": 0.04,
+        "split_records": [
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.013835073581031709
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361251,
+            "test_ratio": 0.9787811577535735,
+            "validation_improvement": 0.10353769067576997
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 5,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.01676484561473272
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361251,
+            "test_ratio": 0.9212814588306588,
+            "validation_improvement": 0.05632182451303275
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 7,
+            "task_id": 361251,
+            "test_ratio": 0.9091834521031699,
+            "validation_improvement": 0.04427734212201291
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361251,
+            "test_ratio": 0.8969228829343101,
+            "validation_improvement": 0.07497701509614443
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.015237265411077259
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.014154535692111387
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361258,
+            "test_ratio": 0.9033986245005025,
+            "validation_improvement": 0.06466465381812717
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361258,
+            "test_ratio": 0.9318863526095367,
+            "validation_improvement": 0.0901556832723149
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361258,
+            "test_ratio": 0.8707014470472202,
+            "validation_improvement": 0.08465928706140609
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 7,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.016108250032537335
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361258,
+            "test_ratio": 0.9094440881753894,
+            "validation_improvement": 0.08822503797411507
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 9,
+            "task_id": 361258,
+            "test_ratio": 0.9307525847604567,
+            "validation_improvement": 0.06998303559570267
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.016036514612846765
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 4,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.03241544965288725
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361623,
+            "test_ratio": 0.987027370556751,
+            "validation_improvement": 0.08893965332394309
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361623,
+            "test_ratio": 0.902001597475359,
+            "validation_improvement": 0.05224971660205885
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 7,
+            "task_id": 361623,
+            "test_ratio": 0.9319464427226196,
+            "validation_improvement": 0.06734606538483875
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361623,
+            "test_ratio": 1.0118285695384275,
+            "validation_improvement": 0.046339088414758624
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.0
+          }
+        ],
+        "worst_dataset_ratio": 0.9753214390379983,
+        "worst_split_ratio": 1.0118285695384275
+      },
+      {
+        "dataset_ratios": {
+          "grid_stability": 0.9701374966490911,
+          "kin8nm": 0.9340902577557246,
+          "space_ga": 0.973684391628926
+        },
+        "engaged_coordinates": 11,
+        "equal_dataset_geomean_ratio": 0.9591358273838319,
+        "leave_one_out_equal_dataset_ratios": {
+          "grid_stability": 0.9536818674743635,
+          "kin8nm": 0.9719093261313935,
+          "space_ga": 0.9519432673764981
+        },
+        "minimum_validation_improvement": 0.05,
+        "split_records": [
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.013835073581031709
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361251,
+            "test_ratio": 0.9787811577535735,
+            "validation_improvement": 0.10353769067576997
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 5,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.01676484561473272
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361251,
+            "test_ratio": 0.9212814588306588,
+            "validation_improvement": 0.05632182451303275
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 7,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.04427734212201291
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361251,
+            "test_ratio": 0.8969228829343101,
+            "validation_improvement": 0.07497701509614443
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.015237265411077259
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.014154535692111387
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361258,
+            "test_ratio": 0.9033986245005025,
+            "validation_improvement": 0.06466465381812717
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361258,
+            "test_ratio": 0.9318863526095367,
+            "validation_improvement": 0.0901556832723149
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361258,
+            "test_ratio": 0.8707014470472202,
+            "validation_improvement": 0.08465928706140609
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 7,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.016108250032537335
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361258,
+            "test_ratio": 0.9094440881753894,
+            "validation_improvement": 0.08822503797411507
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 9,
+            "task_id": 361258,
+            "test_ratio": 0.9307525847604567,
+            "validation_improvement": 0.06998303559570267
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.016036514612846765
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 4,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.03241544965288725
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361623,
+            "test_ratio": 0.987027370556751,
+            "validation_improvement": 0.08893965332394309
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361623,
+            "test_ratio": 0.902001597475359,
+            "validation_improvement": 0.05224971660205885
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 7,
+            "task_id": 361623,
+            "test_ratio": 0.9319464427226196,
+            "validation_improvement": 0.06734606538483875
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 8,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.046339088414758624
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.0
+          }
+        ],
+        "worst_dataset_ratio": 0.973684391628926,
+        "worst_split_ratio": 1.0
+      },
+      {
+        "dataset_ratios": {
+          "grid_stability": 0.9815673424761704,
+          "kin8nm": 0.9340902577557246,
+          "space_ga": 0.9881370068389097
+        },
+        "engaged_coordinates": 9,
+        "equal_dataset_geomean_ratio": 0.9676286140470262,
+        "leave_one_out_equal_dataset_ratios": {
+          "grid_stability": 0.9607336526926323,
+          "kin8nm": 0.9848466966006567,
+          "space_ga": 0.9575345904656226
+        },
+        "minimum_validation_improvement": 0.06,
+        "split_records": [
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.013835073581031709
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361251,
+            "test_ratio": 0.9787811577535735,
+            "validation_improvement": 0.10353769067576997
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 5,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.01676484561473272
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 6,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.05632182451303275
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 7,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.04427734212201291
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361251,
+            "test_ratio": 0.8969228829343101,
+            "validation_improvement": 0.07497701509614443
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.015237265411077259
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.014154535692111387
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361258,
+            "test_ratio": 0.9033986245005025,
+            "validation_improvement": 0.06466465381812717
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361258,
+            "test_ratio": 0.9318863526095367,
+            "validation_improvement": 0.0901556832723149
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361258,
+            "test_ratio": 0.8707014470472202,
+            "validation_improvement": 0.08465928706140609
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 7,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.016108250032537335
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361258,
+            "test_ratio": 0.9094440881753894,
+            "validation_improvement": 0.08822503797411507
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 9,
+            "task_id": 361258,
+            "test_ratio": 0.9307525847604567,
+            "validation_improvement": 0.06998303559570267
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.016036514612846765
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 4,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.03241544965288725
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361623,
+            "test_ratio": 0.987027370556751,
+            "validation_improvement": 0.08893965332394309
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 6,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.05224971660205885
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 7,
+            "task_id": 361623,
+            "test_ratio": 0.9319464427226196,
+            "validation_improvement": 0.06734606538483875
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 8,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.046339088414758624
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.0
+          }
+        ],
+        "worst_dataset_ratio": 0.9881370068389097,
+        "worst_split_ratio": 1.0
+      },
+      {
+        "dataset_ratios": {
+          "grid_stability": 0.9815673424761704,
+          "kin8nm": 0.9575115728292845,
+          "space_ga": 0.9981363802893585
+        },
+        "engaged_coordinates": 6,
+        "equal_dataset_geomean_ratio": 0.9789293264606832,
+        "leave_one_out_equal_dataset_ratios": {
+          "grid_stability": 0.9776129783247522,
+          "kin8nm": 0.9898171923286693,
+          "space_ga": 0.9694648471874671
+        },
+        "minimum_validation_improvement": 0.07,
+        "split_records": [
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.013835073581031709
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361251,
+            "test_ratio": 0.9787811577535735,
+            "validation_improvement": 0.10353769067576997
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 5,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.01676484561473272
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 6,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.05632182451303275
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 7,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.04427734212201291
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361251,
+            "test_ratio": 0.8969228829343101,
+            "validation_improvement": 0.07497701509614443
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.015237265411077259
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.014154535692111387
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 4,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.06466465381812717
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361258,
+            "test_ratio": 0.9318863526095367,
+            "validation_improvement": 0.0901556832723149
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361258,
+            "test_ratio": 0.8707014470472202,
+            "validation_improvement": 0.08465928706140609
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 7,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.016108250032537335
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361258,
+            "test_ratio": 0.9094440881753894,
+            "validation_improvement": 0.08822503797411507
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.06998303559570267
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.016036514612846765
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 4,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.03241544965288725
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361623,
+            "test_ratio": 0.987027370556751,
+            "validation_improvement": 0.08893965332394309
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 6,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.05224971660205885
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 7,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.06734606538483875
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 8,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.046339088414758624
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.0
+          }
+        ],
+        "worst_dataset_ratio": 0.9981363802893585,
+        "worst_split_ratio": 1.0
+      },
+      {
+        "dataset_ratios": {
+          "grid_stability": 0.9969408034851244,
+          "kin8nm": 0.9575115728292845,
+          "space_ga": 0.9981363802893585
+        },
+        "engaged_coordinates": 5,
+        "equal_dataset_geomean_ratio": 0.9840135892856482,
+        "leave_one_out_equal_dataset_ratios": {
+          "grid_stability": 0.9776129783247522,
+          "kin8nm": 0.99753841277086,
+          "space_ga": 0.9770273060476519
+        },
+        "minimum_validation_improvement": 0.08,
+        "split_records": [
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.013835073581031709
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361251,
+            "test_ratio": 0.9787811577535735,
+            "validation_improvement": 0.10353769067576997
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 5,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.01676484561473272
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 6,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.05632182451303275
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 7,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.04427734212201291
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 8,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.07497701509614443
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.015237265411077259
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.014154535692111387
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 4,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.06466465381812717
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361258,
+            "test_ratio": 0.9318863526095367,
+            "validation_improvement": 0.0901556832723149
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 6,
+            "task_id": 361258,
+            "test_ratio": 0.8707014470472202,
+            "validation_improvement": 0.08465928706140609
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 7,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.016108250032537335
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 8,
+            "task_id": 361258,
+            "test_ratio": 0.9094440881753894,
+            "validation_improvement": 0.08822503797411507
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.06998303559570267
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.016036514612846765
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 4,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.03241544965288725
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361623,
+            "test_ratio": 0.987027370556751,
+            "validation_improvement": 0.08893965332394309
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 6,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.05224971660205885
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 7,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.06734606538483875
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 8,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.046339088414758624
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.0
+          }
+        ],
+        "worst_dataset_ratio": 0.9981363802893585,
+        "worst_split_ratio": 1.0
+      },
+      {
+        "dataset_ratios": {
+          "grid_stability": 0.9969408034851244,
+          "kin8nm": 0.9899728375987437,
+          "space_ga": 1.0
+        },
+        "engaged_coordinates": 2,
+        "equal_dataset_geomean_ratio": 0.9956290278199689,
+        "leave_one_out_equal_dataset_ratios": {
+          "grid_stability": 0.9949737873927854,
+          "kin8nm": 0.9984692301143407,
+          "space_ga": 0.9934507114820241
+        },
+        "minimum_validation_improvement": 0.09,
+        "split_records": [
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.013835073581031709
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361251,
+            "test_ratio": 0.9787811577535735,
+            "validation_improvement": 0.10353769067576997
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 5,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.01676484561473272
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 6,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.05632182451303275
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 7,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.04427734212201291
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 8,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.07497701509614443
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.015237265411077259
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.014154535692111387
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 4,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.06466465381812717
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": true,
+            "fold": 5,
+            "task_id": 361258,
+            "test_ratio": 0.9318863526095367,
+            "validation_improvement": 0.0901556832723149
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 6,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.08465928706140609
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 7,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.016108250032537335
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 8,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.08822503797411507
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.06998303559570267
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.016036514612846765
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 4,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.03241544965288725
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 5,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.08893965332394309
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 6,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.05224971660205885
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 7,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.06734606538483875
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 8,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.046339088414758624
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.0
+          }
+        ],
+        "worst_dataset_ratio": 1.0,
+        "worst_split_ratio": 1.0
+      },
+      {
+        "dataset_ratios": {
+          "grid_stability": 0.9969408034851244,
+          "kin8nm": 1.0,
+          "space_ga": 1.0
+        },
+        "engaged_coordinates": 1,
+        "equal_dataset_geomean_ratio": 0.9989792262037734,
+        "leave_one_out_equal_dataset_ratios": {
+          "grid_stability": 1.0,
+          "kin8nm": 0.9984692301143407,
+          "space_ga": 0.9984692301143407
+        },
+        "minimum_validation_improvement": 0.1,
+        "split_records": [
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.013835073581031709
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": true,
+            "fold": 4,
+            "task_id": 361251,
+            "test_ratio": 0.9787811577535735,
+            "validation_improvement": 0.10353769067576997
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 5,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.01676484561473272
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 6,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.05632182451303275
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 7,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.04427734212201291
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 8,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.07497701509614443
+          },
+          {
+            "dataset_name": "grid_stability",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361251,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.015237265411077259
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.014154535692111387
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 4,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.06466465381812717
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 5,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.0901556832723149
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 6,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.08465928706140609
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 7,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.016108250032537335
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 8,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.08822503797411507
+          },
+          {
+            "dataset_name": "kin8nm",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361258,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.06998303559570267
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 3,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.016036514612846765
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 4,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.03241544965288725
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 5,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.08893965332394309
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 6,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.05224971660205885
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 7,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.06734606538483875
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 8,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.046339088414758624
+          },
+          {
+            "dataset_name": "space_ga",
+            "engaged": false,
+            "fold": 9,
+            "task_id": 361623,
+            "test_ratio": 1.0,
+            "validation_improvement": 0.0
+          }
+        ],
+        "worst_dataset_ratio": 1.0,
+        "worst_split_ratio": 1.0
+      }
+    ],
+    "margin_grid": [
+      0.0,
+      0.01,
+      0.02,
+      0.03,
+      0.04,
+      0.05,
+      0.06,
+      0.07,
+      0.08,
+      0.09,
+      0.1
+    ],
+    "nominee": {
+      "dataset_ratios": {
+        "grid_stability": 0.9701374966490911,
+        "kin8nm": 0.9340902577557246,
+        "space_ga": 0.973684391628926
+      },
+      "engaged_coordinates": 11,
+      "equal_dataset_geomean_ratio": 0.9591358273838319,
+      "leave_one_out_equal_dataset_ratios": {
+        "grid_stability": 0.9536818674743635,
+        "kin8nm": 0.9719093261313935,
+        "space_ga": 0.9519432673764981
+      },
+      "minimum_validation_improvement": 0.05,
+      "split_records": [
+        {
+          "dataset_name": "grid_stability",
+          "engaged": false,
+          "fold": 3,
+          "task_id": 361251,
+          "test_ratio": 1.0,
+          "validation_improvement": 0.013835073581031709
+        },
+        {
+          "dataset_name": "grid_stability",
+          "engaged": true,
+          "fold": 4,
+          "task_id": 361251,
+          "test_ratio": 0.9787811577535735,
+          "validation_improvement": 0.10353769067576997
+        },
+        {
+          "dataset_name": "grid_stability",
+          "engaged": false,
+          "fold": 5,
+          "task_id": 361251,
+          "test_ratio": 1.0,
+          "validation_improvement": 0.01676484561473272
+        },
+        {
+          "dataset_name": "grid_stability",
+          "engaged": true,
+          "fold": 6,
+          "task_id": 361251,
+          "test_ratio": 0.9212814588306588,
+          "validation_improvement": 0.05632182451303275
+        },
+        {
+          "dataset_name": "grid_stability",
+          "engaged": false,
+          "fold": 7,
+          "task_id": 361251,
+          "test_ratio": 1.0,
+          "validation_improvement": 0.04427734212201291
+        },
+        {
+          "dataset_name": "grid_stability",
+          "engaged": true,
+          "fold": 8,
+          "task_id": 361251,
+          "test_ratio": 0.8969228829343101,
+          "validation_improvement": 0.07497701509614443
+        },
+        {
+          "dataset_name": "grid_stability",
+          "engaged": false,
+          "fold": 9,
+          "task_id": 361251,
+          "test_ratio": 1.0,
+          "validation_improvement": 0.015237265411077259
+        },
+        {
+          "dataset_name": "kin8nm",
+          "engaged": false,
+          "fold": 3,
+          "task_id": 361258,
+          "test_ratio": 1.0,
+          "validation_improvement": 0.014154535692111387
+        },
+        {
+          "dataset_name": "kin8nm",
+          "engaged": true,
+          "fold": 4,
+          "task_id": 361258,
+          "test_ratio": 0.9033986245005025,
+          "validation_improvement": 0.06466465381812717
+        },
+        {
+          "dataset_name": "kin8nm",
+          "engaged": true,
+          "fold": 5,
+          "task_id": 361258,
+          "test_ratio": 0.9318863526095367,
+          "validation_improvement": 0.0901556832723149
+        },
+        {
+          "dataset_name": "kin8nm",
+          "engaged": true,
+          "fold": 6,
+          "task_id": 361258,
+          "test_ratio": 0.8707014470472202,
+          "validation_improvement": 0.08465928706140609
+        },
+        {
+          "dataset_name": "kin8nm",
+          "engaged": false,
+          "fold": 7,
+          "task_id": 361258,
+          "test_ratio": 1.0,
+          "validation_improvement": 0.016108250032537335
+        },
+        {
+          "dataset_name": "kin8nm",
+          "engaged": true,
+          "fold": 8,
+          "task_id": 361258,
+          "test_ratio": 0.9094440881753894,
+          "validation_improvement": 0.08822503797411507
+        },
+        {
+          "dataset_name": "kin8nm",
+          "engaged": true,
+          "fold": 9,
+          "task_id": 361258,
+          "test_ratio": 0.9307525847604567,
+          "validation_improvement": 0.06998303559570267
+        },
+        {
+          "dataset_name": "space_ga",
+          "engaged": false,
+          "fold": 3,
+          "task_id": 361623,
+          "test_ratio": 1.0,
+          "validation_improvement": 0.016036514612846765
+        },
+        {
+          "dataset_name": "space_ga",
+          "engaged": false,
+          "fold": 4,
+          "task_id": 361623,
+          "test_ratio": 1.0,
+          "validation_improvement": 0.03241544965288725
+        },
+        {
+          "dataset_name": "space_ga",
+          "engaged": true,
+          "fold": 5,
+          "task_id": 361623,
+          "test_ratio": 0.987027370556751,
+          "validation_improvement": 0.08893965332394309
+        },
+        {
+          "dataset_name": "space_ga",
+          "engaged": true,
+          "fold": 6,
+          "task_id": 361623,
+          "test_ratio": 0.902001597475359,
+          "validation_improvement": 0.05224971660205885
+        },
+        {
+          "dataset_name": "space_ga",
+          "engaged": true,
+          "fold": 7,
+          "task_id": 361623,
+          "test_ratio": 0.9319464427226196,
+          "validation_improvement": 0.06734606538483875
+        },
+        {
+          "dataset_name": "space_ga",
+          "engaged": false,
+          "fold": 8,
+          "task_id": 361623,
+          "test_ratio": 1.0,
+          "validation_improvement": 0.046339088414758624
+        },
+        {
+          "dataset_name": "space_ga",
+          "engaged": false,
+          "fold": 9,
+          "task_id": 361623,
+          "test_ratio": 1.0,
+          "validation_improvement": 0.0
+        }
+      ],
+      "worst_dataset_ratio": 0.973684391628926,
+      "worst_split_ratio": 1.0
+    },
+    "nominee_requires_fresh_confirmation": true,
+    "selection_rule": "smallest whole-percentage validation margin on the declared grid with no observed split regression"
+  },
+  "created_at": "2026-07-18T01:08:02.637813+00:00",
+  "schema_version": 1,
+  "source": {
+    "path": "benchmarks/smooth_cross_features.json",
+    "sha256": "b5544bc598601862c443c237214124007ae49b72b11e2cf2888f03112450d30c",
+    "source_head": "f6d7983f537f9995739dbfd327b31e97f28cd747",
+    "source_protocol_sha256": "608bd3235bbaad895d1efdbffe0588a26bc104233a243fb756c488568eaeecd4"
+  }
+}

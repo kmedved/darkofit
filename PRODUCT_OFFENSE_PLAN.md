@@ -18,7 +18,8 @@ the agenda. Companion to the execution ledger in `BEYOND_PARITY_PLAN.md`.*
 | T3 feature recipes | Complete | docs tied to immutable evidence |
 | T4 capped selection | Complete | final-refit exactness + metadata |
 | T6a RSSI diagnosis | Complete | `benchmarks/rssi_linear_leaf_diagnosis_result.md` |
-| T5 and T6b–T10 campaigns | Pending | frozen protocols, contamination and power checks |
+| T6b smooth cross features | Complete | exact mechanism + 5% T5 nominee |
+| T5 and T7–T10 campaigns | Pending | frozen protocols, contamination and power checks |
 
 Status in this table is operational only. It cannot amend a frozen protocol or
 promote a Tier-D candidate.
@@ -117,7 +118,12 @@ The complete binding policy is `benchmarks/SHIPPING_POLICY.md`.
   and selection policy, the 100-round linear audition chose the wrong
   full-budget lane, and cross features were not selected. T6b therefore uses
   other spent smooth tasks for cross-feature development rather than
-  reimplementing linear leaves.
+  reimplementing linear leaves. T6b then reproduced ChimeraBoost's native
+  full-budget cross path exactly on 21 coordinates. Its raw selector had a
+  1.0708× worst split; a development-derived 5% validation margin retained a
+  0.9591× equal-dataset ratio with exact declines and no observed split harm.
+  That guarded mechanism is the frozen nominee for fresh T5 confirmation, not
+  a promoted default.
 - **T7. CatBoost attribution.** On development data, isolate ordered
   boosting, border count, leaf estimation/backtracking, combinations, and
   depth policy by `(n, p)`. The output is an attribution table and at most
