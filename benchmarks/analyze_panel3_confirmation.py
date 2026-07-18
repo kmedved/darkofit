@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import math
 import sys
@@ -22,6 +21,7 @@ if str(ROOT) not in sys.path:
 from benchmarks import panel3_registry_common as common  # noqa: E402
 from benchmarks import panel3_data_contract as data_contract  # noqa: E402
 from benchmarks import run_panel3_confirmation as runner  # noqa: E402
+from benchmarks.campaign_lib import provenance  # noqa: E402
 
 
 DEFAULT_INPUT = ROOT / "benchmarks" / "panel3_confirmation_raw.json"
@@ -120,58 +120,16 @@ PROTOCOL_FIELDS = {
 
 
 def _json_sha256(value: Any) -> str:
-    return hashlib.sha256(
-        json.dumps(
-            value,
-            sort_keys=True,
-            separators=(",", ":"),
-            allow_nan=False,
-        ).encode("utf-8")
-    ).hexdigest()
+    return provenance.canonical_json_sha256(value)
 
 
 def _is_sha256(value: Any) -> bool:
-    return (
-        isinstance(value, str)
-        and len(value) == 64
-        and all(character in "0123456789abcdef" for character in value)
-    )
-
-
-def _json_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-    result = {}
-    for key, value in pairs:
-        if key in result:
-            raise ValueError(f"duplicate JSON key: {key}")
-        result[key] = value
-    return result
-
-
-def _json_float(value: str) -> float:
-    result = float(value)
-    if not math.isfinite(result):
-        raise ValueError(f"non-finite JSON number: {value}")
-    return result
-
-
-def _json_int(value: str) -> int:
-    result = int(value)
-    if not -(2**63) <= result <= 2**63 - 1:
-        raise ValueError(f"out-of-range JSON integer: {value}")
-    return result
+    return provenance.is_sha256(value)
 
 
 def _json_loads(encoded: str, label: str) -> dict[str, Any]:
     try:
-        value = json.loads(
-            encoded,
-            object_pairs_hook=_json_object,
-            parse_float=_json_float,
-            parse_int=_json_int,
-            parse_constant=lambda constant: (_ for _ in ()).throw(
-                ValueError(f"non-finite JSON constant: {constant}")
-            ),
-        )
+        value = provenance.strict_json_loads(encoded)
     except (json.JSONDecodeError, ValueError) as exc:
         raise RuntimeError(f"invalid panel-3 {label} JSON") from exc
     if not isinstance(value, dict):
@@ -1985,7 +1943,7 @@ def validate_raw(
         != {"path", "file_sha256", "canonical_sha256"}
         or not isinstance(raw.get("created_at"), str)
         or registry_record.get("path")
-        != runner._artifact_path(registry_path)
+        != provenance.artifact_path(registry_path, root=ROOT)
         or registry_record.get("canonical_sha256")
         != registry["registry_sha256"]
         or registry_record.get("file_sha256")
@@ -2015,15 +1973,22 @@ def validate_raw(
         not isinstance(protocol, dict)
         or set(protocol) != PROTOCOL_FIELDS
         or protocol.get("arms") != list(arm_order)
-        or protocol.get("path") != runner._artifact_path(common.PROTOCOL)
+        or protocol.get("path")
+        != provenance.artifact_path(common.PROTOCOL, root=ROOT)
         or protocol.get("runner_path")
-        != runner._artifact_path(Path(runner.__file__).resolve())
+        != provenance.artifact_path(
+            Path(runner.__file__).resolve(),
+            root=ROOT,
+        )
         or protocol.get("analyzer_path")
-        != runner._artifact_path(Path(__file__).resolve())
+        != provenance.artifact_path(Path(__file__).resolve(), root=ROOT)
         or protocol.get("candidate_contract_path")
-        != runner._artifact_path(common.CANDIDATE_CONTRACT)
+        != provenance.artifact_path(common.CANDIDATE_CONTRACT, root=ROOT)
         or protocol.get("power_design_decision_path")
-        != runner._artifact_path(common.POWER_DESIGN_DECISION)
+        != provenance.artifact_path(
+            common.POWER_DESIGN_DECISION,
+            root=ROOT,
+        )
         or protocol.get("power_design_file_sha256")
         != registry["power_design_file_sha256"]
         or protocol.get("power_design_decision_sha256")

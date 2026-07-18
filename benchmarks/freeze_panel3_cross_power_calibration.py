@@ -19,6 +19,7 @@ if str(ROOT) not in sys.path:
 
 from benchmarks import panel3_registry_common as common  # noqa: E402
 from benchmarks import run_tabarena_regression_followon_screen as spent  # noqa: E402
+from benchmarks.campaign_lib import provenance  # noqa: E402
 
 
 DEFAULT_OUTPUT = (
@@ -124,17 +125,11 @@ _RUNTIME_PACKAGE_NAMES = {
 
 
 def _git(*arguments: str) -> str:
-    return subprocess.run(
-        ["git", *arguments],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
+    return provenance.git_output(ROOT, *arguments)
 
 
 def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    return provenance.file_sha256(path)
 
 
 def _blob(path: str, head: str) -> bytes:

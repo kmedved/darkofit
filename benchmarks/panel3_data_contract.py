@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from collections import Counter
 import hashlib
-import json
 import math
 import unicodedata
 from typing import Any
 
 import numpy as np
 import pandas as pd
+
+from benchmarks.campaign_lib import provenance
 
 
 DATETIME_COMPONENTS = frozenset(
@@ -29,14 +30,7 @@ LEXICAL_COUNTS = ("char_count", "token_count")
 
 
 def canonical_json_sha256(value: Any) -> str:
-    return hashlib.sha256(
-        json.dumps(
-            value,
-            sort_keys=True,
-            separators=(",", ":"),
-            allow_nan=False,
-        ).encode("utf-8")
-    ).hexdigest()
+    return provenance.canonical_json_sha256(value)
 
 
 def feature_schema(X: pd.DataFrame) -> list[dict[str, str]]:

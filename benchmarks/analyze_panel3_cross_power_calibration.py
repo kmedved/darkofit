@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import math
 import sys
@@ -21,6 +20,7 @@ if str(ROOT) not in sys.path:
 from benchmarks import freeze_panel3_cross_power_calibration as freeze  # noqa: E402
 from benchmarks import panel3_registry_common as common  # noqa: E402
 from benchmarks import run_panel3_cross_power_calibration as runner  # noqa: E402
+from benchmarks.campaign_lib import provenance  # noqa: E402
 
 
 DEFAULT_RAW = (
@@ -33,26 +33,15 @@ DEFAULT_OUTPUT = (
 
 
 def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    return provenance.file_sha256(path)
 
 
 def _json_sha256(value: Any) -> str:
-    return hashlib.sha256(
-        json.dumps(
-            value,
-            sort_keys=True,
-            separators=(",", ":"),
-            allow_nan=False,
-        ).encode("utf-8")
-    ).hexdigest()
+    return provenance.canonical_json_sha256(value)
 
 
 def _is_sha256(value: Any) -> bool:
-    return (
-        isinstance(value, str)
-        and len(value) == 64
-        and all(character in "0123456789abcdef" for character in value)
-    )
+    return provenance.is_sha256(value)
 
 
 def _positive_finite(value: Any, label: str) -> float:

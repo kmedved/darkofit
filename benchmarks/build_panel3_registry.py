@@ -28,6 +28,7 @@ from benchmarks import build_fresh_confirmation_registry as fresh  # noqa: E402
 from benchmarks import build_panel3_power_design as power_design  # noqa: E402
 from benchmarks import panel3_data_contract as data_contract  # noqa: E402
 from benchmarks import panel3_registry_common as common  # noqa: E402
+from benchmarks.campaign_lib import provenance  # noqa: E402
 from benchmarks import preflight_panel3_registry as preflight_builder  # noqa: E402
 
 
@@ -166,13 +167,7 @@ LOCKBOX_DARKOFIT_REFERENCE_ALLOWLIST = frozenset(
 
 
 def _git(path: Path, *args: str) -> str:
-    return subprocess.run(
-        ["git", *args],
-        cwd=path,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
+    return provenance.git_output(path, *args)
 
 
 def _is_ancestor(path: Path, ancestor: str, descendant: str) -> bool:

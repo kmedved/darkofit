@@ -44,6 +44,7 @@ from benchmarks import panel3_data_contract as data_contract  # noqa: E402
 from benchmarks import panel3_registry_common as common  # noqa: E402
 from benchmarks import run_basketball_creator_benchmark as creator  # noqa: E402
 from benchmarks import run_t5_composite_confirmation as t5  # noqa: E402
+from benchmarks.campaign_lib import provenance  # noqa: E402
 from benchmarks.run_smooth_cross_features import candidate_pairs  # noqa: E402
 
 
@@ -113,6 +114,8 @@ PANEL3_V1_REGISTRY_SOURCE_RELATIVE_PATHS = (
     "benchmarks/panel3_registry_protocol.md",
     "benchmarks/panel3_registry_common.py",
     "benchmarks/panel3_data_contract.py",
+    "benchmarks/campaign_lib/__init__.py",
+    "benchmarks/campaign_lib/provenance.py",
     "benchmarks/panel3_candidate_contract.json",
     "benchmarks/panel3_environment_contract.json",
     "benchmarks/panel3_power_design_contract.json",
@@ -341,7 +344,7 @@ def _arm_order(registry: dict[str, Any]) -> tuple[str, ...]:
 
 
 def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    return provenance.file_sha256(path)
 
 
 def _array_sha256(value: Any, dtype: str | None = "<f8") -> str:
@@ -350,14 +353,7 @@ def _array_sha256(value: Any, dtype: str | None = "<f8") -> str:
 
 
 def _json_sha256(value: Any) -> str:
-    return hashlib.sha256(
-        json.dumps(
-            value,
-            sort_keys=True,
-            separators=(",", ":"),
-            allow_nan=False,
-        ).encode("utf-8")
-    ).hexdigest()
+    return provenance.canonical_json_sha256(value)
 
 
 def _json_file_bytes(value: Any) -> bytes:
@@ -371,57 +367,18 @@ def _json_file_sha256(value: Any) -> str:
 
 
 def _is_sha256(value: Any) -> bool:
-    return (
-        isinstance(value, str)
-        and len(value) == 64
-        and all(character in "0123456789abcdef" for character in value)
-    )
-
-
-def _json_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-    result = {}
-    for key, value in pairs:
-        if key in result:
-            raise ValueError(f"duplicate JSON key: {key}")
-        result[key] = value
-    return result
-
-
-def _json_float(value: str) -> float:
-    result = float(value)
-    if not math.isfinite(result):
-        raise ValueError(f"non-finite JSON number: {value}")
-    return result
-
-
-def _json_int(value: str) -> int:
-    result = int(value)
-    if not -(2**63) <= result <= 2**63 - 1:
-        raise ValueError(f"out-of-range JSON integer: {value}")
-    return result
+    return provenance.is_sha256(value)
 
 
 def _json_loads(encoded: str, label: str) -> Any:
     try:
-        return json.loads(
-            encoded,
-            object_pairs_hook=_json_object,
-            parse_float=_json_float,
-            parse_int=_json_int,
-            parse_constant=lambda value: (_ for _ in ()).throw(
-                ValueError(f"non-finite JSON constant: {value}")
-            ),
-        )
+        return provenance.strict_json_loads(encoded)
     except (json.JSONDecodeError, ValueError) as exc:
         raise RuntimeError(f"invalid panel-3 {label} JSON") from exc
 
 
 def _artifact_path(path: Path) -> str:
-    absolute = path.expanduser().absolute()
-    try:
-        return str(absolute.relative_to(ROOT))
-    except ValueError:
-        return str(absolute)
+    return provenance.artifact_path(path, root=ROOT)
 
 
 def _validate_candidate_contract_taxonomy(
@@ -697,25 +654,11 @@ def _validate_t5_size_gate_binding(
 
 
 def _git(path: Path, *arguments: str) -> str:
-    return subprocess.run(
-        ["git", *arguments],
-        cwd=path,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
+    return provenance.git_output(path, *arguments)
 
 
 def _is_ancestor(path: Path, ancestor: str, descendant: str) -> bool:
-    return (
-        subprocess.run(
-            ["git", "merge-base", "--is-ancestor", ancestor, descendant],
-            cwd=path,
-            check=False,
-            capture_output=True,
-        ).returncode
-        == 0
-    )
+    return provenance.git_is_ancestor(path, ancestor, descendant)
 
 
 def _peak_rss_bytes() -> int:

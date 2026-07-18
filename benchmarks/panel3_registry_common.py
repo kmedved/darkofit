@@ -17,6 +17,7 @@ import numpy as np
 
 from benchmarks import build_ctr23_contamination_registry as ctr
 from benchmarks import panel3_data_contract as data_contract
+from benchmarks.campaign_lib import provenance
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,6 +25,10 @@ DECLARATIONS = ROOT / "benchmarks" / "panel3_registry_declarations.json"
 PROTOCOL = ROOT / "benchmarks" / "panel3_registry_protocol.md"
 COMMON = ROOT / "benchmarks" / "panel3_registry_common.py"
 DATA_CONTRACT = ROOT / "benchmarks" / "panel3_data_contract.py"
+CAMPAIGN_LIB_INIT = ROOT / "benchmarks" / "campaign_lib" / "__init__.py"
+CAMPAIGN_LIB_PROVENANCE = (
+    ROOT / "benchmarks" / "campaign_lib" / "provenance.py"
+)
 CANDIDATE_CONTRACT = (
     ROOT / "benchmarks" / "panel3_candidate_contract.json"
 )
@@ -75,6 +80,8 @@ PANEL3_SOURCE_PATHS = (
     PROTOCOL,
     COMMON,
     DATA_CONTRACT,
+    CAMPAIGN_LIB_INIT,
+    CAMPAIGN_LIB_PROVENANCE,
     CANDIDATE_CONTRACT,
     ENVIRONMENT_CONTRACT,
     POWER_DESIGN_CONTRACT,
@@ -248,29 +255,6 @@ COLLEGES_MANUAL_ADJUDICATION = {
 }
 
 
-def _json_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-    result: dict[str, Any] = {}
-    for key, value in pairs:
-        if key in result:
-            raise ValueError(f"duplicate JSON key: {key}")
-        result[key] = value
-    return result
-
-
-def _json_float(value: str) -> float:
-    result = float(value)
-    if not math.isfinite(result):
-        raise ValueError(f"non-finite JSON number: {value}")
-    return result
-
-
-def _json_int(value: str) -> int:
-    result = int(value)
-    if not -(2**63) <= result <= 2**63 - 1:
-        raise ValueError(f"out-of-range JSON integer: {value}")
-    return result
-
-
 def load_json(path: Path) -> Any:
     """Load a campaign JSON artifact with a fail-closed numeric grammar."""
     try:
@@ -282,15 +266,7 @@ def load_json(path: Path) -> Any:
 def decode_json_bytes(payload: bytes, *, source: Path | str) -> Any:
     """Strictly decode an already-captured JSON byte snapshot."""
     try:
-        return json.loads(
-            payload.decode("utf-8"),
-            object_pairs_hook=_json_object,
-            parse_float=_json_float,
-            parse_int=_json_int,
-            parse_constant=lambda value: (_ for _ in ()).throw(
-                ValueError(f"non-finite JSON constant: {value}")
-            ),
-        )
+        return provenance.strict_json_loads(payload.decode("utf-8"))
     except (
         UnicodeDecodeError,
         json.JSONDecodeError,
@@ -389,7 +365,7 @@ def t5_size_gate_applicability(
 
 
 def sha256_file(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    return provenance.file_sha256(path)
 
 
 def artifact_sha256(artifact: dict[str, Any], field: str) -> str:

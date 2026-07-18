@@ -32,6 +32,7 @@ from benchmarks import panel3_data_contract as data_contract  # noqa: E402
 from benchmarks import panel3_registry_common as common  # noqa: E402
 from benchmarks import run_panel3_confirmation as panel3  # noqa: E402
 from benchmarks import run_t5_composite_confirmation as t5  # noqa: E402
+from benchmarks.campaign_lib import provenance  # noqa: E402
 
 
 DEFAULT_FREEZE = freeze.DEFAULT_OUTPUT
@@ -56,18 +57,11 @@ if t5.SIZE_GATE != T5_SIZE_GATE:
 
 
 def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    return provenance.file_sha256(path)
 
 
 def _json_sha256(value: Any) -> str:
-    return hashlib.sha256(
-        json.dumps(
-            value,
-            sort_keys=True,
-            separators=(",", ":"),
-            allow_nan=False,
-        ).encode("utf-8")
-    ).hexdigest()
+    return provenance.canonical_json_sha256(value)
 
 
 def _array_sha256(value: Any, dtype: str = "<f8") -> str:
@@ -76,25 +70,11 @@ def _array_sha256(value: Any, dtype: str = "<f8") -> str:
 
 
 def _git(*arguments: str, check: bool = True) -> str:
-    return subprocess.run(
-        ["git", *arguments],
-        cwd=ROOT,
-        check=check,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
+    return provenance.git_output(ROOT, *arguments, check=check)
 
 
 def _is_ancestor(ancestor: str, descendant: str) -> bool:
-    return (
-        subprocess.run(
-            ["git", "merge-base", "--is-ancestor", ancestor, descendant],
-            cwd=ROOT,
-            check=False,
-            capture_output=True,
-        ).returncode
-        == 0
-    )
+    return provenance.git_is_ancestor(ROOT, ancestor, descendant)
 
 
 def _validate_post_freeze_history(source_head: str, head: str) -> None:
@@ -999,8 +979,8 @@ def validate_worker_result(
         "metadata": metadata,
     }
     if (
-        not panel3._is_sha256(result["prediction_sha256"])
-        or not panel3._is_sha256(result["test_target_sha256"])
+        not provenance.is_sha256(result["prediction_sha256"])
+        or not provenance.is_sha256(result["test_target_sha256"])
         or metadata.get("kind") != arm
         or result["behavior_fingerprint_sha256"] != _json_sha256(behavior)
     ):
@@ -1170,7 +1150,7 @@ def spool_binding(
 ) -> dict[str, Any]:
     if (
         source_freeze_path.expanduser().absolute() != DEFAULT_FREEZE
-        or not panel3._is_sha256(source_freeze_file_sha256)
+        or not provenance.is_sha256(source_freeze_file_sha256)
     ):
         raise RuntimeError("calibration source-freeze file hash is invalid")
     return {
@@ -1208,15 +1188,7 @@ def load_spool(
             path,
             allowed_root=allowed_root,
         )
-        payload = json.loads(
-            encoded.decode("utf-8"),
-            object_pairs_hook=common._json_object,
-            parse_float=common._json_float,
-            parse_int=common._json_int,
-            parse_constant=lambda value: (_ for _ in ()).throw(
-                ValueError(f"non-finite JSON constant: {value}")
-            ),
-        )
+        payload = provenance.strict_json_loads(encoded.decode("utf-8"))
     except (
         RuntimeError,
         UnicodeDecodeError,

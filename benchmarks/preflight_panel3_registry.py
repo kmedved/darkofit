@@ -24,6 +24,7 @@ from benchmarks import build_ctr23_contamination_registry as ctr  # noqa: E402
 from benchmarks import confirmation_target_preflight as target_check  # noqa: E402
 from benchmarks import build_panel3_power_design as power_design  # noqa: E402
 from benchmarks import panel3_registry_common as common  # noqa: E402
+from benchmarks.campaign_lib import provenance  # noqa: E402
 
 
 DEFAULT_OUTPUT = ROOT / "benchmarks" / "panel3_target_preflight.json"
@@ -31,13 +32,7 @@ COORDINATE_FOLDS = (0, 1, 2)
 
 
 def _git(*args: str) -> str:
-    return subprocess.run(
-        ["git", *args],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
+    return provenance.git_output(ROOT, *args)
 
 
 def _is_ancestor(ancestor: str, descendant: str) -> bool:

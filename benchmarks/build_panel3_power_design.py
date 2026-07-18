@@ -24,6 +24,7 @@ if str(ROOT) not in sys.path:
 
 from benchmarks import analyze_panel3_cross_power_calibration as calibration  # noqa: E402
 from benchmarks import panel3_registry_common as common  # noqa: E402
+from benchmarks.campaign_lib import provenance  # noqa: E402
 from benchmarks import run_panel3_confirmation as confirmation  # noqa: E402
 
 
@@ -289,6 +290,8 @@ PANEL3_V1_SOURCE_RELATIVE_PATHS = (
     "tests/test_panel3_power_design.py",
     "tests/test_panel3_registry.py",
     "benchmarks/panel3_registry_protocol.md",
+    "benchmarks/campaign_lib/__init__.py",
+    "benchmarks/campaign_lib/provenance.py",
     "benchmarks/preflight_panel3_registry.py",
     "benchmarks/confirmation_target_preflight.py",
     "benchmarks/build_fresh_confirmation_registry.py",
@@ -414,21 +417,11 @@ DECISION_FIELDS = {
 
 
 def _git(*arguments: str) -> str:
-    return subprocess.run(
-        ["git", *arguments],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
+    return provenance.git_output(ROOT, *arguments)
 
 
 def _is_sha256(value: Any) -> bool:
-    return (
-        isinstance(value, str)
-        and len(value) == 64
-        and all(character in "0123456789abcdef" for character in value)
-    )
+    return provenance.is_sha256(value)
 
 
 def _validate_decision_runtime(
