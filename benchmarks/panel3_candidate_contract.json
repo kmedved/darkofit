@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "contract_name": "darkofit_panel3_dual_candidate_contract_v1",
+  "random_state": 4,
+  "thread_count": 6,
+  "runtime": {
+    "path": "benchmarks/panel3_environment_contract.json",
+    "sha256": "9755529964eda51024a6a02b9bad46b4099b13d38621067e4ade1cc4232046a0"
+  },
+  "ordinal_features": {
+    "source": "panel3_registry_declarations.json:ordinal_features_by_task",
+    "policy": "explicit_per_task_only",
+    "all_declared_maps_empty": true,
+    "reason": "no complete source-ordered category maps survived the source audit"
+  },
+  "inner_validation": {
+    "kind": "ShuffleSplit",
+    "test_size": 0.2,
+    "random_state": 4
+  },
+  "control": {
+    "name": "current_default",
+    "estimator": "DarkoRegressor",
+    "constructor": {
+      "random_state": 4,
+      "thread_count": 6
+    },
+    "fit_on_all_outer_training_rows": true
+  },
+  "candidates": [
+    {
+      "name": "t5_composite_policy",
+      "source_protocol": "benchmarks/t5_composite_registry_protocol.md",
+      "source_runner": "benchmarks/run_t5_composite_confirmation.py",
+      "definition": {
+        "minimum_outer_training_rows": 2000,
+        "n_estimators": 10000,
+        "learning_rate": 0.1,
+        "l2_leaf_reg": 3.0,
+        "max_bins": 128,
+        "ts_permutations": 1,
+        "tree_mode": "auto",
+        "tree_mode_selection_rounds": 100,
+        "linear_leaf_race": "full_budget_only_when_catboost_tree_mode_wins",
+        "cross_features": "top_six_numeric_split_gain_diff_and_product_pairs",
+        "cross_guard_ratio": 0.95,
+        "candidate_guard_ratio": 0.995,
+        "refit": "selected_resolved_learning_rate_and_best_prefix_on_all_outer_training_rows",
+        "decline": "byte_exact_current_default_full_data_fit"
+      }
+    },
+    {
+      "name": "guarded_cross_features_policy",
+      "source_protocol": "benchmarks/smooth_cross_features_protocol.md",
+      "source_analysis": "benchmarks/smooth_cross_margin_analysis.json",
+      "definition": {
+        "n_estimators": 2000,
+        "learning_rate": 0.1,
+        "depth": 6,
+        "l2_leaf_reg": 1.0,
+        "max_bins": 128,
+        "min_child_weight": 1.0,
+        "tree_mode": "catboost",
+        "constant_linear_race": "full_budget",
+        "cross_features": "top_six_numeric_split_gain_diff_and_product_pairs",
+        "cross_guard_ratio": 0.95,
+        "refit": "selected_lane_and_best_prefix_on_all_outer_training_rows",
+        "decline": "uncrossed_constant_or_linear_validation_winner"
+      }
+    }
+  ],
+  "comparators": [
+    {
+      "name": "chimeraboost_0_15_0",
+      "decision_role": "descriptive_only",
+      "required_for_candidate_decision": false,
+      "failure_policy": "persist_immutable_failure_record_and_continue"
+    },
+    {
+      "name": "catboost_product_default",
+      "decision_role": "descriptive_only",
+      "required_for_candidate_decision": false,
+      "failure_policy": "persist_immutable_failure_record_and_continue"
+    }
+  ],
+  "decision": {
+    "frozen_candidate_hypothesis_count": 2,
+    "post_outcome_winner_selection_allowed": false,
+    "each_candidate_adjudicated_separately": true,
+    "default_selection_mapping": {
+      "neither_passes": null,
+      "only_guarded_cross_features_policy_passes": "guarded_cross_features_policy",
+      "only_t5_composite_policy_passes": "t5_composite_policy",
+      "both_pass": "t5_composite_policy"
+    },
+    "both_pass_reason": "t5_composite_policy contains guarded crosses as a constituent, so the broader frozen policy has fixed precedence without metric ranking or post-outcome discretion",
+    "independent_constituent_confirmation_preserved": true,
+    "familywise_one_sided_alpha": 0.05,
+    "multiplicity_source": "benchmarks/panel3_power_design_decision.json",
+    "retained_candidate_multiplicity": {
+      "two": {
+        "candidate_count": 2,
+        "per_candidate_one_sided_alpha": 0.025,
+        "bootstrap_percentile": 97.5,
+        "execution_authorized": true
+      },
+      "one": {
+        "candidate_count": 1,
+        "per_candidate_one_sided_alpha": 0.05,
+        "bootstrap_percentile": 95.0,
+        "execution_authorized": true
+      },
+      "zero": {
+        "candidate_count": 0,
+        "execution_authorized": false
+      }
+    },
+    "equal_dataset_geomean_ratio_at_most": 0.995,
+    "bootstrap_upper_ratio_at_most": 1.002,
+    "leave_one_favorable_dataset_out_ratio_at_most": 0.998,
+    "worst_dataset_ratio_at_most": 1.005,
+    "fit_seconds_ratio_at_most": 6.0,
+    "worst_dataset_fit_seconds_ratio_at_most": 12.0,
+    "predict_seconds_ratio_at_most": 1.5,
+    "peak_rss_ratio_at_most": 2.5
+  }
+}
