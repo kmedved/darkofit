@@ -6,7 +6,7 @@
 - Original run-time runner SHA-256: `382ba9059fcf430654748c0cc0c15427f42d9be98cf37aa3becd76d19f471d80`
 - Current runner SHA-256: `382ba9059fcf430654748c0cc0c15427f42d9be98cf37aa3becd76d19f471d80`
 - Original run-time analyzer SHA-256: `c8b52ee6313b7b3406648277aec53661f993ec4f53fe276201588044b31d4c0e`
-- Current hardened analyzer SHA-256: `e44de24ef10e122ff56e0681e8d6015d0897b45599668597b6d5011c27fcca47`
+- Current hardened analyzer SHA-256: `a231b64e96e946601989b11b5da7c6e6cf8403a7f24d94c2cd28cac91f186acd`
 - Complete coordinates: **75/75**
 - Status: descriptive Tier-E evidence; no default or automatic policy was tested.
 - Post-run amendment: the current analyzer hardens validation and report layout only; the immutable raw coordinates and metrics were not rerun or changed.

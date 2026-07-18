@@ -1,5 +1,6 @@
 import copy
 import json
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -457,12 +458,23 @@ def test_t7_runner_rejects_substituted_temporary_inode(
     tmp_path, monkeypatch, publisher
 ):
     original = runner.os.link
+    original_fdopen = runner.os.fdopen
+    foreign_temporaries = []
+    handles = []
+
+    def track_fdopen(*args, **kwargs):
+        handle = original_fdopen(*args, **kwargs)
+        handles.append(handle)
+        return handle
 
     def substitute_temporary(source, destination):
-        Path(source).unlink()
-        Path(source).write_bytes(b"foreign\n")
+        source = Path(source)
+        source.unlink()
+        source.write_bytes(b"foreign\n")
+        foreign_temporaries.append(source)
         original(source, destination)
 
+    monkeypatch.setattr(runner.os, "fdopen", track_fdopen)
     monkeypatch.setattr(runner.os, "link", substitute_temporary)
     if publisher == "spool":
         output = runner._spool_path(tmp_path, 123, 0)
@@ -477,7 +489,10 @@ def test_t7_runner_rejects_substituted_temporary_inode(
         with pytest.raises(RuntimeError, match="publish identity changed"):
             runner._create_output(output, b"ours\n")
     assert output.read_bytes() == b"foreign\n"
-    assert not list(tmp_path.glob(f".{output.name}.*.tmp"))
+    assert len(foreign_temporaries) == 1
+    assert foreign_temporaries[0].read_bytes() == b"foreign\n"
+    assert os.path.samefile(foreign_temporaries[0], output)
+    assert handles and all(handle.closed for handle in handles)
 
 
 @pytest.mark.parametrize("publisher", ["spool", "output"])
@@ -539,10 +554,10 @@ def test_t7_analysis_pair_publish_rolls_back_first_output(
     markdown = tmp_path / "result.md"
     original = analyzer._atomic_create
 
-    def fail_markdown(path, value):
+    def fail_markdown(path, value, **kwargs):
         if path == markdown:
             raise OSError("injected second-output failure")
-        return original(path, value)
+        return original(path, value, **kwargs)
 
     monkeypatch.setattr(analyzer, "_atomic_create", fail_markdown)
     with pytest.raises(OSError, match="second-output"):
@@ -591,17 +606,31 @@ def test_t7_analysis_rejects_substituted_temporary_inode(
 ):
     output = tmp_path / "summary.json"
     original = analyzer.os.link
+    original_fdopen = analyzer.os.fdopen
+    foreign_temporaries = []
+    handles = []
+
+    def track_fdopen(*args, **kwargs):
+        handle = original_fdopen(*args, **kwargs)
+        handles.append(handle)
+        return handle
 
     def substitute_temporary(source, destination):
-        Path(source).unlink()
-        Path(source).write_bytes(b"foreign\n")
+        source = Path(source)
+        source.unlink()
+        source.write_bytes(b"foreign\n")
+        foreign_temporaries.append(source)
         original(source, destination)
 
+    monkeypatch.setattr(analyzer.os, "fdopen", track_fdopen)
     monkeypatch.setattr(analyzer.os, "link", substitute_temporary)
     with pytest.raises(RuntimeError, match="publish identity changed"):
         analyzer._atomic_create(output, b"ours\n")
     assert output.read_bytes() == b"foreign\n"
-    assert not list(tmp_path.glob(f".{output.name}.*.tmp"))
+    assert len(foreign_temporaries) == 1
+    assert foreign_temporaries[0].read_bytes() == b"foreign\n"
+    assert os.path.samefile(foreign_temporaries[0], output)
+    assert handles and all(handle.closed for handle in handles)
 
 
 def test_t7_create_only_publish_preserves_competing_writer(
@@ -635,14 +664,22 @@ def test_t7_pair_rollback_preserves_replacement_inode(
     summary = tmp_path / "summary.json"
     markdown = tmp_path / "result.md"
     original = analyzer._atomic_create
+    original_fdopen = analyzer.os.fdopen
+    handles = []
 
-    def replace_then_fail(path, value):
+    def track_fdopen(*args, **kwargs):
+        handle = original_fdopen(*args, **kwargs)
+        handles.append(handle)
+        return handle
+
+    def replace_then_fail(path, value, **kwargs):
         if path == markdown:
             summary.unlink()
             summary.write_bytes(b"other writer\n")
             raise OSError("injected second-output failure")
-        return original(path, value)
+        return original(path, value, **kwargs)
 
+    monkeypatch.setattr(analyzer.os, "fdopen", track_fdopen)
     monkeypatch.setattr(analyzer, "_atomic_create", replace_then_fail)
     with pytest.raises(OSError, match="second-output"):
         analyzer._atomic_create_pair(
@@ -650,6 +687,44 @@ def test_t7_pair_rollback_preserves_replacement_inode(
         )
     assert summary.read_bytes() == b"other writer\n"
     assert not markdown.exists()
+    assert handles and all(handle.closed for handle in handles)
+
+
+def test_t7_pair_publish_ignores_post_commit_close_errors(
+    tmp_path, monkeypatch
+):
+    summary = tmp_path / "summary.json"
+    markdown = tmp_path / "result.md"
+    original_fdopen = analyzer.os.fdopen
+    wrapped = []
+
+    class CloseError:
+        def __init__(self, handle):
+            self.handle = handle
+            self.close_calls = 0
+
+        def __getattr__(self, name):
+            return getattr(self.handle, name)
+
+        def close(self):
+            self.close_calls += 1
+            self.handle.close()
+            raise OSError("injected close failure")
+
+    def wrap_fdopen(*args, **kwargs):
+        handle = CloseError(original_fdopen(*args, **kwargs))
+        wrapped.append(handle)
+        return handle
+
+    monkeypatch.setattr(analyzer.os, "fdopen", wrap_fdopen)
+    analyzer._atomic_create_pair(
+        summary, b"summary\n", markdown, b"markdown\n"
+    )
+    assert summary.read_bytes() == b"summary\n"
+    assert markdown.read_bytes() == b"markdown\n"
+    assert len(wrapped) == 2
+    assert all(item.handle.closed for item in wrapped)
+    assert all(item.close_calls == 1 for item in wrapped)
 
 
 def test_t7_artifacts_are_hash_bound_and_nonpromotional(

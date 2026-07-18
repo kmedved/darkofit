@@ -14,6 +14,26 @@ from benchmarks import run_rssi_linear_leaf_diagnosis as rssi_diagnosis
 
 ROOT = Path(__file__).resolve().parents[1]
 ARTIFACT = ROOT / "benchmarks" / "smooth_cross_features.json"
+HERMETIC_CHIMERA_SETUP = r"""
+import tempfile
+from pathlib import Path
+
+chimera_temp = tempfile.TemporaryDirectory()
+chimera_root = Path(chimera_temp.name)
+chimera_package = chimera_root / "chimeraboost"
+chimera_package.mkdir()
+(chimera_package / "__init__.py").write_text(
+    "from .sklearn_api import ChimeraBoostRegressor\n",
+    encoding="utf-8",
+)
+(chimera_package / "sklearn_api.py").write_text(
+    "class ChimeraBoostRegressor:\n"
+    "    def __init__(self):\n"
+    "        self.ready = True\n",
+    encoding="utf-8",
+)
+runner.CHIMERA_ROOT = chimera_root
+"""
 
 
 @pytest.mark.parametrize(
@@ -32,6 +52,7 @@ import sys
 import types
 
 runner = importlib.import_module({module_name!r})
+{HERMETIC_CHIMERA_SETUP}
 assert str(runner.CHIMERA_ROOT) not in sys.path
 fake = types.ModuleType("chimeraboost")
 fake.__file__ = str(Path.cwd() / "fake" / "__init__.py")
@@ -112,6 +133,7 @@ def test_runner_rejects_replacement_of_loaded_private_module(module_name):
 import importlib
 
 runner = importlib.import_module({module_name!r})
+{HERMETIC_CHIMERA_SETUP}
 runner._chimera_regressor_class()
 runner._CHIMERA_MODULE.ChimeraBoostRegressor = type(
     "ForgedRegressor",
@@ -150,6 +172,7 @@ import sys
 import types
 
 runner = importlib.import_module({module_name!r})
+{HERMETIC_CHIMERA_SETUP}
 regressor = runner._chimera_regressor_class()
 child_name = regressor.__module__
 replacement = types.ModuleType(child_name)
@@ -185,6 +208,7 @@ def test_runner_revalidates_cached_private_class_provenance(module_name):
 import importlib
 
 runner = importlib.import_module({module_name!r})
+{HERMETIC_CHIMERA_SETUP}
 regressor = runner._chimera_regressor_class()
 regressor.__module__ = "forged.provenance"
 try:
@@ -215,6 +239,7 @@ def test_runner_provenance_requires_private_package_root(module_name):
 import importlib
 
 runner = importlib.import_module({module_name!r})
+{HERMETIC_CHIMERA_SETUP}
 regressor = runner._chimera_regressor_class()
 private_modules = dict(runner._CHIMERA_MODULES)
 private_modules.pop(runner._CHIMERA_MODULE_NAME)
@@ -645,6 +670,57 @@ def test_single_artifact_writers_preserve_replaced_temporary_file(
     assert not output.exists()
     assert replacement is not None
     assert replacement.read_bytes() == b"other writer"
+
+
+@pytest.mark.parametrize(
+    "module",
+    [experiment, rssi_diagnosis, margin_analysis],
+)
+def test_single_artifact_writers_pin_temp_inode_through_error_cleanup(
+    tmp_path,
+    monkeypatch,
+    module,
+):
+    output = tmp_path / "result.json"
+    original_temporary_at = module._temporary_at
+    original_unlink_if_owned = module._unlink_if_owned_at
+    temporary_descriptor = None
+    cleanup_observed = False
+
+    def capture_temporary_descriptor(*args, **kwargs):
+        nonlocal temporary_descriptor
+        result = original_temporary_at(*args, **kwargs)
+        temporary_descriptor = result[0]
+        return result
+
+    def fail_publication(*_args, **_kwargs):
+        raise OSError("injected publication failure")
+
+    def observe_cleanup(*args, **kwargs):
+        nonlocal cleanup_observed
+        assert temporary_descriptor is not None
+        module.os.fstat(temporary_descriptor)
+        cleanup_observed = True
+        return original_unlink_if_owned(*args, **kwargs)
+
+    monkeypatch.setattr(
+        module,
+        "_temporary_at",
+        capture_temporary_descriptor,
+    )
+    monkeypatch.setattr(module.os, "link", fail_publication)
+    monkeypatch.setattr(
+        module,
+        "_unlink_if_owned_at",
+        observe_cleanup,
+    )
+    with pytest.raises(OSError, match="injected publication failure"):
+        module._atomic_create(output, b"result")
+    assert cleanup_observed is True
+    assert temporary_descriptor is not None
+    with pytest.raises(OSError):
+        module.os.fstat(temporary_descriptor)
+    assert list(tmp_path.iterdir()) == []
 
 
 @pytest.mark.parametrize(

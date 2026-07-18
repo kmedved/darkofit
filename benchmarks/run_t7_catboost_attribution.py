@@ -556,63 +556,82 @@ def _create_spool(path, binding, result, *, return_publish_state=False):
     _reject_symlink_directory(path.parent, message)
     owned_directories = _create_owned_directories(path.parent, message)
     temporary = None
+    temporary_identity = None
     published_identity = None
+    handle = None
+    descriptor = None
     try:
-        _reject_symlink_directory(path.parent, message)
-        descriptor, temporary_name = tempfile.mkstemp(
-            prefix=f".{path.name}.",
-            suffix=".tmp",
-            dir=path.parent,
-        )
-        temporary = Path(temporary_name)
-        with os.fdopen(descriptor, "wb") as handle:
+        try:
+            _reject_symlink_directory(path.parent, message)
+            descriptor, temporary_name = tempfile.mkstemp(
+                prefix=f".{path.name}.",
+                suffix=".tmp",
+                dir=path.parent,
+            )
+            temporary = Path(temporary_name)
+            identity = os.fstat(descriptor)
+            temporary_identity = (identity.st_dev, identity.st_ino)
+            handle = os.fdopen(descriptor, "wb")
+            descriptor = None
             handle.write(encoded)
             handle.flush()
             os.fsync(handle.fileno())
-            identity = os.fstat(handle.fileno())
+            try:
+                os.link(temporary, path)
+            except FileExistsError:
+                outcome = _load_spool(
+                    path,
+                    binding,
+                    result["task_id"],
+                    result["fold"],
+                )
+                published = False
+            else:
+                published_identity = (identity.st_dev, identity.st_ino)
+                _verify_published_identity(
+                    path,
+                    published_identity,
+                    "T7 spool publish identity changed",
+                )
+                outcome = (result, payload["spool_sha256"])
+                published = True
+        except BaseException:
+            if temporary is not None and temporary_identity is not None:
+                try:
+                    _unlink_if_owned(temporary, temporary_identity)
+                except OSError:
+                    pass
+            if published_identity is not None:
+                try:
+                    _unlink_if_owned(path, published_identity)
+                except OSError:
+                    pass
+            _remove_owned_directories(owned_directories)
+            raise
         try:
-            os.link(temporary, path)
-        except FileExistsError:
-            outcome = _load_spool(
-                path,
-                binding,
-                result["task_id"],
-                result["fold"],
-            )
-            published = False
-        else:
-            published_identity = (identity.st_dev, identity.st_ino)
-            _verify_published_identity(
-                path,
-                published_identity,
-                "T7 spool publish identity changed",
-            )
-            outcome = (result, payload["spool_sha256"])
-            published = True
-    except BaseException:
-        if temporary is not None:
+            _unlink_if_owned(temporary, temporary_identity)
+        except BaseException:
+            if published_identity is not None:
+                try:
+                    _unlink_if_owned(path, published_identity)
+                except OSError:
+                    pass
+            _remove_owned_directories(owned_directories)
+            raise
+        return (
+            (*outcome, published) if return_publish_state else outcome
+        )
+    finally:
+        if handle is not None:
             try:
-                temporary.unlink(missing_ok=True)
+                handle.close()
             except OSError:
                 pass
-        if published_identity is not None:
+        elif descriptor is not None:
             try:
-                _unlink_if_owned(path, published_identity)
+                os.close(descriptor)
             except OSError:
                 pass
-        _remove_owned_directories(owned_directories)
-        raise
-    try:
-        temporary.unlink(missing_ok=True)
-    except BaseException:
-        if published_identity is not None:
-            try:
-                _unlink_if_owned(path, published_identity)
-            except OSError:
-                pass
-        _remove_owned_directories(owned_directories)
-        raise
-    return (*outcome, published) if return_publish_state else outcome
 
 
 def _create_output(path, encoded):
@@ -622,52 +641,71 @@ def _create_output(path, encoded):
     _reject_symlink_directory(path.parent, message)
     owned_directories = _create_owned_directories(path.parent, message)
     temporary = None
+    temporary_identity = None
     published_identity = None
+    handle = None
+    descriptor = None
     try:
-        _reject_symlink_directory(path.parent, message)
-        descriptor, temporary_name = tempfile.mkstemp(
-            prefix=f".{path.name}.",
-            suffix=".tmp",
-            dir=path.parent,
-        )
-        temporary = Path(temporary_name)
-        with os.fdopen(descriptor, "wb") as handle:
+        try:
+            _reject_symlink_directory(path.parent, message)
+            descriptor, temporary_name = tempfile.mkstemp(
+                prefix=f".{path.name}.",
+                suffix=".tmp",
+                dir=path.parent,
+            )
+            temporary = Path(temporary_name)
+            identity = os.fstat(descriptor)
+            temporary_identity = (identity.st_dev, identity.st_ino)
+            handle = os.fdopen(descriptor, "wb")
+            descriptor = None
             handle.write(encoded)
             handle.flush()
             os.fsync(handle.fileno())
-            identity = os.fstat(handle.fileno())
-        try:
-            os.link(temporary, path)
-        except FileExistsError as error:
-            raise RuntimeError(f"refusing existing output: {path}") from error
-        published_identity = (identity.st_dev, identity.st_ino)
-        _verify_published_identity(
-            path,
-            published_identity,
-            "T7 output publish identity changed",
-        )
-    except BaseException:
-        if temporary is not None:
             try:
-                temporary.unlink(missing_ok=True)
-            except OSError:
-                pass
-        if published_identity is not None:
+                os.link(temporary, path)
+            except FileExistsError as error:
+                raise RuntimeError(
+                    f"refusing existing output: {path}"
+                ) from error
+            published_identity = (identity.st_dev, identity.st_ino)
+            _verify_published_identity(
+                path,
+                published_identity,
+                "T7 output publish identity changed",
+            )
+        except BaseException:
+            if temporary is not None and temporary_identity is not None:
+                try:
+                    _unlink_if_owned(temporary, temporary_identity)
+                except OSError:
+                    pass
+            if published_identity is not None:
+                try:
+                    _unlink_if_owned(path, published_identity)
+                except OSError:
+                    pass
+            _remove_owned_directories(owned_directories)
+            raise
+        try:
+            _unlink_if_owned(temporary, temporary_identity)
+        except BaseException:
             try:
                 _unlink_if_owned(path, published_identity)
             except OSError:
                 pass
-        _remove_owned_directories(owned_directories)
-        raise
-    try:
-        temporary.unlink(missing_ok=True)
-    except BaseException:
-        try:
-            _unlink_if_owned(path, published_identity)
-        except OSError:
-            pass
-        _remove_owned_directories(owned_directories)
-        raise
+            _remove_owned_directories(owned_directories)
+            raise
+    finally:
+        if handle is not None:
+            try:
+                handle.close()
+            except OSError:
+                pass
+        elif descriptor is not None:
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
 
 
 def _validate_worker_identity(result, task_id, fold, coordinate_index):

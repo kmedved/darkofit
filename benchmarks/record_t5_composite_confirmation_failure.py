@@ -976,7 +976,7 @@ validity is checked before authorization.
 """
 
 
-def _atomic_create(path, value):
+def _atomic_create(path, value, *, _keep_open=False):
     if path.exists() or path.is_symlink():
         raise RuntimeError(f"refusing existing output: {path}")
     message = "refusing symlink T5 failure output directory"
@@ -985,53 +985,76 @@ def _atomic_create(path, value):
     )
     owned_directories = _create_owned_directories(path.parent, message)
     temporary = None
+    temporary_identity = None
     published_identity = None
+    handle = None
+    descriptor = None
     try:
-        _reject_symlink_directory(path.parent, message)
-        descriptor, temporary_name = tempfile.mkstemp(
-            prefix=f".{path.name}.",
-            suffix=".tmp",
-            dir=path.parent,
-        )
-        temporary = Path(temporary_name)
-        with os.fdopen(descriptor, "wb") as handle:
+        try:
+            _reject_symlink_directory(path.parent, message)
+            descriptor, temporary_name = tempfile.mkstemp(
+                prefix=f".{path.name}.",
+                suffix=".tmp",
+                dir=path.parent,
+            )
+            temporary = Path(temporary_name)
+            identity = os.fstat(descriptor)
+            temporary_identity = (identity.st_dev, identity.st_ino)
+            handle = os.fdopen(descriptor, "wb")
+            descriptor = None
             handle.write(value)
             handle.flush()
             os.fsync(handle.fileno())
-            identity = os.fstat(handle.fileno())
-        try:
-            os.link(temporary, path)
-        except FileExistsError as error:
-            raise RuntimeError(f"refusing existing output: {path}") from error
-        published_identity = (identity.st_dev, identity.st_ino)
-        _verify_published_identity(
-            path,
-            published_identity,
-            "T5 failure output publish identity changed",
-        )
-    except BaseException:
-        if temporary is not None:
             try:
-                temporary.unlink(missing_ok=True)
-            except OSError:
-                pass
-        if published_identity is not None:
+                os.link(temporary, path)
+            except FileExistsError as error:
+                raise RuntimeError(
+                    f"refusing existing output: {path}"
+                ) from error
+            published_identity = (identity.st_dev, identity.st_ino)
+            _verify_published_identity(
+                path,
+                published_identity,
+                "T5 failure output publish identity changed",
+            )
+        except BaseException:
+            if temporary is not None and temporary_identity is not None:
+                try:
+                    _unlink_if_owned(temporary, temporary_identity)
+                except OSError:
+                    pass
+            if published_identity is not None:
+                try:
+                    _unlink_if_owned(path, published_identity)
+                except OSError:
+                    pass
+            _remove_owned_directories(owned_directories)
+            raise
+        try:
+            _unlink_if_owned(temporary, temporary_identity)
+        except BaseException:
             try:
                 _unlink_if_owned(path, published_identity)
             except OSError:
                 pass
-        _remove_owned_directories(owned_directories)
-        raise
-    try:
-        temporary.unlink(missing_ok=True)
-    except BaseException:
-        try:
-            _unlink_if_owned(path, published_identity)
-        except OSError:
-            pass
-        _remove_owned_directories(owned_directories)
-        raise
-    return published_identity, owned_directories
+            _remove_owned_directories(owned_directories)
+            raise
+        if _keep_open:
+            pinned_handle = handle
+            handle = None
+            return published_identity, owned_directories, pinned_handle
+        return published_identity, owned_directories
+    finally:
+        if handle is not None:
+            try:
+                handle.close()
+            except OSError:
+                pass
+        elif descriptor is not None:
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
 
 
 def _unlink_if_owned(path, identity):
@@ -1053,19 +1076,31 @@ def _atomic_create_pair(first_path, first_value, second_path, second_value):
     created = []
     try:
         created.append(
-            (first_path, _atomic_create(first_path, first_value))
+            (
+                first_path,
+                _atomic_create(first_path, first_value, _keep_open=True),
+            )
         )
         created.append(
-            (second_path, _atomic_create(second_path, second_value))
+            (
+                second_path,
+                _atomic_create(second_path, second_value, _keep_open=True),
+            )
         )
     except BaseException:
-        for path, (identity, owned_directories) in reversed(created):
+        for path, (identity, owned_directories, _handle) in reversed(created):
             try:
                 _unlink_if_owned(path, identity)
             except OSError:
                 pass
             _remove_owned_directories(owned_directories)
         raise
+    finally:
+        for _path, (_identity, _owned_directories, handle) in created:
+            try:
+                handle.close()
+            except OSError:
+                pass
 
 
 def parse_args(argv=None):

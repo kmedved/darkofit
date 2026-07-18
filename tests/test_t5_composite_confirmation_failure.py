@@ -1,5 +1,6 @@
 import json
 import hashlib
+import os
 from pathlib import Path
 
 import pytest
@@ -193,10 +194,10 @@ def test_t5_failure_pair_publish_rolls_back_first_output(
     markdown = tmp_path / "failure.md"
     original = failure._atomic_create
 
-    def fail_markdown(path, value):
+    def fail_markdown(path, value, **kwargs):
         if path == markdown:
             raise OSError("injected second-output failure")
-        return original(path, value)
+        return original(path, value, **kwargs)
 
     monkeypatch.setattr(failure, "_atomic_create", fail_markdown)
     with pytest.raises(OSError, match="second-output"):
@@ -255,17 +256,63 @@ def test_t5_failure_publish_rejects_substituted_temporary_inode(
 ):
     output = tmp_path / "failure.json"
     original = failure.os.link
+    original_fdopen = failure.os.fdopen
+    foreign_temporaries = []
+    handles = []
+
+    def track_fdopen(*args, **kwargs):
+        handle = original_fdopen(*args, **kwargs)
+        handles.append(handle)
+        return handle
 
     def substitute_temporary(source, destination):
-        Path(source).unlink()
-        Path(source).write_bytes(b"foreign\n")
+        source = Path(source)
+        source.unlink()
+        source.write_bytes(b"foreign\n")
+        foreign_temporaries.append(source)
         original(source, destination)
 
+    monkeypatch.setattr(failure.os, "fdopen", track_fdopen)
     monkeypatch.setattr(failure.os, "link", substitute_temporary)
     with pytest.raises(RuntimeError, match="publish identity changed"):
         failure._atomic_create(output, b"ours\n")
     assert output.read_bytes() == b"foreign\n"
-    assert not list(tmp_path.glob(f".{output.name}.*.tmp"))
+    assert len(foreign_temporaries) == 1
+    assert foreign_temporaries[0].read_bytes() == b"foreign\n"
+    assert os.path.samefile(foreign_temporaries[0], output)
+    assert handles and all(handle.closed for handle in handles)
+
+
+def test_t5_failure_pair_rollback_preserves_replacement_inode(
+    tmp_path, monkeypatch
+):
+    artifact = tmp_path / "failure.json"
+    markdown = tmp_path / "failure.md"
+    original = failure._atomic_create
+    original_fdopen = failure.os.fdopen
+    handles = []
+
+    def track_fdopen(*args, **kwargs):
+        handle = original_fdopen(*args, **kwargs)
+        handles.append(handle)
+        return handle
+
+    def replace_then_fail(path, value, **kwargs):
+        if path == markdown:
+            artifact.unlink()
+            artifact.write_bytes(b"other writer\n")
+            raise OSError("injected second-output failure")
+        return original(path, value, **kwargs)
+
+    monkeypatch.setattr(failure.os, "fdopen", track_fdopen)
+    monkeypatch.setattr(failure, "_atomic_create", replace_then_fail)
+    with pytest.raises(OSError, match="second-output"):
+        failure._atomic_create_pair(
+            artifact, b"ours\n", markdown, b"# failure\n"
+        )
+    assert artifact.read_bytes() == b"other writer\n"
+    assert not markdown.exists()
+    assert handles and all(handle.closed for handle in handles)
 
 
 def test_t5_failure_registry_is_read_from_one_snapshot(monkeypatch):

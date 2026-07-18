@@ -8,8 +8,8 @@
 - Frozen raw canonical SHA-256: `6673fe69c5e09d1e020252237c322e7795c14effdf375e9dd1c0db3ecc4772ee`
 - Frozen protocol SHA-256: `18200d9bd8f6b43ec345be5755ce795f6284ae399a43eeae0144cd860718f460`
 - Original run-time runner SHA-256: `be1178f8593d3ff52a19963812932b399fbfbc3fd1942b97ad663ee9fe728a49`
-- Current hardened analyzer SHA-256: `1cc5bef2bcc2f190395e5cd34a58c6dbbde1ac7ea5a3e5a70ad47ca9465e0ab2`
-- Current hardened runner SHA-256: `aa716997bbf52528ca41a70a5c770bf098d3ab3941f283b0ccc7a962b1d0dd32`
+- Current hardened analyzer SHA-256: `4de5a7c36b4cfb8792d6a0517e80ef2c2747d4458c9fb78dbc9d71bb88947921`
+- Current hardened runner SHA-256: `71d55bb9db9970754fe77f41cc595d5078921b637a1c53ff32d459f3889cc310`
 - Frozen C2 split-helper SHA-256: `8da023ee1c6ab1311d0b8b152c8bcd82f80d6f323020efb4e86c71870caa8952`
 - Current C2 split-helper SHA-256: `8da023ee1c6ab1311d0b8b152c8bcd82f80d6f323020efb4e86c71870caa8952`
 

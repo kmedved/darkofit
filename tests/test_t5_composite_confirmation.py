@@ -1,6 +1,7 @@
 import copy
 import hashlib
 import json
+import os
 import time
 from pathlib import Path
 
@@ -124,10 +125,10 @@ def test_analysis_pair_publish_rolls_back_first_output(
     markdown = tmp_path / "result.md"
     original = analyzer._atomic_create
 
-    def fail_markdown(path, text):
+    def fail_markdown(path, text, **kwargs):
         if path == markdown:
             raise OSError("injected second-output failure")
-        return original(path, text)
+        return original(path, text, **kwargs)
 
     monkeypatch.setattr(analyzer, "_atomic_create", fail_markdown)
     with pytest.raises(OSError, match="second-output"):
@@ -186,17 +187,63 @@ def test_analysis_publish_rejects_substituted_temporary_inode(
 ):
     output = tmp_path / "summary.json"
     original = analyzer.os.link
+    original_fdopen = analyzer.os.fdopen
+    foreign_temporaries = []
+    handles = []
+
+    def track_fdopen(*args, **kwargs):
+        handle = original_fdopen(*args, **kwargs)
+        handles.append(handle)
+        return handle
 
     def substitute_temporary(source, destination):
-        Path(source).unlink()
-        Path(source).write_text("foreign\n", encoding="utf-8")
+        source = Path(source)
+        source.unlink()
+        source.write_text("foreign\n", encoding="utf-8")
+        foreign_temporaries.append(source)
         original(source, destination)
 
+    monkeypatch.setattr(analyzer.os, "fdopen", track_fdopen)
     monkeypatch.setattr(analyzer.os, "link", substitute_temporary)
     with pytest.raises(RuntimeError, match="publish identity changed"):
         analyzer._atomic_create(output, "ours\n")
     assert output.read_text(encoding="utf-8") == "foreign\n"
-    assert not list(tmp_path.glob(f".{output.name}.*.tmp"))
+    assert len(foreign_temporaries) == 1
+    assert foreign_temporaries[0].read_text(encoding="utf-8") == "foreign\n"
+    assert os.path.samefile(foreign_temporaries[0], output)
+    assert handles and all(handle.closed for handle in handles)
+
+
+def test_analysis_pair_rollback_preserves_replacement_inode(
+    tmp_path, monkeypatch
+):
+    summary = tmp_path / "summary.json"
+    markdown = tmp_path / "result.md"
+    original = analyzer._atomic_create
+    original_fdopen = analyzer.os.fdopen
+    handles = []
+
+    def track_fdopen(*args, **kwargs):
+        handle = original_fdopen(*args, **kwargs)
+        handles.append(handle)
+        return handle
+
+    def replace_then_fail(path, text, **kwargs):
+        if path == markdown:
+            summary.unlink()
+            summary.write_text("other writer\n", encoding="utf-8")
+            raise OSError("injected second-output failure")
+        return original(path, text, **kwargs)
+
+    monkeypatch.setattr(analyzer.os, "fdopen", track_fdopen)
+    monkeypatch.setattr(analyzer, "_atomic_create", replace_then_fail)
+    with pytest.raises(OSError, match="second-output"):
+        analyzer._atomic_create_pair(
+            summary, "ours\n", markdown, "# result\n"
+        )
+    assert summary.read_text(encoding="utf-8") == "other writer\n"
+    assert not markdown.exists()
+    assert handles and all(handle.closed for handle in handles)
 
 
 def _core_fit_metadata(rounds=10):

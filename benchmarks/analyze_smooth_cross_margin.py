@@ -187,6 +187,7 @@ def _atomic_create(path, value):
     parent_descriptor = None
     parent_identity = None
     temporary_name = None
+    temporary_descriptor = None
     identity = None
     created = False
     try:
@@ -196,45 +197,53 @@ def _atomic_create(path, value):
             raise FileExistsError(
                 f"refusing to replace existing output: {path}"
             )
-        descriptor, temporary_name, identity = _temporary_at(
+        temporary_descriptor, temporary_name, identity = _temporary_at(
             parent_descriptor,
             path.name,
         )
-        with os.fdopen(descriptor, "wb") as handle:
+        with os.fdopen(
+            temporary_descriptor,
+            "wb",
+            closefd=False,
+        ) as handle:
             handle.write(value)
             handle.flush()
             os.fsync(handle.fileno())
-        _assert_output_parent_identity(path, parent_identity)
-        current = _stat_at(parent_descriptor, temporary_name)
-        if (
-            not stat.S_ISREG(current.st_mode)
-            or (current.st_dev, current.st_ino) != identity
-        ):
-            raise RuntimeError(
-                "temporary output changed before publication: "
-                f"{path.parent / temporary_name}"
+            # Keep the original inode open until publication and cleanup
+            # finish.  Otherwise Linux may immediately reuse its inode after
+            # an attacker unlinks the temporary path, making an unrelated
+            # replacement appear to have our recorded identity.
+            _assert_output_parent_identity(path, parent_identity)
+            current = _stat_at(parent_descriptor, temporary_name)
+            if (
+                not stat.S_ISREG(current.st_mode)
+                or (current.st_dev, current.st_ino) != identity
+            ):
+                raise RuntimeError(
+                    "temporary output changed before publication: "
+                    f"{path.parent / temporary_name}"
+                )
+            os.link(
+                temporary_name,
+                path.name,
+                src_dir_fd=parent_descriptor,
+                dst_dir_fd=parent_descriptor,
+                follow_symlinks=False,
             )
-        os.link(
-            temporary_name,
-            path.name,
-            src_dir_fd=parent_descriptor,
-            dst_dir_fd=parent_descriptor,
-            follow_symlinks=False,
-        )
-        created = True
-        _assert_output_parent_identity(path, parent_identity)
-        current = _stat_at(parent_descriptor, path.name)
-        if (
-            not stat.S_ISREG(current.st_mode)
-            or (current.st_dev, current.st_ino) != identity
-        ):
-            raise RuntimeError(f"published output changed: {path}")
-        _unlink_if_owned_at(
-            parent_descriptor,
-            temporary_name,
-            identity,
-        )
-        _assert_output_parent_identity(path, parent_identity)
+            created = True
+            _assert_output_parent_identity(path, parent_identity)
+            current = _stat_at(parent_descriptor, path.name)
+            if (
+                not stat.S_ISREG(current.st_mode)
+                or (current.st_dev, current.st_ino) != identity
+            ):
+                raise RuntimeError(f"published output changed: {path}")
+            _unlink_if_owned_at(
+                parent_descriptor,
+                temporary_name,
+                identity,
+            )
+            _assert_output_parent_identity(path, parent_identity)
     except BaseException:
         if parent_descriptor is not None and identity is not None:
             if created:
@@ -258,6 +267,11 @@ def _atomic_create(path, value):
         _remove_owned_empty_directories(created_directories)
         raise
     finally:
+        if temporary_descriptor is not None:
+            try:
+                os.close(temporary_descriptor)
+            except OSError:
+                pass
         if parent_descriptor is not None:
             try:
                 os.close(parent_descriptor)

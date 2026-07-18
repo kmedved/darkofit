@@ -1,5 +1,6 @@
 import csv
 import math
+import os
 import statistics
 from pathlib import Path
 
@@ -270,17 +271,62 @@ def test_t8_output_rejects_substituted_temporary_inode(
 ):
     output = tmp_path / "result.md"
     original = analysis.os.link
+    original_fdopen = analysis.os.fdopen
+    foreign_temporaries = []
+    handles = []
+
+    def track_fdopen(*args, **kwargs):
+        handle = original_fdopen(*args, **kwargs)
+        handles.append(handle)
+        return handle
 
     def substitute_temporary(source, destination):
-        Path(source).unlink()
-        Path(source).write_text("foreign\n", encoding="utf-8")
+        source = Path(source)
+        source.unlink()
+        source.write_text("foreign\n", encoding="utf-8")
+        foreign_temporaries.append(source)
         original(source, destination)
 
+    monkeypatch.setattr(analysis.os, "fdopen", track_fdopen)
     monkeypatch.setattr(analysis.os, "link", substitute_temporary)
     with pytest.raises(RuntimeError, match="publish identity changed"):
         analysis._atomic_write_text(output, "ours\n")
     assert output.read_text(encoding="utf-8") == "foreign\n"
-    assert not list(tmp_path.glob(f".{output.name}.*.tmp"))
+    assert len(foreign_temporaries) == 1
+    assert foreign_temporaries[0].read_text(encoding="utf-8") == "foreign\n"
+    assert os.path.samefile(foreign_temporaries[0], output)
+    assert handles and all(handle.closed for handle in handles)
+
+
+def test_t8_output_ignores_post_commit_close_error(tmp_path, monkeypatch):
+    output = tmp_path / "result.md"
+    original_fdopen = analysis.os.fdopen
+    wrapped = []
+
+    class CloseError:
+        def __init__(self, handle):
+            self.handle = handle
+            self.close_calls = 0
+
+        def __getattr__(self, name):
+            return getattr(self.handle, name)
+
+        def close(self):
+            self.close_calls += 1
+            self.handle.close()
+            raise OSError("injected close failure")
+
+    def wrap_fdopen(*args, **kwargs):
+        handle = CloseError(original_fdopen(*args, **kwargs))
+        wrapped.append(handle)
+        return handle
+
+    monkeypatch.setattr(analysis.os, "fdopen", wrap_fdopen)
+    analysis._atomic_write_text(output, "result\n")
+    assert output.read_text(encoding="utf-8") == "result\n"
+    assert len(wrapped) == 1
+    assert wrapped[0].handle.closed
+    assert wrapped[0].close_calls == 1
 
 
 def test_t8_output_rejects_nested_symlink_ancestor_before_mkdir(tmp_path):
