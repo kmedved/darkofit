@@ -45,3 +45,9 @@ def test_depth_policy_is_fixed_by_samples_per_feature():
     assert depth_policy_arm(100, 1) == "default"
     assert depth_policy_arm(2_499, 1) == "default"
     assert depth_policy_arm(2_500, 1) == "depth_8"
+
+
+def test_catboost_warmup_target_is_nonconstant():
+    import numpy as np
+
+    assert runner._warmup() > 0

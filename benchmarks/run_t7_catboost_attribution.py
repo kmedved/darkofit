@@ -134,7 +134,7 @@ def _warmup():
     from catboost import CatBoostRegressor
 
     X = np.arange(320, dtype=np.float64).reshape(80, 4)
-    y = X[:, 0] - X[:, 1]
+    y = np.square(X[:, 0]) + 0.5 * X[:, 1]
     started = time.perf_counter_ns()
     model = CatBoostRegressor(
         iterations=2,
