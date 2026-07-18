@@ -59,15 +59,30 @@ For every coordinate the runner records:
   `cross_features=None`, and `selection_rounds=None`.
 
 The runner fails unless DarkoFit's external selected policy and ChimeraBoost's
-native full product agree exactly on:
+native full product agree exactly at the common best-validation prefix on:
 
 - selected constant/linear lane;
 - selected cross-feature decision and ordered pair list;
-- fitted borders and normalized tree fingerprint;
+- fitted borders and normalized best-prefix tree fingerprint;
 - complete validation history;
-- prediction bytes, retained tree count, best validation RMSE, and test RMSE.
+- best-prefix prediction bytes, best-round count, best validation RMSE, and
+  best-prefix test RMSE.
+
+### Retention-policy amendment
+
+The committed v1 run stopped before producing an artifact when an iteration
+limit exposed a wrapper difference: DarkoFit honors `use_best_model=True` at
+the cap, while ChimeraBoost retains every requested tree unless patience
+itself fires. The learning curves and trees through the shared best round were
+exact. The invalid attempt is recorded in
+`smooth_cross_features_invalid_attempt.md`.
+
+The amended runner therefore uses `argmin(validation_history) + 1` as the
+common engine-comparison prefix. It also records each library's actual retained
+tree count and ChimeraBoost's actual product prediction and RMSE. Competitive
+product comparisons use actual predictions; only the implementation-exactness
+check uses the normalized prefix.
 
 The analyzer reports equal-dataset geometric-mean quality ratios, leave-one-out
 ratios, worst dataset and split ratios, selection counts, summed fit seconds,
 and RSS. Timings are diagnostic and not eligible for an engineering claim.
-

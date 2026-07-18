@@ -167,10 +167,11 @@ def _update_array_hash(digest, label, value):
     digest.update(array.tobytes())
 
 
-def _model_sha256(core):
+def _model_sha256(core, tree_limit=None):
     digest = hashlib.sha256()
     _update_array_hash(digest, "init", np.asarray([core.init_], dtype="<f8"))
-    for index, tree in enumerate(core.trees_):
+    trees = core.trees_ if tree_limit is None else core.trees_[:tree_limit]
+    for index, tree in enumerate(trees):
         digest.update(str(index).encode("ascii"))
         _update_array_hash(digest, "splits_feat", tree.splits_feat)
         _update_array_hash(digest, "splits_thr", tree.splits_thr)
@@ -190,9 +191,12 @@ def _model_sha256(core):
     return digest.hexdigest()
 
 
-def _fingerprint(model, prediction, y_test):
+def _fingerprint(model, prediction, y_test, *, tree_limit=None):
     core = model.model_
     history = np.asarray(core.valid_history_, dtype=np.float64)
+    best_rounds = int(np.argmin(history)) + 1
+    if tree_limit is None:
+        tree_limit = len(core.trees_)
     borders = np.concatenate(
         [
             np.asarray(border, dtype=np.float64)
@@ -201,7 +205,9 @@ def _fingerprint(model, prediction, y_test):
     )
     prediction = np.asarray(prediction, dtype=np.float64)
     return {
-        "fitted_tree_count": int(len(core.trees_)),
+        "actual_retained_tree_count": int(len(core.trees_)),
+        "best_prefix_tree_count": best_rounds,
+        "fingerprinted_tree_count": int(tree_limit),
         "best_validation_rmse": float(np.min(history)),
         "test_rmse": float(
             mean_squared_error(np.asarray(y_test, dtype=np.float64), prediction)
@@ -210,8 +216,19 @@ def _fingerprint(model, prediction, y_test):
         "prediction_sha256": _array_sha256(prediction, "<f8"),
         "validation_history_sha256": _array_sha256(history, "<f8"),
         "borders_sha256": _array_sha256(borders, "<f8"),
-        "model_sha256": _model_sha256(core),
+        "model_sha256": _model_sha256(core, tree_limit=tree_limit),
     }
+
+
+def _staged_prediction_at(model, X, rounds):
+    prediction = None
+    for index, staged in enumerate(model.staged_predict(X), start=1):
+        if index == rounds:
+            prediction = np.asarray(staged, dtype=np.float64)
+            break
+    if prediction is None:
+        raise RuntimeError(f"model did not yield staged round {rounds}")
+    return prediction
 
 
 def _darko_model(*, linear_leaves):
@@ -317,7 +334,11 @@ def _evaluate_fold(task, X, y, task_id, fold):
         eval_X,
         eval_y,
     )
-    chimera_prediction = chimera.predict(X.iloc[outer_test])
+    chimera_actual_prediction = chimera.predict(X.iloc[outer_test])
+    chimera_best_rounds = int(np.argmin(chimera.model_.valid_history_)) + 1
+    chimera_prediction = _staged_prediction_at(
+        chimera, X.iloc[outer_test], chimera_best_rounds
+    )
 
     y_test = y.iloc[outer_test]
     base_fingerprint = _fingerprint(base, base_prediction, y_test)
@@ -325,10 +346,20 @@ def _evaluate_fold(task, X, y, task_id, fold):
         selected, selected_prediction, y_test
     )
     chimera_fingerprint = _fingerprint(
-        chimera, chimera_prediction, y_test
+        chimera,
+        chimera_prediction,
+        y_test,
+        tree_limit=chimera_best_rounds,
+    )
+    chimera_actual_fingerprint = _fingerprint(
+        chimera,
+        chimera_actual_prediction,
+        y_test,
+        tree_limit=len(chimera.model_.trees_),
     )
     exact_fields = (
-        "fitted_tree_count",
+        "best_prefix_tree_count",
+        "fingerprinted_tree_count",
         "best_validation_rmse",
         "test_rmse",
         "prediction_sha256",
@@ -368,6 +399,7 @@ def _evaluate_fold(task, X, y, task_id, fold):
         "base": base_fingerprint,
         "selected": selected_fingerprint,
         "chimera": chimera_fingerprint,
+        "chimera_actual": chimera_actual_fingerprint,
         "external_native_exact": True,
         "darko_total_fit_seconds": float(darko_fit_seconds),
         "chimera_total_fit_seconds": float(chimera_fit_seconds),
@@ -503,4 +535,3 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
