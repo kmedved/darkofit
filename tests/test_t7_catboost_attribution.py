@@ -760,8 +760,11 @@ def test_t7_artifacts_are_hash_bound_and_nonpromotional(
             Path(analyzer.c2.__file__).resolve()
         ),
     }
+    regenerated = analyzer.analyze(_raw())
+    regenerated_hash = regenerated.pop("summary_sha256")
+    assert analyzer._json_sha256(regenerated) == regenerated_hash
+    assert_analysis_equal(summary, regenerated)
     stored = {**summary, "summary_sha256": summary_hash}
-    assert_analysis_equal(stored, analyzer.analyze(_raw()))
     assert (
         analyzer._markdown(stored)
         == (root / "benchmarks" / "t7_catboost_attribution_result.md").read_text()

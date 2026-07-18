@@ -10,6 +10,7 @@ import pytest
 
 
 CAMPAIGN_EXACT = frozenset({
+    "test_analysis_comparison.py",
     "test_bench_status.py",
     "test_bench_vs_lightgbm.py",
     "test_benchmark_adapters.py",
@@ -83,6 +84,10 @@ def pytest_collection_modifyitems(items):
 
 def _assert_analysis_equal(stored, regenerated, path="result"):
     """Compare an analysis exactly except for platform-level FP rounding."""
+    assert type(stored) is type(regenerated), (
+        f"{path}: {type(stored).__name__} != "
+        f"{type(regenerated).__name__}"
+    )
     if isinstance(stored, float) and isinstance(regenerated, float):
         assert math.isclose(
             stored,
