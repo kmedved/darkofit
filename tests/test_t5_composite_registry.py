@@ -62,6 +62,22 @@ def test_protocol_uses_no_win_count_and_freezes_guarded_candidate():
     assert "No-rerun rule" in text
 
 
+@pytest.mark.parametrize(
+    ("literal", "expected"),
+    [
+        ("UCC", False),
+        ("child", False),
+        ("fifa", False),
+        ("colrec", True),
+        ("bike-sharing-domain-generalization", True),
+    ],
+)
+def test_repository_literal_requires_six_discriminating_characters(
+    literal, expected
+):
+    assert registry._repository_literal_is_discriminating(literal) is expected
+
+
 def test_recorded_registry_is_target_blind_and_only_authorizes_execution():
     if not registry.DEFAULT_OUTPUT.exists():
         pytest.skip("registry is generated only after its builder is committed")

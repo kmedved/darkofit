@@ -115,6 +115,11 @@ def _task_records(payload: Any):
     return list(unique.values())
 
 
+def _repository_literal_is_discriminating(value: str) -> bool:
+    normalized = ctr.normalize_name(value).replace("_", "")
+    return len(normalized) >= 6
+
+
 def _spent_source_tasks():
     ctr_snapshot = _load(CTR_SNAPSHOT)
     records = list(
@@ -371,22 +376,27 @@ def build():
                     "match": int(task["openml_dataset_id"]),
                 }
             )
-        for repository, revision, label in (
-            (ROOT, prefreeze, "darkofit"),
-            (CHIMERA_ROOT, declarations["chimeraboost_head"], "chimeraboost"),
-        ):
-            matches = fresh._git_grep(
-                repository, revision, str(task["dataset_name"])
-            )
-            if matches:
-                reasons.append(
-                    {
-                        "kind": "repository_reference",
-                        "repository": label,
-                        "literal": str(task["dataset_name"]),
-                        "paths": matches,
-                    }
+        if _repository_literal_is_discriminating(task["dataset_name"]):
+            for repository, revision, label in (
+                (ROOT, prefreeze, "darkofit"),
+                (
+                    CHIMERA_ROOT,
+                    declarations["chimeraboost_head"],
+                    "chimeraboost",
+                ),
+            ):
+                matches = fresh._git_grep(
+                    repository, revision, str(task["dataset_name"])
                 )
+                if matches:
+                    reasons.append(
+                        {
+                            "kind": "repository_reference",
+                            "repository": label,
+                            "literal": str(task["dataset_name"]),
+                            "paths": matches,
+                        }
+                    )
         near_matches = []
         for source in source_tasks:
             evidence = ctr.near_match_evidence(

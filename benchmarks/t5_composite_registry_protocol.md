@@ -64,6 +64,17 @@ target-blind with task `363204` (`dataFTR`, target `time`), preserving the
 25-lineage and 9/9/7 stratum design. The failed attempt is recorded in
 `t5_composite_registry_invalid_attempt.md`.
 
+The next target-blind build stopped on four contamination alarms. `UCC` and
+`child` were non-semantic literal collisions: their three- and five-character
+names occurred inside unrelated source text and encoded evidence. Repository
+literal checks now use the same six-character discriminating minimum as the
+name-containment rule; exact ID, name-catalog, and fingerprint checks remain
+unchanged. The other alarms were real: `avocado_sales` appears in
+ChimeraBoost's high-cardinality plan, while `fifa` is catalog-known and a
+near-lineage match to a spent source. They were replaced target-blind by
+`std` and `colrec`, respectively, preserving the frozen panel shape and
+strata. No registry artifact, model, target statistic, or score existed.
+
 ## Exact composite nominee
 
 The evaluated unit is a selection-guarded automatic policy, not a bare
