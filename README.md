@@ -303,6 +303,34 @@ Calibration applies to
 `refit=True`, the calibration is frozen from the selection-phase validation
 model and then applied to the full-data refit.
 
+Gaussian models can also opt into held-out split-conformal intervals:
+
+```
+reg = DarkoRegressor(
+    loss="Gaussian",
+    tree_mode="lightgbm",
+    early_stopping=True,
+    dist_calibration="affine",
+    interval_calibration="conformal",
+)
+reg.fit(X_train, y_train, eval_set=(X_validation, y_validation))
+lo, hi = reg.predict_interval(
+    X_test, alpha=0.1, calibrate="conformal"
+)
+```
+
+When the validation set is needed for early stopping, model selection,
+learning-rate selection, or distribution calibration, DarkoFit
+deterministically reserves half of it as a separate conformal holdout. Those
+rows are not used by any fitting or selection step. If the model does not
+otherwise need a validation set, the full validation split is used for
+conformal scores. The method uses the finite-sample split-conformal order
+statistic on standardized absolute residuals. Parametric intervals remain the
+default, so callers must pass `calibrate="conformal"` explicitly.
+Sample-weighted conformal intervals and `refit=True` are rejected rather than
+silently weakening the coverage interpretation. Conformal coverage and
+interval width must always be reported together.
+
 `DarkoRegressor` also retains opt-in linear residual boosting via
 `linear_residual=True` for the 0.10 migration cycle. This family is deprecated
 for removal in 1.0: local `linear_leaves=True` was materially more accurate on

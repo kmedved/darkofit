@@ -46,6 +46,7 @@ _SKLEARN_ONLY = frozenset({
     "refit_strategy", "auto_learning_rate_probe",
     "auto_learning_rate_probe_values", "auto_learning_rate_probe_iterations",
     "dist_calibration", "dist_calibration_feature", "dist_params",
+    "interval_calibration",
     "sigma_calibration", "linear_residual", "linear_residual_alpha",
     "linear_residual_features", "linear_residual_fit_intercept",
     "linear_residual_standardize", "preset", "selection_rounds",
@@ -458,6 +459,76 @@ def _normalize_dist_calibration(
             )
         return sigma_mode
     return dist_mode
+
+
+def _normalize_interval_calibration(calibration):
+    if calibration is None or calibration is False:
+        return None
+    mode = str(calibration).lower().replace("-", "_")
+    if mode in {"none", "off", "false", "no"}:
+        return None
+    if mode in {"conformal", "split_conformal"}:
+        return "conformal"
+    raise ValueError(
+        "interval_calibration must be None, False, or 'conformal'"
+    )
+
+
+def _conformal_order_statistic(scores, alpha):
+    values = np.asarray(scores, dtype=np.float64)
+    if (
+        values.ndim != 1
+        or values.size == 0
+        or not np.all(np.isfinite(values))
+        or np.any(values < 0.0)
+    ):
+        raise ValueError("conformal calibration scores are invalid")
+    rank = int(math.ceil((values.size + 1) * (1.0 - float(alpha))))
+    if rank > values.size:
+        raise ValueError(
+            "the conformal calibration set is too small for the requested "
+            f"alpha={float(alpha):g}; use at least "
+            f"{int(math.ceil(1.0 / float(alpha) - 1.0))} calibration rows "
+            "or request a wider miscoverage level"
+        )
+    index = max(rank - 1, 0)
+    return float(np.partition(values, index)[index]), rank
+
+
+def _reserve_conformal_holdout(eval_set, random_state, *, selection_needed):
+    """Keep conformal rows untouched by fitting, selection, and calibration."""
+    X_eval, y_eval = eval_set
+    n_eval = int(len(y_eval))
+    if not selection_needed:
+        return None, eval_set, {
+            "selection_n_samples": 0,
+            "calibration_n_samples": n_eval,
+            "holdout_fraction": 1.0,
+        }
+    if n_eval < 4:
+        raise ValueError(
+            "interval_calibration='conformal' needs at least 4 validation "
+            "rows when the validation set is also used for model selection "
+            "or distribution calibration"
+        )
+    rng = np.random.default_rng(int(random_state) ^ 0x434F4E46)
+    order = rng.permutation(n_eval)
+    calibration_n = max(1, n_eval // 2)
+    calibration_idx = order[:calibration_n]
+    selection_idx = order[calibration_n:]
+    selection_set = (
+        X_eval[selection_idx],
+        np.asarray(y_eval)[selection_idx],
+    )
+    calibration_set = (
+        X_eval[calibration_idx],
+        np.asarray(y_eval)[calibration_idx],
+    )
+    return selection_set, calibration_set, {
+        "selection_n_samples": int(selection_idx.size),
+        "calibration_n_samples": int(calibration_idx.size),
+        "holdout_fraction": float(calibration_idx.size / n_eval),
+    }
 
 
 def _sigma_calibration_base_arrays(model, X_val, y_val):
@@ -2322,6 +2393,9 @@ class _RefitParamsMixin:
             "dist_mean_calibration_numerator_",
             "dist_mean_calibration_denominator_",
             "dist_mean_calibration_objective_",
+            "interval_calibration_", "interval_calibration_source_",
+            "interval_calibration_split_", "conformal_scores_",
+            "conformal_score_count_",
             "selection_model_persisted_", "sigma_calibration_",
             "sigma_scale_", "sigma_scale_source_",
             "sigma_calibration_fold_stats_",
@@ -2980,6 +3054,17 @@ class _RefitParamsMixin:
             state["selection_n_total"] = self._selection_n_total_
         if hasattr(self, "_selection_n_train_"):
             state["selection_n_train"] = self._selection_n_train_
+        if hasattr(self, "interval_calibration_"):
+            state["interval_calibration"] = self.interval_calibration_
+            state["interval_calibration_source"] = (
+                self.interval_calibration_source_
+            )
+            state["interval_calibration_split"] = dict(
+                self.interval_calibration_split_
+            )
+            state["conformal_score_count"] = int(
+                self.conformal_score_count_
+            )
         calibration_method = getattr(
             self, "dist_calibration_",
             getattr(self, "sigma_calibration_", None),
@@ -3123,6 +3208,10 @@ class _RefitParamsMixin:
 
     def _wrapper_arrays(self):
         arrays = {}
+        if hasattr(self, "conformal_scores_"):
+            arrays["conformal_scores"] = np.asarray(
+                self.conformal_scores_, dtype=np.float64
+            )
         if not getattr(self, "linear_residual_active_", False):
             return arrays
         trend = getattr(self, "linear_residual_trend_", None)
@@ -3277,6 +3366,85 @@ class _RefitParamsMixin:
                 self.dist_mean_calibration_objective_ = str(
                     state["dist_mean_calibration_objective"]
                 )
+
+    def _restore_interval_calibration_state(self, state, wrapper_arrays):
+        state = state or {}
+        method = state.get("interval_calibration")
+        scores = (wrapper_arrays or {}).get("conformal_scores")
+        if method is None:
+            if _normalize_interval_calibration(
+                getattr(self, "interval_calibration", None)
+            ) is not None:
+                raise ValueError(
+                    "invalid DarkoFit model: interval calibration parameter "
+                    "has no fitted calibration state"
+                )
+            if scores is not None:
+                raise ValueError(
+                    "invalid DarkoFit model: conformal scores have no "
+                    "interval calibration state"
+                )
+            return
+        method = _normalize_interval_calibration(method)
+        if method != "conformal":
+            raise ValueError(
+                "invalid DarkoFit model: unsupported interval calibration"
+            )
+        if self._fitted_loss_name() != "Gaussian":
+            raise ValueError(
+                "invalid DarkoFit model: conformal interval calibration "
+                "requires a Gaussian model"
+            )
+        values = (
+            np.asarray(scores, dtype=np.float64)
+            if scores is not None
+            else None
+        )
+        expected_count = state.get("conformal_score_count")
+        if (
+            values is None
+            or values.ndim != 1
+            or values.size == 0
+            or not np.all(np.isfinite(values))
+            or np.any(values < 0.0)
+            or expected_count is None
+            or int(expected_count) != values.size
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: conformal calibration scores are "
+                "missing or invalid"
+            )
+        source = state.get("interval_calibration_source")
+        split = state.get("interval_calibration_split")
+        if source != "held_out_validation" or not isinstance(split, Mapping):
+            raise ValueError(
+                "invalid DarkoFit model: conformal calibration provenance "
+                "is missing or invalid"
+            )
+        if (
+            bool(split.get("calibration_rows_used_for_fit", True))
+            or bool(split.get("calibration_rows_used_for_selection", True))
+            or bool(
+                split.get("calibration_rows_used_for_dist_calibration", True)
+            )
+            or int(split.get("calibration_n_samples", -1)) != values.size
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: conformal holdout metadata is "
+                "inconsistent"
+            )
+        self.interval_calibration_ = method
+        self.interval_calibration_source_ = source
+        self.interval_calibration_split_ = dict(split)
+        self.conformal_scores_ = np.sort(values.copy())
+        self.conformal_score_count_ = int(values.size)
+        self.model_.auto_params_["interval_calibration"] = {
+            "method": method,
+            "source": source,
+            "score_count": int(values.size),
+            "weighted": False,
+            "split": dict(split),
+        }
 
     def _restore_linear_residual_state(self, state, wrapper_arrays):
         state = dict(state or {})
@@ -3770,6 +3938,9 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
     selection_rounds : int or None, default None
         Optional cap for each ``tree_mode="auto"`` audition. The selected
         mode is then fit from scratch with the full requested round budget.
+    interval_calibration : {None, "conformal"}, default None
+        Opt into split-conformal Gaussian intervals using standardized
+        residual scores from the explicit or automatic validation set.
     n_ensembles : int, default 1
         Number of OOB-selected bootstrap members. Values above one opt into
         mean aggregation. ``ensemble_bootstrap="groups"`` requires ``groups``
@@ -3797,6 +3968,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                  dist_calibration=None,
                  dist_calibration_feature=_GROUP_AFFINE_DEFAULT_FEATURE,
                  dist_params=None,
+                 interval_calibration=None,
                  sigma_calibration=None,
                  linear_residual=False,
                  linear_residual_alpha=1.0,
@@ -3859,6 +4031,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self.dist_calibration = dist_calibration
         self.dist_calibration_feature = dist_calibration_feature
         self.dist_params = dist_params
+        self.interval_calibration = interval_calibration
         self.sigma_calibration = sigma_calibration
         self.linear_residual = linear_residual
         self.linear_residual_alpha = linear_residual_alpha
@@ -4056,6 +4229,9 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             self.sigma_calibration,
             warn_legacy=self.sigma_calibration is not None,
         )
+        interval_calibration_ = _normalize_interval_calibration(
+            self.interval_calibration
+        )
         if (
             not distributional_loss
             and self.eval_metric not in {None, "auto", "loss"}
@@ -4076,6 +4252,11 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 )
             raise ValueError(
                 f"{calibration_name} is only supported for distributional losses"
+            )
+        if not distributional_loss and interval_calibration_ is not None:
+            raise ValueError(
+                "interval_calibration is only supported for "
+                "distributional losses"
             )
         if distributional_loss:
             if self.alpha != 0.5:
@@ -4108,16 +4289,41 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                     f"dist_calibration='dispersion' is not supported for "
                     f"loss={self.loss!r}"
                 )
+            if (
+                interval_calibration_ == "conformal"
+                and self.loss != "Gaussian"
+            ):
+                raise ValueError(
+                    "interval_calibration='conformal' is currently "
+                    "supported only for loss='Gaussian'"
+                )
         elif self.dist_params not in (None, {}):
             raise ValueError("dist_params is only supported for distributional losses")
         self._validate_tree_mode_selection_request()
         if self.refit:
             self._refit_strategy_exponent(self.refit_strategy)
         es_active = _should_early_stop(self.early_stopping)
+        if interval_calibration_ is not None and self.refit:
+            raise ValueError(
+                "interval_calibration='conformal' is incompatible with "
+                "refit=True because refitting on the held-out calibration "
+                "rows would invalidate split-conformal coverage"
+            )
+        if (
+            interval_calibration_ == "conformal"
+            and (
+                sample_weight is not None
+                or eval_sample_weight is not None
+            )
+        ):
+            raise ValueError(
+                "interval_calibration='conformal' does not yet support "
+                "sample weights"
+            )
         if validation_strategy_ == "group" and groups is None:
             raise ValueError("validation_strategy='group' requires groups")
         if (
-            (es_active or tree_mode_auto)
+            (es_active or tree_mode_auto or interval_calibration_ is not None)
             and eval_set is None
             and groups is not None
             and validation_strategy_ == "weighted_stratified"
@@ -4126,7 +4332,11 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 "validation_strategy='weighted_stratified' is only supported "
                 "for ungrouped regression automatic validation splits"
             )
-        if (es_active or tree_mode_auto) and eval_set is None:
+        if (
+            es_active
+            or tree_mode_auto
+            or interval_calibration_ is not None
+        ) and eval_set is None:
             if eval_sample_weight is not None:
                 raise ValueError(
                     "eval_sample_weight requires an explicit eval_set; "
@@ -4151,6 +4361,26 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             if sample_weight is not None:
                 sample_weight = sample_weight[train_idx]
 
+        conformal_eval_set = None
+        conformal_split_metadata = None
+        if interval_calibration_ == "conformal":
+            selection_needed = bool(
+                es_active
+                or tree_mode_auto
+                or dist_calibration_ is not None
+                or self.use_best_model
+                or self.auto_learning_rate_probe
+            )
+            eval_set, conformal_eval_set, conformal_split_metadata = (
+                _reserve_conformal_holdout(
+                    eval_set,
+                    fit_random_state,
+                    selection_needed=selection_needed,
+                )
+            )
+            split_eval_n = None if eval_set is None else len(eval_set[1])
+            eval_sample_weight = None
+
         y = self._fit_linear_residual_trend(
             X, y, sample_weight, cat_features, feature_names
         )
@@ -4159,6 +4389,14 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             eval_set = (
                 X_eval,
                 self.linear_residual_trend_.residualize(X_eval, y_eval),
+            )
+        if conformal_eval_set is not None and self.linear_residual_active_:
+            X_conformal, y_conformal = conformal_eval_set
+            conformal_eval_set = (
+                X_conformal,
+                self.linear_residual_trend_.residualize(
+                    X_conformal, y_conformal
+                ),
             )
 
         if dist_calibration_ is not None and eval_set is None:
@@ -4172,6 +4410,12 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 "validation set; pass eval_set or set early_stopping=True to "
                 "create an automatic validation split"
             )
+        if interval_calibration_ is not None and eval_set is None:
+            if conformal_eval_set is None:
+                raise ValueError(
+                    "interval_calibration='conformal' requires a validation "
+                    "set; pass eval_set or allow the automatic validation split"
+                )
 
         es_rounds = self.early_stopping_rounds
         if es_active and es_rounds is None:
@@ -4271,6 +4515,8 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             split_source = "automatic_tree_mode_selection"
         elif es_active:
             split_source = "automatic"
+        elif interval_calibration_ is not None:
+            split_source = "automatic_interval_calibration"
         else:
             split_source = "none"
         validation_metadata = {
@@ -4446,6 +4692,44 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 emit_warning=not (self.refit and selection_active)
             )
 
+        if distributional_loss and interval_calibration_ is not None:
+            self.interval_calibration_ = interval_calibration_
+            self.interval_calibration_source_ = "held_out_validation"
+            if interval_calibration_ == "conformal":
+                X_cal, y_cal = conformal_eval_set
+                raw_cal = selection_model.predict_raw(X_cal)
+                params_cal = self._calibrated_params_from_raw(raw_cal, X_cal)
+                mu_cal = np.asarray(params_cal[0], dtype=np.float64)
+                sigma_cal = np.maximum(
+                    np.asarray(params_cal[1], dtype=np.float64),
+                    _SIGMA_MIN,
+                )
+                scores = np.abs(
+                    (np.asarray(y_cal, dtype=np.float64) - mu_cal) / sigma_cal
+                )
+                if (
+                    scores.ndim != 1
+                    or scores.size == 0
+                    or not np.all(np.isfinite(scores))
+                ):
+                    raise RuntimeError(
+                        "conformal interval calibration produced invalid "
+                        "scores"
+                    )
+                self.conformal_scores_ = np.sort(scores)
+                self.conformal_score_count_ = int(scores.size)
+                self.interval_calibration_split_ = {
+                    **conformal_split_metadata,
+                    "selection_source": (
+                        "explicit_eval_set"
+                        if explicit_eval_set
+                        else "automatic_validation_split"
+                    ),
+                    "calibration_rows_used_for_fit": False,
+                    "calibration_rows_used_for_selection": False,
+                    "calibration_rows_used_for_dist_calibration": False,
+                }
+
         if self.refit and selection_active:
             selection_linear_residual_summary = (
                 self._linear_residual_metadata()
@@ -4502,6 +4786,16 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             # Free the binned-matrix copies; fitted models keep a reference
             # to this dict, so an unemptied cache would pin them in memory.
             preprocessing_cache.clear()
+        if distributional_loss and interval_calibration_ is not None:
+            self.model_.auto_params_["interval_calibration"] = {
+                "method": self.interval_calibration_,
+                "source": self.interval_calibration_source_,
+                "score_count": int(
+                    getattr(self, "conformal_score_count_", 0)
+                ),
+                "weighted": False,
+                "split": dict(self.interval_calibration_split_),
+            }
         self._attach_ordinal_metadata()
         return self
 
@@ -4807,11 +5101,18 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             f"loss={self._fitted_loss_name()!r}"
         )
 
-    def predict_interval(self, X, alpha=0.1):
-        """Return central prediction interval bounds."""
+    def predict_interval(self, X, alpha=0.1, calibrate=None):
+        """Return central prediction interval bounds.
+
+        Pass ``calibrate="conformal"`` to use held-out standardized
+        residual scores collected by a fit with
+        ``interval_calibration="conformal"``. The default remains the
+        fitted distribution's parametric interval.
+        """
         alpha = float(alpha)
         if not 0.0 < alpha < 1.0:
             raise ValueError("alpha must be in (0, 1)")
+        calibration = _normalize_interval_calibration(calibrate)
         X = _check_predict_input(self, X)
         loss = self._require_distributional(
             "predict_interval", capability="interval"
@@ -4819,6 +5120,28 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         trend = self._linear_residual_trend(X)
         raw = self.model_.predict_raw(X, _validated=True)
         params = self._calibrated_params_from_raw(raw, X)
+        if calibration == "conformal":
+            if getattr(self, "interval_calibration_", None) != "conformal":
+                raise ValueError(
+                    "calibrate='conformal' requires fitting with "
+                    "interval_calibration='conformal'"
+                )
+            if self._fitted_loss_name() != "Gaussian":
+                raise ValueError(
+                    "conformal intervals are currently supported only for "
+                    "loss='Gaussian'"
+                )
+            quantile, _ = _conformal_order_statistic(
+                self.conformal_scores_, alpha
+            )
+            mu = np.asarray(params[0], dtype=np.float64)
+            sigma = np.maximum(
+                np.asarray(params[1], dtype=np.float64), _SIGMA_MIN
+            )
+            return self._linear_residual_shift_interval(
+                (mu - quantile * sigma, mu + quantile * sigma),
+                trend,
+            )
         if hasattr(loss, "interval_from_params"):
             return self._linear_residual_shift_interval(
                 loss.interval_from_params(*params, alpha), trend
@@ -4909,6 +5232,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             est.loss = booster.loss_name
         state = wrapper_header.get("state", {})
         est._restore_wrapper_state(state)
+        est._restore_interval_calibration_state(state, wrapper_arrays)
         est._restore_linear_residual_state(state, wrapper_arrays)
         return est
 

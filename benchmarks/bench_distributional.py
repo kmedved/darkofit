@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import importlib.util
 import math
 import os
@@ -49,11 +50,13 @@ DEFAULT_MODELS = (
     "darkofit_gaussian",
     "darkofit_gaussian_es",
     "darkofit_gaussian_es_calibrated",
+    "darkofit_gaussian_es_conformal",
     "darkofit_student_t",
     "darkofit_rmse_const_sigma",
     "darkofit_quantile_pair",
     "ngboost",
     "catboost_uncertainty",
+    "lightgbm_quantile_pair",
     "lightgbm_twin",
     "lightgbm_twin_calibrated",
 )
@@ -76,6 +79,9 @@ class Result:
     n_features: int
     status: str
     reason: str = ""
+    data_sha256: str = ""
+    interval_method: str = "parametric"
+    calibration_n: int | None = None
     fit_seconds: float | None = None
     predict_seconds: float | None = None
     best_iteration: int | None = None
@@ -118,11 +124,36 @@ def _make_heteroscedastic(seed, n_train, n_test, n_features):
     return X[:n_train], X[n_train:], y[:n_train], y[n_train:]
 
 
+def _make_heavy_tailed(seed, n_train, n_test, n_features):
+    X_train, X_test, _, _ = _make_heteroscedastic(
+        seed, n_train, n_test, n_features
+    )
+    X = np.vstack([X_train, X_test])
+    rng = np.random.default_rng(seed + 1_000_003)
+    sigma = (
+        0.20
+        + 0.65 / (1.0 + np.exp(-2.0 * X[:, 1]))
+        + 0.20 * np.abs(X[:, 3])
+    )
+    mu = (
+        1.4 * X[:, 0]
+        - 0.8 * X[:, 2]
+        + 0.4 * np.sin(2.0 * X[:, 4])
+        + 0.2 * X[:, 5] * X[:, 0]
+    )
+    # Student-t(3) has variance 3; rescale to preserve sigma as the
+    # conditional standard deviation and isolate tail shape.
+    y = mu + sigma * rng.standard_t(3.0, size=X.shape[0]) / np.sqrt(3.0)
+    return X[:n_train], X[n_train:], y[:n_train], y[n_train:]
+
+
 def _synthetic_dataset(dataset, seed, args):
     if dataset == "synthetic_smoke":
         return _make_heteroscedastic(seed, args.n_train, args.n_test, args.n_features)
     if dataset == "synthetic_100k":
         return _make_heteroscedastic(seed, 100_000, 25_000, args.n_features)
+    if dataset == "synthetic_t3_100k":
+        return _make_heavy_tailed(seed, 100_000, 25_000, args.n_features)
     if dataset == "synthetic_500k":
         return _make_heteroscedastic(seed, 500_000, 100_000, args.n_features)
     raise KeyError(dataset)
@@ -136,9 +167,18 @@ def _openml_dataset(dataset, seed):
     target = ds.target.astype(float).to_numpy()
     X_df = ds.frame.drop(columns=[ds.target.name])
     X_df = X_df.apply(lambda col: col.astype(float))
-    X_df = X_df.fillna(X_df.median(numeric_only=True))
-    X = X_df.to_numpy(dtype=np.float64)
-    return train_test_split(X, target, test_size=0.25, random_state=seed)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_df, target, test_size=0.25, random_state=seed
+    )
+    medians = X_train.median(numeric_only=True)
+    X_train = X_train.fillna(medians)
+    X_test = X_test.fillna(medians)
+    return (
+        X_train.to_numpy(dtype=np.float64),
+        X_test.to_numpy(dtype=np.float64),
+        y_train,
+        y_test,
+    )
 
 
 def _make_dataset(dataset, seed, args):
@@ -161,6 +201,22 @@ def _make_sample_weight(y, mode):
     pct = order / max(y.shape[0] - 1, 1)
     w = 0.5 + 3.0 * pct
     return w * (len(w) / w.sum())
+
+
+def _dataset_fingerprint(Xtr, Xte, ytr, yte):
+    digest = hashlib.sha256()
+    for name, values in (
+        ("Xtr", Xtr),
+        ("Xte", Xte),
+        ("ytr", ytr),
+        ("yte", yte),
+    ):
+        array = np.ascontiguousarray(values)
+        digest.update(name.encode("ascii"))
+        digest.update(str(array.shape).encode("ascii"))
+        digest.update(array.dtype.str.encode("ascii"))
+        digest.update(array.view(np.uint8))
+    return digest.hexdigest()
 
 
 def _weighted_mean(values, sample_weight=None):
@@ -234,11 +290,16 @@ def _sigma_binned_coverage(y, lo, hi, sigma, sample_weight, n_bins):
 
 def _score(dataset, model_name, seed, Xtr, Xte, yte, fit_seconds, predict_seconds,
            mu, sigma, best_iteration=None, sigma_bins=5,
-           sample_weight=None, weight_mode="none"):
+           sample_weight=None, weight_mode="none", interval=None,
+           interval_method="parametric", calibration_n=None):
     sigma = np.clip(np.asarray(sigma, dtype=np.float64), 1e-12, None)
     mu = np.asarray(mu, dtype=np.float64)
-    lo = mu - 1.6448536269514722 * sigma
-    hi = mu + 1.6448536269514722 * sigma
+    if interval is None:
+        lo = mu - 1.6448536269514722 * sigma
+        hi = mu + 1.6448536269514722 * sigma
+    else:
+        lo = np.asarray(interval[0], dtype=np.float64)
+        hi = np.asarray(interval[1], dtype=np.float64)
     return Result(
         dataset=dataset,
         model=model_name,
@@ -248,6 +309,8 @@ def _score(dataset, model_name, seed, Xtr, Xte, yte, fit_seconds, predict_second
         n_test=int(Xte.shape[0]),
         n_features=int(Xtr.shape[1]),
         status="ok",
+        interval_method=interval_method,
+        calibration_n=calibration_n,
         fit_seconds=float(fit_seconds),
         predict_seconds=float(predict_seconds),
         best_iteration=None if best_iteration is None else int(best_iteration),
@@ -283,9 +346,10 @@ def _score_interval_only(dataset, model_name, seed, Xtr, Xte, yte,
         n_features=int(Xtr.shape[1]),
         status="ok",
         reason="interval-only baseline",
+        interval_method="quantile",
         fit_seconds=float(fit_seconds),
         predict_seconds=float(predict_seconds),
-        rmse_mu=_weighted_rms(yte - mu, sample_weight),
+        rmse_mu=None,
         interval90_coverage=_weighted_mean(
             ((yte >= lo) & (yte <= hi)).astype(float), sample_weight
         ),
@@ -401,6 +465,59 @@ def _run_darkofit_gaussian_es_calibrated(dataset, seed, Xtr, Xte, ytr, yte,
         sigma_bins=args.sigma_bins,
         sample_weight=wte,
         weight_mode=args.weight_mode,
+    )
+
+
+def _run_darkofit_gaussian_es_conformal(dataset, seed, Xtr, Xte, ytr, yte,
+                                        wtr, wte, args):
+    if wtr is not None or wte is not None:
+        return _skip(
+            dataset,
+            "darkofit_gaussian_es_conformal",
+            seed,
+            Xtr,
+            Xte,
+            "split-conformal lane does not support sample weights",
+            args.weight_mode,
+        )
+    t0 = time.perf_counter()
+    model = DarkoRegressor(
+        loss="Gaussian",
+        tree_mode="lightgbm",
+        iterations=(
+            args.early_stop_iterations
+            if args.early_stop_iterations is not None
+            else args.iterations
+        ),
+        learning_rate=args.learning_rate,
+        num_leaves=args.num_leaves,
+        min_child_samples=args.min_child_samples,
+        early_stopping=True,
+        early_stopping_rounds=args.early_stopping_rounds,
+        validation_fraction=args.validation_fraction,
+        dist_calibration=args.darkofit_sigma_calibration,
+        interval_calibration="conformal",
+        thread_count=args.threads,
+        random_state=seed,
+        diagnostic_warnings="never",
+    ).fit(Xtr, ytr)
+    fit_seconds = time.perf_counter() - t0
+    t0 = time.perf_counter()
+    mu, sigma = model.predict_dist(Xte)
+    interval = model.predict_interval(
+        Xte, alpha=0.1, calibrate="conformal"
+    )
+    predict_seconds = time.perf_counter() - t0
+    return _score(
+        dataset, "darkofit_gaussian_es_conformal", seed, Xtr, Xte, yte,
+        fit_seconds, predict_seconds, mu, sigma,
+        best_iteration=model.n_estimators_,
+        sigma_bins=args.sigma_bins,
+        sample_weight=wte,
+        weight_mode=args.weight_mode,
+        interval=interval,
+        interval_method="split_conformal",
+        calibration_n=model.conformal_score_count_,
     )
 
 
@@ -613,6 +730,49 @@ def _lightgbm_regressor(seed, args):
     )
 
 
+def _lightgbm_quantile_regressor(seed, alpha, args):
+    from lightgbm import LGBMRegressor
+
+    return LGBMRegressor(
+        objective="quantile",
+        alpha=float(alpha),
+        n_estimators=args.iterations,
+        learning_rate=args.learning_rate,
+        num_leaves=args.num_leaves,
+        min_child_samples=args.min_child_samples,
+        random_state=seed,
+        n_jobs=args.threads,
+        verbosity=-1,
+    )
+
+
+def _run_lightgbm_quantile_pair(
+    dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args
+):
+    if not _has_module("lightgbm"):
+        return _skip(
+            dataset, "lightgbm_quantile_pair", seed, Xtr, Xte,
+            "lightgbm is not installed", args.weight_mode
+        )
+    t0 = time.perf_counter()
+    lo_model = _lightgbm_quantile_regressor(seed, 0.05, args)
+    hi_model = _lightgbm_quantile_regressor(seed + 10_000, 0.95, args)
+    lo_model.fit(Xtr, ytr, sample_weight=wtr)
+    hi_model.fit(Xtr, ytr, sample_weight=wtr)
+    fit_seconds = time.perf_counter() - t0
+    t0 = time.perf_counter()
+    lo = lo_model.predict(Xte)
+    hi = hi_model.predict(Xte)
+    predict_seconds = time.perf_counter() - t0
+    return _score_interval_only(
+        dataset, "lightgbm_quantile_pair", seed, Xtr, Xte, yte,
+        fit_seconds, predict_seconds,
+        np.minimum(lo, hi), np.maximum(lo, hi),
+        sample_weight=wte,
+        weight_mode=args.weight_mode,
+    )
+
+
 def _fit_lightgbm_twin(seed, Xtr, ytr, wtr, args):
     oof = np.empty_like(ytr, dtype=np.float64)
     splitter = KFold(n_splits=args.lightgbm_oof_folds, shuffle=True,
@@ -717,11 +877,13 @@ RUNNERS = {
     "darkofit_gaussian": _run_darkofit_gaussian,
     "darkofit_gaussian_es": _run_darkofit_gaussian_es,
     "darkofit_gaussian_es_calibrated": _run_darkofit_gaussian_es_calibrated,
+    "darkofit_gaussian_es_conformal": _run_darkofit_gaussian_es_conformal,
     "darkofit_student_t": _run_darkofit_student_t,
     "darkofit_rmse_const_sigma": _run_darkofit_rmse_const_sigma,
     "darkofit_quantile_pair": _run_darkofit_quantile_pair,
     "ngboost": _run_ngboost,
     "catboost_uncertainty": _run_catboost_uncertainty,
+    "lightgbm_quantile_pair": _run_lightgbm_quantile_pair,
     "lightgbm_twin": _run_lightgbm_twin,
     "lightgbm_twin_calibrated": _run_lightgbm_twin_calibrated,
 }
@@ -834,7 +996,7 @@ def _write_markdown(path, rows):
     path.write_text(_markdown_table(rows) + "\n", encoding="utf-8")
 
 
-def _warm_darkofit(args):
+def _warm_models(args):
     if args.no_warmup:
         return
     Xtr, Xte, ytr, yte = _make_heteroscedastic(
@@ -851,6 +1013,9 @@ def _warm_darkofit(args):
         )
     warm_args.num_leaves = min(max(3, int(args.num_leaves)), 7)
     warm_args.min_child_samples = min(max(2, int(args.min_child_samples)), 4)
+    warm_args.validation_fraction = max(
+        float(args.validation_fraction), 0.2
+    )
     warm_args.weight_mode = "none"
     wtr = None
     wte = None
@@ -862,6 +1027,10 @@ def _warm_darkofit(args):
         )
     if "darkofit_gaussian_es_calibrated" in args.models:
         _run_darkofit_gaussian_es_calibrated(
+            "warmup", 0, Xtr, Xte, ytr, yte, wtr, wte, warm_args
+        )
+    if "darkofit_gaussian_es_conformal" in args.models:
+        _run_darkofit_gaussian_es_conformal(
             "warmup", 0, Xtr, Xte, ytr, yte, wtr, wte, warm_args
         )
     if "darkofit_student_t" in args.models:
@@ -876,12 +1045,18 @@ def _warm_darkofit(args):
         _run_darkofit_quantile_pair(
             "warmup", 0, Xtr, Xte, ytr, yte, wtr, wte, warm_args
         )
+    for model_name in args.models:
+        if not model_name.startswith("darkofit_"):
+            RUNNERS[model_name](
+                "warmup", 0, Xtr, Xte, ytr, yte, wtr, wte, warm_args
+            )
 
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     dataset_choices = [
-        "synthetic_smoke", "synthetic_100k", "synthetic_500k",
+        "synthetic_smoke", "synthetic_100k", "synthetic_t3_100k",
+        "synthetic_500k",
         *sorted(OPENML_REGRESSION_DATASETS),
     ]
     parser.add_argument("--datasets", nargs="+", choices=dataset_choices,
@@ -950,7 +1125,7 @@ def parse_args(argv=None):
 
 def main(argv=None):
     args = parse_args(argv)
-    _warm_darkofit(args)
+    _warm_models(args)
     rows = []
     for dataset in args.datasets:
         for seed in args.seeds:
@@ -976,11 +1151,13 @@ def main(argv=None):
                 wtr = _make_sample_weight(ytr, weight_mode)
                 wte = _make_sample_weight(yte, weight_mode)
                 for model_name in args.models:
-                    rows.append(
-                        RUNNERS[model_name](
-                            dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args
-                        )
+                    row = RUNNERS[model_name](
+                        dataset, seed, Xtr, Xte, ytr, yte, wtr, wte, args
                     )
+                    row.data_sha256 = _dataset_fingerprint(
+                        Xtr, Xte, ytr, yte
+                    )
+                    rows.append(row)
     _print_results(rows)
     if args.csv is not None:
         _write_csv(args.csv, rows)

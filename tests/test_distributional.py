@@ -390,6 +390,141 @@ def test_gaussian_regressor_api_alias_and_auto_metadata():
     assert model.model_.auto_params_["distributional"]["n_outputs"] == 2
 
 
+def test_gaussian_split_conformal_intervals_use_untouched_holdout_and_roundtrip(
+    tmp_path,
+):
+    X, y = _make_heteroscedastic(seed=140, n=360)
+    X_train, X_eval = X[:240], X[240:]
+    y_train, y_eval = y[:240], y[240:]
+    model = DarkoRegressor(
+        **_gaussian_test_params(
+            iterations=10,
+            random_state=17,
+            dist_calibration="affine",
+            interval_calibration="conformal",
+        )
+    ).fit(X_train, y_train, eval_set=(X_eval, y_eval))
+
+    split = model.interval_calibration_split_
+    assert split == {
+        "selection_n_samples": 60,
+        "calibration_n_samples": 60,
+        "holdout_fraction": 0.5,
+        "selection_source": "explicit_eval_set",
+        "calibration_rows_used_for_fit": False,
+        "calibration_rows_used_for_selection": False,
+        "calibration_rows_used_for_dist_calibration": False,
+    }
+    assert model.interval_calibration_source_ == "held_out_validation"
+    assert model.conformal_score_count_ == 60
+
+    order = np.random.default_rng(17 ^ 0x434F4E46).permutation(120)
+    calibration_idx = order[:60]
+    mu_cal, sigma_cal = model.predict_dist(X_eval[calibration_idx])
+    expected_scores = np.sort(
+        np.abs((y_eval[calibration_idx] - mu_cal) / sigma_cal)
+    )
+    np.testing.assert_allclose(
+        model.conformal_scores_, expected_scores, rtol=0.0, atol=0.0
+    )
+
+    X_test = X_eval[:20]
+    alpha = 0.2
+    base = model.predict_interval(X_test, alpha=alpha)
+    base_off = model.predict_interval(X_test, alpha=alpha, calibrate="off")
+    np.testing.assert_array_equal(base_off[0], base[0])
+    np.testing.assert_array_equal(base_off[1], base[1])
+
+    mu, sigma = model.predict_dist(X_test)
+    rank = int(np.ceil((model.conformal_score_count_ + 1) * (1.0 - alpha)))
+    quantile = expected_scores[min(rank, expected_scores.size) - 1]
+    conformal = model.predict_interval(
+        X_test, alpha=alpha, calibrate="conformal"
+    )
+    np.testing.assert_allclose(conformal[0], mu - quantile * sigma)
+    np.testing.assert_allclose(conformal[1], mu + quantile * sigma)
+
+    meta = model.model_.auto_params_["interval_calibration"]
+    assert meta["method"] == "conformal"
+    assert meta["score_count"] == 60
+    assert meta["weighted"] is False
+
+    path = tmp_path / "gaussian_conformal.npz"
+    model.save_model(path)
+    loaded = DarkoRegressor.load_model(path)
+    np.testing.assert_array_equal(
+        loaded.conformal_scores_, model.conformal_scores_
+    )
+    loaded_interval = loaded.predict_interval(
+        X_test, alpha=alpha, calibrate="conformal"
+    )
+    np.testing.assert_array_equal(loaded_interval[0], conformal[0])
+    np.testing.assert_array_equal(loaded_interval[1], conformal[1])
+
+
+def test_gaussian_split_conformal_automatic_holdout_and_misuse_errors():
+    X, y = _make_heteroscedastic(seed=141, n=200)
+    model = DarkoRegressor(
+        **_gaussian_test_params(
+            iterations=4,
+            interval_calibration="conformal",
+        )
+    ).fit(X, y)
+    assert model.interval_calibration_split_["selection_source"] == (
+        "automatic_validation_split"
+    )
+    assert model.conformal_score_count_ > 0
+    assert (
+        model.interval_calibration_split_["calibration_n_samples"]
+        == model.conformal_score_count_
+    )
+
+    plain = DarkoRegressor(
+        **_gaussian_test_params(iterations=2)
+    ).fit(X, y)
+    with pytest.raises(ValueError, match="requires fitting"):
+        plain.predict_interval(X[:4], calibrate="conformal")
+    with pytest.raises(ValueError, match="interval_calibration"):
+        DarkoRegressor(
+            iterations=2,
+            interval_calibration="conformal",
+        ).fit(X, y)
+    with pytest.raises(ValueError, match="only for loss='Gaussian'"):
+        DarkoRegressor(
+            loss="StudentT",
+            tree_mode="lightgbm",
+            iterations=2,
+            interval_calibration="conformal",
+        ).fit(X, y)
+    with pytest.raises(ValueError, match="does not yet support sample weights"):
+        DarkoRegressor(
+            **_gaussian_test_params(
+                iterations=2,
+                interval_calibration="conformal",
+            )
+        ).fit(X, y, sample_weight=np.ones(y.size))
+    with pytest.raises(ValueError, match="incompatible with refit=True"):
+        DarkoRegressor(
+            **_gaussian_test_params(
+                iterations=2,
+                interval_calibration="conformal",
+                refit=True,
+            )
+        ).fit(X, y)
+    with pytest.raises(ValueError, match="at least 4 validation rows"):
+        DarkoRegressor(
+            **_gaussian_test_params(
+                iterations=2,
+                interval_calibration="conformal",
+            )
+        ).fit(X[:-3], y[:-3], eval_set=(X[-3:], y[-3:]))
+    with pytest.raises(ValueError, match="interval_calibration"):
+        model.predict_interval(X[:4], calibrate="bogus")
+    model.conformal_scores_ = model.conformal_scores_[:5]
+    with pytest.raises(ValueError, match="too small"):
+        model.predict_interval(X[:4], alpha=0.1, calibrate="conformal")
+
+
 def test_gaussian_early_stopping_eval_weights_and_refit_params():
     X, y = _make_heteroscedastic(seed=8, n=800)
     Xtr, Xv = X[:500], X[500:]

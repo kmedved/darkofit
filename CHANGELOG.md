@@ -14,6 +14,12 @@
 - Add opt-in `selection_rounds` for capped automatic tree-mode auditions,
   followed by a fresh full-budget fit of the selected mode. The default
   `None` path is unchanged.
+- Add opt-in held-out split-conformal prediction intervals for Gaussian
+  distributional regressors. Calibration rows are isolated from fitting,
+  selection, early stopping, learning-rate probing, and distribution
+  calibration; the finite-sample order statistic, provenance metadata, and
+  safe NPZ round trips are covered. Parametric intervals remain the default,
+  while weighted conformal calibration and full-data refit fail closed.
 - Add the Tier-E `n_ensembles` API for deterministic row or group bootstrap
   bagging. Members select their horizons on OOB rows; regression averages
   predictions, classification soft-votes, SHAP values are averaged, and
