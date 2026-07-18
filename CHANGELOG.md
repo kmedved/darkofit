@@ -20,6 +20,16 @@
   calibration; the finite-sample order statistic, provenance metadata, and
   safe NPZ round trips are covered. Parametric intervals remain the default,
   while weighted conformal calibration and full-data refit fail closed.
+- Complete the frozen 75-coordinate distributional flagship against NGBoost,
+  CatBoost uncertainty, and quantile LightGBM. Conformal DarkoFit has the
+  smallest equal-dataset mean absolute 90%-coverage error (`0.0110`) and
+  `0.9831×` parametric-DarkoFit width on this panel; the result remains
+  descriptive and reports coverage beside width.
+- Re-score the immutable SynthGen df1 artifact against the corrected,
+  later-confirmed outcome ledger. Its agreement moves from 6/9 to 8/9 when
+  exactly the random-strength and fixed-linear development labels are
+  superseded. It is admitted only as a retrospective probe-tier direction
+  finder and remains inadmissible as confirmation or promotion evidence.
 - Add the Tier-E `n_ensembles` API for deterministic row or group bootstrap
   bagging. Members select their horizons on OOB rows; regression averages
   predictions, classification soft-votes, SHAP values are averaged, and

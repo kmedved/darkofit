@@ -1,3 +1,4 @@
+import json
 import math
 import pickle
 
@@ -5,6 +6,7 @@ import numpy as np
 import pytest
 
 from benchmarks import analyze_synthgen_darkofit_ledger as analysis
+from benchmarks import analyze_t9_synthgen_corrected_ledger as corrected
 from benchmarks import run_synthgen_darkofit_ledger as runner
 
 
@@ -219,6 +221,30 @@ def test_frozen_canary_configs_fit_and_report_metadata():
         assert metadata["requested_thread_count"] == 1
         assert metadata["resolved_thread_count"] == 1
         assert metadata["early_stopping_rounds"] == 1
+
+
+def test_t9_corrected_ledger_changes_only_superseded_outcomes():
+    result = corrected.analyze()
+    assert result["original_agreement_count"] == 6
+    assert result["corrected_agreement_count"] == 8
+    assert result["adopted_as_probe_tier_direction_finder"] is True
+    changed = [
+        row["number"]
+        for row in result["decisions"]
+        if row["original_agreement"] != row["agrees"]
+    ]
+    assert changed == [3, 5]
+    assert result["decisions"][5]["agrees"] is False
+    assert result["decisions"][5]["label_superseded"] is False
+    assert all(result["adoption_gates"].values())
+
+
+def test_t9_result_matches_frozen_analyzer():
+    stored = json.loads(
+        corrected.OUTPUT_JSON.read_text(encoding="utf-8")
+    )
+    regenerated = corrected.analyze()
+    assert stored == regenerated
 
 
 class _null:

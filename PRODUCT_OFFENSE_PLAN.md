@@ -21,7 +21,9 @@ the agenda. Companion to the execution ledger in `BEYOND_PARITY_PLAN.md`.*
 | T6b smooth cross features | Complete | exact mechanism + 5% T5 nominee |
 | T5 composite confirmation | Closed | fail-closed on two non-finite-target tasks before candidate wave |
 | T7 CatBoost attribution | Complete | one frozen `(n,p)` depth-policy research candidate |
-| T8–T10 campaigns | Pending | frozen protocols, contamination and power checks |
+| T8 distributional flagship | Complete | 75/75; conformal coverage/width reported jointly |
+| T9 SynthGen corrected ledger | Complete | 8/9; probe-tier direction finder only |
+| T10 sports panel #2 | Pending | fresh protocol and confirmation bed |
 
 Status in this table is operational only. It cannot amend a frozen protocol or
 promote a Tier-D candidate.
@@ -145,11 +147,25 @@ The complete binding policy is `benchmarks/SHIPPING_POLICY.md`.
 - **T8. Distributional flagship.** Benchmark CRPS, coverage, width, and NLL
   against NGBoost, CatBoost uncertainty, and quantile LightGBM. Add
   `predict_interval(..., calibrate="conformal")` as an opt-in, evaluated
-  coverage-first without hiding interval width.
+  coverage-first without hiding interval width. The frozen 75-coordinate
+  campaign completed without skips. Across five equally weighted datasets,
+  conformal DarkoFit had the smallest mean absolute 90%-coverage error
+  (`0.0110`) while its geometric-mean width was `0.9831×` the parametric
+  DarkoFit interval. The result is descriptive Tier-E evidence, not a default
+  change or conditional-coverage claim; all per-dataset NLL, CRPS, coverage,
+  width, and timing values remain adjacent in the
+  [`result`](benchmarks/t8_distributional_flagship_result.md).
 - **T9. SynthGen corrected-ledger re-backtest.** Score the instrument against
   the corrected fresh-panel outcome ledger. It may become a probe-tier
   direction finder only if it meets its frozen adoption rule; it never
-  substitutes for confirmation.
+  substitutes for confirmation. The immutable synthetic artifact reproduced
+  the original 6/9 scorecard, then reached 8/9 when exactly two later
+  confirmation outcomes superseded their development labels:
+  `random_strength=0.5` failed the fresh sports panel and fixed local linear
+  leaves regressed on the fresh smooth/process panel. SynthGen is therefore
+  adopted only to rank cheap development probes. The explicitly retrospective
+  [`result`](benchmarks/t9_synthgen_corrected_ledger_result.md) cannot kill,
+  confirm, promote, or justify a product decision.
 - **T10. Sports panel #2.** Build a fresh multi-season/multi-target
   confirmation bed for the sports profile. It is the only route by which
   ensemble/random-strength composites can become a sports automatic policy.

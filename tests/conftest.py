@@ -28,6 +28,7 @@ CAMPAIGN_EXACT = frozenset({
     "test_synthgen_darkofit_ledger.py",
     "test_synthgen_harvest.py",
     "test_synthgen.py",
+    "test_t8_distributional_flagship.py",
     "test_vector_fit_profile.py",
 })
 CAMPAIGN_PREFIXES = (

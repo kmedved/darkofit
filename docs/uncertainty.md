@@ -84,6 +84,16 @@ would require a different coverage argument. Marginal coverage is not a
 conditional-coverage guarantee, and interval width must be reported alongside
 coverage.
 
+The frozen five-dataset, three-seed T8 comparison found an equal-dataset mean
+absolute 90%-coverage error of `0.0110` for the conformal interval versus
+`0.0129` for DarkoFit's parametric interval, `0.0824` for NGBoost Normal,
+`0.0473` for CatBoost uncertainty, and `0.0509` for quantile LightGBM. The
+conformal interval's geometric-mean width was `0.9831×` the DarkoFit
+parametric width. Read the complete
+[coverage-and-width table](https://github.com/kmedved/darkofit/blob/main/benchmarks/t8_distributional_flagship_result.md):
+the evidence is marginal coverage on this exact panel, not conditional
+coverage or a default-policy nomination.
+
 ## Current limits
 
 Distributional models require `tree_mode="lightgbm"`. GOSS/MVS,

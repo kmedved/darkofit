@@ -403,6 +403,26 @@ internal target transform.
 | CatBoost `RMSEWithUncertainty` | 1.058 | 1.056 | 0.410 | 0.909 | 0.8 |
 | LightGBM twin-model variance hack | 1.644 | 1.630 | 0.419 | 0.619 | 3.5 |
 
+The newer frozen T8 campaign adds heavy-tailed synthetic data and three public
+real datasets, with three seeds and a quantile-LightGBM baseline. Its
+coverage-first summary keeps width visible:
+
+| model | mean cov90 | mean absolute coverage gap | width / conformal |
+| --- | ---: | ---: | ---: |
+| DarkoFit Gaussian + affine calibration | 0.9129 | 0.0129 | 1.0172× |
+| **DarkoFit Gaussian + split conformal** | **0.9103** | **0.0110** | 1.0000× |
+| NGBoost Normal | 0.8255 | 0.0824 | 0.7487× |
+| CatBoost `RMSEWithUncertainty` | 0.8691 | 0.0473 | 0.8334× |
+| LightGBM quantile pair | 0.8584 | 0.0509 | 0.9850× |
+
+The conformal interval was also `0.9831×` as wide geometrically as DarkoFit's
+parametric interval. These are equal-dataset descriptive measurements, not a
+conditional-coverage or universal-superiority claim. NLL and CRPS are
+reported per dataset only for models that expose a Gaussian distribution;
+see the complete
+[`T8 result`](benchmarks/t8_distributional_flagship_result.md) and
+[`frozen protocol`](benchmarks/t8_distributional_flagship_protocol.md).
+
 Command and per-seed rows live in
 [BENCHMARK_NOTES.md](BENCHMARK_NOTES.md) and
 [benchmarks/distributional_summary.md](benchmarks/distributional_summary.md);
