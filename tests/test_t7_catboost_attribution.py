@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 import pandas as pd
 
 from benchmarks import run_t7_catboost_attribution as runner
@@ -51,3 +54,23 @@ def test_catboost_warmup_target_is_nonconstant():
     import numpy as np
 
     assert runner._warmup() > 0
+
+
+def test_t7_artifacts_are_hash_bound_and_nonpromotional():
+    root = Path(__file__).resolve().parents[1]
+    raw = json.loads(
+        (root / "benchmarks" / "t7_catboost_attribution_raw.json").read_text()
+    )
+    raw_hash = raw.pop("raw_sha256")
+    assert runner._json_sha256(raw) == raw_hash
+    summary = json.loads(
+        (
+            root / "benchmarks" / "t7_catboost_attribution_summary.json"
+        ).read_text()
+    )
+    summary_hash = summary.pop("summary_sha256")
+    from benchmarks import analyze_t7_catboost_attribution as analyzer
+
+    assert analyzer._json_sha256(summary) == summary_hash
+    assert summary["frozen_research_candidates"] == ["depth_by_n_p"]
+    assert summary["default_change_authorized"] is False

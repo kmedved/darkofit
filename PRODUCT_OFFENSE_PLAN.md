@@ -20,7 +20,8 @@ the agenda. Companion to the execution ledger in `BEYOND_PARITY_PLAN.md`.*
 | T6a RSSI diagnosis | Complete | `benchmarks/rssi_linear_leaf_diagnosis_result.md` |
 | T6b smooth cross features | Complete | exact mechanism + 5% T5 nominee |
 | T5 composite confirmation | Closed | fail-closed on two non-finite-target tasks before candidate wave |
-| T7–T10 campaigns | Pending | frozen protocols, contamination and power checks |
+| T7 CatBoost attribution | Complete | one frozen `(n,p)` depth-policy research candidate |
+| T8–T10 campaigns | Pending | frozen protocols, contamination and power checks |
 
 Status in this table is operational only. It cannot amend a frozen protocol or
 promote a Tier-D candidate.
@@ -134,7 +135,13 @@ The complete binding policy is `benchmarks/SHIPPING_POLICY.md`.
 - **T7. CatBoost attribution.** On development data, isolate ordered
   boosting, border count, leaf estimation/backtracking, combinations, and
   depth policy by `(n, p)`. The output is an attribution table and at most
-  three frozen candidates, not a post-hoc default change.
+  three frozen candidates, not a post-hoc default change. The complete
+  216-fit attribution rejected Ordered boosting, 128 borders, extra leaf
+  steps/backtracking, and CTR complexity 2 as automatic explanations. The
+  predeclared samples-per-feature depth policy improved CatBoost's
+  equal-dataset RMSE by 3.78% with three wins, no losses, and five exact
+  defaults; it is frozen as the sole research candidate. See
+  `benchmarks/t7_catboost_attribution_result.md`.
 - **T8. Distributional flagship.** Benchmark CRPS, coverage, width, and NLL
   against NGBoost, CatBoost uncertainty, and quantile LightGBM. Add
   `predict_interval(..., calibrate="conformal")` as an opt-in, evaluated

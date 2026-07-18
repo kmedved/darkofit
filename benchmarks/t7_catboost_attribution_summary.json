@@ -1,0 +1,3246 @@
+{
+  "analyzer_sha256": "f437a451200c55404c6e1db118a01bbbf612d93ad3c78854f108e706b3f238ef",
+  "candidate_contrasts": {
+    "border_128": {
+      "denominator": "default",
+      "equal_dataset_test_ratio": 1.0199294363567424,
+      "equal_dataset_validation_ratio": 1.0009875448264138,
+      "least_favorable_loo_test_ratio": 1.0267954544325208,
+      "leave_one_out": [
+        {
+          "omitted_lineage": "auction_verification",
+          "ratio": 1.0228087388173737
+        },
+        {
+          "omitted_lineage": "video_transcoding",
+          "ratio": 1.0267954544325208
+        },
+        {
+          "omitted_lineage": "fps_benchmark",
+          "ratio": 1.0228087388173737
+        },
+        {
+          "omitted_lineage": "cars_ctr23",
+          "ratio": 1.0235017599324974
+        },
+        {
+          "omitted_lineage": "diamonds",
+          "ratio": 1.0207469768391915
+        },
+        {
+          "omitted_lineage": "book_price",
+          "ratio": 1.022944233446368
+        },
+        {
+          "omitted_lineage": "apparel_price",
+          "ratio": 1.0228087388173737
+        },
+        {
+          "omitted_lineage": "munich_rent",
+          "ratio": 0.997321376628076
+        }
+      ],
+      "losses": 2,
+      "numerator": "border_128",
+      "per_task": {
+        "apparel_price": {
+          "dataset_name": "ae_price_prediction",
+          "selected_arms": [
+            "border_128",
+            "border_128",
+            "border_128"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 363375,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "auction_verification": {
+          "dataset_name": "auction_verification",
+          "selected_arms": [
+            "border_128",
+            "border_128",
+            "border_128"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 361236,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "book_price": {
+          "dataset_name": "bookprice_prediction",
+          "selected_arms": [
+            "border_128",
+            "border_128",
+            "border_128"
+          ],
+          "split_test_ratios": [
+            0.9977947435721827,
+            1.0012915482186213,
+            0.9981369637738485
+          ],
+          "task_id": 363372,
+          "test_ratio": 0.9990731795851056,
+          "validation_ratio": 0.9949888016718673
+        },
+        "cars_ctr23": {
+          "dataset_name": "cars",
+          "selected_arms": [
+            "border_128",
+            "border_128",
+            "border_128"
+          ],
+          "split_test_ratios": [
+            0.9666836483110774,
+            0.9862648823112796,
+            1.0340573305331033
+          ],
+          "task_id": 361622,
+          "test_ratio": 0.9952698619023639,
+          "validation_ratio": 1.0022109336469192
+        },
+        "diamonds": {
+          "dataset_name": "diamonds",
+          "selected_arms": [
+            "border_128",
+            "border_128",
+            "border_128"
+          ],
+          "split_test_ratios": [
+            1.009680292726415,
+            1.0216141623061055,
+            1.0114213002420898
+          ],
+          "task_id": 363631,
+          "test_ratio": 1.0142249576928037,
+          "validation_ratio": 1.0079547132110938
+        },
+        "fps_benchmark": {
+          "dataset_name": "fps_benchmark",
+          "selected_arms": [
+            "border_128",
+            "border_128",
+            "border_128"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 361268,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "munich_rent": {
+          "dataset_name": "munich-rent-index-1999",
+          "selected_arms": [
+            "border_128",
+            "border_128",
+            "border_128"
+          ],
+          "split_test_ratios": [
+            1.2916063151872603,
+            1.2167684520969373,
+            1.0809540772358162
+          ],
+          "task_id": 363471,
+          "test_ratio": 1.1932051383442064,
+          "validation_ratio": 1.0242119053899954
+        },
+        "video_transcoding": {
+          "dataset_name": "video_transcoding",
+          "selected_arms": [
+            "border_128",
+            "border_128",
+            "border_128"
+          ],
+          "split_test_ratios": [
+            0.971074237532164,
+            0.9552365980002573,
+            0.9934750341230719
+          ],
+          "task_id": 361252,
+          "test_ratio": 0.9731357956413685,
+          "validation_ratio": 0.9790868555171897
+        }
+      },
+      "ties": 3,
+      "wins": 3,
+      "worst_split_test_ratio": 1.2916063151872603,
+      "worst_task_test_ratio": 1.1932051383442064
+    },
+    "ctr_complexity_2": {
+      "denominator": "default",
+      "equal_dataset_test_ratio": 1.0079716907845626,
+      "equal_dataset_validation_ratio": 1.005857159231965,
+      "least_favorable_loo_test_ratio": 1.0096018727924612,
+      "leave_one_out": [
+        {
+          "omitted_lineage": "auction_verification",
+          "ratio": 1.0096018727924612
+        },
+        {
+          "omitted_lineage": "video_transcoding",
+          "ratio": 1.0090497639718292
+        },
+        {
+          "omitted_lineage": "fps_benchmark",
+          "ratio": 1.0006243793891048
+        },
+        {
+          "omitted_lineage": "cars_ctr23",
+          "ratio": 1.009115679561867
+        },
+        {
+          "omitted_lineage": "diamonds",
+          "ratio": 1.008909247048893
+        },
+        {
+          "omitted_lineage": "book_price",
+          "ratio": 1.0091856864644817
+        },
+        {
+          "omitted_lineage": "apparel_price",
+          "ratio": 1.0082025093283684
+        },
+        {
+          "omitted_lineage": "munich_rent",
+          "ratio": 1.009115679561867
+        }
+      ],
+      "losses": 4,
+      "numerator": "ctr_complexity_2",
+      "per_task": {
+        "apparel_price": {
+          "dataset_name": "ae_price_prediction",
+          "selected_arms": [
+            "ctr_complexity_2",
+            "ctr_complexity_2",
+            "ctr_complexity_2"
+          ],
+          "split_test_ratios": [
+            1.007499755190327,
+            1.0071540732928919,
+            1.0044213190990736
+          ],
+          "task_id": 363375,
+          "test_ratio": 1.0063574399255906,
+          "validation_ratio": 1.0086500272839338
+        },
+        "auction_verification": {
+          "dataset_name": "auction_verification",
+          "selected_arms": [
+            "ctr_complexity_2",
+            "ctr_complexity_2",
+            "ctr_complexity_2"
+          ],
+          "split_test_ratios": [
+            1.0108368924106998,
+            1.0030904338383593,
+            0.9763055747139847
+          ],
+          "task_id": 361236,
+          "test_ratio": 0.9966338813346677,
+          "validation_ratio": 0.9874257341535694
+        },
+        "book_price": {
+          "dataset_name": "bookprice_prediction",
+          "selected_arms": [
+            "ctr_complexity_2",
+            "ctr_complexity_2",
+            "ctr_complexity_2"
+          ],
+          "split_test_ratios": [
+            0.9976230376764752,
+            1.000617199483414,
+            1.0003060153906889
+          ],
+          "task_id": 363372,
+          "test_ratio": 0.9995145131830946,
+          "validation_ratio": 0.9960226848053437
+        },
+        "cars_ctr23": {
+          "dataset_name": "cars",
+          "selected_arms": [
+            "ctr_complexity_2",
+            "ctr_complexity_2",
+            "ctr_complexity_2"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 361622,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "diamonds": {
+          "dataset_name": "diamonds",
+          "selected_arms": [
+            "ctr_complexity_2",
+            "ctr_complexity_2",
+            "ctr_complexity_2"
+          ],
+          "split_test_ratios": [
+            1.0026446768633883,
+            0.9993943993051516,
+            1.0022635181667172
+          ],
+          "task_id": 363631,
+          "test_ratio": 1.0014331466354602,
+          "validation_ratio": 1.0043622739624911
+        },
+        "fps_benchmark": {
+          "dataset_name": "fps_benchmark",
+          "selected_arms": [
+            "ctr_complexity_2",
+            "ctr_complexity_2",
+            "ctr_complexity_2"
+          ],
+          "split_test_ratios": [
+            0.9954128385235365,
+            1.0796606383236367,
+            1.1111606554036622
+          ],
+          "task_id": 361268,
+          "test_ratio": 1.0609358393186512,
+          "validation_ratio": 1.048305802547432
+        },
+        "munich_rent": {
+          "dataset_name": "munich-rent-index-1999",
+          "selected_arms": [
+            "ctr_complexity_2",
+            "ctr_complexity_2",
+            "ctr_complexity_2"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 363471,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "video_transcoding": {
+          "dataset_name": "video_transcoding",
+          "selected_arms": [
+            "ctr_complexity_2",
+            "ctr_complexity_2",
+            "ctr_complexity_2"
+          ],
+          "split_test_ratios": [
+            1.0123433615054291,
+            0.9750967443979198,
+            1.0144256117342931
+          ],
+          "task_id": 361252,
+          "test_ratio": 1.0004573605588514,
+          "validation_ratio": 1.003224048259924
+        }
+      },
+      "ties": 2,
+      "wins": 2,
+      "worst_split_test_ratio": 1.1111606554036622,
+      "worst_task_test_ratio": 1.0609358393186512
+    },
+    "depth_by_n_p": {
+      "denominator": "default",
+      "equal_dataset_test_ratio": 0.9622480701913496,
+      "equal_dataset_validation_ratio": 0.9674783648073251,
+      "least_favorable_loo_test_ratio": 0.9980293652577985,
+      "leave_one_out": [
+        {
+          "omitted_lineage": "auction_verification",
+          "ratio": 0.9569725582826413
+        },
+        {
+          "omitted_lineage": "video_transcoding",
+          "ratio": 0.9980293652577985
+        },
+        {
+          "omitted_lineage": "fps_benchmark",
+          "ratio": 0.9569725582826413
+        },
+        {
+          "omitted_lineage": "cars_ctr23",
+          "ratio": 0.9586631784110287
+        },
+        {
+          "omitted_lineage": "diamonds",
+          "ratio": 0.9571711543248573
+        },
+        {
+          "omitted_lineage": "book_price",
+          "ratio": 0.9569725582826413
+        },
+        {
+          "omitted_lineage": "apparel_price",
+          "ratio": 0.9569725582826413
+        },
+        {
+          "omitted_lineage": "munich_rent",
+          "ratio": 0.9569725582826413
+        }
+      ],
+      "losses": 0,
+      "numerator": "depth_by_n_p",
+      "per_task": {
+        "apparel_price": {
+          "dataset_name": "ae_price_prediction",
+          "selected_arms": [
+            "default",
+            "default",
+            "default"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 363375,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "auction_verification": {
+          "dataset_name": "auction_verification",
+          "selected_arms": [
+            "default",
+            "default",
+            "default"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 361236,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "book_price": {
+          "dataset_name": "bookprice_prediction",
+          "selected_arms": [
+            "default",
+            "default",
+            "default"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 363372,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "cars_ctr23": {
+          "dataset_name": "cars",
+          "selected_arms": [
+            "depth_4",
+            "depth_4",
+            "depth_4"
+          ],
+          "split_test_ratios": [
+            0.9903643875911714,
+            0.9816878362266761,
+            0.9911371714177656
+          ],
+          "task_id": 361622,
+          "test_ratio": 0.9877204897083339,
+          "validation_ratio": 0.9909349636399375
+        },
+        "diamonds": {
+          "dataset_name": "diamonds",
+          "selected_arms": [
+            "depth_8",
+            "depth_8",
+            "depth_8"
+          ],
+          "split_test_ratios": [
+            0.9949855625525893,
+            0.9933094598533027,
+            1.007409812155724
+          ],
+          "task_id": 363631,
+          "test_ratio": 0.9985485278363267,
+          "validation_ratio": 1.0006315159739745
+        },
+        "fps_benchmark": {
+          "dataset_name": "fps_benchmark",
+          "selected_arms": [
+            "default",
+            "default",
+            "default"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 361268,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "munich_rent": {
+          "dataset_name": "munich-rent-index-1999",
+          "selected_arms": [
+            "default",
+            "default",
+            "default"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 363471,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "video_transcoding": {
+          "dataset_name": "video_transcoding",
+          "selected_arms": [
+            "depth_8",
+            "depth_8",
+            "depth_8"
+          ],
+          "split_test_ratios": [
+            0.7641827996662903,
+            0.7101521042005204,
+            0.7626597344281193
+          ],
+          "task_id": 361252,
+          "test_ratio": 0.7452348422976101,
+          "validation_ratio": 0.7741244167784225
+        }
+      },
+      "ties": 5,
+      "wins": 3,
+      "worst_split_test_ratio": 1.007409812155724,
+      "worst_task_test_ratio": 1.0
+    },
+    "leaf10_any_improvement": {
+      "denominator": "default",
+      "equal_dataset_test_ratio": 1.0180338593274352,
+      "equal_dataset_validation_ratio": 1.0169318863695544,
+      "least_favorable_loo_test_ratio": 1.0516206276041442,
+      "leave_one_out": [
+        {
+          "omitted_lineage": "auction_verification",
+          "ratio": 1.0349306728077672
+        },
+        {
+          "omitted_lineage": "video_transcoding",
+          "ratio": 0.9947253131687165
+        },
+        {
+          "omitted_lineage": "fps_benchmark",
+          "ratio": 0.9893973658143268
+        },
+        {
+          "omitted_lineage": "cars_ctr23",
+          "ratio": 1.0184734490690697
+        },
+        {
+          "omitted_lineage": "diamonds",
+          "ratio": 1.018896050787558
+        },
+        {
+          "omitted_lineage": "book_price",
+          "ratio": 1.0212951609204615
+        },
+        {
+          "omitted_lineage": "apparel_price",
+          "ratio": 1.016301677172689
+        },
+        {
+          "omitted_lineage": "munich_rent",
+          "ratio": 1.0516206276041442
+        }
+      ],
+      "losses": 5,
+      "numerator": "leaf10_any_improvement",
+      "per_task": {
+        "apparel_price": {
+          "dataset_name": "ae_price_prediction",
+          "selected_arms": [
+            "leaf10_any_improvement",
+            "leaf10_any_improvement",
+            "leaf10_any_improvement"
+          ],
+          "split_test_ratios": [
+            1.0365446441000061,
+            1.0316761451853602,
+            1.022554479317965
+          ],
+          "task_id": 363375,
+          "test_ratio": 1.0302420819601648,
+          "validation_ratio": 1.028112191087746
+        },
+        "auction_verification": {
+          "dataset_name": "auction_verification",
+          "selected_arms": [
+            "leaf10_any_improvement",
+            "leaf10_any_improvement",
+            "leaf10_any_improvement"
+          ],
+          "split_test_ratios": [
+            0.9476148898701485,
+            0.9574371090997482,
+            0.8230283249943832
+          ],
+          "task_id": 361236,
+          "test_ratio": 0.9072332766536858,
+          "validation_ratio": 0.8452569485833337
+        },
+        "book_price": {
+          "dataset_name": "bookprice_prediction",
+          "selected_arms": [
+            "leaf10_any_improvement",
+            "leaf10_any_improvement",
+            "leaf10_any_improvement"
+          ],
+          "split_test_ratios": [
+            0.9959732254526816,
+            0.99400158021979,
+            0.9965104301103912
+          ],
+          "task_id": 363372,
+          "test_ratio": 0.9954944940343452,
+          "validation_ratio": 0.9964188525115447
+        },
+        "cars_ctr23": {
+          "dataset_name": "cars",
+          "selected_arms": [
+            "leaf10_any_improvement",
+            "leaf10_any_improvement",
+            "leaf10_any_improvement"
+          ],
+          "split_test_ratios": [
+            1.0066712423539117,
+            1.012638323047577,
+            1.0256693476726264
+          ],
+          "task_id": 361622,
+          "test_ratio": 1.0149620391072347,
+          "validation_ratio": 1.0132308976892592
+        },
+        "diamonds": {
+          "dataset_name": "diamonds",
+          "selected_arms": [
+            "leaf10_any_improvement",
+            "leaf10_any_improvement",
+            "leaf10_any_improvement"
+          ],
+          "split_test_ratios": [
+            1.0130547514945503,
+            1.0115925915890311,
+            1.0114101987088358
+          ],
+          "task_id": 363631,
+          "test_ratio": 1.0120189130279433,
+          "validation_ratio": 1.007514595088265
+        },
+        "fps_benchmark": {
+          "dataset_name": "fps_benchmark",
+          "selected_arms": [
+            "leaf10_any_improvement",
+            "leaf10_any_improvement",
+            "leaf10_any_improvement"
+          ],
+          "split_test_ratios": [
+            1.2630898059157447,
+            1.213038065955858,
+            1.2537153394936564
+          ],
+          "task_id": 361268,
+          "test_ratio": 1.2430898862651552,
+          "validation_ratio": 1.2398693598859851
+        },
+        "munich_rent": {
+          "dataset_name": "munich-rent-index-1999",
+          "selected_arms": [
+            "leaf10_any_improvement",
+            "leaf10_any_improvement",
+            "leaf10_any_improvement"
+          ],
+          "split_test_ratios": [
+            0.6545523136120222,
+            0.9607486524917214,
+            0.8485905223682003
+          ],
+          "task_id": 363471,
+          "test_ratio": 0.8111181280421524,
+          "validation_ratio": 0.9051001271007828
+        },
+        "video_transcoding": {
+          "dataset_name": "video_transcoding",
+          "selected_arms": [
+            "leaf10_any_improvement",
+            "leaf10_any_improvement",
+            "leaf10_any_improvement"
+          ],
+          "split_test_ratios": [
+            1.208570176384053,
+            1.159303260321433,
+            1.2247793321805107
+          ],
+          "task_id": 361252,
+          "test_ratio": 1.1972244930741869,
+          "validation_ratio": 1.1530055596611755
+        }
+      },
+      "ties": 0,
+      "wins": 3,
+      "worst_split_test_ratio": 1.2630898059157447,
+      "worst_task_test_ratio": 1.2430898862651552
+    },
+    "leaf10_no_backtracking": {
+      "denominator": "default",
+      "equal_dataset_test_ratio": 1.0198398748756436,
+      "equal_dataset_validation_ratio": 1.0249080348280233,
+      "least_favorable_loo_test_ratio": 1.057917082371671,
+      "leave_one_out": [
+        {
+          "omitted_lineage": "auction_verification",
+          "ratio": 1.0295328879505852
+        },
+        {
+          "omitted_lineage": "video_transcoding",
+          "ratio": 0.9970877448347335
+        },
+        {
+          "omitted_lineage": "fps_benchmark",
+          "ratio": 0.9921857341767922
+        },
+        {
+          "omitted_lineage": "cars_ctr23",
+          "ratio": 1.020804610125355
+        },
+        {
+          "omitted_lineage": "diamonds",
+          "ratio": 1.0208600943460595
+        },
+        {
+          "omitted_lineage": "book_price",
+          "ratio": 1.02323272744149
+        },
+        {
+          "omitted_lineage": "apparel_price",
+          "ratio": 1.0184845010689016
+        },
+        {
+          "omitted_lineage": "munich_rent",
+          "ratio": 1.057917082371671
+        }
+      ],
+      "losses": 5,
+      "numerator": "leaf10_no_backtracking",
+      "per_task": {
+        "apparel_price": {
+          "dataset_name": "ae_price_prediction",
+          "selected_arms": [
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking"
+          ],
+          "split_test_ratios": [
+            1.03491167944672,
+            1.0320381850150062,
+            1.0212351544444873
+          ],
+          "task_id": 363375,
+          "test_ratio": 1.0293781297000795,
+          "validation_ratio": 1.0282970807466416
+        },
+        "auction_verification": {
+          "dataset_name": "auction_verification",
+          "selected_arms": [
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking"
+          ],
+          "split_test_ratios": [
+            0.9724020578061678,
+            0.9517692692536983,
+            0.9396053092304796
+          ],
+          "task_id": 361236,
+          "test_ratio": 0.9544964917842966,
+          "validation_ratio": 0.8793174938729288
+        },
+        "book_price": {
+          "dataset_name": "bookprice_prediction",
+          "selected_arms": [
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking"
+          ],
+          "split_test_ratios": [
+            0.9921452731735579,
+            0.999835485175915,
+            0.9972431034594467
+          ],
+          "task_id": 363372,
+          "test_ratio": 0.996402828769497,
+          "validation_ratio": 0.995191695814859
+        },
+        "cars_ctr23": {
+          "dataset_name": "cars",
+          "selected_arms": [
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking"
+          ],
+          "split_test_ratios": [
+            1.009702138398232,
+            1.0007132472653144,
+            1.0291287761685404
+          ],
+          "task_id": 361622,
+          "test_ratio": 1.0131122088078364,
+          "validation_ratio": 1.009497192842495
+        },
+        "diamonds": {
+          "dataset_name": "diamonds",
+          "selected_arms": [
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking"
+          ],
+          "split_test_ratios": [
+            1.014720810625472,
+            1.0089578806212174,
+            1.0145123614777078
+          ],
+          "task_id": 363631,
+          "test_ratio": 1.0127268298123078,
+          "validation_ratio": 1.007257412017302
+        },
+        "fps_benchmark": {
+          "dataset_name": "fps_benchmark",
+          "selected_arms": [
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking"
+          ],
+          "split_test_ratios": [
+            1.271576104195286,
+            1.2422380881354833,
+            1.1961013465761887
+          ],
+          "task_id": 361268,
+          "test_ratio": 1.2362464554636061,
+          "validation_ratio": 1.2490571194844668
+        },
+        "munich_rent": {
+          "dataset_name": "munich-rent-index-1999",
+          "selected_arms": [
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking"
+          ],
+          "split_test_ratios": [
+            0.5895905199756548,
+            0.9606414828650416,
+            0.8673046395115536
+          ],
+          "task_id": 363471,
+          "test_ratio": 0.7890317865953848,
+          "validation_ratio": 0.915744123660542
+        },
+        "video_transcoding": {
+          "dataset_name": "video_transcoding",
+          "selected_arms": [
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking"
+          ],
+          "split_test_ratios": [
+            1.1888587131851922,
+            1.1778758500498534,
+            1.2165697551102639
+          ],
+          "task_id": 361252,
+          "test_ratio": 1.1943242743722662,
+          "validation_ratio": 1.1633384855267483
+        }
+      },
+      "ties": 0,
+      "wins": 3,
+      "worst_split_test_ratio": 1.271576104195286,
+      "worst_task_test_ratio": 1.2362464554636061
+    },
+    "ordered": {
+      "denominator": "default",
+      "equal_dataset_test_ratio": 1.1715453856690115,
+      "equal_dataset_validation_ratio": 1.1278828569449324,
+      "least_favorable_loo_test_ratio": 1.1999404779216574,
+      "leave_one_out": [
+        {
+          "omitted_lineage": "auction_verification",
+          "ratio": 1.1618691583583929
+        },
+        {
+          "omitted_lineage": "video_transcoding",
+          "ratio": 1.181810319591245
+        },
+        {
+          "omitted_lineage": "fps_benchmark",
+          "ratio": 1.120640893423388
+        },
+        {
+          "omitted_lineage": "cars_ctr23",
+          "ratio": 1.1999404779216574
+        },
+        {
+          "omitted_lineage": "diamonds",
+          "ratio": 1.1935858166928026
+        },
+        {
+          "omitted_lineage": "book_price",
+          "ratio": 1.1991542649637015
+        },
+        {
+          "omitted_lineage": "apparel_price",
+          "ratio": 1.1850413668546136
+        },
+        {
+          "omitted_lineage": "munich_rent",
+          "ratio": 1.1331295215414041
+        }
+      ],
+      "losses": 6,
+      "numerator": "ordered",
+      "per_task": {
+        "apparel_price": {
+          "dataset_name": "ae_price_prediction",
+          "selected_arms": [
+            "ordered",
+            "ordered",
+            "ordered"
+          ],
+          "split_test_ratios": [
+            1.0959129740877442,
+            1.0759957733625547,
+            1.0720831451024175
+          ],
+          "task_id": 363375,
+          "test_ratio": 1.0812804910952158,
+          "validation_ratio": 1.082387190964421
+        },
+        "auction_verification": {
+          "dataset_name": "auction_verification",
+          "selected_arms": [
+            "ordered",
+            "ordered",
+            "ordered"
+          ],
+          "split_test_ratios": [
+            1.3260602592355264,
+            1.1291264031116124,
+            1.2782367805048416
+          ],
+          "task_id": 361236,
+          "test_ratio": 1.2415733373223525,
+          "validation_ratio": 1.1591981701326295
+        },
+        "book_price": {
+          "dataset_name": "bookprice_prediction",
+          "selected_arms": [
+            "ordered",
+            "ordered",
+            "ordered"
+          ],
+          "split_test_ratios": [
+            1.0147778154291265,
+            0.9864529612134743,
+            0.9849071672394428
+          ],
+          "task_id": 363372,
+          "test_ratio": 0.9952852035824602,
+          "validation_ratio": 0.9938288108412381
+        },
+        "cars_ctr23": {
+          "dataset_name": "cars",
+          "selected_arms": [
+            "ordered",
+            "ordered",
+            "ordered"
+          ],
+          "split_test_ratios": [
+            0.9871642845907841,
+            0.9819185776942014,
+            1.0032291390242596
+          ],
+          "task_id": 361622,
+          "test_ratio": 0.9907293211067395,
+          "validation_ratio": 0.9795177557445529
+        },
+        "diamonds": {
+          "dataset_name": "diamonds",
+          "selected_arms": [
+            "ordered",
+            "ordered",
+            "ordered"
+          ],
+          "split_test_ratios": [
+            1.0219934925315863,
+            1.029116059140382,
+            1.0336647430381682
+          ],
+          "task_id": 363631,
+          "test_ratio": 1.028246870435057,
+          "validation_ratio": 1.0266801354466515
+        },
+        "fps_benchmark": {
+          "dataset_name": "fps_benchmark",
+          "selected_arms": [
+            "ordered",
+            "ordered",
+            "ordered"
+          ],
+          "split_test_ratios": [
+            1.833252432391738,
+            1.4849355882765527,
+            1.5013887238130827
+          ],
+          "task_id": 361268,
+          "test_ratio": 1.5988498424830884,
+          "validation_ratio": 1.6092148822960268
+        },
+        "munich_rent": {
+          "dataset_name": "munich-rent-index-1999",
+          "selected_arms": [
+            "ordered",
+            "ordered",
+            "ordered"
+          ],
+          "split_test_ratios": [
+            1.5885043210620444,
+            1.5608093433357642,
+            1.3062007489947354
+          ],
+          "task_id": 363471,
+          "test_ratio": 1.4795037208597672,
+          "validation_ratio": 1.1944143374884835
+        },
+        "video_transcoding": {
+          "dataset_name": "video_transcoding",
+          "selected_arms": [
+            "ordered",
+            "ordered",
+            "ordered"
+          ],
+          "split_test_ratios": [
+            1.1292887910011007,
+            1.0353750463956,
+            1.1450192288693652
+          ],
+          "task_id": 361252,
+          "test_ratio": 1.1021443969059888,
+          "validation_ratio": 1.0865345274272622
+        }
+      },
+      "ties": 0,
+      "wins": 2,
+      "worst_split_test_ratio": 1.833252432391738,
+      "worst_task_test_ratio": 1.5988498424830884
+    }
+  },
+  "candidate_gate_results": [
+    {
+      "candidate": "ordered",
+      "gates": {
+        "least_favorable_loo_at_most_1": false,
+        "test_ratio_at_most_0_995": false,
+        "validation_ratio_at_most_1_005": false,
+        "worst_task_at_most_1_02": false
+      },
+      "passes": false,
+      "test_ratio": 1.1715453856690115
+    },
+    {
+      "candidate": "border_128",
+      "gates": {
+        "least_favorable_loo_at_most_1": false,
+        "test_ratio_at_most_0_995": false,
+        "validation_ratio_at_most_1_005": true,
+        "worst_task_at_most_1_02": false
+      },
+      "passes": false,
+      "test_ratio": 1.0199294363567424
+    },
+    {
+      "candidate": "leaf10_no_backtracking",
+      "gates": {
+        "least_favorable_loo_at_most_1": false,
+        "test_ratio_at_most_0_995": false,
+        "validation_ratio_at_most_1_005": false,
+        "worst_task_at_most_1_02": false
+      },
+      "passes": false,
+      "test_ratio": 1.0198398748756436
+    },
+    {
+      "candidate": "leaf10_any_improvement",
+      "gates": {
+        "least_favorable_loo_at_most_1": false,
+        "test_ratio_at_most_0_995": false,
+        "validation_ratio_at_most_1_005": false,
+        "worst_task_at_most_1_02": false
+      },
+      "passes": false,
+      "test_ratio": 1.0180338593274352
+    },
+    {
+      "candidate": "ctr_complexity_2",
+      "gates": {
+        "least_favorable_loo_at_most_1": false,
+        "test_ratio_at_most_0_995": false,
+        "validation_ratio_at_most_1_005": false,
+        "worst_task_at_most_1_02": false
+      },
+      "passes": false,
+      "test_ratio": 1.0079716907845626
+    },
+    {
+      "candidate": "depth_by_n_p",
+      "gates": {
+        "least_favorable_loo_at_most_1": true,
+        "test_ratio_at_most_0_995": true,
+        "validation_ratio_at_most_1_005": true,
+        "worst_task_at_most_1_02": true
+      },
+      "passes": true,
+      "test_ratio": 0.9622480701913496
+    }
+  ],
+  "candidate_limit": 3,
+  "catboost_default_resolution": {
+    "apparel_price": {
+      "dataset_name": "ae_price_prediction",
+      "resolved_params_by_fold": [
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.06364600360393524,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        },
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.06364600360393524,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        },
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.06364600360393524,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        }
+      ],
+      "task_id": 363375
+    },
+    "auction_verification": {
+      "dataset_name": "auction_verification",
+      "resolved_params_by_fold": [
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.04351300001144409,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        },
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.04351300001144409,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        },
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.04351300001144409,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        }
+      ],
+      "task_id": 361236
+    },
+    "book_price": {
+      "dataset_name": "bookprice_prediction",
+      "resolved_params_by_fold": [
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.05011000111699104,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        },
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.05011000111699104,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        },
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.05011000111699104,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        }
+      ],
+      "task_id": 363372
+    },
+    "cars_ctr23": {
+      "dataset_name": "cars",
+      "resolved_params_by_fold": [
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.03754600137472153,
+          "max_ctr_complexity": null,
+          "random_seed": 4
+        },
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.03754600137472153,
+          "max_ctr_complexity": null,
+          "random_seed": 4
+        },
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.03754600137472153,
+          "max_ctr_complexity": null,
+          "random_seed": 4
+        }
+      ],
+      "task_id": 361622
+    },
+    "diamonds": {
+      "dataset_name": "diamonds",
+      "resolved_params_by_fold": [
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.0696130022406578,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        },
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.0696130022406578,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        },
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.0696130022406578,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        }
+      ],
+      "task_id": 363631
+    },
+    "fps_benchmark": {
+      "dataset_name": "fps_benchmark",
+      "resolved_params_by_fold": [
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.06448599696159363,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        },
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.06448599696159363,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        },
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.06448599696159363,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        }
+      ],
+      "task_id": 361268
+    },
+    "munich_rent": {
+      "dataset_name": "munich-rent-index-1999",
+      "resolved_params_by_fold": [
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.046434998512268066,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        },
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.046434998512268066,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        },
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.04643800109624863,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        }
+      ],
+      "task_id": 363471
+    },
+    "video_transcoding": {
+      "dataset_name": "video_transcoding",
+      "resolved_params_by_fold": [
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.07585100084543228,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        },
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.07585100084543228,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        },
+        {
+          "boosting_type": "Plain",
+          "border_count": 254,
+          "depth": 6,
+          "grow_policy": "SymmetricTree",
+          "iterations": 1000,
+          "leaf_estimation_backtracking": "AnyImprovement",
+          "leaf_estimation_iterations": 1,
+          "learning_rate": 0.07585100084543228,
+          "max_ctr_complexity": 4,
+          "random_seed": 4
+        }
+      ],
+      "task_id": 361252
+    }
+  },
+  "confirmation_outcomes_inspected": false,
+  "contrasts": {
+    "backtracking_over_no_backtracking": {
+      "denominator": "leaf10_no_backtracking",
+      "equal_dataset_test_ratio": 0.998229118518798,
+      "equal_dataset_validation_ratio": 0.9922176935028058,
+      "least_favorable_loo_test_ratio": 1.0052429455341896,
+      "leave_one_out": [
+        {
+          "omitted_lineage": "auction_verification",
+          "ratio": 1.0052429455341896
+        },
+        {
+          "omitted_lineage": "video_transcoding",
+          "ratio": 0.9976306682353131
+        },
+        {
+          "omitted_lineage": "fps_benchmark",
+          "ratio": 0.9971896709795178
+        },
+        {
+          "omitted_lineage": "cars_ctr23",
+          "ratio": 0.9977163494040262
+        },
+        {
+          "omitted_lineage": "diamonds",
+          "ratio": 0.998076089398166
+        },
+        {
+          "omitted_lineage": "book_price",
+          "ratio": 0.9981064263592572
+        },
+        {
+          "omitted_lineage": "apparel_price",
+          "ratio": 0.9978567922301009
+        },
+        {
+          "omitted_lineage": "munich_rent",
+          "ratio": 0.994048253050786
+        }
+      ],
+      "losses": 5,
+      "numerator": "leaf10_any_improvement",
+      "per_task": {
+        "apparel_price": {
+          "dataset_name": "ae_price_prediction",
+          "selected_arms": [
+            "leaf10_any_improvement",
+            "leaf10_any_improvement",
+            "leaf10_any_improvement"
+          ],
+          "split_test_ratios": [
+            1.0015778782728195,
+            0.9996491991915583,
+            1.0012918913609035
+          ],
+          "task_id": 363375,
+          "test_ratio": 1.0008392953329375,
+          "validation_ratio": 0.9998201982069602
+        },
+        "auction_verification": {
+          "dataset_name": "auction_verification",
+          "selected_arms": [
+            "leaf10_any_improvement",
+            "leaf10_any_improvement",
+            "leaf10_any_improvement"
+          ],
+          "split_test_ratios": [
+            0.9745093423681748,
+            1.0059550565763635,
+            0.8759298366123847
+          ],
+          "task_id": 361236,
+          "test_ratio": 0.9504836156681322,
+          "validation_ratio": 0.9612647928342964
+        },
+        "book_price": {
+          "dataset_name": "bookprice_prediction",
+          "selected_arms": [
+            "leaf10_any_improvement",
+            "leaf10_any_improvement",
+            "leaf10_any_improvement"
+          ],
+          "split_test_ratios": [
+            1.0038582578404867,
+            0.994165135122106,
+            0.9992653011622604
+          ],
+          "task_id": 363372,
+          "test_ratio": 0.9990883860333138,
+          "validation_ratio": 1.0012330857480487
+        },
+        "cars_ctr23": {
+          "dataset_name": "cars",
+          "selected_arms": [
+            "leaf10_any_improvement",
+            "leaf10_any_improvement",
+            "leaf10_any_improvement"
+          ],
+          "split_test_ratios": [
+            0.996998227567262,
+            1.0119165763167928,
+            0.9966384882280784
+          ],
+          "task_id": 361622,
+          "test_ratio": 1.001825888863362,
+          "validation_ratio": 1.00369857873131
+        },
+        "diamonds": {
+          "dataset_name": "diamonds",
+          "selected_arms": [
+            "leaf10_any_improvement",
+            "leaf10_any_improvement",
+            "leaf10_any_improvement"
+          ],
+          "split_test_ratios": [
+            0.998358110808928,
+            1.0026113190832027,
+            0.9969422129422322
+          ],
+          "task_id": 363631,
+          "test_ratio": 0.99930097953019,
+          "validation_ratio": 1.0002553300356938
+        },
+        "fps_benchmark": {
+          "dataset_name": "fps_benchmark",
+          "selected_arms": [
+            "leaf10_any_improvement",
+            "leaf10_any_improvement",
+            "leaf10_any_improvement"
+          ],
+          "split_test_ratios": [
+            0.9933261577883207,
+            0.9764940211876351,
+            1.0481681532107512
+          ],
+          "task_id": 361268,
+          "test_ratio": 1.0055356525159722,
+          "validation_ratio": 0.9926442438418879
+        },
+        "munich_rent": {
+          "dataset_name": "munich-rent-index-1999",
+          "selected_arms": [
+            "leaf10_any_improvement",
+            "leaf10_any_improvement",
+            "leaf10_any_improvement"
+          ],
+          "split_test_ratios": [
+            1.1101812044722998,
+            1.000111560481815,
+            0.9784226714688248
+          ],
+          "task_id": 363471,
+          "test_ratio": 1.0279917004891128,
+          "validation_ratio": 0.9883766695469346
+        },
+        "video_transcoding": {
+          "dataset_name": "video_transcoding",
+          "selected_arms": [
+            "leaf10_any_improvement",
+            "leaf10_any_improvement",
+            "leaf10_any_improvement"
+          ],
+          "split_test_ratios": [
+            1.0165801562290357,
+            0.984232133015008,
+            1.006748135103443
+          ],
+          "task_id": 361252,
+          "test_ratio": 1.0024283343846838,
+          "validation_ratio": 0.9911178681062079
+        }
+      },
+      "ties": 0,
+      "wins": 3,
+      "worst_split_test_ratio": 1.1101812044722998,
+      "worst_task_test_ratio": 1.0279917004891128
+    },
+    "border_128_over_default": {
+      "denominator": "default",
+      "equal_dataset_test_ratio": 1.0199294363567424,
+      "equal_dataset_validation_ratio": 1.0009875448264138,
+      "least_favorable_loo_test_ratio": 1.0267954544325208,
+      "leave_one_out": [
+        {
+          "omitted_lineage": "auction_verification",
+          "ratio": 1.0228087388173737
+        },
+        {
+          "omitted_lineage": "video_transcoding",
+          "ratio": 1.0267954544325208
+        },
+        {
+          "omitted_lineage": "fps_benchmark",
+          "ratio": 1.0228087388173737
+        },
+        {
+          "omitted_lineage": "cars_ctr23",
+          "ratio": 1.0235017599324974
+        },
+        {
+          "omitted_lineage": "diamonds",
+          "ratio": 1.0207469768391915
+        },
+        {
+          "omitted_lineage": "book_price",
+          "ratio": 1.022944233446368
+        },
+        {
+          "omitted_lineage": "apparel_price",
+          "ratio": 1.0228087388173737
+        },
+        {
+          "omitted_lineage": "munich_rent",
+          "ratio": 0.997321376628076
+        }
+      ],
+      "losses": 2,
+      "numerator": "border_128",
+      "per_task": {
+        "apparel_price": {
+          "dataset_name": "ae_price_prediction",
+          "selected_arms": [
+            "border_128",
+            "border_128",
+            "border_128"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 363375,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "auction_verification": {
+          "dataset_name": "auction_verification",
+          "selected_arms": [
+            "border_128",
+            "border_128",
+            "border_128"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 361236,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "book_price": {
+          "dataset_name": "bookprice_prediction",
+          "selected_arms": [
+            "border_128",
+            "border_128",
+            "border_128"
+          ],
+          "split_test_ratios": [
+            0.9977947435721827,
+            1.0012915482186213,
+            0.9981369637738485
+          ],
+          "task_id": 363372,
+          "test_ratio": 0.9990731795851056,
+          "validation_ratio": 0.9949888016718673
+        },
+        "cars_ctr23": {
+          "dataset_name": "cars",
+          "selected_arms": [
+            "border_128",
+            "border_128",
+            "border_128"
+          ],
+          "split_test_ratios": [
+            0.9666836483110774,
+            0.9862648823112796,
+            1.0340573305331033
+          ],
+          "task_id": 361622,
+          "test_ratio": 0.9952698619023639,
+          "validation_ratio": 1.0022109336469192
+        },
+        "diamonds": {
+          "dataset_name": "diamonds",
+          "selected_arms": [
+            "border_128",
+            "border_128",
+            "border_128"
+          ],
+          "split_test_ratios": [
+            1.009680292726415,
+            1.0216141623061055,
+            1.0114213002420898
+          ],
+          "task_id": 363631,
+          "test_ratio": 1.0142249576928037,
+          "validation_ratio": 1.0079547132110938
+        },
+        "fps_benchmark": {
+          "dataset_name": "fps_benchmark",
+          "selected_arms": [
+            "border_128",
+            "border_128",
+            "border_128"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 361268,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "munich_rent": {
+          "dataset_name": "munich-rent-index-1999",
+          "selected_arms": [
+            "border_128",
+            "border_128",
+            "border_128"
+          ],
+          "split_test_ratios": [
+            1.2916063151872603,
+            1.2167684520969373,
+            1.0809540772358162
+          ],
+          "task_id": 363471,
+          "test_ratio": 1.1932051383442064,
+          "validation_ratio": 1.0242119053899954
+        },
+        "video_transcoding": {
+          "dataset_name": "video_transcoding",
+          "selected_arms": [
+            "border_128",
+            "border_128",
+            "border_128"
+          ],
+          "split_test_ratios": [
+            0.971074237532164,
+            0.9552365980002573,
+            0.9934750341230719
+          ],
+          "task_id": 361252,
+          "test_ratio": 0.9731357956413685,
+          "validation_ratio": 0.9790868555171897
+        }
+      },
+      "ties": 3,
+      "wins": 3,
+      "worst_split_test_ratio": 1.2916063151872603,
+      "worst_task_test_ratio": 1.1932051383442064
+    },
+    "ctr_complexity_2_over_default": {
+      "denominator": "default",
+      "equal_dataset_test_ratio": 1.0079716907845626,
+      "equal_dataset_validation_ratio": 1.005857159231965,
+      "least_favorable_loo_test_ratio": 1.0096018727924612,
+      "leave_one_out": [
+        {
+          "omitted_lineage": "auction_verification",
+          "ratio": 1.0096018727924612
+        },
+        {
+          "omitted_lineage": "video_transcoding",
+          "ratio": 1.0090497639718292
+        },
+        {
+          "omitted_lineage": "fps_benchmark",
+          "ratio": 1.0006243793891048
+        },
+        {
+          "omitted_lineage": "cars_ctr23",
+          "ratio": 1.009115679561867
+        },
+        {
+          "omitted_lineage": "diamonds",
+          "ratio": 1.008909247048893
+        },
+        {
+          "omitted_lineage": "book_price",
+          "ratio": 1.0091856864644817
+        },
+        {
+          "omitted_lineage": "apparel_price",
+          "ratio": 1.0082025093283684
+        },
+        {
+          "omitted_lineage": "munich_rent",
+          "ratio": 1.009115679561867
+        }
+      ],
+      "losses": 4,
+      "numerator": "ctr_complexity_2",
+      "per_task": {
+        "apparel_price": {
+          "dataset_name": "ae_price_prediction",
+          "selected_arms": [
+            "ctr_complexity_2",
+            "ctr_complexity_2",
+            "ctr_complexity_2"
+          ],
+          "split_test_ratios": [
+            1.007499755190327,
+            1.0071540732928919,
+            1.0044213190990736
+          ],
+          "task_id": 363375,
+          "test_ratio": 1.0063574399255906,
+          "validation_ratio": 1.0086500272839338
+        },
+        "auction_verification": {
+          "dataset_name": "auction_verification",
+          "selected_arms": [
+            "ctr_complexity_2",
+            "ctr_complexity_2",
+            "ctr_complexity_2"
+          ],
+          "split_test_ratios": [
+            1.0108368924106998,
+            1.0030904338383593,
+            0.9763055747139847
+          ],
+          "task_id": 361236,
+          "test_ratio": 0.9966338813346677,
+          "validation_ratio": 0.9874257341535694
+        },
+        "book_price": {
+          "dataset_name": "bookprice_prediction",
+          "selected_arms": [
+            "ctr_complexity_2",
+            "ctr_complexity_2",
+            "ctr_complexity_2"
+          ],
+          "split_test_ratios": [
+            0.9976230376764752,
+            1.000617199483414,
+            1.0003060153906889
+          ],
+          "task_id": 363372,
+          "test_ratio": 0.9995145131830946,
+          "validation_ratio": 0.9960226848053437
+        },
+        "cars_ctr23": {
+          "dataset_name": "cars",
+          "selected_arms": [
+            "ctr_complexity_2",
+            "ctr_complexity_2",
+            "ctr_complexity_2"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 361622,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "diamonds": {
+          "dataset_name": "diamonds",
+          "selected_arms": [
+            "ctr_complexity_2",
+            "ctr_complexity_2",
+            "ctr_complexity_2"
+          ],
+          "split_test_ratios": [
+            1.0026446768633883,
+            0.9993943993051516,
+            1.0022635181667172
+          ],
+          "task_id": 363631,
+          "test_ratio": 1.0014331466354602,
+          "validation_ratio": 1.0043622739624911
+        },
+        "fps_benchmark": {
+          "dataset_name": "fps_benchmark",
+          "selected_arms": [
+            "ctr_complexity_2",
+            "ctr_complexity_2",
+            "ctr_complexity_2"
+          ],
+          "split_test_ratios": [
+            0.9954128385235365,
+            1.0796606383236367,
+            1.1111606554036622
+          ],
+          "task_id": 361268,
+          "test_ratio": 1.0609358393186512,
+          "validation_ratio": 1.048305802547432
+        },
+        "munich_rent": {
+          "dataset_name": "munich-rent-index-1999",
+          "selected_arms": [
+            "ctr_complexity_2",
+            "ctr_complexity_2",
+            "ctr_complexity_2"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 363471,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "video_transcoding": {
+          "dataset_name": "video_transcoding",
+          "selected_arms": [
+            "ctr_complexity_2",
+            "ctr_complexity_2",
+            "ctr_complexity_2"
+          ],
+          "split_test_ratios": [
+            1.0123433615054291,
+            0.9750967443979198,
+            1.0144256117342931
+          ],
+          "task_id": 361252,
+          "test_ratio": 1.0004573605588514,
+          "validation_ratio": 1.003224048259924
+        }
+      },
+      "ties": 2,
+      "wins": 2,
+      "worst_split_test_ratio": 1.1111606554036622,
+      "worst_task_test_ratio": 1.0609358393186512
+    },
+    "depth_4_over_default": {
+      "denominator": "default",
+      "equal_dataset_test_ratio": 1.1819967589727212,
+      "equal_dataset_validation_ratio": 1.1946595660924069,
+      "least_favorable_loo_test_ratio": 1.2211834047744732,
+      "leave_one_out": [
+        {
+          "omitted_lineage": "auction_verification",
+          "ratio": 1.1606208174527954
+        },
+        {
+          "omitted_lineage": "video_transcoding",
+          "ratio": 1.1154505629119686
+        },
+        {
+          "omitted_lineage": "fps_benchmark",
+          "ratio": 1.1339432888280463
+        },
+        {
+          "omitted_lineage": "cars_ctr23",
+          "ratio": 1.2127090072073141
+        },
+        {
+          "omitted_lineage": "diamonds",
+          "ratio": 1.2065785816249632
+        },
+        {
+          "omitted_lineage": "book_price",
+          "ratio": 1.211786336630438
+        },
+        {
+          "omitted_lineage": "apparel_price",
+          "ratio": 1.198613341806438
+        },
+        {
+          "omitted_lineage": "munich_rent",
+          "ratio": 1.2211834047744732
+        }
+      ],
+      "losses": 5,
+      "numerator": "depth_4",
+      "per_task": {
+        "apparel_price": {
+          "dataset_name": "ae_price_prediction",
+          "selected_arms": [
+            "depth_4",
+            "depth_4",
+            "depth_4"
+          ],
+          "split_test_ratios": [
+            1.0793388762496354,
+            1.0739675633741208,
+            1.0626264313537028
+          ],
+          "task_id": 363375,
+          "test_ratio": 1.0719549472920866,
+          "validation_ratio": 1.0734340834955531
+        },
+        "auction_verification": {
+          "dataset_name": "auction_verification",
+          "selected_arms": [
+            "depth_4",
+            "depth_4",
+            "depth_4"
+          ],
+          "split_test_ratios": [
+            1.6097179809937983,
+            1.2402808825595413,
+            1.213454610146848
+          ],
+          "task_id": 361236,
+          "test_ratio": 1.3430673564996412,
+          "validation_ratio": 1.4506445338423968
+        },
+        "book_price": {
+          "dataset_name": "bookprice_prediction",
+          "selected_arms": [
+            "depth_4",
+            "depth_4",
+            "depth_4"
+          ],
+          "split_test_ratios": [
+            0.9979700596916244,
+            0.9975054407942288,
+            0.9835829539575718
+          ],
+          "task_id": 363372,
+          "test_ratio": 0.9929969768258925,
+          "validation_ratio": 0.9927664245516099
+        },
+        "cars_ctr23": {
+          "dataset_name": "cars",
+          "selected_arms": [
+            "depth_4",
+            "depth_4",
+            "depth_4"
+          ],
+          "split_test_ratios": [
+            0.9903643875911714,
+            0.9816878362266761,
+            0.9911371714177656
+          ],
+          "task_id": 361622,
+          "test_ratio": 0.9877204897083339,
+          "validation_ratio": 0.9909349636399375
+        },
+        "diamonds": {
+          "dataset_name": "diamonds",
+          "selected_arms": [
+            "depth_4",
+            "depth_4",
+            "depth_4"
+          ],
+          "split_test_ratios": [
+            1.0226047294402605,
+            1.0239439650950124,
+            1.023620613024876
+          ],
+          "task_id": 363631,
+          "test_ratio": 1.0233896100903093,
+          "validation_ratio": 1.0307735118109833
+        },
+        "fps_benchmark": {
+          "dataset_name": "fps_benchmark",
+          "selected_arms": [
+            "depth_4",
+            "depth_4",
+            "depth_4"
+          ],
+          "split_test_ratios": [
+            1.5788678359787398,
+            1.6314428354596222,
+            1.5326930330999768
+          ],
+          "task_id": 361268,
+          "test_ratio": 1.5804870460511444,
+          "validation_ratio": 1.5875661785509958
+        },
+        "munich_rent": {
+          "dataset_name": "munich-rent-index-1999",
+          "selected_arms": [
+            "depth_4",
+            "depth_4",
+            "depth_4"
+          ],
+          "split_test_ratios": [
+            0.9098940658344635,
+            0.9380037005674653,
+            0.9754313333916548
+          ],
+          "task_id": 363471,
+          "test_ratio": 0.9407279094745361,
+          "validation_ratio": 0.9901601002112898
+        },
+        "video_transcoding": {
+          "dataset_name": "video_transcoding",
+          "selected_arms": [
+            "depth_4",
+            "depth_4",
+            "depth_4"
+          ],
+          "split_test_ratios": [
+            1.7681108353665966,
+            1.738944950790142,
+            1.8135881557733315
+          ],
+          "task_id": 361252,
+          "test_ratio": 1.7732827801569326,
+          "validation_ratio": 1.671568546645589
+        }
+      },
+      "ties": 0,
+      "wins": 3,
+      "worst_split_test_ratio": 1.8135881557733315,
+      "worst_task_test_ratio": 1.7732827801569326
+    },
+    "depth_8_over_default": {
+      "denominator": "default",
+      "equal_dataset_test_ratio": 0.9641235736110045,
+      "equal_dataset_validation_ratio": 0.9417579748622568,
+      "least_favorable_loo_test_ratio": 1.000252810831837,
+      "leave_one_out": [
+        {
+          "omitted_lineage": "auction_verification",
+          "ratio": 0.9729062275838523
+        },
+        {
+          "omitted_lineage": "video_transcoding",
+          "ratio": 1.000252810831837
+        },
+        {
+          "omitted_lineage": "fps_benchmark",
+          "ratio": 0.993947975047404
+        },
+        {
+          "omitted_lineage": "cars_ctr23",
+          "ratio": 0.9580036094107067
+        },
+        {
+          "omitted_lineage": "diamonds",
+          "ratio": 0.9593035745128455
+        },
+        {
+          "omitted_lineage": "book_price",
+          "ratio": 0.9573927243403204
+        },
+        {
+          "omitted_lineage": "apparel_price",
+          "ratio": 0.9604957413494398
+        },
+        {
+          "omitted_lineage": "munich_rent",
+          "ratio": 0.9132894129801593
+        }
+      ],
+      "losses": 3,
+      "numerator": "depth_8",
+      "per_task": {
+        "apparel_price": {
+          "dataset_name": "ae_price_prediction",
+          "selected_arms": [
+            "depth_8",
+            "depth_8",
+            "depth_8"
+          ],
+          "split_test_ratios": [
+            0.9902662995238986,
+            1.0079332038196744,
+            0.9718444895360242
+          ],
+          "task_id": 363375,
+          "test_ratio": 0.9899049806789847,
+          "validation_ratio": 0.9952402559528456
+        },
+        "auction_verification": {
+          "dataset_name": "auction_verification",
+          "selected_arms": [
+            "depth_8",
+            "depth_8",
+            "depth_8"
+          ],
+          "split_test_ratios": [
+            0.8179153359151276,
+            1.0733689061014493,
+            0.8437947772132648
+          ],
+          "task_id": 361236,
+          "test_ratio": 0.9048252916953257,
+          "validation_ratio": 0.9114743358783826
+        },
+        "book_price": {
+          "dataset_name": "bookprice_prediction",
+          "selected_arms": [
+            "depth_8",
+            "depth_8",
+            "depth_8"
+          ],
+          "split_test_ratios": [
+            1.0079846266338455,
+            1.0148688429279127,
+            1.014912118707799
+          ],
+          "task_id": 363372,
+          "test_ratio": 1.0125832882084222,
+          "validation_ratio": 1.0093954024878877
+        },
+        "cars_ctr23": {
+          "dataset_name": "cars",
+          "selected_arms": [
+            "depth_8",
+            "depth_8",
+            "depth_8"
+          ],
+          "split_test_ratios": [
+            1.0229422356349454,
+            0.9956524354870898,
+            1.005809935558593
+          ],
+          "task_id": 361622,
+          "test_ratio": 1.0080721051856087,
+          "validation_ratio": 1.011433350095793
+        },
+        "diamonds": {
+          "dataset_name": "diamonds",
+          "selected_arms": [
+            "depth_8",
+            "depth_8",
+            "depth_8"
+          ],
+          "split_test_ratios": [
+            0.9949855625525893,
+            0.9933094598533027,
+            1.007409812155724
+          ],
+          "task_id": 363631,
+          "test_ratio": 0.9985485278363267,
+          "validation_ratio": 1.0006315159739745
+        },
+        "fps_benchmark": {
+          "dataset_name": "fps_benchmark",
+          "selected_arms": [
+            "depth_8",
+            "depth_8",
+            "depth_8"
+          ],
+          "split_test_ratios": [
+            0.7288230425988651,
+            0.8108556415453523,
+            0.799802004193231
+          ],
+          "task_id": 361268,
+          "test_ratio": 0.7789615871586385,
+          "validation_ratio": 0.7801962319595173
+        },
+        "munich_rent": {
+          "dataset_name": "munich-rent-index-1999",
+          "selected_arms": [
+            "depth_8",
+            "depth_8",
+            "depth_8"
+          ],
+          "split_test_ratios": [
+            1.662862342305179,
+            1.5082666048299795,
+            1.1144832417014536
+          ],
+          "task_id": 363471,
+          "test_ratio": 1.408648548145701,
+          "validation_ratio": 1.105489671906255
+        },
+        "video_transcoding": {
+          "dataset_name": "video_transcoding",
+          "selected_arms": [
+            "depth_8",
+            "depth_8",
+            "depth_8"
+          ],
+          "split_test_ratios": [
+            0.7641827996662903,
+            0.7101521042005204,
+            0.7626597344281193
+          ],
+          "task_id": 361252,
+          "test_ratio": 0.7452348422976101,
+          "validation_ratio": 0.7741244167784225
+        }
+      },
+      "ties": 0,
+      "wins": 5,
+      "worst_split_test_ratio": 1.662862342305179,
+      "worst_task_test_ratio": 1.408648548145701
+    },
+    "depth_by_n_p_over_default": {
+      "denominator": "default",
+      "equal_dataset_test_ratio": 0.9622480701913496,
+      "equal_dataset_validation_ratio": 0.9674783648073251,
+      "least_favorable_loo_test_ratio": 0.9980293652577985,
+      "leave_one_out": [
+        {
+          "omitted_lineage": "auction_verification",
+          "ratio": 0.9569725582826413
+        },
+        {
+          "omitted_lineage": "video_transcoding",
+          "ratio": 0.9980293652577985
+        },
+        {
+          "omitted_lineage": "fps_benchmark",
+          "ratio": 0.9569725582826413
+        },
+        {
+          "omitted_lineage": "cars_ctr23",
+          "ratio": 0.9586631784110287
+        },
+        {
+          "omitted_lineage": "diamonds",
+          "ratio": 0.9571711543248573
+        },
+        {
+          "omitted_lineage": "book_price",
+          "ratio": 0.9569725582826413
+        },
+        {
+          "omitted_lineage": "apparel_price",
+          "ratio": 0.9569725582826413
+        },
+        {
+          "omitted_lineage": "munich_rent",
+          "ratio": 0.9569725582826413
+        }
+      ],
+      "losses": 0,
+      "numerator": "depth_by_n_p",
+      "per_task": {
+        "apparel_price": {
+          "dataset_name": "ae_price_prediction",
+          "selected_arms": [
+            "default",
+            "default",
+            "default"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 363375,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "auction_verification": {
+          "dataset_name": "auction_verification",
+          "selected_arms": [
+            "default",
+            "default",
+            "default"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 361236,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "book_price": {
+          "dataset_name": "bookprice_prediction",
+          "selected_arms": [
+            "default",
+            "default",
+            "default"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 363372,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "cars_ctr23": {
+          "dataset_name": "cars",
+          "selected_arms": [
+            "depth_4",
+            "depth_4",
+            "depth_4"
+          ],
+          "split_test_ratios": [
+            0.9903643875911714,
+            0.9816878362266761,
+            0.9911371714177656
+          ],
+          "task_id": 361622,
+          "test_ratio": 0.9877204897083339,
+          "validation_ratio": 0.9909349636399375
+        },
+        "diamonds": {
+          "dataset_name": "diamonds",
+          "selected_arms": [
+            "depth_8",
+            "depth_8",
+            "depth_8"
+          ],
+          "split_test_ratios": [
+            0.9949855625525893,
+            0.9933094598533027,
+            1.007409812155724
+          ],
+          "task_id": 363631,
+          "test_ratio": 0.9985485278363267,
+          "validation_ratio": 1.0006315159739745
+        },
+        "fps_benchmark": {
+          "dataset_name": "fps_benchmark",
+          "selected_arms": [
+            "default",
+            "default",
+            "default"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 361268,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "munich_rent": {
+          "dataset_name": "munich-rent-index-1999",
+          "selected_arms": [
+            "default",
+            "default",
+            "default"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 363471,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "video_transcoding": {
+          "dataset_name": "video_transcoding",
+          "selected_arms": [
+            "depth_8",
+            "depth_8",
+            "depth_8"
+          ],
+          "split_test_ratios": [
+            0.7641827996662903,
+            0.7101521042005204,
+            0.7626597344281193
+          ],
+          "task_id": 361252,
+          "test_ratio": 0.7452348422976101,
+          "validation_ratio": 0.7741244167784225
+        }
+      },
+      "ties": 5,
+      "wins": 3,
+      "worst_split_test_ratio": 1.007409812155724,
+      "worst_task_test_ratio": 1.0
+    },
+    "leaf10_no_backtracking_over_default": {
+      "denominator": "default",
+      "equal_dataset_test_ratio": 1.0198398748756436,
+      "equal_dataset_validation_ratio": 1.0249080348280233,
+      "least_favorable_loo_test_ratio": 1.057917082371671,
+      "leave_one_out": [
+        {
+          "omitted_lineage": "auction_verification",
+          "ratio": 1.0295328879505852
+        },
+        {
+          "omitted_lineage": "video_transcoding",
+          "ratio": 0.9970877448347335
+        },
+        {
+          "omitted_lineage": "fps_benchmark",
+          "ratio": 0.9921857341767922
+        },
+        {
+          "omitted_lineage": "cars_ctr23",
+          "ratio": 1.020804610125355
+        },
+        {
+          "omitted_lineage": "diamonds",
+          "ratio": 1.0208600943460595
+        },
+        {
+          "omitted_lineage": "book_price",
+          "ratio": 1.02323272744149
+        },
+        {
+          "omitted_lineage": "apparel_price",
+          "ratio": 1.0184845010689016
+        },
+        {
+          "omitted_lineage": "munich_rent",
+          "ratio": 1.057917082371671
+        }
+      ],
+      "losses": 5,
+      "numerator": "leaf10_no_backtracking",
+      "per_task": {
+        "apparel_price": {
+          "dataset_name": "ae_price_prediction",
+          "selected_arms": [
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking"
+          ],
+          "split_test_ratios": [
+            1.03491167944672,
+            1.0320381850150062,
+            1.0212351544444873
+          ],
+          "task_id": 363375,
+          "test_ratio": 1.0293781297000795,
+          "validation_ratio": 1.0282970807466416
+        },
+        "auction_verification": {
+          "dataset_name": "auction_verification",
+          "selected_arms": [
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking"
+          ],
+          "split_test_ratios": [
+            0.9724020578061678,
+            0.9517692692536983,
+            0.9396053092304796
+          ],
+          "task_id": 361236,
+          "test_ratio": 0.9544964917842966,
+          "validation_ratio": 0.8793174938729288
+        },
+        "book_price": {
+          "dataset_name": "bookprice_prediction",
+          "selected_arms": [
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking"
+          ],
+          "split_test_ratios": [
+            0.9921452731735579,
+            0.999835485175915,
+            0.9972431034594467
+          ],
+          "task_id": 363372,
+          "test_ratio": 0.996402828769497,
+          "validation_ratio": 0.995191695814859
+        },
+        "cars_ctr23": {
+          "dataset_name": "cars",
+          "selected_arms": [
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking"
+          ],
+          "split_test_ratios": [
+            1.009702138398232,
+            1.0007132472653144,
+            1.0291287761685404
+          ],
+          "task_id": 361622,
+          "test_ratio": 1.0131122088078364,
+          "validation_ratio": 1.009497192842495
+        },
+        "diamonds": {
+          "dataset_name": "diamonds",
+          "selected_arms": [
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking"
+          ],
+          "split_test_ratios": [
+            1.014720810625472,
+            1.0089578806212174,
+            1.0145123614777078
+          ],
+          "task_id": 363631,
+          "test_ratio": 1.0127268298123078,
+          "validation_ratio": 1.007257412017302
+        },
+        "fps_benchmark": {
+          "dataset_name": "fps_benchmark",
+          "selected_arms": [
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking"
+          ],
+          "split_test_ratios": [
+            1.271576104195286,
+            1.2422380881354833,
+            1.1961013465761887
+          ],
+          "task_id": 361268,
+          "test_ratio": 1.2362464554636061,
+          "validation_ratio": 1.2490571194844668
+        },
+        "munich_rent": {
+          "dataset_name": "munich-rent-index-1999",
+          "selected_arms": [
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking"
+          ],
+          "split_test_ratios": [
+            0.5895905199756548,
+            0.9606414828650416,
+            0.8673046395115536
+          ],
+          "task_id": 363471,
+          "test_ratio": 0.7890317865953848,
+          "validation_ratio": 0.915744123660542
+        },
+        "video_transcoding": {
+          "dataset_name": "video_transcoding",
+          "selected_arms": [
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking",
+            "leaf10_no_backtracking"
+          ],
+          "split_test_ratios": [
+            1.1888587131851922,
+            1.1778758500498534,
+            1.2165697551102639
+          ],
+          "task_id": 361252,
+          "test_ratio": 1.1943242743722662,
+          "validation_ratio": 1.1633384855267483
+        }
+      },
+      "ties": 0,
+      "wins": 3,
+      "worst_split_test_ratio": 1.271576104195286,
+      "worst_task_test_ratio": 1.2362464554636061
+    },
+    "ordered_over_plain": {
+      "denominator": "plain",
+      "equal_dataset_test_ratio": 1.1715453856690115,
+      "equal_dataset_validation_ratio": 1.1278828569449324,
+      "least_favorable_loo_test_ratio": 1.1999404779216574,
+      "leave_one_out": [
+        {
+          "omitted_lineage": "auction_verification",
+          "ratio": 1.1618691583583929
+        },
+        {
+          "omitted_lineage": "video_transcoding",
+          "ratio": 1.181810319591245
+        },
+        {
+          "omitted_lineage": "fps_benchmark",
+          "ratio": 1.120640893423388
+        },
+        {
+          "omitted_lineage": "cars_ctr23",
+          "ratio": 1.1999404779216574
+        },
+        {
+          "omitted_lineage": "diamonds",
+          "ratio": 1.1935858166928026
+        },
+        {
+          "omitted_lineage": "book_price",
+          "ratio": 1.1991542649637015
+        },
+        {
+          "omitted_lineage": "apparel_price",
+          "ratio": 1.1850413668546136
+        },
+        {
+          "omitted_lineage": "munich_rent",
+          "ratio": 1.1331295215414041
+        }
+      ],
+      "losses": 6,
+      "numerator": "ordered",
+      "per_task": {
+        "apparel_price": {
+          "dataset_name": "ae_price_prediction",
+          "selected_arms": [
+            "ordered",
+            "ordered",
+            "ordered"
+          ],
+          "split_test_ratios": [
+            1.0959129740877442,
+            1.0759957733625547,
+            1.0720831451024175
+          ],
+          "task_id": 363375,
+          "test_ratio": 1.0812804910952158,
+          "validation_ratio": 1.082387190964421
+        },
+        "auction_verification": {
+          "dataset_name": "auction_verification",
+          "selected_arms": [
+            "ordered",
+            "ordered",
+            "ordered"
+          ],
+          "split_test_ratios": [
+            1.3260602592355264,
+            1.1291264031116124,
+            1.2782367805048416
+          ],
+          "task_id": 361236,
+          "test_ratio": 1.2415733373223525,
+          "validation_ratio": 1.1591981701326295
+        },
+        "book_price": {
+          "dataset_name": "bookprice_prediction",
+          "selected_arms": [
+            "ordered",
+            "ordered",
+            "ordered"
+          ],
+          "split_test_ratios": [
+            1.0147778154291265,
+            0.9864529612134743,
+            0.9849071672394428
+          ],
+          "task_id": 363372,
+          "test_ratio": 0.9952852035824602,
+          "validation_ratio": 0.9938288108412381
+        },
+        "cars_ctr23": {
+          "dataset_name": "cars",
+          "selected_arms": [
+            "ordered",
+            "ordered",
+            "ordered"
+          ],
+          "split_test_ratios": [
+            0.9871642845907841,
+            0.9819185776942014,
+            1.0032291390242596
+          ],
+          "task_id": 361622,
+          "test_ratio": 0.9907293211067395,
+          "validation_ratio": 0.9795177557445529
+        },
+        "diamonds": {
+          "dataset_name": "diamonds",
+          "selected_arms": [
+            "ordered",
+            "ordered",
+            "ordered"
+          ],
+          "split_test_ratios": [
+            1.0219934925315863,
+            1.029116059140382,
+            1.0336647430381682
+          ],
+          "task_id": 363631,
+          "test_ratio": 1.028246870435057,
+          "validation_ratio": 1.0266801354466515
+        },
+        "fps_benchmark": {
+          "dataset_name": "fps_benchmark",
+          "selected_arms": [
+            "ordered",
+            "ordered",
+            "ordered"
+          ],
+          "split_test_ratios": [
+            1.833252432391738,
+            1.4849355882765527,
+            1.5013887238130827
+          ],
+          "task_id": 361268,
+          "test_ratio": 1.5988498424830884,
+          "validation_ratio": 1.6092148822960268
+        },
+        "munich_rent": {
+          "dataset_name": "munich-rent-index-1999",
+          "selected_arms": [
+            "ordered",
+            "ordered",
+            "ordered"
+          ],
+          "split_test_ratios": [
+            1.5885043210620444,
+            1.5608093433357642,
+            1.3062007489947354
+          ],
+          "task_id": 363471,
+          "test_ratio": 1.4795037208597672,
+          "validation_ratio": 1.1944143374884835
+        },
+        "video_transcoding": {
+          "dataset_name": "video_transcoding",
+          "selected_arms": [
+            "ordered",
+            "ordered",
+            "ordered"
+          ],
+          "split_test_ratios": [
+            1.1292887910011007,
+            1.0353750463956,
+            1.1450192288693652
+          ],
+          "task_id": 361252,
+          "test_ratio": 1.1021443969059888,
+          "validation_ratio": 1.0865345274272622
+        }
+      },
+      "ties": 0,
+      "wins": 2,
+      "worst_split_test_ratio": 1.833252432391738,
+      "worst_task_test_ratio": 1.5988498424830884
+    },
+    "plain_over_default": {
+      "denominator": "default",
+      "equal_dataset_test_ratio": 1.0,
+      "equal_dataset_validation_ratio": 1.0,
+      "least_favorable_loo_test_ratio": 1.0,
+      "leave_one_out": [
+        {
+          "omitted_lineage": "auction_verification",
+          "ratio": 1.0
+        },
+        {
+          "omitted_lineage": "video_transcoding",
+          "ratio": 1.0
+        },
+        {
+          "omitted_lineage": "fps_benchmark",
+          "ratio": 1.0
+        },
+        {
+          "omitted_lineage": "cars_ctr23",
+          "ratio": 1.0
+        },
+        {
+          "omitted_lineage": "diamonds",
+          "ratio": 1.0
+        },
+        {
+          "omitted_lineage": "book_price",
+          "ratio": 1.0
+        },
+        {
+          "omitted_lineage": "apparel_price",
+          "ratio": 1.0
+        },
+        {
+          "omitted_lineage": "munich_rent",
+          "ratio": 1.0
+        }
+      ],
+      "losses": 0,
+      "numerator": "plain",
+      "per_task": {
+        "apparel_price": {
+          "dataset_name": "ae_price_prediction",
+          "selected_arms": [
+            "plain",
+            "plain",
+            "plain"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 363375,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "auction_verification": {
+          "dataset_name": "auction_verification",
+          "selected_arms": [
+            "plain",
+            "plain",
+            "plain"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 361236,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "book_price": {
+          "dataset_name": "bookprice_prediction",
+          "selected_arms": [
+            "plain",
+            "plain",
+            "plain"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 363372,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "cars_ctr23": {
+          "dataset_name": "cars",
+          "selected_arms": [
+            "plain",
+            "plain",
+            "plain"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 361622,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "diamonds": {
+          "dataset_name": "diamonds",
+          "selected_arms": [
+            "plain",
+            "plain",
+            "plain"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 363631,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "fps_benchmark": {
+          "dataset_name": "fps_benchmark",
+          "selected_arms": [
+            "plain",
+            "plain",
+            "plain"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 361268,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "munich_rent": {
+          "dataset_name": "munich-rent-index-1999",
+          "selected_arms": [
+            "plain",
+            "plain",
+            "plain"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 363471,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        },
+        "video_transcoding": {
+          "dataset_name": "video_transcoding",
+          "selected_arms": [
+            "plain",
+            "plain",
+            "plain"
+          ],
+          "split_test_ratios": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "task_id": 361252,
+          "test_ratio": 1.0,
+          "validation_ratio": 1.0
+        }
+      },
+      "ties": 8,
+      "wins": 0,
+      "worst_split_test_ratio": 1.0,
+      "worst_task_test_ratio": 1.0
+    }
+  },
+  "darkofit_anchors": {
+    "default": {
+      "catboost_arm": "default",
+      "darkofit_losses": 5,
+      "darkofit_wins": 3,
+      "equal_dataset_darkofit_over_catboost_ratio": 1.029344891323524,
+      "evidence_scope": "immutable C2 DarkoFit control; descriptive, not current-release confirmation",
+      "per_task": {
+        "apparel_price": {
+          "darkofit_over_catboost_ratio": 1.0439436341197785,
+          "dataset_name": "ae_price_prediction",
+          "split_ratios": [
+            1.083497430099374,
+            1.0292207889458647,
+            1.0202220733765852
+          ],
+          "task_id": 363375
+        },
+        "auction_verification": {
+          "darkofit_over_catboost_ratio": 1.6533649944016977,
+          "dataset_name": "auction_verification",
+          "split_ratios": [
+            2.122853241451359,
+            1.476573401744911,
+            1.4418869221936705
+          ],
+          "task_id": 361236
+        },
+        "book_price": {
+          "darkofit_over_catboost_ratio": 0.9935967026655023,
+          "dataset_name": "bookprice_prediction",
+          "split_ratios": [
+            0.9842508398795486,
+            0.9958624200067263,
+            1.0007492807266798
+          ],
+          "task_id": 363372
+        },
+        "cars_ctr23": {
+          "darkofit_over_catboost_ratio": 1.019584191513302,
+          "dataset_name": "cars",
+          "split_ratios": [
+            1.0171474560476952,
+            0.9943504742574902,
+            1.0479628254071645
+          ],
+          "task_id": 361622
+        },
+        "diamonds": {
+          "darkofit_over_catboost_ratio": 1.3395011039141316,
+          "dataset_name": "diamonds",
+          "split_ratios": [
+            1.2323978383534497,
+            1.376472493926204,
+            1.4168072234092641
+          ],
+          "task_id": 363631
+        },
+        "fps_benchmark": {
+          "darkofit_over_catboost_ratio": 0.560552004841888,
+          "dataset_name": "fps_benchmark",
+          "split_ratios": [
+            0.630829127626457,
+            0.4463657496591073,
+            0.625525659408703
+          ],
+          "task_id": 361268
+        },
+        "munich_rent": {
+          "darkofit_over_catboost_ratio": 1.0801940681268427,
+          "dataset_name": "munich-rent-index-1999",
+          "split_ratios": [
+            1.1622985898615645,
+            1.1117861640603273,
+            0.9753632501083479
+          ],
+          "task_id": 363471
+        },
+        "video_transcoding": {
+          "darkofit_over_catboost_ratio": 0.8886843046148496,
+          "dataset_name": "video_transcoding",
+          "split_ratios": [
+            0.9285158181109515,
+            0.8481196552232843,
+            0.8912429246713178
+          ],
+          "task_id": 361252
+        }
+      }
+    },
+    "depth_by_n_p": {
+      "catboost_arm": "depth_by_n_p",
+      "darkofit_losses": 6,
+      "darkofit_wins": 2,
+      "equal_dataset_darkofit_over_catboost_ratio": 1.0697292342907287,
+      "evidence_scope": "immutable C2 DarkoFit control; descriptive, not current-release confirmation",
+      "per_task": {
+        "apparel_price": {
+          "darkofit_over_catboost_ratio": 1.0439436341197785,
+          "dataset_name": "ae_price_prediction",
+          "split_ratios": [
+            1.083497430099374,
+            1.0292207889458647,
+            1.0202220733765852
+          ],
+          "task_id": 363375
+        },
+        "auction_verification": {
+          "darkofit_over_catboost_ratio": 1.6533649944016977,
+          "dataset_name": "auction_verification",
+          "split_ratios": [
+            2.122853241451359,
+            1.476573401744911,
+            1.4418869221936705
+          ],
+          "task_id": 361236
+        },
+        "book_price": {
+          "darkofit_over_catboost_ratio": 0.9935967026655023,
+          "dataset_name": "bookprice_prediction",
+          "split_ratios": [
+            0.9842508398795486,
+            0.9958624200067263,
+            1.0007492807266798
+          ],
+          "task_id": 363372
+        },
+        "cars_ctr23": {
+          "darkofit_over_catboost_ratio": 1.0322598368029978,
+          "dataset_name": "cars",
+          "split_ratios": [
+            1.0270436505917455,
+            1.0128988437704247,
+            1.0573337935738127
+          ],
+          "task_id": 361622
+        },
+        "diamonds": {
+          "darkofit_over_catboost_ratio": 1.341448178604386,
+          "dataset_name": "diamonds",
+          "split_ratios": [
+            1.2386087645249748,
+            1.3857438689142143,
+            1.4063861661000538
+          ],
+          "task_id": 363631
+        },
+        "fps_benchmark": {
+          "darkofit_over_catboost_ratio": 0.560552004841888,
+          "dataset_name": "fps_benchmark",
+          "split_ratios": [
+            0.630829127626457,
+            0.4463657496591073,
+            0.625525659408703
+          ],
+          "task_id": 361268
+        },
+        "munich_rent": {
+          "darkofit_over_catboost_ratio": 1.0801940681268427,
+          "dataset_name": "munich-rent-index-1999",
+          "split_ratios": [
+            1.1622985898615645,
+            1.1117861640603273,
+            0.9753632501083479
+          ],
+          "task_id": 363471
+        },
+        "video_transcoding": {
+          "darkofit_over_catboost_ratio": 1.1924889366081906,
+          "dataset_name": "video_transcoding",
+          "split_ratios": [
+            1.215044121009297,
+            1.1942788737887158,
+            1.1685983728243063
+          ],
+          "task_id": 361252
+        }
+      }
+    }
+  },
+  "decision": "freeze_t7_research_candidates",
+  "default_change_authorized": false,
+  "development_data_only": true,
+  "frozen_research_candidates": [
+    "depth_by_n_p"
+  ],
+  "lockbox_data_used": false,
+  "name": "darkofit_t7_catboost_attribution_summary_v1",
+  "raw_sha256": "6673fe69c5e09d1e020252237c322e7795c14effdf375e9dd1c0db3ecc4772ee",
+  "schema_version": 1,
+  "summary_sha256": "604e0964245792d2b2571f34636e2b52f4a0b2d189f3c95b54b40b5806636beb"
+}

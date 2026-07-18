@@ -374,6 +374,9 @@ def analyze(raw):
         "schema_version": 1,
         "name": "darkofit_t7_catboost_attribution_summary_v1",
         "raw_sha256": raw["raw_sha256"],
+        "analyzer_sha256": hashlib.sha256(
+            Path(__file__).read_bytes()
+        ).hexdigest(),
         "contrasts": contrasts,
         "candidate_contrasts": candidate_contrasts,
         "candidate_gate_results": nominations,
@@ -415,6 +418,33 @@ def _markdown(summary):
         else "none"
     )
     anchor = summary["darkofit_anchors"]["default"]
+    candidate_rows = []
+    for name in candidates:
+        contrast = summary["candidate_contrasts"][name]
+        for lineage, row in contrast["per_task"].items():
+            candidate_rows.append(
+                f"| `{name}` | {row['dataset_name']} | "
+                f"{row['test_ratio']:.6f} | "
+                f"{row['validation_ratio']:.6f} | "
+                f"`{row['selected_arms'][0]}` |"
+            )
+    candidate_table = (
+        "\n".join(candidate_rows)
+        if candidate_rows
+        else "| — | — | — | — | — |"
+    )
+    candidate_anchor_rows = "\n".join(
+        f"| `{name}` | "
+        f"{summary['darkofit_anchors'][name][
+            'equal_dataset_darkofit_over_catboost_ratio'
+        ]:.6f} |"
+        for name in candidates
+    )
+    candidate_anchor_table = (
+        candidate_anchor_rows
+        if candidate_anchor_rows
+        else "| — | — |"
+    )
     return f"""# T7 CatBoost mechanism attribution
 
 **Decision: `{summary['decision']}`.**
@@ -425,10 +455,31 @@ def _markdown(summary):
 
 Frozen research candidates (maximum three): {candidate_text}.
 
+## Surviving candidate by dataset
+
+| Candidate | Dataset | Test ratio | Validation ratio | Selected arm |
+|---|---|---:|---:|---|
+{candidate_table}
+
+The fixed depth policy uses depth 4 below 100 inner-fit rows per feature,
+depth 8 at or above 2,500, and CatBoost's default depth 6 otherwise. It
+declines exactly to the default on the five middle-density datasets.
+
+## DarkoFit anchor
+
 Against CatBoost's product default, the immutable C2 DarkoFit control has an
 equal-dataset RMSE ratio of
-`{anchor['equal_dataset_darkofit_over_catboost_ratio']:.6f}`. This is a
-descriptive historical anchor, not a current-release confirmation claim.
+`{anchor['equal_dataset_darkofit_over_catboost_ratio']:.6f}`.
+
+| CatBoost arm | DarkoFit / CatBoost RMSE |
+|---|---:|
+| `default` | {anchor['equal_dataset_darkofit_over_catboost_ratio']:.6f} |
+{candidate_anchor_table}
+
+This is a descriptive historical anchor, not a current-release confirmation
+claim. The surviving CatBoost depth policy widens rather than closes that
+historical competitive gap; porting the rule to DarkoFit would require a
+separate implementation and outcome-unseen evaluation.
 
 All results use spent development tasks. No confirmation panel or lockbox was
 opened, and no default change is authorized.
