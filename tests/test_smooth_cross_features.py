@@ -1,9 +1,15 @@
 import copy
+import json
+from pathlib import Path
 
 import numpy as np
 import pytest
 
 from benchmarks import run_smooth_cross_features as experiment
+
+
+ROOT = Path(__file__).resolve().parents[1]
+ARTIFACT = ROOT / "benchmarks" / "smooth_cross_features.json"
 
 
 def test_candidate_pairs_are_deterministic_and_skip_categoricals():
@@ -79,3 +85,11 @@ def test_analysis_rejects_inexact_or_incomplete_artifacts():
     incomplete = copy.deepcopy(_fake_rows()[:-1])
     with pytest.raises(RuntimeError, match="incomplete"):
         experiment.analyze(incomplete)
+
+
+def test_recorded_artifact_reproduces_raw_analysis():
+    artifact = json.loads(ARTIFACT.read_text())
+    assert experiment.analyze(artifact["results"]) == artifact["analysis"]
+    assert artifact["partition_boundary"]["lockbox_data_used"] is False
+    assert artifact["analysis"]["external_native_exact"] is True
+    assert artifact["analysis"]["fresh_claim_eligible"] is False

@@ -1,0 +1,7591 @@
+{
+  "analysis": {
+    "claim_tier": "development_diagnostic_only",
+    "coordinate_count": 21,
+    "cross_selected_coordinates": 20,
+    "datasets": {
+      "grid_stability": {
+        "cross_selected_count": 7,
+        "geomean_ratio": 0.943105832893258,
+        "linear_selected_count": 3,
+        "task_id": 361251,
+        "worst_split_ratio": 0.9852718416546719
+      },
+      "kin8nm": {
+        "cross_selected_count": 7,
+        "geomean_ratio": 0.9268640952364293,
+        "linear_selected_count": 7,
+        "task_id": 361258,
+        "worst_split_ratio": 0.9864113528659625
+      },
+      "space_ga": {
+        "cross_selected_count": 6,
+        "geomean_ratio": 0.9793908269267345,
+        "linear_selected_count": 7,
+        "task_id": 361623,
+        "worst_split_ratio": 1.0707628651200054
+      }
+    },
+    "equal_dataset_geomean_ratio": 0.9495347005962401,
+    "external_native_exact": true,
+    "fresh_claim_eligible": false,
+    "leave_one_out_equal_dataset_ratios": {
+      "grid_stability": 0.9527655496932633,
+      "kin8nm": 0.9610771048967688,
+      "space_ga": 0.9349496962493804
+    },
+    "linear_selected_coordinates": 17,
+    "summed_chimera_fit_seconds": 70.132484291,
+    "summed_darko_fit_seconds": 70.816271172,
+    "timing_claim_eligible": false,
+    "worst_dataset_ratio": 0.9793908269267345,
+    "worst_split_ratio": 1.0707628651200054
+  },
+  "created_at": "2026-07-18T01:05:42.911164+00:00",
+  "partition_boundary": {
+    "confirmation_task_ids": [
+      361236,
+      361251,
+      361252,
+      361258,
+      361268,
+      361269,
+      361619,
+      361622,
+      361623
+    ],
+    "default_promotion_authorized": false,
+    "lockbox_data_used": false,
+    "lockbox_task_ids": [
+      361247,
+      361253,
+      361254,
+      361261,
+      361264,
+      361272,
+      361616,
+      361617,
+      361618
+    ],
+    "partition_sha256": "125e70cbe49241fb4fda1ed3f79b504f5d8d0b20b8f85d665c1cb49aa5c5fab6"
+  },
+  "protocol": {
+    "folds": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "name": "smooth_cross_features",
+    "path": "benchmarks/smooth_cross_features_protocol.md",
+    "sha256": "608bd3235bbaad895d1efdbffe0588a26bc104233a243fb756c488568eaeecd4",
+    "tasks": {
+      "361251": "grid_stability",
+      "361258": "kin8nm",
+      "361623": "space_ga"
+    }
+  },
+  "results": [
+    {
+      "base": {
+        "actual_retained_tree_count": 1871,
+        "best_prefix_tree_count": 1871,
+        "best_validation_rmse": 0.00664364967936552,
+        "borders_sha256": "f4585dcb9935cf56a933cdc80d04b1b4a34ac59b3e8306c9099a94fdb9611032",
+        "fingerprinted_tree_count": 1871,
+        "model_sha256": "78eedc0c38be26dbde3731314b0c273045b57a4b31a200ae38c39e7c63c0fac2",
+        "prediction_sha256": "46a2c3a7cc4817a2a8563dba88e4cffae96edd0e7ad41d8b9526e07b09fc1d98",
+        "test_rmse": 0.00733810447683212,
+        "validation_history_sha256": "71fafc85e5d1078b0239bc5f598d0ee0adb4c082aa6a685b8d3d6984680aa457"
+      },
+      "base_linear_selected": false,
+      "candidate_cross_pairs": [
+        [
+          3,
+          0,
+          "diff"
+        ],
+        [
+          3,
+          0,
+          "prod"
+        ],
+        [
+          3,
+          1,
+          "diff"
+        ],
+        [
+          3,
+          1,
+          "prod"
+        ],
+        [
+          3,
+          2,
+          "diff"
+        ],
+        [
+          3,
+          2,
+          "prod"
+        ],
+        [
+          3,
+          10,
+          "diff"
+        ],
+        [
+          3,
+          10,
+          "prod"
+        ],
+        [
+          3,
+          9,
+          "diff"
+        ],
+        [
+          3,
+          9,
+          "prod"
+        ],
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          2,
+          "diff"
+        ],
+        [
+          0,
+          2,
+          "prod"
+        ],
+        [
+          0,
+          10,
+          "diff"
+        ],
+        [
+          0,
+          10,
+          "prod"
+        ],
+        [
+          0,
+          9,
+          "diff"
+        ],
+        [
+          0,
+          9,
+          "prod"
+        ],
+        [
+          1,
+          2,
+          "diff"
+        ],
+        [
+          1,
+          2,
+          "prod"
+        ],
+        [
+          1,
+          10,
+          "diff"
+        ],
+        [
+          1,
+          10,
+          "prod"
+        ],
+        [
+          1,
+          9,
+          "diff"
+        ],
+        [
+          1,
+          9,
+          "prod"
+        ],
+        [
+          2,
+          10,
+          "diff"
+        ],
+        [
+          2,
+          10,
+          "prod"
+        ],
+        [
+          2,
+          9,
+          "diff"
+        ],
+        [
+          2,
+          9,
+          "prod"
+        ],
+        [
+          10,
+          9,
+          "diff"
+        ],
+        [
+          10,
+          9,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 1733,
+        "best_prefix_tree_count": 1733,
+        "best_validation_rmse": 0.0065517342972049005,
+        "borders_sha256": "3a3ec668884d0898325abf3144c3068cb2dc3fca8b03e0980bc7bdaa5a373890",
+        "fingerprinted_tree_count": 1733,
+        "model_sha256": "a6669930f15ecccafe17dfa77451e163891fac969fe41b319c8876083cfb20fa",
+        "prediction_sha256": "e002f2811ae2df1c747ccca98b42b7616db0540dcbfe652aeff413c8964d0d99",
+        "test_rmse": 0.006994360540205717,
+        "validation_history_sha256": "eed2b1921092021a8a1007cc87f323327b6d3c1c9a5d49194ca1b7b379dc91e5"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 1733,
+        "best_prefix_tree_count": 1733,
+        "best_validation_rmse": 0.0065517342972049005,
+        "borders_sha256": "3a3ec668884d0898325abf3144c3068cb2dc3fca8b03e0980bc7bdaa5a373890",
+        "fingerprinted_tree_count": 1733,
+        "model_sha256": "a6669930f15ecccafe17dfa77451e163891fac969fe41b319c8876083cfb20fa",
+        "prediction_sha256": "e002f2811ae2df1c747ccca98b42b7616db0540dcbfe652aeff413c8964d0d99",
+        "test_rmse": 0.006994360540205717,
+        "validation_history_sha256": "eed2b1921092021a8a1007cc87f323327b6d3c1c9a5d49194ca1b7b379dc91e5"
+      },
+      "chimera_total_fit_seconds": 5.402759875,
+      "cross_selected": true,
+      "darko_total_fit_seconds": 5.582982417,
+      "dataset_name": "grid_stability",
+      "external_native_exact": true,
+      "fit_index_sha256": "a0f9c77eed4ddb6e42bf4d763e0452d1a057736bae79fb9ef2823000ba270d26",
+      "fold": 3,
+      "outer_test_index_sha256": "7efd20fe94dbac0334e0580fcefb66f6bcd190acc3b1fad540c18bc4c5eac803",
+      "outer_train_index_sha256": "e7716aa5f725f2489a5c993e70e5c015fc1038b76ec5a57cf767083edd6b1777",
+      "selected": {
+        "actual_retained_tree_count": 1733,
+        "best_prefix_tree_count": 1733,
+        "best_validation_rmse": 0.0065517342972049005,
+        "borders_sha256": "3a3ec668884d0898325abf3144c3068cb2dc3fca8b03e0980bc7bdaa5a373890",
+        "fingerprinted_tree_count": 1733,
+        "model_sha256": "a6669930f15ecccafe17dfa77451e163891fac969fe41b319c8876083cfb20fa",
+        "prediction_sha256": "e002f2811ae2df1c747ccca98b42b7616db0540dcbfe652aeff413c8964d0d99",
+        "test_rmse": 0.006994360540205717,
+        "validation_history_sha256": "eed2b1921092021a8a1007cc87f323327b6d3c1c9a5d49194ca1b7b379dc91e5"
+      },
+      "selected_cross_pairs": [
+        [
+          3,
+          0,
+          "diff"
+        ],
+        [
+          3,
+          0,
+          "prod"
+        ],
+        [
+          3,
+          1,
+          "diff"
+        ],
+        [
+          3,
+          1,
+          "prod"
+        ],
+        [
+          3,
+          2,
+          "diff"
+        ],
+        [
+          3,
+          2,
+          "prod"
+        ],
+        [
+          3,
+          10,
+          "diff"
+        ],
+        [
+          3,
+          10,
+          "prod"
+        ],
+        [
+          3,
+          9,
+          "diff"
+        ],
+        [
+          3,
+          9,
+          "prod"
+        ],
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          2,
+          "diff"
+        ],
+        [
+          0,
+          2,
+          "prod"
+        ],
+        [
+          0,
+          10,
+          "diff"
+        ],
+        [
+          0,
+          10,
+          "prod"
+        ],
+        [
+          0,
+          9,
+          "diff"
+        ],
+        [
+          0,
+          9,
+          "prod"
+        ],
+        [
+          1,
+          2,
+          "diff"
+        ],
+        [
+          1,
+          2,
+          "prod"
+        ],
+        [
+          1,
+          10,
+          "diff"
+        ],
+        [
+          1,
+          10,
+          "prod"
+        ],
+        [
+          1,
+          9,
+          "diff"
+        ],
+        [
+          1,
+          9,
+          "prod"
+        ],
+        [
+          2,
+          10,
+          "diff"
+        ],
+        [
+          2,
+          10,
+          "prod"
+        ],
+        [
+          2,
+          9,
+          "diff"
+        ],
+        [
+          2,
+          9,
+          "prod"
+        ],
+        [
+          10,
+          9,
+          "diff"
+        ],
+        [
+          10,
+          9,
+          "prod"
+        ]
+      ],
+      "task_id": 361251,
+      "validation_index_sha256": "22983b0f2757013a89c6026ff67167292d192429651230d7da1197894aa9556d"
+    },
+    {
+      "base": {
+        "actual_retained_tree_count": 957,
+        "best_prefix_tree_count": 957,
+        "best_validation_rmse": 0.006819109146929567,
+        "borders_sha256": "ea01dbb9df9fb0313ebf298485810c0c7b4149e74144ec4a7da97d755fc79979",
+        "fingerprinted_tree_count": 957,
+        "model_sha256": "e9fc1a0f7bf47f93e153220a0222f815c6236f8d857f7003661cfe4e04ba5eb5",
+        "prediction_sha256": "085b16bb6a847da1da5b855b6d9cb13ff2dc1eb0b53f064f24f3708972deb4de",
+        "test_rmse": 0.006878948582686095,
+        "validation_history_sha256": "d2b6d52c7fab5edf0d31889f7464ce551dfbf4a002a12ec9282141cd8b90e85b"
+      },
+      "base_linear_selected": true,
+      "candidate_cross_pairs": [
+        [
+          1,
+          0,
+          "diff"
+        ],
+        [
+          1,
+          0,
+          "prod"
+        ],
+        [
+          1,
+          2,
+          "diff"
+        ],
+        [
+          1,
+          2,
+          "prod"
+        ],
+        [
+          1,
+          3,
+          "diff"
+        ],
+        [
+          1,
+          3,
+          "prod"
+        ],
+        [
+          1,
+          11,
+          "diff"
+        ],
+        [
+          1,
+          11,
+          "prod"
+        ],
+        [
+          1,
+          8,
+          "diff"
+        ],
+        [
+          1,
+          8,
+          "prod"
+        ],
+        [
+          0,
+          2,
+          "diff"
+        ],
+        [
+          0,
+          2,
+          "prod"
+        ],
+        [
+          0,
+          3,
+          "diff"
+        ],
+        [
+          0,
+          3,
+          "prod"
+        ],
+        [
+          0,
+          11,
+          "diff"
+        ],
+        [
+          0,
+          11,
+          "prod"
+        ],
+        [
+          0,
+          8,
+          "diff"
+        ],
+        [
+          0,
+          8,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          11,
+          "diff"
+        ],
+        [
+          2,
+          11,
+          "prod"
+        ],
+        [
+          2,
+          8,
+          "diff"
+        ],
+        [
+          2,
+          8,
+          "prod"
+        ],
+        [
+          3,
+          11,
+          "diff"
+        ],
+        [
+          3,
+          11,
+          "prod"
+        ],
+        [
+          3,
+          8,
+          "diff"
+        ],
+        [
+          3,
+          8,
+          "prod"
+        ],
+        [
+          11,
+          8,
+          "diff"
+        ],
+        [
+          11,
+          8,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 1312,
+        "best_prefix_tree_count": 1312,
+        "best_validation_rmse": 0.00611307433339046,
+        "borders_sha256": "35fc72a49fdd775ea52b6cb5f7b8133e370f4d1cc7ed448d6900f28faa78480b",
+        "fingerprinted_tree_count": 1312,
+        "model_sha256": "cb422a2a2e8810cbb3fd6435b225ac58149cfee8e9658bcfe26d4a643839310e",
+        "prediction_sha256": "a716ac41b36761b134690e361666dac4a90d0de0878b4269e495d4a288bfeb91",
+        "test_rmse": 0.0067329852578888,
+        "validation_history_sha256": "aa7390bc8e43dd403029bd9807f8bb9671c61a11d8537a24001a335906caf47d"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 1312,
+        "best_prefix_tree_count": 1312,
+        "best_validation_rmse": 0.00611307433339046,
+        "borders_sha256": "35fc72a49fdd775ea52b6cb5f7b8133e370f4d1cc7ed448d6900f28faa78480b",
+        "fingerprinted_tree_count": 1312,
+        "model_sha256": "cb422a2a2e8810cbb3fd6435b225ac58149cfee8e9658bcfe26d4a643839310e",
+        "prediction_sha256": "a716ac41b36761b134690e361666dac4a90d0de0878b4269e495d4a288bfeb91",
+        "test_rmse": 0.0067329852578888,
+        "validation_history_sha256": "aa7390bc8e43dd403029bd9807f8bb9671c61a11d8537a24001a335906caf47d"
+      },
+      "chimera_total_fit_seconds": 5.914375791,
+      "cross_selected": true,
+      "darko_total_fit_seconds": 5.8971283759999995,
+      "dataset_name": "grid_stability",
+      "external_native_exact": true,
+      "fit_index_sha256": "734d2b8ab477582fbcc41976d52143a8c55c28382b6415343ce5c19cd91f8a6f",
+      "fold": 4,
+      "outer_test_index_sha256": "c1264d7ad9239fb20ffe49a8458d80a63bc9d56329fe39244b6624650a7ece12",
+      "outer_train_index_sha256": "52aa219e884bd02838fa6dd841e7343e7776c1324fc9e9af24dbf0a33d266b37",
+      "selected": {
+        "actual_retained_tree_count": 1312,
+        "best_prefix_tree_count": 1312,
+        "best_validation_rmse": 0.00611307433339046,
+        "borders_sha256": "35fc72a49fdd775ea52b6cb5f7b8133e370f4d1cc7ed448d6900f28faa78480b",
+        "fingerprinted_tree_count": 1312,
+        "model_sha256": "cb422a2a2e8810cbb3fd6435b225ac58149cfee8e9658bcfe26d4a643839310e",
+        "prediction_sha256": "a716ac41b36761b134690e361666dac4a90d0de0878b4269e495d4a288bfeb91",
+        "test_rmse": 0.0067329852578888,
+        "validation_history_sha256": "aa7390bc8e43dd403029bd9807f8bb9671c61a11d8537a24001a335906caf47d"
+      },
+      "selected_cross_pairs": [
+        [
+          1,
+          0,
+          "diff"
+        ],
+        [
+          1,
+          0,
+          "prod"
+        ],
+        [
+          1,
+          2,
+          "diff"
+        ],
+        [
+          1,
+          2,
+          "prod"
+        ],
+        [
+          1,
+          3,
+          "diff"
+        ],
+        [
+          1,
+          3,
+          "prod"
+        ],
+        [
+          1,
+          11,
+          "diff"
+        ],
+        [
+          1,
+          11,
+          "prod"
+        ],
+        [
+          1,
+          8,
+          "diff"
+        ],
+        [
+          1,
+          8,
+          "prod"
+        ],
+        [
+          0,
+          2,
+          "diff"
+        ],
+        [
+          0,
+          2,
+          "prod"
+        ],
+        [
+          0,
+          3,
+          "diff"
+        ],
+        [
+          0,
+          3,
+          "prod"
+        ],
+        [
+          0,
+          11,
+          "diff"
+        ],
+        [
+          0,
+          11,
+          "prod"
+        ],
+        [
+          0,
+          8,
+          "diff"
+        ],
+        [
+          0,
+          8,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          11,
+          "diff"
+        ],
+        [
+          2,
+          11,
+          "prod"
+        ],
+        [
+          2,
+          8,
+          "diff"
+        ],
+        [
+          2,
+          8,
+          "prod"
+        ],
+        [
+          3,
+          11,
+          "diff"
+        ],
+        [
+          3,
+          11,
+          "prod"
+        ],
+        [
+          3,
+          8,
+          "diff"
+        ],
+        [
+          3,
+          8,
+          "prod"
+        ],
+        [
+          11,
+          8,
+          "diff"
+        ],
+        [
+          11,
+          8,
+          "prod"
+        ]
+      ],
+      "task_id": 361251,
+      "validation_index_sha256": "49f3dfc569e55217dac1d3939c96197107d99a443aefc53ffbe8809f1bbf30c7"
+    },
+    {
+      "base": {
+        "actual_retained_tree_count": 1994,
+        "best_prefix_tree_count": 1994,
+        "best_validation_rmse": 0.006771463638493031,
+        "borders_sha256": "5d9f83b8462c477050d58d8eb821f9e63a149b36fc3bb04e0448ebe23452314c",
+        "fingerprinted_tree_count": 1994,
+        "model_sha256": "e73579dffc4f2f6060f4622d25f23f28fa197cbc9b9a47d52f00821e310d0d29",
+        "prediction_sha256": "02edf765c7210b66c87470379995f415bbdc4023777d383b637a4d9de17ea391",
+        "test_rmse": 0.0068029894212272525,
+        "validation_history_sha256": "9f53790ff0a58537de88ee9011eaaffcf4b80d97b4f55de274151ffc38447715"
+      },
+      "base_linear_selected": false,
+      "candidate_cross_pairs": [
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          3,
+          "diff"
+        ],
+        [
+          0,
+          3,
+          "prod"
+        ],
+        [
+          0,
+          2,
+          "diff"
+        ],
+        [
+          0,
+          2,
+          "prod"
+        ],
+        [
+          0,
+          10,
+          "diff"
+        ],
+        [
+          0,
+          10,
+          "prod"
+        ],
+        [
+          0,
+          9,
+          "diff"
+        ],
+        [
+          0,
+          9,
+          "prod"
+        ],
+        [
+          1,
+          3,
+          "diff"
+        ],
+        [
+          1,
+          3,
+          "prod"
+        ],
+        [
+          1,
+          2,
+          "diff"
+        ],
+        [
+          1,
+          2,
+          "prod"
+        ],
+        [
+          1,
+          10,
+          "diff"
+        ],
+        [
+          1,
+          10,
+          "prod"
+        ],
+        [
+          1,
+          9,
+          "diff"
+        ],
+        [
+          1,
+          9,
+          "prod"
+        ],
+        [
+          3,
+          2,
+          "diff"
+        ],
+        [
+          3,
+          2,
+          "prod"
+        ],
+        [
+          3,
+          10,
+          "diff"
+        ],
+        [
+          3,
+          10,
+          "prod"
+        ],
+        [
+          3,
+          9,
+          "diff"
+        ],
+        [
+          3,
+          9,
+          "prod"
+        ],
+        [
+          2,
+          10,
+          "diff"
+        ],
+        [
+          2,
+          10,
+          "prod"
+        ],
+        [
+          2,
+          9,
+          "diff"
+        ],
+        [
+          2,
+          9,
+          "prod"
+        ],
+        [
+          10,
+          9,
+          "diff"
+        ],
+        [
+          10,
+          9,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 2000,
+        "best_prefix_tree_count": 1990,
+        "best_validation_rmse": 0.006657941096007919,
+        "borders_sha256": "075aec3294ad30f5775fc1feda450e3f924c5c11140c501cac792f4e7531743a",
+        "fingerprinted_tree_count": 1990,
+        "model_sha256": "f86841d857481c57754c8da189018aaf80a3fce5b323b8a3c7fea39044dd4f6d",
+        "prediction_sha256": "9525fe373a13fc4c153a85f0d99fe8c7fe79900aefae360cc949b5b464983cad",
+        "test_rmse": 0.006537595682644377,
+        "validation_history_sha256": "338932b8f88e6cb5c27990a9958ad38231ba4e64faea3aaa9027cd186717b395"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 2000,
+        "best_prefix_tree_count": 1990,
+        "best_validation_rmse": 0.006657941096007919,
+        "borders_sha256": "075aec3294ad30f5775fc1feda450e3f924c5c11140c501cac792f4e7531743a",
+        "fingerprinted_tree_count": 2000,
+        "model_sha256": "08946ae41672218ed95cdec36c716918b1d5365f898ab677bba9e654a603c28b",
+        "prediction_sha256": "a693b26d9123f02cf2135e5908cb9d301184f13e23482e3dca810cfc0438b17a",
+        "test_rmse": 0.006538016266533093,
+        "validation_history_sha256": "338932b8f88e6cb5c27990a9958ad38231ba4e64faea3aaa9027cd186717b395"
+      },
+      "chimera_total_fit_seconds": 6.163107959,
+      "cross_selected": true,
+      "darko_total_fit_seconds": 6.130469875,
+      "dataset_name": "grid_stability",
+      "external_native_exact": true,
+      "fit_index_sha256": "08a6e888205c94095412e4b4ccc6bd30ef4a60fe0b9a1f3b9a35e59fca6afb18",
+      "fold": 5,
+      "outer_test_index_sha256": "33a9ca0fdf11307611edabb4eb9a6c91b4250e084c6dbe249713aeb069845a6c",
+      "outer_train_index_sha256": "0ec9423ec36917683720ee7f8a670a9cf1505c0078203bb1e6b434ce03b8a0fd",
+      "selected": {
+        "actual_retained_tree_count": 1990,
+        "best_prefix_tree_count": 1990,
+        "best_validation_rmse": 0.006657941096007919,
+        "borders_sha256": "075aec3294ad30f5775fc1feda450e3f924c5c11140c501cac792f4e7531743a",
+        "fingerprinted_tree_count": 1990,
+        "model_sha256": "f86841d857481c57754c8da189018aaf80a3fce5b323b8a3c7fea39044dd4f6d",
+        "prediction_sha256": "9525fe373a13fc4c153a85f0d99fe8c7fe79900aefae360cc949b5b464983cad",
+        "test_rmse": 0.006537595682644377,
+        "validation_history_sha256": "338932b8f88e6cb5c27990a9958ad38231ba4e64faea3aaa9027cd186717b395"
+      },
+      "selected_cross_pairs": [
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          3,
+          "diff"
+        ],
+        [
+          0,
+          3,
+          "prod"
+        ],
+        [
+          0,
+          2,
+          "diff"
+        ],
+        [
+          0,
+          2,
+          "prod"
+        ],
+        [
+          0,
+          10,
+          "diff"
+        ],
+        [
+          0,
+          10,
+          "prod"
+        ],
+        [
+          0,
+          9,
+          "diff"
+        ],
+        [
+          0,
+          9,
+          "prod"
+        ],
+        [
+          1,
+          3,
+          "diff"
+        ],
+        [
+          1,
+          3,
+          "prod"
+        ],
+        [
+          1,
+          2,
+          "diff"
+        ],
+        [
+          1,
+          2,
+          "prod"
+        ],
+        [
+          1,
+          10,
+          "diff"
+        ],
+        [
+          1,
+          10,
+          "prod"
+        ],
+        [
+          1,
+          9,
+          "diff"
+        ],
+        [
+          1,
+          9,
+          "prod"
+        ],
+        [
+          3,
+          2,
+          "diff"
+        ],
+        [
+          3,
+          2,
+          "prod"
+        ],
+        [
+          3,
+          10,
+          "diff"
+        ],
+        [
+          3,
+          10,
+          "prod"
+        ],
+        [
+          3,
+          9,
+          "diff"
+        ],
+        [
+          3,
+          9,
+          "prod"
+        ],
+        [
+          2,
+          10,
+          "diff"
+        ],
+        [
+          2,
+          10,
+          "prod"
+        ],
+        [
+          2,
+          9,
+          "diff"
+        ],
+        [
+          2,
+          9,
+          "prod"
+        ],
+        [
+          10,
+          9,
+          "diff"
+        ],
+        [
+          10,
+          9,
+          "prod"
+        ]
+      ],
+      "task_id": 361251,
+      "validation_index_sha256": "bfe2b68cbf37e00dd1d4ea9fbd0a0b5418054abd83d0fb1b01a772443d854cb6"
+    },
+    {
+      "base": {
+        "actual_retained_tree_count": 871,
+        "best_prefix_tree_count": 871,
+        "best_validation_rmse": 0.006807178096523151,
+        "borders_sha256": "2ff0cc9e538ca905fe781f34b70e6fd8c9c7e8ffa5324d3f38450a877217c79b",
+        "fingerprinted_tree_count": 871,
+        "model_sha256": "83381d5e545b09b8e00ed88b19759344eb9bd50419b93deddbfa3cf947f1d4b6",
+        "prediction_sha256": "a06573f56b90781db2b631c9a3e6e893be703cbb918bcdcd852f5161fde071c8",
+        "test_rmse": 0.0066639914413224545,
+        "validation_history_sha256": "2d03e76084b859b6342561803519089753cc1f69d86ce43d329fc681c82b77aa"
+      },
+      "base_linear_selected": true,
+      "candidate_cross_pairs": [
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          2,
+          "diff"
+        ],
+        [
+          0,
+          2,
+          "prod"
+        ],
+        [
+          0,
+          3,
+          "diff"
+        ],
+        [
+          0,
+          3,
+          "prod"
+        ],
+        [
+          0,
+          10,
+          "diff"
+        ],
+        [
+          0,
+          10,
+          "prod"
+        ],
+        [
+          0,
+          8,
+          "diff"
+        ],
+        [
+          0,
+          8,
+          "prod"
+        ],
+        [
+          1,
+          2,
+          "diff"
+        ],
+        [
+          1,
+          2,
+          "prod"
+        ],
+        [
+          1,
+          3,
+          "diff"
+        ],
+        [
+          1,
+          3,
+          "prod"
+        ],
+        [
+          1,
+          10,
+          "diff"
+        ],
+        [
+          1,
+          10,
+          "prod"
+        ],
+        [
+          1,
+          8,
+          "diff"
+        ],
+        [
+          1,
+          8,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          10,
+          "diff"
+        ],
+        [
+          2,
+          10,
+          "prod"
+        ],
+        [
+          2,
+          8,
+          "diff"
+        ],
+        [
+          2,
+          8,
+          "prod"
+        ],
+        [
+          3,
+          10,
+          "diff"
+        ],
+        [
+          3,
+          10,
+          "prod"
+        ],
+        [
+          3,
+          8,
+          "diff"
+        ],
+        [
+          3,
+          8,
+          "prod"
+        ],
+        [
+          10,
+          8,
+          "diff"
+        ],
+        [
+          10,
+          8,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 703,
+        "best_prefix_tree_count": 703,
+        "best_validation_rmse": 0.006423785406341814,
+        "borders_sha256": "5b35b004e1b61ae630e1ded22b1b31af1c1e3ae5ee31517794e90a9d43b67daf",
+        "fingerprinted_tree_count": 703,
+        "model_sha256": "e564c12894185d19b34eac906a473a37e5a8b821a5c808abaecff8a75f532b68",
+        "prediction_sha256": "fef3032531b9414847a05d606eef1fef8c2ee8b055b74ad9ebc577830b05afe3",
+        "test_rmse": 0.006139411756696575,
+        "validation_history_sha256": "0d2a2a947fb9594bf571a7434f4978e46f351f0a9df8ec7fbf9ec91ff860d535"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 703,
+        "best_prefix_tree_count": 703,
+        "best_validation_rmse": 0.006423785406341814,
+        "borders_sha256": "5b35b004e1b61ae630e1ded22b1b31af1c1e3ae5ee31517794e90a9d43b67daf",
+        "fingerprinted_tree_count": 703,
+        "model_sha256": "e564c12894185d19b34eac906a473a37e5a8b821a5c808abaecff8a75f532b68",
+        "prediction_sha256": "fef3032531b9414847a05d606eef1fef8c2ee8b055b74ad9ebc577830b05afe3",
+        "test_rmse": 0.006139411756696575,
+        "validation_history_sha256": "0d2a2a947fb9594bf571a7434f4978e46f351f0a9df8ec7fbf9ec91ff860d535"
+      },
+      "chimera_total_fit_seconds": 4.771092042,
+      "cross_selected": true,
+      "darko_total_fit_seconds": 4.671115083,
+      "dataset_name": "grid_stability",
+      "external_native_exact": true,
+      "fit_index_sha256": "6ca3f56c6792ece878d4e87e6562b0a1a88907585624ca95b03758810bf246a0",
+      "fold": 6,
+      "outer_test_index_sha256": "cd6f6c07b9a049277beb6fdb6947c62c86072c660310f80ff05fabe6fc2980d7",
+      "outer_train_index_sha256": "fc1dd422ebb89ebd99b56be06e295777eb97fb9fccf718a335dbb33d16a54f6e",
+      "selected": {
+        "actual_retained_tree_count": 703,
+        "best_prefix_tree_count": 703,
+        "best_validation_rmse": 0.006423785406341814,
+        "borders_sha256": "5b35b004e1b61ae630e1ded22b1b31af1c1e3ae5ee31517794e90a9d43b67daf",
+        "fingerprinted_tree_count": 703,
+        "model_sha256": "e564c12894185d19b34eac906a473a37e5a8b821a5c808abaecff8a75f532b68",
+        "prediction_sha256": "fef3032531b9414847a05d606eef1fef8c2ee8b055b74ad9ebc577830b05afe3",
+        "test_rmse": 0.006139411756696575,
+        "validation_history_sha256": "0d2a2a947fb9594bf571a7434f4978e46f351f0a9df8ec7fbf9ec91ff860d535"
+      },
+      "selected_cross_pairs": [
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          2,
+          "diff"
+        ],
+        [
+          0,
+          2,
+          "prod"
+        ],
+        [
+          0,
+          3,
+          "diff"
+        ],
+        [
+          0,
+          3,
+          "prod"
+        ],
+        [
+          0,
+          10,
+          "diff"
+        ],
+        [
+          0,
+          10,
+          "prod"
+        ],
+        [
+          0,
+          8,
+          "diff"
+        ],
+        [
+          0,
+          8,
+          "prod"
+        ],
+        [
+          1,
+          2,
+          "diff"
+        ],
+        [
+          1,
+          2,
+          "prod"
+        ],
+        [
+          1,
+          3,
+          "diff"
+        ],
+        [
+          1,
+          3,
+          "prod"
+        ],
+        [
+          1,
+          10,
+          "diff"
+        ],
+        [
+          1,
+          10,
+          "prod"
+        ],
+        [
+          1,
+          8,
+          "diff"
+        ],
+        [
+          1,
+          8,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          10,
+          "diff"
+        ],
+        [
+          2,
+          10,
+          "prod"
+        ],
+        [
+          2,
+          8,
+          "diff"
+        ],
+        [
+          2,
+          8,
+          "prod"
+        ],
+        [
+          3,
+          10,
+          "diff"
+        ],
+        [
+          3,
+          10,
+          "prod"
+        ],
+        [
+          3,
+          8,
+          "diff"
+        ],
+        [
+          3,
+          8,
+          "prod"
+        ],
+        [
+          10,
+          8,
+          "diff"
+        ],
+        [
+          10,
+          8,
+          "prod"
+        ]
+      ],
+      "task_id": 361251,
+      "validation_index_sha256": "f5e18cf549a87b3112d01e4bd2fa5b8a848b7440f98b827241b3ee74d1fb4cd1"
+    },
+    {
+      "base": {
+        "actual_retained_tree_count": 1123,
+        "best_prefix_tree_count": 1123,
+        "best_validation_rmse": 0.006997841914143977,
+        "borders_sha256": "3a6bc2b3f0dce9df7c3f96916db13e782069c4d2953f9623f0b69e44ef0b2a28",
+        "fingerprinted_tree_count": 1123,
+        "model_sha256": "1802c434fecc04bc2fd62f40d3828f53ce6fbb42b05523c37b22a26d1366efa8",
+        "prediction_sha256": "69bedaaba7caa9126e5ad15c39f0b58bfb96513c9209bd0b37a0deaf4df113ad",
+        "test_rmse": 0.007117731528912391,
+        "validation_history_sha256": "9d280dd7a78be01f30216ace023192266b8f49a07c95a6208da9a0de76ffae13"
+      },
+      "base_linear_selected": false,
+      "candidate_cross_pairs": [
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          2,
+          "diff"
+        ],
+        [
+          0,
+          2,
+          "prod"
+        ],
+        [
+          0,
+          3,
+          "diff"
+        ],
+        [
+          0,
+          3,
+          "prod"
+        ],
+        [
+          0,
+          10,
+          "diff"
+        ],
+        [
+          0,
+          10,
+          "prod"
+        ],
+        [
+          0,
+          8,
+          "diff"
+        ],
+        [
+          0,
+          8,
+          "prod"
+        ],
+        [
+          1,
+          2,
+          "diff"
+        ],
+        [
+          1,
+          2,
+          "prod"
+        ],
+        [
+          1,
+          3,
+          "diff"
+        ],
+        [
+          1,
+          3,
+          "prod"
+        ],
+        [
+          1,
+          10,
+          "diff"
+        ],
+        [
+          1,
+          10,
+          "prod"
+        ],
+        [
+          1,
+          8,
+          "diff"
+        ],
+        [
+          1,
+          8,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          10,
+          "diff"
+        ],
+        [
+          2,
+          10,
+          "prod"
+        ],
+        [
+          2,
+          8,
+          "diff"
+        ],
+        [
+          2,
+          8,
+          "prod"
+        ],
+        [
+          3,
+          10,
+          "diff"
+        ],
+        [
+          3,
+          10,
+          "prod"
+        ],
+        [
+          3,
+          8,
+          "diff"
+        ],
+        [
+          3,
+          8,
+          "prod"
+        ],
+        [
+          10,
+          8,
+          "diff"
+        ],
+        [
+          10,
+          8,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 1879,
+        "best_prefix_tree_count": 1879,
+        "best_validation_rmse": 0.006687996073595662,
+        "borders_sha256": "f15e269b72daa5224b7653c42d4d0a7be810eb75424b200d1eac3a7f13494306",
+        "fingerprinted_tree_count": 1879,
+        "model_sha256": "282e7b0fc2bb792ba2df7f29802137a75eb856bbdddce6c3d67a7d063b6ce747",
+        "prediction_sha256": "890bb9982d6a8d48f186d75899083f22cad89c23d694bbe70646b75c5121be0b",
+        "test_rmse": 0.0064713237226001405,
+        "validation_history_sha256": "6a4161b544cdb9c3afb97540d6156b4ada537c52f0a6a4f4c9e0236a4181b3f1"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 1879,
+        "best_prefix_tree_count": 1879,
+        "best_validation_rmse": 0.006687996073595662,
+        "borders_sha256": "f15e269b72daa5224b7653c42d4d0a7be810eb75424b200d1eac3a7f13494306",
+        "fingerprinted_tree_count": 1879,
+        "model_sha256": "282e7b0fc2bb792ba2df7f29802137a75eb856bbdddce6c3d67a7d063b6ce747",
+        "prediction_sha256": "890bb9982d6a8d48f186d75899083f22cad89c23d694bbe70646b75c5121be0b",
+        "test_rmse": 0.0064713237226001405,
+        "validation_history_sha256": "6a4161b544cdb9c3afb97540d6156b4ada537c52f0a6a4f4c9e0236a4181b3f1"
+      },
+      "chimera_total_fit_seconds": 4.810066,
+      "cross_selected": true,
+      "darko_total_fit_seconds": 5.089533958,
+      "dataset_name": "grid_stability",
+      "external_native_exact": true,
+      "fit_index_sha256": "c9a6ac50f73cb6d759c9c60eaa2d9159d234260c7b1dd18e58ee951f1d514591",
+      "fold": 7,
+      "outer_test_index_sha256": "30bd587118a2fe7d349790d185f3efc19d7736b34bbf3e851d74a03d5342c3ed",
+      "outer_train_index_sha256": "e2c78e5fc835dccc4c6ccc5b474c0a31a35f01f3a39a7792ae2f480805c9829e",
+      "selected": {
+        "actual_retained_tree_count": 1879,
+        "best_prefix_tree_count": 1879,
+        "best_validation_rmse": 0.006687996073595662,
+        "borders_sha256": "f15e269b72daa5224b7653c42d4d0a7be810eb75424b200d1eac3a7f13494306",
+        "fingerprinted_tree_count": 1879,
+        "model_sha256": "282e7b0fc2bb792ba2df7f29802137a75eb856bbdddce6c3d67a7d063b6ce747",
+        "prediction_sha256": "890bb9982d6a8d48f186d75899083f22cad89c23d694bbe70646b75c5121be0b",
+        "test_rmse": 0.0064713237226001405,
+        "validation_history_sha256": "6a4161b544cdb9c3afb97540d6156b4ada537c52f0a6a4f4c9e0236a4181b3f1"
+      },
+      "selected_cross_pairs": [
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          2,
+          "diff"
+        ],
+        [
+          0,
+          2,
+          "prod"
+        ],
+        [
+          0,
+          3,
+          "diff"
+        ],
+        [
+          0,
+          3,
+          "prod"
+        ],
+        [
+          0,
+          10,
+          "diff"
+        ],
+        [
+          0,
+          10,
+          "prod"
+        ],
+        [
+          0,
+          8,
+          "diff"
+        ],
+        [
+          0,
+          8,
+          "prod"
+        ],
+        [
+          1,
+          2,
+          "diff"
+        ],
+        [
+          1,
+          2,
+          "prod"
+        ],
+        [
+          1,
+          3,
+          "diff"
+        ],
+        [
+          1,
+          3,
+          "prod"
+        ],
+        [
+          1,
+          10,
+          "diff"
+        ],
+        [
+          1,
+          10,
+          "prod"
+        ],
+        [
+          1,
+          8,
+          "diff"
+        ],
+        [
+          1,
+          8,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          10,
+          "diff"
+        ],
+        [
+          2,
+          10,
+          "prod"
+        ],
+        [
+          2,
+          8,
+          "diff"
+        ],
+        [
+          2,
+          8,
+          "prod"
+        ],
+        [
+          3,
+          10,
+          "diff"
+        ],
+        [
+          3,
+          10,
+          "prod"
+        ],
+        [
+          3,
+          8,
+          "diff"
+        ],
+        [
+          3,
+          8,
+          "prod"
+        ],
+        [
+          10,
+          8,
+          "diff"
+        ],
+        [
+          10,
+          8,
+          "prod"
+        ]
+      ],
+      "task_id": 361251,
+      "validation_index_sha256": "f1b569ae4864036497d4ddc3e4c774e1103d597cb0d7dfa482c28e16d330b867"
+    },
+    {
+      "base": {
+        "actual_retained_tree_count": 593,
+        "best_prefix_tree_count": 593,
+        "best_validation_rmse": 0.007075451415213279,
+        "borders_sha256": "c36b647db9fc11635d375eda5f316d0c1527cdb157a762ce41293edb691a706e",
+        "fingerprinted_tree_count": 593,
+        "model_sha256": "742c72cb08d3e04bf321a5b5bcd9cc6fa0648f908a71630a9b4dc092559932f8",
+        "prediction_sha256": "ca3a4b2f64d54e668ab77c2ab115c82e934b96d4ac4fd208dec2b509ef8cb48f",
+        "test_rmse": 0.006810100216829837,
+        "validation_history_sha256": "53be6ee7448c9355e25a791aed8e02f075aac0394d8a726e31342d86492eb94c"
+      },
+      "base_linear_selected": true,
+      "candidate_cross_pairs": [
+        [
+          0,
+          2,
+          "diff"
+        ],
+        [
+          0,
+          2,
+          "prod"
+        ],
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          3,
+          "diff"
+        ],
+        [
+          0,
+          3,
+          "prod"
+        ],
+        [
+          0,
+          8,
+          "diff"
+        ],
+        [
+          0,
+          8,
+          "prod"
+        ],
+        [
+          0,
+          9,
+          "diff"
+        ],
+        [
+          0,
+          9,
+          "prod"
+        ],
+        [
+          2,
+          1,
+          "diff"
+        ],
+        [
+          2,
+          1,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          8,
+          "diff"
+        ],
+        [
+          2,
+          8,
+          "prod"
+        ],
+        [
+          2,
+          9,
+          "diff"
+        ],
+        [
+          2,
+          9,
+          "prod"
+        ],
+        [
+          1,
+          3,
+          "diff"
+        ],
+        [
+          1,
+          3,
+          "prod"
+        ],
+        [
+          1,
+          8,
+          "diff"
+        ],
+        [
+          1,
+          8,
+          "prod"
+        ],
+        [
+          1,
+          9,
+          "diff"
+        ],
+        [
+          1,
+          9,
+          "prod"
+        ],
+        [
+          3,
+          8,
+          "diff"
+        ],
+        [
+          3,
+          8,
+          "prod"
+        ],
+        [
+          3,
+          9,
+          "diff"
+        ],
+        [
+          3,
+          9,
+          "prod"
+        ],
+        [
+          8,
+          9,
+          "diff"
+        ],
+        [
+          8,
+          9,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 947,
+        "best_prefix_tree_count": 947,
+        "best_validation_rmse": 0.006544955187642796,
+        "borders_sha256": "37344ad84aae84455214d38f2835da197942c568b2a39c67b2bf48650c341bd8",
+        "fingerprinted_tree_count": 947,
+        "model_sha256": "c77e2522e1816e13e5410f7a0022566c457a676f2280d5fdbeb84cc4c2312f68",
+        "prediction_sha256": "f2808b3278916d9acd4cb4d986782de901d109882a71317e7debc1d345e1c914",
+        "test_rmse": 0.006108134719550588,
+        "validation_history_sha256": "fdaa6b2ce0cccf75cfb694a954f7918983262753137a64939672b24bd59264ce"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 947,
+        "best_prefix_tree_count": 947,
+        "best_validation_rmse": 0.006544955187642796,
+        "borders_sha256": "37344ad84aae84455214d38f2835da197942c568b2a39c67b2bf48650c341bd8",
+        "fingerprinted_tree_count": 947,
+        "model_sha256": "c77e2522e1816e13e5410f7a0022566c457a676f2280d5fdbeb84cc4c2312f68",
+        "prediction_sha256": "f2808b3278916d9acd4cb4d986782de901d109882a71317e7debc1d345e1c914",
+        "test_rmse": 0.006108134719550588,
+        "validation_history_sha256": "fdaa6b2ce0cccf75cfb694a954f7918983262753137a64939672b24bd59264ce"
+      },
+      "chimera_total_fit_seconds": 4.557213583,
+      "cross_selected": true,
+      "darko_total_fit_seconds": 4.400286875,
+      "dataset_name": "grid_stability",
+      "external_native_exact": true,
+      "fit_index_sha256": "caf6eb6ccb814fd935579732e38f20aeb0eaafa302fcb24b697fdad75618a9f3",
+      "fold": 8,
+      "outer_test_index_sha256": "e4d8d18f0cd2d69f8f28fd908e2cc4b3d5ae3b7b66b777118f6360f3c260aa57",
+      "outer_train_index_sha256": "cbf01964bb7b72fced0cd6b8d4a8340d6a96a95ca01e3c203b419ead4e785b23",
+      "selected": {
+        "actual_retained_tree_count": 947,
+        "best_prefix_tree_count": 947,
+        "best_validation_rmse": 0.006544955187642796,
+        "borders_sha256": "37344ad84aae84455214d38f2835da197942c568b2a39c67b2bf48650c341bd8",
+        "fingerprinted_tree_count": 947,
+        "model_sha256": "c77e2522e1816e13e5410f7a0022566c457a676f2280d5fdbeb84cc4c2312f68",
+        "prediction_sha256": "f2808b3278916d9acd4cb4d986782de901d109882a71317e7debc1d345e1c914",
+        "test_rmse": 0.006108134719550588,
+        "validation_history_sha256": "fdaa6b2ce0cccf75cfb694a954f7918983262753137a64939672b24bd59264ce"
+      },
+      "selected_cross_pairs": [
+        [
+          0,
+          2,
+          "diff"
+        ],
+        [
+          0,
+          2,
+          "prod"
+        ],
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          3,
+          "diff"
+        ],
+        [
+          0,
+          3,
+          "prod"
+        ],
+        [
+          0,
+          8,
+          "diff"
+        ],
+        [
+          0,
+          8,
+          "prod"
+        ],
+        [
+          0,
+          9,
+          "diff"
+        ],
+        [
+          0,
+          9,
+          "prod"
+        ],
+        [
+          2,
+          1,
+          "diff"
+        ],
+        [
+          2,
+          1,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          8,
+          "diff"
+        ],
+        [
+          2,
+          8,
+          "prod"
+        ],
+        [
+          2,
+          9,
+          "diff"
+        ],
+        [
+          2,
+          9,
+          "prod"
+        ],
+        [
+          1,
+          3,
+          "diff"
+        ],
+        [
+          1,
+          3,
+          "prod"
+        ],
+        [
+          1,
+          8,
+          "diff"
+        ],
+        [
+          1,
+          8,
+          "prod"
+        ],
+        [
+          1,
+          9,
+          "diff"
+        ],
+        [
+          1,
+          9,
+          "prod"
+        ],
+        [
+          3,
+          8,
+          "diff"
+        ],
+        [
+          3,
+          8,
+          "prod"
+        ],
+        [
+          3,
+          9,
+          "diff"
+        ],
+        [
+          3,
+          9,
+          "prod"
+        ],
+        [
+          8,
+          9,
+          "diff"
+        ],
+        [
+          8,
+          9,
+          "prod"
+        ]
+      ],
+      "task_id": 361251,
+      "validation_index_sha256": "8e968bcfc369588ce662d92c2b198ecd6cbc63c939674676cb2f9f407c2d6906"
+    },
+    {
+      "base": {
+        "actual_retained_tree_count": 1303,
+        "best_prefix_tree_count": 1303,
+        "best_validation_rmse": 0.00692786517674595,
+        "borders_sha256": "4f7f9ee9d9d0f059b24f5e945bc7f1cbee543abd54d303228913f71abe46c6f2",
+        "fingerprinted_tree_count": 1303,
+        "model_sha256": "642d62a7ce4f9524058f25ee7218adc63c7252e9cba0b54598bf9ac051e7a33d",
+        "prediction_sha256": "6309d1891fbd1a60426fc223b6ecbf7bc7874128853548373892b2a8589145a2",
+        "test_rmse": 0.006561996748226788,
+        "validation_history_sha256": "f9fd43604b7a0088311a8409700a3b5c95f6a2fe67b3d684422ffc1a8c3d2982"
+      },
+      "base_linear_selected": false,
+      "candidate_cross_pairs": [
+        [
+          2,
+          1,
+          "diff"
+        ],
+        [
+          2,
+          1,
+          "prod"
+        ],
+        [
+          2,
+          0,
+          "diff"
+        ],
+        [
+          2,
+          0,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          9,
+          "diff"
+        ],
+        [
+          2,
+          9,
+          "prod"
+        ],
+        [
+          2,
+          8,
+          "diff"
+        ],
+        [
+          2,
+          8,
+          "prod"
+        ],
+        [
+          1,
+          0,
+          "diff"
+        ],
+        [
+          1,
+          0,
+          "prod"
+        ],
+        [
+          1,
+          3,
+          "diff"
+        ],
+        [
+          1,
+          3,
+          "prod"
+        ],
+        [
+          1,
+          9,
+          "diff"
+        ],
+        [
+          1,
+          9,
+          "prod"
+        ],
+        [
+          1,
+          8,
+          "diff"
+        ],
+        [
+          1,
+          8,
+          "prod"
+        ],
+        [
+          0,
+          3,
+          "diff"
+        ],
+        [
+          0,
+          3,
+          "prod"
+        ],
+        [
+          0,
+          9,
+          "diff"
+        ],
+        [
+          0,
+          9,
+          "prod"
+        ],
+        [
+          0,
+          8,
+          "diff"
+        ],
+        [
+          0,
+          8,
+          "prod"
+        ],
+        [
+          3,
+          9,
+          "diff"
+        ],
+        [
+          3,
+          9,
+          "prod"
+        ],
+        [
+          3,
+          8,
+          "diff"
+        ],
+        [
+          3,
+          8,
+          "prod"
+        ],
+        [
+          9,
+          8,
+          "diff"
+        ],
+        [
+          9,
+          8,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 1680,
+        "best_prefix_tree_count": 1680,
+        "best_validation_rmse": 0.006822303456315713,
+        "borders_sha256": "baf1b4033e7c4666d8eea555f4c7bd7f8c0e2f2178445424649c925910c25d25",
+        "fingerprinted_tree_count": 1680,
+        "model_sha256": "019aed25ee28b5d4e1471560c1d1282b453b4960e9d8000f624980fce8cb8724",
+        "prediction_sha256": "6b7d872c1d4d2ec67294b14699a8ff1cb8e017f10e08918c9b788b2231e4e2e3",
+        "test_rmse": 0.006465350621057376,
+        "validation_history_sha256": "6933abbb07e8d752c4b2e7c350991890224b54519c64542977852462d8acaa42"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 1680,
+        "best_prefix_tree_count": 1680,
+        "best_validation_rmse": 0.006822303456315713,
+        "borders_sha256": "baf1b4033e7c4666d8eea555f4c7bd7f8c0e2f2178445424649c925910c25d25",
+        "fingerprinted_tree_count": 1680,
+        "model_sha256": "019aed25ee28b5d4e1471560c1d1282b453b4960e9d8000f624980fce8cb8724",
+        "prediction_sha256": "6b7d872c1d4d2ec67294b14699a8ff1cb8e017f10e08918c9b788b2231e4e2e3",
+        "test_rmse": 0.006465350621057376,
+        "validation_history_sha256": "6933abbb07e8d752c4b2e7c350991890224b54519c64542977852462d8acaa42"
+      },
+      "chimera_total_fit_seconds": 4.887756792,
+      "cross_selected": true,
+      "darko_total_fit_seconds": 5.082002792,
+      "dataset_name": "grid_stability",
+      "external_native_exact": true,
+      "fit_index_sha256": "465fd1c17ab7839c5462d8e3aac95c5b07c90b83163f44616177925c4d84cd8f",
+      "fold": 9,
+      "outer_test_index_sha256": "42f7dc1939a94c92921c04d20477077bbb572747a8a26270fcb473df5bbb3685",
+      "outer_train_index_sha256": "799c34695295fe4bf098776498de9be2984977279a735cea0b6b27c7d1a4d84c",
+      "selected": {
+        "actual_retained_tree_count": 1680,
+        "best_prefix_tree_count": 1680,
+        "best_validation_rmse": 0.006822303456315713,
+        "borders_sha256": "baf1b4033e7c4666d8eea555f4c7bd7f8c0e2f2178445424649c925910c25d25",
+        "fingerprinted_tree_count": 1680,
+        "model_sha256": "019aed25ee28b5d4e1471560c1d1282b453b4960e9d8000f624980fce8cb8724",
+        "prediction_sha256": "6b7d872c1d4d2ec67294b14699a8ff1cb8e017f10e08918c9b788b2231e4e2e3",
+        "test_rmse": 0.006465350621057376,
+        "validation_history_sha256": "6933abbb07e8d752c4b2e7c350991890224b54519c64542977852462d8acaa42"
+      },
+      "selected_cross_pairs": [
+        [
+          2,
+          1,
+          "diff"
+        ],
+        [
+          2,
+          1,
+          "prod"
+        ],
+        [
+          2,
+          0,
+          "diff"
+        ],
+        [
+          2,
+          0,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          9,
+          "diff"
+        ],
+        [
+          2,
+          9,
+          "prod"
+        ],
+        [
+          2,
+          8,
+          "diff"
+        ],
+        [
+          2,
+          8,
+          "prod"
+        ],
+        [
+          1,
+          0,
+          "diff"
+        ],
+        [
+          1,
+          0,
+          "prod"
+        ],
+        [
+          1,
+          3,
+          "diff"
+        ],
+        [
+          1,
+          3,
+          "prod"
+        ],
+        [
+          1,
+          9,
+          "diff"
+        ],
+        [
+          1,
+          9,
+          "prod"
+        ],
+        [
+          1,
+          8,
+          "diff"
+        ],
+        [
+          1,
+          8,
+          "prod"
+        ],
+        [
+          0,
+          3,
+          "diff"
+        ],
+        [
+          0,
+          3,
+          "prod"
+        ],
+        [
+          0,
+          9,
+          "diff"
+        ],
+        [
+          0,
+          9,
+          "prod"
+        ],
+        [
+          0,
+          8,
+          "diff"
+        ],
+        [
+          0,
+          8,
+          "prod"
+        ],
+        [
+          3,
+          9,
+          "diff"
+        ],
+        [
+          3,
+          9,
+          "prod"
+        ],
+        [
+          3,
+          8,
+          "diff"
+        ],
+        [
+          3,
+          8,
+          "prod"
+        ],
+        [
+          9,
+          8,
+          "diff"
+        ],
+        [
+          9,
+          8,
+          "prod"
+        ]
+      ],
+      "task_id": 361251,
+      "validation_index_sha256": "41abc80270caa61ca5ac3901e5661c3db47c0106cd51e0f4ccebdd7365ad58af"
+    },
+    {
+      "base": {
+        "actual_retained_tree_count": 657,
+        "best_prefix_tree_count": 657,
+        "best_validation_rmse": 0.08792334386080089,
+        "borders_sha256": "1813c28ac7b57901c29c042dcb19f412dbad47f711c0acdd7416fe4cad81cdab",
+        "fingerprinted_tree_count": 657,
+        "model_sha256": "3ab960262a2c7e9ffb58b7f7bc7b13a0957d5c37a02a210e6962f81dd76d1077",
+        "prediction_sha256": "9de52a14d2f1cfcf12bb3216eadd54e803ff14daedce2b4669eeeb7f968516fa",
+        "test_rmse": 0.08804565832666568,
+        "validation_history_sha256": "54c3cdb82378710491c6c99abeb3649381628d9702ca059e846e40e307787313"
+      },
+      "base_linear_selected": true,
+      "candidate_cross_pairs": [
+        [
+          2,
+          5,
+          "diff"
+        ],
+        [
+          2,
+          5,
+          "prod"
+        ],
+        [
+          2,
+          4,
+          "diff"
+        ],
+        [
+          2,
+          4,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          6,
+          "diff"
+        ],
+        [
+          2,
+          6,
+          "prod"
+        ],
+        [
+          2,
+          0,
+          "diff"
+        ],
+        [
+          2,
+          0,
+          "prod"
+        ],
+        [
+          5,
+          4,
+          "diff"
+        ],
+        [
+          5,
+          4,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          6,
+          "diff"
+        ],
+        [
+          5,
+          6,
+          "prod"
+        ],
+        [
+          5,
+          0,
+          "diff"
+        ],
+        [
+          5,
+          0,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          6,
+          "diff"
+        ],
+        [
+          4,
+          6,
+          "prod"
+        ],
+        [
+          4,
+          0,
+          "diff"
+        ],
+        [
+          4,
+          0,
+          "prod"
+        ],
+        [
+          3,
+          6,
+          "diff"
+        ],
+        [
+          3,
+          6,
+          "prod"
+        ],
+        [
+          3,
+          0,
+          "diff"
+        ],
+        [
+          3,
+          0,
+          "prod"
+        ],
+        [
+          6,
+          0,
+          "diff"
+        ],
+        [
+          6,
+          0,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 968,
+        "best_prefix_tree_count": 968,
+        "best_validation_rmse": 0.0866788297519534,
+        "borders_sha256": "64bc480ec5c1f39ac016dbcbfb44c9acbbeb5d0e5d67c546486d20964212b3f8",
+        "fingerprinted_tree_count": 968,
+        "model_sha256": "f6ad5358d94495cb7b123c69cc2a3e8fe2e2663453a73c432d224031cb6a2764",
+        "prediction_sha256": "2ce32379a90530ba87bc5db33e6fe6b51ca649a41ba51d361f3eda9cfb973e42",
+        "test_rmse": 0.08453574744619533,
+        "validation_history_sha256": "befef967d7e8de40aaa30babd407d5ea4244fb5063e30791f760bdf7e915be9b"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 968,
+        "best_prefix_tree_count": 968,
+        "best_validation_rmse": 0.0866788297519534,
+        "borders_sha256": "64bc480ec5c1f39ac016dbcbfb44c9acbbeb5d0e5d67c546486d20964212b3f8",
+        "fingerprinted_tree_count": 968,
+        "model_sha256": "f6ad5358d94495cb7b123c69cc2a3e8fe2e2663453a73c432d224031cb6a2764",
+        "prediction_sha256": "2ce32379a90530ba87bc5db33e6fe6b51ca649a41ba51d361f3eda9cfb973e42",
+        "test_rmse": 0.08453574744619533,
+        "validation_history_sha256": "befef967d7e8de40aaa30babd407d5ea4244fb5063e30791f760bdf7e915be9b"
+      },
+      "chimera_total_fit_seconds": 4.262158542,
+      "cross_selected": true,
+      "darko_total_fit_seconds": 4.191478667,
+      "dataset_name": "kin8nm",
+      "external_native_exact": true,
+      "fit_index_sha256": "ce3afac13c5fb79a51be0b723527f2757414138cf5cde53adbbc40749f47a876",
+      "fold": 3,
+      "outer_test_index_sha256": "c04cd2faf7dcf9dbcf8f550026b603c265ee97000cf2b25a49536fd616ea7d14",
+      "outer_train_index_sha256": "7c661de4473406039c9ad3a7827d302f998303a14fa7f9c4aeed97a90bab5431",
+      "selected": {
+        "actual_retained_tree_count": 968,
+        "best_prefix_tree_count": 968,
+        "best_validation_rmse": 0.0866788297519534,
+        "borders_sha256": "64bc480ec5c1f39ac016dbcbfb44c9acbbeb5d0e5d67c546486d20964212b3f8",
+        "fingerprinted_tree_count": 968,
+        "model_sha256": "f6ad5358d94495cb7b123c69cc2a3e8fe2e2663453a73c432d224031cb6a2764",
+        "prediction_sha256": "2ce32379a90530ba87bc5db33e6fe6b51ca649a41ba51d361f3eda9cfb973e42",
+        "test_rmse": 0.08453574744619533,
+        "validation_history_sha256": "befef967d7e8de40aaa30babd407d5ea4244fb5063e30791f760bdf7e915be9b"
+      },
+      "selected_cross_pairs": [
+        [
+          2,
+          5,
+          "diff"
+        ],
+        [
+          2,
+          5,
+          "prod"
+        ],
+        [
+          2,
+          4,
+          "diff"
+        ],
+        [
+          2,
+          4,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          6,
+          "diff"
+        ],
+        [
+          2,
+          6,
+          "prod"
+        ],
+        [
+          2,
+          0,
+          "diff"
+        ],
+        [
+          2,
+          0,
+          "prod"
+        ],
+        [
+          5,
+          4,
+          "diff"
+        ],
+        [
+          5,
+          4,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          6,
+          "diff"
+        ],
+        [
+          5,
+          6,
+          "prod"
+        ],
+        [
+          5,
+          0,
+          "diff"
+        ],
+        [
+          5,
+          0,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          6,
+          "diff"
+        ],
+        [
+          4,
+          6,
+          "prod"
+        ],
+        [
+          4,
+          0,
+          "diff"
+        ],
+        [
+          4,
+          0,
+          "prod"
+        ],
+        [
+          3,
+          6,
+          "diff"
+        ],
+        [
+          3,
+          6,
+          "prod"
+        ],
+        [
+          3,
+          0,
+          "diff"
+        ],
+        [
+          3,
+          0,
+          "prod"
+        ],
+        [
+          6,
+          0,
+          "diff"
+        ],
+        [
+          6,
+          0,
+          "prod"
+        ]
+      ],
+      "task_id": 361258,
+      "validation_index_sha256": "1c6a3a74d89ea093db94aa0346a2035db26fce790af3653b6fd0189c493cc977"
+    },
+    {
+      "base": {
+        "actual_retained_tree_count": 499,
+        "best_prefix_tree_count": 499,
+        "best_validation_rmse": 0.0868596829333856,
+        "borders_sha256": "c50953928c2f4c9cf772bb5d0e51fff89b5b800a465d78d6839572f9e53e313e",
+        "fingerprinted_tree_count": 499,
+        "model_sha256": "ea7304f88ee828773c61d2217a4ea34568074941d1b8c3c4e8f8340267508a24",
+        "prediction_sha256": "2cf050f7ec2cbde20ed655fd3eda123a1df2523874996554fb05c7d91a718211",
+        "test_rmse": 0.08887286526979322,
+        "validation_history_sha256": "cd0ab6b82e98998707140837851e56741fba94a0ed2be7e26c85a6675edce706"
+      },
+      "base_linear_selected": true,
+      "candidate_cross_pairs": [
+        [
+          2,
+          4,
+          "diff"
+        ],
+        [
+          2,
+          4,
+          "prod"
+        ],
+        [
+          2,
+          6,
+          "diff"
+        ],
+        [
+          2,
+          6,
+          "prod"
+        ],
+        [
+          2,
+          5,
+          "diff"
+        ],
+        [
+          2,
+          5,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          7,
+          "diff"
+        ],
+        [
+          2,
+          7,
+          "prod"
+        ],
+        [
+          4,
+          6,
+          "diff"
+        ],
+        [
+          4,
+          6,
+          "prod"
+        ],
+        [
+          4,
+          5,
+          "diff"
+        ],
+        [
+          4,
+          5,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          7,
+          "diff"
+        ],
+        [
+          4,
+          7,
+          "prod"
+        ],
+        [
+          6,
+          5,
+          "diff"
+        ],
+        [
+          6,
+          5,
+          "prod"
+        ],
+        [
+          6,
+          3,
+          "diff"
+        ],
+        [
+          6,
+          3,
+          "prod"
+        ],
+        [
+          6,
+          7,
+          "diff"
+        ],
+        [
+          6,
+          7,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          7,
+          "diff"
+        ],
+        [
+          5,
+          7,
+          "prod"
+        ],
+        [
+          3,
+          7,
+          "diff"
+        ],
+        [
+          3,
+          7,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 665,
+        "best_prefix_tree_count": 665,
+        "best_validation_rmse": 0.08124293160574593,
+        "borders_sha256": "6c8f53340dcbea4531dc50c8a3aedbffbde3a2f0b3bd8347f24272a465eca3d3",
+        "fingerprinted_tree_count": 665,
+        "model_sha256": "3a85f21adafeca96b67bb049323deac3d3a96092b7fa9b300a5acf2b9834f30f",
+        "prediction_sha256": "ed63d6f8c56d17926f4450f68e4d097a2ab7ae3f6c67448818d87e9df8d0371c",
+        "test_rmse": 0.08028762424014968,
+        "validation_history_sha256": "0f5e1037003754a05136a852fac23dd208dbb82ef4e5a77a5b9b741b9c14fc54"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 665,
+        "best_prefix_tree_count": 665,
+        "best_validation_rmse": 0.08124293160574593,
+        "borders_sha256": "6c8f53340dcbea4531dc50c8a3aedbffbde3a2f0b3bd8347f24272a465eca3d3",
+        "fingerprinted_tree_count": 665,
+        "model_sha256": "3a85f21adafeca96b67bb049323deac3d3a96092b7fa9b300a5acf2b9834f30f",
+        "prediction_sha256": "ed63d6f8c56d17926f4450f68e4d097a2ab7ae3f6c67448818d87e9df8d0371c",
+        "test_rmse": 0.08028762424014968,
+        "validation_history_sha256": "0f5e1037003754a05136a852fac23dd208dbb82ef4e5a77a5b9b741b9c14fc54"
+      },
+      "chimera_total_fit_seconds": 3.459387458,
+      "cross_selected": true,
+      "darko_total_fit_seconds": 3.4441222930000004,
+      "dataset_name": "kin8nm",
+      "external_native_exact": true,
+      "fit_index_sha256": "541fd6811239a183a726ac5ea6a4413c6754631fa38cdb2cb3eb2ca36dbb22c0",
+      "fold": 4,
+      "outer_test_index_sha256": "a6d4205dd086aae496cfff4df42f0881a282e3f2d0e99fa722479df8948e0fe5",
+      "outer_train_index_sha256": "f180dbcdf3733a17fdfdb2dc36cb3c747f5758f608e2c0264ca25078d7ef0b9d",
+      "selected": {
+        "actual_retained_tree_count": 665,
+        "best_prefix_tree_count": 665,
+        "best_validation_rmse": 0.08124293160574593,
+        "borders_sha256": "6c8f53340dcbea4531dc50c8a3aedbffbde3a2f0b3bd8347f24272a465eca3d3",
+        "fingerprinted_tree_count": 665,
+        "model_sha256": "3a85f21adafeca96b67bb049323deac3d3a96092b7fa9b300a5acf2b9834f30f",
+        "prediction_sha256": "ed63d6f8c56d17926f4450f68e4d097a2ab7ae3f6c67448818d87e9df8d0371c",
+        "test_rmse": 0.08028762424014968,
+        "validation_history_sha256": "0f5e1037003754a05136a852fac23dd208dbb82ef4e5a77a5b9b741b9c14fc54"
+      },
+      "selected_cross_pairs": [
+        [
+          2,
+          4,
+          "diff"
+        ],
+        [
+          2,
+          4,
+          "prod"
+        ],
+        [
+          2,
+          6,
+          "diff"
+        ],
+        [
+          2,
+          6,
+          "prod"
+        ],
+        [
+          2,
+          5,
+          "diff"
+        ],
+        [
+          2,
+          5,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          7,
+          "diff"
+        ],
+        [
+          2,
+          7,
+          "prod"
+        ],
+        [
+          4,
+          6,
+          "diff"
+        ],
+        [
+          4,
+          6,
+          "prod"
+        ],
+        [
+          4,
+          5,
+          "diff"
+        ],
+        [
+          4,
+          5,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          7,
+          "diff"
+        ],
+        [
+          4,
+          7,
+          "prod"
+        ],
+        [
+          6,
+          5,
+          "diff"
+        ],
+        [
+          6,
+          5,
+          "prod"
+        ],
+        [
+          6,
+          3,
+          "diff"
+        ],
+        [
+          6,
+          3,
+          "prod"
+        ],
+        [
+          6,
+          7,
+          "diff"
+        ],
+        [
+          6,
+          7,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          7,
+          "diff"
+        ],
+        [
+          5,
+          7,
+          "prod"
+        ],
+        [
+          3,
+          7,
+          "diff"
+        ],
+        [
+          3,
+          7,
+          "prod"
+        ]
+      ],
+      "task_id": 361258,
+      "validation_index_sha256": "e81a71c4921c223d088fdfe72ed2e6c0b2502ca33b3e6058a0e3b6287ef2414b"
+    },
+    {
+      "base": {
+        "actual_retained_tree_count": 448,
+        "best_prefix_tree_count": 448,
+        "best_validation_rmse": 0.08882157815983976,
+        "borders_sha256": "d432cb2677e199bb1d08c58560d3d94151f1cd7bdd31ddb30850c451d033c93a",
+        "fingerprinted_tree_count": 448,
+        "model_sha256": "faa7f466c5337e1d72d71165538c1e7459a2d39a27b4e7739e5981be5e925312",
+        "prediction_sha256": "822fd548a376f9e497b794069401fac53405982b46a8693aa4f77ffb12254ef4",
+        "test_rmse": 0.09072599521412811,
+        "validation_history_sha256": "0294bc862e2b01ff46e1598f3fda824e9423dedc0e352914fd0122152090e117"
+      },
+      "base_linear_selected": true,
+      "candidate_cross_pairs": [
+        [
+          2,
+          6,
+          "diff"
+        ],
+        [
+          2,
+          6,
+          "prod"
+        ],
+        [
+          2,
+          4,
+          "diff"
+        ],
+        [
+          2,
+          4,
+          "prod"
+        ],
+        [
+          2,
+          5,
+          "diff"
+        ],
+        [
+          2,
+          5,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          7,
+          "diff"
+        ],
+        [
+          2,
+          7,
+          "prod"
+        ],
+        [
+          6,
+          4,
+          "diff"
+        ],
+        [
+          6,
+          4,
+          "prod"
+        ],
+        [
+          6,
+          5,
+          "diff"
+        ],
+        [
+          6,
+          5,
+          "prod"
+        ],
+        [
+          6,
+          3,
+          "diff"
+        ],
+        [
+          6,
+          3,
+          "prod"
+        ],
+        [
+          6,
+          7,
+          "diff"
+        ],
+        [
+          6,
+          7,
+          "prod"
+        ],
+        [
+          4,
+          5,
+          "diff"
+        ],
+        [
+          4,
+          5,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          7,
+          "diff"
+        ],
+        [
+          4,
+          7,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          7,
+          "diff"
+        ],
+        [
+          5,
+          7,
+          "prod"
+        ],
+        [
+          3,
+          7,
+          "diff"
+        ],
+        [
+          3,
+          7,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 745,
+        "best_prefix_tree_count": 745,
+        "best_validation_rmse": 0.08081380809151409,
+        "borders_sha256": "b735dd7671e76fa7472326d655b7d0c142ab999c43397eb3fabe19dbea1250f3",
+        "fingerprinted_tree_count": 745,
+        "model_sha256": "2e9d09463b3041099f4f8422742a76c9cfd95a6430aa71e4ff5efee39866dbec",
+        "prediction_sha256": "482ccd31982acc2f528486f96c517c271c8d309b76747b5eeb3be7430ae198af",
+        "test_rmse": 0.08454631676696413,
+        "validation_history_sha256": "cc5c0d03d7355a8e3970d4275dedeed406b104b7eb821cb01b2e9625ca936ce4"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 745,
+        "best_prefix_tree_count": 745,
+        "best_validation_rmse": 0.08081380809151409,
+        "borders_sha256": "b735dd7671e76fa7472326d655b7d0c142ab999c43397eb3fabe19dbea1250f3",
+        "fingerprinted_tree_count": 745,
+        "model_sha256": "2e9d09463b3041099f4f8422742a76c9cfd95a6430aa71e4ff5efee39866dbec",
+        "prediction_sha256": "482ccd31982acc2f528486f96c517c271c8d309b76747b5eeb3be7430ae198af",
+        "test_rmse": 0.08454631676696413,
+        "validation_history_sha256": "cc5c0d03d7355a8e3970d4275dedeed406b104b7eb821cb01b2e9625ca936ce4"
+      },
+      "chimera_total_fit_seconds": 3.929105209,
+      "cross_selected": true,
+      "darko_total_fit_seconds": 4.303890167,
+      "dataset_name": "kin8nm",
+      "external_native_exact": true,
+      "fit_index_sha256": "8a55e0621294f7448ceff6c7c07b043de60083f6185cd8d634af9fddf25b8c39",
+      "fold": 5,
+      "outer_test_index_sha256": "3b8f1692ecb5347c56494716a6145a8fcd47b602f407159a9c971bdc6977ce13",
+      "outer_train_index_sha256": "978352973a293dcd4d0d46ee0d28d6fc8bce0affce30224b211fa2df17ff2866",
+      "selected": {
+        "actual_retained_tree_count": 745,
+        "best_prefix_tree_count": 745,
+        "best_validation_rmse": 0.08081380809151409,
+        "borders_sha256": "b735dd7671e76fa7472326d655b7d0c142ab999c43397eb3fabe19dbea1250f3",
+        "fingerprinted_tree_count": 745,
+        "model_sha256": "2e9d09463b3041099f4f8422742a76c9cfd95a6430aa71e4ff5efee39866dbec",
+        "prediction_sha256": "482ccd31982acc2f528486f96c517c271c8d309b76747b5eeb3be7430ae198af",
+        "test_rmse": 0.08454631676696413,
+        "validation_history_sha256": "cc5c0d03d7355a8e3970d4275dedeed406b104b7eb821cb01b2e9625ca936ce4"
+      },
+      "selected_cross_pairs": [
+        [
+          2,
+          6,
+          "diff"
+        ],
+        [
+          2,
+          6,
+          "prod"
+        ],
+        [
+          2,
+          4,
+          "diff"
+        ],
+        [
+          2,
+          4,
+          "prod"
+        ],
+        [
+          2,
+          5,
+          "diff"
+        ],
+        [
+          2,
+          5,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          7,
+          "diff"
+        ],
+        [
+          2,
+          7,
+          "prod"
+        ],
+        [
+          6,
+          4,
+          "diff"
+        ],
+        [
+          6,
+          4,
+          "prod"
+        ],
+        [
+          6,
+          5,
+          "diff"
+        ],
+        [
+          6,
+          5,
+          "prod"
+        ],
+        [
+          6,
+          3,
+          "diff"
+        ],
+        [
+          6,
+          3,
+          "prod"
+        ],
+        [
+          6,
+          7,
+          "diff"
+        ],
+        [
+          6,
+          7,
+          "prod"
+        ],
+        [
+          4,
+          5,
+          "diff"
+        ],
+        [
+          4,
+          5,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          7,
+          "diff"
+        ],
+        [
+          4,
+          7,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          7,
+          "diff"
+        ],
+        [
+          5,
+          7,
+          "prod"
+        ],
+        [
+          3,
+          7,
+          "diff"
+        ],
+        [
+          3,
+          7,
+          "prod"
+        ]
+      ],
+      "task_id": 361258,
+      "validation_index_sha256": "baefcc03122f403a57a438365d2f2ba7e58fa1da6556ca0bcbb039d75520a45d"
+    },
+    {
+      "base": {
+        "actual_retained_tree_count": 532,
+        "best_prefix_tree_count": 532,
+        "best_validation_rmse": 0.0870237464378881,
+        "borders_sha256": "6c5fbc2efd09fa8b00d7c65a3fc2c56efa50179643a84dc5af4358c488a63337",
+        "fingerprinted_tree_count": 532,
+        "model_sha256": "42a8c4c5b0a7e7ecbbb383457d12f14c76a21370fef8221514ad640b46da2116",
+        "prediction_sha256": "8d1ea184ea13d344d48dcdbb3db00def31d4caed19c36e654e69b5c93efae95e",
+        "test_rmse": 0.093369874783158,
+        "validation_history_sha256": "05288aa4d98b40bcadcc4e1e22c964b83d4d5ae22c5d7837dc2aa1443242c704"
+      },
+      "base_linear_selected": true,
+      "candidate_cross_pairs": [
+        [
+          2,
+          5,
+          "diff"
+        ],
+        [
+          2,
+          5,
+          "prod"
+        ],
+        [
+          2,
+          4,
+          "diff"
+        ],
+        [
+          2,
+          4,
+          "prod"
+        ],
+        [
+          2,
+          6,
+          "diff"
+        ],
+        [
+          2,
+          6,
+          "prod"
+        ],
+        [
+          2,
+          7,
+          "diff"
+        ],
+        [
+          2,
+          7,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          4,
+          "diff"
+        ],
+        [
+          5,
+          4,
+          "prod"
+        ],
+        [
+          5,
+          6,
+          "diff"
+        ],
+        [
+          5,
+          6,
+          "prod"
+        ],
+        [
+          5,
+          7,
+          "diff"
+        ],
+        [
+          5,
+          7,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          6,
+          "diff"
+        ],
+        [
+          4,
+          6,
+          "prod"
+        ],
+        [
+          4,
+          7,
+          "diff"
+        ],
+        [
+          4,
+          7,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          6,
+          7,
+          "diff"
+        ],
+        [
+          6,
+          7,
+          "prod"
+        ],
+        [
+          6,
+          3,
+          "diff"
+        ],
+        [
+          6,
+          3,
+          "prod"
+        ],
+        [
+          7,
+          3,
+          "diff"
+        ],
+        [
+          7,
+          3,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 709,
+        "best_prefix_tree_count": 709,
+        "best_validation_rmse": 0.07965637810704392,
+        "borders_sha256": "c9d4be701ce41a369baaeeae29db8bf4ec99a5263367f3b2cd00074b3ff25107",
+        "fingerprinted_tree_count": 709,
+        "model_sha256": "17c69d77764a974d7df3e447e29036a279fd12cf839cf9647fd72428d27e7d3a",
+        "prediction_sha256": "58508ba9294f751de11d09df8083347841e211e94ead96ef373bfaf721467131",
+        "test_rmse": 0.08129728508431343,
+        "validation_history_sha256": "24e77d88a393cfd33a40a3748ca939b67b0223f6377771409bca2cb93d947343"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 709,
+        "best_prefix_tree_count": 709,
+        "best_validation_rmse": 0.07965637810704392,
+        "borders_sha256": "c9d4be701ce41a369baaeeae29db8bf4ec99a5263367f3b2cd00074b3ff25107",
+        "fingerprinted_tree_count": 709,
+        "model_sha256": "17c69d77764a974d7df3e447e29036a279fd12cf839cf9647fd72428d27e7d3a",
+        "prediction_sha256": "58508ba9294f751de11d09df8083347841e211e94ead96ef373bfaf721467131",
+        "test_rmse": 0.08129728508431343,
+        "validation_history_sha256": "24e77d88a393cfd33a40a3748ca939b67b0223f6377771409bca2cb93d947343"
+      },
+      "chimera_total_fit_seconds": 3.708590541,
+      "cross_selected": true,
+      "darko_total_fit_seconds": 3.609384458,
+      "dataset_name": "kin8nm",
+      "external_native_exact": true,
+      "fit_index_sha256": "50ff85bdb593fd24b6690bd179f81ee2b33795960232830d96cc535cdce49b2a",
+      "fold": 6,
+      "outer_test_index_sha256": "7b0540063ddadc5666777898a4e69f419a46bafcb3da0b64df6cad1e861a033e",
+      "outer_train_index_sha256": "4df0eec7ae505a5c9e5d42024605fe2ed628a0a56e33d888c4ffb4cad63cd57e",
+      "selected": {
+        "actual_retained_tree_count": 709,
+        "best_prefix_tree_count": 709,
+        "best_validation_rmse": 0.07965637810704392,
+        "borders_sha256": "c9d4be701ce41a369baaeeae29db8bf4ec99a5263367f3b2cd00074b3ff25107",
+        "fingerprinted_tree_count": 709,
+        "model_sha256": "17c69d77764a974d7df3e447e29036a279fd12cf839cf9647fd72428d27e7d3a",
+        "prediction_sha256": "58508ba9294f751de11d09df8083347841e211e94ead96ef373bfaf721467131",
+        "test_rmse": 0.08129728508431343,
+        "validation_history_sha256": "24e77d88a393cfd33a40a3748ca939b67b0223f6377771409bca2cb93d947343"
+      },
+      "selected_cross_pairs": [
+        [
+          2,
+          5,
+          "diff"
+        ],
+        [
+          2,
+          5,
+          "prod"
+        ],
+        [
+          2,
+          4,
+          "diff"
+        ],
+        [
+          2,
+          4,
+          "prod"
+        ],
+        [
+          2,
+          6,
+          "diff"
+        ],
+        [
+          2,
+          6,
+          "prod"
+        ],
+        [
+          2,
+          7,
+          "diff"
+        ],
+        [
+          2,
+          7,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          4,
+          "diff"
+        ],
+        [
+          5,
+          4,
+          "prod"
+        ],
+        [
+          5,
+          6,
+          "diff"
+        ],
+        [
+          5,
+          6,
+          "prod"
+        ],
+        [
+          5,
+          7,
+          "diff"
+        ],
+        [
+          5,
+          7,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          6,
+          "diff"
+        ],
+        [
+          4,
+          6,
+          "prod"
+        ],
+        [
+          4,
+          7,
+          "diff"
+        ],
+        [
+          4,
+          7,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          6,
+          7,
+          "diff"
+        ],
+        [
+          6,
+          7,
+          "prod"
+        ],
+        [
+          6,
+          3,
+          "diff"
+        ],
+        [
+          6,
+          3,
+          "prod"
+        ],
+        [
+          7,
+          3,
+          "diff"
+        ],
+        [
+          7,
+          3,
+          "prod"
+        ]
+      ],
+      "task_id": 361258,
+      "validation_index_sha256": "dbacc9e5488d681b5a322531d4a05ff01ccf6d09f231b5a1ac86631f83e94c6b"
+    },
+    {
+      "base": {
+        "actual_retained_tree_count": 679,
+        "best_prefix_tree_count": 679,
+        "best_validation_rmse": 0.08854041039809234,
+        "borders_sha256": "408ad7a9f2a46f1b4b3d6c07efffa9387e897524134e46532212597a024a6412",
+        "fingerprinted_tree_count": 679,
+        "model_sha256": "4ff5d42c41e9ef0c4d34d5e159d6c0e1bf8c4220be32bbc62a0762d18e5375ec",
+        "prediction_sha256": "3c9a4735be0d2401e32eac7e72745b020951db3838d819ad16daaac208e0b0fd",
+        "test_rmse": 0.09078336815335382,
+        "validation_history_sha256": "973a348fb469a30206c23a41b2d164f7d7d052c9a6a464c124582b36697297b0"
+      },
+      "base_linear_selected": true,
+      "candidate_cross_pairs": [
+        [
+          2,
+          4,
+          "diff"
+        ],
+        [
+          2,
+          4,
+          "prod"
+        ],
+        [
+          2,
+          5,
+          "diff"
+        ],
+        [
+          2,
+          5,
+          "prod"
+        ],
+        [
+          2,
+          6,
+          "diff"
+        ],
+        [
+          2,
+          6,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          0,
+          "diff"
+        ],
+        [
+          2,
+          0,
+          "prod"
+        ],
+        [
+          4,
+          5,
+          "diff"
+        ],
+        [
+          4,
+          5,
+          "prod"
+        ],
+        [
+          4,
+          6,
+          "diff"
+        ],
+        [
+          4,
+          6,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          0,
+          "diff"
+        ],
+        [
+          4,
+          0,
+          "prod"
+        ],
+        [
+          5,
+          6,
+          "diff"
+        ],
+        [
+          5,
+          6,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          0,
+          "diff"
+        ],
+        [
+          5,
+          0,
+          "prod"
+        ],
+        [
+          6,
+          3,
+          "diff"
+        ],
+        [
+          6,
+          3,
+          "prod"
+        ],
+        [
+          6,
+          0,
+          "diff"
+        ],
+        [
+          6,
+          0,
+          "prod"
+        ],
+        [
+          3,
+          0,
+          "diff"
+        ],
+        [
+          3,
+          0,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 706,
+        "best_prefix_tree_count": 706,
+        "best_validation_rmse": 0.0871141793294164,
+        "borders_sha256": "41eb6274d6f0771d0615853dd3bd3b3e163ba15762d218b610fc68c074b8b762",
+        "fingerprinted_tree_count": 706,
+        "model_sha256": "311745cd802e9baab1f30273bb2cb1057385c6dff6408bc102328f25929c9d98",
+        "prediction_sha256": "ff9a597e6bf504d29e5914a91424bc54151ec0e2bd7f4f6a1e0693fed5ef7b63",
+        "test_rmse": 0.08954974499787847,
+        "validation_history_sha256": "808998d20ee3b9ccf68623dca8d81f8c5d5ef0a2f2ca7c9eccaa2c261838b456"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 706,
+        "best_prefix_tree_count": 706,
+        "best_validation_rmse": 0.0871141793294164,
+        "borders_sha256": "41eb6274d6f0771d0615853dd3bd3b3e163ba15762d218b610fc68c074b8b762",
+        "fingerprinted_tree_count": 706,
+        "model_sha256": "311745cd802e9baab1f30273bb2cb1057385c6dff6408bc102328f25929c9d98",
+        "prediction_sha256": "ff9a597e6bf504d29e5914a91424bc54151ec0e2bd7f4f6a1e0693fed5ef7b63",
+        "test_rmse": 0.08954974499787847,
+        "validation_history_sha256": "808998d20ee3b9ccf68623dca8d81f8c5d5ef0a2f2ca7c9eccaa2c261838b456"
+      },
+      "chimera_total_fit_seconds": 4.150658041,
+      "cross_selected": true,
+      "darko_total_fit_seconds": 4.076915250000001,
+      "dataset_name": "kin8nm",
+      "external_native_exact": true,
+      "fit_index_sha256": "67e050c1f1942e585dd749d7af7db8e1410a2d24a6698b47bf3d519f757f8417",
+      "fold": 7,
+      "outer_test_index_sha256": "db3d069ebf532019497431fe1701b48622e2ed880847c57ad452ae9554c2c6c7",
+      "outer_train_index_sha256": "442861a90d62ae2731ab260cf984892547fc1a8bf6b3822c3e865f2a2af323bf",
+      "selected": {
+        "actual_retained_tree_count": 706,
+        "best_prefix_tree_count": 706,
+        "best_validation_rmse": 0.0871141793294164,
+        "borders_sha256": "41eb6274d6f0771d0615853dd3bd3b3e163ba15762d218b610fc68c074b8b762",
+        "fingerprinted_tree_count": 706,
+        "model_sha256": "311745cd802e9baab1f30273bb2cb1057385c6dff6408bc102328f25929c9d98",
+        "prediction_sha256": "ff9a597e6bf504d29e5914a91424bc54151ec0e2bd7f4f6a1e0693fed5ef7b63",
+        "test_rmse": 0.08954974499787847,
+        "validation_history_sha256": "808998d20ee3b9ccf68623dca8d81f8c5d5ef0a2f2ca7c9eccaa2c261838b456"
+      },
+      "selected_cross_pairs": [
+        [
+          2,
+          4,
+          "diff"
+        ],
+        [
+          2,
+          4,
+          "prod"
+        ],
+        [
+          2,
+          5,
+          "diff"
+        ],
+        [
+          2,
+          5,
+          "prod"
+        ],
+        [
+          2,
+          6,
+          "diff"
+        ],
+        [
+          2,
+          6,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          0,
+          "diff"
+        ],
+        [
+          2,
+          0,
+          "prod"
+        ],
+        [
+          4,
+          5,
+          "diff"
+        ],
+        [
+          4,
+          5,
+          "prod"
+        ],
+        [
+          4,
+          6,
+          "diff"
+        ],
+        [
+          4,
+          6,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          0,
+          "diff"
+        ],
+        [
+          4,
+          0,
+          "prod"
+        ],
+        [
+          5,
+          6,
+          "diff"
+        ],
+        [
+          5,
+          6,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          0,
+          "diff"
+        ],
+        [
+          5,
+          0,
+          "prod"
+        ],
+        [
+          6,
+          3,
+          "diff"
+        ],
+        [
+          6,
+          3,
+          "prod"
+        ],
+        [
+          6,
+          0,
+          "diff"
+        ],
+        [
+          6,
+          0,
+          "prod"
+        ],
+        [
+          3,
+          0,
+          "diff"
+        ],
+        [
+          3,
+          0,
+          "prod"
+        ]
+      ],
+      "task_id": 361258,
+      "validation_index_sha256": "0734d80f48daa8b5789568a8346236f349a717f0cafd6245757c0d4d9bb54046"
+    },
+    {
+      "base": {
+        "actual_retained_tree_count": 675,
+        "best_prefix_tree_count": 675,
+        "best_validation_rmse": 0.08648228871750363,
+        "borders_sha256": "13a5c3ee16119754614165b67e75d466c6fb7cb5c6fe56a2139c03edc7bbd62d",
+        "fingerprinted_tree_count": 675,
+        "model_sha256": "ebe723cd868246bc5d875e76e48626486b93df76767b21042050f66603b51ab5",
+        "prediction_sha256": "3263c1e3b1996c120e12fe6189c2369213c347ed53d11bf3ebae83b9631cb4e5",
+        "test_rmse": 0.08878153138213056,
+        "validation_history_sha256": "18c3f836b4c960412495f59b1ed6e6b8daf3d96ddfda9c99e1104e350f39c39d"
+      },
+      "base_linear_selected": true,
+      "candidate_cross_pairs": [
+        [
+          2,
+          4,
+          "diff"
+        ],
+        [
+          2,
+          4,
+          "prod"
+        ],
+        [
+          2,
+          5,
+          "diff"
+        ],
+        [
+          2,
+          5,
+          "prod"
+        ],
+        [
+          2,
+          6,
+          "diff"
+        ],
+        [
+          2,
+          6,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          7,
+          "diff"
+        ],
+        [
+          2,
+          7,
+          "prod"
+        ],
+        [
+          4,
+          5,
+          "diff"
+        ],
+        [
+          4,
+          5,
+          "prod"
+        ],
+        [
+          4,
+          6,
+          "diff"
+        ],
+        [
+          4,
+          6,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          7,
+          "diff"
+        ],
+        [
+          4,
+          7,
+          "prod"
+        ],
+        [
+          5,
+          6,
+          "diff"
+        ],
+        [
+          5,
+          6,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          7,
+          "diff"
+        ],
+        [
+          5,
+          7,
+          "prod"
+        ],
+        [
+          6,
+          3,
+          "diff"
+        ],
+        [
+          6,
+          3,
+          "prod"
+        ],
+        [
+          6,
+          7,
+          "diff"
+        ],
+        [
+          6,
+          7,
+          "prod"
+        ],
+        [
+          3,
+          7,
+          "diff"
+        ],
+        [
+          3,
+          7,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 738,
+        "best_prefix_tree_count": 738,
+        "best_validation_rmse": 0.07885238551131349,
+        "borders_sha256": "abb0c9830390abdcad7b00613fc4f0d690f0cbf7136fbf718eabb0a5af5027b5",
+        "fingerprinted_tree_count": 738,
+        "model_sha256": "cea72c0a56371fe3c56684653d9bd5f91d45dd8e3e83d51a0f8cb83458709470",
+        "prediction_sha256": "f06b8dd51f2567f8d2c7c7c6a77c00e349a590d88dcaf9a47cf99956ea1d864d",
+        "test_rmse": 0.08074183885463644,
+        "validation_history_sha256": "2aa22749d0f29398f2f53e816d1b9ff117c94b27f97e7baf6bfe78a5bb1133d9"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 738,
+        "best_prefix_tree_count": 738,
+        "best_validation_rmse": 0.07885238551131349,
+        "borders_sha256": "abb0c9830390abdcad7b00613fc4f0d690f0cbf7136fbf718eabb0a5af5027b5",
+        "fingerprinted_tree_count": 738,
+        "model_sha256": "cea72c0a56371fe3c56684653d9bd5f91d45dd8e3e83d51a0f8cb83458709470",
+        "prediction_sha256": "f06b8dd51f2567f8d2c7c7c6a77c00e349a590d88dcaf9a47cf99956ea1d864d",
+        "test_rmse": 0.08074183885463644,
+        "validation_history_sha256": "2aa22749d0f29398f2f53e816d1b9ff117c94b27f97e7baf6bfe78a5bb1133d9"
+      },
+      "chimera_total_fit_seconds": 4.027845791,
+      "cross_selected": true,
+      "darko_total_fit_seconds": 4.075468209,
+      "dataset_name": "kin8nm",
+      "external_native_exact": true,
+      "fit_index_sha256": "f009568f64c7d28c097b21a26cca257a021c05e656058837921dd71889cc0a23",
+      "fold": 8,
+      "outer_test_index_sha256": "00b30db52409f433141a5e655ad3c3b2a64af1b1e346b9c452f4131c3f98d0be",
+      "outer_train_index_sha256": "f9b794629a091de8d909bc3a16feb9a24d74d510c60159cb61ea91ef2d9123b4",
+      "selected": {
+        "actual_retained_tree_count": 738,
+        "best_prefix_tree_count": 738,
+        "best_validation_rmse": 0.07885238551131349,
+        "borders_sha256": "abb0c9830390abdcad7b00613fc4f0d690f0cbf7136fbf718eabb0a5af5027b5",
+        "fingerprinted_tree_count": 738,
+        "model_sha256": "cea72c0a56371fe3c56684653d9bd5f91d45dd8e3e83d51a0f8cb83458709470",
+        "prediction_sha256": "f06b8dd51f2567f8d2c7c7c6a77c00e349a590d88dcaf9a47cf99956ea1d864d",
+        "test_rmse": 0.08074183885463644,
+        "validation_history_sha256": "2aa22749d0f29398f2f53e816d1b9ff117c94b27f97e7baf6bfe78a5bb1133d9"
+      },
+      "selected_cross_pairs": [
+        [
+          2,
+          4,
+          "diff"
+        ],
+        [
+          2,
+          4,
+          "prod"
+        ],
+        [
+          2,
+          5,
+          "diff"
+        ],
+        [
+          2,
+          5,
+          "prod"
+        ],
+        [
+          2,
+          6,
+          "diff"
+        ],
+        [
+          2,
+          6,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          7,
+          "diff"
+        ],
+        [
+          2,
+          7,
+          "prod"
+        ],
+        [
+          4,
+          5,
+          "diff"
+        ],
+        [
+          4,
+          5,
+          "prod"
+        ],
+        [
+          4,
+          6,
+          "diff"
+        ],
+        [
+          4,
+          6,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          7,
+          "diff"
+        ],
+        [
+          4,
+          7,
+          "prod"
+        ],
+        [
+          5,
+          6,
+          "diff"
+        ],
+        [
+          5,
+          6,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          7,
+          "diff"
+        ],
+        [
+          5,
+          7,
+          "prod"
+        ],
+        [
+          6,
+          3,
+          "diff"
+        ],
+        [
+          6,
+          3,
+          "prod"
+        ],
+        [
+          6,
+          7,
+          "diff"
+        ],
+        [
+          6,
+          7,
+          "prod"
+        ],
+        [
+          3,
+          7,
+          "diff"
+        ],
+        [
+          3,
+          7,
+          "prod"
+        ]
+      ],
+      "task_id": 361258,
+      "validation_index_sha256": "b41274950654d93694a820c8ddd4a97a93291bfddfaa1394fe51cb29ae2ebc76"
+    },
+    {
+      "base": {
+        "actual_retained_tree_count": 677,
+        "best_prefix_tree_count": 677,
+        "best_validation_rmse": 0.0877492874537029,
+        "borders_sha256": "2c18ff0e669e030b25be726e200b81b10e068e533e3dbfa98aaf5a9f48c78d3d",
+        "fingerprinted_tree_count": 677,
+        "model_sha256": "c14b2c265bd36d398efd7a808abf6f97df1a73eb34c4ba3a0de9b59baf33eaa5",
+        "prediction_sha256": "791cba71e48b6b435c45eea7cb33f5dc76636cf7aa61b5990999b552d9477843",
+        "test_rmse": 0.08666683484834689,
+        "validation_history_sha256": "471fd45682913f10a175014a407f47511a540d646959799e29340b913e12e14b"
+      },
+      "base_linear_selected": true,
+      "candidate_cross_pairs": [
+        [
+          2,
+          4,
+          "diff"
+        ],
+        [
+          2,
+          4,
+          "prod"
+        ],
+        [
+          2,
+          5,
+          "diff"
+        ],
+        [
+          2,
+          5,
+          "prod"
+        ],
+        [
+          2,
+          6,
+          "diff"
+        ],
+        [
+          2,
+          6,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          7,
+          "diff"
+        ],
+        [
+          2,
+          7,
+          "prod"
+        ],
+        [
+          4,
+          5,
+          "diff"
+        ],
+        [
+          4,
+          5,
+          "prod"
+        ],
+        [
+          4,
+          6,
+          "diff"
+        ],
+        [
+          4,
+          6,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          7,
+          "diff"
+        ],
+        [
+          4,
+          7,
+          "prod"
+        ],
+        [
+          5,
+          6,
+          "diff"
+        ],
+        [
+          5,
+          6,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          7,
+          "diff"
+        ],
+        [
+          5,
+          7,
+          "prod"
+        ],
+        [
+          6,
+          3,
+          "diff"
+        ],
+        [
+          6,
+          3,
+          "prod"
+        ],
+        [
+          6,
+          7,
+          "diff"
+        ],
+        [
+          6,
+          7,
+          "prod"
+        ],
+        [
+          3,
+          7,
+          "diff"
+        ],
+        [
+          3,
+          7,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 363,
+        "best_prefix_tree_count": 363,
+        "best_validation_rmse": 0.08160832594633287,
+        "borders_sha256": "b7d4a4f07e99fd0ea433a134c3589157c773d9714dae22037bca1134ea0c6ae3",
+        "fingerprinted_tree_count": 363,
+        "model_sha256": "85dd60a88df31c83316b821511cf7ea12b0acba0c5c3b1bfb62d4d14e4248c61",
+        "prediction_sha256": "57941cb5b7a3b6cbe5fe58c4966e0eca6d79e20b0aa88f69ae3554b421661a12",
+        "test_rmse": 0.0806653805481065,
+        "validation_history_sha256": "82748d40070b64ddbaabfafbd024de1f1d630214f4edebf7b22ca36f00df4f2c"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 363,
+        "best_prefix_tree_count": 363,
+        "best_validation_rmse": 0.08160832594633287,
+        "borders_sha256": "b7d4a4f07e99fd0ea433a134c3589157c773d9714dae22037bca1134ea0c6ae3",
+        "fingerprinted_tree_count": 363,
+        "model_sha256": "85dd60a88df31c83316b821511cf7ea12b0acba0c5c3b1bfb62d4d14e4248c61",
+        "prediction_sha256": "57941cb5b7a3b6cbe5fe58c4966e0eca6d79e20b0aa88f69ae3554b421661a12",
+        "test_rmse": 0.0806653805481065,
+        "validation_history_sha256": "82748d40070b64ddbaabfafbd024de1f1d630214f4edebf7b22ca36f00df4f2c"
+      },
+      "chimera_total_fit_seconds": 3.109609458,
+      "cross_selected": true,
+      "darko_total_fit_seconds": 3.1883324170000003,
+      "dataset_name": "kin8nm",
+      "external_native_exact": true,
+      "fit_index_sha256": "a7bf4f7d811f53f9de9d3bd5b95544a42960917c481a5e7564ed7b9fa3eb6e59",
+      "fold": 9,
+      "outer_test_index_sha256": "fd32db93cc6c3ed87c72572259e957e5128fd12bf9a0851f82d3b59163a1a5e7",
+      "outer_train_index_sha256": "292167a9c7283ca696544874c7b08196ea15d0bba8853de0da5836fcabb50a57",
+      "selected": {
+        "actual_retained_tree_count": 363,
+        "best_prefix_tree_count": 363,
+        "best_validation_rmse": 0.08160832594633287,
+        "borders_sha256": "b7d4a4f07e99fd0ea433a134c3589157c773d9714dae22037bca1134ea0c6ae3",
+        "fingerprinted_tree_count": 363,
+        "model_sha256": "85dd60a88df31c83316b821511cf7ea12b0acba0c5c3b1bfb62d4d14e4248c61",
+        "prediction_sha256": "57941cb5b7a3b6cbe5fe58c4966e0eca6d79e20b0aa88f69ae3554b421661a12",
+        "test_rmse": 0.0806653805481065,
+        "validation_history_sha256": "82748d40070b64ddbaabfafbd024de1f1d630214f4edebf7b22ca36f00df4f2c"
+      },
+      "selected_cross_pairs": [
+        [
+          2,
+          4,
+          "diff"
+        ],
+        [
+          2,
+          4,
+          "prod"
+        ],
+        [
+          2,
+          5,
+          "diff"
+        ],
+        [
+          2,
+          5,
+          "prod"
+        ],
+        [
+          2,
+          6,
+          "diff"
+        ],
+        [
+          2,
+          6,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          7,
+          "diff"
+        ],
+        [
+          2,
+          7,
+          "prod"
+        ],
+        [
+          4,
+          5,
+          "diff"
+        ],
+        [
+          4,
+          5,
+          "prod"
+        ],
+        [
+          4,
+          6,
+          "diff"
+        ],
+        [
+          4,
+          6,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          7,
+          "diff"
+        ],
+        [
+          4,
+          7,
+          "prod"
+        ],
+        [
+          5,
+          6,
+          "diff"
+        ],
+        [
+          5,
+          6,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          7,
+          "diff"
+        ],
+        [
+          5,
+          7,
+          "prod"
+        ],
+        [
+          6,
+          3,
+          "diff"
+        ],
+        [
+          6,
+          3,
+          "prod"
+        ],
+        [
+          6,
+          7,
+          "diff"
+        ],
+        [
+          6,
+          7,
+          "prod"
+        ],
+        [
+          3,
+          7,
+          "diff"
+        ],
+        [
+          3,
+          7,
+          "prod"
+        ]
+      ],
+      "task_id": 361258,
+      "validation_index_sha256": "bfbe47a606f2fbb8f47691570bd7f84be31da75254301b0030097a88822742cd"
+    },
+    {
+      "base": {
+        "actual_retained_tree_count": 207,
+        "best_prefix_tree_count": 207,
+        "best_validation_rmse": 0.09040243203173212,
+        "borders_sha256": "0cb67867a1c251b88988fcf3e5db7bb9197e1307eb09ac9900756a7fb3b57e98",
+        "fingerprinted_tree_count": 207,
+        "model_sha256": "5cac2a15d44e50121a8b53196eaaa28adf0e0ad8854b075cbf33a2bbb67e6c0b",
+        "prediction_sha256": "797aca03697634077f97320e4a09941fbe289cd4f6f008522421a9b315e24f58",
+        "test_rmse": 0.08415685066895597,
+        "validation_history_sha256": "eaf44ac52a58ea2911ed03e9d6c5adf11b7b9de6f0d693c527b35bdb138be217"
+      },
+      "base_linear_selected": true,
+      "candidate_cross_pairs": [
+        [
+          5,
+          4,
+          "diff"
+        ],
+        [
+          5,
+          4,
+          "prod"
+        ],
+        [
+          5,
+          2,
+          "diff"
+        ],
+        [
+          5,
+          2,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          0,
+          "diff"
+        ],
+        [
+          5,
+          0,
+          "prod"
+        ],
+        [
+          5,
+          1,
+          "diff"
+        ],
+        [
+          5,
+          1,
+          "prod"
+        ],
+        [
+          4,
+          2,
+          "diff"
+        ],
+        [
+          4,
+          2,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          0,
+          "diff"
+        ],
+        [
+          4,
+          0,
+          "prod"
+        ],
+        [
+          4,
+          1,
+          "diff"
+        ],
+        [
+          4,
+          1,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          0,
+          "diff"
+        ],
+        [
+          2,
+          0,
+          "prod"
+        ],
+        [
+          2,
+          1,
+          "diff"
+        ],
+        [
+          2,
+          1,
+          "prod"
+        ],
+        [
+          3,
+          0,
+          "diff"
+        ],
+        [
+          3,
+          0,
+          "prod"
+        ],
+        [
+          3,
+          1,
+          "diff"
+        ],
+        [
+          3,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 97,
+        "best_prefix_tree_count": 97,
+        "best_validation_rmse": 0.08895269210941836,
+        "borders_sha256": "e4cfd5b093ad92d39603016d9c41b97ae0d8544fc38cb11e7f1ed01b6e12a10d",
+        "fingerprinted_tree_count": 97,
+        "model_sha256": "6c85ff2c78b5d409f813e40c9187fdf5b1653646274d024a5cfaca82e174dbf7",
+        "prediction_sha256": "1edef0e0939237ddf6c91e7b11fda38c8625b604237dc4dfb83e820da555c6f2",
+        "test_rmse": 0.09011203054176774,
+        "validation_history_sha256": "8a63627b77bb550387ab1b81a9c5c8b0eef9caa22e11747a61290fadb914dca4"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 97,
+        "best_prefix_tree_count": 97,
+        "best_validation_rmse": 0.08895269210941836,
+        "borders_sha256": "e4cfd5b093ad92d39603016d9c41b97ae0d8544fc38cb11e7f1ed01b6e12a10d",
+        "fingerprinted_tree_count": 97,
+        "model_sha256": "6c85ff2c78b5d409f813e40c9187fdf5b1653646274d024a5cfaca82e174dbf7",
+        "prediction_sha256": "1edef0e0939237ddf6c91e7b11fda38c8625b604237dc4dfb83e820da555c6f2",
+        "test_rmse": 0.09011203054176774,
+        "validation_history_sha256": "8a63627b77bb550387ab1b81a9c5c8b0eef9caa22e11747a61290fadb914dca4"
+      },
+      "chimera_total_fit_seconds": 1.035539417,
+      "cross_selected": true,
+      "darko_total_fit_seconds": 1.095591667,
+      "dataset_name": "space_ga",
+      "external_native_exact": true,
+      "fit_index_sha256": "b451af482f765bed12ec54ef0a9e0cd8c845bec7bf12a7cc87f1e1ba2860c5e0",
+      "fold": 3,
+      "outer_test_index_sha256": "a80fab73279219ae8a9ae9197723095b5e3f87bd74af924209db00dcd9b6d1a2",
+      "outer_train_index_sha256": "ad8a121511688f53e42b0173de93755894965d50c9e4993b51fab92dfeb7e0cd",
+      "selected": {
+        "actual_retained_tree_count": 97,
+        "best_prefix_tree_count": 97,
+        "best_validation_rmse": 0.08895269210941836,
+        "borders_sha256": "e4cfd5b093ad92d39603016d9c41b97ae0d8544fc38cb11e7f1ed01b6e12a10d",
+        "fingerprinted_tree_count": 97,
+        "model_sha256": "6c85ff2c78b5d409f813e40c9187fdf5b1653646274d024a5cfaca82e174dbf7",
+        "prediction_sha256": "1edef0e0939237ddf6c91e7b11fda38c8625b604237dc4dfb83e820da555c6f2",
+        "test_rmse": 0.09011203054176774,
+        "validation_history_sha256": "8a63627b77bb550387ab1b81a9c5c8b0eef9caa22e11747a61290fadb914dca4"
+      },
+      "selected_cross_pairs": [
+        [
+          5,
+          4,
+          "diff"
+        ],
+        [
+          5,
+          4,
+          "prod"
+        ],
+        [
+          5,
+          2,
+          "diff"
+        ],
+        [
+          5,
+          2,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          0,
+          "diff"
+        ],
+        [
+          5,
+          0,
+          "prod"
+        ],
+        [
+          5,
+          1,
+          "diff"
+        ],
+        [
+          5,
+          1,
+          "prod"
+        ],
+        [
+          4,
+          2,
+          "diff"
+        ],
+        [
+          4,
+          2,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          0,
+          "diff"
+        ],
+        [
+          4,
+          0,
+          "prod"
+        ],
+        [
+          4,
+          1,
+          "diff"
+        ],
+        [
+          4,
+          1,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          0,
+          "diff"
+        ],
+        [
+          2,
+          0,
+          "prod"
+        ],
+        [
+          2,
+          1,
+          "diff"
+        ],
+        [
+          2,
+          1,
+          "prod"
+        ],
+        [
+          3,
+          0,
+          "diff"
+        ],
+        [
+          3,
+          0,
+          "prod"
+        ],
+        [
+          3,
+          1,
+          "diff"
+        ],
+        [
+          3,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ]
+      ],
+      "task_id": 361623,
+      "validation_index_sha256": "a26ba1ff170d1c0623f8edbd55a553ca69977cff2a5e736e78b37dd9264baf90"
+    },
+    {
+      "base": {
+        "actual_retained_tree_count": 169,
+        "best_prefix_tree_count": 169,
+        "best_validation_rmse": 0.08959030452849336,
+        "borders_sha256": "1746ff474c7fbd41c2a038114e2f169d04256294eec3373541028c040caa1544",
+        "fingerprinted_tree_count": 169,
+        "model_sha256": "3e7b1d35e75ea7b8ff9e45cbaa09bd8c22e22ec30a7ede72cd4ae94b0dbf13be",
+        "prediction_sha256": "256da7166d3336c6c16dd555ba88dd322572dc36cbdcb19bffacda19b21919ed",
+        "test_rmse": 0.09887005285644324,
+        "validation_history_sha256": "974d86cfc923e572a8a80053dafb16487b3ab82c7593397dc4cbd4aa693989c1"
+      },
+      "base_linear_selected": true,
+      "candidate_cross_pairs": [
+        [
+          5,
+          4,
+          "diff"
+        ],
+        [
+          5,
+          4,
+          "prod"
+        ],
+        [
+          5,
+          2,
+          "diff"
+        ],
+        [
+          5,
+          2,
+          "prod"
+        ],
+        [
+          5,
+          0,
+          "diff"
+        ],
+        [
+          5,
+          0,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          1,
+          "diff"
+        ],
+        [
+          5,
+          1,
+          "prod"
+        ],
+        [
+          4,
+          2,
+          "diff"
+        ],
+        [
+          4,
+          2,
+          "prod"
+        ],
+        [
+          4,
+          0,
+          "diff"
+        ],
+        [
+          4,
+          0,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          1,
+          "diff"
+        ],
+        [
+          4,
+          1,
+          "prod"
+        ],
+        [
+          2,
+          0,
+          "diff"
+        ],
+        [
+          2,
+          0,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          1,
+          "diff"
+        ],
+        [
+          2,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          3,
+          "diff"
+        ],
+        [
+          0,
+          3,
+          "prod"
+        ],
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ],
+        [
+          3,
+          1,
+          "diff"
+        ],
+        [
+          3,
+          1,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 111,
+        "best_prefix_tree_count": 111,
+        "best_validation_rmse": 0.08668619452266314,
+        "borders_sha256": "0ab5d164f9f5b61c8a59eed15093495172547eff902a781b09a8712f637ce662",
+        "fingerprinted_tree_count": 111,
+        "model_sha256": "24122d695c1d6bcaa868260697537ccd800683c2a3345bd845e6b8210325b4be",
+        "prediction_sha256": "4f105dead911aaf15824fef243c87835dba3eaf99143460f80d056ae52640d5f",
+        "test_rmse": 0.09506689164387672,
+        "validation_history_sha256": "7b04dc684d114b1dd025983d8a9bd8d5561f4addfdcfded8bb14e6bb5e1c9f4d"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 111,
+        "best_prefix_tree_count": 111,
+        "best_validation_rmse": 0.08668619452266314,
+        "borders_sha256": "0ab5d164f9f5b61c8a59eed15093495172547eff902a781b09a8712f637ce662",
+        "fingerprinted_tree_count": 111,
+        "model_sha256": "24122d695c1d6bcaa868260697537ccd800683c2a3345bd845e6b8210325b4be",
+        "prediction_sha256": "4f105dead911aaf15824fef243c87835dba3eaf99143460f80d056ae52640d5f",
+        "test_rmse": 0.09506689164387672,
+        "validation_history_sha256": "7b04dc684d114b1dd025983d8a9bd8d5561f4addfdcfded8bb14e6bb5e1c9f4d"
+      },
+      "chimera_total_fit_seconds": 0.9375435,
+      "cross_selected": true,
+      "darko_total_fit_seconds": 0.904012,
+      "dataset_name": "space_ga",
+      "external_native_exact": true,
+      "fit_index_sha256": "b8c48655fb3ee8a92d803787f2cbba3b0646104b79774df84ca7ae655a92f0e0",
+      "fold": 4,
+      "outer_test_index_sha256": "ddd6b4df1cd20488f80dbb6c12cd6b724626f669eb4dae878037f7452a431113",
+      "outer_train_index_sha256": "0f6dc139720531bb6b51e1fd46e9932647e8621a0f42ff8f416b6b1fd55eb56e",
+      "selected": {
+        "actual_retained_tree_count": 111,
+        "best_prefix_tree_count": 111,
+        "best_validation_rmse": 0.08668619452266314,
+        "borders_sha256": "0ab5d164f9f5b61c8a59eed15093495172547eff902a781b09a8712f637ce662",
+        "fingerprinted_tree_count": 111,
+        "model_sha256": "24122d695c1d6bcaa868260697537ccd800683c2a3345bd845e6b8210325b4be",
+        "prediction_sha256": "4f105dead911aaf15824fef243c87835dba3eaf99143460f80d056ae52640d5f",
+        "test_rmse": 0.09506689164387672,
+        "validation_history_sha256": "7b04dc684d114b1dd025983d8a9bd8d5561f4addfdcfded8bb14e6bb5e1c9f4d"
+      },
+      "selected_cross_pairs": [
+        [
+          5,
+          4,
+          "diff"
+        ],
+        [
+          5,
+          4,
+          "prod"
+        ],
+        [
+          5,
+          2,
+          "diff"
+        ],
+        [
+          5,
+          2,
+          "prod"
+        ],
+        [
+          5,
+          0,
+          "diff"
+        ],
+        [
+          5,
+          0,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          1,
+          "diff"
+        ],
+        [
+          5,
+          1,
+          "prod"
+        ],
+        [
+          4,
+          2,
+          "diff"
+        ],
+        [
+          4,
+          2,
+          "prod"
+        ],
+        [
+          4,
+          0,
+          "diff"
+        ],
+        [
+          4,
+          0,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          1,
+          "diff"
+        ],
+        [
+          4,
+          1,
+          "prod"
+        ],
+        [
+          2,
+          0,
+          "diff"
+        ],
+        [
+          2,
+          0,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          1,
+          "diff"
+        ],
+        [
+          2,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          3,
+          "diff"
+        ],
+        [
+          0,
+          3,
+          "prod"
+        ],
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ],
+        [
+          3,
+          1,
+          "diff"
+        ],
+        [
+          3,
+          1,
+          "prod"
+        ]
+      ],
+      "task_id": 361623,
+      "validation_index_sha256": "ffe604e4f74c3ce2377fb57418b9208bbcacc3302c0293a72310f60b41862d5c"
+    },
+    {
+      "base": {
+        "actual_retained_tree_count": 219,
+        "best_prefix_tree_count": 219,
+        "best_validation_rmse": 0.09101848643497167,
+        "borders_sha256": "d1567d4114c3f6946955322fc5dec757ddbe7479fdad961db394db42517e7592",
+        "fingerprinted_tree_count": 219,
+        "model_sha256": "14575a4ef5ec93d590a436bdd1e161d9a5621a0f6b30445ce4bb1257f5a0c20a",
+        "prediction_sha256": "60ab886b64b4687bb641e4677e7929921b1048529208fb4a255313b8724b4ab4",
+        "test_rmse": 0.09165910320190976,
+        "validation_history_sha256": "89e483450d1f5e73353e6037bc305077493f8cf9afb58d45a6de362cbbd57ac6"
+      },
+      "base_linear_selected": true,
+      "candidate_cross_pairs": [
+        [
+          5,
+          4,
+          "diff"
+        ],
+        [
+          5,
+          4,
+          "prod"
+        ],
+        [
+          5,
+          2,
+          "diff"
+        ],
+        [
+          5,
+          2,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          0,
+          "diff"
+        ],
+        [
+          5,
+          0,
+          "prod"
+        ],
+        [
+          5,
+          1,
+          "diff"
+        ],
+        [
+          5,
+          1,
+          "prod"
+        ],
+        [
+          4,
+          2,
+          "diff"
+        ],
+        [
+          4,
+          2,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          0,
+          "diff"
+        ],
+        [
+          4,
+          0,
+          "prod"
+        ],
+        [
+          4,
+          1,
+          "diff"
+        ],
+        [
+          4,
+          1,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          0,
+          "diff"
+        ],
+        [
+          2,
+          0,
+          "prod"
+        ],
+        [
+          2,
+          1,
+          "diff"
+        ],
+        [
+          2,
+          1,
+          "prod"
+        ],
+        [
+          3,
+          0,
+          "diff"
+        ],
+        [
+          3,
+          0,
+          "prod"
+        ],
+        [
+          3,
+          1,
+          "diff"
+        ],
+        [
+          3,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 123,
+        "best_prefix_tree_count": 123,
+        "best_validation_rmse": 0.08292333380537527,
+        "borders_sha256": "a7bf0bf0ecd82793c980ca3d084b8c1d11c1a46fd98afaed27a8f591229f5fc5",
+        "fingerprinted_tree_count": 123,
+        "model_sha256": "de0ee3b5f0a0d25d7345042dfe5743223fa66496a2ade49b560d79454d858d54",
+        "prediction_sha256": "e599dbcf8477e410dc984635a2ff41adcc63193ad82590d2f6a9f2774dfd932a",
+        "test_rmse": 0.09047004362097087,
+        "validation_history_sha256": "779214635ff2c1e4ef42eb98925a0dd96c91adc09a845291b4cedf3dd1d9dd79"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 123,
+        "best_prefix_tree_count": 123,
+        "best_validation_rmse": 0.08292333380537527,
+        "borders_sha256": "a7bf0bf0ecd82793c980ca3d084b8c1d11c1a46fd98afaed27a8f591229f5fc5",
+        "fingerprinted_tree_count": 123,
+        "model_sha256": "de0ee3b5f0a0d25d7345042dfe5743223fa66496a2ade49b560d79454d858d54",
+        "prediction_sha256": "e599dbcf8477e410dc984635a2ff41adcc63193ad82590d2f6a9f2774dfd932a",
+        "test_rmse": 0.09047004362097087,
+        "validation_history_sha256": "779214635ff2c1e4ef42eb98925a0dd96c91adc09a845291b4cedf3dd1d9dd79"
+      },
+      "chimera_total_fit_seconds": 1.009220958,
+      "cross_selected": true,
+      "darko_total_fit_seconds": 1.0951407499999999,
+      "dataset_name": "space_ga",
+      "external_native_exact": true,
+      "fit_index_sha256": "06c550cdc496d963a664b02ac808ee0845c9ed4af7f6a44e411202558109777b",
+      "fold": 5,
+      "outer_test_index_sha256": "e758856b1d7f293ed2c46f34005875d67b0bc9b39261260228fe2bdd8d5ab67b",
+      "outer_train_index_sha256": "97cd3e80f5be63a69772e2e5fd74738a9507475c62f2f7805b116f65df7005a9",
+      "selected": {
+        "actual_retained_tree_count": 123,
+        "best_prefix_tree_count": 123,
+        "best_validation_rmse": 0.08292333380537527,
+        "borders_sha256": "a7bf0bf0ecd82793c980ca3d084b8c1d11c1a46fd98afaed27a8f591229f5fc5",
+        "fingerprinted_tree_count": 123,
+        "model_sha256": "de0ee3b5f0a0d25d7345042dfe5743223fa66496a2ade49b560d79454d858d54",
+        "prediction_sha256": "e599dbcf8477e410dc984635a2ff41adcc63193ad82590d2f6a9f2774dfd932a",
+        "test_rmse": 0.09047004362097087,
+        "validation_history_sha256": "779214635ff2c1e4ef42eb98925a0dd96c91adc09a845291b4cedf3dd1d9dd79"
+      },
+      "selected_cross_pairs": [
+        [
+          5,
+          4,
+          "diff"
+        ],
+        [
+          5,
+          4,
+          "prod"
+        ],
+        [
+          5,
+          2,
+          "diff"
+        ],
+        [
+          5,
+          2,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          0,
+          "diff"
+        ],
+        [
+          5,
+          0,
+          "prod"
+        ],
+        [
+          5,
+          1,
+          "diff"
+        ],
+        [
+          5,
+          1,
+          "prod"
+        ],
+        [
+          4,
+          2,
+          "diff"
+        ],
+        [
+          4,
+          2,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          0,
+          "diff"
+        ],
+        [
+          4,
+          0,
+          "prod"
+        ],
+        [
+          4,
+          1,
+          "diff"
+        ],
+        [
+          4,
+          1,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          0,
+          "diff"
+        ],
+        [
+          2,
+          0,
+          "prod"
+        ],
+        [
+          2,
+          1,
+          "diff"
+        ],
+        [
+          2,
+          1,
+          "prod"
+        ],
+        [
+          3,
+          0,
+          "diff"
+        ],
+        [
+          3,
+          0,
+          "prod"
+        ],
+        [
+          3,
+          1,
+          "diff"
+        ],
+        [
+          3,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ]
+      ],
+      "task_id": 361623,
+      "validation_index_sha256": "0213ae1aa07aa0a8481021325bb1a3897eee3ca350162ec6a2590345205406dd"
+    },
+    {
+      "base": {
+        "actual_retained_tree_count": 137,
+        "best_prefix_tree_count": 137,
+        "best_validation_rmse": 0.09046341375019051,
+        "borders_sha256": "d15a1d597d68b81100aee972b8c9cb1a2ed5044b04901e5c8667a8e8231f45fb",
+        "fingerprinted_tree_count": 137,
+        "model_sha256": "6848807884c216568f0349862c6bab0f7138bcfd1e3647db13601c400822563d",
+        "prediction_sha256": "9a96fc08ff740ce03ffc26da33192bfa43bab6a2cf73e741e01bb4ec8fbe7e9e",
+        "test_rmse": 0.0977216574375942,
+        "validation_history_sha256": "27d7c37171cdc5a35e2a4cb2f48c8eaffe5d9b8875731ed7804ba88f6602c2ae"
+      },
+      "base_linear_selected": true,
+      "candidate_cross_pairs": [
+        [
+          5,
+          4,
+          "diff"
+        ],
+        [
+          5,
+          4,
+          "prod"
+        ],
+        [
+          5,
+          2,
+          "diff"
+        ],
+        [
+          5,
+          2,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          0,
+          "diff"
+        ],
+        [
+          5,
+          0,
+          "prod"
+        ],
+        [
+          5,
+          1,
+          "diff"
+        ],
+        [
+          5,
+          1,
+          "prod"
+        ],
+        [
+          4,
+          2,
+          "diff"
+        ],
+        [
+          4,
+          2,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          0,
+          "diff"
+        ],
+        [
+          4,
+          0,
+          "prod"
+        ],
+        [
+          4,
+          1,
+          "diff"
+        ],
+        [
+          4,
+          1,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          0,
+          "diff"
+        ],
+        [
+          2,
+          0,
+          "prod"
+        ],
+        [
+          2,
+          1,
+          "diff"
+        ],
+        [
+          2,
+          1,
+          "prod"
+        ],
+        [
+          3,
+          0,
+          "diff"
+        ],
+        [
+          3,
+          0,
+          "prod"
+        ],
+        [
+          3,
+          1,
+          "diff"
+        ],
+        [
+          3,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 160,
+        "best_prefix_tree_count": 160,
+        "best_validation_rmse": 0.08573672601888827,
+        "borders_sha256": "f44176c1009e9461b1cff011b77e96f4ff59028b29c0e2a0fb5c87a7d46085e9",
+        "fingerprinted_tree_count": 160,
+        "model_sha256": "f98ef07f5c472203802b00dbb1b922911a9579566d4701184dabb26bc4ef0a66",
+        "prediction_sha256": "1c47672316e4aa205445651256b9101e354e65f2ebb68dd4dd18410e8dba6f07",
+        "test_rmse": 0.08814509111664977,
+        "validation_history_sha256": "271ab0d7320208176fbafe2435fc4228738ec476f6a601bca67adb7c361a414d"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 160,
+        "best_prefix_tree_count": 160,
+        "best_validation_rmse": 0.08573672601888827,
+        "borders_sha256": "f44176c1009e9461b1cff011b77e96f4ff59028b29c0e2a0fb5c87a7d46085e9",
+        "fingerprinted_tree_count": 160,
+        "model_sha256": "f98ef07f5c472203802b00dbb1b922911a9579566d4701184dabb26bc4ef0a66",
+        "prediction_sha256": "1c47672316e4aa205445651256b9101e354e65f2ebb68dd4dd18410e8dba6f07",
+        "test_rmse": 0.08814509111664977,
+        "validation_history_sha256": "271ab0d7320208176fbafe2435fc4228738ec476f6a601bca67adb7c361a414d"
+      },
+      "chimera_total_fit_seconds": 1.063369,
+      "cross_selected": true,
+      "darko_total_fit_seconds": 1.015433918,
+      "dataset_name": "space_ga",
+      "external_native_exact": true,
+      "fit_index_sha256": "64a09ce89f1b360f9c7b52bb344bf913e797a0a5758f1e9d23d02d1e4608af9c",
+      "fold": 6,
+      "outer_test_index_sha256": "6c70947d646712597852d54374823cb8b56f28c4e0c95579b9d09f07d180accc",
+      "outer_train_index_sha256": "bcd2fcfeb8a3e2e3d472db985f696b1aae873d1c09147009997d1fbfc20c6166",
+      "selected": {
+        "actual_retained_tree_count": 160,
+        "best_prefix_tree_count": 160,
+        "best_validation_rmse": 0.08573672601888827,
+        "borders_sha256": "f44176c1009e9461b1cff011b77e96f4ff59028b29c0e2a0fb5c87a7d46085e9",
+        "fingerprinted_tree_count": 160,
+        "model_sha256": "f98ef07f5c472203802b00dbb1b922911a9579566d4701184dabb26bc4ef0a66",
+        "prediction_sha256": "1c47672316e4aa205445651256b9101e354e65f2ebb68dd4dd18410e8dba6f07",
+        "test_rmse": 0.08814509111664977,
+        "validation_history_sha256": "271ab0d7320208176fbafe2435fc4228738ec476f6a601bca67adb7c361a414d"
+      },
+      "selected_cross_pairs": [
+        [
+          5,
+          4,
+          "diff"
+        ],
+        [
+          5,
+          4,
+          "prod"
+        ],
+        [
+          5,
+          2,
+          "diff"
+        ],
+        [
+          5,
+          2,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          0,
+          "diff"
+        ],
+        [
+          5,
+          0,
+          "prod"
+        ],
+        [
+          5,
+          1,
+          "diff"
+        ],
+        [
+          5,
+          1,
+          "prod"
+        ],
+        [
+          4,
+          2,
+          "diff"
+        ],
+        [
+          4,
+          2,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          0,
+          "diff"
+        ],
+        [
+          4,
+          0,
+          "prod"
+        ],
+        [
+          4,
+          1,
+          "diff"
+        ],
+        [
+          4,
+          1,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          0,
+          "diff"
+        ],
+        [
+          2,
+          0,
+          "prod"
+        ],
+        [
+          2,
+          1,
+          "diff"
+        ],
+        [
+          2,
+          1,
+          "prod"
+        ],
+        [
+          3,
+          0,
+          "diff"
+        ],
+        [
+          3,
+          0,
+          "prod"
+        ],
+        [
+          3,
+          1,
+          "diff"
+        ],
+        [
+          3,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ]
+      ],
+      "task_id": 361623,
+      "validation_index_sha256": "f5d5e6686bb3d020ed9e89fe6a2922ca39571c236f3acd6f3cb4f027398cf22e"
+    },
+    {
+      "base": {
+        "actual_retained_tree_count": 125,
+        "best_prefix_tree_count": 125,
+        "best_validation_rmse": 0.097848954092814,
+        "borders_sha256": "ffa34d5b85d9fc73eeb7f120b5f7d260097440cd5c49c4648fa0c0add776480f",
+        "fingerprinted_tree_count": 125,
+        "model_sha256": "2a8e0d3872af237a534ddfa1f56bf4950bc3fbd66ddd4dc46f294decd2256703",
+        "prediction_sha256": "70ee6bd61e0fa45d1955239499a55839829d9e86ec877db4706c52370852e3a7",
+        "test_rmse": 0.09643216044308865,
+        "validation_history_sha256": "55f8d49a6ded955e7fec4743e8a11cc68b7b185fe4b5be375f6ae060da8115b2"
+      },
+      "base_linear_selected": true,
+      "candidate_cross_pairs": [
+        [
+          5,
+          4,
+          "diff"
+        ],
+        [
+          5,
+          4,
+          "prod"
+        ],
+        [
+          5,
+          2,
+          "diff"
+        ],
+        [
+          5,
+          2,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          0,
+          "diff"
+        ],
+        [
+          5,
+          0,
+          "prod"
+        ],
+        [
+          5,
+          1,
+          "diff"
+        ],
+        [
+          5,
+          1,
+          "prod"
+        ],
+        [
+          4,
+          2,
+          "diff"
+        ],
+        [
+          4,
+          2,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          0,
+          "diff"
+        ],
+        [
+          4,
+          0,
+          "prod"
+        ],
+        [
+          4,
+          1,
+          "diff"
+        ],
+        [
+          4,
+          1,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          0,
+          "diff"
+        ],
+        [
+          2,
+          0,
+          "prod"
+        ],
+        [
+          2,
+          1,
+          "diff"
+        ],
+        [
+          2,
+          1,
+          "prod"
+        ],
+        [
+          3,
+          0,
+          "diff"
+        ],
+        [
+          3,
+          0,
+          "prod"
+        ],
+        [
+          3,
+          1,
+          "diff"
+        ],
+        [
+          3,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 165,
+        "best_prefix_tree_count": 165,
+        "best_validation_rmse": 0.09125921203264126,
+        "borders_sha256": "0b05ca9a586fe4e128efc578adbe9ae8bcded4a1c640acd1a2fb897eeaccef37",
+        "fingerprinted_tree_count": 165,
+        "model_sha256": "f09fe3d8e5e74d52742f0c9b921a835e98b57c27dd14a554acca9f39e755fd0a",
+        "prediction_sha256": "154f19fd717c752e4caa6f8262fa0a33008d0e54646b7d6f5d6fc54e31875f3f",
+        "test_rmse": 0.08986960888899338,
+        "validation_history_sha256": "b4cab3e6617babcb6d165e1ca5c88ae607b7f2719727283a9f8f389fe63623a9"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 165,
+        "best_prefix_tree_count": 165,
+        "best_validation_rmse": 0.09125921203264126,
+        "borders_sha256": "0b05ca9a586fe4e128efc578adbe9ae8bcded4a1c640acd1a2fb897eeaccef37",
+        "fingerprinted_tree_count": 165,
+        "model_sha256": "f09fe3d8e5e74d52742f0c9b921a835e98b57c27dd14a554acca9f39e755fd0a",
+        "prediction_sha256": "154f19fd717c752e4caa6f8262fa0a33008d0e54646b7d6f5d6fc54e31875f3f",
+        "test_rmse": 0.08986960888899338,
+        "validation_history_sha256": "b4cab3e6617babcb6d165e1ca5c88ae607b7f2719727283a9f8f389fe63623a9"
+      },
+      "chimera_total_fit_seconds": 1.081506417,
+      "cross_selected": true,
+      "darko_total_fit_seconds": 1.00876725,
+      "dataset_name": "space_ga",
+      "external_native_exact": true,
+      "fit_index_sha256": "4ccef9fbffebbcd3e14c49ea3483090315d9735c1a64097eabad86a0f144cd49",
+      "fold": 7,
+      "outer_test_index_sha256": "4f2004ce528751a8293ac8306d95408ae808f0955be4501afc7d205b3fed1965",
+      "outer_train_index_sha256": "6ee6a6479df60df1d883b8d305cf4806f769291cd33fe256bb68eb9c2269fac1",
+      "selected": {
+        "actual_retained_tree_count": 165,
+        "best_prefix_tree_count": 165,
+        "best_validation_rmse": 0.09125921203264126,
+        "borders_sha256": "0b05ca9a586fe4e128efc578adbe9ae8bcded4a1c640acd1a2fb897eeaccef37",
+        "fingerprinted_tree_count": 165,
+        "model_sha256": "f09fe3d8e5e74d52742f0c9b921a835e98b57c27dd14a554acca9f39e755fd0a",
+        "prediction_sha256": "154f19fd717c752e4caa6f8262fa0a33008d0e54646b7d6f5d6fc54e31875f3f",
+        "test_rmse": 0.08986960888899338,
+        "validation_history_sha256": "b4cab3e6617babcb6d165e1ca5c88ae607b7f2719727283a9f8f389fe63623a9"
+      },
+      "selected_cross_pairs": [
+        [
+          5,
+          4,
+          "diff"
+        ],
+        [
+          5,
+          4,
+          "prod"
+        ],
+        [
+          5,
+          2,
+          "diff"
+        ],
+        [
+          5,
+          2,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          0,
+          "diff"
+        ],
+        [
+          5,
+          0,
+          "prod"
+        ],
+        [
+          5,
+          1,
+          "diff"
+        ],
+        [
+          5,
+          1,
+          "prod"
+        ],
+        [
+          4,
+          2,
+          "diff"
+        ],
+        [
+          4,
+          2,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          0,
+          "diff"
+        ],
+        [
+          4,
+          0,
+          "prod"
+        ],
+        [
+          4,
+          1,
+          "diff"
+        ],
+        [
+          4,
+          1,
+          "prod"
+        ],
+        [
+          2,
+          3,
+          "diff"
+        ],
+        [
+          2,
+          3,
+          "prod"
+        ],
+        [
+          2,
+          0,
+          "diff"
+        ],
+        [
+          2,
+          0,
+          "prod"
+        ],
+        [
+          2,
+          1,
+          "diff"
+        ],
+        [
+          2,
+          1,
+          "prod"
+        ],
+        [
+          3,
+          0,
+          "diff"
+        ],
+        [
+          3,
+          0,
+          "prod"
+        ],
+        [
+          3,
+          1,
+          "diff"
+        ],
+        [
+          3,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ]
+      ],
+      "task_id": 361623,
+      "validation_index_sha256": "8704cd93fbd3cde9a78e2da31e57e68f86046825de18071c1be512dfacc28004"
+    },
+    {
+      "base": {
+        "actual_retained_tree_count": 149,
+        "best_prefix_tree_count": 149,
+        "best_validation_rmse": 0.0940049880972607,
+        "borders_sha256": "8c7c3828f687da879aacd32aa53def505bb883735ac20f7c5dc8f88775520964",
+        "fingerprinted_tree_count": 149,
+        "model_sha256": "5c8f73460d7198ca57162107b6f30572dadc3b591b8b0a3cfcd50cfa04ac73f0",
+        "prediction_sha256": "83dc0f761f8c52eeb927f5e4b5a0545633aa4236c83ae017ac4d6bf200cded20",
+        "test_rmse": 0.13678662703161099,
+        "validation_history_sha256": "bc2f6c8bce9682e66c2852a50f3868d15fca22a95e504bb6adab32592838d09e"
+      },
+      "base_linear_selected": true,
+      "candidate_cross_pairs": [
+        [
+          5,
+          4,
+          "diff"
+        ],
+        [
+          5,
+          4,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          0,
+          "diff"
+        ],
+        [
+          5,
+          0,
+          "prod"
+        ],
+        [
+          5,
+          2,
+          "diff"
+        ],
+        [
+          5,
+          2,
+          "prod"
+        ],
+        [
+          5,
+          1,
+          "diff"
+        ],
+        [
+          5,
+          1,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          0,
+          "diff"
+        ],
+        [
+          4,
+          0,
+          "prod"
+        ],
+        [
+          4,
+          2,
+          "diff"
+        ],
+        [
+          4,
+          2,
+          "prod"
+        ],
+        [
+          4,
+          1,
+          "diff"
+        ],
+        [
+          4,
+          1,
+          "prod"
+        ],
+        [
+          3,
+          0,
+          "diff"
+        ],
+        [
+          3,
+          0,
+          "prod"
+        ],
+        [
+          3,
+          2,
+          "diff"
+        ],
+        [
+          3,
+          2,
+          "prod"
+        ],
+        [
+          3,
+          1,
+          "diff"
+        ],
+        [
+          3,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          2,
+          "diff"
+        ],
+        [
+          0,
+          2,
+          "prod"
+        ],
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ],
+        [
+          2,
+          1,
+          "diff"
+        ],
+        [
+          2,
+          1,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 127,
+        "best_prefix_tree_count": 127,
+        "best_validation_rmse": 0.0896488826423934,
+        "borders_sha256": "6ab428d4d5bafe75fe923de24e7e25d031dc828fd321309846fe4a322bc31846",
+        "fingerprinted_tree_count": 127,
+        "model_sha256": "640ce4e54eb20e4f236df710d8750fc5a31e568b9e52414c0dc9c157c74a6b33",
+        "prediction_sha256": "26d82728319145a6b847622855872049170b69f0b5cfc15bf60ed5e12614eba9",
+        "test_rmse": 0.13840461716138133,
+        "validation_history_sha256": "707f89e383117285f0f65558c54f8f9f91c88efa16d51809b27026d471b783ae"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 127,
+        "best_prefix_tree_count": 127,
+        "best_validation_rmse": 0.0896488826423934,
+        "borders_sha256": "6ab428d4d5bafe75fe923de24e7e25d031dc828fd321309846fe4a322bc31846",
+        "fingerprinted_tree_count": 127,
+        "model_sha256": "640ce4e54eb20e4f236df710d8750fc5a31e568b9e52414c0dc9c157c74a6b33",
+        "prediction_sha256": "26d82728319145a6b847622855872049170b69f0b5cfc15bf60ed5e12614eba9",
+        "test_rmse": 0.13840461716138133,
+        "validation_history_sha256": "707f89e383117285f0f65558c54f8f9f91c88efa16d51809b27026d471b783ae"
+      },
+      "chimera_total_fit_seconds": 0.877654292,
+      "cross_selected": true,
+      "darko_total_fit_seconds": 0.921886958,
+      "dataset_name": "space_ga",
+      "external_native_exact": true,
+      "fit_index_sha256": "33fd559e67003aa12796a39c399386b761fa46128db56833c4d98bf932fb031f",
+      "fold": 8,
+      "outer_test_index_sha256": "fe3069ffb4dd2f889806e9187e5fb8052b844bff2d0b2ae857e1d47da0105f68",
+      "outer_train_index_sha256": "4d2fd420047f528e730201fd74979617dce8f831da7b674f102a3a65d3dfce1a",
+      "selected": {
+        "actual_retained_tree_count": 127,
+        "best_prefix_tree_count": 127,
+        "best_validation_rmse": 0.0896488826423934,
+        "borders_sha256": "6ab428d4d5bafe75fe923de24e7e25d031dc828fd321309846fe4a322bc31846",
+        "fingerprinted_tree_count": 127,
+        "model_sha256": "640ce4e54eb20e4f236df710d8750fc5a31e568b9e52414c0dc9c157c74a6b33",
+        "prediction_sha256": "26d82728319145a6b847622855872049170b69f0b5cfc15bf60ed5e12614eba9",
+        "test_rmse": 0.13840461716138133,
+        "validation_history_sha256": "707f89e383117285f0f65558c54f8f9f91c88efa16d51809b27026d471b783ae"
+      },
+      "selected_cross_pairs": [
+        [
+          5,
+          4,
+          "diff"
+        ],
+        [
+          5,
+          4,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          0,
+          "diff"
+        ],
+        [
+          5,
+          0,
+          "prod"
+        ],
+        [
+          5,
+          2,
+          "diff"
+        ],
+        [
+          5,
+          2,
+          "prod"
+        ],
+        [
+          5,
+          1,
+          "diff"
+        ],
+        [
+          5,
+          1,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          0,
+          "diff"
+        ],
+        [
+          4,
+          0,
+          "prod"
+        ],
+        [
+          4,
+          2,
+          "diff"
+        ],
+        [
+          4,
+          2,
+          "prod"
+        ],
+        [
+          4,
+          1,
+          "diff"
+        ],
+        [
+          4,
+          1,
+          "prod"
+        ],
+        [
+          3,
+          0,
+          "diff"
+        ],
+        [
+          3,
+          0,
+          "prod"
+        ],
+        [
+          3,
+          2,
+          "diff"
+        ],
+        [
+          3,
+          2,
+          "prod"
+        ],
+        [
+          3,
+          1,
+          "diff"
+        ],
+        [
+          3,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          2,
+          "diff"
+        ],
+        [
+          0,
+          2,
+          "prod"
+        ],
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ],
+        [
+          2,
+          1,
+          "diff"
+        ],
+        [
+          2,
+          1,
+          "prod"
+        ]
+      ],
+      "task_id": 361623,
+      "validation_index_sha256": "caf1784051e72ea96ce7011ccfd887d2613647d41bb403a7f89a095835e7e315"
+    },
+    {
+      "base": {
+        "actual_retained_tree_count": 161,
+        "best_prefix_tree_count": 161,
+        "best_validation_rmse": 0.11058378326729565,
+        "borders_sha256": "8aaaf85189cb0dd59aa2d2a9d7565f3ffa3b57b2b22cb475b68fe6d176395b8f",
+        "fingerprinted_tree_count": 161,
+        "model_sha256": "0d0fe3fd87c919b222a7f80303946712ac7c015cd73711fb07fc0d9c2e3d06c1",
+        "prediction_sha256": "4032a4b8f6750174a4db4c2fee0a448c813c8ecdd326895a094711ad34187f54",
+        "test_rmse": 0.09060670957838193,
+        "validation_history_sha256": "f9bb3cbec282ec61894808b556b962aae45b2beba01d704ccf7d7f421c572285"
+      },
+      "base_linear_selected": true,
+      "candidate_cross_pairs": [
+        [
+          5,
+          4,
+          "diff"
+        ],
+        [
+          5,
+          4,
+          "prod"
+        ],
+        [
+          5,
+          3,
+          "diff"
+        ],
+        [
+          5,
+          3,
+          "prod"
+        ],
+        [
+          5,
+          0,
+          "diff"
+        ],
+        [
+          5,
+          0,
+          "prod"
+        ],
+        [
+          5,
+          2,
+          "diff"
+        ],
+        [
+          5,
+          2,
+          "prod"
+        ],
+        [
+          5,
+          1,
+          "diff"
+        ],
+        [
+          5,
+          1,
+          "prod"
+        ],
+        [
+          4,
+          3,
+          "diff"
+        ],
+        [
+          4,
+          3,
+          "prod"
+        ],
+        [
+          4,
+          0,
+          "diff"
+        ],
+        [
+          4,
+          0,
+          "prod"
+        ],
+        [
+          4,
+          2,
+          "diff"
+        ],
+        [
+          4,
+          2,
+          "prod"
+        ],
+        [
+          4,
+          1,
+          "diff"
+        ],
+        [
+          4,
+          1,
+          "prod"
+        ],
+        [
+          3,
+          0,
+          "diff"
+        ],
+        [
+          3,
+          0,
+          "prod"
+        ],
+        [
+          3,
+          2,
+          "diff"
+        ],
+        [
+          3,
+          2,
+          "prod"
+        ],
+        [
+          3,
+          1,
+          "diff"
+        ],
+        [
+          3,
+          1,
+          "prod"
+        ],
+        [
+          0,
+          2,
+          "diff"
+        ],
+        [
+          0,
+          2,
+          "prod"
+        ],
+        [
+          0,
+          1,
+          "diff"
+        ],
+        [
+          0,
+          1,
+          "prod"
+        ],
+        [
+          2,
+          1,
+          "diff"
+        ],
+        [
+          2,
+          1,
+          "prod"
+        ]
+      ],
+      "chimera": {
+        "actual_retained_tree_count": 161,
+        "best_prefix_tree_count": 161,
+        "best_validation_rmse": 0.11058378326729565,
+        "borders_sha256": "8aaaf85189cb0dd59aa2d2a9d7565f3ffa3b57b2b22cb475b68fe6d176395b8f",
+        "fingerprinted_tree_count": 161,
+        "model_sha256": "0d0fe3fd87c919b222a7f80303946712ac7c015cd73711fb07fc0d9c2e3d06c1",
+        "prediction_sha256": "4032a4b8f6750174a4db4c2fee0a448c813c8ecdd326895a094711ad34187f54",
+        "test_rmse": 0.09060670957838193,
+        "validation_history_sha256": "f9bb3cbec282ec61894808b556b962aae45b2beba01d704ccf7d7f421c572285"
+      },
+      "chimera_actual": {
+        "actual_retained_tree_count": 161,
+        "best_prefix_tree_count": 161,
+        "best_validation_rmse": 0.11058378326729565,
+        "borders_sha256": "8aaaf85189cb0dd59aa2d2a9d7565f3ffa3b57b2b22cb475b68fe6d176395b8f",
+        "fingerprinted_tree_count": 161,
+        "model_sha256": "0d0fe3fd87c919b222a7f80303946712ac7c015cd73711fb07fc0d9c2e3d06c1",
+        "prediction_sha256": "4032a4b8f6750174a4db4c2fee0a448c813c8ecdd326895a094711ad34187f54",
+        "test_rmse": 0.09060670957838193,
+        "validation_history_sha256": "f9bb3cbec282ec61894808b556b962aae45b2beba01d704ccf7d7f421c572285"
+      },
+      "chimera_total_fit_seconds": 0.973923625,
+      "cross_selected": false,
+      "darko_total_fit_seconds": 1.032327792,
+      "dataset_name": "space_ga",
+      "external_native_exact": true,
+      "fit_index_sha256": "19a9a86702de42e9a28935bc1e286e95a6da97b61d7a090a0b3d4283e070843d",
+      "fold": 9,
+      "outer_test_index_sha256": "a9c29044cbd88198a79811f73b6993afa957c9f0180d71b8d534ff85a7a2cac3",
+      "outer_train_index_sha256": "f2a35c075cc7b7a775ab3761947aae3e9cc8415178c37ea1f454b98e6c305081",
+      "selected": {
+        "actual_retained_tree_count": 161,
+        "best_prefix_tree_count": 161,
+        "best_validation_rmse": 0.11058378326729565,
+        "borders_sha256": "8aaaf85189cb0dd59aa2d2a9d7565f3ffa3b57b2b22cb475b68fe6d176395b8f",
+        "fingerprinted_tree_count": 161,
+        "model_sha256": "0d0fe3fd87c919b222a7f80303946712ac7c015cd73711fb07fc0d9c2e3d06c1",
+        "prediction_sha256": "4032a4b8f6750174a4db4c2fee0a448c813c8ecdd326895a094711ad34187f54",
+        "test_rmse": 0.09060670957838193,
+        "validation_history_sha256": "f9bb3cbec282ec61894808b556b962aae45b2beba01d704ccf7d7f421c572285"
+      },
+      "selected_cross_pairs": [],
+      "task_id": 361623,
+      "validation_index_sha256": "371adefdcad3b3d22a7fe5f046fc54e1861511465aac7ca4d5a7f34bb0f1153e"
+    }
+  ],
+  "schema_version": 1,
+  "sources": {
+    "chimeraboost": {
+      "branch": "main",
+      "clean": true,
+      "head": "851ab7fa79fbb2a7f698fbc1a00952e1bd18c62d",
+      "path": "/Users/kmedved/Code/GitHub/chimeraboost"
+    },
+    "darkofit": {
+      "branch": "codex/product-offense",
+      "clean": true,
+      "head": "f6d7983f537f9995739dbfd327b31e97f28cd747",
+      "path": "/Users/kmedved/Code/GitHub/darkofit-product-offense"
+    }
+  },
+  "tasks": {
+    "361251": {
+      "X_sha256": "0ab39ea0afb33fff086205a60d87bfc92254fecb807ff97269d4b91fe48df5a2",
+      "dataset_id": 44973,
+      "dataset_name": "grid_stability",
+      "features": 12,
+      "rows": 10000,
+      "target_name": "stab",
+      "task_id": 361251,
+      "y_sha256": "9f0c5f7676567a669b708b6eab2b4d679bb2fe1358e530d02406b9b3f2aa99d5"
+    },
+    "361258": {
+      "X_sha256": "40fe658abf608fb41492e445d8e89d3a5f5daeee62e29ebdac02f329f1cf6dff",
+      "dataset_id": 44980,
+      "dataset_name": "kin8nm",
+      "features": 8,
+      "rows": 8192,
+      "target_name": "y",
+      "task_id": 361258,
+      "y_sha256": "a16dfbf651526e3e7a7543c7ba12c93e50ca2baecd284e62671fad99b9ea1fb4"
+    },
+    "361623": {
+      "X_sha256": "7f3e610156f915570638ec9ae084145bd8c7c7eb2b9c627ef91dbd7fedad22aa",
+      "dataset_id": 45402,
+      "dataset_name": "space_ga",
+      "features": 6,
+      "rows": 3107,
+      "target_name": "ln_votes_pop",
+      "task_id": 361623,
+      "y_sha256": "eb2d95e4e07d1a89dd0afdc47741d7cca10d24bc491c535c2a3b980843806921"
+    }
+  }
+}
