@@ -25,3 +25,10 @@ engine difference. No result artifact was created and no campaign conclusion
 was drawn. The amended protocol compares the common best-iteration prefix for
 engine exactness and separately records the actual retained product prediction.
 
+A second execution of the amended protocol reached the last coordinate,
+space_ga fold 9, and stopped with no fingerprint mismatches. Both products
+declined the crossed challenger. The runner incorrectly compared
+ChimeraBoost's empty **selected** pair list with DarkoFit's 30 **candidate**
+pairs. The schema was corrected to record candidate and selected pairs
+separately and exactness now compares selected pairs, as the protocol states.
+Again, no artifact was written.

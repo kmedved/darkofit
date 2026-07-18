@@ -373,10 +373,11 @@ def _evaluate_fold(task, X, y, task_id, fold):
         if selected_fingerprint[field] != chimera_fingerprint[field]
     ]
     chimera_pairs = list(chimera.cross_pairs_ or ())
+    selected_pairs = pairs if cross_selected else []
     if (
         bool(chimera.linear_leaves_selected_) != base_linear
         or bool(chimera.cross_features_selected_) != cross_selected
-        or chimera_pairs != pairs
+        or chimera_pairs != selected_pairs
         or mismatches
     ):
         raise RuntimeError(
@@ -395,7 +396,8 @@ def _evaluate_fold(task, X, y, task_id, fold):
         ),
         "base_linear_selected": base_linear,
         "cross_selected": cross_selected,
-        "cross_pairs": [list(pair) for pair in pairs],
+        "candidate_cross_pairs": [list(pair) for pair in pairs],
+        "selected_cross_pairs": [list(pair) for pair in selected_pairs],
         "base": base_fingerprint,
         "selected": selected_fingerprint,
         "chimera": chimera_fingerprint,

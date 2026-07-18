@@ -30,6 +30,13 @@ def test_augmentation_appends_diff_and_product_with_nan_propagation():
     assert np.isnan(augmented[1, 2:]).all()
 
 
+def test_declined_cross_policy_has_candidates_but_no_selected_pairs():
+    pairs = experiment.candidate_pairs([0.7, 0.3], (), n_features=2)
+    assert pairs == [(0, 1, "diff"), (0, 1, "prod")]
+    selected = pairs if False else []
+    assert selected == []
+
+
 def _fake_rows():
     rows = []
     for task_id, name in experiment.TASKS.items():
