@@ -26,6 +26,8 @@ time.
 
 import io
 import json
+import zipfile
+import zlib
 from pathlib import Path
 
 import numpy as np
@@ -169,7 +171,7 @@ def save_ensemble(estimators, path, *, wrapper_class, params, metadata):
     np.savez_compressed(path, **arrays)
 
 
-def load_ensemble(path):
+def _load_ensemble_payload(path):
     """Return an ensemble header/payloads, or ``None`` for a booster archive."""
     loaded_path = _load_path(path)
     try:
@@ -225,6 +227,38 @@ def load_ensemble(path):
     return header, payloads
 
 
+def load_ensemble(path):
+    """Return an ensemble header/payloads, or ``None`` for a booster archive."""
+    try:
+        return _load_ensemble_payload(path)
+    except ValueError as exc:
+        message = str(exc)
+        if (
+            message.startswith("invalid DarkoFit model:")
+            or "is not a DarkoFit model archive" in message
+            or message.startswith("model format ")
+        ):
+            raise
+        raise ValueError(
+            f"invalid DarkoFit model: malformed archive payload: {message}"
+        ) from exc
+    except (
+        KeyError,
+        TypeError,
+        IndexError,
+        AttributeError,
+        OverflowError,
+        UnicodeError,
+        EOFError,
+        OSError,
+        zipfile.BadZipFile,
+        zlib.error,
+    ) as exc:
+        raise ValueError(
+            "invalid DarkoFit model: malformed archive payload"
+        ) from exc
+
+
 def _require_offsets(name, offsets, total_size=None, expected_count=None):
     offsets = np.asarray(offsets)
     if offsets.ndim != 1 or offsets.size == 0:
@@ -265,6 +299,44 @@ def _invalid_model(message):
     raise ValueError(f"invalid DarkoFit model: {message}")
 
 
+def _require_header_integer(name, value, *, minimum=None):
+    if isinstance(value, bool) or not isinstance(value, int):
+        _invalid_model(f"{name} must be an integer")
+    if minimum is not None and value < int(minimum):
+        _invalid_model(f"{name} must be at least {int(minimum)}")
+    return int(value)
+
+
+def _require_header_number(name, value, *, positive=False):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        _invalid_model(f"{name} must be numeric")
+    try:
+        value = float(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError(
+            f"invalid DarkoFit model: {name} must be numeric"
+        ) from exc
+    if not np.isfinite(value):
+        _invalid_model(f"{name} must be finite")
+    if positive and value <= 0.0:
+        _invalid_model(f"{name} must be positive")
+    return value
+
+
+def _require_header_numeric_vector(name, value, expected_length):
+    if not isinstance(value, list) or len(value) != int(expected_length):
+        _invalid_model(
+            f"{name} must contain {int(expected_length)} numeric values"
+        )
+    return np.asarray(
+        [
+            _require_header_number(f"{name} value {index}", item)
+            for index, item in enumerate(value)
+        ],
+        dtype=np.float64,
+    )
+
+
 def _require_array_ndim(name, array, ndim):
     array = np.asarray(array)
     if array.ndim != int(ndim):
@@ -277,6 +349,18 @@ def _require_integer_array(name, array, ndim=1):
     if not np.issubdtype(array.dtype, np.integer):
         _invalid_model(f"{name} must contain integer values")
     return array.astype(np.int64, copy=False)
+
+
+def _require_finite_numeric_array(name, array, ndim=1):
+    array = _require_array_ndim(name, array, ndim)
+    if not (
+        np.issubdtype(array.dtype, np.integer)
+        or np.issubdtype(array.dtype, np.floating)
+    ):
+        _invalid_model(f"{name} must be numeric")
+    if not np.all(np.isfinite(array)):
+        _invalid_model(f"{name} must be finite")
+    return array
 
 
 def _require_unique_feature_indices(name, values, n_input_features):
@@ -557,8 +641,12 @@ def _unpack_oblivious(data, n_bins, format_version, n_numeric_features):
     depths = _require_integer_array("oblivious depths", data["trees__depths"])
     feats = _require_integer_array("oblivious features", data["trees__feats_flat"])
     thrs = _require_integer_array("oblivious thresholds", data["trees__thrs_flat"])
-    gains = _require_array_ndim("oblivious gains", data["trees__gains_flat"], 1)
-    values = _require_array_ndim("oblivious values", data["trees__values_flat"], 1)
+    gains = _require_finite_numeric_array(
+        "oblivious gains", data["trees__gains_flat"]
+    )
+    values = _require_finite_numeric_array(
+        "oblivious values", data["trees__values_flat"]
+    )
     so = _require_same_offsets(
         "oblivious split",
         data["trees__split_offsets"],
@@ -765,9 +853,11 @@ def _unpack_nonoblivious(data, cls, n_bins, expected_value_width=None):
     splits_thr = _require_integer_array(
         "nonoblivious split thresholds", data["trees__splits_thr_flat"]
     )
-    gains = _require_array_ndim("nonoblivious gains", data["trees__gains_flat"], 1)
+    gains = _require_finite_numeric_array(
+        "nonoblivious gains", data["trees__gains_flat"]
+    )
     if cls is MultiNonObliviousTree:
-        values = _require_array_ndim(
+        values = _require_finite_numeric_array(
             "multiclass nonoblivious values", data["trees__values_flat"], 2
         )
         if (
@@ -778,7 +868,7 @@ def _unpack_nonoblivious(data, cls, n_bins, expected_value_width=None):
                 "multiclass nonoblivious value width does not match classes"
             )
     else:
-        values = _require_array_ndim(
+        values = _require_finite_numeric_array(
             "nonoblivious values", data["trees__values_flat"], 1
         )
     no = _require_same_offsets(
@@ -927,14 +1017,18 @@ def _unpack_levelwise(data, n_bins):
     node_thresholds = _require_integer_array(
         "levelwise node thresholds", data["trees__node_thresholds_flat"]
     )
-    values = _require_array_ndim("levelwise values", data["trees__values_flat"], 1)
+    values = _require_finite_numeric_array(
+        "levelwise values", data["trees__values_flat"]
+    )
     splits_feat = _require_integer_array(
         "levelwise split features", data["trees__splits_feat_flat"]
     )
     splits_thr = _require_integer_array(
         "levelwise split thresholds", data["trees__splits_thr_flat"]
     )
-    gains = _require_array_ndim("levelwise gains", data["trees__gains_flat"], 1)
+    gains = _require_finite_numeric_array(
+        "levelwise gains", data["trees__gains_flat"]
+    )
     no = _require_same_offsets(
         "levelwise node",
         data["trees__node_offsets"],
@@ -1000,9 +1094,9 @@ def _unpack_levelwise(data, n_bins):
 
 
 def _validate_boosting_round_count(kind, trees, header):
-    best_iteration = int(header["best_iteration"])
-    if best_iteration < 0:
-        _invalid_model("best_iteration must be nonnegative")
+    best_iteration = _require_header_integer(
+        "best_iteration", header.get("best_iteration"), minimum=0
+    )
     if kind == "empty":
         if best_iteration != 0:
             _invalid_model("empty tree kind does not match best_iteration")
@@ -1012,7 +1106,9 @@ def _validate_boosting_round_count(kind, trees, header):
         "nonoblivious_per_class",
         "levelwise_per_class",
     }:
-        n_rounds = int(header["n_rounds"])
+        n_rounds = _require_header_integer(
+            "n_rounds", header.get("n_rounds"), minimum=0
+        )
         if n_rounds != best_iteration:
             _invalid_model(
                 "per-class tree count n_rounds does not match best_iteration"
@@ -1480,7 +1576,7 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
     np.savez_compressed(path, **arrays)
 
 
-def load_booster(path, return_wrapper_payload=False):
+def _load_booster_payload(path, return_wrapper_payload=False):
     """Load a booster saved by :func:`save_booster`.
 
     With ``return_wrapper_payload=True``, returns
@@ -1508,7 +1604,15 @@ def load_booster(path, return_wrapper_payload=False):
             raise ValueError(
                 f"{path!r} is not a DarkoFit model archive"
             ) from exc
-        format_version = int(header["format_version"])
+        if not isinstance(header, dict):
+            _invalid_model("header must be an object")
+        format_version = header.get("format_version")
+        if (
+            isinstance(format_version, bool)
+            or not isinstance(format_version, int)
+            or format_version < 1
+        ):
+            _invalid_model("unsupported model format version")
         if format_version > FORMAT_VERSION:
             raise ValueError(
                 f"model format {format_version} is newer than this "
@@ -1518,6 +1622,18 @@ def load_booster(path, return_wrapper_payload=False):
         params = header.get("params")
         if not isinstance(params, dict):
             _invalid_model("params header must be an object")
+        lr = _require_header_number("lr", header.get("lr"), positive=True)
+        _require_header_integer(
+            "best_iteration", header.get("best_iteration"), minimum=0
+        )
+        best_score = _require_header_number(
+            "best_score", header.get("best_score")
+        )
+        n_input_features = _require_header_integer(
+            "n_input_features",
+            header.get("n_input_features"),
+            minimum=1,
+        )
         loss_name = header.get("loss_name")
         if model_class == "GradientBoosting":
             if not isinstance(loss_name, str) or loss_name not in LOSSES:
@@ -1530,20 +1646,32 @@ def load_booster(path, return_wrapper_payload=False):
                 booster.loss_ = LOSSES[loss_name](**header["loss_kwargs"])
             except (KeyError, TypeError, ValueError, OverflowError) as exc:
                 _invalid_model(f"invalid booster params: {exc}")
-            booster.init_ = header["init"]
+            booster.init_ = _require_header_number(
+                "scalar init", header.get("init")
+            )
         elif model_class == "MulticlassBoosting":
             try:
                 booster = MulticlassBoosting(**params)
             except (TypeError, ValueError, OverflowError) as exc:
                 _invalid_model(f"invalid booster params: {exc}")
-            booster.init_ = np.array(header["init"], dtype=np.float64)
-            booster.n_classes_ = header["n_classes"]
+            booster.n_classes_ = _require_header_integer(
+                "n_classes", header.get("n_classes"), minimum=1
+            )
+            booster.init_ = _require_header_numeric_vector(
+                "multiclass init", header.get("init"), booster.n_classes_
+            )
             booster.loss_ = MultiSoftmax(booster.n_classes_)
-            classes = data["classes"]
+            classes = _require_array_ndim(
+                "multiclass classes", data["classes"], 1
+            )
             if "classes_kinds" in data:
                 classes = _decode_categories(
                     classes, data["classes_kinds"],
                     name="multiclass classes",
+                )
+            if len(classes) != booster.n_classes_:
+                _invalid_model(
+                    "multiclass classes length does not match n_classes"
                 )
             booster.classes_ = classes
         elif model_class == "DistributionalBoosting":
@@ -1562,47 +1690,73 @@ def load_booster(path, return_wrapper_payload=False):
                 )
             except (KeyError, TypeError, ValueError, OverflowError) as exc:
                 _invalid_model(f"invalid booster params: {exc}")
-            booster.init_ = np.array(header["init"], dtype=np.float64)
-            booster.n_outputs_ = int(header["n_outputs"])
-            target_transform = header.get("target_transform") or {
-                "enabled": False,
-                "mean": 0.0,
-                "scale": 1.0,
-                "basis": "target",
-            }
-            if not isinstance(target_transform, dict):
-                _invalid_model("distributional target transform must be an object")
-            enabled = bool(target_transform.get("enabled", False))
-            mean = float(target_transform.get("mean", 0.0))
-            scale = float(target_transform.get("scale", 1.0))
-            if not np.isfinite(mean):
-                _invalid_model("distributional target transform mean is not finite")
-            if not np.isfinite(scale) or scale <= 0.0:
-                _invalid_model("distributional target transform scale must be positive")
-            booster.target_transform_ = {
-                "enabled": enabled,
-                "mean": mean,
-                "scale": scale,
-                "basis": str(target_transform.get("basis", "target")),
-            }
-            loss_state = header.get("loss_state")
-            if loss_state:
-                booster.loss_.state_ = loss_state
+            booster.n_outputs_ = _require_header_integer(
+                "n_outputs", header.get("n_outputs"), minimum=1
+            )
             expected_outputs = int(getattr(booster.loss_, "n_outputs", 0))
             if booster.n_outputs_ != expected_outputs:
                 _invalid_model(
                     "distributional n_outputs does not match loss "
                     f"{header['loss_name']!r}"
                 )
+            booster.init_ = _require_header_numeric_vector(
+                "distributional init",
+                header.get("init"),
+                booster.n_outputs_,
+            )
+            target_transform = header.get("target_transform")
+            if target_transform is None:
+                target_transform = {
+                    "enabled": False,
+                    "mean": 0.0,
+                    "scale": 1.0,
+                    "basis": "target",
+                }
+            if not isinstance(target_transform, dict):
+                _invalid_model("distributional target transform must be an object")
+            enabled = target_transform.get("enabled", False)
+            if not isinstance(enabled, bool):
+                _invalid_model(
+                    "distributional target transform enabled must be a boolean"
+                )
+            mean = _require_header_number(
+                "distributional target transform mean",
+                target_transform.get("mean", 0.0),
+            )
+            scale = _require_header_number(
+                "distributional target transform scale",
+                target_transform.get("scale", 1.0),
+                positive=True,
+            )
+            basis = target_transform.get("basis", "target")
+            if not isinstance(basis, str) or not basis:
+                _invalid_model(
+                    "distributional target transform basis must be a "
+                    "nonempty string"
+                )
+            booster.target_transform_ = {
+                "enabled": enabled,
+                "mean": mean,
+                "scale": scale,
+                "basis": basis,
+            }
+            loss_state = header.get("loss_state")
+            if loss_state:
+                booster.loss_.state_ = loss_state
         else:
             raise ValueError(f"unknown model class {model_class!r}")
 
-        booster.lr_ = header["lr"]
+        booster.lr_ = lr
         booster.best_iteration_ = header["best_iteration"]
-        booster.best_score_ = header["best_score"]
+        booster.best_score_ = best_score
         booster.auto_params_ = header.get("auto_params", {})
         if not isinstance(booster.auto_params_, dict):
             _invalid_model("auto_params must be an object")
+        if (
+            "diagnostics" in booster.auto_params_
+            and not isinstance(booster.auto_params_["diagnostics"], dict)
+        ):
+            _invalid_model("diagnostics metadata must be an object")
         saved_linear_metadata = booster.auto_params_.get("linear_leaves")
         if saved_linear_metadata is not None:
             if not isinstance(saved_linear_metadata, dict):
@@ -1700,7 +1854,9 @@ def load_booster(path, return_wrapper_payload=False):
         booster.valid_history_ = list(header.get("valid_history", []))
         saved_n_threads = header.get("n_threads")
         if saved_n_threads is not None:
-            booster.n_threads_ = int(saved_n_threads)
+            booster.n_threads_ = _require_header_integer(
+                "n_threads", saved_n_threads, minimum=1
+            )
         else:
             import numba
             requested_threads = params.get("thread_count")
@@ -1723,7 +1879,7 @@ def load_booster(path, return_wrapper_payload=False):
             feature_map,
             binner,
         ) = _validate_preprocessor_payload(
-            data, prep_cfg, header["n_input_features"]
+            data, prep_cfg, n_input_features
         )
         n_bins = np.asarray(binner.n_bins_, dtype=np.int64)
         if "shap__background" in data.files:
@@ -1831,7 +1987,7 @@ def load_booster(path, return_wrapper_payload=False):
         prep.num_features_ = num_features
         prep.cat_features_ = cat_features
         prep.feature_map_ = feature_map
-        prep.n_input_features_ = header["n_input_features"]
+        prep.n_input_features_ = n_input_features
         prep._cat_indexes_ = {}
         prep.cat_categories_ = []
         prep.cat_maps_ = []
@@ -2025,12 +2181,16 @@ def load_booster(path, return_wrapper_payload=False):
                         _invalid_model(
                             f"linear leaf metadata {name} requires payload"
                         )
-        linear_metadata = booster._linear_leaf_metadata()
-        booster.auto_params_["linear_leaves"] = linear_metadata
-        booster.auto_params_.setdefault("diagnostics", {})
-        booster.auto_params_["diagnostics"]["linear_leaves"] = (
-            linear_metadata
-        )
+        if (
+            isinstance(booster, GradientBoosting)
+            or saved_linear_metadata is not None
+        ):
+            linear_metadata = booster._linear_leaf_metadata()
+            booster.auto_params_["linear_leaves"] = linear_metadata
+            booster.auto_params_.setdefault("diagnostics", {})
+            booster.auto_params_["diagnostics"]["linear_leaves"] = (
+                linear_metadata
+            )
         _restore_training_metadata(booster)
 
         wrapper_header = header.get("wrapper", {})
@@ -2041,3 +2201,37 @@ def load_booster(path, return_wrapper_payload=False):
     if return_wrapper_payload:
         return booster, wrapper_header, wrapper_arrays
     return booster
+
+
+def load_booster(path, return_wrapper_payload=False):
+    """Load a booster while normalizing malformed payload failures."""
+    try:
+        return _load_booster_payload(
+            path, return_wrapper_payload=return_wrapper_payload
+        )
+    except ValueError as exc:
+        message = str(exc)
+        if (
+            message.startswith("invalid DarkoFit model:")
+            or "is not a DarkoFit model archive" in message
+            or message.startswith("model format ")
+        ):
+            raise
+        raise ValueError(
+            f"invalid DarkoFit model: malformed archive payload: {message}"
+        ) from exc
+    except (
+        KeyError,
+        TypeError,
+        IndexError,
+        AttributeError,
+        OverflowError,
+        UnicodeError,
+        EOFError,
+        OSError,
+        zipfile.BadZipFile,
+        zlib.error,
+    ) as exc:
+        raise ValueError(
+            "invalid DarkoFit model: malformed archive payload"
+        ) from exc

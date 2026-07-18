@@ -31,11 +31,12 @@ EXPECTED_SOURCE_SHA256 = {
 }
 
 
-def _read_json(path: Path) -> dict[str, Any]:
-    value = json.loads(path.read_text(encoding="utf-8"))
+def _read_json_with_sha256(path: Path) -> tuple[dict[str, Any], str]:
+    payload = path.read_bytes()
+    value = json.loads(payload)
     if not isinstance(value, dict):
         raise ValueError(f"{path} must contain a JSON object")
-    return value
+    return value, hashlib.sha256(payload).hexdigest()
 
 
 def _sha256(path: Path) -> str:
@@ -43,6 +44,8 @@ def _sha256(path: Path) -> str:
 
 
 def _finite_positive(value: Any, label: str) -> float:
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        raise ValueError(f"{label} must be finite and positive")
     result = float(value)
     if not math.isfinite(result) or result <= 0.0:
         raise ValueError(f"{label} must be finite and positive")
@@ -50,6 +53,8 @@ def _finite_positive(value: Any, label: str) -> float:
 
 
 def _finite(value: Any, label: str) -> float:
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        raise ValueError(f"{label} must be finite")
     result = float(value)
     if not math.isfinite(result):
         raise ValueError(f"{label} must be finite")
@@ -230,7 +235,10 @@ def _sports_panel(summary: dict[str, Any]) -> dict[str, Any]:
     for row in rows:
         row["pareto"] = flags[row["engine"]]
     return {
-        "scope": "nine target-season basketball cells plus cold-player guardrail",
+        "scope": (
+            "historical S4 2017–2019 panel: nine target-season basketball "
+            "cells plus cold-player guardrail"
+        ),
         "baseline": "ChimeraBoost 0.15.0",
         "decision": summary.get("candidate", {}).get("decision"),
         "rows": rows,
@@ -469,7 +477,10 @@ def build_status() -> dict[str, Any]:
         "native_ordinal_c2": C2_SUMMARY,
         "fused_subset": FUSED_SUBSET_SUMMARY,
     }
-    actual_hashes = {name: _sha256(path) for name, path in sources.items()}
+    loaded = {}
+    actual_hashes = {}
+    for name, path in sources.items():
+        loaded[name], actual_hashes[name] = _read_json_with_sha256(path)
     for name, actual in actual_hashes.items():
         expected = EXPECTED_SOURCE_SHA256[name]
         if actual != expected:
@@ -477,7 +488,6 @@ def build_status() -> dict[str, Any]:
                 f"{name} frozen source hash changed: expected {expected}, "
                 f"found {actual}"
             )
-    loaded = {name: _read_json(path) for name, path in sources.items()}
     return {
         "schema_version": 1,
         "evidence_policy": (
@@ -542,7 +552,7 @@ def render_markdown(status: dict[str, Any]) -> str:
             "the best quality, DarkoFit the lowest fit time and incremental "
             "memory, and ChimeraBoost the best prediction time.",
             "",
-            "## Sports Pareto",
+            "## Sports Pareto (historical S4)",
             "",
             f"Scope: {sports['scope']}. Timing ratios use "
             f"{sports['baseline']} as 1.0.",
@@ -561,10 +571,13 @@ def render_markdown(status: dict[str, Any]) -> str:
     lines.extend(
         [
             "",
-            "DarkoFit beats ChimeraBoost on sports quality, but CatBoost is "
-            "both more accurate and faster than DarkoFit on this panel. The "
-            "failed `random_strength=0.5` candidate is excluded from the "
-            "product frontier.",
+            "On historical S4, DarkoFit beats ChimeraBoost on sports quality, "
+            "but CatBoost is both more accurate and faster than DarkoFit. The "
+            "failed `random_strength=0.5` candidate is excluded from this "
+            "panel's product frontier. The later "
+            "[player-disjoint T10 panel]"
+            "(basketball_sports_panel_v2_result.md) is reported separately "
+            "and is not blended into S4.",
             "",
             "## Engine tracks",
             "",

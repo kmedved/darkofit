@@ -21,9 +21,13 @@ Descriptive same-machine performance is published separately in
 
 Key current conclusions:
 
-- DarkoFit's sports defaults beat ChimeraBoost 0.15 on all nine frozen
-  multi-season cells, but CatBoost remains the quality ceiling on eight of
-  nine.
+- On the newer
+  [player-disjoint 2014–2016 sports panel](https://github.com/kmedved/darkofit/blob/main/benchmarks/basketball_sports_panel_v2_result.md),
+  DarkoFit's aggregate RMSE was 2.81% better than ChimeraBoost 0.15 across
+  nine target-season lineages, with six lineage wins and three losses.
+  DarkoFit's RMSE was 5.26% higher than CatBoost's, and CatBoost won all nine
+  lineages. The older overlap-permitting S4 panel had produced DarkoFit wins
+  over ChimeraBoost in all nine cells.
 - Matched large-n fit was faster than ChimeraBoost, but the frozen `1.30x`
   claim threshold was missed (`1.2793x`).
 - Public prediction medians beat ChimeraBoost in the seconds-integrated

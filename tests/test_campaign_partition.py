@@ -63,3 +63,16 @@ def test_core_library_modules_stay_out_of_campaign_partition():
     )
     assert pytest_ignore_collect(Path("test_darkofit.py"), unfiltered) is None
     assert pytest_ignore_collect(Path("tests"), campaign) is None
+
+
+def test_product_offense_evidence_verifiers_are_campaign_tests():
+    for name in (
+        "test_basketball_sports_panel_v2.py",
+        "test_rssi_linear_leaf_diagnosis.py",
+        "test_smooth_cross_features.py",
+        "test_smooth_cross_margin_analysis.py",
+        "test_t5_composite_confirmation.py",
+        "test_t5_composite_confirmation_failure.py",
+        "test_t5_composite_registry.py",
+    ):
+        assert is_campaign_module(name)

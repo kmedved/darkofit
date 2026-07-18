@@ -10,8 +10,10 @@ import json
 import math
 import os
 import resource
+import stat
 import subprocess
 import sys
+import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
@@ -81,6 +83,133 @@ def _json_sha256(value):
     ).hexdigest()
 
 
+def _json_object(pairs):
+    value = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError(f"duplicate JSON key: {key}")
+        value[key] = item
+    return value
+
+
+def _json_float(value):
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"non-finite JSON number: {value}")
+    return number
+
+
+def _json_int(value):
+    number = int(value)
+    if not -(2**63) <= number <= 2**63 - 1:
+        raise ValueError(f"out-of-range JSON integer: {value}")
+    return number
+
+
+def _json_loads(encoded, context):
+    try:
+        if isinstance(encoded, (bytes, bytearray)):
+            encoded = bytes(encoded).decode("utf-8")
+        elif not isinstance(encoded, str):
+            raise ValueError("JSON input must be UTF-8 bytes or text")
+        return json.loads(
+            encoded,
+            object_pairs_hook=_json_object,
+            parse_float=_json_float,
+            parse_int=_json_int,
+            parse_constant=lambda value: (_ for _ in ()).throw(
+                ValueError(f"non-finite JSON constant: {value}")
+            ),
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
+        raise RuntimeError(f"invalid {context} JSON") from error
+
+
+def _same_typed_value(left, right):
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, dict):
+        return left.keys() == right.keys() and all(
+            _same_typed_value(left[key], right[key]) for key in left
+        )
+    if isinstance(left, list):
+        return len(left) == len(right) and all(
+            _same_typed_value(a, b) for a, b in zip(left, right)
+        )
+    return left == right
+
+
+def _reject_symlink_directory(path, message):
+    absolute = Path(os.path.abspath(os.path.expanduser(path)))
+    for component in (absolute, *absolute.parents):
+        try:
+            mode = component.lstat().st_mode
+        except FileNotFoundError:
+            continue
+        if stat.S_ISLNK(mode):
+            raise RuntimeError(f"{message}: {component}")
+
+
+def _create_owned_directories(path, message):
+    missing = []
+    current = path
+    while True:
+        try:
+            mode = current.lstat().st_mode
+        except FileNotFoundError:
+            missing.append(current)
+            current = current.parent
+            continue
+        if not stat.S_ISDIR(mode) or stat.S_ISLNK(mode):
+            raise RuntimeError(f"{message}: {current}")
+        break
+    owned = []
+    try:
+        for directory in reversed(missing):
+            try:
+                directory.mkdir()
+            except FileExistsError:
+                mode = directory.lstat().st_mode
+                if not stat.S_ISDIR(mode) or stat.S_ISLNK(mode):
+                    raise RuntimeError(f"{message}: {directory}")
+                continue
+            identity = directory.lstat()
+            if not stat.S_ISDIR(identity.st_mode):
+                raise RuntimeError(f"{message}: {directory}")
+            owned.append(
+                (directory, (identity.st_dev, identity.st_ino))
+            )
+    except BaseException:
+        _remove_owned_directories(owned)
+        raise
+    return owned
+
+
+def _remove_owned_directories(owned):
+    for directory, expected in reversed(owned):
+        try:
+            current = directory.lstat()
+            if (
+                stat.S_ISDIR(current.st_mode)
+                and (current.st_dev, current.st_ino) == expected
+            ):
+                directory.rmdir()
+        except OSError:
+            pass
+
+
+def _verify_published_identity(path, expected, message):
+    try:
+        current = path.lstat()
+    except FileNotFoundError as error:
+        raise RuntimeError(f"{message}: {path}") from error
+    if (
+        not stat.S_ISREG(current.st_mode)
+        or (current.st_dev, current.st_ino) != expected
+    ):
+        raise RuntimeError(f"{message}: {path}")
+
+
 def _array_sha256(value):
     array = np.ascontiguousarray(np.asarray(value, dtype="<f8"))
     return hashlib.sha256(array.tobytes()).hexdigest()
@@ -91,17 +220,21 @@ def _peak_rss_bytes():
     return value if sys.platform == "darwin" else value * 1024
 
 
-def _rows():
-    if _sha256(REGISTRY) != EXPECTED_REGISTRY_SHA256:
+def _rows(registry_bytes=None, c2_raw_bytes=None):
+    if registry_bytes is None:
+        registry_bytes = REGISTRY.read_bytes()
+    if hashlib.sha256(registry_bytes).hexdigest() != EXPECTED_REGISTRY_SHA256:
         raise RuntimeError("T7 C2 registry changed")
-    registry = c2._load_registry()
+    registry = _json_loads(registry_bytes, "T7 registry")
     rows = {
         int(row["task_id"]): row
         for row in registry["development_tasks"]
     }
     if len(rows) != 8:
         raise RuntimeError("T7 development task count changed")
-    if _sha256(C2_RAW) != EXPECTED_C2_RAW_SHA256:
+    if c2_raw_bytes is None:
+        c2_raw_bytes = C2_RAW.read_bytes()
+    if hashlib.sha256(c2_raw_bytes).hexdigest() != EXPECTED_C2_RAW_SHA256:
         raise RuntimeError("T7 immutable DarkoFit anchor changed")
     return registry, rows
 
@@ -126,7 +259,9 @@ def _source_state():
 
 
 def _arm_order(coordinate_index):
-    shift = int(coordinate_index) % len(ARM_NAMES)
+    if type(coordinate_index) is not int or coordinate_index < 0:
+        raise ValueError("T7 coordinate index must be a nonnegative integer")
+    shift = coordinate_index % len(ARM_NAMES)
     return ARM_NAMES[shift:] + ARM_NAMES[:shift]
 
 
@@ -197,22 +332,38 @@ def _resolved_params(model):
 
 
 def run_worker(task_id, fold, coordinate_index):
+    registry, rows = _rows()
+    coordinates = [
+        (int(row["task_id"]), current_fold)
+        for row in registry["development_tasks"]
+        for current_fold in FOLDS
+    ]
+    if (
+        type(task_id) is not int
+        or type(fold) is not int
+        or type(coordinate_index) is not int
+        or coordinate_index < 0
+        or coordinate_index >= len(coordinates)
+        or coordinates[coordinate_index] != (task_id, fold)
+    ):
+        raise ValueError(
+            "T7 worker coordinate does not match the frozen schedule"
+        )
     import catboost
     from catboost import CatBoostRegressor
 
     if catboost.__version__ != "1.2.10":
         raise RuntimeError("T7 requires CatBoost 1.2.10")
-    _registry, rows = _rows()
-    row = rows[int(task_id)]
+    row = rows[task_id]
     task, X, y, categorical = c2._load_task(row)
     outer_train, outer_test = task.get_train_test_split_indices(
-        repeat=0, fold=int(fold), sample=0
+        repeat=0, fold=fold, sample=0
     )
     outer = c2._verify_outer_split(
-        row, int(fold), outer_train, outer_test
+        row, fold, outer_train, outer_test
     )
     fit_indices, validation_indices, inner = c2.development_split(
-        outer_train, task_id=int(task_id), fold=int(fold)
+        outer_train, task_id=task_id, fold=fold
     )
     X_fit = _catboost_frame(X.iloc[fit_indices], categorical)
     X_validation = _catboost_frame(
@@ -322,22 +473,74 @@ def _spool_path(directory, task_id, fold):
     return directory / f"task-{task_id}--fold-{fold}.json"
 
 
+def _ordered_spool_records(records, coordinates):
+    coordinate_order = {
+        coordinate: index for index, coordinate in enumerate(coordinates)
+    }
+    return sorted(
+        records,
+        key=lambda row: coordinate_order[(row["task_id"], row["fold"])],
+    )
+
+
 def _load_spool(path, binding, task_id, fold):
-    payload = json.loads(path.read_text())
+    _reject_symlink_directory(
+        path.parent, "refusing symlink T7 spool directory"
+    )
+    flags = os.O_RDONLY
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        descriptor = os.open(path, flags)
+    except OSError as error:
+        raise RuntimeError(f"refusing invalid T7 spool record: {path}") from error
+    with os.fdopen(descriptor, "rb") as handle:
+        if not stat.S_ISREG(os.fstat(handle.fileno()).st_mode):
+            raise RuntimeError(f"refusing invalid T7 spool record: {path}")
+        encoded = handle.read()
+    payload = _json_loads(encoded, "T7 spool record")
+    if not isinstance(payload, dict):
+        raise RuntimeError(f"refusing invalid T7 spool record: {path}")
     expected = payload.pop("spool_sha256", None)
-    if expected != _json_sha256(payload):
-        raise RuntimeError(f"T7 spool hash changed: {path}")
     if (
-        payload["binding"] != binding
-        or int(payload["task_id"]) != int(task_id)
-        or int(payload["fold"]) != int(fold)
-        or payload["result_sha256"] != _json_sha256(payload["result"])
+        set(payload)
+        != {"binding", "task_id", "fold", "result_sha256", "result"}
+        or expected != _json_sha256(payload)
+    ):
+        raise RuntimeError(f"T7 spool hash changed: {path}")
+    result = payload.get("result")
+    if (
+        not _same_typed_value(payload.get("binding"), binding)
+        or type(payload.get("task_id")) is not int
+        or payload["task_id"] != task_id
+        or type(payload.get("fold")) is not int
+        or payload["fold"] != fold
+        or not isinstance(result, dict)
+        or type(result.get("task_id")) is not int
+        or result["task_id"] != task_id
+        or type(result.get("fold")) is not int
+        or result["fold"] != fold
+        or payload["result_sha256"] != _json_sha256(result)
     ):
         raise RuntimeError(f"T7 spool binding changed: {path}")
-    return payload["result"], expected
+    return result, expected
 
 
-def _create_spool(path, binding, result):
+def _unlink_if_owned(path, identity):
+    try:
+        current = path.lstat()
+    except FileNotFoundError:
+        return
+    if (
+        stat.S_ISREG(current.st_mode)
+        and (current.st_dev, current.st_ino) == identity
+    ):
+        path.unlink()
+
+
+def _create_spool(path, binding, result, *, return_publish_state=False):
+    if path.is_symlink():
+        raise RuntimeError(f"refusing symlink T7 spool record: {path}")
     payload = {
         "binding": binding,
         "task_id": result["task_id"],
@@ -346,24 +549,158 @@ def _create_spool(path, binding, result):
         "result": result,
     }
     payload["spool_sha256"] = _json_sha256(payload)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor = os.open(
-        path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600
-    )
-    with os.fdopen(descriptor, "w") as handle:
-        json.dump(payload, handle, indent=2, sort_keys=True, allow_nan=False)
-        handle.write("\n")
-        handle.flush()
-        os.fsync(handle.fileno())
-    return result, payload["spool_sha256"]
+    encoded = (
+        json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
+    ).encode()
+    message = "refusing symlink T7 spool directory"
+    _reject_symlink_directory(path.parent, message)
+    owned_directories = _create_owned_directories(path.parent, message)
+    temporary = None
+    published_identity = None
+    try:
+        _reject_symlink_directory(path.parent, message)
+        descriptor, temporary_name = tempfile.mkstemp(
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            dir=path.parent,
+        )
+        temporary = Path(temporary_name)
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(encoded)
+            handle.flush()
+            os.fsync(handle.fileno())
+            identity = os.fstat(handle.fileno())
+        try:
+            os.link(temporary, path)
+        except FileExistsError:
+            outcome = _load_spool(
+                path,
+                binding,
+                result["task_id"],
+                result["fold"],
+            )
+            published = False
+        else:
+            published_identity = (identity.st_dev, identity.st_ino)
+            _verify_published_identity(
+                path,
+                published_identity,
+                "T7 spool publish identity changed",
+            )
+            outcome = (result, payload["spool_sha256"])
+            published = True
+    except BaseException:
+        if temporary is not None:
+            try:
+                temporary.unlink(missing_ok=True)
+            except OSError:
+                pass
+        if published_identity is not None:
+            try:
+                _unlink_if_owned(path, published_identity)
+            except OSError:
+                pass
+        _remove_owned_directories(owned_directories)
+        raise
+    try:
+        temporary.unlink(missing_ok=True)
+    except BaseException:
+        if published_identity is not None:
+            try:
+                _unlink_if_owned(path, published_identity)
+            except OSError:
+                pass
+        _remove_owned_directories(owned_directories)
+        raise
+    return (*outcome, published) if return_publish_state else outcome
+
+
+def _create_output(path, encoded):
+    if path.exists() or path.is_symlink():
+        raise RuntimeError(f"refusing existing output: {path}")
+    message = "refusing symlink T7 output directory"
+    _reject_symlink_directory(path.parent, message)
+    owned_directories = _create_owned_directories(path.parent, message)
+    temporary = None
+    published_identity = None
+    try:
+        _reject_symlink_directory(path.parent, message)
+        descriptor, temporary_name = tempfile.mkstemp(
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            dir=path.parent,
+        )
+        temporary = Path(temporary_name)
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(encoded)
+            handle.flush()
+            os.fsync(handle.fileno())
+            identity = os.fstat(handle.fileno())
+        try:
+            os.link(temporary, path)
+        except FileExistsError as error:
+            raise RuntimeError(f"refusing existing output: {path}") from error
+        published_identity = (identity.st_dev, identity.st_ino)
+        _verify_published_identity(
+            path,
+            published_identity,
+            "T7 output publish identity changed",
+        )
+    except BaseException:
+        if temporary is not None:
+            try:
+                temporary.unlink(missing_ok=True)
+            except OSError:
+                pass
+        if published_identity is not None:
+            try:
+                _unlink_if_owned(path, published_identity)
+            except OSError:
+                pass
+        _remove_owned_directories(owned_directories)
+        raise
+    try:
+        temporary.unlink(missing_ok=True)
+    except BaseException:
+        try:
+            _unlink_if_owned(path, published_identity)
+        except OSError:
+            pass
+        _remove_owned_directories(owned_directories)
+        raise
+
+
+def _validate_worker_identity(result, task_id, fold, coordinate_index):
+    if (
+        not isinstance(result, dict)
+        or type(result.get("task_id")) is not int
+        or result["task_id"] != task_id
+        or type(result.get("fold")) is not int
+        or result["fold"] != fold
+        or type(result.get("coordinate_index")) is not int
+        or result["coordinate_index"] != coordinate_index
+        or not isinstance(result.get("arm_order"), list)
+        or tuple(result["arm_order"]) != _arm_order(coordinate_index)
+        or not isinstance(result.get("arms"), list)
+        or len(result["arms"]) != len(ARM_NAMES)
+        or any(
+            not isinstance(arm, dict)
+            or type(arm.get("position")) is not int
+            or arm["position"] != position
+            or arm.get("arm") != result["arm_order"][position]
+            for position, arm in enumerate(result["arms"])
+        )
+    ):
+        raise RuntimeError(f"T7 worker {task_id}/{fold} identity changed")
 
 
 def _run_one(task_id, fold, coordinate_index, spool, binding):
     path = _spool_path(spool, task_id, fold)
-    if path.exists():
+    if path.exists() or path.is_symlink():
         result, digest = _load_spool(
             path, binding, task_id, fold
         )
+        _validate_worker_identity(result, task_id, fold, coordinate_index)
         return result, digest, True
     command = [
         sys.executable,
@@ -393,7 +730,10 @@ def _run_one(task_id, fold, coordinate_index, spool, binding):
     ]
     if len(lines) != 1:
         raise RuntimeError(f"T7 worker {task_id}/{fold} protocol failed")
-    result = json.loads(lines[0][len(WORKER_PREFIX) :])
+    result = _json_loads(
+        lines[0][len(WORKER_PREFIX) :], "T7 worker result"
+    )
+    _validate_worker_identity(result, task_id, fold, coordinate_index)
     result["worker_stderr"] = completed.stderr.strip() or None
     result["worker_stdout"] = (
         "\n".join(
@@ -403,13 +743,22 @@ def _run_one(task_id, fold, coordinate_index, spool, binding):
         ).strip()
         or None
     )
-    result, digest = _create_spool(path, binding, result)
-    return result, digest, False
+    result, digest, published = _create_spool(
+        path, binding, result, return_publish_state=True
+    )
+    _validate_worker_identity(result, task_id, fold, coordinate_index)
+    return result, digest, not published
 
 
 def run_parent(args):
     if args.output.exists() or args.output.is_symlink():
         raise RuntimeError(f"refusing existing output: {args.output}")
+    _reject_symlink_directory(
+        args.output.parent, "refusing symlink T7 output directory"
+    )
+    _reject_symlink_directory(
+        args.spool, "refusing symlink T7 spool directory"
+    )
     source = _source_state()
     registry, rows = _rows()
     binding = _binding(source)
@@ -453,6 +802,7 @@ def run_parent(args):
     if _source_state() != source:
         raise RuntimeError("T7 source changed during execution")
     results.sort(key=lambda row: int(row["coordinate_index"]))
+    spool_records = _ordered_spool_records(spool_records, coordinates)
     artifact = {
         "schema_version": 1,
         "name": "darkofit_t7_catboost_attribution_raw_v1",
@@ -475,7 +825,7 @@ def run_parent(args):
         "default_change_authorized": False,
     }
     artifact["raw_sha256"] = _json_sha256(artifact)
-    creator._atomic_write_bytes(
+    _create_output(
         args.output,
         (
             json.dumps(artifact, indent=2, sort_keys=True, allow_nan=False)
@@ -493,8 +843,8 @@ def parse_args(argv=None):
     parser.add_argument("--worker-fold", type=int)
     parser.add_argument("--coordinate-index", type=int)
     args = parser.parse_args(argv)
-    args.output = args.output.expanduser().absolute()
-    args.spool = args.spool.expanduser().absolute()
+    args.output = Path(os.path.abspath(os.path.expanduser(args.output)))
+    args.spool = Path(os.path.abspath(os.path.expanduser(args.spool)))
     worker = (
         args.worker_task,
         args.worker_fold,

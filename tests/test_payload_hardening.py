@@ -1,6 +1,10 @@
 """Regression tests for review blockers: corrupt-archive tree semantics,
 class-minor buffer contracts, exact-solver boundaries, and prep round-trip."""
 
+import json
+import zipfile
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -10,6 +14,7 @@ from darkofit.booster import (
     _exact_mvs_probabilities,
     _exact_weighted_goss_probabilities,
 )
+from darkofit.serialization import FORMAT_VERSION
 from darkofit.tree import build_leafwise_multiclass_tree
 
 
@@ -44,6 +49,279 @@ def _fit_and_save(tmp_path, tree_mode, name):
 def _assert_load_rejected(path, match):
     with pytest.raises(ValueError, match=match):
         DarkoRegressor.load_model(path)
+
+
+@pytest.mark.parametrize(
+    ("location", "key"),
+    [
+        pytest.param("header", "init", id="missing-init"),
+        pytest.param("header", "prep", id="missing-prep"),
+        pytest.param("array", "importance", id="missing-importance"),
+        pytest.param("array", "trees__depths", id="missing-tree-depths"),
+    ],
+)
+def test_load_normalizes_missing_payload_fields_to_value_error(
+    tmp_path, location, key
+):
+    _, _, source = _fit_and_save(
+        tmp_path, "catboost", f"{location}-{key}-source.npz"
+    )
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {
+            name: np.asarray(archive[name]).copy()
+            for name in archive.files
+        }
+    if location == "header":
+        header = json.loads(str(arrays["header"]))
+        header.pop(key)
+        arrays["header"] = np.asarray(json.dumps(header))
+    else:
+        arrays.pop(key)
+    corrupt = tmp_path / f"{location}-{key}-corrupt.npz"
+    np.savez_compressed(corrupt, **arrays)
+
+    _assert_load_rejected(corrupt, "invalid DarkoFit model")
+
+
+def test_load_normalizes_corrupt_compressed_member_to_value_error(tmp_path):
+    _, _, source = _fit_and_save(
+        tmp_path, "catboost", "compressed-member-source.npz"
+    )
+    payload = bytearray(Path(source).read_bytes())
+    with zipfile.ZipFile(source) as archive:
+        info = archive.getinfo("trees__values_flat.npy")
+    data_start = (
+        info.header_offset
+        + 30
+        + len(info.filename.encode())
+        + len(info.extra)
+    )
+    payload[data_start + max(1, info.compress_size // 2)] ^= 0xFF
+    corrupt = tmp_path / "compressed-member-corrupt.npz"
+    corrupt.write_bytes(payload)
+
+    _assert_load_rejected(corrupt, "invalid DarkoFit model")
+
+
+# ---------------------------------------------------------------------------
+# Archive format versions must be exact integers, while genuine v1 stays valid.
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize(
+    "header",
+    [
+        pytest.param([], id="list"),
+        pytest.param(None, id="null"),
+        pytest.param(True, id="bool"),
+        pytest.param(1, id="number"),
+        pytest.param("header", id="string"),
+    ],
+)
+def test_load_rejects_non_object_model_headers(tmp_path, header):
+    _, _, path = _fit_and_save(tmp_path, "catboost", "header-source.npz")
+    with np.load(path, allow_pickle=False) as data:
+        arrays = {key: np.asarray(data[key]).copy() for key in data.files}
+    arrays["header"] = np.asarray(json.dumps(header))
+    corrupt = tmp_path / f"header-{type(header).__name__}.npz"
+    np.savez_compressed(corrupt, **arrays)
+
+    _assert_load_rejected(corrupt, "header must be an object")
+
+
+@pytest.mark.parametrize(
+    ("present", "version"),
+    [
+        pytest.param(False, None, id="missing"),
+        pytest.param(True, None, id="null"),
+        pytest.param(True, True, id="bool"),
+        pytest.param(True, 1.0, id="float"),
+        pytest.param(True, 0, id="zero"),
+        pytest.param(True, -1, id="negative"),
+        pytest.param(True, FORMAT_VERSION + 1, id="too-new"),
+    ],
+)
+def test_load_rejects_invalid_model_format_versions(
+    tmp_path, present, version
+):
+    _, _, path = _fit_and_save(tmp_path, "catboost", "version-source.npz")
+    with np.load(path, allow_pickle=False) as data:
+        arrays = {key: np.asarray(data[key]).copy() for key in data.files}
+    header = json.loads(str(arrays["header"]))
+    if present:
+        header["format_version"] = version
+    else:
+        header.pop("format_version")
+    arrays["header"] = np.asarray(json.dumps(header))
+    corrupt = tmp_path / f"version-{present}-{version}.npz"
+    np.savez_compressed(corrupt, **arrays)
+
+    _assert_load_rejected(corrupt, "format version|model format")
+
+
+def test_integer_v1_archive_survives_load_save_load(tmp_path):
+    X, model, path = _fit_and_save(
+        tmp_path, "catboost", "version-v1-source.npz"
+    )
+    with np.load(path, allow_pickle=False) as data:
+        arrays = {key: np.asarray(data[key]).copy() for key in data.files}
+    header = json.loads(str(arrays["header"]))
+    header["format_version"] = 1
+    arrays["header"] = np.asarray(json.dumps(header))
+    legacy = tmp_path / "version-v1-legacy.npz"
+    second = tmp_path / "version-v1-second.npz"
+    np.savez_compressed(legacy, **arrays)
+
+    loaded = DarkoRegressor.load_model(legacy)
+    loaded.save_model(second)
+    reloaded = DarkoRegressor.load_model(second)
+
+    np.testing.assert_array_equal(model.predict(X), loaded.predict(X))
+    np.testing.assert_array_equal(model.predict(X), reloaded.predict(X))
+
+
+@pytest.mark.parametrize(
+    "diagnostics",
+    [
+        pytest.param(None, id="null"),
+        pytest.param([], id="list"),
+        pytest.param(True, id="bool"),
+        pytest.param(1, id="number"),
+        pytest.param("diagnostics", id="string"),
+    ],
+)
+def test_load_rejects_non_object_diagnostics_metadata(
+    tmp_path, diagnostics
+):
+    _, _, path = _fit_and_save(
+        tmp_path, "catboost", "diagnostics-source.npz"
+    )
+    with np.load(path, allow_pickle=False) as data:
+        arrays = {key: np.asarray(data[key]).copy() for key in data.files}
+    header = json.loads(str(arrays["header"]))
+    header["auto_params"]["diagnostics"] = diagnostics
+    arrays["header"] = np.asarray(json.dumps(header))
+    corrupt = tmp_path / f"diagnostics-{type(diagnostics).__name__}.npz"
+    np.savez_compressed(corrupt, **arrays)
+
+    _assert_load_rejected(corrupt, "diagnostics metadata must be an object")
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        pytest.param("lr", "0.5", "lr must be numeric", id="string-lr"),
+        pytest.param("lr", np.inf, "lr must be finite", id="infinite-lr"),
+        pytest.param(
+            "best_score",
+            "1.0",
+            "best_score must be numeric",
+            id="string-score",
+        ),
+        pytest.param(
+            "best_iteration",
+            12.0,
+            "best_iteration must be an integer",
+            id="float-best-iteration",
+        ),
+        pytest.param(
+            "best_iteration",
+            True,
+            "best_iteration must be an integer",
+            id="bool-best-iteration",
+        ),
+        pytest.param(
+            "n_input_features",
+            6.0,
+            "n_input_features must be an integer",
+            id="float-input-count",
+        ),
+    ],
+)
+def test_load_rejects_untyped_or_nonfinite_core_header_scalars(
+    tmp_path, field, value, message
+):
+    _, _, source = _fit_and_save(
+        tmp_path, "catboost", f"{field}-header-source.npz"
+    )
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {
+            name: np.asarray(archive[name]).copy()
+            for name in archive.files
+        }
+    header = json.loads(str(arrays["header"]))
+    header[field] = value
+    arrays["header"] = np.asarray(json.dumps(header))
+    corrupt = tmp_path / f"{field}-header-corrupt.npz"
+    np.savez_compressed(corrupt, **arrays)
+
+    _assert_load_rejected(corrupt, message)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        pytest.param(
+            "n_outputs",
+            2.0,
+            "n_outputs must be an integer",
+            id="float-output-count",
+        ),
+        pytest.param(
+            "enabled",
+            1,
+            "enabled must be a boolean",
+            id="integer-transform-enabled",
+        ),
+        pytest.param(
+            "mean",
+            "0.0",
+            "transform mean must be numeric",
+            id="string-transform-mean",
+        ),
+        pytest.param(
+            "scale",
+            "1.0",
+            "transform scale must be numeric",
+            id="string-transform-scale",
+        ),
+        pytest.param(
+            "scale",
+            np.inf,
+            "transform scale must be finite",
+            id="infinite-transform-scale",
+        ),
+    ],
+)
+def test_distributional_load_rejects_untyped_header_scalars(
+    tmp_path, field, value, message
+):
+    X, y = _make_regression(n=160, f=4, seed=23)
+    model = DarkoRegressor(
+        loss="Gaussian",
+        tree_mode="lightgbm",
+        iterations=3,
+        min_child_samples=3,
+        num_leaves=5,
+        random_state=0,
+        diagnostic_warnings="never",
+    ).fit(X, y)
+    source = tmp_path / f"distributional-{field}-source.npz"
+    model.save_model(source)
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {
+            name: np.asarray(archive[name]).copy()
+            for name in archive.files
+        }
+    header = json.loads(str(arrays["header"]))
+    if field == "n_outputs":
+        header[field] = value
+    else:
+        header["target_transform"][field] = value
+    arrays["header"] = np.asarray(json.dumps(header))
+    corrupt = tmp_path / f"distributional-{field}-corrupt.npz"
+    np.savez_compressed(corrupt, **arrays)
+
+    _assert_load_rejected(corrupt, message)
 
 
 # ---------------------------------------------------------------------------
@@ -184,6 +462,80 @@ def test_load_rejects_levelwise_out_of_range_node_feature(tmp_path):
         trees__node_features_flat=corrupt,
     )
     _assert_load_rejected(bad, "out of range")
+
+
+# ---------------------------------------------------------------------------
+# Tree gains and scalar/vector leaf values must stay numeric and finite.
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("tree_mode", ["catboost", "lightgbm", "depthwise"])
+def test_load_rejects_malformed_scalar_tree_numeric_payloads(
+    tmp_path, tree_mode
+):
+    _, _, source = _fit_and_save(
+        tmp_path, tree_mode, f"{tree_mode}-numeric-source.npz"
+    )
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {
+            name: np.asarray(archive[name]).copy()
+            for name in archive.files
+        }
+
+    for key in ("trees__gains_flat", "trees__values_flat"):
+        assert arrays[key].size
+        for suffix, mutate, match in (
+            ("string", lambda value: value.astype(str), "must be numeric"),
+            (
+                "nan",
+                lambda value: np.full_like(value, np.nan),
+                "must be finite",
+            ),
+            (
+                "inf",
+                lambda value: np.full_like(value, np.inf),
+                "must be finite",
+            ),
+        ):
+            corrupt = dict(arrays)
+            corrupt[key] = mutate(arrays[key])
+            path = tmp_path / f"{tree_mode}-{key}-{suffix}.npz"
+            np.savez_compressed(path, **corrupt)
+            _assert_load_rejected(path, match)
+
+
+def test_load_rejects_malformed_vector_tree_values(tmp_path):
+    rng = np.random.default_rng(17)
+    X = rng.normal(size=(180, 4))
+    y = np.digitize(X[:, 0] - 0.4 * X[:, 1], [-0.5, 0.5])
+    model = DarkoClassifier(
+        iterations=4,
+        tree_mode="lightgbm",
+        multiclass_tree_strategy="shared_vector",
+        min_child_samples=3,
+        num_leaves=5,
+        random_state=0,
+        early_stopping=False,
+    ).fit(X, y)
+    source = tmp_path / "vector-numeric-source.npz"
+    model.save_model(source)
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {
+            name: np.asarray(archive[name]).copy()
+            for name in archive.files
+        }
+    values = arrays["trees__values_flat"]
+    assert values.ndim == 2
+    for suffix, corrupt_values, match in (
+        ("string", values.astype(str), "must be numeric"),
+        ("nan", np.full_like(values, np.nan), "must be finite"),
+        ("inf", np.full_like(values, np.inf), "must be finite"),
+    ):
+        corrupt = dict(arrays)
+        corrupt["trees__values_flat"] = corrupt_values
+        path = tmp_path / f"vector-values-{suffix}.npz"
+        np.savez_compressed(path, **corrupt)
+        with pytest.raises(ValueError, match=match):
+            DarkoClassifier.load_model(path)
 
 
 # ---------------------------------------------------------------------------

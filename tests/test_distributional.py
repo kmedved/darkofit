@@ -450,8 +450,10 @@ def test_gaussian_split_conformal_intervals_use_untouched_holdout_and_roundtrip(
     assert meta["weighted"] is False
 
     path = tmp_path / "gaussian_conformal.npz"
+    model.set_params(interval_calibration=None)
     model.save_model(path)
     loaded = DarkoRegressor.load_model(path)
+    assert loaded.interval_calibration == "conformal"
     np.testing.assert_array_equal(
         loaded.conformal_scores_, model.conformal_scores_
     )
@@ -460,6 +462,430 @@ def test_gaussian_split_conformal_intervals_use_untouched_holdout_and_roundtrip(
     )
     np.testing.assert_array_equal(loaded_interval[0], conformal[0])
     np.testing.assert_array_equal(loaded_interval[1], conformal[1])
+
+
+def test_gaussian_conformal_holdout_accepts_default_random_state_none():
+    X, y = _make_heteroscedastic(seed=151, n=180)
+    model = DarkoRegressor(
+        **_gaussian_test_params(
+            iterations=3,
+            random_state=None,
+            interval_calibration="conformal",
+        )
+    ).fit(X[:120], y[:120], eval_set=(X[120:], y[120:]))
+
+    assert model.random_state is None
+    assert model.interval_calibration_split_["selection_n_samples"] == 30
+    assert model.conformal_score_count_ == 30
+    assert np.all(np.isfinite(model.conformal_scores_))
+
+
+def test_save_freezes_absent_interval_calibration_after_set_params(tmp_path):
+    X, y = _make_heteroscedastic(seed=145, n=120)
+    model = DarkoRegressor(
+        **_gaussian_test_params(iterations=3, random_state=17)
+    ).fit(X, y)
+    expected = model.predict_interval(X[:12], alpha=0.2)
+    model.set_params(interval_calibration="conformal")
+    path = tmp_path / "gaussian-no-conformal-frozen.npz"
+    model.save_model(path)
+
+    loaded = DarkoRegressor.load_model(path)
+
+    assert loaded.interval_calibration is None
+    actual = loaded.predict_interval(X[:12], alpha=0.2)
+    np.testing.assert_array_equal(actual[0], expected[0])
+    np.testing.assert_array_equal(actual[1], expected[1])
+
+
+def test_distributional_save_load_save_preserves_auto_params(tmp_path):
+    X, y = _make_heteroscedastic(seed=149, n=120)
+    model = DarkoRegressor(
+        **_gaussian_test_params(iterations=3, random_state=17)
+    ).fit(X, y)
+    first = tmp_path / "gaussian-first.npz"
+    second = tmp_path / "gaussian-second.npz"
+    model.save_model(first)
+
+    loaded = DarkoRegressor.load_model(first)
+    loaded.save_model(second)
+
+    with np.load(first, allow_pickle=False) as archive:
+        first_header = json.loads(str(archive["header"]))
+    with np.load(second, allow_pickle=False) as archive:
+        second_header = json.loads(str(archive["header"]))
+    assert first_header["auto_params"] == second_header["auto_params"]
+    assert "linear_leaves" not in second_header["auto_params"]
+    assert (
+        "linear_leaves"
+        not in second_header["auto_params"].get("diagnostics", {})
+    )
+
+
+@pytest.mark.parametrize(
+    "corruption",
+    ["missing-primary", "malformed-diagnostics"],
+)
+def test_uncalibrated_load_rejects_incomplete_calibration_provenance(
+    tmp_path, corruption
+):
+    X, y = _make_heteroscedastic(seed=150, n=120)
+    model = DarkoRegressor(
+        **_gaussian_test_params(iterations=3, random_state=17)
+    ).fit(X, y)
+    source = tmp_path / f"uncalibrated-{corruption}-source.npz"
+    corrupt = tmp_path / f"uncalibrated-{corruption}-corrupt.npz"
+    model.save_model(source)
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {
+            name: np.asarray(archive[name]).copy()
+            for name in archive.files
+        }
+    header = json.loads(str(arrays["header"]))
+    auto_params = header["auto_params"]
+    if corruption == "missing-primary":
+        auto_params.pop("dist_calibration")
+    else:
+        auto_params["diagnostics"]["dist_calibration"] = []
+    arrays["header"] = np.asarray(json.dumps(header))
+    np.savez_compressed(corrupt, **arrays)
+
+    with pytest.raises(
+        ValueError,
+        match="distribution calibration booster provenance is inconsistent",
+    ):
+        DarkoRegressor.load_model(corrupt)
+
+
+@pytest.mark.parametrize(
+    ("fitted_calibration", "post_fit_calibration"),
+    [
+        ("scalar", None),
+        (None, "scalar"),
+    ],
+)
+def test_save_freezes_fitted_distribution_calibration_after_set_params(
+    tmp_path, fitted_calibration, post_fit_calibration
+):
+    X, y = _make_heteroscedastic(seed=147, n=180)
+    model = DarkoRegressor(
+        **_gaussian_test_params(
+            iterations=3,
+            random_state=17,
+            dist_calibration=fitted_calibration,
+        )
+    ).fit(X[:120], y[:120], eval_set=(X[120:], y[120:]))
+    expected = model.predict_dist(X[:12])
+    model.set_params(dist_calibration=post_fit_calibration)
+    path = tmp_path / "gaussian-dist-calibration-frozen.npz"
+    model.save_model(path)
+
+    loaded = DarkoRegressor.load_model(path)
+
+    assert loaded.dist_calibration == fitted_calibration
+    assert loaded.sigma_calibration is None
+    assert loaded.dist_calibration_ == fitted_calibration
+    actual = loaded.predict_dist(X[:12])
+    np.testing.assert_array_equal(actual[0], expected[0])
+    np.testing.assert_array_equal(actual[1], expected[1])
+
+
+def test_load_rejects_distribution_calibration_param_state_mismatch(tmp_path):
+    X, y = _make_heteroscedastic(seed=148, n=180)
+    model = DarkoRegressor(
+        **_gaussian_test_params(
+            iterations=3,
+            random_state=17,
+            dist_calibration="scalar",
+        )
+    ).fit(X[:120], y[:120], eval_set=(X[120:], y[120:]))
+    source = tmp_path / "dist-calibration-param-source.npz"
+    corrupt = tmp_path / "dist-calibration-param-corrupt.npz"
+    model.save_model(source)
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {name: archive[name].copy() for name in archive.files}
+    header = json.loads(str(arrays["header"]))
+    header["wrapper"]["params"]["dist_calibration"] = None
+    arrays["header"] = np.array(json.dumps(header))
+    np.savez_compressed(corrupt, **arrays)
+
+    with pytest.raises(ValueError, match="parameter does not match"):
+        DarkoRegressor.load_model(corrupt)
+
+
+@pytest.mark.parametrize(
+    "corrupt_scale",
+    [
+        pytest.param("double", id="finite-mismatch"),
+        pytest.param(10**1000, id="overflowing-integer"),
+    ],
+)
+def test_load_rejects_distribution_calibration_state_forgery(
+    tmp_path, corrupt_scale
+):
+    X, y = _make_heteroscedastic(seed=146, n=180)
+    model = DarkoRegressor(
+        **_gaussian_test_params(
+            iterations=3,
+            random_state=17,
+            dist_calibration="scalar",
+        )
+    ).fit(X[:120], y[:120], eval_set=(X[120:], y[120:]))
+    source = tmp_path / "dist-calibration-source.npz"
+    corrupt = tmp_path / "dist-calibration-corrupt.npz"
+    model.save_model(source)
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {name: archive[name].copy() for name in archive.files}
+    header = json.loads(str(arrays["header"]))
+    state = header["wrapper"]["state"]
+    if corrupt_scale == "double":
+        state["dist_scale"] *= 2.0
+        state["sigma_scale"] *= 2.0
+    else:
+        state["dist_scale"] = corrupt_scale
+        state["sigma_scale"] = corrupt_scale
+    arrays["header"] = np.array(json.dumps(header))
+    np.savez_compressed(corrupt, **arrays)
+
+    with pytest.raises(
+        ValueError, match="distribution calibration wrapper and booster"
+    ):
+        DarkoRegressor.load_model(corrupt)
+
+
+def test_load_rejects_self_consistent_nonpositive_distribution_scale(tmp_path):
+    X, y = _make_heteroscedastic(seed=152, n=180)
+    model = DarkoRegressor(
+        **_gaussian_test_params(
+            iterations=3,
+            random_state=17,
+            dist_calibration="scalar",
+        )
+    ).fit(X[:120], y[:120], eval_set=(X[120:], y[120:]))
+    source = tmp_path / "negative-scale-source.npz"
+    corrupt = tmp_path / "negative-scale-corrupt.npz"
+    model.save_model(source)
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {name: archive[name].copy() for name in archive.files}
+    header = json.loads(str(arrays["header"]))
+    state = header["wrapper"]["state"]
+    state["dist_scale"] = -1.0
+    state["sigma_scale"] = -1.0
+    auto_params = header["auto_params"]
+    for metadata in (
+        auto_params["dist_calibration"],
+        auto_params["sigma_calibration"],
+        auto_params["diagnostics"]["dist_calibration"],
+        auto_params["diagnostics"]["sigma_calibration"],
+    ):
+        metadata["dist_scale"] = -1.0
+        metadata["sigma_scale"] = -1.0
+    arrays["header"] = np.array(json.dumps(header))
+    np.savez_compressed(corrupt, **arrays)
+
+    with pytest.raises(ValueError, match="distribution calibration"):
+        DarkoRegressor.load_model(corrupt)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        pytest.param("sigma_affine_a", "__missing__", id="missing-coefficient"),
+        pytest.param("validation_n_samples", "30", id="untyped-row-count"),
+        pytest.param(
+            "validation_positive_weight_n",
+            999,
+            id="impossible-positive-weight-count",
+        ),
+        pytest.param(
+            "validation_effective_n",
+            10**1000,
+            id="oversized-effective-count",
+        ),
+        pytest.param(
+            (
+                "validation_n_samples",
+                "validation_positive_weight_n",
+            ),
+            10**1000,
+            id="oversized-row-counts",
+        ),
+        pytest.param(
+            "validation_weight_sum",
+            -1.0,
+            id="negative-weight-mass",
+        ),
+    ],
+)
+def test_load_rejects_invalid_group_calibration_records(
+    tmp_path, field, value
+):
+    rng = np.random.default_rng(153)
+    X = rng.normal(size=(180, 3))
+    X[:, 0] = np.tile([0.0, 1.0], 90)
+    y = X[:, 1] + rng.normal(size=180)
+    model = DarkoRegressor(
+        **_gaussian_test_params(
+            iterations=3,
+            random_state=17,
+            dist_calibration="per_metric_affine",
+            dist_calibration_feature=0,
+        )
+    ).fit(
+        X[:120],
+        y[:120],
+        cat_features=[0],
+        eval_set=(X[120:], y[120:]),
+    )
+    source = tmp_path / "group-calibration-source.npz"
+    corrupt = tmp_path / "group-calibration-corrupt.npz"
+    model.save_model(source)
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {name: archive[name].copy() for name in archive.files}
+    header = json.loads(str(arrays["header"]))
+    state = header["wrapper"]["state"]
+    for records in (
+        state["dist_group_affine"],
+        state["sigma_group_affine"],
+    ):
+        for field_name in (
+            field if isinstance(field, tuple) else (field,)
+        ):
+            if value == "__missing__":
+                records[0].pop(field_name)
+            else:
+                records[0][field_name] = value
+    auto_params = header["auto_params"]
+    for metadata in (
+        auto_params["dist_calibration"],
+        auto_params["sigma_calibration"],
+        auto_params["diagnostics"]["dist_calibration"],
+        auto_params["diagnostics"]["sigma_calibration"],
+    ):
+        for records in (
+            metadata["dist_group_affine"],
+            metadata["sigma_group_affine"],
+        ):
+            for field_name in (
+                field if isinstance(field, tuple) else (field,)
+            ):
+                if value == "__missing__":
+                    records[0].pop(field_name)
+                else:
+                    records[0][field_name] = value
+    arrays["header"] = np.array(json.dumps(header))
+    np.savez_compressed(corrupt, **arrays)
+
+    with pytest.raises(ValueError, match="grouped distribution calibration"):
+        DarkoRegressor.load_model(corrupt)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("conformal_score_count", "60"),
+        ("calibration_rows_used_for_fit", 0),
+        ("selection_n_samples", "60"),
+        ("holdout_fraction", 0.75),
+        ("holdout_fraction", 10**1000),
+        ("selection_source", "fabricated"),
+        ("interval_calibration_param", None),
+    ],
+)
+def test_gaussian_conformal_load_rejects_untyped_or_inconsistent_provenance(
+    tmp_path, field, value
+):
+    X, y = _make_heteroscedastic(seed=142, n=360)
+    model = DarkoRegressor(
+        **_gaussian_test_params(
+            iterations=4,
+            random_state=17,
+            interval_calibration="conformal",
+        )
+    ).fit(X[:240], y[:240], eval_set=(X[240:], y[240:]))
+    source = tmp_path / f"conformal-{field}-source.npz"
+    corrupt = tmp_path / f"conformal-{field}-corrupt.npz"
+    model.save_model(source)
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {name: archive[name].copy() for name in archive.files}
+    header = json.loads(str(arrays["header"]))
+    state = header["wrapper"]["state"]
+    if field == "conformal_score_count":
+        state[field] = value
+    elif field == "interval_calibration_param":
+        header["wrapper"]["params"]["interval_calibration"] = value
+    else:
+        state["interval_calibration_split"][field] = value
+    arrays["header"] = np.array(json.dumps(header))
+    np.savez_compressed(corrupt, **arrays)
+
+    with pytest.raises(ValueError, match="conformal"):
+        DarkoRegressor.load_model(corrupt)
+
+
+def test_gaussian_conformal_load_rejects_self_consistent_wrapper_forgery(
+    tmp_path,
+):
+    X, y = _make_heteroscedastic(seed=143, n=360)
+    model = DarkoRegressor(
+        **_gaussian_test_params(
+            iterations=4,
+            random_state=17,
+            interval_calibration="conformal",
+        )
+    ).fit(X[:240], y[:240], eval_set=(X[240:], y[240:]))
+    source = tmp_path / "conformal-wrapper-source.npz"
+    corrupt = tmp_path / "conformal-wrapper-corrupt.npz"
+    model.save_model(source)
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {name: archive[name].copy() for name in archive.files}
+    header = json.loads(str(arrays["header"]))
+    split = header["wrapper"]["state"]["interval_calibration_split"]
+    split["selection_n_samples"] += 1
+    split["holdout_fraction"] = (
+        split["calibration_n_samples"]
+        / (
+            split["selection_n_samples"]
+            + split["calibration_n_samples"]
+        )
+    )
+    arrays["header"] = np.array(json.dumps(header))
+    np.savez_compressed(corrupt, **arrays)
+
+    with pytest.raises(ValueError, match="wrapper and booster provenance"):
+        DarkoRegressor.load_model(corrupt)
+
+
+def test_gaussian_conformal_load_rejects_stripped_wrapper_state(tmp_path):
+    X, y = _make_heteroscedastic(seed=144, n=360)
+    model = DarkoRegressor(
+        **_gaussian_test_params(
+            iterations=4,
+            random_state=17,
+            interval_calibration="conformal",
+        )
+    ).fit(X[:240], y[:240], eval_set=(X[240:], y[240:]))
+    source = tmp_path / "conformal-strip-source.npz"
+    corrupt = tmp_path / "conformal-strip-corrupt.npz"
+    model.save_model(source)
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {name: archive[name].copy() for name in archive.files}
+    header = json.loads(str(arrays["header"]))
+    header["wrapper"]["params"]["interval_calibration"] = None
+    state = header["wrapper"]["state"]
+    for name in (
+        "interval_calibration",
+        "interval_calibration_source",
+        "interval_calibration_split",
+        "conformal_score_count",
+    ):
+        state.pop(name)
+    arrays.pop("wrapper__conformal_scores")
+    arrays["header"] = np.array(json.dumps(header))
+    np.savez_compressed(corrupt, **arrays)
+
+    with pytest.raises(ValueError, match="booster conformal provenance"):
+        DarkoRegressor.load_model(corrupt)
 
 
 def test_gaussian_split_conformal_automatic_holdout_and_misuse_errors():
@@ -770,9 +1196,15 @@ def test_gaussian_per_metric_affine_calibration_applies_group_maps_and_roundtrip
     np.testing.assert_allclose(public_sigma, expected)
     np.testing.assert_allclose(model.predict_variance(X[360:390]), expected * expected)
 
+    model.set_params(
+        dist_calibration=None,
+        dist_calibration_feature=1,
+    )
     path = tmp_path / "per_metric_affine_gaussian.npz"
     model.save_model(path)
     loaded = DarkoRegressor.load_model(path)
+    assert loaded.dist_calibration == "per_metric_affine"
+    assert loaded.dist_calibration_feature == 0
     assert loaded.dist_calibration_ == "per_metric_affine"
     assert loaded.dist_calibration_feature_index_ == 0
     np.testing.assert_allclose(
@@ -820,6 +1252,37 @@ def test_gaussian_per_metric_affine_calibration_resolves_pandas_feature_name():
     public = model.predict_dist(X.iloc[180:190])[1]
     assert np.all(np.isfinite(public))
     assert np.all(public > 0.0)
+
+
+def test_per_metric_affine_refit_preserves_ungrouped_split_provenance():
+    rng = np.random.default_rng(154)
+    n = 240
+    metric_codes = np.tile([0.0, 1.0], n // 2)
+    X = np.column_stack([metric_codes, rng.normal(size=(n, 2))])
+    y = (
+        0.4 * X[:, 1]
+        + rng.normal(scale=0.3 + 0.2 * metric_codes, size=n)
+    )
+
+    model = DarkoRegressor(
+        **_gaussian_test_params(
+            iterations=3,
+            random_state=17,
+            early_stopping=True,
+            early_stopping_rounds=2,
+            validation_fraction=0.25,
+            refit=True,
+            dist_calibration="per_metric_affine",
+            dist_calibration_feature=0,
+        )
+    ).fit(X, y, cat_features=[0])
+
+    selection_validation = model.selection_model_.auto_params_[
+        "validation_split"
+    ]
+    refit_validation = model.model_.auto_params_["validation_split"]
+    assert selection_validation["groups_provided"] is False
+    assert refit_validation["groups_provided"] is False
 
 
 def test_gaussian_small_sigma_calibration_warning_respects_reset():

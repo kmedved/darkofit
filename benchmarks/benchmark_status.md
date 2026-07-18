@@ -14,9 +14,9 @@ Scope: 13 TabArena regression datasets, r0f0/r1f1/r2f2. Ratios use CatBoost 1.2.
 
 All three engines remain on this four-axis frontier: CatBoost has the best quality, DarkoFit the lowest fit time and incremental memory, and ChimeraBoost the best prediction time.
 
-## Sports Pareto
+## Sports Pareto (historical S4)
 
-Scope: nine target-season basketball cells plus cold-player guardrail. Timing ratios use ChimeraBoost 0.15.0 as 1.0.
+Scope: historical S4 2017–2019 panel: nine target-season basketball cells plus cold-player guardrail. Timing ratios use ChimeraBoost 0.15.0 as 1.0.
 
 | Engine | Equal-cell R² | Cold-player R² | Fit | Predict | Pareto |
 |---|---:|---:|---:|---:|:---:|
@@ -24,7 +24,7 @@ Scope: nine target-season basketball cells plus cold-player guardrail. Timing ra
 | ChimeraBoost 0.15.0 | 0.761923 | 0.787290 | 1.000× | 1.000× | yes |
 | CatBoost 1.2.10 | 0.803272 | 0.816725 | 2.345× | 1.013× | yes |
 
-DarkoFit beats ChimeraBoost on sports quality, but CatBoost is both more accurate and faster than DarkoFit on this panel. The failed `random_strength=0.5` candidate is excluded from the product frontier.
+On historical S4, DarkoFit beats ChimeraBoost on sports quality, but CatBoost is both more accurate and faster than DarkoFit. The failed `random_strength=0.5` candidate is excluded from this panel's product frontier. The later [player-disjoint T10 panel](basketball_sports_panel_v2_result.md) is reported separately and is not blended into S4.
 
 ## Engine tracks
 

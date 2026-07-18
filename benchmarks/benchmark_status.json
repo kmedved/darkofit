@@ -225,6 +225,6 @@
         "predict_time_ratio": 1.0125052075485381
       }
     ],
-    "scope": "nine target-season basketball cells plus cold-player guardrail"
+    "scope": "historical S4 2017\u20132019 panel: nine target-season basketball cells plus cold-player guardrail"
   }
 }

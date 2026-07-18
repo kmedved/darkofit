@@ -1,9 +1,11 @@
 """Scikit-learn flavored estimators: fit / predict / predict_proba."""
 
 import hashlib
+import json
 import math
 import warnings
 from collections.abc import Mapping
+from functools import wraps
 
 import numpy as np
 from ._validation import (
@@ -35,6 +37,7 @@ from .auto_params import (
 from .callbacks import WallClockStopper, _normalize_callbacks
 from .losses import VECTOR_LOSSES
 from .linear_residual import WeightedRidgeTrend, validate_linear_residual_loss
+from .serialization import MAX_ENSEMBLE_MEMBERS
 from .target_encoding import _is_missing_value
 from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin, clone
 from sklearn.utils.multiclass import type_of_target
@@ -80,6 +83,8 @@ _SIGMA_CALIBRATION_INFLUENCE_TOP_K = 5
 _SIGMA_CALIBRATION_INFLUENCE_THRESHOLD = 0.5
 _SIGMA_MIN = 1e-12
 _GROUP_AFFINE_DEFAULT_FEATURE = "metric_code"
+_SCALAR_REGRESSION_LOSSES = frozenset({"RMSE", "MAE", "Quantile"})
+_ORDINAL_STATE_VERSION = 1
 
 
 def _normalize_tree_mode_token(tree_mode):
@@ -103,6 +108,16 @@ def _normalize_regression_preset(preset):
     raise ValueError("preset must be None or 'accuracy'")
 
 
+def _preset_metadata_payload(preset, preset_params):
+    return {
+        "name": preset,
+        "claim_tier": "E",
+        "default_changed": False,
+        "resolved": dict(preset_params),
+        "evidence_scope": "spent_development_panel",
+    }
+
+
 def _normalize_selection_rounds(selection_rounds):
     if selection_rounds is None:
         return None
@@ -124,6 +139,10 @@ def _normalize_n_ensembles(n_ensembles):
     n_ensembles = int(n_ensembles)
     if n_ensembles < 1:
         raise ValueError("n_ensembles must be at least 1")
+    if n_ensembles > MAX_ENSEMBLE_MEMBERS:
+        raise ValueError(
+            f"n_ensembles must be at most {MAX_ENSEMBLE_MEMBERS}"
+        )
     return n_ensembles
 
 
@@ -134,11 +153,38 @@ def _normalize_ensemble_bootstrap(bootstrap):
     return token
 
 
+class _NamedRowSubset:
+    """Array-backed row subset that preserves frame-like feature names."""
+
+    def __init__(self, values, names):
+        self._values = np.asarray(values)
+        self.columns = [str(name) for name in names]
+        self.shape = self._values.shape
+
+    def to_numpy(self, dtype=None, na_value=None):
+        del na_value
+        return np.asarray(self._values, dtype=dtype)
+
+    def __array__(self, dtype=None, copy=None):
+        values = np.asarray(self._values, dtype=dtype)
+        return values.copy() if copy else values
+
+
 def _take_rows(values, indices):
     iloc = getattr(values, "iloc", None)
     if iloc is not None:
         return iloc[indices]
-    return np.asarray(values)[indices]
+    gather = getattr(values, "gather", None)
+    if callable(gather):
+        return gather(indices)
+    take = getattr(values, "take", None)
+    if getattr(values, "column_names", None) is not None and callable(take):
+        return take(indices)
+    names = feature_names_from_input(values)
+    subset = array_like_to_numpy(values)[indices]
+    if names is not None:
+        return _NamedRowSubset(subset, names)
+    return subset
 
 
 def _index_sha256(indices):
@@ -251,8 +297,11 @@ def _ensemble_bootstrap_plan(
 
 def _validate_loaded_ensemble_metadata(metadata, members, *, classification):
     """Fail closed on contradictory fitted-ensemble provenance."""
+    version = metadata.get("version")
     if (
-        metadata.get("version") != 1
+        isinstance(version, bool)
+        or not isinstance(version, int)
+        or version != 1
         or metadata.get("claim_tier") != "E"
         or metadata.get("default_changed") is not False
         or metadata.get("oob_early_stopping") is not True
@@ -261,7 +310,12 @@ def _validate_loaded_ensemble_metadata(metadata, members, *, classification):
             "invalid DarkoFit model: ensemble provenance is invalid"
         )
     member_count = len(members)
-    if metadata.get("member_count") != member_count:
+    saved_member_count = metadata.get("member_count")
+    if (
+        isinstance(saved_member_count, bool)
+        or not isinstance(saved_member_count, int)
+        or saved_member_count != member_count
+    ):
         raise ValueError(
             "invalid DarkoFit model: ensemble metadata member count does not "
             "match its payload"
@@ -281,6 +335,32 @@ def _validate_loaded_ensemble_metadata(metadata, members, *, classification):
         raise ValueError(
             "invalid DarkoFit model: ensemble preprocessing mode is invalid"
         )
+    shared_requested = metadata.get("shared_preprocessing_requested")
+    if not isinstance(shared_requested, bool):
+        raise ValueError(
+            "invalid DarkoFit model: ensemble preprocessing request is invalid"
+        )
+    fallback_reason = metadata.get("shared_preprocessing_fallback_reason")
+    if (
+        shared == "numeric_target_free"
+        and (not shared_requested or fallback_reason is not None)
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: shared ensemble preprocessing provenance "
+            "is inconsistent"
+        )
+    if shared == "member_local" and (
+        (
+            shared_requested
+            and fallback_reason
+            not in {"categorical_or_ordinal_features", "non_numeric_dtype"}
+        )
+        or (not shared_requested and fallback_reason is not None)
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: member-local ensemble preprocessing "
+            "provenance is inconsistent"
+        )
     seeds = metadata.get("member_seeds")
     records = metadata.get("members")
     if (
@@ -292,16 +372,69 @@ def _validate_loaded_ensemble_metadata(metadata, members, *, classification):
         raise ValueError(
             "invalid DarkoFit model: ensemble member provenance is invalid"
         )
+    for member in members:
+        model = getattr(member, "model_", None)
+        if classification:
+            multiclass = getattr(member, "_multiclass", None)
+            valid_model = (
+                multiclass is True
+                and isinstance(model, MulticlassBoosting)
+            ) or (
+                multiclass is False
+                and isinstance(model, GradientBoosting)
+                and getattr(model, "loss_name", None) == "Logloss"
+            )
+        else:
+            valid_model = (
+                isinstance(model, GradientBoosting)
+                and getattr(model, "loss_name", None)
+                in {"RMSE", "MAE", "Quantile"}
+            )
+        if not valid_model:
+            raise ValueError(
+                "invalid DarkoFit model: ensemble member model family is "
+                "invalid"
+            )
+        if (
+            getattr(member, "early_stopping", None) is not True
+            or getattr(member, "use_best_model", None) is not True
+            or getattr(member, "refit", None) is not False
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: ensemble member selection params do "
+                "not match fitted OOB provenance"
+            )
     for index, (seed, record, member) in enumerate(
         zip(seeds, records, members)
     ):
+        member_index = (
+            record.get("member") if isinstance(record, Mapping) else None
+        )
+        record_seed = (
+            record.get("seed") if isinstance(record, Mapping) else None
+        )
+        member_random_state = member.get_params().get("random_state")
+        core_random_state = getattr(member.model_, "random_state", None)
         if (
             isinstance(seed, bool)
             or not isinstance(seed, int)
+            or seed < 0
+            or seed >= 2**31 - 1
             or not isinstance(record, Mapping)
-            or record.get("member") != index
-            or record.get("seed") != seed
-            or member.get_params().get("random_state") != seed
+            or isinstance(member_index, bool)
+            or not isinstance(member_index, int)
+            or member_index != index
+            or isinstance(record_seed, bool)
+            or not isinstance(record_seed, int)
+            or record_seed < 0
+            or record_seed >= 2**31 - 1
+            or record_seed != seed
+            or isinstance(member_random_state, bool)
+            or not isinstance(member_random_state, int)
+            or member_random_state != seed
+            or isinstance(core_random_state, bool)
+            or not isinstance(core_random_state, int)
+            or core_random_state != seed
             or record.get("validation_source") != "explicit_eval_set"
         ):
             raise ValueError(
@@ -334,9 +467,889 @@ def _validate_loaded_ensemble_metadata(metadata, members, *, classification):
                 raise ValueError(
                     f"invalid DarkoFit model: ensemble member {name} is invalid"
                 )
-        if bootstrap == "groups" and record.get("group_disjoint") is not True:
+        validation = getattr(member.model_, "auto_params_", {}).get(
+            "validation_split"
+        )
+        if (
+            not isinstance(validation, Mapping)
+            or validation.get("source") != "explicit_eval_set"
+            or isinstance(validation.get("train_n_samples"), bool)
+            or not isinstance(validation.get("train_n_samples"), int)
+            or validation["train_n_samples"] != record["bootstrap_rows"]
+            or isinstance(validation.get("eval_n_samples"), bool)
+            or not isinstance(validation.get("eval_n_samples"), int)
+            or validation["eval_n_samples"] != record["oob_rows"]
+            or record["bootstrap_unique_rows"] > record["bootstrap_rows"]
+        ):
             raise ValueError(
-                "invalid DarkoFit model: group ensemble is not disjoint"
+                "invalid DarkoFit model: ensemble member sampling metadata "
+                "does not match its payload"
+            )
+        group_fields = (
+            "sampled_group_draws",
+            "sampled_unique_groups",
+            "oob_groups",
+        )
+        if bootstrap == "rows":
+            if (
+                any(record.get(name) is not None for name in group_fields)
+                or record.get("group_disjoint") is not None
+                or record["bootstrap_rows"]
+                != record["bootstrap_unique_rows"] + record["oob_rows"]
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: row ensemble sampling metadata "
+                    "is invalid"
+                )
+        elif (
+            any(
+                isinstance(record.get(name), bool)
+                or not isinstance(record.get(name), int)
+                or record[name] < 1
+                for name in group_fields
+            )
+            or record["sampled_unique_groups"]
+            > record["sampled_group_draws"]
+            or record["sampled_unique_groups"] + record["oob_groups"]
+            != record["sampled_group_draws"]
+            or record["sampled_group_draws"] > record["bootstrap_rows"]
+            or record["sampled_unique_groups"]
+            > record["bootstrap_unique_rows"]
+            or record["oob_groups"] > record["oob_rows"]
+            or record.get("group_disjoint") is not True
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: group ensemble metadata is invalid"
+            )
+        if record["bootstrap_attempts"] > 128:
+            raise ValueError(
+                "invalid DarkoFit model: ensemble bootstrap attempt count is "
+                "invalid"
+            )
+        learning_rate = record.get("learning_rate")
+        stop_reason = record.get("stop_reason")
+        try:
+            learning_rate_value = float(learning_rate)
+        except (TypeError, ValueError, OverflowError):
+            learning_rate_value = float("nan")
+        if (
+            isinstance(learning_rate, bool)
+            or not isinstance(learning_rate, (int, float))
+            or not np.isfinite(learning_rate_value)
+            or learning_rate_value != float(member.learning_rate_)
+            or learning_rate_value != float(member.model_.lr_)
+            or record["best_iteration"] != int(member.best_n_estimators_)
+            or record["best_iteration"] != int(member.model_.best_iteration_)
+            or not isinstance(stop_reason, str)
+            or stop_reason != str(
+                getattr(member.model_, "stop_reason_", "unknown")
+            )
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: ensemble member fitted metadata does "
+                "not match its payload"
+            )
+
+
+def _validate_loaded_wrapper_fitted_params(params, booster):
+    """Reject wrapper constructor state that contradicts its fitted booster."""
+    fitted_loss = getattr(booster, "loss_name", None)
+    if (
+        "loss" in params
+        and fitted_loss is not None
+        and params["loss"] != fitted_loss
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: wrapper loss does not match the loaded "
+            "booster"
+        )
+    if fitted_loss == "Quantile" and "alpha" in params:
+        saved_alpha = params["alpha"]
+        fitted_alpha = getattr(booster, "loss_kwargs", {}).get("alpha")
+        try:
+            saved_alpha_value = float(saved_alpha)
+            fitted_alpha_value = float(fitted_alpha)
+        except (TypeError, ValueError, OverflowError):
+            saved_alpha_value = float("nan")
+            fitted_alpha_value = float("nan")
+        if (
+            isinstance(saved_alpha, bool)
+            or not isinstance(saved_alpha, (int, float))
+            or not np.isfinite(saved_alpha_value)
+            or not np.isfinite(fitted_alpha_value)
+            or saved_alpha_value != fitted_alpha_value
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: wrapper quantile alpha does not "
+                "match the loaded booster"
+            )
+    fitted_random_state = getattr(booster, "random_state", None)
+    if isinstance(fitted_random_state, (bool, np.bool_)):
+        raise ValueError(
+            "invalid DarkoFit model: wrapper random state is invalid"
+        )
+    try:
+        fitted_seed = normalize_random_state_seed(fitted_random_state)
+    except ValueError as exc:
+        raise ValueError(
+            "invalid DarkoFit model: wrapper random state is invalid"
+        ) from exc
+    if fitted_seed is not None and fitted_seed < 0:
+        raise ValueError(
+            "invalid DarkoFit model: wrapper random state is invalid"
+        )
+    if "random_state" in params:
+        if isinstance(params["random_state"], (bool, np.bool_)):
+            raise ValueError(
+                "invalid DarkoFit model: wrapper random state is invalid"
+            )
+        try:
+            saved_seed = normalize_random_state_seed(params["random_state"])
+        except ValueError as exc:
+            raise ValueError(
+                "invalid DarkoFit model: wrapper random state is invalid"
+            ) from exc
+        if (
+            saved_seed is not None
+            and saved_seed < 0
+        ) or saved_seed != fitted_seed:
+            raise ValueError(
+                "invalid DarkoFit model: wrapper random state does not match "
+                "the loaded booster"
+            )
+
+
+def _validate_loaded_wrapper_fitted_state(state, booster):
+    """Bind wrapper fitted summaries and input width to the decoded booster."""
+    refit = state.get("refit", False)
+
+    if "learning_rate" in state:
+        learning_rate = state["learning_rate"]
+        fitted_learning_rate = getattr(booster, "lr_", None)
+        try:
+            learning_rate_value = float(learning_rate)
+            fitted_learning_rate_value = float(fitted_learning_rate)
+        except (TypeError, ValueError, OverflowError):
+            learning_rate_value = float("nan")
+            fitted_learning_rate_value = float("nan")
+        if (
+            isinstance(learning_rate, bool)
+            or not isinstance(learning_rate, (int, float))
+            or not np.isfinite(learning_rate_value)
+            or not np.isfinite(fitted_learning_rate_value)
+            or learning_rate_value != fitted_learning_rate_value
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: wrapper fitted learning rate does "
+                "not match the loaded booster"
+            )
+
+    has_best_n = "best_n_estimators" in state
+    best_n = state.get("best_n_estimators")
+    if has_best_n:
+        if (
+            isinstance(best_n, bool)
+            or not isinstance(best_n, int)
+            or best_n < 0
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: wrapper fitted estimator count is "
+                "invalid"
+            )
+        if not refit:
+            expected_best_n = getattr(booster, "best_iteration_", None)
+            if (
+                isinstance(expected_best_n, bool)
+                or not isinstance(expected_best_n, int)
+                or best_n != expected_best_n
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: wrapper fitted estimator count "
+                    "does not match the loaded booster"
+                )
+        else:
+            strategy = state.get("refit_strategy")
+            exponent = _REFIT_STRATEGY_EXPONENT[strategy]
+            expected_refit_n = best_n
+            if exponent:
+                if (
+                    "selection_n_total" not in state
+                    or "selection_n_train" not in state
+                ):
+                    raise ValueError(
+                        "invalid DarkoFit model: scaled refit strategy has no "
+                        "selection sample counts"
+                    )
+                total = state["selection_n_total"]
+                train = state["selection_n_train"]
+                try:
+                    expected_refit_n = int(
+                        np.ceil(best_n * ((total / train) ** exponent))
+                    )
+                except (OverflowError, ValueError) as exc:
+                    raise ValueError(
+                        "invalid DarkoFit model: wrapper selection and refit "
+                        "estimator counts are inconsistent"
+                    ) from exc
+            if state.get("refit_n_estimators") != expected_refit_n:
+                raise ValueError(
+                    "invalid DarkoFit model: wrapper selection and refit "
+                    "estimator counts are inconsistent"
+                )
+    elif refit:
+        raise ValueError(
+            "invalid DarkoFit model: refit fitted state has no selection "
+            "estimator count"
+        )
+
+    if "best_score" in state:
+        best_score = state["best_score"]
+        try:
+            best_score_value = float(best_score)
+        except (TypeError, ValueError, OverflowError):
+            best_score_value = float("nan")
+        if (
+            isinstance(best_score, bool)
+            or not isinstance(best_score, (int, float))
+            or not np.isfinite(best_score_value)
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: wrapper fitted score is invalid"
+            )
+        if not refit:
+            fitted_score = getattr(booster, "best_score_", None)
+            try:
+                score_matches = (
+                    best_score_value == float(fitted_score)
+                )
+            except (TypeError, ValueError, OverflowError):
+                score_matches = False
+            if not score_matches:
+                raise ValueError(
+                    "invalid DarkoFit model: wrapper fitted score does not "
+                    "match the loaded booster"
+                )
+
+    fitted_n_features = _infer_model_n_features(booster)
+    if "n_features_in" in state:
+        n_features = state["n_features_in"]
+        if (
+            isinstance(n_features, bool)
+            or not isinstance(n_features, int)
+            or n_features < 1
+            or fitted_n_features is None
+            or n_features != fitted_n_features
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: wrapper input feature count does "
+                "not match the loaded booster"
+            )
+    if "feature_names_in" in state:
+        feature_names = state["feature_names_in"]
+        if (
+            not isinstance(feature_names, list)
+            or fitted_n_features is None
+            or len(feature_names) != fitted_n_features
+            or not all(isinstance(name, str) for name in feature_names)
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: feature name state does not match "
+                "the loaded booster input width"
+            )
+
+
+def _validate_loaded_linear_residual_params(params, state):
+    """Reject constructor/state contradictions in linear-residual archives."""
+    if (
+        "linear_residual_enabled" not in state
+        and "linear_residual_active" not in state
+    ):
+        return
+    enabled = state.get(
+        "linear_residual_enabled",
+        state.get("linear_residual_active", False),
+    )
+    active = state.get("linear_residual_active", False)
+    if not isinstance(enabled, bool) or not isinstance(active, bool):
+        raise ValueError(
+            "invalid DarkoFit model: linear residual flags must be booleans"
+        )
+    if active and not enabled:
+        raise ValueError(
+            "invalid DarkoFit model: active linear residual state cannot be "
+            "disabled"
+        )
+    if "linear_residual_version" in state:
+        version = state["linear_residual_version"]
+        if (
+            isinstance(version, bool)
+            or not isinstance(version, int)
+            or version != 1
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: linear residual version is invalid"
+            )
+    if "linear_residual" in params and (
+        not isinstance(params["linear_residual"], bool)
+        or params["linear_residual"] is not enabled
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: linear residual parameter does not "
+            "match its fitted state"
+        )
+    comparisons = (
+        (
+            "linear_residual_fit_intercept",
+            "linear_residual_fit_intercept",
+            bool,
+        ),
+        (
+            "linear_residual_standardize",
+            "linear_residual_standardize",
+            bool,
+        ),
+    )
+    for param_name, state_name, expected_type in comparisons:
+        if param_name in params and not isinstance(
+            params[param_name], expected_type
+        ):
+            raise ValueError(
+                f"invalid DarkoFit model: {param_name} is invalid"
+            )
+        if state_name in state and not isinstance(
+            state[state_name], expected_type
+        ):
+            raise ValueError(
+                f"invalid DarkoFit model: {state_name} is invalid"
+            )
+        if (
+            param_name in params
+            and state_name in state
+            and params[param_name] is not state[state_name]
+        ):
+            raise ValueError(
+                f"invalid DarkoFit model: {param_name} does not match its "
+                "fitted state"
+            )
+    alpha_values = {}
+    for section_name, section in (("parameter", params), ("state", state)):
+        if "linear_residual_alpha" not in section:
+            continue
+        alpha = section["linear_residual_alpha"]
+        try:
+            alpha_value = float(alpha)
+        except (TypeError, ValueError, OverflowError):
+            alpha_value = float("nan")
+        if (
+            isinstance(alpha, bool)
+            or not isinstance(alpha, (int, float))
+            or not np.isfinite(alpha_value)
+            or alpha_value < 0.0
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: linear_residual_alpha "
+                f"{section_name} is invalid"
+            )
+        alpha_values[section_name] = alpha_value
+    if (
+        len(alpha_values) == 2
+        and alpha_values["parameter"] != alpha_values["state"]
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: linear_residual_alpha does not match "
+            "its fitted state"
+        )
+
+
+def _validate_loaded_refit_state(state, booster):
+    """Reject wrapper selection/refit state that contradicts its booster."""
+    refit = state.get("refit", False)
+    if not isinstance(refit, bool):
+        raise ValueError(
+            "invalid DarkoFit model: refit fitted state must be a boolean"
+        )
+    auto_params = getattr(booster, "auto_params_", {})
+    validation = auto_params.get("validation_split")
+    if isinstance(validation, Mapping):
+        validation_refit = validation.get("refit")
+        if (
+            not isinstance(validation_refit, bool)
+            or validation_refit is not refit
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: refit wrapper and booster "
+                "provenance disagree"
+            )
+    elif refit:
+        raise ValueError(
+            "invalid DarkoFit model: refit wrapper state has no booster "
+            "provenance"
+        )
+
+    if refit:
+        refit_n = state.get("refit_n_estimators")
+        strategy = state.get("refit_strategy")
+        selection_validation = auto_params.get("selection_validation_split")
+        if (
+            isinstance(refit_n, bool)
+            or not isinstance(refit_n, int)
+            or refit_n != len(getattr(booster, "trees_", ()))
+            or not isinstance(strategy, str)
+            or strategy not in _REFIT_STRATEGY_EXPONENT
+            or state.get("selection_model_persisted") is not False
+            or not isinstance(selection_validation, Mapping)
+            or validation.get("source") != "refit_full_data"
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: refit fitted state is inconsistent"
+            )
+    elif (
+        state.get("refit_n_estimators") is not None
+        or state.get("refit_strategy") is not None
+        or "selection_model_persisted" in state
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: non-refit model has refit fitted state"
+        )
+
+    has_total = "selection_n_total" in state
+    has_train = "selection_n_train" in state
+    if has_total != has_train:
+        raise ValueError(
+            "invalid DarkoFit model: selection sample counts are incomplete"
+        )
+    selection_validation = (
+        auto_params.get("selection_validation_split")
+        if refit else validation
+    )
+    if has_total:
+        total = state["selection_n_total"]
+        train = state["selection_n_train"]
+        selection_source = (
+            selection_validation.get("source")
+            if isinstance(selection_validation, Mapping)
+            else None
+        )
+        if (
+            isinstance(total, bool)
+            or not isinstance(total, int)
+            or total < 2
+            or isinstance(train, bool)
+            or not isinstance(train, int)
+            or train < 1
+            or train >= total
+            or not isinstance(selection_validation, Mapping)
+            or not isinstance(selection_source, str)
+            or not selection_source.startswith("automatic")
+            or selection_validation.get("original_n_samples") != total
+            or selection_validation.get("train_n_samples") != train
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: selection sample counts do not "
+                "match booster provenance"
+            )
+        if (
+            refit
+            and (
+                not isinstance(validation, Mapping)
+                or validation.get("original_n_samples") != total
+                or validation.get("train_n_samples") != total
+            )
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: selection and refit sample counts "
+                "do not match booster provenance"
+            )
+    elif (
+        isinstance(selection_validation, Mapping)
+        and str(selection_validation.get("source", "")).startswith("automatic")
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: automatic selection provenance has no "
+            "wrapper sample counts"
+        )
+
+
+def _validate_loaded_dist_calibration_state(state, booster, params=None):
+    """Bind prediction-changing calibration state to booster provenance."""
+    auto_params = getattr(booster, "auto_params_", {})
+    fitted = auto_params.get("dist_calibration")
+    fitted_sigma = auto_params.get("sigma_calibration")
+    diagnostics = auto_params.get("diagnostics", {})
+    diagnostic_dist = (
+        diagnostics.get("dist_calibration")
+        if isinstance(diagnostics, Mapping)
+        else None
+    )
+    diagnostic_sigma = (
+        diagnostics.get("sigma_calibration")
+        if isinstance(diagnostics, Mapping)
+        else None
+    )
+    calibration_metadata = (
+        fitted,
+        fitted_sigma,
+        diagnostic_dist,
+        diagnostic_sigma,
+    )
+    if any(value is not None for value in calibration_metadata) and (
+        not all(
+            isinstance(value, Mapping)
+            for value in calibration_metadata
+        )
+        or any(
+            dict(value) != dict(fitted)
+            for value in calibration_metadata[1:]
+        )
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: distribution calibration booster "
+            "provenance is inconsistent"
+        )
+
+    def finite_number(value, *, positive=False):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return None
+        try:
+            result = float(value)
+        except (TypeError, ValueError, OverflowError):
+            return None
+        if not np.isfinite(result) or (positive and result <= 0.0):
+            return None
+        return result
+
+    method = state.get(
+        "dist_calibration", state.get("sigma_calibration")
+    )
+    fitted_method = (
+        fitted.get("method") if isinstance(fitted, Mapping) else None
+    )
+    param_method = None
+    has_calibration_param = (
+        isinstance(params, Mapping)
+        and (
+            "dist_calibration" in params
+            or "sigma_calibration" in params
+        )
+    )
+    if has_calibration_param:
+        try:
+            param_method = _normalize_dist_calibration(
+                params.get("dist_calibration"),
+                params.get("sigma_calibration"),
+            )
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "invalid DarkoFit model: distribution calibration parameter "
+                "is invalid"
+            ) from exc
+    if method is None:
+        if fitted_method is not None or param_method is not None:
+            raise ValueError(
+                "invalid DarkoFit model: distribution calibration parameter, "
+                "wrapper state, and booster provenance disagree"
+            )
+        if isinstance(fitted, Mapping):
+            dist_scale = finite_number(
+                fitted.get("dist_scale"), positive=True
+            )
+            sigma_scale = finite_number(
+                fitted.get("sigma_scale"), positive=True
+            )
+            if (
+                dist_scale != 1.0
+                or sigma_scale != 1.0
+                or fitted.get("source") != "none"
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: uncalibrated distribution "
+                    "provenance is invalid"
+                )
+        if any(
+            key in state
+            for key in (
+                "dist_scale",
+                "sigma_scale",
+                "dist_affine_a",
+                "sigma_affine_a",
+                "dist_group_affine",
+                "sigma_group_affine",
+            )
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: uncalibrated distribution wrapper "
+                "contains fitted calibration state"
+            )
+        return
+    try:
+        method = _normalize_dist_calibration(method)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            "invalid DarkoFit model: distribution calibration method is "
+            "invalid"
+        ) from exc
+    if not isinstance(fitted, Mapping) or fitted_method != method:
+        raise ValueError(
+            "invalid DarkoFit model: distribution calibration wrapper and "
+            "booster provenance disagree"
+        )
+    if has_calibration_param and param_method != method:
+        raise ValueError(
+            "invalid DarkoFit model: distribution calibration parameter does "
+            "not match its fitted state"
+        )
+    if state.get("sigma_calibration") != method:
+        raise ValueError(
+            "invalid DarkoFit model: distribution calibration wrapper and "
+            "booster provenance disagree"
+        )
+
+    def require_number(state_key, metadata_key, *, positive=False):
+        value = state.get(state_key)
+        metadata_value = fitted.get(metadata_key)
+        value_float = finite_number(value, positive=positive)
+        metadata_float = finite_number(metadata_value, positive=positive)
+        if (
+            value_float is None
+            or metadata_float is None
+            or value_float != metadata_float
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: distribution calibration wrapper "
+                "and booster provenance disagree"
+            )
+        return value_float
+
+    dist_scale = require_number(
+        "dist_scale", "dist_scale", positive=True
+    )
+    sigma_scale = require_number(
+        "sigma_scale", "sigma_scale", positive=True
+    )
+    if dist_scale != sigma_scale:
+        raise ValueError(
+            "invalid DarkoFit model: distribution calibration aliases "
+            "disagree"
+        )
+    if (
+        state.get("dist_scale_source") != fitted.get("source")
+        or state.get("sigma_scale_source") != fitted.get("source")
+        or not isinstance(fitted.get("source"), str)
+        or not fitted.get("source")
+        or fitted.get("source") == "none"
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: distribution calibration wrapper and "
+            "booster provenance disagree"
+        )
+    for state_key, metadata_key in (
+        ("dist_affine_a", "dist_affine_a"),
+        ("dist_affine_b", "dist_affine_b"),
+        ("sigma_affine_a", "sigma_affine_a"),
+        ("sigma_affine_b", "sigma_affine_b"),
+    ):
+        if state_key in state or metadata_key in fitted:
+            require_number(state_key, metadata_key)
+    if method in {"affine", "per_metric_affine"}:
+        affine_pairs = (
+            ("dist_affine_a", "sigma_affine_a"),
+            ("dist_affine_b", "sigma_affine_b"),
+        )
+        for dist_key, sigma_key in affine_pairs:
+            if dist_key not in state or sigma_key not in state:
+                raise ValueError(
+                    "invalid DarkoFit model: affine distribution calibration "
+                    "state is incomplete"
+                )
+            if finite_number(state[dist_key]) != finite_number(
+                state[sigma_key]
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: distribution calibration aliases "
+                    "disagree"
+                )
+    for state_key, metadata_key in (
+        ("dist_group_affine", "dist_group_affine"),
+        ("sigma_group_affine", "sigma_group_affine"),
+        ("dist_calibration_feature", "dist_calibration_feature"),
+        (
+            "dist_calibration_feature_index",
+            "dist_calibration_feature_index",
+        ),
+        ("dist_calibration_feature_name", "dist_calibration_feature_name"),
+    ):
+        if state_key in state or metadata_key in fitted:
+            if state.get(state_key) != fitted.get(metadata_key):
+                raise ValueError(
+                    "invalid DarkoFit model: distribution calibration wrapper "
+                    "and booster provenance disagree"
+                )
+    for state_key, metadata_key in (
+        (
+            "dist_mean_calibration_numerator",
+            "mean_calibration_numerator",
+        ),
+        (
+            "dist_mean_calibration_denominator",
+            "mean_calibration_denominator",
+        ),
+    ):
+        if state_key in state or metadata_key in fitted:
+            require_number(state_key, metadata_key)
+    if (
+        state.get("dist_calibration_fallback_reason")
+        != fitted.get("fallback_reason")
+        or state.get("sigma_calibration_fallback_reason")
+        != fitted.get("fallback_reason")
+        or state.get("dist_mean_calibration_objective")
+        != fitted.get("mean_calibration_objective")
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: distribution calibration wrapper and "
+            "booster provenance disagree"
+        )
+    if (
+        method == "per_metric_affine"
+        and isinstance(params, Mapping)
+        and "dist_calibration_feature" in params
+        and (
+            isinstance(params["dist_calibration_feature"], bool)
+            or isinstance(state.get("dist_calibration_feature"), bool)
+            or type(params["dist_calibration_feature"])
+            is not type(state.get("dist_calibration_feature"))
+            or params["dist_calibration_feature"]
+            != state.get("dist_calibration_feature")
+        )
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: distribution calibration feature "
+            "parameter does not match its fitted state"
+        )
+    if method == "per_metric_affine":
+        records = state.get("dist_group_affine")
+        feature = state.get("dist_calibration_feature")
+        feature_index = state.get("dist_calibration_feature_index")
+        feature_name = state.get("dist_calibration_feature_name")
+        group_count = fitted.get("group_count")
+        group_fallback_count = fitted.get("group_fallback_count")
+        saved_feature_names = getattr(booster, "feature_names_in_", None)
+        if (
+            not isinstance(records, list)
+            or not records
+            or records != state.get("sigma_group_affine")
+            or isinstance(feature, bool)
+            or not isinstance(feature, (int, str))
+            or isinstance(feature_index, bool)
+            or not isinstance(feature_index, int)
+            or feature_index < 0
+            or feature_index >= int(getattr(booster, "n_features_in_", 0))
+            or (
+                feature_name is not None
+                and not isinstance(feature_name, str)
+            )
+            or isinstance(group_count, bool)
+            or not isinstance(group_count, int)
+            or group_count != len(records)
+            or isinstance(group_fallback_count, bool)
+            or not isinstance(group_fallback_count, int)
+            or (
+                saved_feature_names is None
+                and feature_name is not None
+            )
+            or (
+                saved_feature_names is not None
+                and feature_name
+                != str(np.asarray(saved_feature_names)[feature_index])
+            )
+            or (
+                isinstance(feature, str)
+                and feature_name != feature
+            )
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: grouped distribution calibration "
+                "state is invalid"
+            )
+        seen_groups = []
+        fallback_count = 0
+        validation_count = 0
+        positive_weight_count = 0
+        for record in records:
+            if not isinstance(record, Mapping):
+                raise ValueError(
+                    "invalid DarkoFit model: grouped distribution calibration "
+                    "record is invalid"
+                )
+            group = record.get("group")
+            record_validation_count = record.get("validation_n_samples")
+            record_positive_weight_count = record.get(
+                "validation_positive_weight_n"
+            )
+            record_effective_n = finite_number(
+                record.get("validation_effective_n"), positive=True
+            )
+            record_weight_sum = finite_number(
+                record.get("validation_weight_sum"), positive=True
+            )
+            record_fallback = record.get("fallback_reason")
+            if (
+                not isinstance(group, (str, bool, int, float))
+                or (
+                    isinstance(group, float)
+                    and not np.isfinite(group)
+                )
+                or finite_number(
+                    record.get("sigma_scale"), positive=True
+                ) is None
+                or finite_number(record.get("sigma_affine_a")) is None
+                or finite_number(record.get("sigma_affine_b")) is None
+                or isinstance(record_validation_count, bool)
+                or not isinstance(record_validation_count, int)
+                or record_validation_count < 1
+                or isinstance(record_positive_weight_count, bool)
+                or not isinstance(record_positive_weight_count, int)
+                or record_positive_weight_count < 1
+                or record_positive_weight_count != record_validation_count
+                or record_effective_n is None
+                or record_effective_n - 1e-9
+                > record_positive_weight_count
+                or record_weight_sum is None
+                or (
+                    record_fallback is not None
+                    and record_fallback
+                    not in {
+                        "small_group",
+                        "slope_bound",
+                        "non_finite_profile",
+                    }
+                )
+                or any(group == prior for prior in seen_groups)
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: grouped distribution calibration "
+                    "record is invalid"
+                )
+            seen_groups.append(group)
+            validation_count += record_validation_count
+            positive_weight_count += record_positive_weight_count
+            fallback_count += record_fallback is not None
+        fitted_validation_count = fitted.get("validation_n_samples")
+        fitted_positive_weight_count = fitted.get(
+            "validation_positive_weight_n"
+        )
+        if (
+            group_fallback_count != fallback_count
+            or isinstance(fitted_validation_count, bool)
+            or not isinstance(fitted_validation_count, int)
+            or fitted_validation_count < validation_count
+            or isinstance(fitted_positive_weight_count, bool)
+            or not isinstance(fitted_positive_weight_count, int)
+            or fitted_positive_weight_count != validation_count
+            or fitted_positive_weight_count != positive_weight_count
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: grouped distribution calibration "
+                "aggregate provenance is invalid"
             )
 
 
@@ -511,7 +1524,10 @@ def _reserve_conformal_holdout(eval_set, random_state, *, selection_needed):
             "rows when the validation set is also used for model selection "
             "or distribution calibration"
         )
-    rng = np.random.default_rng(int(random_state) ^ 0x434F4E46)
+    seed = normalize_random_state_seed(random_state)
+    rng = np.random.default_rng(
+        None if seed is None else int(seed) ^ 0x434F4E46
+    )
     order = rng.permutation(n_eval)
     calibration_n = max(1, n_eval // 2)
     calibration_idx = order[:calibration_n]
@@ -918,6 +1934,8 @@ def _jsonable_group_value(value):
 def _resolve_dist_calibration_feature(feature, feature_names, n_features):
     if feature is None:
         feature = _GROUP_AFFINE_DEFAULT_FEATURE
+    if isinstance(feature, (bool, np.bool_)):
+        raise ValueError("dist_calibration_feature must be a column name or index")
     if isinstance(feature, (int, np.integer)):
         index = int(feature)
         if index < 0:
@@ -1563,6 +2581,75 @@ def _transform_ordinal_features(X, records):
     return transformed
 
 
+def _ordinal_category_order_sha256(records):
+    """Bind ordered category values and scalar types to fitted provenance."""
+    encoded_records = []
+    for record in records:
+        encoded_categories = []
+        for value in record["categories"]:
+            if isinstance(value, bool):
+                encoded = ("bool", "1" if value else "0")
+            elif isinstance(value, int):
+                encoded = ("int", str(value))
+            elif isinstance(value, float):
+                encoded = ("float", value.hex())
+            else:
+                encoded = ("str", value)
+            encoded_categories.append(encoded)
+        encoded_records.append((int(record["index"]), encoded_categories))
+    payload = json.dumps(
+        encoded_records,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _ordinal_metadata_payload(mode, records, nominal_cat_count):
+    metadata = {}
+    if records:
+        metadata["state_version"] = _ORDINAL_STATE_VERSION
+    metadata.update({
+        "mode": mode,
+        "active": bool(records),
+        "feature_count": len(records),
+        "feature_indices": [int(record["index"]) for record in records],
+        "feature_names": [record.get("name") for record in records],
+        "sources": [record["source"] for record in records],
+    })
+    if records:
+        metadata["category_order_sha256"] = (
+            _ordinal_category_order_sha256(records)
+        )
+    metadata.update({
+        "nominal_categorical_count": int(nominal_cat_count),
+        "added_columns": 0,
+        "target_stat_blocks_added": 0,
+        "target_used": False,
+        "unknown_policy": "fail_closed",
+        "missing_policy": "numeric_missing_bin",
+    })
+    return metadata
+
+
+def _ordinal_metadata_matches(value, expected):
+    if not isinstance(value, Mapping):
+        return False
+    encoded = json.dumps(
+        dict(value),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    expected_encoded = json.dumps(
+        expected,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return encoded == expected_encoded
+
+
 def _restore_ordinal_records(records, *, n_features, feature_names=None):
     if not isinstance(records, list):
         raise ValueError(
@@ -1843,6 +2930,22 @@ def _make_eval_split(X, y, validation_fraction, random_state,
     return train_idx, val_idx, realized_policy
 
 
+def _restore_fitted_state_on_fit_failure(method):
+    """Keep an already-fitted wrapper transactional across failed refits."""
+
+    @wraps(method)
+    def transactional_fit(self, *args, **kwargs):
+        previous_state = dict(self.__dict__)
+        try:
+            return method(self, *args, **kwargs)
+        except BaseException:
+            self.__dict__.clear()
+            self.__dict__.update(previous_state)
+            raise
+
+    return transactional_fit
+
+
 class _RefitParamsMixin:
     """Shared fitted-model metadata and full-data refit helpers."""
 
@@ -1852,6 +2955,7 @@ class _RefitParamsMixin:
             "ensemble_metadata_",
             "ensemble_best_iterations_",
             "ensemble_learning_rates_",
+            "expected_value_",
         ):
             if hasattr(self, name):
                 delattr(self, name)
@@ -1890,6 +2994,8 @@ class _RefitParamsMixin:
     def _adopt_ensemble(self, estimators, metadata):
         if not estimators:
             raise ValueError("an ensemble must contain at least one estimator")
+        self._clear_refit_selection_metadata()
+        self._clear_linear_residual_state()
         first = estimators[0]
         self.estimators_ = tuple(estimators)
         self.model_ = first.model_
@@ -1908,6 +3014,8 @@ class _RefitParamsMixin:
         ):
             if hasattr(first, name):
                 setattr(self, name, getattr(first, name))
+            elif hasattr(self, name):
+                delattr(self, name)
         best_iterations = tuple(
             int(member.best_n_estimators_) for member in estimators
         )
@@ -1932,10 +3040,41 @@ class _RefitParamsMixin:
 
     def _ensemble_params_header(self):
         params = self.get_params()
-        if params.get("random_state") is not None:
-            params["random_state"] = int(
-                self.ensemble_metadata_["fit_random_state_seed"]
-            )
+        first = self.estimators_[0]
+        fitted_member_params = first._wrapper_params_header()
+        fitted_loss = getattr(first.model_, "loss_name", None)
+        if "loss" in params and fitted_loss is not None:
+            params["loss"] = fitted_loss
+        if "alpha" in params and fitted_loss == "Quantile":
+            params["alpha"] = float(first.model_.loss_kwargs["alpha"])
+        for name in (
+            "early_stopping",
+            "use_best_model",
+            "refit_strategy",
+            "preset",
+            "selection_rounds",
+            "tree_mode",
+            "interval_calibration",
+            "dist_calibration",
+            "sigma_calibration",
+            "linear_residual",
+            "linear_residual_alpha",
+            "linear_residual_features",
+            "linear_residual_fit_intercept",
+            "linear_residual_standardize",
+        ):
+            if name in params and name in fitted_member_params:
+                params[name] = fitted_member_params[name]
+        params["n_ensembles"] = len(self.estimators_)
+        params["ensemble_bootstrap"] = self.ensemble_metadata_["bootstrap"]
+        params["ensemble_shared_preprocessing"] = bool(
+            self.ensemble_metadata_["shared_preprocessing_requested"]
+        )
+        params["refit"] = False
+        fit_seed = self.ensemble_metadata_["fit_random_state_seed"]
+        params["random_state"] = (
+            None if fit_seed is None else int(fit_seed)
+        )
         return params
 
     @classmethod
@@ -1962,6 +3101,11 @@ class _RefitParamsMixin:
                 "invalid DarkoFit model: ensemble params do not match its "
                 "member count"
             )
+        for payload in payloads:
+            if load_ensemble(io.BytesIO(payload)) is not None:
+                raise ValueError(
+                    "invalid DarkoFit model: nested ensemble member detected"
+                )
         members = [
             cls.load_model(io.BytesIO(payload)) for payload in payloads
         ]
@@ -1971,11 +3115,176 @@ class _RefitParamsMixin:
                     "invalid DarkoFit model: nested ensemble member detected"
                 )
         metadata = header["metadata"]
+        classification = issubclass(cls, ClassifierMixin)
         _validate_loaded_ensemble_metadata(
             metadata,
             members,
-            classification=hasattr(members[0], "classes_"),
+            classification=classification,
         )
+        if (
+            _normalize_ensemble_bootstrap(est.ensemble_bootstrap)
+            != metadata["bootstrap"]
+            or not isinstance(
+                est.ensemble_shared_preprocessing, (bool, np.bool_)
+            )
+            or bool(est.ensemble_shared_preprocessing)
+            != metadata["shared_preprocessing_requested"]
+            or est.refit is not False
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: ensemble params do not match fitted "
+                "provenance"
+            )
+        fit_seed = metadata.get("fit_random_state_seed")
+        outer_random_state = est.random_state
+        if (
+            (
+                fit_seed is not None
+                and (
+                    isinstance(fit_seed, bool)
+                    or not isinstance(fit_seed, int)
+                    or fit_seed < 0
+                )
+            )
+            or (
+                fit_seed is None
+                and outer_random_state is not None
+            )
+            or (
+                fit_seed is not None
+                and (
+                    isinstance(outer_random_state, bool)
+                    or not isinstance(outer_random_state, int)
+                    or outer_random_state != fit_seed
+                )
+            )
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: ensemble random state does not match "
+                "fitted provenance"
+            )
+        if hasattr(est, "loss"):
+            fitted_losses = {
+                member._fitted_loss_name() for member in members
+            }
+            if len(fitted_losses) != 1 or est.loss != next(
+                iter(fitted_losses)
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: ensemble loss does not match its "
+                    "member payloads"
+                )
+            if est.loss == "Quantile":
+                try:
+                    outer_alpha_param = est.alpha
+                    outer_alpha = float(est.alpha)
+                    fitted_alphas = {
+                        float(member.model_.loss_kwargs["alpha"])
+                        for member in members
+                    }
+                    member_alphas = {
+                        float(member.alpha) for member in members
+                    }
+                except (KeyError, TypeError, ValueError, OverflowError):
+                    outer_alpha = float("nan")
+                    fitted_alphas = set()
+                    member_alphas = set()
+                if (
+                    isinstance(outer_alpha_param, bool)
+                    or not isinstance(outer_alpha_param, (int, float))
+                    or not np.isfinite(outer_alpha)
+                    or len(fitted_alphas) != 1
+                    or member_alphas != fitted_alphas
+                    or outer_alpha != next(iter(fitted_alphas))
+                ):
+                    raise ValueError(
+                        "invalid DarkoFit model: ensemble quantile does not "
+                        "match its member payloads"
+                    )
+            linear_bool_params = (
+                "linear_residual",
+                "linear_residual_fit_intercept",
+                "linear_residual_standardize",
+            )
+            if any(
+                not isinstance(getattr(est, name), bool)
+                for name in linear_bool_params
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: ensemble linear residual "
+                    "parameters are invalid"
+                )
+            linear_alpha = est.linear_residual_alpha
+            try:
+                linear_alpha_value = float(linear_alpha)
+            except (TypeError, ValueError, OverflowError):
+                linear_alpha_value = float("nan")
+            if (
+                isinstance(linear_alpha, bool)
+                or not isinstance(linear_alpha, (int, float))
+                or not np.isfinite(linear_alpha_value)
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: ensemble linear residual "
+                    "parameters are invalid"
+                )
+            for name in (
+                *linear_bool_params,
+                "linear_residual_alpha",
+                "linear_residual_features",
+            ):
+                outer_value = getattr(est, name)
+                if any(
+                    not np.array_equal(
+                        np.asarray(outer_value, dtype=object),
+                        np.asarray(getattr(member, name), dtype=object),
+                    )
+                    for member in members
+                ):
+                    raise ValueError(
+                        "invalid DarkoFit model: ensemble linear residual "
+                        "parameters do not match member payloads"
+                    )
+        for name in (
+            "early_stopping",
+            "use_best_model",
+            "refit_strategy",
+            "preset",
+            "selection_rounds",
+            "tree_mode",
+            "interval_calibration",
+            "dist_calibration",
+            "sigma_calibration",
+        ):
+            if not hasattr(est, name):
+                continue
+            outer_value = getattr(est, name)
+            member_values = [
+                getattr(member, name) for member in members
+            ]
+            if (
+                any(type(value) is not type(member_values[0])
+                    for value in member_values[1:])
+                or type(outer_value) is not type(member_values[0])
+                or outer_value != member_values[0]
+                or any(value != member_values[0] for value in member_values[1:])
+            ):
+                raise ValueError(
+                    f"invalid DarkoFit model: ensemble {name} parameter does "
+                    "not match member payloads"
+                )
+        if fit_seed is not None:
+            expected_seeds = [
+                int(value)
+                for value in np.random.default_rng(fit_seed).integers(
+                    0, 2**31 - 1, size=len(members)
+                )
+            ]
+            if metadata["member_seeds"] != expected_seeds:
+                raise ValueError(
+                    "invalid DarkoFit model: ensemble member seeds do not match "
+                    "the fitted random state"
+                )
         feature_counts = {
             int(member.n_features_in_) for member in members
         }
@@ -1984,10 +3293,91 @@ class _RefitParamsMixin:
                 "invalid DarkoFit model: ensemble members disagree on input "
                 "feature count"
             )
-        if hasattr(members[0], "classes_"):
+        input_feature_count = metadata.get("input_feature_count")
+        if (
+            isinstance(input_feature_count, bool)
+            or not isinstance(input_feature_count, int)
+            or input_feature_count != next(iter(feature_counts))
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: ensemble input feature count does not "
+                "match its payload"
+            )
+        reference_names = getattr(members[0], "feature_names_in_", None)
+        reference_ordinals = getattr(members[0], "ordinal_features_", ())
+        reference_cat_features = tuple(
+            int(index)
+            for index in members[0].model_.prep_.cat_features_
+        )
+        if any(
+            (
+                (reference_names is None)
+                != (getattr(member, "feature_names_in_", None) is None)
+            )
+            or (
+                reference_names is not None
+                and not np.array_equal(
+                    np.asarray(reference_names),
+                    np.asarray(member.feature_names_in_),
+                )
+            )
+            or getattr(member, "ordinal_features_", ()) != reference_ordinals
+            or tuple(
+                int(index) for index in member.model_.prep_.cat_features_
+            )
+            != reference_cat_features
+            for member in members[1:]
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: ensemble members disagree on input "
+                "feature schema"
+            )
+        if metadata["shared_preprocessing"] == "numeric_target_free":
+            if reference_ordinals or reference_cat_features:
+                raise ValueError(
+                    "invalid DarkoFit model: shared preprocessing provenance "
+                    "contradicts the fitted feature schema"
+                )
+            reference_prep = members[0].model_.prep_
+            reference_binner = reference_prep.binner_
+            if any(
+                not np.array_equal(
+                    np.asarray(reference_prep.num_features_),
+                    np.asarray(member.model_.prep_.num_features_),
+                )
+                or not np.array_equal(
+                    np.asarray(reference_prep.feature_map_),
+                    np.asarray(member.model_.prep_.feature_map_),
+                )
+                or not np.array_equal(
+                    np.asarray(reference_binner._borders_flat_),
+                    np.asarray(
+                        member.model_.prep_.binner_._borders_flat_
+                    ),
+                )
+                or not np.array_equal(
+                    np.asarray(reference_binner._border_offsets_),
+                    np.asarray(
+                        member.model_.prep_.binner_._border_offsets_
+                    ),
+                )
+                or not np.array_equal(
+                    np.asarray(reference_binner.n_bins_),
+                    np.asarray(member.model_.prep_.binner_.n_bins_),
+                )
+                for member in members[1:]
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: shared ensemble preprocessing "
+                    "payloads disagree"
+                )
+        if classification:
             reference = np.asarray(members[0].classes_)
             if any(
-                not np.array_equal(reference, np.asarray(member.classes_))
+                member._multiclass != members[0]._multiclass
+                or not np.array_equal(
+                    reference, np.asarray(member.classes_)
+                )
                 for member in members[1:]
             ):
                 raise ValueError(
@@ -2013,6 +3403,7 @@ class _RefitParamsMixin:
         n_members = _normalize_n_ensembles(self.n_ensembles)
         if n_members == 1:
             return None
+        callbacks = _normalize_callbacks(callbacks)
         bootstrap = _normalize_ensemble_bootstrap(self.ensemble_bootstrap)
         if eval_set is not None or eval_sample_weight is not None:
             raise ValueError(
@@ -2046,9 +3437,31 @@ class _RefitParamsMixin:
                 "distributional parameter aggregation is not yet defined"
             )
 
-        X_checked, resolved_cat_features, n_features = _coerce_fit_X(
-            X, cat_features
+        (
+            X_for_validation,
+            nominal_cat_features,
+            _ordinal_mode,
+            ordinal_records,
+        ) = self._prepare_ordinal_fit_input(
+            X, cat_features, ordinal_features
         )
+        X_checked, resolved_cat_features, n_features = _coerce_fit_X(
+            X_for_validation, nominal_cat_features
+        )
+        if ordinal_records:
+            frozen_ordinal_records = {
+                int(record["index"]): tuple(record["categories"])
+                for record in ordinal_records
+            }
+            member_ordinal_features = (
+                _FrozenAutoOrdinalFeatures(frozen_ordinal_records)
+                if isinstance(
+                    ordinal_features, _FrozenAutoOrdinalFeatures
+                )
+                else frozen_ordinal_records
+            )
+        else:
+            member_ordinal_features = ordinal_features
         y_checked = validate_target_vector(
             y,
             X_checked.shape[0],
@@ -2068,6 +3481,12 @@ class _RefitParamsMixin:
         sample_weight_checked = _validate_wrapper_sample_weight(
             sample_weight, X_checked.shape[0]
         )
+        if bootstrap == "rows" and groups is not None:
+            raise ValueError(
+                "groups cannot be used with ensemble_bootstrap='rows'; set "
+                "ensemble_bootstrap='groups' to keep entities intact across "
+                "bootstrap and out-of-bag rows"
+            )
         group_values = None
         if bootstrap == "groups":
             if groups is None:
@@ -2092,13 +3511,7 @@ class _RefitParamsMixin:
         shared_eligible = (
             shared_requested
             and not resolved_cat_features
-            and (
-                ordinal_features is None
-                or (
-                    isinstance(ordinal_features, Mapping)
-                    and not ordinal_features
-                )
-            )
+            and not ordinal_records
             and np.asarray(X_checked).dtype.kind in "biuf"
         )
         shared_prep = None
@@ -2155,9 +3568,14 @@ class _RefitParamsMixin:
                         _take_rows(X, oob),
                         _take_rows(y, oob),
                     ),
+                    groups=(
+                        None
+                        if group_values is None
+                        else group_values[sampled]
+                    ),
                     sample_weight=member_sample_weight,
                     eval_sample_weight=member_eval_weight,
-                    ordinal_features=ordinal_features,
+                    ordinal_features=member_ordinal_features,
                 )
             finally:
                 if hasattr(member, "_shared_numeric_preprocessing_"):
@@ -2221,7 +3639,7 @@ class _RefitParamsMixin:
                 if shared_eligible or not shared_requested
                 else (
                     "categorical_or_ordinal_features"
-                    if resolved_cat_features or ordinal_features is not None
+                    if resolved_cat_features or ordinal_records
                     else "non_numeric_dtype"
                 )
             ),
@@ -2246,24 +3664,14 @@ class _RefitParamsMixin:
 
     def _attach_ordinal_metadata(self):
         records = list(getattr(self, "ordinal_features_", ()))
-        if getattr(self, "ordinal_features_mode_", "off") == "off":
+        mode = getattr(self, "ordinal_features_mode_", "off")
+        if mode == "off":
             return
-        metadata = {
-            "mode": getattr(self, "ordinal_features_mode_", "off"),
-            "active": bool(records),
-            "feature_count": len(records),
-            "feature_indices": [int(record["index"]) for record in records],
-            "feature_names": [record.get("name") for record in records],
-            "sources": [record["source"] for record in records],
-            "nominal_categorical_count": int(
-                getattr(self, "_ordinal_nominal_cat_count_", 0)
-            ),
-            "added_columns": 0,
-            "target_stat_blocks_added": 0,
-            "target_used": False,
-            "unknown_policy": "fail_closed",
-            "missing_policy": "numeric_missing_bin",
-        }
+        metadata = _ordinal_metadata_payload(
+            mode,
+            records,
+            getattr(self, "_ordinal_nominal_cat_count_", 0),
+        )
         model = getattr(self, "model_", None)
         if model is not None:
             model.auto_params_["ordinal_features"] = metadata
@@ -2320,6 +3728,79 @@ class _RefitParamsMixin:
         self._ordinal_nominal_cat_count_ = len(
             getattr(prep, "cat_features_", ())
         )
+        has_state_version = "ordinal_features_version" in state
+        state_version = state.get("ordinal_features_version")
+        auto_params = getattr(
+            getattr(self, "model_", None), "auto_params_", {}
+        )
+        fitted_metadata = auto_params.get("ordinal_features")
+        fitted_version = (
+            fitted_metadata.get("state_version")
+            if isinstance(fitted_metadata, Mapping)
+            else None
+        )
+        expected_metadata = _ordinal_metadata_payload(
+            mode,
+            records,
+            self._ordinal_nominal_cat_count_,
+        )
+        diagnostics = auto_params.get("diagnostics")
+        diagnostics_metadata = (
+            diagnostics.get("ordinal_features")
+            if isinstance(diagnostics, Mapping)
+            else None
+        )
+        if not has_state_version:
+            if fitted_version is None:
+                if mode == "off":
+                    if (
+                        fitted_metadata is None
+                        and diagnostics_metadata is None
+                    ):
+                        return
+                else:
+                    legacy_expected = dict(expected_metadata)
+                    legacy_expected.pop("state_version", None)
+                    legacy_expected.pop("category_order_sha256", None)
+                    if (
+                        _ordinal_metadata_matches(
+                            fitted_metadata, legacy_expected
+                        )
+                        and _ordinal_metadata_matches(
+                            diagnostics_metadata, legacy_expected
+                        )
+                    ):
+                        return
+                raise ValueError(
+                    "invalid DarkoFit model: ordinal wrapper state does not "
+                    "match fitted provenance"
+                )
+            raise ValueError(
+                "invalid DarkoFit model: ordinal wrapper state is missing "
+                "fitted provenance"
+            )
+        elif (
+            isinstance(state_version, bool)
+            or not isinstance(state_version, int)
+            or state_version != _ORDINAL_STATE_VERSION
+            or not records
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: ordinal feature state version is "
+                "invalid"
+            )
+        if (
+            not _ordinal_metadata_matches(
+                fitted_metadata, expected_metadata
+            )
+            or not _ordinal_metadata_matches(
+                diagnostics_metadata, expected_metadata
+            )
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: ordinal wrapper state does not match "
+                "fitted provenance"
+            )
 
     def _warn_wrapper_deprecated_options(self, *, stacklevel=3):
         if (
@@ -2418,13 +3899,7 @@ class _RefitParamsMixin:
         preset = getattr(self, "preset_", None)
         if preset is None:
             return
-        metadata = {
-            "name": preset,
-            "claim_tier": "E",
-            "default_changed": False,
-            "resolved": dict(self.preset_params_),
-            "evidence_scope": "spent_development_panel",
-        }
+        metadata = _preset_metadata_payload(preset, self.preset_params_)
         model = getattr(self, "model_", None)
         auto_params = getattr(model, "auto_params_", None)
         if auto_params is not None:
@@ -3041,6 +4516,16 @@ class _RefitParamsMixin:
             state["feature_names_in"] = self.feature_names_in_.tolist()
         ordinal_mode = getattr(self, "ordinal_features_mode_", "off")
         if ordinal_mode != "off":
+            ordinal_metadata = getattr(
+                getattr(self, "model_", None), "auto_params_", {}
+            ).get("ordinal_features")
+            if (
+                self.ordinal_features_
+                and isinstance(ordinal_metadata, Mapping)
+                and ordinal_metadata.get("state_version")
+                == _ORDINAL_STATE_VERSION
+            ):
+                state["ordinal_features_version"] = _ORDINAL_STATE_VERSION
             state["ordinal_features_mode"] = ordinal_mode
             state["ordinal_features"] = list(self.ordinal_features_)
         if getattr(self, "refit_", False):
@@ -3194,15 +4679,70 @@ class _RefitParamsMixin:
 
     def _wrapper_params_header(self):
         params = self.get_params()
-        random_state = params.get("random_state")
-        if random_state is not None:
-            fit_seed = getattr(
-                getattr(self, "model_", None), "_fit_random_state_seed_", None
+        model = getattr(self, "model_", None)
+        fitted_loss = getattr(model, "loss_name", None)
+        if "loss" in params and fitted_loss is not None:
+            params["loss"] = fitted_loss
+        if "alpha" in params and fitted_loss == "Quantile":
+            params["alpha"] = float(model.loss_kwargs["alpha"])
+        if "preset" in params:
+            params["preset"] = getattr(self, "preset_", None)
+        if "interval_calibration" in params:
+            params["interval_calibration"] = getattr(
+                self, "interval_calibration_", None
+            )
+        fitted_dist_calibration = getattr(
+            self,
+            "dist_calibration_",
+            getattr(self, "sigma_calibration_", None),
+        )
+        if "dist_calibration" in params:
+            params["dist_calibration"] = fitted_dist_calibration
+        if "sigma_calibration" in params:
+            params["sigma_calibration"] = None
+        if (
+            fitted_dist_calibration == "per_metric_affine"
+            and "dist_calibration_feature" in params
+        ):
+            params["dist_calibration_feature"] = getattr(
+                self,
+                "dist_calibration_feature_",
+                _GROUP_AFFINE_DEFAULT_FEATURE,
+            )
+        if hasattr(self, "linear_residual_enabled_"):
+            params["linear_residual"] = bool(
+                self.linear_residual_enabled_
+            )
+            params["linear_residual_alpha"] = float(
+                self.linear_residual_alpha_
+            )
+            params["linear_residual_fit_intercept"] = bool(
+                self.linear_residual_fit_intercept_
+            )
+            params["linear_residual_standardize"] = bool(
+                self.linear_residual_standardize_
+            )
+            trend = getattr(self, "linear_residual_trend_", None)
+            if trend is not None:
+                selector = getattr(trend, "features", "auto")
+                if (
+                    selector is None
+                    or isinstance(selector, (str, list, tuple, np.ndarray))
+                ):
+                    params["linear_residual_features"] = selector
+                else:
+                    params["linear_residual_features"] = [
+                        int(index)
+                        for index in self.linear_residual_feature_indices_
+                    ]
+        if "random_state" in params:
+            fit_seed = (
+                model._fit_random_state_seed_
+                if hasattr(model, "_fit_random_state_seed_")
+                else getattr(model, "random_state", None)
             )
             params["random_state"] = (
-                int(fit_seed)
-                if fit_seed is not None
-                else normalize_random_state_seed(random_state)
+                None if fit_seed is None else int(fit_seed)
             )
         return params
 
@@ -3241,8 +4781,13 @@ class _RefitParamsMixin:
         )
         return arrays
 
-    def _restore_wrapper_state(self, state):
+    def _restore_wrapper_state(self, state, wrapper_params=None):
         state = state or {}
+        _validate_loaded_refit_state(state, self.model_)
+        _validate_loaded_wrapper_fitted_state(state, self.model_)
+        _validate_loaded_dist_calibration_state(
+            state, self.model_, wrapper_params
+        )
         if "best_n_estimators" in state:
             self._best_n_estimators_ = int(state["best_n_estimators"])
         if "best_score" in state:
@@ -3262,7 +4807,34 @@ class _RefitParamsMixin:
         self.refit_n_estimators_ = state.get("refit_n_estimators")
         self.refit_strategy_ = state.get("refit_strategy")
         if "tree_mode_selection" in state:
-            self.tree_mode_selection_ = state["tree_mode_selection"]
+            saved_selection = state["tree_mode_selection"]
+            auto_params = getattr(self.model_, "auto_params_", {})
+            fitted_selection = auto_params.get("tree_mode_selection")
+            diagnostics = auto_params.get("diagnostics", {})
+            diagnostic_selection = (
+                diagnostics.get("tree_mode_selection")
+                if isinstance(diagnostics, Mapping)
+                else None
+            )
+            if (
+                not isinstance(saved_selection, Mapping)
+                or not isinstance(fitted_selection, Mapping)
+                or dict(saved_selection) != dict(fitted_selection)
+                or not isinstance(diagnostic_selection, Mapping)
+                or dict(saved_selection) != dict(diagnostic_selection)
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: tree mode selection wrapper and "
+                    "booster provenance disagree"
+                )
+            self.tree_mode_selection_ = dict(saved_selection)
+        elif getattr(self.model_, "auto_params_", {}).get(
+            "tree_mode_selection"
+        ) is not None:
+            raise ValueError(
+                "invalid DarkoFit model: booster tree mode selection "
+                "provenance has no wrapper fitted state"
+            )
         if "preset" in state:
             preset = _normalize_regression_preset(state["preset"])
             preset_params = state.get("preset_params")
@@ -3276,8 +4848,38 @@ class _RefitParamsMixin:
                     "invalid DarkoFit model: preset parameters do not match "
                     "the saved preset"
                 )
+            auto_params = getattr(self.model_, "auto_params_", {})
+            fitted_preset = auto_params.get("preset")
+            diagnostics = auto_params.get("diagnostics", {})
+            diagnostic_preset = (
+                diagnostics.get("preset")
+                if isinstance(diagnostics, Mapping)
+                else None
+            )
+            expected_metadata = _preset_metadata_payload(
+                preset, preset_params
+            )
+            if (
+                _normalize_regression_preset(
+                    getattr(self, "preset", None)
+                )
+                != preset
+                or not isinstance(fitted_preset, Mapping)
+                or dict(fitted_preset) != expected_metadata
+                or not isinstance(diagnostic_preset, Mapping)
+                or dict(diagnostic_preset) != expected_metadata
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: preset wrapper and booster "
+                    "provenance disagree"
+                )
             self.preset_ = preset
             self.preset_params_ = dict(preset_params)
+        elif getattr(self.model_, "auto_params_", {}).get("preset") is not None:
+            raise ValueError(
+                "invalid DarkoFit model: booster preset provenance has no "
+                "wrapper fitted state"
+            )
         if self.refit_ and state.get("selection_model_persisted") is False:
             self.selection_model_ = None
             self.selection_model_persisted_ = False
@@ -3366,11 +4968,21 @@ class _RefitParamsMixin:
                 self.dist_mean_calibration_objective_ = str(
                     state["dist_mean_calibration_objective"]
                 )
+        elif isinstance(self.model_, DistributionalBoosting):
+            self.dist_calibration_ = None
+            self.sigma_calibration_ = None
+            self.dist_scale_ = 1.0
+            self.sigma_scale_ = 1.0
+            self.dist_scale_source_ = "none"
+            self.sigma_scale_source_ = "none"
 
     def _restore_interval_calibration_state(self, state, wrapper_arrays):
         state = state or {}
         method = state.get("interval_calibration")
         scores = (wrapper_arrays or {}).get("conformal_scores")
+        fitted_metadata = getattr(self.model_, "auto_params_", {}).get(
+            "interval_calibration"
+        )
         if method is None:
             if _normalize_interval_calibration(
                 getattr(self, "interval_calibration", None)
@@ -3384,11 +4996,26 @@ class _RefitParamsMixin:
                     "invalid DarkoFit model: conformal scores have no "
                     "interval calibration state"
                 )
+            if fitted_metadata is not None:
+                raise ValueError(
+                    "invalid DarkoFit model: booster conformal provenance has "
+                    "no wrapper calibration state"
+                )
             return
         method = _normalize_interval_calibration(method)
         if method != "conformal":
             raise ValueError(
                 "invalid DarkoFit model: unsupported interval calibration"
+            )
+        if (
+            _normalize_interval_calibration(
+                getattr(self, "interval_calibration", None)
+            )
+            != method
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: conformal interval calibration "
+                "parameter does not match its fitted state"
             )
         if self._fitted_loss_name() != "Gaussian":
             raise ValueError(
@@ -3407,8 +5034,9 @@ class _RefitParamsMixin:
             or values.size == 0
             or not np.all(np.isfinite(values))
             or np.any(values < 0.0)
-            or expected_count is None
-            or int(expected_count) != values.size
+            or isinstance(expected_count, bool)
+            or not isinstance(expected_count, int)
+            or expected_count != values.size
         ):
             raise ValueError(
                 "invalid DarkoFit model: conformal calibration scores are "
@@ -3421,17 +5049,55 @@ class _RefitParamsMixin:
                 "invalid DarkoFit model: conformal calibration provenance "
                 "is missing or invalid"
             )
+        selection_count = split.get("selection_n_samples")
+        calibration_count = split.get("calibration_n_samples")
+        holdout_fraction = split.get("holdout_fraction")
+        try:
+            holdout_fraction_value = float(holdout_fraction)
+        except (TypeError, ValueError, OverflowError):
+            holdout_fraction_value = float("nan")
         if (
-            bool(split.get("calibration_rows_used_for_fit", True))
-            or bool(split.get("calibration_rows_used_for_selection", True))
-            or bool(
-                split.get("calibration_rows_used_for_dist_calibration", True)
+            isinstance(selection_count, bool)
+            or not isinstance(selection_count, int)
+            or selection_count < 0
+            or isinstance(calibration_count, bool)
+            or not isinstance(calibration_count, int)
+            or calibration_count != values.size
+            or isinstance(holdout_fraction, bool)
+            or not isinstance(holdout_fraction, (int, float))
+            or not np.isfinite(holdout_fraction_value)
+            or not math.isclose(
+                holdout_fraction_value,
+                calibration_count / (selection_count + calibration_count),
+                rel_tol=0.0,
+                abs_tol=1e-15,
             )
-            or int(split.get("calibration_n_samples", -1)) != values.size
+            or split.get("selection_source")
+            not in {"explicit_eval_set", "automatic_validation_split"}
+            or split.get("calibration_rows_used_for_fit") is not False
+            or split.get("calibration_rows_used_for_selection") is not False
+            or split.get(
+                "calibration_rows_used_for_dist_calibration"
+            ) is not False
         ):
             raise ValueError(
                 "invalid DarkoFit model: conformal holdout metadata is "
                 "inconsistent"
+            )
+        if (
+            not isinstance(fitted_metadata, Mapping)
+            or fitted_metadata.get("method") != method
+            or fitted_metadata.get("source") != source
+            or isinstance(fitted_metadata.get("score_count"), bool)
+            or not isinstance(fitted_metadata.get("score_count"), int)
+            or fitted_metadata["score_count"] != values.size
+            or fitted_metadata.get("weighted") is not False
+            or not isinstance(fitted_metadata.get("split"), Mapping)
+            or dict(fitted_metadata["split"]) != dict(split)
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: conformal wrapper and booster "
+                "provenance disagree"
             )
         self.interval_calibration_ = method
         self.interval_calibration_source_ = source
@@ -3452,6 +5118,38 @@ class _RefitParamsMixin:
             "linear_residual_enabled" not in state
             and "linear_residual_active" not in state
         ):
+            fitted_metadata = getattr(
+                self.model_, "auto_params_", {}
+            ).get("linear_residual")
+            has_linear_arrays = any(
+                str(name).startswith("linear_residual_")
+                for name in (wrapper_arrays or {})
+            )
+            if has_linear_arrays:
+                raise ValueError(
+                    "invalid DarkoFit model: linear residual arrays have no "
+                    "wrapper fitted state"
+                )
+            if fitted_metadata is not None:
+                if not isinstance(fitted_metadata, Mapping):
+                    raise ValueError(
+                        "invalid DarkoFit model: linear residual booster "
+                        "provenance is invalid"
+                    )
+                enabled = fitted_metadata.get("enabled")
+                active = fitted_metadata.get("active")
+                if (
+                    not isinstance(enabled, bool)
+                    or not isinstance(active, bool)
+                    or enabled
+                    or active
+                    or not isinstance(self.linear_residual, bool)
+                    or self.linear_residual is not enabled
+                ):
+                    raise ValueError(
+                        "invalid DarkoFit model: booster linear residual "
+                        "provenance has no matching wrapper fitted state"
+                    )
             self._set_linear_residual_disabled_state()
             return
         enabled = bool(
@@ -3474,6 +5172,9 @@ class _RefitParamsMixin:
             wrapper_arrays or {},
             n_features=getattr(self, "n_features_in_", None),
         )
+        trend.features = getattr(
+            self, "linear_residual_features", "auto"
+        )
         if (
             active
             and getattr(trend, "feature_names_", None) is not None
@@ -3495,6 +5196,23 @@ class _RefitParamsMixin:
             self.selection_linear_residual_summary_ = state[
                 "selection_linear_residual_summary"
             ]
+        restored_metadata = self._linear_residual_metadata()
+        if hasattr(self, "selection_linear_residual_summary_"):
+            restored_metadata = dict(restored_metadata)
+            restored_metadata["selection_summary"] = (
+                self.selection_linear_residual_summary_
+            )
+        fitted_metadata = getattr(self.model_, "auto_params_", {}).get(
+            "linear_residual"
+        )
+        if (
+            not isinstance(fitted_metadata, Mapping)
+            or dict(fitted_metadata) != restored_metadata
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: linear residual wrapper and booster "
+                "provenance disagree"
+            )
         self._attach_linear_residual_metadata()
 
     def _attach_dist_calibration_metadata(self, *, emit_warning=True):
@@ -3937,15 +5655,16 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         Explicit parameters outside the managed A10 fields remain in effect.
     selection_rounds : int or None, default None
         Optional cap for each ``tree_mode="auto"`` audition. The selected
-        mode is then fit from scratch with the full requested round budget.
+        mode is then fit from scratch with the full requested round budget,
+        unless a shared wall-clock deadline expires before the refit starts.
     interval_calibration : {None, "conformal"}, default None
         Opt into split-conformal Gaussian intervals using standardized
         residual scores from the explicit or automatic validation set.
     n_ensembles : int, default 1
-        Number of OOB-selected bootstrap members. Values above one opt into
-        mean aggregation. ``ensemble_bootstrap="groups"`` requires ``groups``
-        in :meth:`fit`; numeric-only members may safely share target-free
-        preprocessing.
+        Number of OOB-selected bootstrap members, from 1 through 256. Values
+        above one opt into mean aggregation. ``ensemble_bootstrap="groups"``
+        requires ``groups`` in :meth:`fit`; numeric-only members may safely
+        share target-free preprocessing.
     """
 
     def __init__(self, iterations=1000, learning_rate=None, depth=None,
@@ -4056,13 +5775,14 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self.auto_learning_rate_probe_values = auto_learning_rate_probe_values
         self.auto_learning_rate_probe_iterations = auto_learning_rate_probe_iterations
 
+    @_restore_fitted_state_on_fit_failure
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
             sample_weight=None, eval_sample_weight=None, callbacks=None,
             ordinal_features=None):
         """Fit the model, resolving any opt-in product preset."""
         self._clear_ensemble_state()
         if not getattr(self, "_suppress_wrapper_deprecation_warning", False):
-            self._warn_wrapper_deprecated_options()
+            self._warn_wrapper_deprecated_options(stacklevel=4)
         preset = _normalize_regression_preset(self.preset)
         self._clear_preset_state()
         if preset is None:
@@ -4604,11 +6324,11 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                                 n_features,
                             )
                         )
-                        groups = _extract_feature_column_by_index(
+                        calibration_groups = _extract_feature_column_by_index(
                             X_cal, feature_index
                         )
                         calibration = _fit_grouped_affine_sigma_calibration(
-                            selection_model, X_cal, y_cal, groups,
+                            selection_model, X_cal, y_cal, calibration_groups,
                             eval_sample_weight,
                             fold_stats=self.sigma_calibration_fold_stats_,
                         )
@@ -5204,6 +6924,10 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         booster, wrapper_header, wrapper_arrays = load_booster(
             path, return_wrapper_payload=True
         )
+        if not isinstance(wrapper_header, Mapping):
+            raise ValueError(
+                "invalid DarkoFit model: wrapper header must be an object"
+            )
         saved_class = wrapper_header.get("wrapper_class")
         if saved_class is not None and saved_class != cls.__name__:
             raise TypeError(
@@ -5214,15 +6938,24 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 f"{path!r} contains a multiclass model; "
                 "use DarkoClassifier.load_model"
             )
+        if not (
+            isinstance(booster, DistributionalBoosting)
+            or (
+                isinstance(booster, GradientBoosting)
+                and getattr(booster, "loss_name", None)
+                in _SCALAR_REGRESSION_LOSSES
+            )
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: regressor booster family is invalid"
+            )
         est = cls()
-        params = wrapper_header.get("params") or {}
-        if isinstance(booster, DistributionalBoosting):
-            saved_loss = params.get("loss")
-            if saved_loss is not None and saved_loss != booster.loss_name:
-                raise ValueError(
-                    "invalid DarkoFit model: wrapper loss does not match "
-                    "the loaded distributional booster"
-                )
+        params = wrapper_header.get("params", {})
+        if not isinstance(params, Mapping):
+            raise ValueError(
+                "invalid DarkoFit model: wrapper params must be an object"
+            )
+        _validate_loaded_wrapper_fitted_params(params, booster)
         known = est.get_params()
         est.set_params(**{k: v for k, v in params.items() if k in known})
         est.model_ = booster
@@ -5230,8 +6963,17 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             est.loss = booster.loss_name
         elif isinstance(booster, GradientBoosting):
             est.loss = booster.loss_name
+            if booster.loss_name == "Quantile":
+                est.alpha = float(booster.loss_kwargs["alpha"])
+        if "random_state" not in params:
+            est.random_state = getattr(booster, "random_state", None)
         state = wrapper_header.get("state", {})
-        est._restore_wrapper_state(state)
+        if not isinstance(state, Mapping):
+            raise ValueError(
+                "invalid DarkoFit model: wrapper state must be an object"
+            )
+        _validate_loaded_linear_residual_params(params, state)
+        est._restore_wrapper_state(state, params)
         est._restore_interval_calibration_state(state, wrapper_arrays)
         est._restore_linear_residual_state(state, wrapper_arrays)
         return est
@@ -5289,9 +7031,9 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         Fraction of training data held out for the automatic validation set.
         Ignored when an explicit *eval_set* is given to ``fit``.
     n_ensembles : int, default 1
-        Number of OOB-selected bootstrap members. Values above one opt into
-        soft-vote aggregation. ``ensemble_bootstrap="groups"`` requires
-        ``groups`` in :meth:`fit`.
+        Number of OOB-selected bootstrap members, from 1 through 256. Values
+        above one opt into soft-vote aggregation.
+        ``ensemble_bootstrap="groups"`` requires ``groups`` in :meth:`fit`.
     """
 
     def __init__(self, iterations=1000, learning_rate=None, depth=None,
@@ -5371,6 +7113,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         self.auto_learning_rate_probe_values = auto_learning_rate_probe_values
         self.auto_learning_rate_probe_iterations = auto_learning_rate_probe_iterations
 
+    @_restore_fitted_state_on_fit_failure
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
             sample_weight=None, eval_sample_weight=None, callbacks=None,
             ordinal_features=None):
@@ -5412,7 +7155,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         """
         self._clear_ensemble_state()
         if not getattr(self, "_suppress_wrapper_deprecation_warning", False):
-            self._warn_wrapper_deprecated_options()
+            self._warn_wrapper_deprecated_options(stacklevel=4)
         ensemble = self._fit_ensemble(
             X,
             y,
@@ -5912,17 +7655,43 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         booster, wrapper_header, wrapper_arrays = load_booster(
             path, return_wrapper_payload=True
         )
+        if not isinstance(wrapper_header, Mapping):
+            raise ValueError(
+                "invalid DarkoFit model: wrapper header must be an object"
+            )
         saved_class = wrapper_header.get("wrapper_class")
         if saved_class is not None and saved_class != cls.__name__:
             raise TypeError(
                 f"{path!r} was saved by {saved_class}, not {cls.__name__}"
             )
+        if not (
+            isinstance(booster, MulticlassBoosting)
+            or (
+                isinstance(booster, GradientBoosting)
+                and getattr(booster, "loss_name", None) == "Logloss"
+            )
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: classifier booster family is invalid"
+            )
         est = cls()
-        params = wrapper_header.get("params") or {}
+        params = wrapper_header.get("params", {})
+        if not isinstance(params, Mapping):
+            raise ValueError(
+                "invalid DarkoFit model: wrapper params must be an object"
+            )
+        _validate_loaded_wrapper_fitted_params(params, booster)
         known = est.get_params()
         est.set_params(**{k: v for k, v in params.items() if k in known})
         est.model_ = booster
-        est._restore_wrapper_state(wrapper_header.get("state", {}))
+        if "random_state" not in params:
+            est.random_state = getattr(booster, "random_state", None)
+        state = wrapper_header.get("state", {})
+        if not isinstance(state, Mapping):
+            raise ValueError(
+                "invalid DarkoFit model: wrapper state must be an object"
+            )
+        est._restore_wrapper_state(state, params)
         est._multiclass = isinstance(booster, MulticlassBoosting)
         if "classes" in wrapper_arrays:
             classes = wrapper_arrays["classes"]
@@ -5939,8 +7708,53 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                 f"{path!r} has no class labels; binary classifiers must be "
                 "saved with DarkoClassifier.save_model"
             )
+        classes = np.asarray(classes)
+        if classes.ndim != 1 or classes.size < 2:
+            raise ValueError(
+                "invalid DarkoFit model: classifier class labels are invalid"
+            )
+        if any(
+            _is_missing_value(value)
+            or (
+                isinstance(value, (float, np.floating))
+                and not np.isfinite(value)
+            )
+            for value in classes
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: classifier class labels are invalid"
+            )
+        try:
+            target_type = type_of_target(classes)
+            unique_class_count = int(np.unique(classes).size)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "invalid DarkoFit model: classifier class labels are invalid"
+            ) from exc
+        if (
+            target_type not in {"binary", "multiclass"}
+            or unique_class_count != classes.size
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: classifier class labels are invalid"
+            )
+        if est._multiclass:
+            reference_classes = np.asarray(booster.classes_)
+            if (
+                classes.size != int(booster.n_classes_)
+                or not np.array_equal(classes, reference_classes)
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: wrapper class labels do not "
+                    "match the multiclass booster"
+                )
+        elif classes.size != 2 or bool(classes[0] == classes[1]):
+            raise ValueError(
+                "invalid DarkoFit model: binary classifier must contain two "
+                "distinct class labels"
+            )
         est.classes_ = classes
-        est.n_classes_ = len(classes)
+        est.n_classes_ = int(classes.size)
         return est
 
     @property

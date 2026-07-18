@@ -14,15 +14,23 @@ ARTIFACT = ROOT / "benchmarks" / "rssi_linear_leaf_diagnosis.json"
 def _row(arm, *, marker="same", best=1.0, selected=None, cross=None):
     return {
         "arm": arm,
+        "library": (
+            "darkofit" if arm.startswith("darko_") else "chimeraboost"
+        ),
+        "fit_seconds": 1.0,
+        "resolved_learning_rate": 0.1,
         "borders_sha256": marker,
         "validation_history_sha256": marker,
         "model_sha256": marker,
         "prediction_sha256": marker,
         "fitted_tree_count": 10,
-        "best_validation_rmse": best,
+        "best_validation_rmse": (
+            None if arm == "darko_default" else best
+        ),
         "test_rmse": best,
         "linear_leaves_selected": selected,
         "cross_features_selected": cross,
+        "cross_pair_count": 30 if cross is True else 0,
     }
 
 
@@ -32,8 +40,9 @@ def _valid_rows():
         if arm in {
             "darko_shared_constant",
             "chimera_shared_constant",
-            "chimera_full_selector",
         }:
+            row = _row(arm, best=0.8)
+        elif arm == "chimera_full_selector":
             row = _row(arm, best=0.8, selected=False)
         elif arm in {
             "darko_shared_linear",
@@ -46,7 +55,7 @@ def _valid_rows():
         elif arm == "chimera_product":
             row = _row(arm, best=1.0, selected=True, cross=False)
         elif arm == "chimera_full_product":
-            row = _row(arm, best=1.0, selected=False, cross=False)
+            row = _row(arm, best=0.8, selected=False, cross=False)
         else:
             row = _row(arm, best=1.0)
         rows.append(row)
@@ -107,6 +116,64 @@ def test_analysis_rejects_full_selector_that_disagrees_with_forced_race():
         diagnosis.analyze(rows)
 
 
+def test_analysis_rejects_selector_model_that_disagrees_with_winning_lane():
+    rows = _valid_rows()
+    for row in rows:
+        if row["arm"] == "chimera_full_selector":
+            row["model_sha256"] = "different"
+    with pytest.raises(RuntimeError, match="model_sha256"):
+        diagnosis.analyze(rows)
+
+
+def test_analysis_rejects_missing_selector_decisions():
+    rows = _valid_rows()
+    for row in rows:
+        if row["arm"] == "chimera_capped_selector":
+            row["linear_leaves_selected"] = None
+    with pytest.raises(RuntimeError, match="resolved linear-leaf"):
+        diagnosis.analyze(rows)
+
+
+def test_analysis_rejects_invalid_numeric_or_library_evidence():
+    rows = _valid_rows()
+    for row in rows:
+        if row["arm"] == "chimera_product":
+            row["test_rmse"] = -1.0
+    with pytest.raises(RuntimeError, match="invalid numeric evidence"):
+        diagnosis.analyze(rows)
+
+    rows = _valid_rows()
+    for row in rows:
+        if row["arm"] == "chimera_product":
+            row["library"] = "darkofit"
+    with pytest.raises(RuntimeError, match="invalid library ledger"):
+        diagnosis.analyze(rows)
+
+    rows = _valid_rows()
+    for row in rows:
+        if row["arm"] == "chimera_product":
+            row["test_rmse"] = "1.0"
+    with pytest.raises(RuntimeError, match="invalid numeric evidence"):
+        diagnosis.analyze(rows)
+
+
+def test_analysis_rejects_contradictory_cross_pair_ledger():
+    rows = _valid_rows()
+    for row in rows:
+        if row["arm"] == "chimera_product":
+            row["cross_pair_count"] = 30
+    with pytest.raises(RuntimeError, match="invalid selector ledger"):
+        diagnosis.analyze(rows)
+
+    rows = _valid_rows()
+    for row in rows:
+        if row["arm"] == "chimera_product":
+            row["cross_features_selected"] = True
+            row["cross_pair_count"] = 1
+    with pytest.raises(RuntimeError, match="invalid selector ledger"):
+        diagnosis.analyze(rows)
+
+
 def test_arm_manifest_has_no_duplicate_or_undeclared_lane():
     assert len(diagnosis.ARMS) == len(set(diagnosis.ARMS))
     assert set(diagnosis.ARMS) == {
@@ -124,10 +191,49 @@ def test_arm_manifest_has_no_duplicate_or_undeclared_lane():
     }
 
 
+def test_rssi_artifact_create_is_atomic_and_create_only(tmp_path, monkeypatch):
+    output = tmp_path / "result.json"
+    diagnosis._atomic_create(output, b"first")
+    assert output.read_bytes() == b"first"
+    with pytest.raises(FileExistsError, match="refusing to replace"):
+        diagnosis._atomic_create(output, b"second")
+    monkeypatch.setattr(
+        diagnosis,
+        "_source_state",
+        lambda *_args, **_kwargs: pytest.fail("diagnosis should not start"),
+    )
+    with pytest.raises(FileExistsError, match="refusing to replace"):
+        diagnosis.run(output)
+
+
+def test_rssi_artifact_rejects_mutable_symlink_parent(tmp_path):
+    real = tmp_path / "real"
+    real.mkdir()
+    linked = tmp_path / "linked"
+    linked.symlink_to(real, target_is_directory=True)
+    with pytest.raises(RuntimeError, match="symlink output"):
+        diagnosis._atomic_create(
+            linked / "missing" / "result.json",
+            b"result",
+        )
+    assert list(real.iterdir()) == []
+
+
 def test_recorded_artifact_reproduces_binding_diagnosis(
     assert_analysis_equal,
 ):
     artifact = json.loads(ARTIFACT.read_text())
+    assert artifact["schema_version"] == 1
+    assert artifact["protocol"]["sha256"] == diagnosis._sha256(
+        diagnosis.PROTOCOL
+    )
+    assert artifact["spent_boundary"][
+        "registry_sha256"
+    ] == diagnosis._sha256(diagnosis.REGISTRY)
+    assert artifact["spent_boundary"][
+        "prior_result_sha256"
+    ] == diagnosis._sha256(diagnosis.PRIOR_RESULT)
+    diagnosis.validate_artifact(artifact)
     analysis = diagnosis.analyze(artifact["results"])
     assert_analysis_equal(artifact["analysis"], analysis)
     assert artifact["spent_boundary"]["fresh_claim_eligible"] is False
@@ -140,3 +246,26 @@ def test_recorded_artifact_reproduces_binding_diagnosis(
         ]
         < 1.0
     )
+
+
+def test_artifact_validation_rejects_forged_analysis_and_split_hash():
+    artifact = json.loads(ARTIFACT.read_text())
+    changed = copy.deepcopy(artifact)
+    changed["analysis"]["forced_full_budget_validation_winner"] = "linear"
+    with pytest.raises(RuntimeError, match="not reproducible"):
+        diagnosis.validate_artifact(changed)
+
+    changed = copy.deepcopy(artifact)
+    changed["data"]["shared_fit_index_sha256"] = "forged"
+    with pytest.raises(RuntimeError, match="data ledger"):
+        diagnosis.validate_artifact(changed)
+
+    changed = copy.deepcopy(artifact)
+    changed["data"]["shared_fit_index_sha256"] = "0" * 64
+    with pytest.raises(RuntimeError, match="frozen evidence ledger"):
+        diagnosis.validate_artifact(changed)
+
+    changed = copy.deepcopy(artifact)
+    changed["results"][0]["fit_seconds"] += 1.0
+    with pytest.raises(RuntimeError, match="frozen artifact changed"):
+        diagnosis.validate_artifact(changed)

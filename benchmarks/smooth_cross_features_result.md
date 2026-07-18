@@ -20,6 +20,11 @@ margin remains a nominee, not a default; it must face fresh T5 confirmation.
 - Invalid attempts and their corrections:
   [`smooth_cross_features_invalid_attempt.md`](smooth_cross_features_invalid_attempt.md).
 
+Protocol erratum: the frozen protocol's final sentence says the analyzer
+reports RSS. The runner did not record RSS, so no RSS measurement or claim
+exists for this screen. The protocol bytes remain unchanged to preserve the
+raw artifact's recorded hash; this correction does not affect the decision.
+
 ## Implementation result
 
 DarkoFit's target-free external augmentation is exact to ChimeraBoost 0.15's
@@ -89,4 +94,3 @@ largest validation gain among the two observed harmful crossed splits
   cost in the T5 protocol.
 - Do not expose or promote an automatic cross-feature default from this
   three-dataset result.
-

@@ -2,6 +2,17 @@
 
 **Decision: `freeze_t7_research_candidates`.**
 
+## Evidence bindings
+
+- Frozen raw file SHA-256: `cf199793c5e3349ee4a8e3575870f9cacec2905e54b84fc4bcf2703a70cb518f`
+- Frozen raw canonical SHA-256: `6673fe69c5e09d1e020252237c322e7795c14effdf375e9dd1c0db3ecc4772ee`
+- Frozen protocol SHA-256: `18200d9bd8f6b43ec345be5755ce795f6284ae399a43eeae0144cd860718f460`
+- Original run-time runner SHA-256: `be1178f8593d3ff52a19963812932b399fbfbc3fd1942b97ad663ee9fe728a49`
+- Current hardened analyzer SHA-256: `1cc5bef2bcc2f190395e5cd34a58c6dbbde1ac7ea5a3e5a70ad47ca9465e0ab2`
+- Current hardened runner SHA-256: `aa716997bbf52528ca41a70a5c770bf098d3ab3941f283b0ccc7a962b1d0dd32`
+- Frozen C2 split-helper SHA-256: `8da023ee1c6ab1311d0b8b152c8bcd82f80d6f323020efb4e86c71870caa8952`
+- Current C2 split-helper SHA-256: `8da023ee1c6ab1311d0b8b152c8bcd82f80d6f323020efb4e86c71870caa8952`
+
 | Contrast | Test ratio | Validation ratio | Worst task | W/L/T |
 |---|---:|---:|---:|---:|
 | `ordered_over_plain` | 1.171545 | 1.127883 | 1.598850 | 2/6/0 |
@@ -42,10 +53,19 @@ equal-dataset RMSE ratio of
 | CatBoost arm | DarkoFit / CatBoost RMSE |
 |---|---:|
 | `default` | 1.029345 |
+| `ordered` | 0.878621 |
+| `plain` | 1.029345 |
+| `border_128` | 1.009231 |
+| `leaf10_no_backtracking` | 1.009320 |
+| `leaf10_any_improvement` | 1.011111 |
+| `ctr_complexity_2` | 1.021204 |
+| `depth_4` | 0.870853 |
+| `depth_8` | 1.067648 |
 | `depth_by_n_p` | 1.069729 |
 
 This is a descriptive historical anchor, not a current-release confirmation
-claim. The surviving CatBoost depth policy widens rather than closes that
+claim. All nine measured CatBoost arms and the assembled depth policy are
+reported. The surviving CatBoost depth policy widens rather than closes the
 historical competitive gap; porting the rule to DarkoFit would require a
 separate implementation and outcome-unseen evaluation.
 

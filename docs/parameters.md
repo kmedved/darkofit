@@ -42,20 +42,25 @@ concrete selected mode with `preset=None`.
 
 `selection_rounds` currently applies only to `tree_mode="auto"`. The capped
 auditions choose a mode; DarkoFit then starts a fresh full-budget fit of that
-mode. Leaving it at `None` preserves the historical selection path.
+mode. If a shared wall-clock deadline has expired before that refit starts,
+the selected capped audition is retained and fitted metadata records
+`final_refit_status="skipped_deadline"`. Leaving it at `None` preserves the
+historical selection path.
 
 ## Ensembles
 
 | Parameter | Default | Purpose |
 |---|---:|---|
-| `n_ensembles` | `1` | Number of independently bootstrapped members. Values above one opt into ensemble mode. |
+| `n_ensembles` | `1` | Number of independently bootstrapped members, from 1 through 256. Values above one opt into ensemble mode. |
 | `ensemble_bootstrap` | `"rows"` | Bootstrap rows, or complete entities with `"groups"` and `groups=` in `fit`. |
 | `ensemble_shared_preprocessing` | `True` | Reuse one target-free numeric preprocessor when safe. Categorical and ordinal fits fall back to member-local preprocessing. |
 
 Each member uses its out-of-bag rows as an explicit early-stopping set.
 Regression predictions are member means; classification probabilities are
 soft-vote means. `shap_values()` averages member contributions and expected
-values. Group bootstraps keep sampled and OOB groups disjoint.
+values. Group bootstraps keep sampled and OOB groups disjoint. Supplying
+`groups=` in ensemble mode requires `ensemble_bootstrap="groups"`; row
+bootstraps reject groups rather than silently splitting entities.
 
 Ensemble archives remain pickle-free: `save_model()` stores independently
 loadable member NPZ payloads inside one validated outer NPZ. Explicit

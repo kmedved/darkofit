@@ -5,10 +5,17 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.machinery
+import importlib.util
 import json
 import math
+import os
+import secrets
+import stat
 import subprocess
 import sys
+import tempfile
+import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -23,8 +30,6 @@ ROOT = Path(__file__).resolve().parents[1]
 CHIMERA_ROOT = ROOT.parent / "chimeraboost"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-if str(CHIMERA_ROOT) not in sys.path:
-    sys.path.insert(0, str(CHIMERA_ROOT))
 
 TASK_ID = 363132
 DATASET_ID = 45718
@@ -38,6 +43,7 @@ THREADS = 6
 EXPECTED_SHAPE = (5760, 7)
 EXPECTED_SPLIT_DIMENSIONS = (1, 10, 1)
 EXPECTED_CHIMERA_HEAD = "851ab7fa79fbb2a7f698fbc1a00952e1bd18c62d"
+EXPECTED_CROSS_PAIR_COUNT = 30
 PROTOCOL = ROOT / "benchmarks" / "rssi_linear_leaf_diagnosis_protocol.md"
 REGISTRY = ROOT / "benchmarks" / "fresh_confirmation_registry.json"
 PRIOR_RESULT = ROOT / "benchmarks" / "fresh_selector_confirmation.json"
@@ -66,10 +72,432 @@ EXACT_FIELDS = (
     "best_validation_rmse",
     "test_rmse",
 )
+_CHIMERA_MODULE_NAME = "_darkofit_rssi_frozen_chimeraboost"
+_CHIMERA_IMPORT_LOCK = threading.Lock()
+_CHIMERA_MODULE = None
+_CHIMERA_MODULES = None
+_CHIMERA_REGRESSOR = None
+FROZEN_EVIDENCE_SHA256 = (
+    "aabf23b858511efe39a3a3be663d89883d5315ecd77c2fb9451eb297017d3ddf"
+)
+FROZEN_ARTIFACT_SHA256 = (
+    "a6f408909ecb12fb3bad25f68f03e83bfaaa8fd81f0c0d9c9eb166bbd4754066"
+)
+
+
+def _private_chimera_provenance_is_valid(
+    package,
+    initializer,
+    module,
+    regressor,
+    private_modules,
+):
+    if not isinstance(private_modules, dict):
+        return False
+    source_name = getattr(module, "__file__", None)
+    regressor_name = getattr(regressor, "__module__", None)
+    regressor_module = (
+        private_modules.get(regressor_name)
+        if isinstance(regressor_name, str)
+        else None
+    )
+    regressor_source_name = getattr(regressor_module, "__file__", None)
+    regressor_init_code = getattr(
+        getattr(regressor, "__init__", None),
+        "__code__",
+        None,
+    )
+    if (
+        private_modules.get(_CHIMERA_MODULE_NAME) is not module
+        or not isinstance(source_name, (str, os.PathLike))
+        or Path(source_name).resolve() != initializer.resolve()
+        or not isinstance(regressor, type)
+        or not isinstance(regressor_name, str)
+        or not regressor_name.startswith(f"{_CHIMERA_MODULE_NAME}.")
+        or regressor_module is None
+        or getattr(module, "ChimeraBoostRegressor", None) is not regressor
+        or not isinstance(regressor_source_name, (str, os.PathLike))
+        or not Path(regressor_source_name).resolve().is_relative_to(
+            package.resolve()
+        )
+        or regressor_init_code is None
+        or Path(regressor_init_code.co_filename).resolve()
+        != Path(regressor_source_name).resolve()
+    ):
+        return False
+    for name, loaded in private_modules.items():
+        loaded_spec = getattr(loaded, "__spec__", None)
+        loaded_loader = getattr(loaded_spec, "loader", None)
+        loaded_file = getattr(loaded, "__file__", None)
+        loaded_origin = getattr(loaded_spec, "origin", None)
+        if (
+            sys.modules.get(name) is not loaded
+            or getattr(loaded, "__name__", None) != name
+            or getattr(loaded_spec, "name", None) != name
+            or type(loaded_loader) is not importlib.machinery.SourceFileLoader
+            or getattr(loaded_loader, "name", None) != name
+            or not isinstance(loaded_file, (str, os.PathLike))
+            or not isinstance(loaded_origin, (str, os.PathLike))
+            or not isinstance(
+                getattr(loaded_loader, "path", None),
+                (str, os.PathLike),
+            )
+            or Path(loaded_file).resolve() != Path(loaded_origin).resolve()
+            or Path(loaded_file).resolve()
+            != Path(loaded_loader.path).resolve()
+            or not Path(loaded_file).resolve().is_relative_to(
+                package.resolve()
+            )
+        ):
+            return False
+    return True
+
+
+def _chimera_regressor_class():
+    """Load the frozen sibling package without changing global import order."""
+    global _CHIMERA_MODULE, _CHIMERA_MODULES, _CHIMERA_REGRESSOR
+
+    package = CHIMERA_ROOT / "chimeraboost"
+    initializer = package / "__init__.py"
+    with _CHIMERA_IMPORT_LOCK:
+        installed = sys.modules.get(_CHIMERA_MODULE_NAME)
+        if _CHIMERA_MODULE is None:
+            occupied = [
+                name
+                for name in sys.modules
+                if name == _CHIMERA_MODULE_NAME
+                or name.startswith(f"{_CHIMERA_MODULE_NAME}.")
+            ]
+            if occupied:
+                raise RuntimeError(
+                    "imported chimeraboost from the wrong checkout: "
+                    "private module slot was already occupied"
+                )
+            spec = importlib.util.spec_from_file_location(
+                _CHIMERA_MODULE_NAME,
+                initializer,
+                submodule_search_locations=[str(package)],
+            )
+            if spec is None or spec.loader is None:
+                raise RuntimeError(
+                    f"cannot load frozen chimeraboost package: {initializer}"
+                )
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[_CHIMERA_MODULE_NAME] = module
+            try:
+                spec.loader.exec_module(module)
+            except BaseException:
+                for name in tuple(sys.modules):
+                    if name == _CHIMERA_MODULE_NAME or name.startswith(
+                        f"{_CHIMERA_MODULE_NAME}."
+                    ):
+                        sys.modules.pop(name, None)
+                raise
+            regressor = getattr(module, "ChimeraBoostRegressor", None)
+            private_modules = {
+                name: loaded
+                for name, loaded in sys.modules.items()
+                if name == _CHIMERA_MODULE_NAME
+                or name.startswith(f"{_CHIMERA_MODULE_NAME}.")
+            }
+            if not _private_chimera_provenance_is_valid(
+                package,
+                initializer,
+                module,
+                regressor,
+                private_modules,
+            ):
+                for name in tuple(sys.modules):
+                    if name == _CHIMERA_MODULE_NAME or name.startswith(
+                        f"{_CHIMERA_MODULE_NAME}."
+                    ):
+                        sys.modules.pop(name, None)
+                raise RuntimeError(
+                    "imported chimeraboost from the wrong checkout"
+                )
+            _CHIMERA_MODULE = module
+            _CHIMERA_MODULES = private_modules
+            _CHIMERA_REGRESSOR = regressor
+        elif (
+            installed is not _CHIMERA_MODULE
+            or _CHIMERA_MODULES is None
+            or {
+                name
+                for name in sys.modules
+                if name == _CHIMERA_MODULE_NAME
+                or name.startswith(f"{_CHIMERA_MODULE_NAME}.")
+            }
+            != set(_CHIMERA_MODULES)
+            or any(
+                sys.modules.get(name) is not loaded
+                for name, loaded in _CHIMERA_MODULES.items()
+            )
+            or not _private_chimera_provenance_is_valid(
+                package,
+                initializer,
+                _CHIMERA_MODULE,
+                _CHIMERA_REGRESSOR,
+                _CHIMERA_MODULES,
+            )
+        ):
+            raise RuntimeError(
+                "imported chimeraboost from the wrong checkout: "
+                "private module slot changed"
+            )
+        return _CHIMERA_REGRESSOR
 
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _json_sha256(value: Any) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            value,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def _reject_mutable_symlink_output_parents(path: Path) -> None:
+    for directory in (path.parent, *path.parent.parents):
+        if directory.is_symlink() and os.access(directory.parent, os.W_OK):
+            raise RuntimeError(
+                f"refusing symlink output directory: {directory}"
+            )
+
+
+def _create_missing_directories(
+    directory: Path,
+    created: list[tuple[Path, tuple[int, int]]],
+) -> None:
+    missing = []
+    current = directory
+    while not current.exists():
+        if current.is_symlink():
+            raise RuntimeError(
+                f"refusing symlink output directory: {current}"
+            )
+        missing.append(current)
+        current = current.parent
+    if not current.is_dir():
+        raise NotADirectoryError(
+            f"output parent is not a directory: {current}"
+        )
+    for current in reversed(missing):
+        try:
+            current.mkdir()
+        except FileExistsError:
+            if not current.is_dir() or current.is_symlink():
+                raise
+        else:
+            metadata = current.lstat()
+            created.append(
+                (current, (metadata.st_dev, metadata.st_ino))
+            )
+
+
+def _remove_owned_empty_directories(
+    directories: list[tuple[Path, tuple[int, int]]],
+) -> None:
+    for directory, identity in reversed(directories):
+        try:
+            current = directory.lstat()
+            if (
+                stat.S_ISDIR(current.st_mode)
+                and (current.st_dev, current.st_ino) == identity
+            ):
+                directory.rmdir()
+        except OSError:
+            pass
+
+
+def _assert_output_parent_identity(
+    path: Path,
+    identity: tuple[int, int],
+) -> None:
+    _reject_mutable_symlink_output_parents(path)
+    try:
+        current = path.parent.lstat()
+    except OSError as exc:
+        raise RuntimeError(f"output parent changed: {path.parent}") from exc
+    if (
+        not stat.S_ISDIR(current.st_mode)
+        or (current.st_dev, current.st_ino) != identity
+    ):
+        raise RuntimeError(f"output parent changed: {path.parent}")
+
+
+def _open_output_parent(path: Path) -> tuple[int, tuple[int, int]]:
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+    )
+    descriptor = os.open(path.parent, flags)
+    try:
+        current = os.fstat(descriptor)
+        identity = (current.st_dev, current.st_ino)
+        if not stat.S_ISDIR(current.st_mode):
+            raise RuntimeError(
+                f"output parent is not a directory: {path.parent}"
+            )
+        _assert_output_parent_identity(path, identity)
+        return descriptor, identity
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def _temporary_at(
+    directory_descriptor: int,
+    output_name: str,
+) -> tuple[int, str, tuple[int, int]]:
+    flags = (
+        os.O_WRONLY
+        | os.O_CREAT
+        | os.O_EXCL
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    for _attempt in range(128):
+        name = f".{output_name}.{secrets.token_hex(8)}.tmp"
+        try:
+            descriptor = os.open(
+                name,
+                flags,
+                0o600,
+                dir_fd=directory_descriptor,
+            )
+        except FileExistsError:
+            continue
+        current = os.fstat(descriptor)
+        return descriptor, name, (current.st_dev, current.st_ino)
+    raise FileExistsError(
+        f"unable to reserve temporary output for {output_name}"
+    )
+
+
+def _stat_at(directory_descriptor: int, name: str) -> os.stat_result:
+    return os.stat(
+        name,
+        dir_fd=directory_descriptor,
+        follow_symlinks=False,
+    )
+
+
+def _exists_at(directory_descriptor: int, name: str) -> bool:
+    try:
+        _stat_at(directory_descriptor, name)
+    except FileNotFoundError:
+        return False
+    return True
+
+
+def _unlink_if_owned_at(
+    directory_descriptor: int,
+    name: str,
+    identity: tuple[int, int],
+) -> None:
+    try:
+        current = _stat_at(directory_descriptor, name)
+    except FileNotFoundError:
+        return
+    if (
+        stat.S_ISREG(current.st_mode)
+        and (current.st_dev, current.st_ino) == identity
+    ):
+        os.unlink(name, dir_fd=directory_descriptor)
+
+
+def _atomic_create(path: Path, value: bytes) -> None:
+    path = Path(os.path.abspath(os.path.expanduser(os.fspath(path))))
+    if path.exists() or path.is_symlink():
+        raise FileExistsError(f"refusing to replace existing output: {path}")
+    _reject_mutable_symlink_output_parents(path)
+    created_directories: list[tuple[Path, tuple[int, int]]] = []
+    parent_descriptor = None
+    parent_identity = None
+    temporary_name = None
+    identity = None
+    created = False
+    try:
+        _create_missing_directories(path.parent, created_directories)
+        parent_descriptor, parent_identity = _open_output_parent(path)
+        if _exists_at(parent_descriptor, path.name):
+            raise FileExistsError(
+                f"refusing to replace existing output: {path}"
+            )
+        descriptor, temporary_name, identity = _temporary_at(
+            parent_descriptor,
+            path.name,
+        )
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(value)
+            handle.flush()
+            os.fsync(handle.fileno())
+        _assert_output_parent_identity(path, parent_identity)
+        current = _stat_at(parent_descriptor, temporary_name)
+        if (
+            not stat.S_ISREG(current.st_mode)
+            or (current.st_dev, current.st_ino) != identity
+        ):
+            raise RuntimeError(
+                "temporary output changed before publication: "
+                f"{path.parent / temporary_name}"
+            )
+        os.link(
+            temporary_name,
+            path.name,
+            src_dir_fd=parent_descriptor,
+            dst_dir_fd=parent_descriptor,
+            follow_symlinks=False,
+        )
+        created = True
+        _assert_output_parent_identity(path, parent_identity)
+        current = _stat_at(parent_descriptor, path.name)
+        if (
+            not stat.S_ISREG(current.st_mode)
+            or (current.st_dev, current.st_ino) != identity
+        ):
+            raise RuntimeError(f"published output changed: {path}")
+        _unlink_if_owned_at(
+            parent_descriptor,
+            temporary_name,
+            identity,
+        )
+        _assert_output_parent_identity(path, parent_identity)
+    except BaseException:
+        if parent_descriptor is not None and identity is not None:
+            if created:
+                try:
+                    _unlink_if_owned_at(
+                        parent_descriptor,
+                        path.name,
+                        identity,
+                    )
+                except OSError:
+                    pass
+            if temporary_name is not None:
+                try:
+                    _unlink_if_owned_at(
+                        parent_descriptor,
+                        temporary_name,
+                        identity,
+                    )
+                except OSError:
+                    pass
+        _remove_owned_empty_directories(created_directories)
+        raise
+    finally:
+        if parent_descriptor is not None:
+            try:
+                os.close(parent_descriptor)
+            except OSError:
+                pass
 
 
 def _array_sha256(value, dtype=None) -> str:
@@ -105,7 +533,14 @@ def _source_state(path: Path, *, expected_head: str | None = None) -> dict[str, 
 
 
 def _verify_spent_boundary() -> dict[str, Any]:
-    registry = json.loads(REGISTRY.read_text())
+    registry_payload = REGISTRY.read_bytes()
+    registry = json.loads(registry_payload)
+    if (
+        not isinstance(registry, dict)
+        or registry.get("schema_version") != 1
+        or not isinstance(registry.get("coordinates"), list)
+    ):
+        raise RuntimeError("RSSI spent-coordinate registry has an unknown schema")
     coordinates = {
         (
             int(row["task_id"]),
@@ -119,7 +554,14 @@ def _verify_spent_boundary() -> dict[str, Any]:
     if coordinate not in coordinates:
         raise RuntimeError("RSSI diagnostic coordinate is not declared spent")
 
-    prior = json.loads(PRIOR_RESULT.read_text())
+    prior_payload = PRIOR_RESULT.read_bytes()
+    prior = json.loads(prior_payload)
+    if (
+        not isinstance(prior, dict)
+        or prior.get("schema_version") != 1
+        or not isinstance(prior.get("results"), list)
+    ):
+        raise RuntimeError("RSSI prior-result artifact has an unknown schema")
     scored = False
     for result in prior["results"]:
         if int(result["task_id"]) != TASK_ID:
@@ -141,8 +583,8 @@ def _verify_spent_boundary() -> dict[str, Any]:
             "fold": OUTER_FOLD,
             "sample": OUTER_SAMPLE,
         },
-        "registry_sha256": _sha256(REGISTRY),
-        "prior_result_sha256": _sha256(PRIOR_RESULT),
+        "registry_sha256": hashlib.sha256(registry_payload).hexdigest(),
+        "prior_result_sha256": hashlib.sha256(prior_payload).hexdigest(),
         "prior_outcome_exists": True,
         "fresh_claim_eligible": False,
     }
@@ -397,7 +839,7 @@ def _fit_chimera(
     validation_indices,
     outer_test,
 ):
-    from chimeraboost import ChimeraBoostRegressor
+    ChimeraBoostRegressor = _chimera_regressor_class()
 
     common = {
         "n_estimators": 1000,
@@ -489,12 +931,117 @@ def _exact_pair(records: dict[str, dict[str, Any]], left: str, right: str):
     }
 
 
+def _is_hex_digest(value: Any, length: int) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == length
+        and all(character in "0123456789abcdef" for character in value)
+    )
+
+
+def _is_git_sha(value: Any) -> bool:
+    return _is_hex_digest(value, 40)
+
+
+def _is_sha256(value: Any) -> bool:
+    return _is_hex_digest(value, 64)
+
+
+def _valid_aware_timestamp(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:
+        return False
+    return parsed.tzinfo is not None and parsed.utcoffset() is not None
+
+
+def _analysis_equal(left: Any, right: Any) -> bool:
+    if isinstance(left, bool) or isinstance(right, bool):
+        return left is right
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, float) and isinstance(right, float):
+        return math.isclose(
+            left,
+            right,
+            rel_tol=1e-14,
+            abs_tol=1e-15,
+        )
+    if isinstance(left, dict) and isinstance(right, dict):
+        return left.keys() == right.keys() and all(
+            _analysis_equal(left[key], right[key]) for key in left
+        )
+    if isinstance(left, list) and isinstance(right, list):
+        return len(left) == len(right) and all(
+            _analysis_equal(left_value, right_value)
+            for left_value, right_value in zip(left, right)
+        )
+    return left == right
+
+
 def analyze(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    if not isinstance(rows, list) or any(
+        not isinstance(row, dict) or not isinstance(row.get("arm"), str)
+        for row in rows
+    ):
+        raise RuntimeError("RSSI diagnosis arm ledger is invalid")
     records = {row["arm"]: row for row in rows}
     missing = sorted(set(ARMS) - set(records))
     extra = sorted(set(records) - set(ARMS))
     if missing or extra or len(rows) != len(ARMS):
         raise RuntimeError(f"arm set mismatch: missing={missing}, extra={extra}")
+    for arm, row in records.items():
+        expected_library = "darkofit" if arm.startswith("darko_") else "chimeraboost"
+        if row.get("library") != expected_library:
+            raise RuntimeError(f"{arm} has an invalid library ledger")
+        numeric_fields = (
+            row.get("fit_seconds"),
+            row.get("test_rmse"),
+            row.get("resolved_learning_rate"),
+        )
+        if any(
+            not isinstance(value, (int, float)) or isinstance(value, bool)
+            for value in numeric_fields
+        ):
+            raise RuntimeError(f"{arm} has invalid numeric evidence")
+        fit_seconds, test_rmse, learning_rate = map(float, numeric_fields)
+        tree_count = row.get("fitted_tree_count")
+        cross_pair_count = row.get("cross_pair_count")
+        if (
+            not math.isfinite(fit_seconds)
+            or fit_seconds <= 0.0
+            or not math.isfinite(test_rmse)
+            or test_rmse <= 0.0
+            or not math.isfinite(learning_rate)
+            or learning_rate <= 0.0
+            or not isinstance(tree_count, int)
+            or isinstance(tree_count, bool)
+            or tree_count <= 0
+            or not isinstance(cross_pair_count, int)
+            or isinstance(cross_pair_count, bool)
+            or cross_pair_count < 0
+        ):
+            raise RuntimeError(f"{arm} has invalid numeric evidence")
+        best = row.get("best_validation_rmse")
+        if arm != "darko_default" and (
+            not isinstance(best, (int, float))
+            or isinstance(best, bool)
+            or not math.isfinite(float(best))
+            or float(best) <= 0.0
+        ):
+            raise RuntimeError(f"{arm} has invalid validation evidence")
+        if arm == "darko_default" and best is not None:
+            raise RuntimeError(f"{arm} has invalid validation evidence")
+        for field in (
+            "borders_sha256",
+            "validation_history_sha256",
+            "model_sha256",
+            "prediction_sha256",
+        ):
+            if not isinstance(row.get(field), str) or not row[field]:
+                raise RuntimeError(f"{arm} has an invalid fingerprint ledger")
 
     parity = [
         _exact_pair(records, "darko_shared_constant", "chimera_shared_constant"),
@@ -503,6 +1050,36 @@ def analyze(rows: list[dict[str, Any]]) -> dict[str, Any]:
             records, "darko_matched_auto20_linear", "darko_shared_linear"
         ),
     ]
+    for arm in ("chimera_full_selector", "chimera_capped_selector"):
+        if not isinstance(records[arm].get("linear_leaves_selected"), bool):
+            raise RuntimeError(f"{arm} lacks a resolved linear-leaf decision")
+    for arm in ("chimera_full_product", "chimera_product"):
+        if not isinstance(
+            records[arm].get("linear_leaves_selected"), bool
+        ) or not isinstance(records[arm].get("cross_features_selected"), bool):
+            raise RuntimeError(f"{arm} lacks a resolved product decision")
+    for arm, row in records.items():
+        linear_selected = row.get("linear_leaves_selected")
+        cross_selected = row.get("cross_features_selected")
+        pair_count = row["cross_pair_count"]
+        if arm.startswith("darko_") or arm in {
+            "chimera_shared_constant",
+            "chimera_shared_linear",
+        }:
+            expected_decisions = (None, None)
+        elif arm in {"chimera_full_selector", "chimera_capped_selector"}:
+            expected_decisions = (linear_selected, None)
+        else:
+            expected_decisions = (linear_selected, cross_selected)
+        if (
+            (linear_selected, cross_selected) != expected_decisions
+            or (
+                cross_selected is True
+                and pair_count != EXPECTED_CROSS_PAIR_COUNT
+            )
+            or (cross_selected is not True and pair_count != 0)
+        ):
+            raise RuntimeError(f"{arm} has an invalid selector ledger")
     constant_best = records["chimera_shared_constant"]["best_validation_rmse"]
     linear_best = records["chimera_shared_linear"]["best_validation_rmse"]
     full_winner = "linear" if linear_best < constant_best else "constant"
@@ -518,6 +1095,29 @@ def analyze(rows: list[dict[str, Any]]) -> dict[str, Any]:
         if records["chimera_capped_selector"]["linear_leaves_selected"]
         else "constant"
     )
+    _exact_pair(
+        records,
+        "chimera_full_selector",
+        f"chimera_shared_{full_selected}",
+    )
+    _exact_pair(
+        records,
+        "chimera_capped_selector",
+        f"chimera_shared_{capped_selected}",
+    )
+    if (
+        records["chimera_full_product"]["linear_leaves_selected"]
+        != (full_selected == "linear")
+        or records["chimera_product"]["linear_leaves_selected"]
+        != (capped_selected == "linear")
+    ):
+        raise RuntimeError("product selector disagrees with its linear-leaf race")
+    if not records["chimera_full_product"]["cross_features_selected"]:
+        _exact_pair(
+            records,
+            "chimera_full_product",
+            "chimera_full_selector",
+        )
 
     product = records["chimera_product"]["test_rmse"]
     default = records["darko_default"]["test_rmse"]
@@ -573,7 +1173,184 @@ def analyze(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def validate_artifact(
+    artifact: Any,
+    *,
+    require_frozen: bool = True,
+) -> dict[str, Any]:
+    if (
+        not isinstance(artifact, dict)
+        or artifact.get("schema_version") != 1
+        or isinstance(artifact.get("schema_version"), bool)
+        or not _valid_aware_timestamp(artifact.get("created_at"))
+    ):
+        raise RuntimeError("RSSI diagnosis artifact has an unknown schema")
+    protocol = artifact.get("protocol")
+    if (
+        not isinstance(protocol, dict)
+        or protocol.get("name") != "rssi_linear_leaf_diagnosis"
+        or protocol.get("path") != str(PROTOCOL.relative_to(ROOT))
+        or protocol.get("sha256") != _sha256(PROTOCOL)
+        or protocol.get("arms") != list(ARMS)
+        or protocol.get("timing_claim_eligible") is not False
+    ):
+        raise RuntimeError("RSSI diagnosis protocol ledger changed")
+    if artifact.get("spent_boundary") != _verify_spent_boundary():
+        raise RuntimeError("RSSI diagnosis spent-boundary ledger changed")
+
+    sources = artifact.get("sources")
+    if not isinstance(sources, dict) or set(sources) != {
+        "darkofit",
+        "chimeraboost",
+    }:
+        raise RuntimeError("RSSI diagnosis source ledger changed")
+    for name, source in sources.items():
+        if (
+            not isinstance(source, dict)
+            or source.get("clean") is not True
+            or not isinstance(source.get("path"), str)
+            or not Path(source["path"]).is_absolute()
+            or not isinstance(source.get("branch"), str)
+            or not source["branch"]
+            or not _is_git_sha(source.get("head"))
+        ):
+            raise RuntimeError(f"RSSI diagnosis {name} source ledger changed")
+    if sources["chimeraboost"]["head"] != EXPECTED_CHIMERA_HEAD:
+        raise RuntimeError("RSSI diagnosis ChimeraBoost source ledger changed")
+
+    data = artifact.get("data")
+    integer_fields = {
+        "task_id": TASK_ID,
+        "dataset_id": DATASET_ID,
+        "rows": EXPECTED_SHAPE[0],
+        "features": EXPECTED_SHAPE[1],
+    }
+    if (
+        not isinstance(data, dict)
+        or data.get("dataset_name") != TASK_NAME
+        or data.get("target_name") != TARGET_NAME
+        or any(
+            not isinstance(data.get(field), int)
+            or isinstance(data.get(field), bool)
+            or data[field] != expected
+            for field, expected in integer_fields.items()
+        )
+        or any(
+            not _is_sha256(data.get(field))
+            for field in (
+                "X_sha256",
+                "y_sha256",
+                "outer_train_index_sha256",
+                "outer_test_index_sha256",
+                "shared_fit_index_sha256",
+                "shared_validation_index_sha256",
+            )
+        )
+    ):
+        raise RuntimeError("RSSI diagnosis data ledger changed")
+    row_fields = (
+        "outer_train_rows",
+        "outer_test_rows",
+        "shared_fit_rows",
+        "shared_validation_rows",
+    )
+    if any(
+        not isinstance(data.get(field), int)
+        or isinstance(data.get(field), bool)
+        or data[field] <= 0
+        for field in row_fields
+    ):
+        raise RuntimeError("RSSI diagnosis split-row ledger changed")
+    if (
+        data["outer_train_rows"] + data["outer_test_rows"] != data["rows"]
+        or data["shared_fit_rows"] + data["shared_validation_rows"]
+        != data["outer_train_rows"]
+    ):
+        raise RuntimeError("RSSI diagnosis split-row ledger changed")
+
+    rows = artifact.get("results")
+    if not isinstance(rows, list):
+        raise RuntimeError("RSSI diagnosis result ledger changed")
+    for row in rows:
+        if not isinstance(row, dict) or any(
+            not _is_sha256(row.get(field))
+            for field in (
+                "borders_sha256",
+                "validation_history_sha256",
+                "model_sha256",
+                "prediction_sha256",
+            )
+        ):
+            raise RuntimeError("RSSI diagnosis fingerprint ledger changed")
+        split_features = row.get("first_tree_splits_feat")
+        split_thresholds = row.get("first_tree_splits_thr")
+        linear_features = row.get("first_tree_linear_features")
+        if (
+            not isinstance(split_features, list)
+            or not split_features
+            or any(
+                not isinstance(value, int) or isinstance(value, bool)
+                for value in split_features
+            )
+            or not isinstance(split_thresholds, list)
+            or len(split_thresholds) != len(split_features)
+            or any(
+                not isinstance(value, (int, float))
+                or isinstance(value, bool)
+                or not math.isfinite(float(value))
+                for value in split_thresholds
+            )
+            or (
+                linear_features is not None
+                and (
+                    not isinstance(linear_features, list)
+                    or any(
+                        not isinstance(value, int)
+                        or isinstance(value, bool)
+                        for value in linear_features
+                    )
+                )
+            )
+        ):
+            raise RuntimeError("RSSI diagnosis first-tree ledger changed")
+    frozen_evidence = {
+        "protocol": protocol,
+        "source_revisions": {
+            name: {
+                "head": source["head"],
+                "branch": source["branch"],
+                "clean": source["clean"],
+            }
+            for name, source in sources.items()
+        },
+        "spent_boundary": artifact["spent_boundary"],
+        "data": data,
+        "results": [
+            {
+                key: value
+                for key, value in row.items()
+                if key != "fit_seconds"
+            }
+            for row in rows
+        ],
+    }
+    if _json_sha256(frozen_evidence) != FROZEN_EVIDENCE_SHA256:
+        raise RuntimeError("RSSI diagnosis frozen evidence ledger changed")
+    analysis = analyze(rows)
+    if not _analysis_equal(artifact.get("analysis"), analysis):
+        raise RuntimeError("RSSI diagnosis stored analysis is not reproducible")
+    if (
+        require_frozen
+        and _json_sha256(artifact) != FROZEN_ARTIFACT_SHA256
+    ):
+        raise RuntimeError("RSSI diagnosis frozen artifact changed")
+    return analysis
+
+
 def run(output: Path) -> dict[str, Any]:
+    if output.exists() or output.is_symlink():
+        raise FileExistsError(f"refusing to replace existing output: {output}")
+    protocol_sha256 = _sha256(PROTOCOL)
     darko_source = _source_state(ROOT)
     chimera_source = _source_state(
         CHIMERA_ROOT, expected_head=EXPECTED_CHIMERA_HEAD
@@ -614,10 +1391,19 @@ def run(output: Path) -> dict[str, Any]:
         rows.append(row)
 
     analysis = analyze(rows)
-    if _git(ROOT, "rev-parse", "HEAD") != darko_source["head"]:
-        raise RuntimeError("DarkoFit source head changed during diagnosis")
-    if _git(CHIMERA_ROOT, "rev-parse", "HEAD") != chimera_source["head"]:
-        raise RuntimeError("ChimeraBoost source head changed during diagnosis")
+    if _source_state(ROOT) != darko_source:
+        raise RuntimeError("DarkoFit source state changed during diagnosis")
+    if (
+        _source_state(
+            CHIMERA_ROOT, expected_head=EXPECTED_CHIMERA_HEAD
+        )
+        != chimera_source
+    ):
+        raise RuntimeError("ChimeraBoost source state changed during diagnosis")
+    if _sha256(PROTOCOL) != protocol_sha256:
+        raise RuntimeError("RSSI diagnosis protocol changed during diagnosis")
+    if _verify_spent_boundary() != spent:
+        raise RuntimeError("RSSI spent boundary changed during diagnosis")
 
     artifact = {
         "schema_version": 1,
@@ -625,7 +1411,7 @@ def run(output: Path) -> dict[str, Any]:
         "protocol": {
             "name": "rssi_linear_leaf_diagnosis",
             "path": str(PROTOCOL.relative_to(ROOT)),
-            "sha256": _sha256(PROTOCOL),
+            "sha256": protocol_sha256,
             "arms": list(ARMS),
             "timing_claim_eligible": False,
         },
@@ -638,7 +1424,19 @@ def run(output: Path) -> dict[str, Any]:
         "results": rows,
         "analysis": analysis,
     }
-    output.write_text(json.dumps(artifact, indent=2, sort_keys=True) + "\n")
+    validate_artifact(artifact, require_frozen=False)
+    _atomic_create(
+        output,
+        (
+            json.dumps(
+                artifact,
+                indent=2,
+                sort_keys=True,
+                allow_nan=False,
+            )
+            + "\n"
+        ).encode("utf-8"),
+    )
     return artifact
 
 
@@ -653,4 +1451,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -79,12 +79,17 @@ def test_explicit_ordinal_matches_external_numeric_encoding_bitwise():
     assert len(ordinal.model_.prep_.n_bins_) == X.shape[1]
     metadata = ordinal.model_.auto_params_["ordinal_features"]
     assert metadata == {
+        "state_version": 1,
         "mode": "explicit",
         "active": True,
         "feature_count": 1,
         "feature_indices": [1],
         "feature_names": ["level"],
         "sources": ["explicit"],
+        "category_order_sha256": (
+            "087c5b9bc23ad72b0b95bbe1fb02b882"
+            "67adaa5c4e58dcff0b0160ac248992d3"
+        ),
         "nominal_categorical_count": 1,
         "added_columns": 0,
         "target_stat_blocks_added": 0,
@@ -376,6 +381,7 @@ def test_ordinal_mapping_survives_safe_round_trip(tmp_path, estimator_cls):
         model.predict(X) if estimator_cls is DarkoRegressor else model.predict_proba(X)
     )
     path = tmp_path / "ordinal.npz"
+    second = tmp_path / "ordinal-second.npz"
     model.save_model(path)
     loaded = estimator_cls.load_model(path)
     after = (
@@ -385,6 +391,216 @@ def test_ordinal_mapping_survives_safe_round_trip(tmp_path, estimator_cls):
     )
     assert np.array_equal(before, after)
     assert loaded.ordinal_features_ == model.ordinal_features_
+    loaded.save_model(second)
+    reloaded = estimator_cls.load_model(second)
+    assert reloaded.ordinal_features_ == model.ordinal_features_
+    with np.load(path, allow_pickle=False) as archive:
+        first_header = json.loads(archive["header"].item())
+    with np.load(second, allow_pickle=False) as archive:
+        second_header = json.loads(archive["header"].item())
+    first_state = first_header["wrapper"]["state"]
+    second_state = second_header["wrapper"]["state"]
+    for key in (
+        "ordinal_features_version",
+        "ordinal_features_mode",
+        "ordinal_features",
+    ):
+        assert first_state[key] == second_state[key]
+    assert (
+        first_header["auto_params"]["ordinal_features"]
+        == second_header["auto_params"]["ordinal_features"]
+    )
+
+
+@pytest.mark.parametrize(
+    ("ordinal_features", "expected_mode"),
+    [({}, "explicit"), ("auto", "auto")],
+    ids=["explicit", "auto"],
+)
+def test_inactive_ordinal_mapping_survives_second_save(
+    tmp_path, ordinal_features, expected_mode
+):
+    X, y = _frame()
+    model = DarkoRegressor(**PARAMS).fit(
+        X,
+        y,
+        cat_features=["level", "region"],
+        ordinal_features=ordinal_features,
+    )
+    first = tmp_path / "empty-ordinal-first.npz"
+    second = tmp_path / "empty-ordinal-second.npz"
+    model.save_model(first)
+    loaded = DarkoRegressor.load_model(first)
+    loaded.save_model(second)
+    reloaded = DarkoRegressor.load_model(second)
+
+    assert loaded.ordinal_features_mode_ == expected_mode
+    assert loaded.ordinal_features_ == []
+    assert reloaded.ordinal_features_mode_ == expected_mode
+    assert reloaded.ordinal_features_ == []
+    with np.load(second, allow_pickle=False) as archive:
+        header = json.loads(archive["header"].item())
+    state = header["wrapper"]["state"]
+    metadata = header["auto_params"]["ordinal_features"]
+    assert state["ordinal_features_mode"] == expected_mode
+    assert state["ordinal_features"] == []
+    assert "ordinal_features_version" not in state
+    assert "state_version" not in metadata
+    assert "category_order_sha256" not in metadata
+
+
+def test_legacy_ordinal_archive_survives_second_save(tmp_path):
+    X, y = _frame()
+    model = DarkoRegressor(**PARAMS).fit(
+        X,
+        y,
+        cat_features=["region"],
+        ordinal_features={"level": ["low", "medium", "high"]},
+    )
+    expected = model.predict(X)
+    current = tmp_path / "current-ordinal.npz"
+    legacy = tmp_path / "legacy-ordinal.npz"
+    second = tmp_path / "legacy-ordinal-second.npz"
+    model.save_model(current)
+    with np.load(current, allow_pickle=False) as archive:
+        arrays = {
+            name: np.asarray(archive[name]).copy()
+            for name in archive.files
+        }
+    header = json.loads(arrays["header"].item())
+    header["wrapper"]["state"].pop("ordinal_features_version")
+    for metadata in (
+        header["auto_params"]["ordinal_features"],
+        header["auto_params"]["diagnostics"]["ordinal_features"],
+    ):
+        metadata.pop("state_version")
+        metadata.pop("category_order_sha256")
+    arrays["header"] = np.asarray(json.dumps(header))
+    np.savez_compressed(legacy, **arrays)
+
+    loaded = DarkoRegressor.load_model(legacy)
+    np.testing.assert_array_equal(loaded.predict(X), expected)
+    loaded.save_model(second)
+    reloaded = DarkoRegressor.load_model(second)
+    np.testing.assert_array_equal(reloaded.predict(X), expected)
+    with np.load(second, allow_pickle=False) as archive:
+        second_header = json.loads(archive["header"].item())
+    assert (
+        "ordinal_features_version"
+        not in second_header["wrapper"]["state"]
+    )
+    assert (
+        "state_version"
+        not in second_header["auto_params"]["ordinal_features"]
+    )
+
+
+@pytest.mark.parametrize(
+    "ordinal_features",
+    [{}, "auto"],
+    ids=["explicit", "auto"],
+)
+def test_inactive_ordinal_metadata_corruption_is_rejected(
+    tmp_path, ordinal_features
+):
+    X, y = _frame()
+    model = DarkoRegressor(**PARAMS).fit(
+        X,
+        y,
+        cat_features=["level", "region"],
+        ordinal_features=ordinal_features,
+    )
+    valid = tmp_path / "inactive-valid.npz"
+    corrupt = tmp_path / "inactive-corrupt.npz"
+    model.save_model(valid)
+    with np.load(valid, allow_pickle=False) as archive:
+        arrays = {
+            name: np.asarray(archive[name]).copy()
+            for name in archive.files
+        }
+    header = json.loads(arrays["header"].item())
+    header["auto_params"]["ordinal_features"]["target_used"] = True
+    header["auto_params"]["diagnostics"]["ordinal_features"][
+        "target_used"
+    ] = True
+    arrays["header"] = np.asarray(json.dumps(header))
+    np.savez_compressed(corrupt, **arrays)
+
+    with pytest.raises(
+        ValueError,
+        match="ordinal wrapper state does not match fitted provenance",
+    ):
+        DarkoRegressor.load_model(corrupt)
+
+
+@pytest.mark.parametrize(
+    "ordinal_features",
+    [{}, "auto"],
+    ids=["explicit", "auto"],
+)
+def test_inactive_ordinal_wrapper_cannot_claim_versioned_state(
+    tmp_path, ordinal_features
+):
+    X, y = _frame()
+    model = DarkoRegressor(**PARAMS).fit(
+        X,
+        y,
+        cat_features=["level", "region"],
+        ordinal_features=ordinal_features,
+    )
+    valid = tmp_path / "inactive-valid.npz"
+    corrupt = tmp_path / "inactive-versioned.npz"
+    model.save_model(valid)
+    with np.load(valid, allow_pickle=False) as archive:
+        arrays = {
+            name: np.asarray(archive[name]).copy()
+            for name in archive.files
+        }
+    header = json.loads(arrays["header"].item())
+    header["wrapper"]["state"]["ordinal_features_version"] = 1
+    arrays["header"] = np.asarray(json.dumps(header))
+    np.savez_compressed(corrupt, **arrays)
+
+    with pytest.raises(
+        ValueError,
+        match="ordinal feature state version is invalid",
+    ):
+        DarkoRegressor.load_model(corrupt)
+
+
+def test_legacy_ordinal_metadata_corruption_is_rejected(tmp_path):
+    X, y = _frame()
+    model = DarkoRegressor(**PARAMS).fit(
+        X,
+        y,
+        cat_features=["region"],
+        ordinal_features={"level": ["low", "medium", "high"]},
+    )
+    valid = tmp_path / "legacy-valid.npz"
+    corrupt = tmp_path / "legacy-corrupt.npz"
+    model.save_model(valid)
+    with np.load(valid, allow_pickle=False) as archive:
+        arrays = {
+            name: np.asarray(archive[name]).copy()
+            for name in archive.files
+        }
+    header = json.loads(arrays["header"].item())
+    header["wrapper"]["state"].pop("ordinal_features_version")
+    for metadata in (
+        header["auto_params"]["ordinal_features"],
+        header["auto_params"]["diagnostics"]["ordinal_features"],
+    ):
+        metadata.pop("state_version")
+        metadata.pop("category_order_sha256")
+        metadata["target_used"] = True
+    arrays["header"] = np.asarray(json.dumps(header))
+    np.savez_compressed(corrupt, **arrays)
+
+    with pytest.raises(
+        ValueError,
+        match="ordinal wrapper state does not match fitted provenance",
+    ):
+        DarkoRegressor.load_model(corrupt)
 
 
 def test_corrupt_ordinal_wrapper_state_is_rejected(tmp_path):
@@ -405,6 +621,75 @@ def test_corrupt_ordinal_wrapper_state_is_rejected(tmp_path):
     arrays["header"] = np.asarray(json.dumps(header))
     np.savez_compressed(corrupt, **arrays)
     with pytest.raises(ValueError, match="ordinal feature index is invalid"):
+        DarkoRegressor.load_model(corrupt)
+
+
+@pytest.mark.parametrize("version", [True, 1.0], ids=["bool", "float"])
+def test_non_integer_ordinal_metadata_version_is_rejected(
+    tmp_path, version
+):
+    X, y = _frame()
+    model = DarkoRegressor(**PARAMS).fit(
+        X,
+        y,
+        cat_features=["region"],
+        ordinal_features={"level": ["low", "medium", "high"]},
+    )
+    valid = tmp_path / "valid.npz"
+    corrupt = tmp_path / "corrupt.npz"
+    model.save_model(valid)
+    with np.load(valid, allow_pickle=False) as archive:
+        arrays = {
+            name: np.asarray(archive[name]).copy()
+            for name in archive.files
+        }
+    header = json.loads(arrays["header"].item())
+    header["auto_params"]["ordinal_features"]["state_version"] = version
+    header["auto_params"]["diagnostics"]["ordinal_features"][
+        "state_version"
+    ] = version
+    arrays["header"] = np.asarray(json.dumps(header))
+    np.savez_compressed(corrupt, **arrays)
+
+    with pytest.raises(
+        ValueError,
+        match="ordinal wrapper state does not match fitted provenance",
+    ):
+        DarkoRegressor.load_model(corrupt)
+
+
+@pytest.mark.parametrize(
+    "version",
+    [None, True, 1.0],
+    ids=["null", "bool", "float"],
+)
+def test_non_integer_ordinal_wrapper_version_is_rejected(
+    tmp_path, version
+):
+    X, y = _frame()
+    model = DarkoRegressor(**PARAMS).fit(
+        X,
+        y,
+        cat_features=["region"],
+        ordinal_features={"level": ["low", "medium", "high"]},
+    )
+    valid = tmp_path / "valid.npz"
+    corrupt = tmp_path / "corrupt.npz"
+    model.save_model(valid)
+    with np.load(valid, allow_pickle=False) as archive:
+        arrays = {
+            name: np.asarray(archive[name]).copy()
+            for name in archive.files
+        }
+    header = json.loads(arrays["header"].item())
+    header["wrapper"]["state"]["ordinal_features_version"] = version
+    arrays["header"] = np.asarray(json.dumps(header))
+    np.savez_compressed(corrupt, **arrays)
+
+    with pytest.raises(
+        ValueError,
+        match="ordinal feature state version is invalid",
+    ):
         DarkoRegressor.load_model(corrupt)
 
 

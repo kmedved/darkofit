@@ -77,6 +77,14 @@ def test_pareto_rejects_strictly_dominated_row():
     assert flags == {"a": True, "b": False, "c": True}
 
 
+@pytest.mark.parametrize("value", [True, "1.0"])
+def test_numeric_evidence_rejects_non_numeric_domain_types(value):
+    with pytest.raises(ValueError, match="finite and positive"):
+        bench_status._finite_positive(value, "test value")
+    with pytest.raises(ValueError, match="must be finite"):
+        bench_status._finite(value, "test value")
+
+
 def test_source_hashes_bind_and_fail_closed(
     tmp_path, monkeypatch
 ):

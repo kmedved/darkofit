@@ -76,8 +76,12 @@ Historical implementation plans are retained in
 On the frozen same-machine 13-dataset regression panel, DarkoFit 0.9.0 had
 1.0538× CatBoost's RMSE while using 0.3729× its fit time and 0.1526× its
 incremental memory; ChimeraBoost 0.14.1 had 1.0408× RMSE and 0.4101× fit
-time. On the nine-cell basketball panel, DarkoFit beat ChimeraBoost 0.15.0 on
-quality but CatBoost was both more accurate and faster than DarkoFit.
+time. On the newer
+[player-disjoint nine-cell basketball panel](benchmarks/basketball_sports_panel_v2_result.md),
+DarkoFit's aggregate RMSE beat ChimeraBoost 0.15.0 by 2.81% with six cell
+wins and three losses; CatBoost was both more accurate and faster than
+DarkoFit. The generated release frontier below retains the older S4 panel as
+a separately identified historical boundary.
 
 These are separate descriptive panels, not a blended score or a universal
 ranking. The generated [benchmark status](benchmarks/benchmark_status.md)
@@ -536,7 +540,10 @@ score, learning rate, stop reason, and deadline state; candidates not yet
 started when the deadline expires are marked `skipped_deadline` without paying
 another setup pass. Callbacks remain intentionally rejected with automatic
 learning-rate probes or `refit=True`, whose additional-fit budget semantics are
-not defined.
+not defined. If a shared deadline expires before a `selection_rounds` final
+refit can start, DarkoFit retains the selected capped audition and records
+`final_refit_status="skipped_deadline"` instead of starting work past the
+deadline.
 
 Automatic validation splitting keeps `validation_fraction=0.1` by default.
 Pass `validation_fraction="auto"` to resolve a held-out fraction from Kish
