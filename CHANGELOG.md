@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+- Adopt the evidence-calibrated shipping policy: Tier-E opt-in APIs,
+  behavior-exact engine work, recipes, and measurements ship on correctness
+  plus honest scoped reporting; Tier-D defaults retain fresh preregistered
+  confirmation with power, uncertainty, concentration, harm, and cost checks.
+  Win counts and binary engineering-certification bars are no longer gates.
+- Add the opt-in `preset="accuracy"` regression profile for the frozen A10
+  managed fields, with fitted resolution metadata, concrete refit export, and
+  safe model round trips. The historical development advantage and its
+  Diamonds concentration/inference-cost caveats are documented together.
+- Add opt-in `selection_rounds` for capped automatic tree-mode auditions,
+  followed by a fresh full-budget fit of the selected mode. The default
+  `None` path is unchanged.
+- Add the Tier-E `n_ensembles` API for deterministic row or group bootstrap
+  bagging. Members select their horizons on OOB rows; regression averages
+  predictions, classification soft-votes, SHAP values are averaged, and
+  safe nested NPZ persistence remains pickle-free. Numeric-only fits share a
+  target-free preprocessor, while categorical and ordinal fits deliberately
+  use member-local preprocessing.
+- Enable the already-tested behavior-exact fused histogram/split kernels for
+  eligible selected-row and selected-feature oblivious fits. All old frozen
+  gate outcomes remain immutable; the engine route ships under Tier-E because
+  its predictions and canonical model state were exact in all eight cells.
+- Generate a hash-bound Tier-E engineering measurements page from immutable
+  same-machine artifacts, and add honest feature recipes for robust heads,
+  random strength, linear leaves, declared ordinals, and the accuracy profile.
 - Preserve zero- and one-category ordered pandas vocabularies under
   `ordinal_features="auto"` during stepwise cross-validation, and validate
   explicit evaluation-set width before ordinal transformation so malformed
@@ -15,8 +40,8 @@
   frozen source artifacts changes, rather than merely recording a new hash in
   regenerated output.
 - Keep all five optional TabArena adapter-integration tests collectable without
-  AutoGluon, so the documented 1,913-test library/campaign partition is stable
-  across development and CI environments.
+  AutoGluon, so the documented library/campaign partition remains stable
+  across development and CI environments as coverage grows.
 - Apply the exact `campaign` and `not campaign` pytest partitions before module
   import, preventing optional or Python-3.10-only campaign tooling from leaking
   skips and compatibility requirements into the library matrix.

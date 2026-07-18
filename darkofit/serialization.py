@@ -24,6 +24,7 @@ Categories must be str, float, int, or bool; anything else raises at save
 time.
 """
 
+import io
 import json
 from pathlib import Path
 
@@ -43,6 +44,8 @@ from .tree import (
 
 FORMAT_VERSION = 4
 BASE_FORMAT_VERSION = 2
+ENSEMBLE_FORMAT_VERSION = 1
+MAX_ENSEMBLE_MEMBERS = 256
 
 _KIND_STR = 0
 _KIND_FLOAT = 1
@@ -123,6 +126,9 @@ def _validate_plain_arrays(arrays):
 
 
 def _load_path(path):
+    if hasattr(path, "read") and hasattr(path, "seek"):
+        path.seek(0)
+        return path
     candidate = Path(path)
     if candidate.exists():
         return candidate
@@ -131,6 +137,92 @@ def _load_path(path):
         if with_suffix.exists():
             return with_suffix
     return candidate
+
+
+def save_ensemble(estimators, path, *, wrapper_class, params, metadata):
+    """Safely store fitted wrapper members as nested non-pickle NPZ bytes."""
+    estimators = tuple(estimators)
+    if not 1 < len(estimators) <= MAX_ENSEMBLE_MEMBERS:
+        raise ValueError(
+            f"ensemble must contain 2 to {MAX_ENSEMBLE_MEMBERS} members"
+        )
+    arrays = {}
+    for index, estimator in enumerate(estimators):
+        buffer = io.BytesIO()
+        estimator.save_model(buffer)
+        payload = buffer.getvalue()
+        if not payload:
+            raise ValueError("cannot save an empty ensemble member archive")
+        arrays[f"member_{index:04d}"] = np.frombuffer(
+            payload, dtype=np.uint8
+        ).copy()
+    header = {
+        "archive_kind": "darkofit_ensemble",
+        "ensemble_format_version": ENSEMBLE_FORMAT_VERSION,
+        "wrapper_class": str(wrapper_class),
+        "member_count": len(estimators),
+        "params": _jsonify(params),
+        "metadata": _jsonify(metadata),
+    }
+    arrays["header"] = np.array(json.dumps(header))
+    _validate_plain_arrays(arrays)
+    np.savez_compressed(path, **arrays)
+
+
+def load_ensemble(path):
+    """Return an ensemble header/payloads, or ``None`` for a booster archive."""
+    loaded_path = _load_path(path)
+    try:
+        archive = np.load(loaded_path, allow_pickle=False)
+    except (OSError, ValueError, KeyError) as exc:
+        raise ValueError(f"{path!r} is not a DarkoFit model archive") from exc
+    with archive as data:
+        try:
+            header = json.loads(str(data["header"]))
+        except (KeyError, TypeError, json.JSONDecodeError) as exc:
+            raise ValueError(
+                f"{path!r} is not a DarkoFit model archive"
+            ) from exc
+        if not isinstance(header, dict):
+            _invalid_model("header must be an object")
+        if header.get("archive_kind") != "darkofit_ensemble":
+            if hasattr(path, "seek"):
+                path.seek(0)
+            return None
+        version = header.get("ensemble_format_version")
+        if (
+            isinstance(version, bool)
+            or not isinstance(version, int)
+            or version < 1
+            or version > ENSEMBLE_FORMAT_VERSION
+        ):
+            _invalid_model("unsupported ensemble format version")
+        member_count = header.get("member_count")
+        if (
+            isinstance(member_count, bool)
+            or not isinstance(member_count, int)
+            or not 1 < member_count <= MAX_ENSEMBLE_MEMBERS
+        ):
+            _invalid_model("ensemble member count is invalid")
+        if not isinstance(header.get("wrapper_class"), str):
+            _invalid_model("ensemble wrapper class is invalid")
+        if not isinstance(header.get("params"), dict):
+            _invalid_model("ensemble params must be an object")
+        if not isinstance(header.get("metadata"), dict):
+            _invalid_model("ensemble metadata must be an object")
+        expected = {
+            "header",
+            *(f"member_{index:04d}" for index in range(member_count)),
+        }
+        if set(data.files) != expected:
+            _invalid_model("ensemble member payloads do not match the header")
+        payloads = []
+        for index in range(member_count):
+            values = np.asarray(data[f"member_{index:04d}"])
+            if values.ndim != 1 or values.dtype != np.uint8 or values.size == 0:
+                _invalid_model("ensemble member payload is invalid")
+            payloads.append(values.tobytes())
+    return header, payloads
 
 
 def _require_offsets(name, offsets, total_size=None, expected_count=None):

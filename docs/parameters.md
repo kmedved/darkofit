@@ -8,6 +8,7 @@ controls are below; fitted resolutions are recorded in
 
 | Parameter | Default | Purpose |
 |---|---:|---|
+| `preset` | `None` | Opt-in product profile; `"accuracy"` applies the frozen A10 managed fields. |
 | `iterations` | `1000` | Maximum boosting rounds. |
 | `learning_rate` | `None` | Automatic fitted-rate rule; pass a positive float to freeze it. |
 | `depth` | `None` | Symmetric-tree depth or non-oblivious path-depth cap. |
@@ -26,9 +27,44 @@ controls are below; fitted resolutions are recorded in
 | `validation_strategy` | `"random"` | Random, weighted-stratified regression, or group-disjoint selection. |
 | `use_best_model` | `True` | Retain the best validation prefix. |
 | `refit` | `False` | Refit the selected policy on all rows. |
+| `selection_rounds` | `None` | Cap each `tree_mode="auto"` audition, then refit the selected mode at the full budget. |
 
 Pass `groups=` to `fit` for entity-disjoint validation. Use
 `get_refit_params()` to export the fitted concrete policy for a manual refit.
+
+`preset="accuracy"` manages `iterations=10000`, `tree_mode="auto"`,
+`l2_leaf_reg=3`, `max_bins=128`, `learning_rate=0.1`,
+`ts_permutations=1`, `linear_residual=False`, `early_stopping=True`, and
+`use_best_model=True` during fit. Other explicit parameters remain user
+overrides. The constructor values are restored after fitting; the resolved
+profile is stored in fitted metadata, and `get_refit_params()` returns its
+concrete selected mode with `preset=None`.
+
+`selection_rounds` currently applies only to `tree_mode="auto"`. The capped
+auditions choose a mode; DarkoFit then starts a fresh full-budget fit of that
+mode. Leaving it at `None` preserves the historical selection path.
+
+## Ensembles
+
+| Parameter | Default | Purpose |
+|---|---:|---|
+| `n_ensembles` | `1` | Number of independently bootstrapped members. Values above one opt into ensemble mode. |
+| `ensemble_bootstrap` | `"rows"` | Bootstrap rows, or complete entities with `"groups"` and `groups=` in `fit`. |
+| `ensemble_shared_preprocessing` | `True` | Reuse one target-free numeric preprocessor when safe. Categorical and ordinal fits fall back to member-local preprocessing. |
+
+Each member uses its out-of-bag rows as an explicit early-stopping set.
+Regression predictions are member means; classification probabilities are
+soft-vote means. `shap_values()` averages member contributions and expected
+values. Group bootstraps keep sampled and OOB groups disjoint.
+
+Ensemble archives remain pickle-free: `save_model()` stores independently
+loadable member NPZ payloads inside one validated outer NPZ. Explicit
+`eval_set`, callbacks, automatic ordinal discovery, and distributional heads
+are not supported in ensemble mode. `refit=True` is also rejected because it
+would replace the bootstrap training rows that define each member. Declare
+ordinal orders explicitly; categorical target-statistic preprocessing is
+always fitted separately inside each member to avoid target leakage. Staged
+prediction yields the common prefix shared by every member.
 
 ## Structure
 
@@ -40,6 +76,8 @@ compatibility. `"hybrid"` and `"auto"` remain explicit experimental paths.
 oblivious-tree fits. It is default-off. `ordinal_features={column: order}`
 explicitly maps declared ordered categories into the numeric binner; unknown
 non-missing values fail closed.
+
+See [Feature recipes](recipes.md) for measured benefits and failure boundaries.
 
 ## Sampling and categoricals
 

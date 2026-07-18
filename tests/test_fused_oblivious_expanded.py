@@ -245,7 +245,7 @@ def test_default_internal_dispatch_engages_proven_fused_lane(monkeypatch):
         {"colsample": 2 / 3, "subsample": 0.8},
     ],
 )
-def test_subset_lanes_retain_exact_reference_dispatch(
+def test_subset_lanes_use_exact_fused_dispatch(
     monkeypatch, tmp_path, sampling_params
 ):
     X, y = _regression_data(seed=101, n=320)
@@ -258,6 +258,6 @@ def test_subset_lanes_retain_exact_reference_dispatch(
     )
 
     assert reference_count == 0
-    assert candidate_count == 0
+    assert candidate_count > 0
     name = "-".join(sorted(sampling_params))
     _assert_exact_models(reference, candidate, X, tmp_path, name)

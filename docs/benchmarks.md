@@ -4,12 +4,20 @@ DarkoFit separates diagnostic benchmarks, spent development panels, and
 target-unseen confirmation evidence. A failed preregistered gate is recorded
 as a failure; thresholds and frozen artifacts are not rewritten afterward.
 
+The binding prospective decision rule is the
+[shipping policy](https://github.com/kmedved/darkofit/blob/main/benchmarks/SHIPPING_POLICY.md).
+Opt-in APIs and behavior-exact engine work are Tier-E; defaults and automatic
+modeling policies are Tier-D. Tier-D uses uncertainty, leave-one-dataset-out
+concentration, explicit harm bounds, and declared cost budgets—not win counts.
+
 The current high-level record is in
 [Benchmark notes](https://github.com/kmedved/darkofit/blob/main/BENCHMARK_NOTES.md).
 The active ceiling ledger is
 [Beyond parity](https://github.com/kmedved/darkofit/blob/main/BEYOND_PARITY_PLAN.md).
 The release-level same-machine frontier is regenerated in
 [Benchmark status](https://github.com/kmedved/darkofit/blob/main/benchmarks/benchmark_status.md).
+Descriptive same-machine performance is published separately in
+[Engineering measurements](measurements.md).
 
 Key current conclusions:
 

@@ -32,6 +32,8 @@ def test_release_status_preserves_panel_boundaries_and_decisions():
     )
     assert not status["large_n"]["certified"]
     assert status["native_ordinal_c2"]["confirmation_run"] is False
+    assert status["fused_subset"]["all_exact"] is True
+    assert status["fused_subset"]["tier_e_dispatch_shipped"] is True
 
 
 def test_prediction_status_disambiguates_legacy_counter():
@@ -46,12 +48,18 @@ def test_prediction_status_disambiguates_legacy_counter():
 
 def test_committed_status_outputs_are_current():
     status = bench_status.build_status()
-    expected_json, expected_markdown = bench_status._serialized(status)
+    expected_json, expected_markdown, expected_measurements = (
+        bench_status._serialized(status)
+    )
 
     assert bench_status.OUTPUT_JSON.read_text(encoding="utf-8") == expected_json
     assert (
         bench_status.OUTPUT_MARKDOWN.read_text(encoding="utf-8")
         == expected_markdown
+    )
+    assert (
+        bench_status.OUTPUT_MEASUREMENTS.read_text(encoding="utf-8")
+        == expected_measurements
     )
     assert json.loads(expected_json)["sources"]
 

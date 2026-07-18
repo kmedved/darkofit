@@ -30,12 +30,13 @@ DarkoFit beats ChimeraBoost on sports quality, but CatBoost is both more accurat
 
 | Track | Observed result | Formal status |
 |---|---|---|
-| Large-n matched core | Darko/Chimera fit 0.7817× (1.2793× speedup); RMSE 0.99998–1.00085× | Not certified: missed the frozen 1.30× speedup threshold |
-| Public prediction | 8/8 median wins, 6/8 also stable; ratios 0.805–0.987× | Not certified: two stability gates and one minimum-interval gate failed |
+| Large-n matched core | Darko/Chimera fit 0.7817× (1.2793× speedup); RMSE 0.99998–1.00085× | Tier-E measurement; the old frozen 1.30× certification remains closed |
+| Public prediction | 8/8 median wins, 6/8 also stable; ratios 0.805–0.987× | Tier-E measurement; the old all-case certification remains closed |
+| Sampled fused training | Exact in 8/8 cells; fit 0.5348× and tree build 0.5265× | Shipped as behavior-exact Tier-E engine work; no external universal speed claim |
 | Native ordinal C2 | Candidate/default RMSE 0.9928×, fit 1.0082×, predict 1.0407× | Closed in development; confirmation remained sealed |
 
 The historical integrated-prediction JSON field `stretch_public_cases_at_or_below_chimera` counts cases that were both stable and no slower (6), despite its broader name. The eight raw median ratios show 8/8 no-slower medians. This report preserves the immutable artifact and labels both counts explicitly.
 
 ## Release conclusion
 
-Ship the deprecation/docs/infrastructure release; do not promote a new quality policy or claim a certified all-case engine win.
+Ship exact Tier-E engine work, opt-in product surfaces, and descriptive measurements; do not promote a Tier-D quality default without fresh preregistered confirmation.

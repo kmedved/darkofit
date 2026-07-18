@@ -3,8 +3,8 @@
 DarkoFit is a NumPy/Numba gradient-boosting library for tabular data with
 scikit-learn-style estimators. It supports numeric and categorical predictors,
 sample weights, early stopping, safe model serialization, distributional
-regression, local linear leaves, and exact interventional TreeSHAP for
-supported oblivious-tree models.
+regression, opt-in row/group bootstrap ensembles, local linear leaves, and
+exact interventional TreeSHAP for supported oblivious-tree models.
 
 Start with [Getting started](getting-started.md), then use:
 

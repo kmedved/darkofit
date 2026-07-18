@@ -1706,6 +1706,28 @@ class _BaseBooster:
     def _fit_transform_preprocessor(
         self, X, encode_targets, cat_features, sample_weight
     ):
+        shared = getattr(self, "_shared_preprocessing_payload", None)
+        if shared is not None:
+            # Ensemble members may share a target-free numeric preprocessor.
+            # The payload is instance-local (never a class monkeypatch) and is
+            # consumed once so a fitted booster does not retain the training
+            # matrix. Categorical target statistics are deliberately excluded.
+            del self._shared_preprocessing_payload
+            if cat_features is not None and len(cat_features):
+                raise ValueError(
+                    "shared numeric preprocessing cannot be used with "
+                    "categorical features"
+                )
+            prep = shared.get("prep")
+            X_binned = np.asarray(shared.get("X_binned"))
+            if prep is None or X_binned.ndim != 2:
+                raise ValueError("invalid shared preprocessing payload")
+            if X_binned.shape[0] != X.shape[0]:
+                raise ValueError("shared preprocessing row count mismatch")
+            if X_binned.shape[1] != len(prep.n_bins_):
+                raise ValueError("shared preprocessing feature count mismatch")
+            self.prep_ = copy.deepcopy(prep)
+            return X_binned.copy()
         prep = self._new_preprocessor()
         cache = getattr(self, "_preprocessing_cache", None)
         if cache is None:

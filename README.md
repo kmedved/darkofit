@@ -14,7 +14,8 @@ inspired by CatBoost.
       ChimeraBoost but trail CatBoost overall; accuracy and speed vary
       materially by dataset. A frozen explicit accuracy profile reached
       ChimeraBoost development parity on the spent 13-dataset panel but still
-      trailed CatBoost and awaits unseen confirmation
+      trailed CatBoost. It ships only as a Tier-E opt-in; that spent evidence
+      cannot support a default promotion
       ([benchmark notes](BENCHMARK_NOTES.md))
     * Supports sample weights and automatic early stopping
 
@@ -38,6 +39,24 @@ Models can be saved without pickle:
 clf.save_model("model.npz")
 clf2 = DarkoClassifier.load_model("model.npz")
 ```
+
+Opt-in accuracy and bagging surfaces leave the single-model defaults intact:
+
+```
+from darkofit import DarkoRegressor
+
+accurate = DarkoRegressor(preset="accuracy")
+bagged = DarkoRegressor(
+    n_ensembles=5,
+    ensemble_bootstrap="groups",
+)
+bagged.fit(X, y, groups=player_id)
+```
+
+Bagged members early-stop on their own out-of-bag rows. Numeric-only fits can
+share target-free preprocessing; categorical target statistics remain
+member-local. Regression uses mean aggregation, classification uses soft
+voting, and safe `.npz` persistence stores every member without pickle.
 
 ## Documentation
 

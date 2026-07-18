@@ -9,10 +9,12 @@ nav:
   - Home: index.md
   - Getting started: getting-started.md
   - Parameters: parameters.md
+  - Feature recipes: recipes.md
   - Core concepts: concepts.md
   - Distributional regression: uncertainty.md
   - TreeSHAP: shap.md
   - Benchmarks: benchmarks.md
+  - Engineering measurements: measurements.md
   - FAQ: faq.md
   - Development: development.md
   - Archive:

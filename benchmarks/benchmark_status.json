@@ -1,5 +1,20 @@
 {
   "evidence_policy": "same-machine panels remain separate; no cross-panel composite score or unmatched timing is used",
+  "fused_subset": {
+    "all_exact": true,
+    "cell_count": 8,
+    "fit_geomean_ratio": 0.534826100570808,
+    "fit_iqr_over_median_max": 0.20851957717476982,
+    "fit_ratio_max": 0.5639263754642114,
+    "fit_ratio_min": 0.5109866877172771,
+    "prior_frozen_decision": "restore_full_lane_only_dispatch",
+    "scope": "5,241-row x 15-feature basketball workload; selected rows, features, and both; unit and variable Hessians; 18 threads",
+    "tier_e_dispatch_shipped": true,
+    "tree_build_geomean_ratio": 0.5265432416506726,
+    "tree_build_iqr_over_median_max": 0.20601401871596023,
+    "tree_build_ratio_max": 0.5521419803379135,
+    "tree_build_ratio_min": 0.502885541484551
+  },
   "general_pareto": {
     "baseline": "CatBoost 1.2.10",
     "decision": "descriptive_only",
@@ -38,7 +53,27 @@
     "fit_speedup": 1.2792983256567738,
     "rmse_ratio_max": 1.0008479649149764,
     "rmse_ratio_min": 0.9999847468806878,
-    "scope": "matched numeric core at 500k and 1M training rows"
+    "scope": "matched numeric core at 500k and 1M training rows",
+    "sizes": [
+      {
+        "fit_iqr_over_median": 0.03820956155027647,
+        "fit_q1_ratio": 0.7927356425774221,
+        "fit_q3_ratio": 0.8234491367654191,
+        "fit_ratio": 0.8038169751721406,
+        "peak_rss_ratio": 0.8431843267108168,
+        "rmse_ratio": 0.9999847468806878,
+        "rows": 500000
+      },
+      {
+        "fit_iqr_over_median": 0.012935905783775573,
+        "fit_q1_ratio": 0.7532492471542769,
+        "fit_q3_ratio": 0.7630824728502115,
+        "fit_ratio": 0.7601497614699376,
+        "peak_rss_ratio": 0.7128915115751249,
+        "rmse_ratio": 1.0008479649149764,
+        "rows": 1000000
+      }
+    ]
   },
   "native_ordinal_c2": {
     "candidate_over_default_fit": 1.0081928719378834,
@@ -50,6 +85,80 @@
   },
   "prediction": {
     "case_count": 8,
+    "cases": [
+      {
+        "input": "basketball numeric",
+        "iqr_over_median": 0.1055551920218133,
+        "median_ratio": 0.8046490653412373,
+        "q1_ratio": 0.7466240676709317,
+        "q3_ratio": 0.8315589542731986,
+        "rows": 8192,
+        "stable": false
+      },
+      {
+        "input": "basketball numeric",
+        "iqr_over_median": 0.03263427411275622,
+        "median_ratio": 0.9580474722212766,
+        "q1_ratio": 0.9448864795781315,
+        "q3_ratio": 0.9761516633996339,
+        "rows": 65536,
+        "stable": true
+      },
+      {
+        "input": "basketball numeric",
+        "iqr_over_median": 0.10031983603989816,
+        "median_ratio": 0.9181894391098898,
+        "q1_ratio": 0.8328551258520114,
+        "q3_ratio": 0.9249677398370816,
+        "rows": 524288,
+        "stable": false
+      },
+      {
+        "input": "basketball numeric",
+        "iqr_over_median": 0.058716031655318926,
+        "median_ratio": 0.8692908293329555,
+        "q1_ratio": 0.8595138810394882,
+        "q3_ratio": 0.9105551888922805,
+        "rows": 2000000,
+        "stable": true
+      },
+      {
+        "input": "synthetic mixed",
+        "iqr_over_median": 0.03529123656018983,
+        "median_ratio": 0.8854262254767229,
+        "q1_ratio": 0.8676523562476182,
+        "q3_ratio": 0.8989001426275132,
+        "rows": 8192,
+        "stable": true
+      },
+      {
+        "input": "synthetic mixed",
+        "iqr_over_median": 0.04656187331130131,
+        "median_ratio": 0.9465610486922832,
+        "q1_ratio": 0.9281206916596259,
+        "q3_ratio": 0.9721943472902485,
+        "rows": 65536,
+        "stable": true
+      },
+      {
+        "input": "synthetic mixed",
+        "iqr_over_median": 0.014591102674176633,
+        "median_ratio": 0.9869563682000011,
+        "q1_ratio": 0.9738943926076418,
+        "q3_ratio": 0.9882951743109805,
+        "rows": 524288,
+        "stable": true
+      },
+      {
+        "input": "synthetic mixed",
+        "iqr_over_median": 0.01259046161093136,
+        "median_ratio": 0.9836415043263472,
+        "q1_ratio": 0.9799469616450136,
+        "q3_ratio": 0.9923314622441533,
+        "rows": 2000000,
+        "stable": true
+      }
+    ],
     "certified": false,
     "decision": "p2_target_remains_open",
     "legacy_counter_name_is_ambiguous": true,
@@ -59,9 +168,13 @@
     "scope": "eight numeric/mixed public prediction cases",
     "stable_and_at_or_below_chimera_count": 6
   },
-  "release_conclusion": "Ship the deprecation/docs/infrastructure release; do not promote a new quality policy or claim a certified all-case engine win.",
+  "release_conclusion": "Ship exact Tier-E engine work, opt-in product surfaces, and descriptive measurements; do not promote a Tier-D quality default without fresh preregistered confirmation.",
   "schema_version": 1,
   "sources": {
+    "fused_subset": {
+      "path": "benchmarks/fused_subset_oblivious.json",
+      "sha256": "ed45820d74733ebcc6fca3ed1524a49eb9d73ae7ef22925bec41e7dea22d9d01"
+    },
     "general_panel": {
       "path": "benchmarks/tabarena_regression_same_machine_summary.json",
       "sha256": "ca23618bdc3d9e0ab38557e7738c66e95827945ad34e3eb63005f253c92ccf01"

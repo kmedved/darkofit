@@ -1,5 +1,6 @@
 """Scikit-learn flavored estimators: fit / predict / predict_proba."""
 
+import hashlib
 import math
 import warnings
 from collections.abc import Mapping
@@ -35,7 +36,7 @@ from .callbacks import WallClockStopper, _normalize_callbacks
 from .losses import VECTOR_LOSSES
 from .linear_residual import WeightedRidgeTrend, validate_linear_residual_loss
 from .target_encoding import _is_missing_value
-from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin
+from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin, clone
 from sklearn.utils.multiclass import type_of_target
 from sklearn.utils.validation import check_is_fitted
 
@@ -47,7 +48,8 @@ _SKLEARN_ONLY = frozenset({
     "dist_calibration", "dist_calibration_feature", "dist_params",
     "sigma_calibration", "linear_residual", "linear_residual_alpha",
     "linear_residual_features", "linear_residual_fit_intercept",
-    "linear_residual_standardize",
+    "linear_residual_standardize", "preset", "selection_rounds",
+    "n_ensembles", "ensemble_bootstrap", "ensemble_shared_preprocessing",
 })
 
 _REFIT_STRATEGY_EXPONENT = {
@@ -59,6 +61,17 @@ _REFIT_STRATEGY_EXPONENT = {
 }
 
 _AUTO_TREE_MODE_CANDIDATES = ("catboost", "lightgbm", "hybrid")
+_ACCURACY_PRESET_PARAMS = {
+    "iterations": 10_000,
+    "tree_mode": "auto",
+    "l2_leaf_reg": 3.0,
+    "max_bins": 128,
+    "learning_rate": 0.1,
+    "ts_permutations": 1,
+    "linear_residual": False,
+    "early_stopping": True,
+    "use_best_model": True,
+}
 _SIGMA_CALIBRATION_MIN_EFFECTIVE_N = 200.0
 _SIGMA_AFFINE_BOUNDS = (0.5, 2.0)
 _SIGMA_CALIBRATION_Z_GUARD = 1000.0
@@ -76,6 +89,266 @@ def _normalize_tree_mode_token(tree_mode):
 
 def _is_auto_tree_mode(tree_mode):
     return _normalize_tree_mode_token(tree_mode) == "auto"
+
+
+def _normalize_regression_preset(preset):
+    if preset is None:
+        return None
+    token = str(preset).strip().lower().replace("-", "_")
+    if token in {"", "none", "off", "false", "no"}:
+        return None
+    if token == "accuracy":
+        return token
+    raise ValueError("preset must be None or 'accuracy'")
+
+
+def _normalize_selection_rounds(selection_rounds):
+    if selection_rounds is None:
+        return None
+    if isinstance(selection_rounds, (bool, np.bool_)) or not isinstance(
+        selection_rounds, (int, np.integer)
+    ):
+        raise TypeError("selection_rounds must be a positive integer or None")
+    selection_rounds = int(selection_rounds)
+    if selection_rounds < 1:
+        raise ValueError("selection_rounds must be at least 1")
+    return selection_rounds
+
+
+def _normalize_n_ensembles(n_ensembles):
+    if isinstance(n_ensembles, (bool, np.bool_)) or not isinstance(
+        n_ensembles, (int, np.integer)
+    ):
+        raise TypeError("n_ensembles must be a positive integer")
+    n_ensembles = int(n_ensembles)
+    if n_ensembles < 1:
+        raise ValueError("n_ensembles must be at least 1")
+    return n_ensembles
+
+
+def _normalize_ensemble_bootstrap(bootstrap):
+    token = str(bootstrap).strip().lower().replace("-", "_")
+    if token not in {"rows", "groups"}:
+        raise ValueError("ensemble_bootstrap must be 'rows' or 'groups'")
+    return token
+
+
+def _take_rows(values, indices):
+    iloc = getattr(values, "iloc", None)
+    if iloc is not None:
+        return iloc[indices]
+    return np.asarray(values)[indices]
+
+
+def _index_sha256(indices):
+    values = np.ascontiguousarray(np.asarray(indices, dtype="<i8"))
+    return hashlib.sha256(values.tobytes()).hexdigest()
+
+
+def _ensemble_bootstrap_plan(
+    n_rows,
+    seed,
+    *,
+    bootstrap,
+    groups=None,
+    y=None,
+    required_class_count=None,
+    sample_weight=None,
+    max_attempts=128,
+):
+    """Return a deterministic bootstrap/OOB plan with usable validation."""
+    n_rows = int(n_rows)
+    if n_rows < 2:
+        raise ValueError("an ensemble requires at least two training rows")
+    rng = np.random.default_rng(int(seed))
+    group_codes = None
+    unique_group_count = None
+    if bootstrap == "groups":
+        group_values = np.asarray(groups)
+        if group_values.ndim != 1 or len(group_values) != n_rows:
+            raise ValueError(
+                "groups must be one-dimensional with one value per training row"
+            )
+        try:
+            _, group_codes = np.unique(group_values, return_inverse=True)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "groups must contain consistently comparable scalar values"
+            ) from exc
+        group_codes = np.asarray(group_codes, dtype=np.int64)
+        unique_group_count = int(group_codes.max()) + 1
+        if unique_group_count < 2:
+            raise ValueError(
+                "ensemble_bootstrap='groups' requires at least two groups"
+            )
+
+    weights = (
+        None
+        if sample_weight is None
+        else np.asarray(sample_weight, dtype=np.float64)
+    )
+    labels = None if y is None else np.asarray(y)
+    for attempt in range(1, int(max_attempts) + 1):
+        if bootstrap == "rows":
+            sampled = rng.integers(
+                0, n_rows, size=n_rows, dtype=np.int64
+            )
+            selected_groups = None
+        else:
+            selected_groups = rng.integers(
+                0, unique_group_count,
+                size=unique_group_count,
+                dtype=np.int64,
+            )
+            sampled = np.concatenate(
+                [
+                    np.flatnonzero(group_codes == group)
+                    for group in selected_groups
+                ]
+            ).astype(np.int64, copy=False)
+        oob_mask = np.ones(n_rows, dtype=np.bool_)
+        if bootstrap == "groups":
+            oob_mask[np.isin(group_codes, np.unique(selected_groups))] = False
+        else:
+            oob_mask[sampled] = False
+        oob = np.flatnonzero(oob_mask).astype(np.int64, copy=False)
+        if not len(oob):
+            continue
+        if weights is not None and (
+            float(np.sum(weights[sampled])) <= 0.0
+            or float(np.sum(weights[oob])) <= 0.0
+        ):
+            continue
+        if (
+            required_class_count is not None
+            and np.unique(labels[sampled]).size != int(required_class_count)
+        ):
+            continue
+        return {
+            "sampled": sampled,
+            "oob": oob,
+            "attempts": attempt,
+            "sampled_group_draws": (
+                None if selected_groups is None else len(selected_groups)
+            ),
+            "sampled_unique_groups": (
+                None
+                if selected_groups is None
+                else np.unique(selected_groups).size
+            ),
+            "oob_groups": (
+                None
+                if group_codes is None
+                else np.unique(group_codes[oob]).size
+            ),
+        }
+    raise RuntimeError(
+        "could not construct a bootstrap sample with a usable, class-safe "
+        "out-of-bag validation set"
+    )
+
+
+def _validate_loaded_ensemble_metadata(metadata, members, *, classification):
+    """Fail closed on contradictory fitted-ensemble provenance."""
+    if (
+        metadata.get("version") != 1
+        or metadata.get("claim_tier") != "E"
+        or metadata.get("default_changed") is not False
+        or metadata.get("oob_early_stopping") is not True
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: ensemble provenance is invalid"
+        )
+    member_count = len(members)
+    if metadata.get("member_count") != member_count:
+        raise ValueError(
+            "invalid DarkoFit model: ensemble metadata member count does not "
+            "match its payload"
+        )
+    bootstrap = metadata.get("bootstrap")
+    if bootstrap not in {"rows", "groups"}:
+        raise ValueError(
+            "invalid DarkoFit model: ensemble bootstrap mode is invalid"
+        )
+    expected_aggregation = "soft_vote" if classification else "mean"
+    if metadata.get("aggregation") != expected_aggregation:
+        raise ValueError(
+            "invalid DarkoFit model: ensemble aggregation is invalid"
+        )
+    shared = metadata.get("shared_preprocessing")
+    if shared not in {"numeric_target_free", "member_local"}:
+        raise ValueError(
+            "invalid DarkoFit model: ensemble preprocessing mode is invalid"
+        )
+    seeds = metadata.get("member_seeds")
+    records = metadata.get("members")
+    if (
+        not isinstance(seeds, list)
+        or not isinstance(records, list)
+        or len(seeds) != member_count
+        or len(records) != member_count
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: ensemble member provenance is invalid"
+        )
+    for index, (seed, record, member) in enumerate(
+        zip(seeds, records, members)
+    ):
+        if (
+            isinstance(seed, bool)
+            or not isinstance(seed, int)
+            or not isinstance(record, Mapping)
+            or record.get("member") != index
+            or record.get("seed") != seed
+            or member.get_params().get("random_state") != seed
+            or record.get("validation_source") != "explicit_eval_set"
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: ensemble member provenance does not "
+                "match its payload"
+            )
+        for name in ("bootstrap_indices_sha256", "oob_indices_sha256"):
+            digest = record.get(name)
+            if (
+                not isinstance(digest, str)
+                or len(digest) != 64
+                or any(char not in "0123456789abcdef" for char in digest)
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: ensemble index digest is invalid"
+                )
+        for name in (
+            "bootstrap_attempts",
+            "bootstrap_rows",
+            "bootstrap_unique_rows",
+            "oob_rows",
+            "best_iteration",
+        ):
+            value = record.get(name)
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, int)
+                or value < (0 if name == "best_iteration" else 1)
+            ):
+                raise ValueError(
+                    f"invalid DarkoFit model: ensemble member {name} is invalid"
+                )
+        if bootstrap == "groups" and record.get("group_disjoint") is not True:
+            raise ValueError(
+                "invalid DarkoFit model: group ensemble is not disjoint"
+            )
+
+
+class _SelectionRoundStopper:
+    """Private callback that caps an automatic-mode audition."""
+
+    stop_reason = "selection_round_limit"
+
+    def __init__(self, rounds):
+        self.rounds = int(rounds)
+
+    def __call__(self, progress):
+        return progress.rounds_completed >= self.rounds
 
 
 def _wall_clock_callback_state(callbacks, *, refresh_deadline=False):
@@ -1502,6 +1775,390 @@ def _make_eval_split(X, y, validation_fraction, random_state,
 class _RefitParamsMixin:
     """Shared fitted-model metadata and full-data refit helpers."""
 
+    def _clear_ensemble_state(self):
+        for name in (
+            "estimators_",
+            "ensemble_metadata_",
+            "ensemble_best_iterations_",
+            "ensemble_learning_rates_",
+        ):
+            if hasattr(self, name):
+                delattr(self, name)
+
+    def _configure_model_preprocessing(self, model):
+        payload = getattr(self, "_shared_numeric_preprocessing_", None)
+        if payload is not None:
+            model._shared_preprocessing_payload = payload
+        return model
+
+    def _make_shared_numeric_preprocessing(
+        self, X, y, sample_weight, seed
+    ):
+        """Fit one target-free numeric preprocessor for all bag members."""
+        from .preprocessing import FeaturePreprocessor
+
+        prep = FeaturePreprocessor(
+            self.max_bins,
+            self.cat_smoothing,
+            None if seed is None else int(seed),
+            include_cat_codes=False,
+            target_encoding_mode="ordered",
+            ts_permutations=self.ts_permutations,
+            target_ordered_cat_codes="off",
+            bin_sample_count=self.bin_sample_count,
+        )
+        placeholder_target = np.zeros(len(X), dtype=np.float64)
+        binned = prep.fit_transform(
+            X,
+            [placeholder_target],
+            cat_features=None,
+            sample_weight=sample_weight,
+        )
+        return prep, np.asarray(binned)
+
+    def _adopt_ensemble(self, estimators, metadata):
+        if not estimators:
+            raise ValueError("an ensemble must contain at least one estimator")
+        first = estimators[0]
+        self.estimators_ = tuple(estimators)
+        self.model_ = first.model_
+        for name in (
+            "n_features_in_",
+            "feature_names_in_",
+            "ordinal_features_mode_",
+            "ordinal_features_",
+            "ordinal_feature_indices_",
+            "_ordinal_nominal_cat_count_",
+            "classes_",
+            "n_classes_",
+            "_multiclass",
+            "preset_",
+            "preset_params_",
+        ):
+            if hasattr(first, name):
+                setattr(self, name, getattr(first, name))
+        best_iterations = tuple(
+            int(member.best_n_estimators_) for member in estimators
+        )
+        learning_rates = tuple(
+            float(member.learning_rate_) for member in estimators
+        )
+        best_scores = np.asarray(
+            [float(member.best_score_) for member in estimators],
+            dtype=np.float64,
+        )
+        self.ensemble_best_iterations_ = best_iterations
+        self.ensemble_learning_rates_ = learning_rates
+        self._best_n_estimators_ = int(np.median(best_iterations))
+        self._learning_rate_ = float(np.median(learning_rates))
+        self._best_score_ = (
+            float(np.mean(best_scores[np.isfinite(best_scores)]))
+            if np.any(np.isfinite(best_scores))
+            else float("nan")
+        )
+        self.ensemble_metadata_ = metadata
+        return self
+
+    def _ensemble_params_header(self):
+        params = self.get_params()
+        if params.get("random_state") is not None:
+            params["random_state"] = int(
+                self.ensemble_metadata_["fit_random_state_seed"]
+            )
+        return params
+
+    @classmethod
+    def _load_ensemble_model(cls, path):
+        import io
+        from .serialization import load_ensemble
+
+        archive = load_ensemble(path)
+        if archive is None:
+            return None
+        header, payloads = archive
+        saved_class = header["wrapper_class"]
+        if saved_class != cls.__name__:
+            raise TypeError(
+                f"{path!r} was saved by {saved_class}, not {cls.__name__}"
+            )
+        est = cls()
+        params = header["params"]
+        known = est.get_params()
+        est.set_params(**{k: v for k, v in params.items() if k in known})
+        expected_members = _normalize_n_ensembles(est.n_ensembles)
+        if expected_members != len(payloads):
+            raise ValueError(
+                "invalid DarkoFit model: ensemble params do not match its "
+                "member count"
+            )
+        members = [
+            cls.load_model(io.BytesIO(payload)) for payload in payloads
+        ]
+        for member in members:
+            if _normalize_n_ensembles(member.n_ensembles) != 1:
+                raise ValueError(
+                    "invalid DarkoFit model: nested ensemble member detected"
+                )
+        metadata = header["metadata"]
+        _validate_loaded_ensemble_metadata(
+            metadata,
+            members,
+            classification=hasattr(members[0], "classes_"),
+        )
+        feature_counts = {
+            int(member.n_features_in_) for member in members
+        }
+        if len(feature_counts) != 1:
+            raise ValueError(
+                "invalid DarkoFit model: ensemble members disagree on input "
+                "feature count"
+            )
+        if hasattr(members[0], "classes_"):
+            reference = np.asarray(members[0].classes_)
+            if any(
+                not np.array_equal(reference, np.asarray(member.classes_))
+                for member in members[1:]
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: ensemble members disagree on "
+                    "class labels"
+                )
+        return est._adopt_ensemble(members, metadata)
+
+    def _fit_ensemble(
+        self,
+        X,
+        y,
+        *,
+        cat_features,
+        eval_set,
+        groups,
+        sample_weight,
+        eval_sample_weight,
+        callbacks,
+        ordinal_features,
+        classification,
+    ):
+        n_members = _normalize_n_ensembles(self.n_ensembles)
+        if n_members == 1:
+            return None
+        bootstrap = _normalize_ensemble_bootstrap(self.ensemble_bootstrap)
+        if eval_set is not None or eval_sample_weight is not None:
+            raise ValueError(
+                "ensemble fits use each member's out-of-bag rows for "
+                "validation; eval_set and eval_sample_weight are not supported"
+            )
+        if callbacks:
+            raise ValueError(
+                "callbacks are not supported with n_ensembles > 1 because "
+                "each member owns an independent boosting lifecycle"
+            )
+        if self.refit:
+            raise ValueError(
+                "refit=True is not supported with n_ensembles > 1; OOB "
+                "members intentionally retain their bootstrap training rows"
+            )
+        if isinstance(ordinal_features, str) and (
+            ordinal_features.strip().lower() == "auto"
+        ):
+            raise ValueError(
+                "ordinal_features='auto' is not supported with ensembles; "
+                "declare complete ordinal category orders explicitly"
+            )
+        if not isinstance(
+            self.ensemble_shared_preprocessing, (bool, np.bool_)
+        ):
+            raise TypeError("ensemble_shared_preprocessing must be a bool")
+        if not classification and _is_distributional_loss(self.loss):
+            raise ValueError(
+                "n_ensembles currently supports scalar regression losses only; "
+                "distributional parameter aggregation is not yet defined"
+            )
+
+        X_checked, resolved_cat_features, n_features = _coerce_fit_X(
+            X, cat_features
+        )
+        y_checked = validate_target_vector(
+            y,
+            X_checked.shape[0],
+            dtype=None if classification else np.float64,
+        )
+        if classification:
+            target_type = type_of_target(y_checked)
+            if target_type not in {"binary", "multiclass"}:
+                raise ValueError(f"Unknown label type: {target_type}")
+            required_class_count = int(np.unique(y_checked).size)
+            if required_class_count < 2:
+                raise ValueError(
+                    f"Need at least 2 classes; got {required_class_count} class."
+                )
+        else:
+            required_class_count = None
+        sample_weight_checked = _validate_wrapper_sample_weight(
+            sample_weight, X_checked.shape[0]
+        )
+        group_values = None
+        if bootstrap == "groups":
+            if groups is None:
+                raise ValueError(
+                    "ensemble_bootstrap='groups' requires groups in fit"
+                )
+            group_values = np.asarray(groups)
+            if group_values.ndim != 1 or len(group_values) != len(X_checked):
+                raise ValueError(
+                    "groups must be one-dimensional with one value per "
+                    "training row"
+                )
+
+        fit_seed = normalize_random_state_seed(self.random_state)
+        member_seeds = tuple(
+            int(value)
+            for value in np.random.default_rng(fit_seed).integers(
+                0, 2**31 - 1, size=n_members
+            )
+        )
+        shared_requested = bool(self.ensemble_shared_preprocessing)
+        shared_eligible = (
+            shared_requested
+            and not resolved_cat_features
+            and (
+                ordinal_features is None
+                or (
+                    isinstance(ordinal_features, Mapping)
+                    and not ordinal_features
+                )
+            )
+            and np.asarray(X_checked).dtype.kind in "biuf"
+        )
+        shared_prep = None
+        full_binned = None
+        if shared_eligible:
+            shared_prep, full_binned = self._make_shared_numeric_preprocessing(
+                X_checked, y_checked, sample_weight_checked, fit_seed
+            )
+
+        estimators = []
+        member_metadata = []
+        for member_index, member_seed in enumerate(member_seeds):
+            plan = _ensemble_bootstrap_plan(
+                len(X_checked),
+                member_seed,
+                bootstrap=bootstrap,
+                groups=group_values,
+                y=y_checked,
+                required_class_count=required_class_count,
+                sample_weight=sample_weight_checked,
+            )
+            sampled = plan["sampled"]
+            oob = plan["oob"]
+            member = clone(self)
+            member.set_params(
+                n_ensembles=1,
+                random_state=member_seed,
+                early_stopping=True,
+                use_best_model=True,
+                refit=False,
+            )
+            member._suppress_wrapper_deprecation_warning = True
+            if shared_eligible:
+                member._shared_numeric_preprocessing_ = {
+                    "prep": shared_prep,
+                    "X_binned": np.asarray(full_binned[sampled]),
+                }
+            member_sample_weight = (
+                None
+                if sample_weight_checked is None
+                else sample_weight_checked[sampled]
+            )
+            member_eval_weight = (
+                None
+                if sample_weight_checked is None
+                else sample_weight_checked[oob]
+            )
+            try:
+                member.fit(
+                    _take_rows(X, sampled),
+                    _take_rows(y, sampled),
+                    cat_features=cat_features,
+                    eval_set=(
+                        _take_rows(X, oob),
+                        _take_rows(y, oob),
+                    ),
+                    sample_weight=member_sample_weight,
+                    eval_sample_weight=member_eval_weight,
+                    ordinal_features=ordinal_features,
+                )
+            finally:
+                if hasattr(member, "_shared_numeric_preprocessing_"):
+                    del member._shared_numeric_preprocessing_
+                if hasattr(member, "_suppress_wrapper_deprecation_warning"):
+                    del member._suppress_wrapper_deprecation_warning
+            validation = dict(
+                member.model_.auto_params_.get("validation_split", {})
+            )
+            if (
+                validation.get("source") != "explicit_eval_set"
+                or int(validation.get("eval_n_samples", -1)) != len(oob)
+            ):
+                raise RuntimeError(
+                    "ensemble member did not bind early stopping to its OOB rows"
+                )
+            estimators.append(member)
+            member_metadata.append({
+                "member": member_index,
+                "seed": member_seed,
+                "bootstrap_attempts": int(plan["attempts"]),
+                "bootstrap_rows": int(len(sampled)),
+                "bootstrap_unique_rows": int(np.unique(sampled).size),
+                "bootstrap_indices_sha256": _index_sha256(sampled),
+                "oob_rows": int(len(oob)),
+                "oob_indices_sha256": _index_sha256(oob),
+                "sampled_group_draws": plan["sampled_group_draws"],
+                "sampled_unique_groups": plan["sampled_unique_groups"],
+                "oob_groups": plan["oob_groups"],
+                "group_disjoint": (
+                    None if bootstrap == "rows" else True
+                ),
+                "best_iteration": int(member.best_n_estimators_),
+                "learning_rate": float(member.learning_rate_),
+                "stop_reason": str(
+                    getattr(member.model_, "stop_reason_", "unknown")
+                ),
+                "validation_source": validation["source"],
+            })
+
+        metadata = {
+            "version": 1,
+            "claim_tier": "E",
+            "default_changed": False,
+            "member_count": n_members,
+            "member_seeds": list(member_seeds),
+            "fit_random_state_seed": fit_seed,
+            "bootstrap": bootstrap,
+            "aggregation": (
+                "soft_vote" if classification else "mean"
+            ),
+            "oob_early_stopping": True,
+            "shared_preprocessing_requested": shared_requested,
+            "shared_preprocessing": (
+                "numeric_target_free"
+                if shared_eligible
+                else "member_local"
+            ),
+            "shared_preprocessing_fallback_reason": (
+                None
+                if shared_eligible or not shared_requested
+                else (
+                    "categorical_or_ordinal_features"
+                    if resolved_cat_features or ordinal_features is not None
+                    else "non_numeric_dtype"
+                )
+            ),
+            "input_feature_count": int(n_features),
+            "members": member_metadata,
+        }
+        return self._adopt_ensemble(estimators, metadata)
+
     def _prepare_ordinal_fit_input(self, X, cat_features, ordinal_features):
         nominal, mode, records = _resolve_ordinal_features(
             X, cat_features, ordinal_features
@@ -1593,7 +2250,7 @@ class _RefitParamsMixin:
             getattr(prep, "cat_features_", ())
         )
 
-    def _warn_wrapper_deprecated_options(self):
+    def _warn_wrapper_deprecated_options(self, *, stacklevel=3):
         if (
             self.auto_learning_rate_probe
             or self.auto_learning_rate_probe_values is not None
@@ -1606,7 +2263,7 @@ class _RefitParamsMixin:
                 "be removed in DarkoFit 1.0; use an explicit "
                 "validation-backed learning-rate search instead",
                 FutureWarning,
-                stacklevel=3,
+                stacklevel=stacklevel,
             )
         if (
             bool(getattr(self, "linear_residual", False))
@@ -1627,7 +2284,7 @@ class _RefitParamsMixin:
                 "scalar RMSE or detrend explicitly before fitting other "
                 "losses",
                 FutureWarning,
-                stacklevel=3,
+                stacklevel=stacklevel,
             )
 
     def __sklearn_is_fitted__(self):
@@ -1677,6 +2334,29 @@ class _RefitParamsMixin:
         ):
             if hasattr(self, name):
                 delattr(self, name)
+
+    def _clear_preset_state(self):
+        for name in ("preset_", "preset_params_"):
+            if hasattr(self, name):
+                delattr(self, name)
+
+    def _attach_preset_metadata(self):
+        preset = getattr(self, "preset_", None)
+        if preset is None:
+            return
+        metadata = {
+            "name": preset,
+            "claim_tier": "E",
+            "default_changed": False,
+            "resolved": dict(self.preset_params_),
+            "evidence_scope": "spent_development_panel",
+        }
+        model = getattr(self, "model_", None)
+        auto_params = getattr(model, "auto_params_", None)
+        if auto_params is not None:
+            auto_params["preset"] = metadata
+            auto_params.setdefault("diagnostics", {})
+            auto_params["diagnostics"]["preset"] = metadata
 
     def _clear_linear_residual_state(self):
         for name in (
@@ -1991,6 +2671,15 @@ class _RefitParamsMixin:
             auto_params["diagnostics"]["tree_mode_selection"] = metadata
 
     def _validate_tree_mode_selection_request(self):
+        selection_rounds = _normalize_selection_rounds(
+            getattr(self, "selection_rounds", None)
+        )
+        if selection_rounds is not None and not _is_auto_tree_mode(
+            self.tree_mode
+        ):
+            raise ValueError(
+                "selection_rounds currently requires tree_mode='auto'"
+            )
         if not _is_auto_tree_mode(self.tree_mode):
             return
         if self.ordered_boosting == "auto":
@@ -2021,6 +2710,14 @@ class _RefitParamsMixin:
         self, make_model, fit_kwargs, X, y, *, cat_features, eval_set,
         sample_weight, eval_sample_weight, callbacks=()
     ):
+        selection_rounds = _normalize_selection_rounds(
+            getattr(self, "selection_rounds", None)
+        )
+        requested_iterations = fit_kwargs.get("iterations", self.iterations)
+        cap_active = (
+            selection_rounds is not None
+            and selection_rounds < requested_iterations
+        )
         results = []
         best_model = None
         best_score = np.inf
@@ -2087,11 +2784,17 @@ class _RefitParamsMixin:
             if probe_lr is not None:
                 candidate_kwargs["learning_rate"] = probe_lr
             model = make_model(candidate_kwargs)
+            candidate_callbacks = callbacks
+            if cap_active:
+                candidate_callbacks = (
+                    *callbacks,
+                    _SelectionRoundStopper(selection_rounds),
+                )
             model.fit(
                 X, y, cat_features=cat_features, eval_set=eval_set,
                 sample_weight=sample_weight,
                 eval_sample_weight=eval_sample_weight,
-                callbacks=callbacks,
+                callbacks=candidate_callbacks,
             )
             deadline_after = _wall_clock_callback_state(callbacks)
             score = self._tree_mode_selection_score(model)
@@ -2166,6 +2869,35 @@ class _RefitParamsMixin:
             )
         selected = getattr(best_model, "tree_mode_", None)
         results[best_candidate_index]["selected"] = True
+        audition_model = best_model
+        final_refit_performed = False
+        final_refit_status = "not_requested"
+        if cap_active:
+            deadline_before_refit = _wall_clock_callback_state(
+                callbacks, refresh_deadline=True
+            )
+            if deadline_before_refit["deadline_hit"]:
+                final_refit_status = "skipped_deadline"
+            else:
+                final_kwargs = self._tree_mode_candidate_kwargs(
+                    fit_kwargs, selected
+                )
+                selected_probe_lr = (
+                    None
+                    if best_probe_metadata is None
+                    else best_probe_metadata.get("selected_learning_rate")
+                )
+                if selected_probe_lr is not None:
+                    final_kwargs["learning_rate"] = selected_probe_lr
+                best_model = make_model(final_kwargs)
+                best_model.fit(
+                    X, y, cat_features=cat_features, eval_set=eval_set,
+                    sample_weight=sample_weight,
+                    eval_sample_weight=eval_sample_weight,
+                    callbacks=callbacks,
+                )
+                final_refit_performed = True
+                final_refit_status = "fitted"
         deadline_final = _wall_clock_callback_state(callbacks)
         fit_status_counts = {
             status: sum(
@@ -2195,6 +2927,25 @@ class _RefitParamsMixin:
             ],
             "deadline_hit": bool(deadline_final["deadline_hit"]),
         }
+        if selection_rounds is not None:
+            final_training = getattr(best_model, "training_metadata_", {})
+            metadata.update({
+                "selection_rounds": selection_rounds,
+                "selection_cap_active": cap_active,
+                "final_refit_performed": final_refit_performed,
+                "final_refit_status": final_refit_status,
+                "final_iterations_requested": int(requested_iterations),
+                "audition_selected_rounds_retained": len(
+                    audition_model.trees_
+                ),
+                "final_rounds_retained": len(best_model.trees_),
+                "final_stop_reason": str(
+                    final_training.get(
+                        "stop_reason",
+                        getattr(best_model, "stop_reason_", "unknown"),
+                    )
+                ),
+            })
         if hasattr(best_model, "n_threads_"):
             _apply_thread_count(best_model.n_threads_)
         return best_model, best_probe_metadata, metadata
@@ -2222,6 +2973,9 @@ class _RefitParamsMixin:
             state["selection_model_persisted"] = False
         if hasattr(self, "tree_mode_selection_"):
             state["tree_mode_selection"] = self.tree_mode_selection_
+        if hasattr(self, "preset_"):
+            state["preset"] = self.preset_
+            state["preset_params"] = dict(self.preset_params_)
         if hasattr(self, "_selection_n_total_"):
             state["selection_n_total"] = self._selection_n_total_
         if hasattr(self, "_selection_n_train_"):
@@ -2420,6 +3174,21 @@ class _RefitParamsMixin:
         self.refit_strategy_ = state.get("refit_strategy")
         if "tree_mode_selection" in state:
             self.tree_mode_selection_ = state["tree_mode_selection"]
+        if "preset" in state:
+            preset = _normalize_regression_preset(state["preset"])
+            preset_params = state.get("preset_params")
+            if preset is None or not isinstance(preset_params, Mapping):
+                raise ValueError(
+                    "invalid DarkoFit model: preset state is invalid"
+                )
+            expected = _ACCURACY_PRESET_PARAMS if preset == "accuracy" else {}
+            if dict(preset_params) != expected:
+                raise ValueError(
+                    "invalid DarkoFit model: preset parameters do not match "
+                    "the saved preset"
+                )
+            self.preset_ = preset
+            self.preset_params_ = dict(preset_params)
         if self.refit_ and state.get("selection_model_persisted") is False:
             self.selection_model_ = None
             self.selection_model_persisted_ = False
@@ -2878,6 +3647,11 @@ class _RefitParamsMixin:
         """
         if not hasattr(self, "model_"):
             raise ValueError("model must be fitted before calling get_refit_params")
+        if hasattr(self, "estimators_"):
+            raise ValueError(
+                "get_refit_params() is not defined for OOB ensembles; each "
+                "member selected its own boosting horizon"
+            )
 
         exponent = self._refit_strategy_exponent(strategy)
 
@@ -2894,11 +3668,16 @@ class _RefitParamsMixin:
             rounds = int(np.ceil(rounds * (scale ** exponent)))
 
         params = self.get_params()
+        if hasattr(self, "preset_params_"):
+            params.update(self.preset_params_)
+            params["preset"] = None
         params["iterations"] = max(0, rounds)
         params["learning_rate"] = self.learning_rate_
         selected_tree_mode = getattr(self.model_, "tree_mode_", None)
         if selected_tree_mode is not None:
             params["tree_mode"] = selected_tree_mode
+            if "selection_rounds" in params:
+                params["selection_rounds"] = None
         params["early_stopping"] = False
         params["early_stopping_rounds"] = None
         if (
@@ -2947,6 +3726,10 @@ class _RefitParamsMixin:
     def n_estimators_(self):
         """Number of boosting rounds present in the fitted model."""
         check_is_fitted(self, "model_")
+        if hasattr(self, "estimators_"):
+            return int(np.median([
+                len(member.model_.trees_) for member in self.estimators_
+            ]))
         return len(self.model_.trees_)
 
     @property
@@ -2980,6 +3763,18 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
     linear_lambda : float, default 1.0
         Nonnegative ridge penalty applied to local-linear slopes. The regular
         leaf ``l2_leaf_reg`` remains the intercept penalty.
+    preset : {None, "accuracy"}, default None
+        Optional profile. ``"accuracy"`` applies the frozen A10 development
+        configuration during fit without changing the conservative default.
+        Explicit parameters outside the managed A10 fields remain in effect.
+    selection_rounds : int or None, default None
+        Optional cap for each ``tree_mode="auto"`` audition. The selected
+        mode is then fit from scratch with the full requested round budget.
+    n_ensembles : int, default 1
+        Number of OOB-selected bootstrap members. Values above one opt into
+        mean aggregation. ``ensemble_bootstrap="groups"`` requires ``groups``
+        in :meth:`fit`; numeric-only members may safely share target-free
+        preprocessing.
     """
 
     def __init__(self, iterations=1000, learning_rate=None, depth=None,
@@ -3018,7 +3813,10 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                  target_ordered_cat_codes="off",
                  rho_learning_rate_multiplier=1.0,
                  rho_l2_leaf_reg_multiplier=1.0,
-                 linear_leaves=False, linear_lambda=1.0):
+                 linear_leaves=False, linear_lambda=1.0,
+                 preset=None, selection_rounds=None, n_ensembles=1,
+                 ensemble_bootstrap="rows",
+                 ensemble_shared_preprocessing=True):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -3076,6 +3874,11 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self.rho_l2_leaf_reg_multiplier = rho_l2_leaf_reg_multiplier
         self.linear_leaves = linear_leaves
         self.linear_lambda = linear_lambda
+        self.preset = preset
+        self.selection_rounds = selection_rounds
+        self.n_ensembles = n_ensembles
+        self.ensemble_bootstrap = ensemble_bootstrap
+        self.ensemble_shared_preprocessing = ensemble_shared_preprocessing
         self.auto_learning_rate_probe = auto_learning_rate_probe
         self.auto_learning_rate_probe_values = auto_learning_rate_probe_values
         self.auto_learning_rate_probe_iterations = auto_learning_rate_probe_iterations
@@ -3083,6 +3886,47 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
             sample_weight=None, eval_sample_weight=None, callbacks=None,
             ordinal_features=None):
+        """Fit the model, resolving any opt-in product preset."""
+        self._clear_ensemble_state()
+        if not getattr(self, "_suppress_wrapper_deprecation_warning", False):
+            self._warn_wrapper_deprecated_options()
+        preset = _normalize_regression_preset(self.preset)
+        self._clear_preset_state()
+        if preset is None:
+            return self._fit_resolved(
+                X, y, cat_features=cat_features, eval_set=eval_set,
+                groups=groups, sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight, callbacks=callbacks,
+                ordinal_features=ordinal_features,
+            )
+        if self.loss != "RMSE":
+            raise ValueError(
+                "preset='accuracy' currently requires loss='RMSE'"
+            )
+        original = {
+            name: getattr(self, name) for name in _ACCURACY_PRESET_PARAMS
+        }
+        try:
+            for name, value in _ACCURACY_PRESET_PARAMS.items():
+                setattr(self, name, value)
+            fitted = self._fit_resolved(
+                X, y, cat_features=cat_features, eval_set=eval_set,
+                groups=groups, sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight, callbacks=callbacks,
+                ordinal_features=ordinal_features,
+            )
+        finally:
+            for name, value in original.items():
+                setattr(self, name, value)
+        self.preset_ = preset
+        self.preset_params_ = dict(_ACCURACY_PRESET_PARAMS)
+        self._attach_preset_metadata()
+        return fitted
+
+    def _fit_resolved(self, X, y, cat_features=None, eval_set=None,
+                      groups=None, sample_weight=None,
+                      eval_sample_weight=None, callbacks=None,
+                      ordinal_features=None):
         """Fit the model.
 
         Parameters
@@ -3119,7 +3963,20 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             candidate fits. Callbacks are not supported with automatic
             learning-rate probes or refitting.
         """
-        self._warn_wrapper_deprecated_options()
+        ensemble = self._fit_ensemble(
+            X,
+            y,
+            cat_features=cat_features,
+            eval_set=eval_set,
+            groups=groups,
+            sample_weight=sample_weight,
+            eval_sample_weight=eval_sample_weight,
+            callbacks=callbacks,
+            ordinal_features=ordinal_features,
+            classification=False,
+        )
+        if ensemble is not None:
+            return ensemble
         callbacks = _normalize_callbacks(callbacks)
         X_input = X
         feature_names = _feature_names_from_input(X_input)
@@ -3367,7 +4224,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 )
             if preprocessing_cache is not None:
                 model._preprocessing_cache = preprocessing_cache
-            return model
+            return self._configure_model_preprocessing(model)
 
         tree_mode_selection_metadata = None
         if tree_mode_auto:
@@ -3700,6 +4557,13 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
     def predict(self, X):
         X = _check_predict_input(self, X)
         self._check_fitted_loss_matches_params("predict")
+        if hasattr(self, "estimators_"):
+            predictions = []
+            for member in self.estimators_:
+                trend = member._linear_residual_trend(X)
+                raw = member.model_.predict_raw(X, _validated=True)
+                predictions.append(raw if trend is None else raw + trend)
+            return np.mean(np.stack(predictions, axis=0), axis=0)
         trend = self._linear_residual_trend(X)
         raw = self.model_.predict_raw(X, _validated=True)
         if self._fitted_distributional():
@@ -3733,12 +4597,32 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             )
         if X_background is not None:
             X_background = _check_predict_input(self, X_background)
-        contributions, expected_value = self.model_.shap_values(
-            X,
-            background=X_background,
-            _validated=True,
-            _background_validated=X_background is not None,
-        )
+        if hasattr(self, "estimators_"):
+            values = []
+            expected_values = []
+            for member in self.estimators_:
+                if getattr(member, "linear_residual_active_", False):
+                    raise NotImplementedError(
+                        "shap_values() is not implemented when an ensemble "
+                        "member has an active linear_residual"
+                    )
+                contributions, expected_value = member.model_.shap_values(
+                    X,
+                    background=X_background,
+                    _validated=True,
+                    _background_validated=X_background is not None,
+                )
+                values.append(contributions)
+                expected_values.append(float(expected_value))
+            contributions = np.mean(np.stack(values, axis=0), axis=0)
+            expected_value = float(np.mean(expected_values))
+        else:
+            contributions, expected_value = self.model_.shap_values(
+                X,
+                background=X_background,
+                _validated=True,
+                _background_validated=X_background is not None,
+            )
         self.expected_value_ = expected_value
         return contributions
 
@@ -3746,6 +4630,22 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         """Yield the prediction after each successive tree."""
         X = _check_predict_input(self, X)
         self._check_fitted_loss_matches_params("staged_predict")
+        if hasattr(self, "estimators_"):
+            trends = [
+                member._linear_residual_trend(X)
+                for member in self.estimators_
+            ]
+            generators = [
+                member.model_.staged_predict_raw(X, _validated=True)
+                for member in self.estimators_
+            ]
+            for raw_values in zip(*generators):
+                predictions = [
+                    raw if trend is None else raw + trend
+                    for raw, trend in zip(raw_values, trends)
+                ]
+                yield np.mean(np.stack(predictions, axis=0), axis=0)
+            return
         trend = self._linear_residual_trend(X)
         if self._fitted_distributional():
             loss = self.model_.loss_
@@ -3951,6 +4851,17 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
     def save_model(self, path):
         """Serialize the fitted model to a single ``.npz`` file."""
         check_is_fitted(self, "model_")
+        if hasattr(self, "estimators_"):
+            from .serialization import save_ensemble
+
+            save_ensemble(
+                self.estimators_,
+                path,
+                wrapper_class=type(self).__name__,
+                params=self._ensemble_params_header(),
+                metadata=self.ensemble_metadata_,
+            )
+            return
         from .serialization import save_booster
         save_booster(
             self.model_, path,
@@ -3963,6 +4874,9 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
     @classmethod
     def load_model(cls, path):
         """Load a model saved with :meth:`save_model`."""
+        ensemble = cls._load_ensemble_model(path)
+        if ensemble is not None:
+            return ensemble
         from .serialization import load_booster
         booster, wrapper_header, wrapper_arrays = load_booster(
             path, return_wrapper_payload=True
@@ -4010,11 +4924,29 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
     @property
     def feature_importances_(self):
         check_is_fitted(self, "model_")
+        if hasattr(self, "estimators_"):
+            return np.mean(
+                np.stack(
+                    [
+                        member.model_.feature_importances_
+                        for member in self.estimators_
+                    ],
+                    axis=0,
+                ),
+                axis=0,
+            )
         return self.model_.feature_importances_
 
     @property
     def timing_(self):
         check_is_fitted(self, "model_")
+        if hasattr(self, "estimators_"):
+            return {
+                "ensemble_member_count": len(self.estimators_),
+                "members": [
+                    member.model_.timing_ for member in self.estimators_
+                ],
+            }
         return self.model_.timing_
 
 
@@ -4032,6 +4964,10 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
     validation_fraction : float, default 0.1
         Fraction of training data held out for the automatic validation set.
         Ignored when an explicit *eval_set* is given to ``fit``.
+    n_ensembles : int, default 1
+        Number of OOB-selected bootstrap members. Values above one opt into
+        soft-vote aggregation. ``ensemble_bootstrap="groups"`` requires
+        ``groups`` in :meth:`fit`.
     """
 
     def __init__(self, iterations=1000, learning_rate=None, depth=None,
@@ -4057,7 +4993,10 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                  histogram_dtype="float64",
                  leaf_dtype="int64",
                  ts_permutations=1,
-                 target_ordered_cat_codes="off"):
+                 target_ordered_cat_codes="off",
+                 selection_rounds=None, n_ensembles=1,
+                 ensemble_bootstrap="rows",
+                 ensemble_shared_preprocessing=True):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -4100,6 +5039,10 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         self.leaf_dtype = leaf_dtype
         self.ts_permutations = ts_permutations
         self.target_ordered_cat_codes = target_ordered_cat_codes
+        self.selection_rounds = selection_rounds
+        self.n_ensembles = n_ensembles
+        self.ensemble_bootstrap = ensemble_bootstrap
+        self.ensemble_shared_preprocessing = ensemble_shared_preprocessing
         self.auto_learning_rate_probe = auto_learning_rate_probe
         self.auto_learning_rate_probe_values = auto_learning_rate_probe_values
         self.auto_learning_rate_probe_iterations = auto_learning_rate_probe_iterations
@@ -4143,7 +5086,23 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
             candidate fits. Callbacks are not supported with automatic
             learning-rate probes or refitting.
         """
-        self._warn_wrapper_deprecated_options()
+        self._clear_ensemble_state()
+        if not getattr(self, "_suppress_wrapper_deprecation_warning", False):
+            self._warn_wrapper_deprecated_options()
+        ensemble = self._fit_ensemble(
+            X,
+            y,
+            cat_features=cat_features,
+            eval_set=eval_set,
+            groups=groups,
+            sample_weight=sample_weight,
+            eval_sample_weight=eval_sample_weight,
+            callbacks=callbacks,
+            ordinal_features=ordinal_features,
+            classification=True,
+        )
+        if ensemble is not None:
+            return ensemble
         callbacks = _normalize_callbacks(callbacks)
         X_input = X
         feature_names = _feature_names_from_input(X_input)
@@ -4297,7 +5256,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                 model = GradientBoosting(loss="Logloss", **model_kw)
                 if preprocessing_cache is not None:
                     model._preprocessing_cache = preprocessing_cache
-                return model
+                return self._configure_model_preprocessing(model)
 
             if tree_mode_auto:
                 model, probe_metadata, tree_mode_selection_metadata = (
@@ -4345,7 +5304,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                 model = MulticlassBoosting(**model_kw)
                 if preprocessing_cache is not None:
                     model._preprocessing_cache = preprocessing_cache
-                return model
+                return self._configure_model_preprocessing(model)
 
             if tree_mode_auto:
                 model, probe_metadata, tree_mode_selection_metadata = (
@@ -4472,6 +5431,16 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
 
     def predict_proba(self, X):
         X = _check_predict_input(self, X)
+        if hasattr(self, "estimators_"):
+            probabilities = []
+            for member in self.estimators_:
+                raw = member.model_.predict_raw(X, _validated=True)
+                if member._multiclass:
+                    probabilities.append(member.model_.loss_.transform(raw))
+                else:
+                    p1 = member.model_.loss_.transform(raw)
+                    probabilities.append(np.column_stack([1.0 - p1, p1]))
+            return np.mean(np.stack(probabilities, axis=0), axis=0)
         raw = self.model_.predict_raw(X, _validated=True)
         if self._multiclass:
             return self.model_.loss_.transform(raw)            # (n, K)
@@ -4479,6 +5448,9 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         return np.column_stack([1.0 - p1, p1])
 
     def predict(self, X):
+        if hasattr(self, "estimators_"):
+            probabilities = self.predict_proba(X)
+            return self.classes_[np.argmax(probabilities, axis=1)]
         X = _check_predict_input(self, X)
         raw = self.model_.predict_raw(X, _validated=True)
         if self._multiclass:
@@ -4495,18 +5467,52 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
             )
         if X_background is not None:
             X_background = _check_predict_input(self, X_background)
-        contributions, expected_value = self.model_.shap_values(
-            X,
-            background=X_background,
-            _validated=True,
-            _background_validated=X_background is not None,
-        )
+        if hasattr(self, "estimators_"):
+            values = []
+            expected_values = []
+            for member in self.estimators_:
+                contributions, expected_value = member.model_.shap_values(
+                    X,
+                    background=X_background,
+                    _validated=True,
+                    _background_validated=X_background is not None,
+                )
+                values.append(contributions)
+                expected_values.append(float(expected_value))
+            contributions = np.mean(np.stack(values, axis=0), axis=0)
+            expected_value = float(np.mean(expected_values))
+        else:
+            contributions, expected_value = self.model_.shap_values(
+                X,
+                background=X_background,
+                _validated=True,
+                _background_validated=X_background is not None,
+            )
         self.expected_value_ = expected_value
         return contributions
 
     def staged_predict_proba(self, X):
         """Yield class probabilities after each successive boosting round."""
         X = _check_predict_input(self, X)
+        if hasattr(self, "estimators_"):
+            generators = [
+                member.model_.staged_predict_raw(X, _validated=True)
+                for member in self.estimators_
+            ]
+            for raw_values in zip(*generators):
+                probabilities = []
+                for member, raw in zip(self.estimators_, raw_values):
+                    if member._multiclass:
+                        probabilities.append(
+                            member.model_.loss_.transform(raw)
+                        )
+                    else:
+                        p1 = member.model_.loss_.transform(raw)
+                        probabilities.append(
+                            np.column_stack([1.0 - p1, p1])
+                        )
+                yield np.mean(np.stack(probabilities, axis=0), axis=0)
+            return
         for raw in self.model_.staged_predict_raw(X, _validated=True):
             if self._multiclass:
                 yield self.model_.loss_.transform(raw)
@@ -4516,6 +5522,10 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
 
     def staged_predict(self, X):
         """Yield class labels after each successive boosting round."""
+        if hasattr(self, "estimators_"):
+            for probabilities in self.staged_predict_proba(X):
+                yield self.classes_[np.argmax(probabilities, axis=1)]
+            return
         X = _check_predict_input(self, X)
         for raw in self.model_.staged_predict_raw(X, _validated=True):
             if self._multiclass:
@@ -4527,11 +5537,30 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
     def staged_predict_raw(self, X):
         """Yield raw margins after each successive boosting round."""
         X = _check_predict_input(self, X)
+        if hasattr(self, "estimators_"):
+            generators = [
+                member.model_.staged_predict_raw(X, _validated=True)
+                for member in self.estimators_
+            ]
+            for raw_values in zip(*generators):
+                yield np.mean(np.stack(raw_values, axis=0), axis=0)
+            return
         yield from self.model_.staged_predict_raw(X, _validated=True)
 
     def save_model(self, path):
         """Serialize the fitted model to a single ``.npz`` file."""
         check_is_fitted(self, "model_")
+        if hasattr(self, "estimators_"):
+            from .serialization import save_ensemble
+
+            save_ensemble(
+                self.estimators_,
+                path,
+                wrapper_class=type(self).__name__,
+                params=self._ensemble_params_header(),
+                metadata=self.ensemble_metadata_,
+            )
+            return
         from .serialization import _encode_categories, save_booster
 
         cls_arr = np.asarray(self.classes_)
@@ -4551,6 +5580,9 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
     @classmethod
     def load_model(cls, path):
         """Load a model saved with :meth:`save_model`."""
+        ensemble = cls._load_ensemble_model(path)
+        if ensemble is not None:
+            return ensemble
         from .serialization import _decode_categories, load_booster
 
         booster, wrapper_header, wrapper_arrays = load_booster(
@@ -4599,9 +5631,27 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
     @property
     def feature_importances_(self):
         check_is_fitted(self, "model_")
+        if hasattr(self, "estimators_"):
+            return np.mean(
+                np.stack(
+                    [
+                        member.model_.feature_importances_
+                        for member in self.estimators_
+                    ],
+                    axis=0,
+                ),
+                axis=0,
+            )
         return self.model_.feature_importances_
 
     @property
     def timing_(self):
         check_is_fitted(self, "model_")
+        if hasattr(self, "estimators_"):
+            return {
+                "ensemble_member_count": len(self.estimators_),
+                "members": [
+                    member.model_.timing_ for member in self.estimators_
+                ],
+            }
         return self.model_.timing_

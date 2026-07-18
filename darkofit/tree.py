@@ -5314,11 +5314,10 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     full-row/full-feature lane, level 0 copies them instead of scanning.
     fused_oblivious_kernel: private internal dispatch switch for the common
     multithreaded unit- and variable-Hessian lanes. The proven lane is enabled
-    by default and fuses histogram construction and split scanning for the
-    full-row/full-feature path without changing any public estimator
-    parameter. Selected-row and selected-feature paths retain their reference
-    kernels because their fused expansion did not pass the timing-stability
-    promotion gate.
+    by default and fuses histogram construction and split scanning for full
+    and sampled row/feature paths without changing any public estimator
+    parameter. The sampled expansion is behavior-exact and remains bounded to
+    the same non-randomized, feature-parallel eligibility conditions.
     fused_oblivious_counter: optional one-element integer array incremented
     once for every actual fused level invocation. This is benchmark
     observability only; requesting the candidate does not count as engagement.
@@ -5451,13 +5450,27 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     fused_lane = (
         bool(fused_oblivious_kernel)
         and get_num_threads() > _LEVEL_SUBTRACTION_MAX_THREADS
-        and row_indices is None
-        and feature_indices is None
         and rowpar_buffers is None
         and not subtract_lane
         and not root_copy_lane
         and random_strength <= 0.0
     )
+    fused_subset_lane = (
+        fused_lane
+        and (row_indices is not None or feature_indices is not None)
+    )
+    if fused_subset_lane:
+        fused_feature_indices = (
+            np.arange(n_features, dtype=np.int64)
+            if feature_indices is None
+            else feature_indices
+        )
+        fused_row_indices = (
+            np.empty(0, dtype=np.int64)
+            if row_indices is None
+            else row_indices
+        )
+        fused_all_rows = row_indices is None
     for d in range(max_depth):
         n_leaves = 1 << d
         subtract_level = subtract_lane and d >= 1
@@ -5470,7 +5483,54 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
         if fused_lane:
             if fused_oblivious_counter is not None:
                 fused_oblivious_counter[0] += 1
-            if constant_hessian:
+            if fused_subset_lane and constant_hessian:
+                f, t, gain = (
+                    _build_histograms_subset_unit_hess_and_best_split(
+                        X_hist_binned,
+                        grad,
+                        leaf,
+                        n_leaves,
+                        hg,
+                        hh,
+                        n_bins_per_feature,
+                        l2,
+                        feature_mask,
+                        min_child_weight,
+                        split_scratch[0],
+                        split_scratch[1],
+                        split_scratch[2],
+                        split_scratch[3],
+                        split_scratch[4],
+                        split_scratch[5],
+                        fused_feature_indices,
+                        fused_row_indices,
+                        fused_all_rows,
+                    )
+                )
+            elif fused_subset_lane:
+                f, t, gain = _build_histograms_subset_and_best_split(
+                    X_hist_binned,
+                    grad,
+                    hess,
+                    leaf,
+                    n_leaves,
+                    hg,
+                    hh,
+                    n_bins_per_feature,
+                    l2,
+                    feature_mask,
+                    min_child_weight,
+                    split_scratch[0],
+                    split_scratch[1],
+                    split_scratch[2],
+                    split_scratch[3],
+                    split_scratch[4],
+                    split_scratch[5],
+                    fused_feature_indices,
+                    fused_row_indices,
+                    fused_all_rows,
+                )
+            elif constant_hessian:
                 f, t, gain = _build_histograms_unit_hess_and_best_split(
                     X_hist_binned,
                     grad,
