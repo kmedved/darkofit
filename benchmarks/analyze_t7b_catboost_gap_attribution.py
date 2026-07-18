@@ -160,6 +160,7 @@ def _validate_arm(
         "prediction_timing",
         "tree_count",
         "requested_policy",
+        "constructor_params_observed",
         "resolved_params",
     }
     if (
@@ -176,6 +177,7 @@ def _validate_arm(
         or type(arm["tree_count"]) is not int
         or arm["tree_count"] != runner.ITERATIONS
         or not isinstance(arm["requested_policy"], dict)
+        or not isinstance(arm["constructor_params_observed"], dict)
         or not isinstance(arm["resolved_params"], dict)
         or set(arm["resolved_params"]) != set(runner.RESOLVED_KEYS)
     ):
@@ -199,6 +201,9 @@ def _validate_arm(
     )
     runner._validate_requested(
         arm["requested_policy"], coordinate, seed, expected_name
+    )
+    runner._validate_constructor_params_observed(
+        arm["constructor_params_observed"]
     )
 
 
@@ -301,6 +306,9 @@ def _validate_result(result, expected, coordinate, frozen):
                     "validation": arm["validation"],
                     "test": arm["test"],
                     "requested_policy": arm["requested_policy"],
+                    "constructor_params_observed": arm[
+                        "constructor_params_observed"
+                    ],
                     "resolved_params": arm["resolved_params"],
                 }
                 for arm in result["arms"]

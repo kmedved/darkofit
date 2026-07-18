@@ -22,7 +22,6 @@ def _resolved(learning_rate=0.05, seed=17, arm="baseline"):
             "eval_metric": "RMSE",
             "use_best_model": False,
             "eval_fraction": 0,
-            "thread_count": runner.THREADS_PER_WORKER,
             "boosting_type": "Plain",
             "random_strength": 1,
             "bootstrap_type": "MVS",
@@ -173,6 +172,9 @@ def _artifact_result(expected, coordinate, frozen):
                 "requested_policy": runner._requested_policy(
                     coordinate, expected["seed"], arm
                 ),
+                "constructor_params_observed": {
+                    "thread_count": runner.THREADS_PER_WORKER
+                },
                 "resolved_params": _resolved(
                     coordinate["frozen_learning_rate"],
                     expected["seed"],
@@ -208,6 +210,9 @@ def _artifact_result(expected, coordinate, frozen):
                     "validation": arm["validation"],
                     "test": arm["test"],
                     "requested_policy": arm["requested_policy"],
+                    "constructor_params_observed": arm[
+                        "constructor_params_observed"
+                    ],
                     "resolved_params": arm["resolved_params"],
                 }
                 for arm in arms
@@ -523,6 +528,23 @@ def test_t7b_arms_and_shared_learning_rate_policy_are_exact():
             "one_hot_max_size_255",
             categorical_count=1,
         )
+
+
+def test_t7b_thread_count_is_constructor_observed_not_faked_as_resolved():
+    class Model:
+        def get_all_params(self):
+            return _resolved()
+
+        def get_params(self):
+            return {"thread_count": runner.THREADS_PER_WORKER}
+
+    resolved = runner._resolved_params(Model())
+    observed = runner._constructor_params_observed(Model())
+    assert "thread_count" not in resolved
+    assert observed == {"thread_count": runner.THREADS_PER_WORKER}
+    runner._validate_constructor_params_observed(observed)
+    with pytest.raises(RuntimeError, match="constructor-observed"):
+        runner._validate_constructor_params_observed({"thread_count": None})
 
 
 def test_t7b_seed4_baseline_and_cars_negative_controls_fail_closed():

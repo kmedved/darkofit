@@ -75,7 +75,6 @@ RESOLVED_KEYS = (
     "eval_metric",
     "use_best_model",
     "eval_fraction",
-    "thread_count",
     "boosting_type",
     "random_strength",
     "bootstrap_type",
@@ -99,6 +98,9 @@ COORDINATES = (
 FREEZE = ROOT / "benchmarks" / "t7b_catboost_gap_attribution_freeze.json"
 ANALYZER = ROOT / "benchmarks" / "analyze_t7b_catboost_gap_attribution.py"
 TEST_FILE = ROOT / "tests" / "test_t7b_catboost_gap_attribution.py"
+INVALID_ATTEMPT = (
+    ROOT / "benchmarks" / "t7b_catboost_gap_attribution_invalid_attempt.md"
+)
 T7_RAW = ROOT / "benchmarks" / "t7_catboost_attribution_raw.json"
 T7_SUMMARY = ROOT / "benchmarks" / "t7_catboost_attribution_summary.json"
 DEFAULT_OUTPUT = (
@@ -185,6 +187,7 @@ def _source_paths():
         "protocol": PROTOCOL,
         "coordinates": COORDINATES,
         "tests": TEST_FILE,
+        "invalid_attempt": INVALID_ATTEMPT,
         "t7_runner": Path(t7.__file__).resolve(),
         "t7_analyzer": (
             ROOT / "benchmarks" / "analyze_t7_catboost_attribution.py"
@@ -471,6 +474,18 @@ def _resolved_params(model):
     return {key: params.get(key) for key in RESOLVED_KEYS}
 
 
+def _constructor_params_observed(model):
+    params = model.get_params()
+    return {"thread_count": params.get("thread_count")}
+
+
+def _validate_constructor_params_observed(params):
+    if params != {"thread_count": THREADS_PER_WORKER}:
+        raise RuntimeError(
+            "T7b CatBoost constructor-observed thread policy changed"
+        )
+
+
 def _requested_policy(coordinate, seed, arm):
     constructor = dict(REQUESTED_STATIC_PARAMS)
     constructor.update(
@@ -510,7 +525,6 @@ def _validate_resolved(
         or params.get("eval_metric") != "RMSE"
         or params.get("use_best_model") is not False
         or params.get("eval_fraction") != 0
-        or params.get("thread_count") != THREADS_PER_WORKER
         or params.get("boosting_type") != "Plain"
         or params.get("depth") != 6
         or params.get("grow_policy") != "SymmetricTree"
@@ -695,6 +709,8 @@ def run_worker(task_id, fold, seed, execution_index):
             random_seed=seed,
             **ARMS[arm],
         )
+        constructor_observed = _constructor_params_observed(model)
+        _validate_constructor_params_observed(constructor_observed)
         started = time.perf_counter_ns()
         model.fit(X_fit, y_fit, cat_features=categorical or None)
         fit_seconds = (time.perf_counter_ns() - started) / 1e9
@@ -724,6 +740,7 @@ def run_worker(task_id, fold, seed, execution_index):
                 "prediction_timing": timing,
                 "tree_count": int(model.tree_count_),
                 "requested_policy": requested,
+                "constructor_params_observed": constructor_observed,
                 "resolved_params": resolved,
             }
         )
@@ -761,6 +778,9 @@ def run_worker(task_id, fold, seed, execution_index):
                     "validation": arm["validation"],
                     "test": arm["test"],
                     "requested_policy": arm["requested_policy"],
+                    "constructor_params_observed": arm[
+                        "constructor_params_observed"
+                    ],
                     "resolved_params": arm["resolved_params"],
                 }
                 for arm in arm_results

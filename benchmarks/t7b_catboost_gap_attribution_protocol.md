@@ -82,7 +82,8 @@ The worker and parent enforce:
    access in the parent and workers.
 4. C2 registry, immutable C2 raw anchor, frozen T7 raw artifact, C2 loader,
    CatBoost frame helper, T7 runner, protocol, runner, analyzer, tests, and
-   coordinate declaration must match the source freeze.
+   coordinate declaration, plus the immutable invalid-attempt record, must
+   match the source freeze.
    `tests/conftest.py` is deliberately excluded from the model-affecting
    source map because it only assigns pytest markers; it remains covered by
    the clean two-commit execution boundary.
@@ -98,11 +99,15 @@ The worker and parent enforce:
    policy is still persisted and checked.
 8. Every arm must resolve to CatBoost CPU, seed, 1,000 iterations, and the
    coordinate's frozen learning rate. The complete requested constructor/fit
-   policy and the resolved loss, evaluation, thread, tree, sampling,
-   regularization, categorical, leaf-estimation, learning-rate, iteration, and
-   seed parameters are persisted and checked. Apart from declared overrides
-   and CatBoost's bootstrap-coupled sampling fields, every arm must resolve to
-   the baseline policy.
+   policy and the resolved loss, evaluation, tree, sampling, regularization,
+   categorical, leaf-estimation, learning-rate, iteration, and seed parameters
+   are persisted and checked. CatBoost 1.2.10 omits `thread_count` from
+   `get_all_params()` even when it accepts and retains the constructor value.
+   The runner therefore persists `model.get_params()["thread_count"]` as a
+   separate constructor-observed field and requires it to equal six; it never
+   inserts that value into the resolved snapshot. Apart from declared
+   overrides and CatBoost's bootstrap-coupled sampling fields, every arm must
+   resolve to the baseline policy.
 9. The parent must recheck the exact clean-pushed-main source state, source
    freeze, and coordinate declaration after every worker completes and before
    publishing the raw artifact.
