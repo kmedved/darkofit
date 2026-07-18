@@ -531,6 +531,26 @@ def _validate_chimeraboost_warmup_environment(value: str | None) -> str | None:
     return value
 
 
+def _loaded_chimeraboost_modules() -> dict[str, Any]:
+    """Return the complete currently loaded ChimeraBoost package namespace."""
+    return {
+        name: module
+        for name, module in sys.modules.items()
+        if name == "chimeraboost" or name.startswith("chimeraboost.")
+    }
+
+
+def _module_is_from_checkout(module: Any, checkout: Path) -> bool:
+    source = getattr(module, "__file__", None)
+    if not isinstance(source, (str, os.PathLike)):
+        return False
+    try:
+        Path(source).resolve().relative_to(checkout)
+    except (OSError, ValueError):
+        return False
+    return True
+
+
 def activate_chimeraboost_checkout(path: Path) -> dict[str, Any]:
     """Activate and prove the exact clean 0.14.1 tag checkout."""
     checkout = path.expanduser().resolve()
@@ -546,18 +566,49 @@ def activate_chimeraboost_checkout(path: Path) -> dict[str, Any]:
     _validate_chimeraboost_warmup_environment(
         os.environ.get("CHIMERABOOST_WARMUP")
     )
+    original_modules = _loaded_chimeraboost_modules()
+    origins = {
+        _module_is_from_checkout(module, checkout)
+        for module in original_modules.values()
+    }
+    if origins == {False, True}:
+        raise RuntimeError(
+            "mixed ChimeraBoost imports are already loaded from multiple checkouts"
+        )
+    if origins == {False}:
+        for name in original_modules:
+            sys.modules.pop(name, None)
+
+    original_sys_path = list(sys.path)
     checkout_text = str(checkout)
-    if checkout_text not in sys.path:
-        sys.path.insert(0, checkout_text)
+    while checkout_text in sys.path:
+        sys.path.remove(checkout_text)
+    sys.path.insert(0, checkout_text)
     importlib.invalidate_caches()
-    module = importlib.import_module("chimeraboost")
-    module_file = Path(module.__file__).resolve()
     try:
-        module_file.relative_to(checkout)
-    except ValueError as exc:
-        raise RuntimeError("imported chimeraboost is not the frozen checkout") from exc
-    if getattr(module, "__version__", None) != CHIMERABOOST_VERSION:
-        raise RuntimeError("imported ChimeraBoost version is not 0.14.1")
+        module = importlib.import_module("chimeraboost")
+        module_file = Path(module.__file__).resolve()
+        try:
+            module_file.relative_to(checkout)
+        except ValueError as exc:
+            raise RuntimeError(
+                "imported chimeraboost is not the frozen checkout"
+            ) from exc
+        if getattr(module, "__version__", None) != CHIMERABOOST_VERSION:
+            raise RuntimeError("imported ChimeraBoost version is not 0.14.1")
+        if any(
+            not _module_is_from_checkout(loaded, checkout)
+            for loaded in _loaded_chimeraboost_modules().values()
+        ):
+            raise RuntimeError(
+                "mixed ChimeraBoost imports are loaded from multiple checkouts"
+            )
+    except BaseException:
+        for name in _loaded_chimeraboost_modules():
+            sys.modules.pop(name, None)
+        sys.modules.update(original_modules)
+        sys.path[:] = original_sys_path
+        raise
     return {
         "repository": str(checkout),
         "git_head": CHIMERABOOST_TAG_COMMIT,
