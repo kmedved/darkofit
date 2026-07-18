@@ -1,0 +1,277 @@
+{
+  "analysis_performed": false,
+  "campaign_complete": false,
+  "candidate_arm_started": false,
+  "created_at": "2026-07-18T01:54:04.617011+00:00",
+  "decision": "close_t5_composite_candidate",
+  "default_promotion_authorized": false,
+  "execution": {
+    "attempted_wave": "darko_product_default",
+    "completed_worker_count": 23,
+    "completed_workers": [
+      {
+        "behavior_fingerprint_sha256": "811c9b0843c99fc27138e9b642e479542ee9fd81c0af3dff82ba543dfaf3c379",
+        "config": "darko_product_default",
+        "file_sha256": "86a2f3e6622e4d3db37b78bce1f1bd4ab25ec38833cedc9cd5595e54baa7da31",
+        "filename": "task-361131--darko_product_default.json",
+        "result_sha256": "eb1ceedcfa08dabd6b97abbb9c38ab19328ae2647cc74b11947346e78fe9129c",
+        "spool_record_sha256": "f990e9b027ac8c4bbc42d02ef5bac0a08241fa65888559366938939620eaf58f",
+        "task_id": 361131
+      },
+      {
+        "behavior_fingerprint_sha256": "aba16a6882d3846ca197c8bece408e8bcea0bff8b4993c442ab596a24ed7fe41",
+        "config": "darko_product_default",
+        "file_sha256": "e617a694616c70672e243bd543ce3db0c7a2f64e4e9faa5e7f763c79e97712b3",
+        "filename": "task-362086--darko_product_default.json",
+        "result_sha256": "05df7ed964c2bfb05c0abe3ba1e4911fae4418ea8977975660e8805f988cb86c",
+        "spool_record_sha256": "7dd71d0b31f0a7852de06a2f92a3912036e55627aa874866dd63c20999b55bd8",
+        "task_id": 362086
+      },
+      {
+        "behavior_fingerprint_sha256": "e0e7df462e5fd797aba4449c7d879c30c9ae1ce5ceda959b12f22f640ded4e80",
+        "config": "darko_product_default",
+        "file_sha256": "06a2cf6c339b0399e7c7afb54181187e2122441f3803339991939c8f1c179c3a",
+        "filename": "task-362088--darko_product_default.json",
+        "result_sha256": "522d052c125ac3c7e7ddfab56392bc20edfe99316d21c1d822e71efe6024e4bd",
+        "spool_record_sha256": "39731d5e8391152bd7b5bd10497f1699fa2446fd56b025dabc13ea804cddc60d",
+        "task_id": 362088
+      },
+      {
+        "behavior_fingerprint_sha256": "ace375a489a41362fb6b9eebd08e4958b6084aa021eac358e405f8ff498efd6d",
+        "config": "darko_product_default",
+        "file_sha256": "66b49c602a4dbec9a69f037da99af79d696459814170b4a774ca0941f2895216",
+        "filename": "task-362387--darko_product_default.json",
+        "result_sha256": "e4e452a0aeeb503b4a0210909a62067e22002956aa06d7cfaefabd180423b8b1",
+        "spool_record_sha256": "d823c6c3526b3827d91b55c4abac25531da058af5332872828da148e70c92dc0",
+        "task_id": 362387
+      },
+      {
+        "behavior_fingerprint_sha256": "d803592d84bbbbee775d5ff573495ee5c0a953cec085fe44d795de7a2fced974",
+        "config": "darko_product_default",
+        "file_sha256": "683795a061d420a4209878bc2c836660c6a4e52b80d6c3fddb9ae733f05f402e",
+        "filename": "task-362389--darko_product_default.json",
+        "result_sha256": "422a8f7baf0c6a73ea4a125d774806200e70d593645ec72819a6c3b3ed0bd297",
+        "spool_record_sha256": "6b919a48d76588eced88a20f19fb918ab30ddb6384461a50c1e330ecf5db2c62",
+        "task_id": 362389
+      },
+      {
+        "behavior_fingerprint_sha256": "bb09e733daf3fe784106f0ecd0ffd4f7429b33c6ec962710e9b8596f906100cb",
+        "config": "darko_product_default",
+        "file_sha256": "e9a8f5be836b546591c8b8c19d2cd732aef4f36cbe43b9d15004fa7b8eec5c9b",
+        "filename": "task-362390--darko_product_default.json",
+        "result_sha256": "9b911a70604368c4abd9fcaa8b410c539e9bf44ebf087e153135c5683ec2ae26",
+        "spool_record_sha256": "4b8837b351bb58b24e6c31ffbf649fae38035f608ec67a527bc424905ae947a1",
+        "task_id": 362390
+      },
+      {
+        "behavior_fingerprint_sha256": "c88ebb09c8e9394d7113bf8de906001dc33b36f8c48af9a7af583195b8d41a11",
+        "config": "darko_product_default",
+        "file_sha256": "f4889dba82fccb8bc9738085866196842a1149199d915fe4d469b8acdd435c8c",
+        "filename": "task-362548--darko_product_default.json",
+        "result_sha256": "be26a7274bfed16f686438ad9a468a4f8750a7a3e28aec88713fc4c4f11e2e89",
+        "spool_record_sha256": "5d8e92e1df423391385f23403af6e6dfefa85030f5a337c9d05fb4da17e67837",
+        "task_id": 362548
+      },
+      {
+        "behavior_fingerprint_sha256": "b513ec2cadba552b9ef10d5fceed2eb715a3d5e1dc9594e62351577481b4e75f",
+        "config": "darko_product_default",
+        "file_sha256": "545c2e988ceb0562ac2d9bc84d853863abad0b28a7d0c11414a5c1b5f75222cc",
+        "filename": "task-362589--darko_product_default.json",
+        "result_sha256": "92ae07d6d9dfa9727fbb2b76a30bde9a54add668b8464eb26ede2936fbb5291a",
+        "spool_record_sha256": "bdf05009a2278adebb12f7937935c934939414f62e8530e1ca7295d4217df595",
+        "task_id": 362589
+      },
+      {
+        "behavior_fingerprint_sha256": "b5a8270491e81b694142101b659452c6093b4795b3c8d0a10511d1bf4f516769",
+        "config": "darko_product_default",
+        "file_sha256": "dbc2534eede5b18b524cd63b50cfdc0d2389ad4790a3e9f582ea58f77fa71295",
+        "filename": "task-363198--darko_product_default.json",
+        "result_sha256": "0a33cb3fa0b1097c22aa00ca69a8f22ca6d6ca22d9ae931b475e5270f453d520",
+        "spool_record_sha256": "68b26cae974d0c08abab0b17137a19beb1e25097274fe8bb46600d8bbfc7b90d",
+        "task_id": 363198
+      },
+      {
+        "behavior_fingerprint_sha256": "14098e5eb8b89ac774f92dd241768c3f9f58d060067cbd22d3c9e0abc6892f24",
+        "config": "darko_product_default",
+        "file_sha256": "8b5d5da5ce8a01a9bf26300cf3006849985d5c92adac7f8bf701a02ba85c0473",
+        "filename": "task-363200--darko_product_default.json",
+        "result_sha256": "d85aee94071b6da45b3a8a10de99fadcb9cf977b06d32ff858597c4fc81d87ff",
+        "spool_record_sha256": "513479bf3af59cc3d2bc7b8d9ea5c89e041b1fc87eb97743b8fa47281b6c12a2",
+        "task_id": 363200
+      },
+      {
+        "behavior_fingerprint_sha256": "8cdd1e1a8313554bf7380d31810b95d42c8b0409f261cf11695927389b22a883",
+        "config": "darko_product_default",
+        "file_sha256": "13e5e18bae4180e28cce54f70ef1121d9ebdd603e397f346fa5aaf1abc23746e",
+        "filename": "task-363202--darko_product_default.json",
+        "result_sha256": "578989a464d56ca33d6d150f490d848b24a44961c33e4e0b396bce18c7ae135d",
+        "spool_record_sha256": "86be8d8e6ef76044dbf8a664ad4c60d4900e654773f473d81b641101e51906d5",
+        "task_id": 363202
+      },
+      {
+        "behavior_fingerprint_sha256": "5123b440d5460099607047aba438befc3ca44d4638c1d85ca2a2b42258eb7827",
+        "config": "darko_product_default",
+        "file_sha256": "d0a4e246b6aba7acfc51dfcb994e5889cd8fc1141a6fa906a1727821feb28d58",
+        "filename": "task-363204--darko_product_default.json",
+        "result_sha256": "9708ed94a4c49661a57f978ee16d9633e0551c2a535425500719bd5f0d823969",
+        "spool_record_sha256": "0de6cd0ec2a24c6ed8d20b63058fa687e7f2c2dee03f0e96a00708969145abed",
+        "task_id": 363204
+      },
+      {
+        "behavior_fingerprint_sha256": "301ba4370b3fed88fe31bc16e9579fe8673d725677caea1cf7652f247f4cae3a",
+        "config": "darko_product_default",
+        "file_sha256": "f72da2d1d7112df68521335a4fb041543dfec8ae4e62651e594133300088eaa4",
+        "filename": "task-363210--darko_product_default.json",
+        "result_sha256": "2e5786b45de950deeba0084548cf2b2def5a0adfc1407986e8545ce5d4f05222",
+        "spool_record_sha256": "11d2c1df6c6258e67cf49fbcf54bcfbf67992441513c6264d4ea8ac5406a5f51",
+        "task_id": 363210
+      },
+      {
+        "behavior_fingerprint_sha256": "fa0715188b4742f35df186ef14a53672d334e40f7bbfd965e5c82548da44cc09",
+        "config": "darko_product_default",
+        "file_sha256": "764c186cdf16f4d43be7221bf8aec28358df0c2dfde290a408747317ca4b443f",
+        "filename": "task-363214--darko_product_default.json",
+        "result_sha256": "4920854b258b0a46c549ba284e2963a59d511bea063198996ff2ed41785a5428",
+        "spool_record_sha256": "9d9a96cbea879bf66f81503f15fe855bb9ab0655004239a2a660f70eb070a031",
+        "task_id": 363214
+      },
+      {
+        "behavior_fingerprint_sha256": "99dd744b3e4f9b2f4b42d5375723f5ce2cd5292b41e5d104a87a2ffad3fdd816",
+        "config": "darko_product_default",
+        "file_sha256": "19d46faee9238617ef9b637031e8c73d0db330f69ccdc189e3c63ad3074e3cd4",
+        "filename": "task-363220--darko_product_default.json",
+        "result_sha256": "4036851ae0524437c3e8fbf6c8b5dca17f2757806bdfcac6109379b3372c5673",
+        "spool_record_sha256": "36e9a2cd37a95ef8267d76e1fd0b909e4b1fcee7c081c70ab3090d377ff6d7c9",
+        "task_id": 363220
+      },
+      {
+        "behavior_fingerprint_sha256": "e1d90a90b2003a01259246db677705a26e3c6ea0640c215e014b704444f39426",
+        "config": "darko_product_default",
+        "file_sha256": "f235f416ae9128f873c4a57ffa3c3ef3249e19a035dbd72025ea0925aa211116",
+        "filename": "task-363223--darko_product_default.json",
+        "result_sha256": "181964c3af4a81ebb95f02cb7ec987a507ddfc6719220ad4d7ebbd48523eb16c",
+        "spool_record_sha256": "f943cd59b2404a28734ddb6b53c49cb88d566453f7bea14abd26124a619ab695",
+        "task_id": 363223
+      },
+      {
+        "behavior_fingerprint_sha256": "3a9a156e6c152d4d9c2a31587cfe610fecd659dc649b28a7f0ce1f7110717a6d",
+        "config": "darko_product_default",
+        "file_sha256": "7e362c3809ef8ac0f3c1841368f4c7db43056bbab09d837de908853c7cbca046",
+        "filename": "task-363348--darko_product_default.json",
+        "result_sha256": "ee02670c4678396a58f0502252632260c8b0a78f2394a59ae282e516cb11c86d",
+        "spool_record_sha256": "44352060a1de8b88a9d4594425d9085dcb9ed14f73e547563d05ec0a60547f2e",
+        "task_id": 363348
+      },
+      {
+        "behavior_fingerprint_sha256": "5590b1b2ce3fd950973c6317c027e5eb9b5267bc11a7eed5194e69d7df08888a",
+        "config": "darko_product_default",
+        "file_sha256": "e22bf6389cabdcbc5c2e2fa518580cccb8e60a06bc125b8ada064ca50782046b",
+        "filename": "task-363373--darko_product_default.json",
+        "result_sha256": "14ce240c3ffe847c6d71142394c8d26918010c2682eb1b5c0cf57e4576efd45e",
+        "spool_record_sha256": "753e5a77fa9f50bbd0dc2e64506cfea776a20431074f9f6fe9c3231f686d282f",
+        "task_id": 363373
+      },
+      {
+        "behavior_fingerprint_sha256": "a2056b3624197a8cc1a8107e74ece25bba852b60904c473a205eec8755778edc",
+        "config": "darko_product_default",
+        "file_sha256": "ec73747a3052002e614ab9e705287fb491ee1246c086233596981784d1621f58",
+        "filename": "task-363431--darko_product_default.json",
+        "result_sha256": "bea82b3260c547c729efea3d4691b9756a020735d923bf818cc776e2000efa3f",
+        "spool_record_sha256": "111cca9c44381aa78919118b74caeb9a592e0bca9f2d87c0d8f1e77d86b2af1f",
+        "task_id": 363431
+      },
+      {
+        "behavior_fingerprint_sha256": "fbbc7c0f011071a0d91660f2e21846a208325050b470474512cf0d67ba032c64",
+        "config": "darko_product_default",
+        "file_sha256": "78242e68d0f58bc3b6991d6839885a8e3ba88d12aa8c31bd19f33155fdb3df6b",
+        "filename": "task-363595--darko_product_default.json",
+        "result_sha256": "247314be1960e0fa4400c7f86b5f61b8c09d94cb41ff0e6aaffad2f7eb3acfff",
+        "spool_record_sha256": "b33d26a0fbb4a30233f7cdf59f4dac0d76bf1d05f59492c6c183d314f2887033",
+        "task_id": 363595
+      },
+      {
+        "behavior_fingerprint_sha256": "8a618940255e70fbc28d583646329f9b68805f72582833f98aac067a1dac54c6",
+        "config": "darko_product_default",
+        "file_sha256": "946d02f93f57c16255e7650b064be3252300af2362800e0e754692a3cd6a7c15",
+        "filename": "task-363600--darko_product_default.json",
+        "result_sha256": "0e82bda7f4f34409c806855e13fed827cd24ea9b349d0f604162fff395986a4e",
+        "spool_record_sha256": "67e9e11e7725f04bff9e632fa9fcfb7159e612b1cf69bd7c27bead388c59b9dd",
+        "task_id": 363600
+      },
+      {
+        "behavior_fingerprint_sha256": "5f511c52f62e924250babd5b34961f7da7364e412385f47fa7809f29ddb7b3a8",
+        "config": "darko_product_default",
+        "file_sha256": "0d1df3cb6f396f6eaf54b6f0f0b48c52f44f8be0a3ee699d64dcefddae70bbec",
+        "filename": "task-363652--darko_product_default.json",
+        "result_sha256": "53961fe8065a375679cad06b2e7c13ea790da58871ee649146fbb633c6c216c6",
+        "spool_record_sha256": "3ce2f6410bc407788864c407576fa55bfc8b1ac5a590df08952b2ca307103a15",
+        "task_id": 363652
+      },
+      {
+        "behavior_fingerprint_sha256": "9213a90b1333f2f532b58dc23072ec165df1f7135b7110b8f70e9d2513fb9de1",
+        "config": "darko_product_default",
+        "file_sha256": "ab75668dc2671f01c4e238046501f57cb0c06bba073158b88157ebef41919a09",
+        "filename": "task-363721--darko_product_default.json",
+        "result_sha256": "e9ef2fc7fde84135cd993bed0fcd9c0b4bedd555d2c94695343c1c9f12049d8e",
+        "spool_record_sha256": "5c84cf9c4fec37c797472e4df120ef8d156043bf69b9c27c6ec2d4bca4ddcc13",
+        "task_id": 363721
+      }
+    ],
+    "expected_worker_count": 25,
+    "failed_before_fit_count": 2,
+    "interpreter": "/Users/kmedved/.venvs/tabarena-darko312/bin/python",
+    "invalid_targets": [
+      {
+        "dataset_id": 43462,
+        "dataset_name": "Riga-real-estate-dataset",
+        "finite": 4219,
+        "nan": 470,
+        "neginf": 0,
+        "nonfinite": 470,
+        "posinf": 0,
+        "rows": 4689,
+        "target_name": "price",
+        "task_id": 362367
+      },
+      {
+        "dataset_id": 43853,
+        "dataset_name": "Nintendo3DS-Games",
+        "finite": 138,
+        "nan": 1542,
+        "neginf": 0,
+        "nonfinite": 1542,
+        "posinf": 0,
+        "rows": 1680,
+        "target_name": "metacritic",
+        "task_id": 362395
+      }
+    ],
+    "primary_reported_failure_task_id": 362395,
+    "python": "3.12.13 (main, Jun 11 2026, 03:55:21) [Clang 22.1.3 ]"
+  },
+  "failure_artifact_sha256": "60f34e461c787b15699a39679b8d072ae45fc778679f3e48641ff620a3c5d94e",
+  "failure_reason": "frozen_panel_contains_nonfinite_targets",
+  "lockbox_data_used": false,
+  "name": "darkofit_t5_composite_confirmation_failure_v1",
+  "outcomes_scored": true,
+  "panel_disposition": {
+    "all_25_lineages_spent_for_confirmation": true,
+    "reason": "control outcomes were scored before the frozen data-validity failure; the panel cannot be repaired or reused"
+  },
+  "protocol": {
+    "path": "benchmarks/t5_composite_registry_protocol.md",
+    "registry_canonical_sha256": "683cdb780e8e9eefbe0aeb4b3bd6f8f95ccf4b6e62397a117beb15f068db77ab",
+    "registry_file_sha256": "0cacff16214731dc89292abd31cc6abbd1ea2fc244a6c26b681e1206cbe301bd",
+    "runner_path": "benchmarks/run_t5_composite_confirmation.py",
+    "runner_sha256": "5645c4fba31b302457766a56f553b33292d2fb7443afd52d398879c6df01ac64",
+    "sha256": "ca3ce41165daa5fcb0402b908a0bb23c5fb802774e73877976c36c3eb0aefd19"
+  },
+  "rerun_authorized": false,
+  "schema_version": 1,
+  "sources": {
+    "chimeraboost_head": "851ab7fa79fbb2a7f698fbc1a00952e1bd18c62d",
+    "darkofit_head": "da6881ecf1f58f251c9b3a6486c03000126d292c"
+  },
+  "task_drop_allowed": false,
+  "task_imputation_allowed": false
+}

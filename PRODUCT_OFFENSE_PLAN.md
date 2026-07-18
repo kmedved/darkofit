@@ -19,7 +19,8 @@ the agenda. Companion to the execution ledger in `BEYOND_PARITY_PLAN.md`.*
 | T4 capped selection | Complete | final-refit exactness + metadata |
 | T6a RSSI diagnosis | Complete | `benchmarks/rssi_linear_leaf_diagnosis_result.md` |
 | T6b smooth cross features | Complete | exact mechanism + 5% T5 nominee |
-| T5 and T7–T10 campaigns | Pending | frozen protocols, contamination and power checks |
+| T5 composite confirmation | Closed | fail-closed on two non-finite-target tasks before candidate wave |
+| T7–T10 campaigns | Pending | frozen protocols, contamination and power checks |
 
 Status in this table is operational only. It cannot amend a frozen protocol or
 promote a Tier-D candidate.
@@ -110,7 +111,13 @@ The complete binding policy is `benchmarks/SHIPPING_POLICY.md`.
   against ChimeraBoost and CatBoost on a fresh, contamination-screened,
   approximately 25-dataset panel. Freeze the exact policy, power simulation,
   uncertainty, leave-one-out concentration, harm, and cost rules before
-  outcomes.
+  outcomes. The 25-lineage campaign was frozen and powered, but its first
+  control wave found two tasks with non-finite targets. Because control
+  outcomes already existed and the protocol forbade task dropping or
+  imputation, the campaign closed without running the candidate or changing a
+  default. The failure record is
+  `benchmarks/t5_composite_confirmation_failure.md`; every lineage is spent
+  for confirmation.
 - **T6. Smooth/geometry cross features.** Develop diff/product features on
   spent smooth tasks, beginning with a 3D-RSSI diagnosis. The closed sports
   application remains closed. Confirmation belongs inside the T5 panel. T6a
