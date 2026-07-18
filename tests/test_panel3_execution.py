@@ -1434,20 +1434,30 @@ def test_analysis_cli_rejects_noncanonical_paths(tmp_path, monkeypatch):
             analyzer.main([flag, str(tmp_path / name)])
 
 
-def test_analysis_partial_publication_never_deletes_create_only_file(
+def test_analysis_partial_publication_resumes_from_identical_display(
     tmp_path,
     monkeypatch,
 ):
     output = tmp_path / "summary.json"
     markdown = tmp_path / "result.md"
     monkeypatch.setattr(analyzer, "_markdown", lambda _summary: "result\n")
+    failed_once = False
 
     def create(path, payload):
-        if path == output:
+        nonlocal failed_once
+        if path == output and not failed_once:
+            failed_once = True
             raise FileExistsError("simulated publication race")
+        if path.exists():
+            raise FileExistsError(f"refusing existing output: {path}")
         path.write_bytes(payload)
 
     monkeypatch.setattr(common, "atomic_create", create)
+    monkeypatch.setattr(
+        common,
+        "secure_read_bytes",
+        lambda path: path.read_bytes(),
+    )
 
     with pytest.raises(FileExistsError, match="publication race"):
         analyzer._publish_artifacts(
@@ -1457,6 +1467,46 @@ def test_analysis_partial_publication_never_deletes_create_only_file(
         )
 
     assert markdown.read_text() == "result\n"
+    assert not output.exists()
+
+    analyzer._publish_artifacts(
+        {"value": 1},
+        output=output,
+        markdown=markdown,
+    )
+
+    assert markdown.read_text() == "result\n"
+    assert json.loads(output.read_text()) == {"value": 1}
+
+
+def test_analysis_partial_publication_rejects_different_display(
+    tmp_path,
+    monkeypatch,
+):
+    output = tmp_path / "summary.json"
+    markdown = tmp_path / "result.md"
+    markdown.write_text("different\n")
+    monkeypatch.setattr(analyzer, "_markdown", lambda _summary: "result\n")
+    monkeypatch.setattr(
+        common,
+        "atomic_create",
+        lambda path, _payload: (_ for _ in ()).throw(
+            FileExistsError(f"refusing existing output: {path}")
+        ),
+    )
+    monkeypatch.setattr(
+        common,
+        "secure_read_bytes",
+        lambda path: path.read_bytes(),
+    )
+
+    with pytest.raises(RuntimeError, match="differs from derived display"):
+        analyzer._publish_artifacts(
+            {"value": 1},
+            output=output,
+            markdown=markdown,
+        )
+
     assert not output.exists()
 
 

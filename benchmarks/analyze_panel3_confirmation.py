@@ -3133,8 +3133,20 @@ def _publish_artifacts(
     output: Path,
     markdown: Path,
 ) -> None:
-    """Publish the display first and the canonical summary as commit marker."""
-    common.atomic_create(markdown, _markdown(summary).encode("utf-8"))
+    """Publish the display first and the canonical summary as commit marker.
+
+    A failed summary publication may leave the create-only display behind.
+    Treat an exact display match as a resumable partial publication; any
+    differing pre-existing display remains a hard failure.
+    """
+    display = _markdown(summary).encode("utf-8")
+    try:
+        common.atomic_create(markdown, display)
+    except FileExistsError:
+        if common.secure_read_bytes(markdown) != display:
+            raise RuntimeError(
+                "existing panel-3 markdown differs from derived display"
+            ) from None
     common.atomic_create(
         output,
         (
@@ -3165,8 +3177,14 @@ def main(argv: list[str] | None = None) -> int:
     paths = observed[2:]
     if len(set(paths)) != len(paths):
         raise RuntimeError("refusing existing or aliased panel-3 output")
-    for path in paths:
-        common.validate_create_path(path)
+    common.validate_create_path(paths[0])
+    try:
+        common.validate_create_path(paths[1])
+    except FileExistsError:
+        # An exact-content comparison is deferred until after the summary is
+        # re-derived. This only permits recovery from a display-first partial
+        # publication; the canonical summary must still be absent.
+        common.secure_read_bytes(paths[1])
     raw, raw_file_sha256 = common.secure_load_json(args.input)
     registry, registry_file_sha256 = common.secure_load_json(args.registry)
     if not isinstance(raw, dict) or not isinstance(registry, dict):
