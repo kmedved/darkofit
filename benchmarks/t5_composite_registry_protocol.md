@@ -89,7 +89,10 @@ hyperparameter arm.
    auditions followed by the selected lane's full-budget fit.
 5. If CatBoost tree mode wins, separately race constant and per-leaf-linear
    leaves at full budget. Other tree modes remain constant-leaf.
-6. Apply only complete ordinal maps frozen in this registry.
+6. Apply only complete ordinal maps frozen in this registry, and only to the
+   challenger. The control audition, separate current-default arm, size-gate
+   decline, and validation-guard decline remain the unmodified current product
+   default.
 7. From the selected uncrossed challenger, rank numeric features by split gain,
    take at most six, append every pair's difference and product, and refit the
    selected tree/leaf lane. Crosses engage only when validation RMSE improves
@@ -110,6 +113,18 @@ separate current-default full-data fit byte for byte.
 ChimeraBoost 0.15.0 and the installed CatBoost product default run on the same
 outer coordinates. They are competitive comparators, not ingredients in the
 DarkoFit promotion decision.
+
+Each isolated task/config worker performs the appropriate engine warmup before
+any recorded fit. Prediction cost includes external cross transformation and
+is measured in repeated blocks lasting at least 0.25 seconds, with at least
+five calls. Warmup time is recorded but excluded from fit/predict comparisons.
+The runner emits an immutable raw artifact only. A separate analyzer validates
+that raw boundary and computes every gate without refitting. Each completed
+task/config worker is first persisted as a hash-bound, create-only spool
+record. An interrupted campaign resumes those exact records and never refits a
+completed worker; the final raw artifact records which workers were resumed.
+Any source, protocol, runner, registry, coordinate, or result-hash mismatch
+fails closed.
 
 ## Tier-D decision rule
 
