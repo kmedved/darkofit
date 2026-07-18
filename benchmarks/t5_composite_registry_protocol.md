@@ -53,6 +53,17 @@ near-match fails the freeze closed. The one ordinal declaration (`Riga:
 condition`) is checked against the complete feature domain without consulting
 the target.
 
+### Target-blind registry amendment
+
+The committed v1 builder stopped before writing an artifact because OpenML
+task `168887` (`CD4`) names `Future_CD4` as its task target while the dataset
+metadata has no default target. The shared semantic-fingerprint builder
+correctly rejects that ambiguity. No model was fitted, no target statistic was
+computed, and no candidate outcome was scored. The nominee was replaced
+target-blind with task `363204` (`dataFTR`, target `time`), preserving the
+25-lineage and 9/9/7 stratum design. The failed attempt is recorded in
+`t5_composite_registry_invalid_attempt.md`.
+
 ## Exact composite nominee
 
 The evaluated unit is a selection-guarded automatic policy, not a bare
