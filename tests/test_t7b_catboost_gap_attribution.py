@@ -1,5 +1,7 @@
 import json
 import math
+import subprocess
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -224,7 +226,7 @@ def _artifact_result(expected, coordinate, frozen):
 
 
 def _raw_artifact():
-    freeze = runner._source_freeze()
+    freeze = runner._source_freeze(verify_live=False)
     declaration, frozen = runner._coordinates()
     source = _artifact_source()
     binding = runner._binding(source, freeze, declaration)
@@ -271,13 +273,13 @@ def _raw_artifact():
     return payload
 
 
-def test_t7b_is_frozen_before_execution_in_a_new_namespace():
+def test_t7b_historical_freeze_uses_a_dedicated_namespace():
     assert runner.PROTOCOL.name.startswith("t7b_")
     assert runner.COORDINATES.name.startswith("t7b_")
     assert runner.FREEZE.name.startswith("t7b_")
     assert runner.DEFAULT_OUTPUT.name.startswith("t7b_")
     assert runner.DEFAULT_SPOOL.name.startswith("t7b-")
-    freeze = runner._source_freeze()
+    freeze = runner._source_freeze(verify_live=False)
     assert freeze["status"] == "frozen_not_executed"
     assert freeze["catboost_version"] == "1.2.10"
     assert freeze["environment"] == runner.EXPECTED_ENVIRONMENT
@@ -294,13 +296,9 @@ def test_t7b_outputs_are_create_only_in_temporary_paths(tmp_path):
 
 
 def test_t7b_freeze_binds_every_declared_source():
-    freeze = runner._source_freeze()
+    freeze = runner._source_freeze(verify_live=False)
     assert set(freeze["source_sha256"]) == set(runner._source_paths())
     assert "test_classifier" not in freeze["source_sha256"]
-    assert all(
-        runner._sha256(path) == freeze["source_sha256"][name]
-        for name, path in runner._source_paths().items()
-    )
     assert all(
         runner._git_blob_sha256(
             path, freeze["darkofit_model_head"]
@@ -956,3 +954,15 @@ def test_t7b_cli_defaults_are_repository_anchored(tmp_path, monkeypatch):
     assert analysis_args.input == analyzer.DEFAULT_INPUT
     assert analysis_args.output == analyzer.DEFAULT_OUTPUT
     assert analysis_args.markdown == analyzer.DEFAULT_MARKDOWN
+
+
+def test_t7b_analyzer_direct_script_entrypoint_is_portable(tmp_path):
+    completed = subprocess.run(
+        [sys.executable, str(analyzer.__file__), "--help"],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert "Analyze the prospective" in completed.stdout

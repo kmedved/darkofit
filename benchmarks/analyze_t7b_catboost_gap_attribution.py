@@ -8,16 +8,21 @@ import hashlib
 import json
 import math
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from benchmarks import analyze_t7_catboost_attribution as t7_analyzer
 from benchmarks import run_t7b_catboost_gap_attribution as runner
 
 
-ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_INPUT = runner.DEFAULT_OUTPUT
 DEFAULT_OUTPUT = (
     ROOT / "benchmarks" / "t7b_catboost_gap_attribution_summary.json"
