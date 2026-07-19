@@ -1,7 +1,33 @@
 # Panel 3 pre-freeze consolidation decision
 
-**Status:** safeguard-retention review complete; evidence freeze not yet
-created.
+**Status:** safeguard-retention review complete; repaired evidence chain closed
+at the preregistered power `NO-GO`.
+
+## Post-freeze outcome
+
+The historical body below records the state before evidence was frozen. The
+replacement valid chain is:
+
+- H1 `45aec1c`, which projected the decision runtime into its declared
+  evidence shape and retired the invalid active artifacts;
+- H2 `65a8a72`, the create-only repaired calibration freeze;
+- `9f7a54b`, the repaired spent-calibration summary; and
+- `6d749b1`, the validated create-only power decision.
+
+The first decision publication at `3b0ae6a` was invalid because its producer
+stored the full runtime contract while its validator required the declared
+four-field evidence projection. It never authorized fresh access. The failed
+raw result and spools were archived locally, the active source/freeze chain was
+re-established, and all 117 spent jobs were rerun from empty spools. Every
+substantive candidate result exactly reproduced.
+
+The final decision reports T5 at `50.00%` simulated pass probability
+(`48.61%` one-sided Wilson lower bound) and guarded cross-features at `10.64%`
+(`9.82%` lower bound), against the required `80.00%`; therefore `NO-GO`.
+Zero candidates were retained, and no fresh target preflight, registry,
+confirmation run, default promotion, or product claim was authorized. See the
+bound [`summary`](panel3_cross_power_calibration_summary.json) and
+[`decision`](panel3_power_design_decision.json).
 
 This record closes the pre-freeze review before Panel 3 spends any calibration
 or lockbox evidence. It does **not** claim that Panel 3 became smaller overall.

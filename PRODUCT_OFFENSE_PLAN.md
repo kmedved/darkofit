@@ -25,7 +25,7 @@ the agenda. Companion to the execution ledger in `BEYOND_PARITY_PLAN.md`.*
 | T8 distributional flagship | Complete | 75/75; conformal coverage/width reported jointly |
 | T9 SynthGen corrected ledger | Complete | 8/9; probe-tier direction finder only |
 | T10 sports panel #2 | Closed | OOB-5 lost 8/9 fresh player-disjoint lineages |
-| Panel 3 lockbox | Preparing | exact-policy spent-data power decision required before fresh access |
+| Panel 3 lockbox | Closed | spent-data power decision retained zero candidates; fresh lockbox stayed sealed |
 
 Status in this table is operational only. It cannot amend a frozen protocol or
 promote a Tier-D candidate.
@@ -191,6 +191,15 @@ The complete binding policy is `benchmarks/SHIPPING_POLICY.md`.
   Current DarkoFit control was `0.9719×` ChimeraBoost 0.15.0 but `1.0526×`
   CatBoost 1.2.10 on the same player-disjoint coordinates. See the frozen
   [`result`](benchmarks/basketball_sports_panel_v2_result.md).
+- **Panel 3. Final dual-candidate power decision.** The complete 39-coordinate
+  spent calibration reproduced all candidate/control outcomes and fed the
+  preregistered 5,000-panel simulation. T5's simulated pass probability was
+  `50.00%` (one-sided Wilson lower bound `48.61%`) and guarded cross-features'
+  was `10.64%` (lower bound `9.82%`), against the required `80.00%`.
+  Therefore neither candidate survived, the decision was `NO-GO`, and no
+  fresh target preflight, registry, fit, default change, or product claim was
+  authorized. The CTR23 lockbox remains sealed. See the bound
+  [`decision`](benchmarks/panel3_power_design_decision.json).
 
 ## 5. Sequencing
 
@@ -200,9 +209,9 @@ The complete binding policy is `benchmarks/SHIPPING_POLICY.md`.
    composite · T6 cross features · T7/T7b CatBoost attribution · T9 SynthGen
    re-backtest.
 3. **Ceiling wave:** T8 distributional flagship · T10 sports panel #2.
-4. **Panel 3 decision:** run the exact-policy calibration only on spent
-   coordinates; publish its preregistered power go/no-go before any fresh
-   target access; open the lockbox only if at least one candidate survives.
+4. **Panel 3 decision (complete):** the spent exact-policy calibration
+   produced a preregistered `NO-GO`; zero candidates survived and the fresh
+   lockbox was not opened.
 5. **Closeout:** independent review, complete test partitions, packaging,
    documentation build, multi-Python CI, canonical commit and push.
 
