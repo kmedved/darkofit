@@ -502,14 +502,9 @@ def _mock_power_decision(monkeypatch):
     return decision
 
 
-def test_preflight_failure_leaves_no_output(tmp_path, monkeypatch):
+def _stub_preflight_task_sources(monkeypatch):
     _mock_power_decision(monkeypatch)
     declarations = common.validate_declarations()
-    smooth_ids = {
-        row["task_id"]
-        for row in declarations["candidates"]
-        if row["stratum"] == "smooth_numeric"
-    }
     by_id = {
         row["task_id"]: row for row in declarations["candidates"]
     }
@@ -523,6 +518,16 @@ def test_preflight_failure_leaves_no_output(tmp_path, monkeypatch):
         "_load_task_record",
         lambda task_id: _fake_record(by_id[task_id]),
     )
+    return declarations
+
+
+def test_preflight_failure_leaves_no_output(tmp_path, monkeypatch):
+    declarations = _stub_preflight_task_sources(monkeypatch)
+    smooth_ids = {
+        row["task_id"]
+        for row in declarations["candidates"]
+        if row["stratum"] == "smooth_numeric"
+    }
 
     def reject_smooth(record):
         if record["openml_task_id"] in smooth_ids:
@@ -576,21 +581,7 @@ def test_registry_cli_rejects_noncanonical_paths(tmp_path, monkeypatch):
 
 
 def test_preflight_source_map_is_exact_and_revalidated(monkeypatch):
-    _mock_power_decision(monkeypatch)
-    declarations = common.validate_declarations()
-    by_id = {
-        row["task_id"]: row for row in declarations["candidates"]
-    }
-    monkeypatch.setattr(
-        preflight,
-        "_require_frozen_clean_source",
-        lambda _declarations, _sources: "a" * 40,
-    )
-    monkeypatch.setattr(
-        preflight,
-        "_load_task_record",
-        lambda task_id: _fake_record(by_id[task_id]),
-    )
+    declarations = _stub_preflight_task_sources(monkeypatch)
     monkeypatch.setattr(
         preflight.target_check,
         "attest_openml_target",
@@ -762,26 +753,12 @@ def test_split_applicability_binding_rejects_wrong_evidence_provenance():
 def test_primary_target_ineligibility_blocks_registry_but_not_attestation(
     monkeypatch,
 ):
-    _mock_power_decision(monkeypatch)
-    declarations = common.validate_declarations()
-    by_id = {
-        row["task_id"]: row for row in declarations["candidates"]
-    }
+    declarations = _stub_preflight_task_sources(monkeypatch)
     rejected = next(
         row["task_id"]
         for row in declarations["candidates"]
         if row["stratum"] == "smooth_numeric"
         and row["selection_role"] == "selected"
-    )
-    monkeypatch.setattr(
-        preflight,
-        "_require_frozen_clean_source",
-        lambda _declarations, _sources: "a" * 40,
-    )
-    monkeypatch.setattr(
-        preflight,
-        "_load_task_record",
-        lambda task_id: _fake_record(by_id[task_id]),
     )
 
     def attest(record):
