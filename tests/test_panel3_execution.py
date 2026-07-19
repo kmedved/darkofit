@@ -1060,6 +1060,27 @@ def _synthetic_engaged_t5_result():
     return result
 
 
+def _synthetic_declined_t5_result():
+    result = _synthetic_engaged_t5_result()
+    metadata = result["metadata"]
+    for record in metadata["selection_fits"]:
+        if record["name"] != "control_audition":
+            record["validation_rmse"] = 1.0
+    metadata.update(
+        {
+            "engaged": False,
+            "decline_reason": "outer_validation_guard",
+            "challenger_validation_rmse": 1.0,
+            "relative_challenger_validation_ratio": 1.0,
+            "selected_configuration": "product_default",
+            "selected_linear_leaves": False,
+        }
+    )
+    metadata["final_fit"]["selected_lane"] = "boosting"
+    _refresh_result_behavior(result)
+    return result
+
+
 def _synthetic_raw(tmp_path, monkeypatch):
     registry = _synthetic_registry()
     registry_path = tmp_path / "registry.json"
@@ -1723,6 +1744,8 @@ def test_t5_strict_metadata_rejects_selection_ledger_mutations(
         runner.CONTROL_ARM,
         "t5_composite_policy",
         "guarded_cross_features_policy",
+        "chimeraboost_0_15_0",
+        "catboost_product_default",
     ],
 )
 def test_strict_fitted_metadata_requires_kind_to_match_arm(arm):
@@ -1790,6 +1813,141 @@ def test_guarded_strict_metadata_binds_fixed_refit_learning_rate():
     metadata["final_fit"]["resolved_learning_rate"] = 0.2
 
     with pytest.raises(RuntimeError, match="fixed learning rate changed"):
+        analyzer._validate_fitted_metadata(result, strict=True)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "selected_child_lr"),
+    [
+        ("selected_best_iteration", 10.0, None),
+        ("selected_resolved_learning_rate", "0.1", None),
+        ("selected_resolved_learning_rate", True, 1.0),
+    ],
+)
+def test_t5_strict_metadata_binds_declined_selection_types(
+    field,
+    value,
+    selected_child_lr,
+):
+    result = _synthetic_declined_t5_result()
+    metadata = result["metadata"]
+    metadata[field] = value
+    if selected_child_lr is not None:
+        selected = next(
+            record
+            for record in metadata["selection_fits"]
+            if record["name"] == "challenger_auto"
+        )
+        selected["fit_metadata"][
+            "resolved_learning_rate"
+        ] = selected_child_lr
+
+    with pytest.raises(RuntimeError, match="producer fields changed"):
+        analyzer._validate_fitted_metadata(result, strict=True)
+
+
+@pytest.mark.parametrize(
+    "path",
+    ["t5_engaged", "t5_declined", "guarded_declined"],
+)
+def test_strict_metadata_rejects_string_selection_totals(path):
+    if path == "t5_engaged":
+        result = _synthetic_engaged_t5_result()
+    elif path == "t5_declined":
+        result = _synthetic_declined_t5_result()
+    else:
+        result = _synthetic_result(
+            {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0},
+            "guarded_cross_features_policy",
+            1.0,
+        )
+    result["metadata"]["total_selection_fit_seconds"] = str(
+        result["metadata"]["total_selection_fit_seconds"]
+    )
+
+    with pytest.raises(RuntimeError, match="total selection time"):
+        analyzer._validate_fitted_metadata(result, strict=True)
+
+
+def test_t5_strict_metadata_requires_integer_cross_pair_count():
+    result = _synthetic_engaged_t5_result()
+    metadata = result["metadata"]
+    crossed = _synthetic_selection_fit("challenger_crossed", 1.0)
+    crossed["fit_metadata"]["selected_lane"] = "linear_leaves"
+    crossed.update(
+        {
+            "pairs": [[0, 1, "diff"]],
+            "pair_count": 1.0,
+            "transform_seconds": 0.01,
+        }
+    )
+    metadata["selection_fits"].append(crossed)
+    metadata["total_selection_fit_seconds"] = 0.8
+    result["feature_policy"]["retained_feature_count"] = 2
+    result["fit_seconds"] = 1.2
+
+    with pytest.raises(RuntimeError, match="selection-fit fields changed"):
+        analyzer._validate_fitted_metadata(result, strict=True)
+
+
+def test_t5_strict_ratio_identity_has_no_absolute_tolerance():
+    result = _synthetic_engaged_t5_result()
+    metadata = result["metadata"]
+    selected = next(
+        record
+        for record in metadata["selection_fits"]
+        if record["name"] == "challenger_catboost_linear"
+    )
+    selected["validation_rmse"] = 1e-18
+    metadata["challenger_validation_rmse"] = 1e-18
+    metadata["relative_challenger_validation_ratio"] = 2e-18
+
+    with pytest.raises(RuntimeError, match="outer guard changed"):
+        analyzer._validate_fitted_metadata(result, strict=True)
+
+
+def test_guarded_strict_ratio_identity_has_no_absolute_tolerance():
+    result = _synthetic_result(
+        {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0},
+        "guarded_cross_features_policy",
+        1.0,
+    )
+    metadata = result["metadata"]
+    pairs = [[0, 1, "diff"]]
+    crossed = _synthetic_selection_fit(
+        "crossed_selected_leaf_lane",
+        1e-18,
+    )
+    crossed.update(
+        {
+            "pairs": pairs,
+            "transform_seconds": 0.01,
+        }
+    )
+    metadata.update(
+        {
+            "engaged": True,
+            "decline_reason": None,
+            "selected_configuration": "crossed",
+            "selected_crosses": True,
+            "candidate_cross_pairs": pairs,
+            "selected_cross_pairs": pairs,
+            "selected_cross_pair_count": 1,
+            "crossed_validation_rmse": 1e-18,
+            "relative_crossed_validation_ratio": 2e-18,
+            "selected_selection_fit": crossed,
+            "selection_fits": [
+                *metadata["selection_fits"],
+                crossed,
+            ],
+            "total_selection_fit_seconds": 0.6,
+        }
+    )
+    metadata["final_refit_parameters"]["crossed"] = True
+    result["feature_policy"]["retained_feature_count"] = 2
+    result["fit_seconds"] = 1.2
+
+    with pytest.raises(RuntimeError, match="cross guard changed"):
         analyzer._validate_fitted_metadata(result, strict=True)
 
 

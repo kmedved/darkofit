@@ -1262,6 +1262,15 @@ def _close(left: float, right: float) -> bool:
     )
 
 
+def _ratio_close(left: float, right: float) -> bool:
+    return math.isclose(
+        float(left),
+        float(right),
+        rel_tol=1e-12,
+        abs_tol=0.0,
+    )
+
+
 def _validate_cross_pairs(
     value: Any,
     *,
@@ -1338,6 +1347,13 @@ def _strict_selection_records(
         if (
             set(record) < base_fields
             or extras != expected_extras
+            or (
+                "pair_count" in record
+                and (
+                    type(record["pair_count"]) is not int
+                    or record["pair_count"] < 0
+                )
+            )
         ):
             raise RuntimeError(
                 f"panel-3 {label} selection-fit fields changed"
@@ -1358,9 +1374,13 @@ def _strict_selection_records(
     selection_total = sum(
         float(record["fit_seconds"]) for record in records
     )
+    declared_selection_total = _nonnegative_float(
+        metadata["total_selection_fit_seconds"],
+        f"{label} total selection time",
+    )
     if not _close(
         selection_total,
-        metadata["total_selection_fit_seconds"],
+        declared_selection_total,
     ):
         raise RuntimeError(
             f"panel-3 {label} selection-time ledger changed"
@@ -1496,6 +1516,20 @@ def _validate_fitted_metadata_strict(result: dict[str, Any]) -> None:
             set(metadata) != expected
             or type(metadata["selected_linear_leaves"]) is not bool
             or type(metadata["selected_crosses"]) is not bool
+            or type(metadata["selected_best_iteration"]) is not int
+            or metadata["selected_best_iteration"] <= 0
+            or isinstance(
+                metadata["selected_resolved_learning_rate"],
+                bool,
+            )
+            or not isinstance(
+                metadata["selected_resolved_learning_rate"],
+                (int, float),
+            )
+            or not math.isfinite(
+                float(metadata["selected_resolved_learning_rate"])
+            )
+            or float(metadata["selected_resolved_learning_rate"]) <= 0.0
             or metadata["outer_guard_ratio"] != 0.995
             or metadata["cross_guard_ratio"] != 0.95
             or metadata["selection_rounds"] != 100
@@ -1605,7 +1639,7 @@ def _validate_fitted_metadata_strict(result: dict[str, Any]) -> None:
                 challenger,
                 selected_record["validation_rmse"],
             )
-            or not _close(ratio, challenger / control)
+            or not _ratio_close(ratio, challenger / control)
             or metadata["engaged"] != (ratio <= 0.995)
             or metadata["decline_reason"]
             != (
@@ -1797,7 +1831,7 @@ def _validate_fitted_metadata_strict(result: dict[str, Any]) -> None:
                     crossed_value,
                     crossed_record["validation_rmse"],
                 )
-                and _close(
+                and _ratio_close(
                     ratio_value,
                     crossed_value / uncrossed,
                 )
