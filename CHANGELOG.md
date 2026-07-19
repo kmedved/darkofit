@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.10.0 - 2026-07-19
+
+### Final closeout additions
 
 - Adopt the evidence-calibrated shipping policy: Tier-E opt-in APIs,
   behavior-exact engine work, recipes, and measurements ship on correctness
@@ -80,8 +82,6 @@
 - Apply the exact `campaign` and `not campaign` pytest partitions before module
   import, preventing optional or Python-3.10-only campaign tooling from leaking
   skips and compatibility requirements into the library matrix.
-
-## 0.10.0 - 2026-07-17
 
 ### Release infrastructure
 
