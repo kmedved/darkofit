@@ -1,5 +1,7 @@
 import copy
+import hashlib
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -9,6 +11,18 @@ from benchmarks import run_rssi_linear_leaf_diagnosis as diagnosis
 
 ROOT = Path(__file__).resolve().parents[1]
 ARTIFACT = ROOT / "benchmarks" / "rssi_linear_leaf_diagnosis.json"
+REPORT = ROOT / "benchmarks" / "rssi_linear_leaf_diagnosis_result.md"
+ORIGINAL_SOURCE_COMMIT = "dcd6e298e61aaf114d922cef4e1666fefcd66add"
+ORIGINAL_RUNNER_SHA256 = (
+    "136296297733f24d31f5bc82ad049411f1baec806a88497821c38ff1e4771c05"
+)
+HARDENED_SOURCE_COMMIT = "816101476bb65cf5a0e2f59cd11edaf96f46a1cc"
+HARDENED_RUNNER_SHA256 = (
+    "8b4b9ec41cfa9178ff93c143bd9d09abce98cf0194f943ed9c003a145e944104"
+)
+FROZEN_RAW_FILE_SHA256 = (
+    "02c2d36a12b3a452363cc9b8a62b1cf246b09829a5544d233eae375b10d17ef6"
+)
 
 
 def _row(arm, *, marker="same", best=1.0, selected=None, cross=None):
@@ -85,6 +99,44 @@ def test_protocol_uses_only_previously_scored_coordinate():
         diagnosis.OUTER_FOLD in [fold["fold"] for fold in row["folds"]]
         for row in matching
     )
+
+
+def test_result_discloses_original_and_hardened_evidence_bindings():
+    report = REPORT.read_text()
+    original_runner = subprocess.run(
+        [
+            "git",
+            "show",
+            (
+                f"{ORIGINAL_SOURCE_COMMIT}:"
+                "benchmarks/run_rssi_linear_leaf_diagnosis.py"
+            ),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    ).stdout
+    assert hashlib.sha256(original_runner).hexdigest() == (
+        ORIGINAL_RUNNER_SHA256
+    )
+    assert hashlib.sha256(ARTIFACT.read_bytes()).hexdigest() == (
+        FROZEN_RAW_FILE_SHA256
+    )
+    assert diagnosis._sha256(Path(diagnosis.__file__).resolve()) == (
+        HARDENED_RUNNER_SHA256
+    )
+    for label, value in (
+        ("Frozen raw file SHA-256", FROZEN_RAW_FILE_SHA256),
+        ("Original source commit", ORIGINAL_SOURCE_COMMIT),
+        ("Original run-time runner SHA-256", ORIGINAL_RUNNER_SHA256),
+        ("Current hardened source commit", HARDENED_SOURCE_COMMIT),
+        (
+            "Current hardened runner/verifier SHA-256",
+            HARDENED_RUNNER_SHA256,
+        ),
+    ):
+        assert f"- {label}:\n  `{value}`" in report
+    assert "it did not generate new\nbenchmark outcomes" in report
 
 
 def test_analysis_reports_capped_misselection_without_making_shipping_claim():

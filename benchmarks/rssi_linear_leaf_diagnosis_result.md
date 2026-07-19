@@ -8,6 +8,24 @@ The product gap on this coordinate is a defaults and selection-policy gap.
 This is spent-data mechanism evidence from one OpenML fold. It cannot promote
 a default, estimate broad generalization, or support a timing claim.
 
+## Evidence bindings
+
+- Frozen raw file SHA-256:
+  `02c2d36a12b3a452363cc9b8a62b1cf246b09829a5544d233eae375b10d17ef6`
+- Original source commit:
+  `dcd6e298e61aaf114d922cef4e1666fefcd66add`
+- Original run-time runner SHA-256:
+  `136296297733f24d31f5bc82ad049411f1baec806a88497821c38ff1e4771c05`
+- Current hardened source commit:
+  `816101476bb65cf5a0e2f59cd11edaf96f46a1cc`
+- Current hardened runner/verifier SHA-256:
+  `8b4b9ec41cfa9178ff93c143bd9d09abce98cf0194f943ed9c003a145e944104`
+
+The original hash identifies the runner bytes that produced the frozen raw
+artifact. The current hash identifies the later hardened copy used to
+revalidate that artifact and its embedded analysis; it did not generate new
+benchmark outcomes.
+
 ## Reproduction
 
 ```bash
@@ -92,4 +110,3 @@ linear-leaf implementation or crediting cross features for the observed gap.
   tasks. RSSI remains useful as a validation/default-policy case, not as the
   motivating cross-feature case.
 - Include validation-fraction policy in T5's frozen ablation and cost model.
-

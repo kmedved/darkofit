@@ -3,6 +3,24 @@
 **Decision: `development_attribution_only`.** This is spent development evidence and
 does not authorize a default change.
 
+## Evidence bindings
+
+- Frozen source commit: `ce252439845b18e8a255ce034f01e7885b3ebf4b`
+- Original run-time runner SHA-256:
+  `e429a2096a51239639405a66930d1f2457cddaf31616f2758512bba932bd966b`
+- Original frozen analyzer SHA-256:
+  `08f2b268433d5d266a511f459357a28845e502b388698f2e844530b1d2fbd5e3`
+- Current hardened runner SHA-256:
+  `e429a2096a51239639405a66930d1f2457cddaf31616f2758512bba932bd966b`
+- Current hardened analyzer SHA-256:
+  `dd2f5798e027a7f9b1daff4c23b5193fd05f02bcd54a29e73db9975da83407c1`
+- Frozen raw file SHA-256: `29055ecac0bf920820ede2735f61df5420ecb1b71c2303ddd12e30f445e1be06`
+- Frozen raw canonical SHA-256: `c7dba3b5d21f7d64e71526c78092101124f4051c33382e44f746b85189554fca`
+
+The original hashes identify the source bytes frozen for the run and its
+analysis. The current hashes identify the later hardened copies used to
+revalidate and publish those same outcomes; no benchmark was rerun.
+
 Historical DarkoFit / CatBoost default RMSE ratio:
 `1.029345`.
 

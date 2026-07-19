@@ -924,6 +924,46 @@ def test_t7b_raw_validation_binds_file_and_canonical_hashes(
         analyzer.load(changed_path)
 
 
+def test_t7b_published_analysis_discloses_original_and_hardened_sources():
+    root = Path(__file__).resolve().parents[1]
+    raw = json.loads(
+        (
+            root / "benchmarks" / "t7b_catboost_gap_attribution_raw.json"
+        ).read_text()
+    )
+    summary = json.loads(
+        (
+            root / "benchmarks" / "t7b_catboost_gap_attribution_summary.json"
+        ).read_text()
+    )
+    stored_summary_sha256 = summary.pop("summary_sha256")
+    assert runner._json_sha256(summary) == stored_summary_sha256
+    evidence = summary["analysis_evidence"]
+    assert evidence == {
+        "frozen_source_commit": raw["protocol"]["source_head"],
+        "original_run_time_runner_sha256": raw["protocol"][
+            "source_sha256"
+        ]["runner"],
+        "original_frozen_analyzer_sha256": raw["protocol"][
+            "source_sha256"
+        ]["analyzer"],
+        "current_hardened_runner_sha256": runner._sha256(
+            Path(runner.__file__).resolve()
+        ),
+        "current_hardened_analyzer_sha256": runner._sha256(
+            Path(analyzer.__file__).resolve()
+        ),
+    }
+    stored = {**summary, "summary_sha256": stored_summary_sha256}
+    report = (
+        root / "benchmarks" / "t7b_catboost_gap_attribution_result.md"
+    )
+    rendered_prefix = analyzer.render(stored).split(
+        "Historical DarkoFit / CatBoost", 1
+    )[0]
+    assert report.read_text().startswith(rendered_prefix)
+
+
 def test_t7b_analysis_rejects_missing_raw_file_identity():
     with pytest.raises(ValueError, match="exact raw file"):
         analyzer.analyze({}, raw_file_sha256="not-a-sha")

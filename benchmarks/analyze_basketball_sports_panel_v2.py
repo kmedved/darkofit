@@ -40,6 +40,11 @@ BOOTSTRAP_RESAMPLES = 100_000
 FROZEN_RAW_SHA256 = (
     "787f7f34bf1e5207d231b01bc402c7a32174e24892b2118bb71d5ff4412517b3"
 )
+# Analyzer used to publish this result at commit 9ac474e. This historical
+# attestation is immutable even when the derived-report analyzer is hardened.
+ORIGINAL_ANALYZER_SHA256 = (
+    "1752214e0451b44823557d03fd6e498fecdd8711ceacad95552c0e0dbd0d1e77"
+)
 
 
 def _sha256(path: Path) -> str:
@@ -1103,14 +1108,15 @@ def analyze(raw: dict[str, Any], raw_sha256: str) -> dict[str, Any]:
         }
     _validate_provenance(raw)
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "name": "darkofit_basketball_sports_panel_result_v2",
         "raw": {
             "sha256": raw_sha256,
             "runner_sha256": raw["runner"]["sha256"],
             "protocol_sha256": raw["protocol"]["sha256"],
             "panel_sha256": raw["panel_manifest"]["processed_panel_sha256"],
-            "analyzer_sha256": _sha256(Path(__file__).resolve()),
+            "original_analyzer_sha256": ORIGINAL_ANALYZER_SHA256,
+            "current_analyzer_sha256": _sha256(Path(__file__).resolve()),
         },
         "candidate": {
             "comparison": candidate,
@@ -1204,7 +1210,22 @@ def render_report(result: dict[str, Any]) -> str:
             "and cannot rescue the candidate decision. Panel 2 is spent and "
             "may not be used for retuning.",
             "",
-            f"Raw artifact SHA-256: `{result['raw']['sha256']}`.",
+            "## Evidence bindings",
+            "",
+            f"- Frozen raw artifact SHA-256: `{result['raw']['sha256']}`.",
+            (
+                "- Original run-time analyzer SHA-256: "
+                f"`{result['raw']['original_analyzer_sha256']}`."
+            ),
+            (
+                "- Current hardened analyzer SHA-256: "
+                f"`{result['raw']['current_analyzer_sha256']}`."
+            ),
+            "",
+            "The original hash attests the analyzer that first published this "
+            "result. The current hash attests the hardened analyzer that "
+            "regenerates this derived report; the frozen raw artifact and "
+            "campaign outcome were not changed or rerun.",
         ]
     )
     return "\n".join(lines) + "\n"
