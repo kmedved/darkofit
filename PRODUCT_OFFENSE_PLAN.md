@@ -199,7 +199,13 @@ The complete binding policy is `benchmarks/SHIPPING_POLICY.md`.
   Therefore neither candidate survived, the decision was `NO-GO`, and no
   fresh target preflight, registry, fit, default change, or product claim was
   authorized. The CTR23 lockbox remains sealed. See the bound
-  [`decision`](benchmarks/panel3_power_design_decision.json).
+  [`decision`](benchmarks/panel3_power_design_decision.json). T5's point-effect
+  and leave-one-favorable-dataset gates passed in all `5,000` simulations,
+  while its worst-dataset harm bound passed in only `2,500`; all-gate passage
+  was exactly those same `2,500`. If research ever resumes, the measured
+  problem is a new harm-bounding guard that can decline safely without erasing
+  the aggregate effect. That is a development direction, not permission to
+  retain this candidate, tune on the lockbox, or access fresh targets.
 
 ## 5. Sequencing
 
