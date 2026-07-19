@@ -1,0 +1,494 @@
+{
+  "bootstrap_percentile": null,
+  "calibration": {
+    "raw_artifact_sha256": "f6036fc1c8c67ed8027b0feb7a5b952ae1fe845752ded13f5d4f9a57ef2da649",
+    "raw_file_sha256": "351bab7e639f4fd39dd414d6ce2669a4f73f9fed26d62c6d6bde82c3bb91500f",
+    "raw_path": "benchmarks/panel3_cross_power_calibration_raw.json",
+    "source_freeze_sha256": "0bbada7e475f6f6a9b0a0db0ee1e5ee6df1fc038d602f5434018cea9ba02c47a",
+    "summary_file_sha256": "39a1d80a6e3b664d1f2dec0135b43fd11e9ea8b60d1af9808a07f72695661202",
+    "summary_path": "benchmarks/panel3_cross_power_calibration_summary.json",
+    "summary_sha256": "e6883994b7547c9b18cb942dce12dc42590ff30922bef7a231907e47275d89ec"
+  },
+  "candidate_count": 0,
+  "checks": {
+    "at_least_one_candidate_meets_power_floor": false,
+    "calibration_raw_and_spool_valid": true,
+    "calibration_summary_valid": true,
+    "candidate_retention_rule_applied_without_discretion": true,
+    "complete_39_coordinate_triplets_preserved": true,
+    "design_sources_bound_at_calibration_h1": true,
+    "frozen_4_4_4_composition_preserved": true,
+    "known_t5_size_gate_applicability_preserved": true,
+    "minimum_stratum_support_preserved": true,
+    "power_decision_computed_from_bound_calibration": true
+  },
+  "confirmation_run_authorized": false,
+  "contract": {
+    "contract_name": "darkofit_panel3_authorization_power_design_v1",
+    "file_sha256": "cd010883698aa294205c0c5cf25ac08a47edcbee2ebc62b45d39b1b68a44a925",
+    "path": "benchmarks/panel3_power_design_contract.json"
+  },
+  "created_at": "2026-07-19T02:47:51.639020+00:00",
+  "decision_execution_head": "eedf024baf309dfd108fcdd04f8bac0e681552e9",
+  "decision_sha256": "1e57d00b508131db098ed42e227b346b4d7cea9aa750545c525347296b1bb6e6",
+  "default_promotion_authorized": false,
+  "familywise_one_sided_alpha": 0.05,
+  "initial_bonferroni_screen": {
+    "guarded_cross_features_policy": {
+      "candidate": "guarded_cross_features_policy",
+      "complete_triplets_preserved": true,
+      "component_passing_simulations": {
+        "hierarchical_bootstrap_upper": 2891,
+        "leave_one_favorable_out": 4350,
+        "point": 4656,
+        "worst_dataset": 532
+      },
+      "fixed_t5_noop_coordinates": 0,
+      "fixed_t5_noop_slots": 0,
+      "hierarchical_bootstrap": {
+        "batch": 10000,
+        "hierarchy": "lineage_then_three_coordinates_within_lineage",
+        "numpy_percentile_method": "linear",
+        "percentile": 97.5,
+        "replicates": 100000,
+        "seed": 20260717
+      },
+      "minimum_required_probability": 0.8,
+      "operational_gates_remain_required_at_confirmation": true,
+      "outer_panel_simulations": 5000,
+      "outer_seed": 20260718,
+      "pass_probability": 0.1064,
+      "passes": false,
+      "passing_simulations": 532,
+      "point_estimate_passes": false,
+      "prospective_coordinates": 36,
+      "prospective_tasks": 12,
+      "statistical_gates_only": true,
+      "stratum_composition": {
+        "applied_noisy": 4,
+        "mixed_categorical": 4,
+        "smooth_numeric": 4
+      },
+      "wilson_lower_bound": 0.09815326877688091,
+      "wilson_lower_bound_passes": false,
+      "wilson_one_sided_confidence": 0.975
+    },
+    "t5_composite_policy": {
+      "candidate": "t5_composite_policy",
+      "complete_triplets_preserved": true,
+      "component_passing_simulations": {
+        "hierarchical_bootstrap_upper": 4679,
+        "leave_one_favorable_out": 5000,
+        "point": 5000,
+        "worst_dataset": 2500
+      },
+      "fixed_t5_noop_coordinates": 21,
+      "fixed_t5_noop_slots": 7,
+      "hierarchical_bootstrap": {
+        "batch": 10000,
+        "hierarchy": "lineage_then_three_coordinates_within_lineage",
+        "numpy_percentile_method": "linear",
+        "percentile": 97.5,
+        "replicates": 100000,
+        "seed": 20260717
+      },
+      "minimum_required_probability": 0.8,
+      "operational_gates_remain_required_at_confirmation": true,
+      "outer_panel_simulations": 5000,
+      "outer_seed": 20260718,
+      "pass_probability": 0.5,
+      "passes": false,
+      "passing_simulations": 2500,
+      "point_estimate_passes": false,
+      "prospective_coordinates": 36,
+      "prospective_tasks": 12,
+      "statistical_gates_only": true,
+      "stratum_composition": {
+        "applied_noisy": 4,
+        "mixed_categorical": 4,
+        "smooth_numeric": 4
+      },
+      "wilson_lower_bound": 0.48614628258320963,
+      "wilson_lower_bound_passes": false,
+      "wilson_one_sided_confidence": 0.975
+    }
+  },
+  "mapping": {
+    "calibration_tasks": [
+      {
+        "dataset_name": "airfoil_self_noise",
+        "expected_t5_size_gate_applicable_coordinates": 0,
+        "stratum": "smooth_numeric",
+        "task_id": 363612
+      },
+      {
+        "dataset_name": "Another-Dataset-on-used-Fiat-500",
+        "expected_t5_size_gate_applicable_coordinates": 0,
+        "stratum": "mixed_categorical",
+        "task_id": 363615
+      },
+      {
+        "dataset_name": "concrete_compressive_strength",
+        "expected_t5_size_gate_applicable_coordinates": 0,
+        "stratum": "smooth_numeric",
+        "task_id": 363625
+      },
+      {
+        "dataset_name": "diamonds",
+        "expected_t5_size_gate_applicable_coordinates": 3,
+        "stratum": "mixed_categorical",
+        "task_id": 363631
+      },
+      {
+        "dataset_name": "Food_Delivery_Time",
+        "expected_t5_size_gate_applicable_coordinates": 3,
+        "stratum": "mixed_categorical",
+        "task_id": 363672
+      },
+      {
+        "dataset_name": "healthcare_insurance_expenses",
+        "expected_t5_size_gate_applicable_coordinates": 0,
+        "stratum": "mixed_categorical",
+        "task_id": 363675
+      },
+      {
+        "dataset_name": "houses",
+        "expected_t5_size_gate_applicable_coordinates": 3,
+        "stratum": "applied_noisy",
+        "task_id": 363678
+      },
+      {
+        "dataset_name": "miami_housing",
+        "expected_t5_size_gate_applicable_coordinates": 3,
+        "stratum": "applied_noisy",
+        "task_id": 363686
+      },
+      {
+        "dataset_name": "physiochemical_protein",
+        "expected_t5_size_gate_applicable_coordinates": 3,
+        "stratum": "smooth_numeric",
+        "task_id": 363693
+      },
+      {
+        "dataset_name": "QSAR-TID-11",
+        "expected_t5_size_gate_applicable_coordinates": 3,
+        "stratum": "applied_noisy",
+        "task_id": 363697
+      },
+      {
+        "dataset_name": "QSAR_fish_toxicity",
+        "expected_t5_size_gate_applicable_coordinates": 0,
+        "stratum": "applied_noisy",
+        "task_id": 363698
+      },
+      {
+        "dataset_name": "superconductivity",
+        "expected_t5_size_gate_applicable_coordinates": 3,
+        "stratum": "smooth_numeric",
+        "task_id": 363705
+      },
+      {
+        "dataset_name": "wine_quality",
+        "expected_t5_size_gate_applicable_coordinates": 3,
+        "stratum": "applied_noisy",
+        "task_id": 363708
+      }
+    ],
+    "exchangeability": {
+      "assumption": "Within each frozen semantic stratum and matching T5 applicability state, the 13-task spent panel is an exchangeable empirical proxy for the prospective panel. This is a transport assumption, not confirmation evidence.",
+      "coordinate_values_resampled_or_recombined_across_source_tasks": false,
+      "guarded_cross_slots_sample_all_source_triplets_in_the_matching_stratum": true,
+      "sampling_unit": "complete_three_coordinate_dataset_triplet",
+      "t5_applicable_slots_sample_only_fully_applicable_source_triplets": true,
+      "t5_known_nonapplicable_slots_are_exact_one_one_one_triplets": true,
+      "within_stratum_sampling": "independent_with_replacement"
+    }
+  },
+  "name": "darkofit_panel3_power_design_decision_v1",
+  "owner_decision_statement": "Panel 3 decision-stage simulated pass probabilities were t5_composite_policy 50.00% (one-sided Wilson lower bound 48.61%) and guarded_cross_features_policy 10.64% (one-sided Wilson lower bound 9.82%), against the required 80.00%; therefore NO-GO.",
+  "per_candidate_one_sided_alpha": null,
+  "power_floor": 0.8,
+  "pre_h1_target_statistic_exclusions": [
+    {
+      "dataset_id": 46657,
+      "exposure_kind": "parquet_footer_target_min_max_statistics",
+      "lineage_cluster": "kaggle_google_quest_qa_annotations",
+      "reason": "target_parquet_footer_min_max_observed_before_h1",
+      "replacement_task_id": 359931,
+      "stratum": "mixed_categorical",
+      "task_id": 363370
+    },
+    {
+      "dataset_id": 46660,
+      "exposure_kind": "parquet_footer_target_min_max_statistics",
+      "lineage_cluster": "kaggle_mercari_price_suggestion",
+      "reason": "target_parquet_footer_min_max_observed_before_h1",
+      "replacement_task_id": 360993,
+      "stratum": "mixed_categorical",
+      "task_id": 363377
+    },
+    {
+      "dataset_id": 46787,
+      "exposure_kind": "parquet_footer_target_min_max_statistics",
+      "lineage_cluster": "kaggle_sberbank_russian_housing_market",
+      "reason": "target_parquet_footer_min_max_observed_before_h1",
+      "replacement_task_id": 4851,
+      "stratum": "applied_noisy",
+      "task_id": 363495
+    }
+  ],
+  "product_claim_authorized": false,
+  "prospective_panel": {
+    "authorized_only_for_exact_primary_selection": true,
+    "coordinates_per_task": 3,
+    "required_strata": [
+      "smooth_numeric",
+      "mixed_categorical",
+      "applied_noisy"
+    ],
+    "required_task_count": 12,
+    "required_tasks_per_stratum": 4,
+    "slots": [
+      {
+        "lineage_cluster": "asa_usnews_colleges_1993_94",
+        "stratum": "applied_noisy",
+        "t5_size_gate_applicability": [
+          false,
+          false,
+          false
+        ],
+        "task_id": 5166
+      },
+      {
+        "lineage_cluster": "brien_payne_wine_sensory_experiment",
+        "stratum": "mixed_categorical",
+        "t5_size_gate_applicability": [
+          false,
+          false,
+          false
+        ],
+        "task_id": 359931
+      },
+      {
+        "lineage_cluster": "cps_1988_wages",
+        "stratum": "mixed_categorical",
+        "t5_size_gate_applicability": [
+          true,
+          true,
+          true
+        ],
+        "task_id": 361261
+      },
+      {
+        "lineage_cluster": "kaggle_imperial_loan_default_loss",
+        "stratum": "applied_noisy",
+        "t5_size_gate_applicability": [
+          true,
+          true,
+          true
+        ],
+        "task_id": 361290
+      },
+      {
+        "lineage_cluster": "sarcos_robot_arm",
+        "stratum": "smooth_numeric",
+        "t5_size_gate_applicability": [
+          true,
+          true,
+          true
+        ],
+        "task_id": 361254
+      },
+      {
+        "lineage_cluster": "statlib_1987_mlb_hitter_salary",
+        "stratum": "applied_noisy",
+        "t5_size_gate_applicability": [
+          false,
+          false,
+          false
+        ],
+        "task_id": 4851
+      },
+      {
+        "lineage_cluster": "uci_energy_efficiency",
+        "stratum": "smooth_numeric",
+        "t5_size_gate_applicability": [
+          false,
+          false,
+          false
+        ],
+        "task_id": 361617
+      },
+      {
+        "lineage_cluster": "uci_forest_fires",
+        "stratum": "mixed_categorical",
+        "t5_size_gate_applicability": [
+          false,
+          false,
+          false
+        ],
+        "task_id": 361618
+      },
+      {
+        "lineage_cluster": "uci_garment_employee_productivity",
+        "stratum": "mixed_categorical",
+        "t5_size_gate_applicability": [
+          false,
+          false,
+          false
+        ],
+        "task_id": 360993
+      },
+      {
+        "lineage_cluster": "uci_naval_propulsion",
+        "stratum": "smooth_numeric",
+        "t5_size_gate_applicability": [
+          true,
+          true,
+          true
+        ],
+        "task_id": 361247
+      },
+      {
+        "lineage_cluster": "uk_wheat_milling_baking_quality",
+        "stratum": "applied_noisy",
+        "t5_size_gate_applicability": [
+          false,
+          false,
+          false
+        ],
+        "task_id": 363396
+      },
+      {
+        "lineage_cluster": "wave_energy_converters",
+        "stratum": "smooth_numeric",
+        "t5_size_gate_applicability": [
+          true,
+          true,
+          true
+        ],
+        "task_id": 361253
+      }
+    ]
+  },
+  "registry_build_authorized": false,
+  "retained_candidates": [],
+  "runtime": {
+    "contract_kind": "exact_active_environment_versions_v1",
+    "contract_name": "darkofit_panel3_exact_runtime_environment_v1",
+    "packages": {
+      "catboost": "1.2.10",
+      "darkofit": "0.10.0",
+      "numba": "0.66.0",
+      "numpy": "2.4.6",
+      "openml": "0.15.1",
+      "pandas": "2.3.3",
+      "scikit-learn": "1.7.2",
+      "scipy": "1.16.3"
+    },
+    "python_implementation": "cpython",
+    "python_version": "3.12.13",
+    "schema_version": 1
+  },
+  "schema_version": 1,
+  "simulation": {
+    "familywise_one_sided_alpha": 0.05,
+    "hierarchical_bootstrap_batch": 10000,
+    "hierarchical_bootstrap_replicates": 100000,
+    "hierarchical_bootstrap_seed": 20260717,
+    "initial_bootstrap_percentile": 97.5,
+    "initial_candidate_count": 2,
+    "initial_per_candidate_one_sided_alpha": 0.025,
+    "initial_power_wilson_confidence": 0.975,
+    "numpy_percentile_method": "linear",
+    "outer_matrix_batch": 50,
+    "outer_panel_simulations": 5000,
+    "outer_seed": 20260718,
+    "power_estimate_rule": "both_point_estimate_and_one_sided_wilson_lower_bound_must_meet_floor",
+    "power_floor": 0.8,
+    "quality_gates": {
+      "bootstrap_upper_ratio_at_most": 1.002,
+      "equal_dataset_geomean_ratio_at_most": 0.995,
+      "leave_one_favorable_dataset_out_ratio_at_most": 0.998,
+      "worst_dataset_ratio_at_most": 1.005
+    },
+    "singleton_bootstrap_percentile": 95.0,
+    "singleton_fallback_allowed": true,
+    "singleton_per_candidate_one_sided_alpha": 0.05,
+    "singleton_power_wilson_confidence": 0.95
+  },
+  "singleton_fallback": null,
+  "source_head": "f2a5e5e7aaba84f164cabe20ae1c3122ae4c7cdf",
+  "source_sha256": {
+    "benchmarks/analyze_panel3_confirmation.py": "e9cdcfd6e430f5508d3cf87c366e657edcf6b41fa831eac3e974e4a56e7d2cd8",
+    "benchmarks/analyze_panel3_cross_power_calibration.py": "5117e18c5fef79e56247ffcb16be615afe5023dd0feb9dd87cc25bd2862db706",
+    "benchmarks/basketball_guardrails.py": "4492a65161b2261e5d437b9733c286368534c54f7fd23b6f6b95a804507fff52",
+    "benchmarks/basketball_harness.py": "40360ca54d1954d540bd72bec47c891a179fb0f764a0cb6061d3a33b8593aba1",
+    "benchmarks/build_ctr23_contamination_registry.py": "90f2e62d771a686ef86bf4c959e89acdc9785ebb3266fc005a59b9e8a6c54476",
+    "benchmarks/build_fresh_confirmation_registry.py": "ae20dbe5b02c71c1ab689a144b8cc330d4b19a94271114068542e5371561487e",
+    "benchmarks/build_panel3_power_design.py": "3144b874a84643b9e26b01aaef319ca0fd268fbeb4d244b58a67f7f0d9e422da",
+    "benchmarks/build_panel3_registry.py": "8cfc21ebdf6a16a02664d1edc1b65a9c9bb138288c0502033f07790082a268ff",
+    "benchmarks/campaign_lib/__init__.py": "4d34243cc4c415b6df88c1f3ea2b294cf95945bea1c85526f17b3d232d7c1db5",
+    "benchmarks/campaign_lib/provenance.py": "20b6c93c110fb19996990dc288e5f97778e2cc9afd8cf3ed2515cf8595030101",
+    "benchmarks/confirmation_target_preflight.py": "255f9f84f2ca124143a26a98feb5f37cc19696bd01371f082a0766a76350f447",
+    "benchmarks/freeze_panel3_cross_power_calibration.py": "1884dfa05b8a9b437785754fddb4fd2efd2a0147d50c9c58ddfc0c222c51f005",
+    "benchmarks/panel3_candidate_contract.json": "873f5ca2ea284ba8b178e03882a364e43bc11f5ff5050a337c2f7b9c2af41e48",
+    "benchmarks/panel3_cross_power_calibration_protocol.md": "82ebb9c4c82a977de39bd81659c31bdb67482e5087c47b61995cf568288100e9",
+    "benchmarks/panel3_data_contract.py": "59442dfd91b988747b2b8cd41fc167da7e4620d7083a2348c56a0f3594731b80",
+    "benchmarks/panel3_environment_contract.json": "9755529964eda51024a6a02b9bad46b4099b13d38621067e4ade1cc4232046a0",
+    "benchmarks/panel3_power_design_contract.json": "cd010883698aa294205c0c5cf25ac08a47edcbee2ebc62b45d39b1b68a44a925",
+    "benchmarks/panel3_power_design_protocol.md": "747fb9a0c6fc4e1b856f1b68e7b0173bce98314bf565f8fd9902262315b0098d",
+    "benchmarks/panel3_registry_common.py": "76513dabaac6f447ebff3714ced9daf6a2f2f20054e3b2857e7602f7ca71e4bd",
+    "benchmarks/panel3_registry_declarations.json": "ea6402add410f963b6efb9ff5a22ff55045f39ab82ced56dfc7e65d112c7af22",
+    "benchmarks/panel3_registry_declarations_invalid_draft.md": "0587e77c4e0e6e8d6856b62c2ec66a0e60bfd2dcbef1bc7f074b60b4cf9194e2",
+    "benchmarks/panel3_registry_protocol.md": "60039942cbb5db65bd9e58cc88fded004f53f395282e84c750eb0220613d545f",
+    "benchmarks/preflight_panel3_registry.py": "a61aa5581476f1eda11d84e332096f4c9243166730f033ccd5e1ed4d6354ad0f",
+    "benchmarks/run_basketball_creator_benchmark.py": "9a2d6b3dc8f3a8586cd4ac20bdb3607c17675cab1d89e6bbd7c438d2bba53fec",
+    "benchmarks/run_panel3_confirmation.py": "3751af6a365842a0dfab76989a2d2d550777481e1412e9e4185349bd454fbac5",
+    "benchmarks/run_panel3_cross_power_calibration.py": "a9555ddb27f0b4fd77accf466b65cfe43d90b4d5ed977bce6c89303170882ec4",
+    "benchmarks/run_smooth_cross_features.py": "4e831fa0ff26f7c64b4e130259d1a3fcb565b51c0310ab5ee0bd2a8da7a248eb",
+    "benchmarks/run_t5_composite_confirmation.py": "c5bacca0cb2d493802c91334750a91b5cf9e1e357579d57793a55f6f9bdd4736",
+    "benchmarks/run_tabarena_regression_cap_horizon.py": "8756b142cd52a87bce2389a58f4ecc73ce3e22a11e8b7e3cea288786578d2890",
+    "benchmarks/run_tabarena_regression_followon_screen.py": "0b7f75d01c581296a713a18c2e8ab224bf7f051f16644f7f98f319d8abcdb949",
+    "benchmarks/smooth_cross_features_protocol.md": "608bd3235bbaad895d1efdbffe0588a26bc104233a243fb756c488568eaeecd4",
+    "benchmarks/smooth_cross_margin_analysis.json": "0e115192938137c8bb713f5ca533c84bad315460aae12a900b32603970ad0190",
+    "benchmarks/t5_composite_registry_protocol.md": "ca3ce41165daa5fcb0402b908a0bb23c5fb802774e73877976c36c3eb0aefd19",
+    "benchmarks/tabarena_adapter.py": "13fefe3937ca9a4020412023324aa724e073330377fdd6ecd476fd29fc63740a",
+    "benchmarks/tabarena_followon_warmup.py": "31000374a2d5e5e632a62a8dc69d127b997b18653f094fe1aa53730d1c374a93",
+    "benchmarks/tabarena_screen_adapters.py": "c491b8ccdbbd6ab13f2e296020dff8e209dcab7f4568f39b7f886c05c29ae1af",
+    "benchmarks/tabarena_warmup.py": "f91d7de2fa0e110a0819138fe5c094d0419b6b4f130dae62cd5d7149b101ce71",
+    "darkofit/__init__.py": "f070201f05b9af5f993f6e181f3ac81938b7306a6b023b0dc501e57a30a47903",
+    "darkofit/_numba_runtime.py": "faa794d01c5b0d0404257b9daedb3f3e9c2984faa48fcc4f35e8b76127edb7ab",
+    "darkofit/_validation.py": "baa56787296f5ddf1955533ab32dbe450e3d7d8e97ef9c5f250156214c8cdca1",
+    "darkofit/auto_params.py": "c840dd77f915c02b872238eefdb3b62e9ba39dc7a9262436f31e6decae5d1dd7",
+    "darkofit/binning.py": "86e04b38a193e33e2a3d6b7b9a4ac24cba7f8375c7fb931318a3305a94ef0e88",
+    "darkofit/booster.py": "4ed9f961a1fbfc10abae72ab01bdf25dee6f9c349f61acbdb2c1d77a320329c4",
+    "darkofit/callbacks.py": "e2bd4bb7cf97c4a348178999c91c31d276daf6934141499209008d642e3853c0",
+    "darkofit/flat_model.py": "0d4476b14017cefdbb54f65c2836f2c8dfb30f81252a8cae360658e7e2742819",
+    "darkofit/linear_residual.py": "117f454d78d067f4ff76f442db540c2891270a529c52775b993a61f03f6aff15",
+    "darkofit/losses.py": "817828b19894fb162720b0e3f6bd519d279c8ec86d4065055e9826f29e478dd5",
+    "darkofit/preprocessing.py": "4bffa9cc532c2056cb431dd6103ffe1497a793c157bedcc36303b2dcd5ec33f5",
+    "darkofit/serialization.py": "4e2481609db04114c812dc67a49dbbc4b9ae6c63b3c09b64d7c4ead044bc7894",
+    "darkofit/shap.py": "4696844ebacd1a84e5795d9010119bd1a22a392b0a6ae4d444b3b8342c27e3de",
+    "darkofit/sklearn_api.py": "5dd49e39eb1fd4fddf347dc7004b10b12cd05b586061d9eab329203d777c73f7",
+    "darkofit/target_encoding.py": "d4fb563f9223d661f3542229a009b3363c1c72406c5a8b2e5d190804248bb2dc",
+    "darkofit/tree.py": "82cc270a4a1a23c3c15146333a5dede8d4fd0794752bbe448e9a0c1a0b33dda4",
+    "darkofit/tuning/__init__.py": "fa59383dadf0148a5ad456b4581929530426b37be3e94463868785744d15d496",
+    "darkofit/tuning/optuna_backend.py": "e12e81c020ce8aafbd4ceb95b5b6e8b3e63f51a147df813fe6e8c6ecefdc12d0",
+    "darkofit/tuning/results.py": "18327b7e8a03bab3a63e4ccb0c7536f59bf771791dab460783eb4a6a5532d606",
+    "darkofit/tuning/scoring.py": "6b9decf75f72955f01f7e50ee7ab36f7fbf5dff3ac9406207ef95e53072b6622",
+    "darkofit/tuning/search.py": "424fc69354be377545f42e3ad6bdf5162779784ed5a868b79137e74b3579350f",
+    "darkofit/tuning/spaces.py": "097e399aefb648b58f0ed72eb7ac05ac3d7aa2bf7ef9b0c2fb4904337b3f13ff",
+    "darkofit/tuning/validation.py": "c70421d583febf53d7a4ffe362ce29effe4598dc3d5b49055ffed9914703904c",
+    "darkofit/warmup.py": "028fd18664553d13df958586fa47361324a3a233f81e756a610f1a88b334577a",
+    "pyproject.toml": "7e6f48990c018acdbf632e0485dc7e5b67ecefb0f92ec6df9566e6a5552a8df3",
+    "tests/conftest.py": "18487e73c4eb4cbc3645df453abf6fd294af2ff639d605bf9f52939fdea736d9",
+    "tests/test_campaign_partition.py": "fd223717286f43d1c628c4d4230b568240ad8dbd640f47eae5554f9d82825d7f",
+    "tests/test_confirmation_target_preflight.py": "57f6ffbeaa14b58b4cafc4a3ee34b7a3ac548854a08510ecf8618c5fa0384264",
+    "tests/test_panel3_cross_power_calibration.py": "3855eb41b97a114b15e8a23b4dcb18866c3c4f818b5af41c616602b07d9d8fb1",
+    "tests/test_panel3_execution.py": "a086e637758f473184896e3f0be27e9570c69daf425fbf639f9b5be2bf3d424f",
+    "tests/test_panel3_power_design.py": "0d1028d28f800a691a767a98766ca47eee0257c6ccdc5b8add4865e022b5c151",
+    "tests/test_panel3_registry.py": "bcbf656865654a5b55ffe12b61fc2a2056de82aa679dfeb9da73616f5347841b"
+  },
+  "target_preflight_authorized": false
+}
