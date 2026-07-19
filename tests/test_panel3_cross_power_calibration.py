@@ -57,6 +57,18 @@ def _prediction_timing() -> dict:
     }
 
 
+def _refresh_behavior_fingerprint(result: dict) -> None:
+    result["behavior_fingerprint_sha256"] = runner._json_sha256(
+        {
+            "coordinate": result["coordinate"],
+            "arm": result["arm"],
+            "rmse": result["rmse"],
+            "prediction_sha256": result["prediction_sha256"],
+            "metadata": result["metadata"],
+        }
+    )
+
+
 def _metadata(arm: str, *, engaged: bool, applicable: bool) -> dict:
     outer_rows = 2_400 if applicable else 1_500
     validation_rows = int(outer_rows * 0.2)
@@ -332,15 +344,7 @@ def test_calibration_result_rejects_boolean_measurements_and_nonhex_hashes(
     result = copy.deepcopy(_fake_raw()["results"][0])
     result[field] = value
     if field in {"rmse", "prediction_sha256"}:
-        result["behavior_fingerprint_sha256"] = runner._json_sha256(
-            {
-                "coordinate": result["coordinate"],
-                "arm": result["arm"],
-                "rmse": result["rmse"],
-                "prediction_sha256": result["prediction_sha256"],
-                "metadata": result["metadata"],
-            }
-        )
+        _refresh_behavior_fingerprint(result)
 
     with pytest.raises(RuntimeError):
         analyzer._validate_result(
@@ -354,15 +358,7 @@ def test_calibration_result_rejects_boolean_measurements_and_nonhex_hashes(
 def test_calibration_worker_rejects_boolean_measurement():
     result = copy.deepcopy(_fake_raw()["results"][0])
     result["rmse"] = True
-    result["behavior_fingerprint_sha256"] = runner._json_sha256(
-        {
-            "coordinate": result["coordinate"],
-            "arm": result["arm"],
-            "rmse": result["rmse"],
-            "prediction_sha256": result["prediction_sha256"],
-            "metadata": result["metadata"],
-        }
-    )
+    _refresh_behavior_fingerprint(result)
     source_freeze = {
         "task_view_attestations": {
             str(result["coordinate"]["task_id"]): {
@@ -768,14 +764,7 @@ def test_analyzer_rejects_nonexact_t5_decline():
         and not row["metadata"]["engaged"]
     )
     result["prediction_sha256"] = _hash("9")
-    behavior = {
-        "coordinate": result["coordinate"],
-        "arm": result["arm"],
-        "rmse": result["rmse"],
-        "prediction_sha256": result["prediction_sha256"],
-        "metadata": result["metadata"],
-    }
-    result["behavior_fingerprint_sha256"] = runner._json_sha256(behavior)
+    _refresh_behavior_fingerprint(result)
     with pytest.raises(RuntimeError, match="decline is not exact"):
         analyzer.analyze(
             _rebind_raw(raw),
@@ -819,14 +808,7 @@ def test_analyzer_rejects_incomplete_policy_metadata(arm, field, message):
         if row["arm"] == arm and row["metadata"]["engaged"]
     )
     result["metadata"].pop(field)
-    behavior = {
-        "coordinate": result["coordinate"],
-        "arm": result["arm"],
-        "rmse": result["rmse"],
-        "prediction_sha256": result["prediction_sha256"],
-        "metadata": result["metadata"],
-    }
-    result["behavior_fingerprint_sha256"] = runner._json_sha256(behavior)
+    _refresh_behavior_fingerprint(result)
     with pytest.raises(RuntimeError, match=message):
         analyzer.analyze(
             _rebind_raw(raw),
@@ -920,15 +902,7 @@ def test_calibration_rejects_t5_aggregate_scores_detached_from_children():
     metadata["control_validation_rmse"] = 20.0
     metadata["challenger_validation_rmse"] = 18.0
     metadata["relative_challenger_validation_ratio"] = 0.9
-    result["behavior_fingerprint_sha256"] = runner._json_sha256(
-        {
-            "coordinate": result["coordinate"],
-            "arm": result["arm"],
-            "rmse": result["rmse"],
-            "prediction_sha256": result["prediction_sha256"],
-            "metadata": metadata,
-        }
-    )
+    _refresh_behavior_fingerprint(result)
 
     with pytest.raises(RuntimeError, match="outer guard"):
         analyzer.analyze(
@@ -950,15 +924,7 @@ def test_calibration_rejects_guarded_uncrossed_score_detached_from_children():
     metadata["uncrossed_validation_rmse"] = 20.0
     metadata["crossed_validation_rmse"] = 18.0
     metadata["relative_crossed_validation_ratio"] = 0.9
-    result["behavior_fingerprint_sha256"] = runner._json_sha256(
-        {
-            "coordinate": result["coordinate"],
-            "arm": result["arm"],
-            "rmse": result["rmse"],
-            "prediction_sha256": result["prediction_sha256"],
-            "metadata": metadata,
-        }
-    )
+    _refresh_behavior_fingerprint(result)
 
     with pytest.raises(RuntimeError, match="uncrossed score"):
         analyzer.analyze(
@@ -986,15 +952,7 @@ def test_calibration_rejects_linear_lane_when_constant_child_wins():
     metadata["selected_selection_fit"] = linear
     metadata["final_refit_parameters"]["linear_leaves"] = True
     metadata["final_fit"]["selected_lane"] = "linear_leaves"
-    result["behavior_fingerprint_sha256"] = runner._json_sha256(
-        {
-            "coordinate": result["coordinate"],
-            "arm": result["arm"],
-            "rmse": result["rmse"],
-            "prediction_sha256": result["prediction_sha256"],
-            "metadata": metadata,
-        }
-    )
+    _refresh_behavior_fingerprint(result)
 
     with pytest.raises(RuntimeError, match="selected lane"):
         analyzer.analyze(
