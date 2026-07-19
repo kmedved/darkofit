@@ -39,9 +39,24 @@ COORDINATES = tuple(
     {"repeat": repeat, "fold": fold, "sample": 0}
     for repeat, fold in spent.SCREEN_SPLITS
 )
-EXPECTED_NATIVE_CATEGORICAL_COLUMNS = {
-    name: list(columns)
-    for name, columns in spent.EXPECTED_NATIVE_CATEGORICAL_COLUMNS.items()
+EXPECTED_TASK_VIEW_CATEGORICAL_COLUMNS = {
+    "airfoil_self_noise": ["attack-angle"],
+    "Another-Dataset-on-used-Fiat-500": ["model"],
+    "concrete_compressive_strength": [],
+    "diamonds": ["cut", "color", "clarity"],
+    "Food_Delivery_Time": [
+        "Delivery_person_ID",
+        "Type_of_order",
+        "Type_of_vehicle",
+    ],
+    "healthcare_insurance_expenses": ["sex", "smoker", "region"],
+    "houses": [],
+    "miami_housing": ["avno60plus"],
+    "physiochemical_protein": [],
+    "QSAR-TID-11": [],
+    "QSAR_fish_toxicity": [],
+    "superconductivity": [],
+    "wine_quality": ["wine_color"],
 }
 ARMS = (
     "current_default",
@@ -269,10 +284,10 @@ def task_view_attestations() -> dict[str, Any]:
     import numpy as np
     import openml
     import pandas as pd
-    from pandas.api.types import is_numeric_dtype
 
     from benchmarks import build_ctr23_contamination_registry as fingerprints
     from benchmarks import panel3_data_contract as data_contract
+    from benchmarks import run_panel3_confirmation as panel3
 
     attestations = {}
     for dataset_name, task_id in TASKS.items():
@@ -301,19 +316,15 @@ def task_view_attestations() -> dict[str, Any]:
             raise RuntimeError(
                 f"calibration source task {task_id} target is invalid"
             )
-        categorical_indices = [
-            index
-            for index, (flag, dtype) in enumerate(
-                zip(declared, X.dtypes, strict=True)
-            )
-            if bool(flag) or not is_numeric_dtype(dtype)
-        ]
+        categorical_indices = list(
+            panel3.categorical_column_indices(X, list(declared))
+        )
         categorical_names = [
             str(X.columns[index]) for index in categorical_indices
         ]
         if (
             categorical_names
-            != EXPECTED_NATIVE_CATEGORICAL_COLUMNS[dataset_name]
+            != EXPECTED_TASK_VIEW_CATEGORICAL_COLUMNS[dataset_name]
         ):
             raise RuntimeError(
                 f"calibration source task {task_id} categoricals changed"
@@ -446,8 +457,8 @@ def build() -> dict[str, Any]:
             "runtime_environment": runtime_environment,
             "spent_provenance_sha256": spent,
             "tasks": TASKS,
-            "native_categorical_columns": (
-                EXPECTED_NATIVE_CATEGORICAL_COLUMNS
+            "task_view_categorical_columns": (
+                EXPECTED_TASK_VIEW_CATEGORICAL_COLUMNS
             ),
             "task_view_attestations": task_views,
             "coordinates": list(COORDINATES),

@@ -17,8 +17,8 @@ losses, and inapplicable size-gated coordinates.
 
 ## Fixed data boundary
 
-Use the exact OpenML tasks and native feature views from the spent TabArena
-regression panel:
+Use the exact OpenML tasks and raw OpenML dataframe views from the spent
+TabArena regression panel:
 
 | Order | Dataset | OpenML task |
 | ---: | --- | ---: |
@@ -43,10 +43,17 @@ OpenML dataframe and categorical declarations. Targets must convert exactly
 to finite `float64`; no imputation, task dropping, representation change, or
 outcome-dependent preprocessing is permitted.
 
-The runner records dataset identity, declared checksum, feature schema,
-categorical columns, complete feature/target fingerprints, and exact train/test
-index hashes. A missing coordinate, task drift, non-finite target, or failed
-arm invalidates the campaign.
+This task-view boundary is before AutoGluon's historical child preprocessing.
+Consequently Healthcare preserves `sex`, `smoker`, and `region` as categorical,
+Miami preserves `avno60plus`, and Wine preserves `wine_color`. The spent
+follow-on screen's child-visible categorical ledger is not reused here:
+AutoGluon had converted those binary columns to numeric values before its
+model-adapter boundary.
+
+The runner records dataset identity, declared checksum, feature schema, raw
+task-view categorical columns, complete feature/target fingerprints, and exact
+train/test index hashes. A missing coordinate, task drift, non-finite target,
+or failed arm invalidates the campaign.
 
 ## Frozen arms
 

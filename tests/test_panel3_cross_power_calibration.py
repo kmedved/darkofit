@@ -692,15 +692,40 @@ def test_source_freeze_rejects_transient_contract_snapshot_restored_to_h1(
         freeze.build()
 
 
-def test_boundary_is_imported_from_spent_tabarena_panel():
+def test_boundary_uses_spent_tasks_and_raw_openml_categorical_views():
     assert freeze.TASKS == spent.TASKS
     assert list(freeze.COORDINATES) == [
         {"repeat": repeat, "fold": fold, "sample": 0}
         for repeat, fold in spent.SCREEN_SPLITS
     ]
-    assert (
-        freeze.EXPECTED_NATIVE_CATEGORICAL_COLUMNS
-        == spent.EXPECTED_NATIVE_CATEGORICAL_COLUMNS
+    differences = {
+        dataset: {
+            "task_view": task_view,
+            "autogluon_child": (
+                spent.EXPECTED_NATIVE_CATEGORICAL_COLUMNS[dataset]
+            ),
+        }
+        for dataset, task_view in (
+            freeze.EXPECTED_TASK_VIEW_CATEGORICAL_COLUMNS.items()
+        )
+        if task_view != spent.EXPECTED_NATIVE_CATEGORICAL_COLUMNS[dataset]
+    }
+    assert differences == {
+        "healthcare_insurance_expenses": {
+            "task_view": ["sex", "smoker", "region"],
+            "autogluon_child": ["region"],
+        },
+        "miami_housing": {
+            "task_view": ["avno60plus"],
+            "autogluon_child": [],
+        },
+        "wine_quality": {
+            "task_view": ["wine_color"],
+            "autogluon_child": [],
+        },
+    }
+    assert set(freeze.EXPECTED_TASK_VIEW_CATEGORICAL_COLUMNS) == set(
+        freeze.TASKS
     )
     assert len(runner.expected_coordinates()) == 39
     assert len(analyzer._expected_result_keys()) == 117

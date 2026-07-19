@@ -11,8 +11,8 @@ was accessed while making these changes.
 ## Measured result
 
 The directive arrived when the uncommitted Panel 3 scope was reported at about
-19,300 lines. The same production-and-test scope is now **24,284 lines**:
-roughly **25.8% larger**, not slimmer. Most of that growth
+19,300 lines. The same production-and-test scope is now **24,320 lines**:
+roughly **26.0% larger**, not slimmer. Most of that growth
 preceded the measured consolidation slices and added publication, resume,
 source-closure, and security checks. The decision here is that the retained
 checks are worth their weight, not that the requested global slimming was
@@ -22,9 +22,9 @@ basename contains `panel3`, plus `benchmarks/campaign_lib/*.py`.
 A narrower, reproducible comparison uses commit `62d8f52` as the clean
 pre-consolidation baseline. Relative to that commit, the pre-H1 source is:
 
-- benchmark production code: **150 net lines removed**;
-- tests: **1,409 net lines added**; and
-- combined same-scope delta: **1,259 net lines added**.
+- benchmark production code: **139 net lines removed**;
+- tests: **1,434 net lines added**; and
+- combined same-scope delta: **1,295 net lines added**.
 
 The earlier consolidation slices themselves removed 176 net lines. Subsequent
 blocking reviews required order-sensitive task binding, provenance repair, and
@@ -34,6 +34,13 @@ change followed by a revert, and the immutable power decision did not bind the
 required owner-facing `GO` or `NO-GO` sentence. Those fixes and their tests are
 included in the final numbers above rather than hidden behind an earlier
 checkpoint.
+
+The first H2 creation attempt then stopped before publication because the
+source-freeze builder compared raw OpenML categorical declarations with a
+historical AutoGluon child-visible ledger. Healthcare, Miami, and Wine retain
+binary categorical columns in the raw task view that AutoGluon had converted
+before its child adapter. The unpublished freeze schema now names and binds the
+raw task-view categorical map explicitly and shares the execution resolver.
 
 The test growth is deliberate. Differential review found real acceptance gaps
 in the formerly duplicated fitted-metadata validators. The committed mutation
@@ -99,6 +106,11 @@ in this preparation window or closes a direct one-shot evidence failure:
   footer exposure. The target preflight checks finiteness without publishing
   target statistics, while the exclusion ledger prevents those lineages from
   re-entering the lockbox.
+- **Raw task-view binding.** The attempted H2 freeze caught a category-boundary
+  mismatch before writing an artifact: a historical AutoGluon child ledger had
+  been applied to raw OpenML frames. The corrected contract distinguishes the
+  two representations, binds all raw declared or nonnumeric categorical
+  columns, and uses the same categorical resolver in freeze and execution.
 - **Runtime and machine binding.** Timing evidence is valid only when all arms
   share the declared interpreter, package set, thread policy, and machine. The
   binding prevents mixed-runtime or mixed-machine measurements from being

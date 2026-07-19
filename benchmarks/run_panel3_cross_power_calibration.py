@@ -141,7 +141,7 @@ def validate_source_freeze(
         "runtime_environment",
         "spent_provenance_sha256",
         "tasks",
-        "native_categorical_columns",
+        "task_view_categorical_columns",
         "task_view_attestations",
         "coordinates",
         "arms",
@@ -165,8 +165,8 @@ def validate_source_freeze(
         or artifact["post_freeze_allowed_tracked_path"]
         != freeze.FREEZE_RELATIVE
         or artifact["tasks"] != freeze.TASKS
-        or artifact["native_categorical_columns"]
-        != freeze.EXPECTED_NATIVE_CATEGORICAL_COLUMNS
+        or artifact["task_view_categorical_columns"]
+        != freeze.EXPECTED_TASK_VIEW_CATEGORICAL_COLUMNS
         or not isinstance(artifact["task_view_attestations"], dict)
         or set(artifact["task_view_attestations"])
         != {str(value) for value in freeze.TASKS.values()}
@@ -347,7 +347,7 @@ def load_task(task_id: int, source_freeze: dict[str, Any]):
         or {key: value for key, value in expected.items() if key != "coordinates"}
         != metadata
         or metadata["categorical_feature_names"]
-        != source_freeze["native_categorical_columns"][str(dataset.name)]
+        != source_freeze["task_view_categorical_columns"][str(dataset.name)]
     ):
         raise RuntimeError(
             f"calibration task {task_id} frozen view changed"
