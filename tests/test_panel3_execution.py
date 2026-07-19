@@ -2707,6 +2707,58 @@ def test_worker_crash_leaves_permanent_attempt_and_restart_refuses(
         )
 
 
+def test_decision_worker_crash_before_claim_remains_permanently_invalid(
+    tmp_path,
+    monkeypatch,
+):
+    coordinate = _coordinate()
+    arm = runner.CONTROL_ARM
+    binding = {"campaign": "panel3"}
+    monkeypatch.setattr(
+        runner,
+        "_guard_parent_campaign_boundary",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(runner, "_worker_environment", lambda: {})
+    monkeypatch.setattr(
+        runner.subprocess,
+        "run",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            returncode=9,
+            stdout="",
+            stderr="synthetic pre-claim crash",
+        ),
+    )
+
+    with pytest.raises(RuntimeError, match="invalid panel-3 worker claim"):
+        runner._run_one(
+            tmp_path / "registry.json",
+            coordinate,
+            arm,
+            tmp_path,
+            binding,
+        )
+
+    assert runner._attempt_path(tmp_path, coordinate, arm).is_file()
+    assert not runner._claim_path(tmp_path, coordinate, arm).exists()
+    assert not runner._spool_path(tmp_path, coordinate, arm).exists()
+    monkeypatch.setattr(
+        runner.subprocess,
+        "run",
+        lambda *_args, **_kwargs: pytest.fail(
+            "a spent coordinate must never relaunch"
+        ),
+    )
+    with pytest.raises(RuntimeError, match="permanently invalid"):
+        runner._run_one(
+            tmp_path / "registry.json",
+            coordinate,
+            arm,
+            tmp_path,
+            binding,
+        )
+
+
 def test_parent_refuses_worker_output_without_consumed_claim(
     tmp_path,
     monkeypatch,
@@ -2793,6 +2845,204 @@ def test_comparator_launch_failure_consumes_claim_and_persists_failure(
     assert resumed is False
     assert runner._claim_path(tmp_path, coordinate, arm).is_file()
     assert runner._spool_path(tmp_path, coordinate, arm).is_file()
+
+
+def test_comparator_process_failure_before_claim_persists_and_resumes(
+    tmp_path,
+    monkeypatch,
+):
+    coordinate = _coordinate()
+    arm = "chimeraboost_0_15_0"
+    binding = {"campaign": "panel3"}
+    monkeypatch.setattr(
+        runner,
+        "_guard_parent_campaign_boundary",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(runner, "_worker_environment", lambda: {})
+    monkeypatch.setattr(
+        runner.subprocess,
+        "run",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            returncode=9,
+            stdout="",
+            stderr="synthetic pre-claim crash",
+        ),
+    )
+
+    first = runner._run_one(
+        tmp_path / "registry.json",
+        coordinate,
+        arm,
+        tmp_path,
+        binding,
+    )
+
+    result = first[0]
+    assert result["status"] == "failed"
+    assert result["failure_kind"] == "worker_process_failure"
+    assert first[-1] is False
+    assert runner._attempt_path(tmp_path, coordinate, arm).is_file()
+    assert runner._claim_path(tmp_path, coordinate, arm).is_file()
+    assert runner._spool_path(tmp_path, coordinate, arm).is_file()
+    monkeypatch.setattr(
+        runner.subprocess,
+        "run",
+        lambda *_args, **_kwargs: pytest.fail(
+            "a completed comparator must resume without relaunch"
+        ),
+    )
+
+    resumed = runner._run_one(
+        tmp_path / "registry.json",
+        coordinate,
+        arm,
+        tmp_path,
+        binding,
+    )
+
+    assert resumed[:-1] == first[:-1]
+    assert resumed[-1] is True
+
+
+def test_comparator_process_failure_uses_existing_valid_claim(
+    tmp_path,
+    monkeypatch,
+):
+    coordinate = _coordinate()
+    arm = "chimeraboost_0_15_0"
+    binding = {"campaign": "panel3"}
+    create_claim = runner._create_claim
+    claim_create_count = 0
+    monkeypatch.setattr(
+        runner,
+        "_guard_parent_campaign_boundary",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(runner, "_worker_environment", lambda: {})
+
+    def claimed_crash(*_args, **_kwargs):
+        nonlocal claim_create_count
+        attempt_hash, attempt_file_hash = runner._load_attempt(
+            runner._attempt_path(tmp_path, coordinate, arm),
+            binding,
+            coordinate,
+            arm,
+            allowed_root=tmp_path,
+        )
+        claim_create_count += 1
+        create_claim(
+            runner._claim_path(tmp_path, coordinate, arm),
+            binding,
+            coordinate,
+            arm,
+            attempt_hash,
+            attempt_file_hash,
+            allowed_root=tmp_path,
+        )
+        return SimpleNamespace(
+            returncode=9,
+            stdout="",
+            stderr="synthetic post-claim crash",
+        )
+
+    monkeypatch.setattr(runner.subprocess, "run", claimed_crash)
+
+    result = runner._run_one(
+        tmp_path / "registry.json",
+        coordinate,
+        arm,
+        tmp_path,
+        binding,
+    )[0]
+
+    assert result["failure_kind"] == "worker_process_failure"
+    assert claim_create_count == 1
+
+
+def test_comparator_process_failure_rejects_existing_symlink_claim(
+    tmp_path,
+    monkeypatch,
+):
+    coordinate = _coordinate()
+    arm = "chimeraboost_0_15_0"
+    binding = {"campaign": "panel3"}
+    monkeypatch.setattr(
+        runner,
+        "_guard_parent_campaign_boundary",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(runner, "_worker_environment", lambda: {})
+
+    def symlinked_claim_crash(*_args, **_kwargs):
+        target = tmp_path / "claim-target.json"
+        target.write_text("{}")
+        runner._claim_path(
+            tmp_path,
+            coordinate,
+            arm,
+        ).symlink_to(target)
+        return SimpleNamespace(
+            returncode=9,
+            stdout="",
+            stderr="synthetic post-claim crash",
+        )
+
+    monkeypatch.setattr(runner.subprocess, "run", symlinked_claim_crash)
+
+    with pytest.raises(RuntimeError, match="invalid panel-3 worker claim"):
+        runner._run_one(
+            tmp_path / "registry.json",
+            coordinate,
+            arm,
+            tmp_path,
+            binding,
+        )
+
+    assert not runner._spool_path(tmp_path, coordinate, arm).exists()
+
+
+def test_comparator_process_failure_rejects_claim_creation_race(
+    tmp_path,
+    monkeypatch,
+):
+    coordinate = _coordinate()
+    arm = "chimeraboost_0_15_0"
+    binding = {"campaign": "panel3"}
+    create_claim = runner._create_claim
+    monkeypatch.setattr(
+        runner,
+        "_guard_parent_campaign_boundary",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(runner, "_worker_environment", lambda: {})
+    monkeypatch.setattr(
+        runner.subprocess,
+        "run",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            returncode=9,
+            stdout="",
+            stderr="synthetic pre-claim crash",
+        ),
+    )
+
+    def race(path, *args, **kwargs):
+        create_claim(path, *args, **kwargs)
+        raise FileExistsError(path)
+
+    monkeypatch.setattr(runner, "_create_claim", race)
+
+    with pytest.raises(RuntimeError, match="appeared concurrently"):
+        runner._run_one(
+            tmp_path / "registry.json",
+            coordinate,
+            arm,
+            tmp_path,
+            binding,
+        )
+
+    assert runner._claim_path(tmp_path, coordinate, arm).is_file()
+    assert not runner._spool_path(tmp_path, coordinate, arm).exists()
 
 
 def test_concurrent_worker_attempt_claim_refuses_second_parent(

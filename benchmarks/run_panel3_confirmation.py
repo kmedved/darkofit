@@ -3228,9 +3228,29 @@ def _run_one(
         spool_directory,
         binding,
     )
-    claim_hash, claim_file_hash = load_consumed_claim()
     worker_key = _worker_key(coordinate, arm)
     if completed.returncode:
+        if (
+            arm in COMPARATOR_ARMS
+            and not (claim_path.exists() or claim_path.is_symlink())
+        ):
+            try:
+                claim_hash, claim_file_hash = _create_claim(
+                    claim_path,
+                    binding,
+                    coordinate,
+                    arm,
+                    attempt_hash,
+                    attempt_file_hash,
+                    allowed_root=spool_directory,
+                )
+            except FileExistsError:
+                raise RuntimeError(
+                    "panel-3 comparator claim appeared concurrently after "
+                    f"worker failure: {claim_path}"
+                ) from None
+        else:
+            claim_hash, claim_file_hash = load_consumed_claim()
         message = (
             f"panel-3 worker {worker_key} failed with "
             f"{completed.returncode}\nstdout:\n{completed.stdout}\n"
@@ -3258,6 +3278,7 @@ def _run_one(
             claim_file_hash,
             False,
         )
+    claim_hash, claim_file_hash = load_consumed_claim()
     lines = [
         line
         for line in completed.stdout.splitlines()
