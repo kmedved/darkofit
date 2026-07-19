@@ -174,6 +174,23 @@ def _metadata(arm: str, *, engaged: bool, applicable: bool) -> dict:
     }
 
 
+def _validate_metadata(
+    metadata: dict,
+    *,
+    arm: str,
+    applicable: bool,
+) -> None:
+    runner.validate_arm_metadata(
+        metadata,
+        arm=arm,
+        t5_size_gate_applicable=applicable,
+        fit_seconds=1.0,
+        train_rows=2_400 if applicable else 1_500,
+        feature_count=2,
+        categorical_indices=[],
+    )
+
+
 def _fake_raw() -> dict:
     results = []
     for task_index, (dataset_name, task_id) in enumerate(
@@ -780,13 +797,21 @@ def test_analyzer_rejects_missing_result_instead_of_filtering():
 
 
 @pytest.mark.parametrize(
-    ("arm", "field"),
+    ("arm", "field", "message"),
     [
-        ("t5_composite_policy", "relative_challenger_validation_ratio"),
-        ("guarded_cross_features_policy", "final_refit_parameters"),
+        (
+            "t5_composite_policy",
+            "relative_challenger_validation_ratio",
+            "producer fields",
+        ),
+        (
+            "guarded_cross_features_policy",
+            "final_refit_parameters",
+            "metadata is incomplete",
+        ),
     ],
 )
-def test_analyzer_rejects_incomplete_policy_metadata(arm, field):
+def test_analyzer_rejects_incomplete_policy_metadata(arm, field, message):
     raw = _fake_raw()
     result = next(
         row
@@ -802,11 +827,84 @@ def test_analyzer_rejects_incomplete_policy_metadata(arm, field):
         "metadata": result["metadata"],
     }
     result["behavior_fingerprint_sha256"] = runner._json_sha256(behavior)
-    with pytest.raises(RuntimeError, match="metadata"):
+    with pytest.raises(RuntimeError, match=message):
         analyzer.analyze(
             _rebind_raw(raw),
             verify_source=False,
             verify_spool=False,
+        )
+
+
+@pytest.mark.parametrize(
+    ("arm", "engaged", "applicable"),
+    [
+        (runner.CONTROL_ARM, False, True),
+        ("t5_composite_policy", True, True),
+        ("guarded_cross_features_policy", True, True),
+    ],
+)
+def test_calibration_accepts_canonical_arm_metadata(
+    arm,
+    engaged,
+    applicable,
+):
+    _validate_metadata(
+        _metadata(arm, engaged=engaged, applicable=applicable),
+        arm=arm,
+        applicable=applicable,
+    )
+
+
+@pytest.mark.parametrize("applicable", [False, True])
+def test_calibration_accepts_matching_t5_size_gate_applicability(
+    applicable,
+):
+    _validate_metadata(
+        _metadata(
+            "t5_composite_policy",
+            engaged=applicable,
+            applicable=applicable,
+        ),
+        arm="t5_composite_policy",
+        applicable=applicable,
+    )
+
+
+@pytest.mark.parametrize(
+    ("metadata_applicable", "reported_applicable"),
+    [(False, True), (True, False)],
+)
+def test_calibration_rejects_mismatched_t5_size_gate_applicability(
+    metadata_applicable,
+    reported_applicable,
+):
+    metadata = _metadata(
+        "t5_composite_policy",
+        engaged=metadata_applicable,
+        applicable=metadata_applicable,
+    )
+
+    with pytest.raises(RuntimeError, match="size-gate applicability"):
+        _validate_metadata(
+            metadata,
+            arm="t5_composite_policy",
+            applicable=reported_applicable,
+        )
+
+
+def test_calibration_preserves_arm_error_order():
+    with pytest.raises(RuntimeError, match="metadata arm changed"):
+        _validate_metadata(
+            _metadata(runner.CONTROL_ARM, engaged=False, applicable=True),
+            arm="guarded_cross_features_policy",
+            applicable=True,
+        )
+
+    with pytest.raises(RuntimeError, match="metadata arm is unknown"):
+        _validate_metadata(
+            {"kind": "unknown"},
+            arm="unknown",
+            applicable=True,
         )
 
 
