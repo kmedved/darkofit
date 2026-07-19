@@ -67,6 +67,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install ".[dev,tuning]"
+      - name: Check out pinned ChimeraBoost exposure sources
+        run: |
+          git clone --depth 1 --branch v0.15.0 \
+            https://github.com/bbstats/chimeraboost.git ../chimeraboost
+          test "$(git -C ../chimeraboost rev-parse HEAD)" = \
+            "851ab7fa79fbb2a7f698fbc1a00952e1bd18c62d"
       - name: Run campaign verifiers
         run: python -m pytest -q -m campaign
 
