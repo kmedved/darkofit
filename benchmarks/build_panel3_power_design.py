@@ -281,6 +281,8 @@ PANEL3_V1_SOURCE_RELATIVE_PATHS = (
     "benchmarks/panel3_registry_common.py",
     "benchmarks/run_tabarena_regression_followon_screen.py",
     "benchmarks/run_tabarena_regression_cap_horizon.py",
+    "benchmarks/tabarena_adapter.py",
+    "benchmarks/tabarena_screen_adapters.py",
     "benchmarks/tabarena_followon_warmup.py",
     "benchmarks/tabarena_warmup.py",
     "tests/conftest.py",

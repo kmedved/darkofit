@@ -618,6 +618,8 @@ def test_source_freeze_does_not_treat_uv_lock_as_runtime_contract():
         in freeze.EXPLICIT_SOURCE_PATHS
     )
     assert {
+        "benchmarks/tabarena_adapter.py",
+        "benchmarks/tabarena_screen_adapters.py",
         "tests/conftest.py",
         "tests/test_campaign_partition.py",
         "tests/test_panel3_cross_power_calibration.py",
