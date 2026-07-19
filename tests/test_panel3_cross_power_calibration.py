@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import copy
 import hashlib
 import json
@@ -11,6 +12,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from benchmarks import analyze_panel3_confirmation as confirmation_analyzer
 from benchmarks import analyze_panel3_cross_power_calibration as analyzer
 from benchmarks import freeze_panel3_cross_power_calibration as freeze
 from benchmarks import panel3_registry_common as common
@@ -201,6 +203,107 @@ def _validate_metadata(
         feature_count=2,
         categorical_indices=[],
     )
+
+
+_FITTED_METADATA_DIFFERENTIAL_CASES = (
+    ("control", runner.CONTROL_ARM, False, True),
+    ("t5_below", "t5_composite_policy", False, False),
+    ("t5_outer", "t5_composite_policy", False, True),
+    ("t5_engaged", "t5_composite_policy", True, True),
+    ("cross_declined", "guarded_cross_features_policy", False, True),
+    ("cross_engaged", "guarded_cross_features_policy", True, True),
+)
+_FITTED_METADATA_MUTATION_COUNT = 2_367
+_FITTED_METADATA_MUTATION_CORPUS_SHA256 = (
+    "c2798d6d0455c0d3413ade39039029ab6951223279fddf0ef4d9e1a5713cf503"
+)
+_FITTED_METADATA_VERDICT_SHA256 = (
+    "48113dad82ca0cc3e0b22e0e094e0c20bea51bdf68dad8116a1c5ac8337a1e4f"
+)
+# One bit per mutation, least-significant bit first. This is the accept/reject
+# oracle produced by the deleted D3a validator, not a copy of its implementation.
+_FITTED_METADATA_D3A_ACCEPTANCE_BITS = (
+    "AAD//////wcA+P////8/AAGAQABAQP7/////DwCAAAAAIEIIkEAAgggEIBAICAEg"
+    "P4hAAAKBgBAA8oMIBCAQCAgBIB8AEAD8/////x8AEMj//////wEAEAAAAEQIARII"
+    "QBCBAAQCASEA5AcRCEAgEBACQH4QgQAEAgEhAOQDAAKA//////8DAABA/v////8P"
+    "gPn//xcgAAAAEAARCEAgEBACQD4AIhCAQCAgBID8IAIBCAQCQgDIDyIQgEAgIAS"
+    "A/PP//z8AAAAAAIAAAAD//////wcAAED+/////w8A8P//B/7//ygAAAAQABEIQCA"
+    "QEAJA/vH//x+AIAIBCAQCQgDIDyIQgEAgIASAfCACAQgEAkIAyD/+//8DAAAAAA"
+    "AIAADw/////38="
+)
+
+
+def _walk_metadata(value, path=()):
+    yield path, value
+    if isinstance(value, dict):
+        for key, item in value.items():
+            yield from _walk_metadata(item, path + (key,))
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            yield from _walk_metadata(item, path + (index,))
+
+
+def _metadata_replacements(value):
+    if value is None:
+        return [0, "changed", False]
+    if type(value) is bool:
+        return [not value, 0, None, "changed"]
+    if type(value) is int:
+        return [
+            value + 1,
+            -1,
+            True,
+            None,
+            float(value),
+            str(value),
+        ]
+    if type(value) is float:
+        return [
+            value + 0.1,
+            -1.0,
+            float("nan"),
+            True,
+            None,
+            str(value),
+        ]
+    if isinstance(value, str):
+        return ["", value + "_changed", None, 1]
+    if isinstance(value, list):
+        return [[], value + [None], None, {}]
+    if isinstance(value, dict):
+        return [{}, None, []]
+    return [None]
+
+
+def _metadata_verdict(metadata, *, arm, applicable):
+    view = {
+        "arm": arm,
+        "metadata": metadata,
+        "fit_seconds": 1.0,
+        "train_rows": 2_400 if applicable else 1_500,
+        "feature_policy": {"retained_feature_count": 2},
+        "categorical_feature_indices": [],
+    }
+    try:
+        confirmation_analyzer._validate_fitted_metadata(
+            copy.deepcopy(view),
+            strict=True,
+        )
+    except Exception:
+        confirmation_accepts = False
+    else:
+        confirmation_accepts = True
+    try:
+        _validate_metadata(
+            copy.deepcopy(metadata),
+            arm=arm,
+            applicable=applicable,
+        )
+    except Exception:
+        calibration_accepts = False
+    else:
+        calibration_accepts = True
+    return confirmation_accepts, calibration_accepts
 
 
 def _fake_raw() -> dict:
@@ -836,6 +939,92 @@ def test_calibration_accepts_canonical_arm_metadata(
         _metadata(arm, engaged=engaged, applicable=applicable),
         arm=arm,
         applicable=applicable,
+    )
+
+
+def test_fitted_metadata_differential_corpus_is_frozen_and_nonwidening():
+    """Repeat the exact D3 mutation corpus without loading Git history."""
+    corpus = []
+    verdicts = []
+    for name, arm, engaged, applicable in (
+        _FITTED_METADATA_DIFFERENTIAL_CASES
+    ):
+        canonical = _metadata(
+            arm,
+            engaged=engaged,
+            applicable=applicable,
+        )
+        assert _metadata_verdict(
+            canonical,
+            arm=arm,
+            applicable=applicable,
+        ) == (True, True)
+        for path, original in list(_walk_metadata(canonical)):
+            if not path:
+                continue
+            replacements = _metadata_replacements(original)
+            for mutation_index, replacement in enumerate(
+                [None, *replacements]
+            ):
+                delete = mutation_index == 0
+                changed = copy.deepcopy(canonical)
+                parent = changed
+                for part in path[:-1]:
+                    parent = parent[part]
+                if delete:
+                    parent.pop(path[-1])
+                else:
+                    parent[path[-1]] = replacement
+                verdicts.append(
+                    _metadata_verdict(
+                        changed,
+                        arm=arm,
+                        applicable=applicable,
+                    )
+                )
+                corpus.append(
+                    [
+                        name,
+                        list(path),
+                        "delete" if delete else mutation_index - 1,
+                        (
+                            "float:nan"
+                            if (
+                                not delete
+                                and type(replacement) is float
+                                and math.isnan(replacement)
+                            )
+                            else replacement
+                        ),
+                    ]
+                )
+
+    legacy_bytes = base64.b64decode(
+        _FITTED_METADATA_D3A_ACCEPTANCE_BITS,
+        validate=True,
+    )
+    legacy_accepts = [
+        bool(legacy_bytes[index // 8] & (1 << (index % 8)))
+        for index in range(len(corpus))
+    ]
+
+    assert len(corpus) == _FITTED_METADATA_MUTATION_COUNT
+    assert runner._json_sha256(corpus) == (
+        _FITTED_METADATA_MUTATION_CORPUS_SHA256
+    )
+    assert sum(legacy_accepts) == 828
+    assert not any(
+        legacy_bytes[index // 8] & (1 << (index % 8))
+        for index in range(len(corpus), len(legacy_bytes) * 8)
+    )
+    assert all(left == right for left, right in verdicts)
+    assert all(
+        legacy_accepts[index] or not confirmation_accepts
+        for index, (confirmation_accepts, _) in enumerate(verdicts)
+    )
+    assert sum(left for left, _ in verdicts) == 86
+    assert runner._json_sha256(verdicts) == (
+        _FITTED_METADATA_VERDICT_SHA256
     )
 
 
