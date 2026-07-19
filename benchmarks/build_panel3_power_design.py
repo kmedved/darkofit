@@ -1483,8 +1483,8 @@ def build(
         raise RuntimeError(
             "Panel 3 contract snapshots differ from calibration H1"
         )
-    runtime = confirmation._validate_runtime_contract(
-        candidate_contract
+    runtime = confirmation.runtime_evidence_projection(
+        confirmation._validate_runtime_contract(candidate_contract)
     )
     retention = decide_retention(profiles, contract=contract)
     retained = retention["retained_candidates"]
@@ -2199,6 +2199,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     ):
         raise RuntimeError("Panel 3 power decision path changed")
     artifact = build(summary_path=args.summary, raw_path=args.raw)
+    _validate_decision_runtime(
+        artifact.get("runtime"),
+        require_current_sources=False,
+    )
     encoded = (
         json.dumps(artifact, indent=2, sort_keys=True, allow_nan=False) + "\n"
     ).encode("utf-8")

@@ -360,6 +360,7 @@ def _minimal_main_decision():
     return {
         "decision_execution_head": "a" * 40,
         "decision_sha256": "b" * 64,
+        "runtime": copy.deepcopy(power.PANEL3_V1_RUNTIME_CONTRACT),
         "retained_candidates": ["guarded_cross_features_policy"],
         "target_preflight_authorized": True,
         "owner_decision_statement": (
@@ -403,6 +404,26 @@ def test_power_design_cli_rechecks_source_head_before_publication(
     )
 
     with pytest.raises(RuntimeError, match="source changed"):
+        power.main([])
+
+
+def test_power_design_cli_rejects_unprojected_runtime_before_publication(
+    monkeypatch,
+):
+    artifact = _minimal_main_decision()
+    artifact["runtime"] = {
+        **artifact["runtime"],
+        "schema_version": 1,
+        "contract_name": "darkofit_panel3_exact_runtime_environment_v1",
+    }
+    monkeypatch.setattr(power, "build", lambda **_kwargs: artifact)
+    monkeypatch.setattr(
+        common,
+        "atomic_create",
+        lambda *_args, **_kwargs: pytest.fail("decision was published"),
+    )
+
+    with pytest.raises(RuntimeError, match="runtime binding changed"):
         power.main([])
 
 
