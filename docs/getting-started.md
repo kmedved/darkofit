@@ -4,8 +4,16 @@
 
 DarkoFit requires Python 3.9 or newer.
 
+DarkoFit is distributed from tagged GitHub releases rather than PyPI:
+
 ```bash
-python -m pip install darkofit
+python -m pip install "darkofit @ git+https://github.com/kmedved/darkofit.git@v0.10.0"
+```
+
+The release wheel can also be installed directly:
+
+```bash
+python -m pip install "https://github.com/kmedved/darkofit/releases/download/v0.10.0/darkofit-0.10.0-py3-none-any.whl"
 ```
 
 For a source checkout:

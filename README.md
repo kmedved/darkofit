@@ -31,9 +31,15 @@ inspired by CatBoost.
 
 * **How?**
 
-```
-# pip install darkofit
+DarkoFit is distributed from tagged GitHub releases rather than PyPI:
 
+```bash
+python -m pip install "darkofit @ git+https://github.com/kmedved/darkofit.git@v0.10.0"
+```
+
+Then:
+
+```python
 from darkofit import DarkoClassifier
 clf = DarkoClassifier(early_stopping=True)
 clf.fit(X, y, sample_weight=w)
@@ -629,8 +635,13 @@ search.fit(X, y, cat_features=[0], groups=groups, sample_weight=w)
 model = search.best_estimator_
 ```
 
-Install the optional dependency with `pip install darkofit[tuning]`. The
-tuner owns the CV folds, passes explicit validation sets to the wrappers,
+Install the optional dependency from the same tag:
+
+```bash
+python -m pip install "darkofit[tuning] @ git+https://github.com/kmedved/darkofit.git@v0.10.0"
+```
+
+The tuner owns the CV folds, passes explicit validation sets to the wrappers,
 scores with validation weights, and controls per-trial `thread_count` so
 multi-process tuning does not oversubscribe Numba threads. `n_trials` is a
 global budget across all phases, tree-mode lanes, and worker processes. With
