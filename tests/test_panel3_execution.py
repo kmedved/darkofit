@@ -188,6 +188,15 @@ def test_group_hash_and_greedy_fold_assignment_are_canonical():
     assert len(set(typed)) == 3
 
 
+def _coordinate(task_id=1, repeat=0, fold=0, sample=0):
+    return {
+        "task_id": task_id,
+        "repeat": repeat,
+        "fold": fold,
+        "sample": sample,
+    }
+
+
 def _explicit_split_row():
     train = np.asarray([0, 2, 4], dtype=np.int64)
     test = np.asarray([1, 3], dtype=np.int64)
@@ -225,7 +234,7 @@ def test_explicit_split_is_consumed_without_openml_split_access():
     train, test, metadata = runner._resolve_split(
         NoOfficialSplit(),
         _explicit_split_row(),
-        {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0},
+        _coordinate(),
     )
 
     assert train.tolist() == [0, 2, 4]
@@ -241,7 +250,7 @@ def test_explicit_split_rejects_overlap_hash_drift_and_unapproved_omission():
         runner._resolve_split(
             object(),
             row,
-            {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0},
+            _coordinate(),
         )
 
     row = _explicit_split_row()
@@ -250,7 +259,7 @@ def test_explicit_split_rejects_overlap_hash_drift_and_unapproved_omission():
         runner._resolve_split(
             object(),
             row,
-            {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0},
+            _coordinate(),
         )
 
     row = _explicit_split_row()
@@ -264,7 +273,7 @@ def test_explicit_split_rejects_overlap_hash_drift_and_unapproved_omission():
         runner._resolve_split(
             object(),
             row,
-            {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0},
+            _coordinate(),
         )
 
 
@@ -375,7 +384,7 @@ def _none_feature_attestation():
 
 def _synthetic_registry():
     coordinates = [
-        {"task_id": task, "repeat": 0, "fold": fold, "sample": 0}
+        _coordinate(task_id=task, fold=fold)
         for task in range(1, 13)
         for fold in range(3)
     ]
@@ -778,6 +787,26 @@ def _synthetic_source_state(repository, head):
     }
 
 
+def _synthetic_source_attestation(
+    registry_file_sha256="0" * 64,
+    registry_canonical_sha256="a" * 64,
+):
+    attestation = {
+        "registry_file_sha256": registry_file_sha256,
+        "registry_canonical_sha256": registry_canonical_sha256,
+        "darkofit": _synthetic_source_state(
+            runner.SOURCE_REPOSITORY_IDS["darkofit"], "a" * 40
+        ),
+        "chimeraboost": _synthetic_source_state(
+            runner.SOURCE_REPOSITORY_IDS["chimeraboost"], "b" * 40
+        ),
+    }
+    return {
+        "before": copy.deepcopy(attestation),
+        "after": copy.deepcopy(attestation),
+    }
+
+
 def test_panel3_public_attestations_redact_host_paths(
     monkeypatch,
 ):
@@ -936,28 +965,7 @@ def _synthetic_result(coordinate, arm, ratio):
         "rmse": float(ratio),
         "prediction_sha256": prediction,
         "metadata": metadata,
-        "source_attestation": {
-            "before": {
-                "registry_file_sha256": "0" * 64,
-                "registry_canonical_sha256": "a" * 64,
-                "darkofit": _synthetic_source_state(
-                    runner.SOURCE_REPOSITORY_IDS["darkofit"], "a" * 40
-                ),
-                "chimeraboost": _synthetic_source_state(
-                    runner.SOURCE_REPOSITORY_IDS["chimeraboost"], "b" * 40
-                ),
-            },
-            "after": {
-                "registry_file_sha256": "0" * 64,
-                "registry_canonical_sha256": "a" * 64,
-                "darkofit": _synthetic_source_state(
-                    runner.SOURCE_REPOSITORY_IDS["darkofit"], "a" * 40
-                ),
-                "chimeraboost": _synthetic_source_state(
-                    runner.SOURCE_REPOSITORY_IDS["chimeraboost"], "b" * 40
-                ),
-            },
-        },
+        "source_attestation": _synthetic_source_attestation(),
     }
     return {
         "worker_key": runner._worker_key(coordinate, arm),
@@ -1009,12 +1017,7 @@ def _synthetic_result(coordinate, arm, ratio):
 
 
 def _synthetic_engaged_t5_result():
-    coordinate = {
-        "task_id": 1,
-        "repeat": 0,
-        "fold": 0,
-        "sample": 0,
-    }
+    coordinate = _coordinate()
     result = _synthetic_result(
         coordinate,
         "t5_composite_policy",
@@ -1127,20 +1130,10 @@ def _synthetic_raw(tmp_path, monkeypatch):
     for arm in runner.ARM_ORDER:
         for coordinate in registry["coordinates"]:
             result = _synthetic_result(coordinate, arm, ratios[arm])
-            attestation = {
-                "registry_file_sha256": common.sha256_file(registry_path),
-                "registry_canonical_sha256": registry["registry_sha256"],
-                "darkofit": _synthetic_source_state(
-                    runner.SOURCE_REPOSITORY_IDS["darkofit"], "a" * 40
-                ),
-                "chimeraboost": _synthetic_source_state(
-                    runner.SOURCE_REPOSITORY_IDS["chimeraboost"], "b" * 40
-                ),
-            }
-            result["source_attestation"] = {
-                "before": copy.deepcopy(attestation),
-                "after": copy.deepcopy(attestation),
-            }
+            result["source_attestation"] = _synthetic_source_attestation(
+                common.sha256_file(registry_path),
+                registry["registry_sha256"],
+            )
             _refresh_result_behavior(result)
             results.append(result)
     raw = {
@@ -1303,11 +1296,6 @@ def _refresh_spool_digest(raw, payload):
     )
 
 
-def _refresh_all_spool_digests(raw):
-    for payload in [*raw["results"], *raw["comparator_failures"]]:
-        _refresh_spool_digest(raw, payload)
-
-
 def _refresh_result_integrity(raw, result):
     _refresh_result_behavior(result)
     _refresh_spool_digest(raw, result)
@@ -1339,12 +1327,7 @@ def test_spool_rejects_right_identity_malformed_result_before_write(
     tmp_path,
     monkeypatch,
 ):
-    coordinate = {
-        "task_id": 1,
-        "repeat": 0,
-        "fold": 0,
-        "sample": 0,
-    }
+    coordinate = _coordinate()
     result = _synthetic_result(
         coordinate,
         runner.CONTROL_ARM,
@@ -1442,19 +1425,14 @@ def test_worker_cli_rejects_mismatched_parent_binding_before_claim_load(
             {"registry_sha256": "a" * 64},
             tmp_path / "registry.json",
             tmp_path,
-            {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0},
+            _coordinate(),
             runner.CONTROL_ARM,
         )
 
 
 def test_worker_attempt_can_be_consumed_only_once(tmp_path, monkeypatch):
     monkeypatch.setattr(runner, "ROOT", tmp_path)
-    coordinate = {
-        "task_id": 1,
-        "repeat": 0,
-        "fold": 0,
-        "sample": 0,
-    }
+    coordinate = _coordinate()
     arm = runner.CONTROL_ARM
     registry = {"registry_sha256": "a" * 64}
     registry_path = tmp_path / "registry.json"
@@ -1597,12 +1575,7 @@ def test_malformed_comparator_result_becomes_nonbinding_failure(
     tmp_path,
     monkeypatch,
 ):
-    coordinate = {
-        "task_id": 1,
-        "repeat": 0,
-        "fold": 0,
-        "sample": 0,
-    }
+    coordinate = _coordinate()
     arm = "chimeraboost_0_15_0"
     worker_key = runner._worker_key(coordinate, arm)
     malformed = {"worker_key": worker_key, "arm": arm}
@@ -1682,12 +1655,7 @@ def test_malformed_comparator_result_becomes_nonbinding_failure(
 
 
 def test_guarded_cross_child_fit_metadata_is_required():
-    coordinate = {
-        "task_id": 1,
-        "repeat": 0,
-        "fold": 0,
-        "sample": 0,
-    }
+    coordinate = _coordinate()
     result = _synthetic_result(
         coordinate,
         "guarded_cross_features_policy",
@@ -1750,7 +1718,7 @@ def test_t5_strict_metadata_rejects_selection_ledger_mutations(
 )
 def test_strict_fitted_metadata_requires_kind_to_match_arm(arm):
     result = _synthetic_result(
-        {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0},
+        _coordinate(),
         arm,
         1.0,
     )
@@ -1768,7 +1736,7 @@ def test_t5_strict_metadata_requires_frozen_size_gate_on_both_paths(
         _synthetic_engaged_t5_result()
         if engaged
         else _synthetic_result(
-            {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0},
+            _coordinate(),
             "t5_composite_policy",
             1.0,
         )
@@ -1788,7 +1756,7 @@ def test_t5_strict_metadata_requires_frozen_size_gate_on_both_paths(
 )
 def test_t5_strict_metadata_binds_below_gate_decline_fields(field, value):
     result = _synthetic_result(
-        {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0},
+        _coordinate(),
         "t5_composite_policy",
         1.0,
     )
@@ -1800,7 +1768,7 @@ def test_t5_strict_metadata_binds_below_gate_decline_fields(field, value):
 
 def test_guarded_strict_metadata_binds_fixed_refit_learning_rate():
     result = _synthetic_result(
-        {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0},
+        _coordinate(),
         "guarded_cross_features_policy",
         1.0,
     )
@@ -1857,7 +1825,7 @@ def test_strict_metadata_rejects_string_selection_totals(path):
         result = _synthetic_declined_t5_result()
     else:
         result = _synthetic_result(
-            {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0},
+            _coordinate(),
             "guarded_cross_features_policy",
             1.0,
         )
@@ -1908,7 +1876,7 @@ def test_t5_strict_ratio_identity_has_no_absolute_tolerance():
 
 def test_guarded_strict_ratio_identity_has_no_absolute_tolerance():
     result = _synthetic_result(
-        {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0},
+        _coordinate(),
         "guarded_cross_features_policy",
         1.0,
     )
@@ -1966,7 +1934,7 @@ def test_guarded_strict_metadata_rejects_selection_ledger_mutations(
     message,
 ):
     result = _synthetic_result(
-        {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0},
+        _coordinate(),
         "guarded_cross_features_policy",
         1.0,
     )
@@ -1988,12 +1956,7 @@ def test_guarded_strict_metadata_rejects_selection_ledger_mutations(
     ],
 )
 def test_fitted_metadata_rejects_boolean_learning_rates(arm):
-    coordinate = {
-        "task_id": 1,
-        "repeat": 0,
-        "fold": 0,
-        "sample": 0,
-    }
+    coordinate = _coordinate()
     result = _synthetic_result(coordinate, arm, 1.0)
     if arm in {
         runner.CONTROL_ARM,
@@ -2015,12 +1978,7 @@ def test_fitted_metadata_rejects_boolean_learning_rates(arm):
 )
 @pytest.mark.parametrize("field", ["selected_mode", "selected_lane"])
 def test_comparator_metadata_requires_nonempty_mode_and_lane(arm, field):
-    coordinate = {
-        "task_id": 1,
-        "repeat": 0,
-        "fold": 0,
-        "sample": 0,
-    }
+    coordinate = _coordinate()
     result = _synthetic_result(coordinate, arm, 1.0)
     result["metadata"][field] = ""
 
@@ -2168,22 +2126,8 @@ def test_raw_validator_enforces_exact_decline_and_analysis_is_independent(
         if row["arm"] == "t5_composite_policy"
     )
     composite["prediction_sha256"] = "f" * 64
-    behavior = {
-        "coordinate": {
-            "task_id": composite["task_id"],
-            **composite["coordinate"],
-        },
-        "arm": composite["arm"],
-        "rmse": composite["rmse"],
-        "prediction_sha256": composite["prediction_sha256"],
-        "metadata": composite["metadata"],
-        "source_attestation": composite["source_attestation"],
-    }
-    composite["behavior_fingerprint_sha256"] = runner._json_sha256(behavior)
-    _refresh_spool_digest(corrupted, composite)
-    unhashed = dict(corrupted)
-    unhashed.pop("raw_artifact_sha256")
-    corrupted["raw_artifact_sha256"] = runner._json_sha256(unhashed)
+    _refresh_result_integrity(corrupted, composite)
+    _refresh_raw_digest(corrupted)
 
     with pytest.raises(RuntimeError, match="byte-identical"):
         analyzer.validate_raw(
@@ -2420,9 +2364,7 @@ def test_descriptive_comparator_failure_cannot_veto_candidates(
     _refresh_spool_digest(raw, raw["comparator_failures"][-1])
     raw["protocol"]["successful_worker_count"] = 179
     raw["protocol"]["comparator_failure_count"] = 1
-    unhashed = dict(raw)
-    unhashed.pop("raw_artifact_sha256")
-    raw["raw_artifact_sha256"] = runner._json_sha256(unhashed)
+    _refresh_raw_digest(raw)
 
     summary = analyzer.analyze_raw(
         raw,
@@ -2571,7 +2513,7 @@ def test_guarded_cross_accepts_valid_no_split_selection_fit():
 
 
 def test_spool_record_is_create_only_and_tamper_evident(tmp_path):
-    coordinate = {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0}
+    coordinate = _coordinate()
     arm = runner.CONTROL_ARM
     path = tmp_path / "record.json"
     binding = {"campaign": "panel3"}
@@ -2623,7 +2565,7 @@ def test_spool_record_is_create_only_and_tamper_evident(tmp_path):
 
 
 def test_worker_attempt_is_create_only_and_tamper_evident(tmp_path):
-    coordinate = {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0}
+    coordinate = _coordinate()
     arm = runner.CONTROL_ARM
     path = runner._attempt_path(tmp_path, coordinate, arm)
     binding = {"campaign": "panel3"}
@@ -2668,7 +2610,7 @@ def test_worker_crash_leaves_permanent_attempt_and_restart_refuses(
     tmp_path,
     monkeypatch,
 ):
-    coordinate = {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0}
+    coordinate = _coordinate()
     binding = {"campaign": "panel3"}
     calls = []
     monkeypatch.setattr(
@@ -2751,7 +2693,7 @@ def test_parent_refuses_worker_output_without_consumed_claim(
     tmp_path,
     monkeypatch,
 ):
-    coordinate = {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0}
+    coordinate = _coordinate()
     arm = runner.CONTROL_ARM
     binding = {"campaign": "panel3"}
     result = _synthetic_result(coordinate, arm, 1.0)
@@ -2794,7 +2736,7 @@ def test_comparator_launch_failure_consumes_claim_and_persists_failure(
     tmp_path,
     monkeypatch,
 ):
-    coordinate = {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0}
+    coordinate = _coordinate()
     arm = "chimeraboost_0_15_0"
     binding = {"campaign": "panel3"}
     monkeypatch.setattr(
@@ -2839,7 +2781,7 @@ def test_concurrent_worker_attempt_claim_refuses_second_parent(
     tmp_path,
     monkeypatch,
 ):
-    coordinate = {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0}
+    coordinate = _coordinate()
     arm = runner.CONTROL_ARM
     binding = {"campaign": "panel3"}
     original_create = runner._create_attempt
@@ -2876,7 +2818,7 @@ def test_completed_worker_resumes_only_with_matching_attempt(
     tmp_path,
     monkeypatch,
 ):
-    coordinate = {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0}
+    coordinate = _coordinate()
     arm = runner.CONTROL_ARM
     binding = {"campaign": "panel3"}
     result = _synthetic_result(coordinate, arm, 1.0)
@@ -2974,7 +2916,7 @@ def test_source_drift_marker_survives_revert_and_blocks_restart(
     with pytest.raises(RuntimeError, match="permanently invalidated"):
         runner._run_one(
             tmp_path / "registry.json",
-            {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0},
+            _coordinate(),
             runner.CONTROL_ARM,
             tmp_path,
             binding,
@@ -2982,7 +2924,7 @@ def test_source_drift_marker_survives_revert_and_blocks_restart(
 
 
 def test_spool_resume_rejects_symlink_ancestor(tmp_path):
-    coordinate = {"task_id": 1, "repeat": 0, "fold": 0, "sample": 0}
+    coordinate = _coordinate()
     arm = runner.CONTROL_ARM
     binding = {"campaign": "panel3"}
     allowed = tmp_path / "allowed"
