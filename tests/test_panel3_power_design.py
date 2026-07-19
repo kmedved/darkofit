@@ -271,6 +271,11 @@ def _decision_artifact(*, retained=None):
     )
 
 
+def _rebind_decision(artifact):
+    artifact.pop("decision_sha256")
+    return common.bind_artifact_sha256(artifact, "decision_sha256")
+
+
 def test_contract_freezes_strata_triplets_and_four_t5_noops():
     contract = power.load_contract()
 
@@ -789,49 +794,38 @@ def test_historical_decision_requires_exact_bonferroni_survivor_fallback(
         )
 
 
-def test_historical_decision_rejects_power_arithmetic_mutation():
-    artifact = _decision_artifact()
-    changed = copy.deepcopy(artifact)
-    changed["initial_bonferroni_screen"]["t5_composite_policy"][
+def _mutate_power_arithmetic(artifact):
+    artifact["initial_bonferroni_screen"]["t5_composite_policy"][
         "passing_simulations"
     ] -= 1
-    changed.pop("decision_sha256")
-    common.bind_artifact_sha256(changed, "decision_sha256")
-
-    with pytest.raises(RuntimeError, match="power arithmetic changed"):
-        power.validate_decision(
-            changed,
-            require_current_sources=False,
-            recompute=False,
-        )
 
 
-def test_historical_decision_rejects_runtime_schema_mutation():
-    artifact = _decision_artifact()
-    changed = copy.deepcopy(artifact)
-    changed["runtime"]["packages"].pop("numpy")
-    changed.pop("decision_sha256")
-    common.bind_artifact_sha256(changed, "decision_sha256")
-
-    with pytest.raises(RuntimeError, match="runtime binding changed"):
-        power.validate_decision(
-            changed,
-            require_current_sources=False,
-            recompute=False,
-        )
+def _mutate_runtime_schema(artifact):
+    artifact["runtime"]["packages"].pop("numpy")
 
 
-def test_historical_decision_rejects_quality_gate_mutation():
-    artifact = _decision_artifact()
-    changed = copy.deepcopy(artifact)
-    changed["simulation"]["quality_gates"] = None
-    changed.pop("decision_sha256")
-    common.bind_artifact_sha256(changed, "decision_sha256")
+def _mutate_quality_gate(artifact):
+    artifact["simulation"]["quality_gates"] = None
 
-    with pytest.raises(
-        RuntimeError,
-        match="historical power-design structure changed",
-    ):
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        (_mutate_power_arithmetic, "power arithmetic changed"),
+        (_mutate_runtime_schema, "runtime binding changed"),
+        (
+            _mutate_quality_gate,
+            "historical power-design structure changed",
+        ),
+    ],
+    ids=("power-arithmetic", "runtime-schema", "quality-gate"),
+)
+def test_historical_decision_rejects_bound_mutation(mutation, message):
+    changed = _decision_artifact()
+    mutation(changed)
+    _rebind_decision(changed)
+
+    with pytest.raises(RuntimeError, match=message):
         power.validate_decision(
             changed,
             require_current_sources=False,
