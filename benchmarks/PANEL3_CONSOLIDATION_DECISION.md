@@ -11,8 +11,8 @@ was accessed while making these changes.
 ## Measured result
 
 The directive arrived when the uncommitted Panel 3 scope was reported at about
-19,300 lines. The same production-and-test scope is now **23,980 lines**:
-roughly **24.2% larger**, not slimmer. Most of that growth
+19,300 lines. The same production-and-test scope is now **24,284 lines**:
+roughly **25.8% larger**, not slimmer. Most of that growth
 preceded the measured consolidation slices and added publication, resume,
 source-closure, and security checks. The decision here is that the retained
 checks are worth their weight, not that the requested global slimming was
@@ -22,14 +22,18 @@ basename contains `panel3`, plus `benchmarks/campaign_lib/*.py`.
 A narrower, reproducible comparison uses commit `62d8f52` as the clean
 pre-consolidation baseline. Relative to that commit, the pre-H1 source is:
 
-- benchmark production code: **223 net lines removed**;
-- tests: **1,178 net lines added**; and
-- combined same-scope delta: **955 net lines added**.
+- benchmark production code: **150 net lines removed**;
+- tests: **1,409 net lines added**; and
+- combined same-scope delta: **1,259 net lines added**.
 
 The earlier consolidation slices themselves removed 176 net lines. Subsequent
 blocking reviews required order-sensitive task binding, provenance repair, and
-the committed differential census. Those additions are included in the final
-numbers above rather than hidden behind the earlier checkpoint.
+the committed differential census. The final stopping-rule review then exposed
+two more fail-closed defects: net Git diffs could hide an intermediate source
+change followed by a revert, and the immutable power decision did not bind the
+required owner-facing `GO` or `NO-GO` sentence. Those fixes and their tests are
+included in the final numbers above rather than hidden behind an earlier
+checkpoint.
 
 The test growth is deliberate. Differential review found real acceptance gaps
 in the formerly duplicated fitted-metadata validators. The committed mutation
@@ -72,6 +76,15 @@ in this preparation window or closes a direct one-shot evidence failure:
   audit found two dynamically imported adapter modules missing from the freeze.
   Historical-artifact validation separately caught a derived report whose
   original analyzer hash had been overwritten by the hardened analyzer hash.
+  Final review also proved that a source-changing commit followed by a revert
+  disappeared from a net tree diff. All three create-only campaign boundaries
+  now enumerate every intervening commit and reject that history.
+- **Immutable owner decision.** The machine-readable power arithmetic and
+  authorization flag were already fail-closed, but the required owner-facing
+  sentence was not part of the published contract. The existing create-only,
+  self-hashed JSON now binds and prints the exact candidate probabilities,
+  Wilson lower bounds, 0.80 floor, and `GO` or `NO-GO` verdict; no second,
+  partially publishable artifact was added.
 - **Order-sensitive task-view binding.** Final review demonstrated that the
   contamination fingerprint is intentionally row-order invariant: a joint
   `X`/`y` permutation preserved it while changing which observations positional

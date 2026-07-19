@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -107,6 +108,67 @@ def git_is_ancestor(
         ).returncode
         == 0
     )
+
+
+def require_single_create_only_history(
+    git: Callable[..., str],
+    source_head: str,
+    execution_head: str,
+    expected_path: str,
+    *,
+    error_message: str,
+    describe_observed_paths: bool = False,
+) -> None:
+    """Require one committed artifact addition and no intermediate changes."""
+    final_change = git(
+        "diff",
+        "--name-status",
+        f"{source_head}..{execution_head}",
+    ).splitlines()
+    commits = filter(
+        None,
+        git(
+            "rev-list",
+            f"{source_head}..{execution_head}",
+        ).splitlines(),
+    )
+    touched_by_commit = [
+        {
+            value
+            for value in git(
+                "diff-tree",
+                "--root",
+                "--no-commit-id",
+                "--name-only",
+                "-r",
+                "-m",
+                commit,
+            ).splitlines()
+            if value
+        }
+        for commit in commits
+    ]
+    nonempty = [paths for paths in touched_by_commit if paths]
+    if (
+        final_change == [f"A\t{expected_path}"]
+        and len(nonempty) == 1
+        and nonempty[0] == {expected_path}
+    ):
+        return
+
+    if describe_observed_paths:
+        observed_paths = {
+            value
+            for paths in touched_by_commit
+            for value in paths
+        }
+        observed_paths.update(
+            value
+            for change in final_change
+            for value in change.split("\t")[1:]
+        )
+        error_message = f"{error_message}: {sorted(observed_paths)}"
+    raise RuntimeError(error_message)
 
 
 def artifact_path(path: Path, *, root: Path) -> str:

@@ -205,21 +205,14 @@ def _validate_post_preflight_boundary(
         raise RuntimeError(
             "panel-3 preflight artifact is outside the repository"
         ) from exc
-    changed_after_preflight = {
-        value
-        for value in _git(
-            ROOT,
-            "diff",
-            "--name-only",
-            f"{preflight_head}..{head}",
-        ).splitlines()
-        if value
-    }
-    if changed_after_preflight != {preflight_relative}:
-        raise RuntimeError(
-            "panel-3 post-preflight source boundary changed: "
-            f"{sorted(changed_after_preflight)}"
-        )
+    provenance.require_single_create_only_history(
+        lambda *arguments: _git(ROOT, *arguments),
+        preflight_head,
+        head,
+        preflight_relative,
+        error_message="panel-3 post-preflight source boundary changed",
+        describe_observed_paths=True,
+    )
 
 
 def _validate_source_snapshots_at_head(

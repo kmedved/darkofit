@@ -260,6 +260,14 @@ def _decision_artifact(*, retained=None):
                 97.5 if len(retained) == 2 else 95.0
             ),
             "power_floor": 0.8,
+            "owner_decision_statement": (
+                power._owner_decision_statement(
+                    initial_bonferroni_screen=initial,
+                    singleton_fallback=singleton,
+                    retained_candidates=retained,
+                    power_floor=0.8,
+                )
+            ),
             "checks": checks,
             "target_preflight_authorized": bool(retained),
             "registry_build_authorized": False,
@@ -354,6 +362,12 @@ def _minimal_main_decision():
         "decision_sha256": "b" * 64,
         "retained_candidates": ["guarded_cross_features_policy"],
         "target_preflight_authorized": True,
+        "owner_decision_statement": (
+            "Panel 3 decision-stage simulated pass probabilities were "
+            "guarded_cross_features_policy 90.00% "
+            "(one-sided Wilson lower bound 85.00%), against the required "
+            "80.00%; therefore GO."
+        ),
         "calibration": {
             "summary_file_sha256": "1" * 64,
             "summary_sha256": "2" * 64,
@@ -483,6 +497,53 @@ def test_power_design_cli_revalidates_spool_chain_before_publication(
 
     with pytest.raises(RuntimeError, match="spool record changed"):
         power.main([])
+
+
+def test_power_design_cli_publishes_exact_owner_decision(
+    monkeypatch,
+    capsys,
+):
+    artifact = _minimal_main_decision()
+    contract = power.load_contract()
+    candidate_contract = common.load_json(common.CANDIDATE_CONTRACT)
+    summary = {"summary_sha256": "2" * 64}
+    raw = {"raw_artifact_sha256": "4" * 64}
+    published = []
+    monkeypatch.setattr(power, "build", lambda **_kwargs: artifact)
+    monkeypatch.setattr(
+        power,
+        "_require_clean_committed_sources",
+        lambda: "a" * 40,
+    )
+
+    def unchanged_snapshot(path):
+        if path == power.DEFAULT_SUMMARY:
+            return summary, "1" * 64
+        if path == power.DEFAULT_RAW:
+            return raw, "3" * 64
+        if path == power.CONTRACT:
+            return contract, common.sha256_file(power.CONTRACT)
+        if path == common.CANDIDATE_CONTRACT:
+            return (
+                candidate_contract,
+                common.sha256_file(common.CANDIDATE_CONTRACT),
+            )
+        raise AssertionError(path)
+
+    monkeypatch.setattr(common, "secure_load_json", unchanged_snapshot)
+    monkeypatch.setattr(power, "validate_calibration", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr(
+        common,
+        "atomic_create",
+        lambda path, encoded: published.append((path, encoded)),
+    )
+
+    assert power.main([]) == 0
+    assert published and published[0][0] == power.DEFAULT_OUTPUT
+    assert (
+        capsys.readouterr().out.splitlines()[0]
+        == artifact["owner_decision_statement"]
+    )
 
 
 def test_summary_validation_preserves_every_ordered_triplet():
@@ -660,6 +721,14 @@ def test_retention_keeps_two_without_joint_probability(monkeypatch):
     assert result["per_candidate_one_sided_alpha"] == 0.025
     assert result["bootstrap_percentile"] == 97.5
     assert "joint" not in result
+    assert result["owner_decision_statement"] == (
+        "Panel 3 decision-stage simulated pass probabilities were "
+        "t5_composite_policy 90.00% "
+        "(one-sided Wilson lower bound 85.00%) and "
+        "guarded_cross_features_policy 90.00% "
+        "(one-sided Wilson lower bound 85.00%), against the required "
+        "80.00%; therefore GO."
+    )
 
 
 def test_retention_recomputes_only_existing_single_survivor(monkeypatch):
@@ -681,6 +750,7 @@ def test_retention_recomputes_only_existing_single_survivor(monkeypatch):
     assert result["retained_candidates"] == ["t5_composite_policy"]
     assert result["per_candidate_one_sided_alpha"] == 0.05
     assert result["bootstrap_percentile"] == 95.0
+    assert result["owner_decision_statement"].endswith("therefore GO.")
 
 
 def test_retention_does_not_rescue_zero_bonferroni_survivors(monkeypatch):
@@ -699,6 +769,37 @@ def test_retention_does_not_rescue_zero_bonferroni_survivors(monkeypatch):
     ]
     assert result["retained_candidates"] == []
     assert result["passes"] is False
+    assert result["owner_decision_statement"].endswith(
+        "therefore NO-GO."
+    )
+
+
+def test_historical_decision_rejects_owner_statement_tampering():
+    artifact = _decision_artifact()
+
+    for mutation in ("missing", "tampered"):
+        changed = copy.deepcopy(artifact)
+        if mutation == "missing":
+            changed.pop("owner_decision_statement")
+        else:
+            changed["owner_decision_statement"] = (
+                changed["owner_decision_statement"].replace("GO.", "NO-GO.")
+            )
+        _rebind_decision(changed)
+
+        with pytest.raises(
+            RuntimeError,
+            match=(
+                "decision contract changed"
+                if mutation == "missing"
+                else "owner-facing power decision changed"
+            ),
+        ):
+            power.validate_decision(
+                changed,
+                require_current_sources=False,
+                recompute=False,
+            )
 
 
 def test_missing_decision_blocks_target_access(monkeypatch, tmp_path):

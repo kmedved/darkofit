@@ -1421,23 +1421,16 @@ def _source_state(registry: dict[str, Any]) -> tuple[dict[str, Any], dict[str, A
         ROOT, str(frozen["darkofit_registry_head"]), darko["head"]
     ):
         raise RuntimeError("panel-3 DarkoFit source left the frozen lineage")
-    changed_since_registry_freeze = {
-        value
-        for value in _git(
-            ROOT,
-            "diff",
-            "--name-only",
-            f"{frozen['darkofit_registry_head']}..{darko['head']}",
-        ).splitlines()
-        if value
-    }
-    if not changed_since_registry_freeze <= {
-        "benchmarks/panel3_registry.json"
-    }:
-        raise RuntimeError(
-            "panel-3 tracked source changed after the registry freeze: "
-            f"{sorted(changed_since_registry_freeze)}"
-        )
+    provenance.require_single_create_only_history(
+        lambda *arguments: _git(ROOT, *arguments),
+        str(frozen["darkofit_registry_head"]),
+        str(darko["head"]),
+        "benchmarks/panel3_registry.json",
+        error_message=(
+            "panel-3 tracked source changed after the registry freeze"
+        ),
+        describe_observed_paths=True,
+    )
     if chimera["head"] != str(frozen["chimeraboost_head"]):
         raise RuntimeError("panel-3 ChimeraBoost source changed")
     return darko, chimera

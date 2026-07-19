@@ -79,48 +79,15 @@ def _is_ancestor(ancestor: str, descendant: str) -> bool:
 
 def _validate_post_freeze_history(source_head: str, head: str) -> None:
     """Require one create-only H2 freeze and no other committed changes."""
-    expected = freeze.FREEZE_RELATIVE
-    final_change = _git(
-        "diff",
-        "--name-status",
-        f"{source_head}..{head}",
-    ).splitlines()
-    commits = [
-        value
-        for value in _git(
-            "rev-list",
-            f"{source_head}..{head}",
-        ).splitlines()
-        if value
-    ]
-    touched_by_commit = {}
-    for commit in commits:
-        touched_by_commit[commit] = {
-            value
-            for value in _git(
-                "diff-tree",
-                "--root",
-                "--no-commit-id",
-                "--name-only",
-                "-r",
-                "-m",
-                commit,
-            ).splitlines()
-            if value
-        }
-    nonempty = {
-        commit: paths
-        for commit, paths in touched_by_commit.items()
-        if paths
-    }
-    if (
-        final_change != [f"A\t{expected}"]
-        or len(nonempty) != 1
-        or next(iter(nonempty.values()), set()) != {expected}
-    ):
-        raise RuntimeError(
+    provenance.require_single_create_only_history(
+        _git,
+        source_head,
+        head,
+        freeze.FREEZE_RELATIVE,
+        error_message=(
             "calibration H2 must add only the create-only source freeze"
-        )
+        ),
+    )
 
 
 def coordinate_key(

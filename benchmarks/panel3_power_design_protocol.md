@@ -109,12 +109,16 @@ applies and the campaign stops.
 The builder revalidates the calibration raw, spool, source freeze, summary,
 triplets, task identities, applicability states, exact runtime, and every
 source digest. It then publishes the design decision with create-only
-semantics and a canonical self-hash. The decision embeds the complete
-three-row pre-H1 target-statistic exclusion ledger. Prospective validation
-requires those bytes to match the current declarations; historical validation
-uses only the embedded ledger and still rejects an exposed task or lineage, or
-a missing same-stratum replacement. Historical registry validation separately
-enforces the excluded dataset IDs against its embedded task rows.
+semantics and a canonical self-hash. The same artifact embeds a deterministic,
+one-sentence owner decision that reports every candidate's decision-stage
+simulated pass probability, one-sided Wilson lower bound, the required 0.80
+floor, and the resulting `GO` or `NO-GO`; the CLI prints that exact bound
+sentence after publication. The decision also embeds the complete three-row
+pre-H1 target-statistic exclusion ledger. Prospective validation requires
+those bytes to match the current declarations; historical validation uses only
+the embedded ledger and still rejects an exposed task or lineage, or a missing
+same-stratum replacement. Historical registry validation separately enforces
+the excluded dataset IDs against its embedded task rows.
 
 The decision artifact may set `target_preflight_authorized=true` only when at
 least one preregistered candidate survives. It always leaves

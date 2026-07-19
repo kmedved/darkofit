@@ -1196,15 +1196,23 @@ def test_pairwise_near_match_checks_all_prior_prospective_records():
 def test_post_preflight_head_diff_allows_only_preflight_artifact(
     monkeypatch,
 ):
+    preflight_path = "benchmarks/panel3_target_preflight.json"
+    preflight_commit = "c" * 40
     artifact = {
         "sources": {"darkofit_execution_head": "a" * 40}
     }
     monkeypatch.setattr(registry, "_is_ancestor", lambda *_args: True)
-    monkeypatch.setattr(
-        registry,
-        "_git",
-        lambda *_args: "benchmarks/panel3_target_preflight.json",
-    )
+
+    def clean_git(_repository, *arguments):
+        if arguments[:2] == ("diff", "--name-status"):
+            return f"A\t{preflight_path}"
+        if arguments[0] == "rev-list":
+            return preflight_commit
+        if arguments[0] == "diff-tree":
+            return preflight_path
+        raise AssertionError(arguments)
+
+    monkeypatch.setattr(registry, "_git", clean_git)
 
     registry._validate_post_preflight_boundary(
         artifact,
@@ -1213,14 +1221,57 @@ def test_post_preflight_head_diff_allows_only_preflight_artifact(
         require_clean_source=True,
     )
 
-    monkeypatch.setattr(
-        registry,
-        "_git",
-        lambda *_args: (
-            "benchmarks/panel3_target_preflight.json\n"
-            "darkofit/booster.py"
-        ),
-    )
+    def changed_git(_repository, *arguments):
+        if arguments[:2] == ("diff", "--name-status"):
+            return f"A\t{preflight_path}\nM\tdarkofit/booster.py"
+        if arguments[0] == "rev-list":
+            return f"{'d' * 40}\n{preflight_commit}"
+        if arguments[0] == "diff-tree":
+            return (
+                preflight_path
+                if arguments[-1] == preflight_commit
+                else "darkofit/booster.py"
+            )
+        raise AssertionError(arguments)
+
+    monkeypatch.setattr(registry, "_git", changed_git)
+    with pytest.raises(RuntimeError, match="source boundary changed"):
+        registry._validate_post_preflight_boundary(
+            artifact,
+            registry.DEFAULT_PREFLIGHT,
+            "b" * 40,
+            require_clean_source=True,
+        )
+
+
+def test_post_preflight_history_rejects_source_change_then_revert(
+    monkeypatch,
+):
+    preflight_path = "benchmarks/panel3_target_preflight.json"
+    preflight_commit = "c" * 40
+    source_commit = "d" * 40
+    revert_commit = "e" * 40
+    artifact = {
+        "sources": {"darkofit_execution_head": "a" * 40}
+    }
+    monkeypatch.setattr(registry, "_is_ancestor", lambda *_args: True)
+
+    def reverted_git(_repository, *arguments):
+        if arguments[:2] == ("diff", "--name-status"):
+            return f"A\t{preflight_path}"
+        if arguments[0] == "rev-list":
+            return (
+                f"{revert_commit}\n{source_commit}\n{preflight_commit}"
+            )
+        if arguments[0] == "diff-tree":
+            return (
+                preflight_path
+                if arguments[-1] == preflight_commit
+                else "darkofit/booster.py"
+            )
+        raise AssertionError(arguments)
+
+    monkeypatch.setattr(registry, "_git", reverted_git)
     with pytest.raises(RuntimeError, match="source boundary changed"):
         registry._validate_post_preflight_boundary(
             artifact,

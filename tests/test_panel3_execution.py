@@ -903,6 +903,85 @@ def _synthetic_source_state(repository, head):
     }
 
 
+def _patch_panel3_source_state(monkeypatch, git):
+    darkofit = _synthetic_source_state(
+        runner.SOURCE_REPOSITORY_IDS["darkofit"],
+        "b" * 40,
+    )
+    chimeraboost = _synthetic_source_state(
+        runner.SOURCE_REPOSITORY_IDS["chimeraboost"],
+        "c" * 40,
+    )
+    monkeypatch.setattr(
+        runner.creator,
+        "git_state",
+        lambda repository: (
+            darkofit if repository == runner.ROOT else chimeraboost
+        ),
+    )
+    monkeypatch.setattr(runner, "_is_ancestor", lambda *_args: True)
+    monkeypatch.setattr(runner, "_git", git)
+    registry = {
+        "sources": {
+            "darkofit_registry_head": "a" * 40,
+            "chimeraboost_head": "c" * 40,
+        }
+    }
+    return registry, darkofit, chimeraboost
+
+
+def test_source_state_allows_one_create_only_registry_commit(monkeypatch):
+    registry_path = "benchmarks/panel3_registry.json"
+    registry_commit = "d" * 40
+
+    def clean_git(_repository, *arguments):
+        if arguments[:2] == ("diff", "--name-status"):
+            return f"A\t{registry_path}"
+        if arguments[0] == "rev-list":
+            return registry_commit
+        if arguments[0] == "diff-tree":
+            return registry_path
+        raise AssertionError(arguments)
+
+    registry, expected_darkofit, expected_chimera = (
+        _patch_panel3_source_state(monkeypatch, clean_git)
+    )
+    darkofit, chimeraboost = runner._source_state(registry)
+
+    assert darkofit == expected_darkofit
+    assert chimeraboost == expected_chimera
+
+
+def test_source_state_rejects_source_change_then_revert(monkeypatch):
+    registry_path = "benchmarks/panel3_registry.json"
+    registry_commit = "d" * 40
+    source_commit = "e" * 40
+    revert_commit = "f" * 40
+
+    def reverted_git(_repository, *arguments):
+        if arguments[:2] == ("diff", "--name-status"):
+            return f"A\t{registry_path}"
+        if arguments[0] == "rev-list":
+            return f"{revert_commit}\n{source_commit}\n{registry_commit}"
+        if arguments[0] == "diff-tree":
+            return (
+                registry_path
+                if arguments[-1] == registry_commit
+                else "darkofit/booster.py"
+            )
+        raise AssertionError(arguments)
+
+    registry, _darkofit, _chimeraboost = _patch_panel3_source_state(
+        monkeypatch,
+        reverted_git,
+    )
+    with pytest.raises(
+        RuntimeError,
+        match="tracked source changed after the registry freeze",
+    ):
+        runner._source_state(registry)
+
+
 def _synthetic_source_attestation(
     registry_file_sha256="0" * 64,
     registry_canonical_sha256="a" * 64,

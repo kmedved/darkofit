@@ -409,6 +409,7 @@ DECISION_FIELDS = {
     "per_candidate_one_sided_alpha",
     "bootstrap_percentile",
     "power_floor",
+    "owner_decision_statement",
     "checks",
     "target_preflight_authorized",
     "registry_build_authorized",
@@ -1360,6 +1361,12 @@ def decide_retention(
         retained = []
         alpha = None
         percentile = None
+    owner_decision_statement = _owner_decision_statement(
+        initial_bonferroni_screen=initial,
+        singleton_fallback=singleton,
+        retained_candidates=retained,
+        power_floor=simulation["power_floor"],
+    )
     return {
         "initial_bonferroni_screen": initial,
         "initial_survivors": initial_survivors,
@@ -1372,8 +1379,39 @@ def decide_retention(
         "per_candidate_one_sided_alpha": alpha,
         "bootstrap_percentile": percentile,
         "power_floor": simulation["power_floor"],
+        "owner_decision_statement": owner_decision_statement,
         "passes": bool(retained),
     }
+
+
+def _owner_decision_statement(
+    *,
+    initial_bonferroni_screen: dict[str, dict[str, Any]],
+    singleton_fallback: dict[str, Any] | None,
+    retained_candidates: list[str],
+    power_floor: float,
+) -> str:
+    """Render the immutable one-sentence owner power decision."""
+    decision_stage_results = dict(initial_bonferroni_screen)
+    if singleton_fallback is not None:
+        decision_stage_results[singleton_fallback["candidate"]] = (
+            singleton_fallback
+        )
+    details = " and ".join(
+        (
+            f"{candidate} "
+            f"{float(decision_stage_results[candidate]['pass_probability']):.2%} "
+            "(one-sided Wilson lower bound "
+            f"{float(decision_stage_results[candidate]['wilson_lower_bound']):.2%})"
+        )
+        for candidate in CANDIDATES
+    )
+    verdict = "GO" if retained_candidates else "NO-GO"
+    return (
+        "Panel 3 decision-stage simulated pass probabilities were "
+        f"{details}, against the required {float(power_floor):.2%}; "
+        f"therefore {verdict}."
+    )
 
 
 def _require_clean_committed_sources() -> str:
@@ -1508,6 +1546,9 @@ def build(
         ],
         "bootstrap_percentile": retention["bootstrap_percentile"],
         "power_floor": retention["power_floor"],
+        "owner_decision_statement": retention[
+            "owner_decision_statement"
+        ],
         "checks": checks,
         "target_preflight_authorized": all(checks.values()),
         "registry_build_authorized": False,
@@ -1976,6 +2017,19 @@ def validate_decision(
         or artifact.get("bootstrap_percentile") != expected_percentile
     ):
         raise RuntimeError("Panel 3 candidate-retention decision changed")
+    expected_owner_decision_statement = _owner_decision_statement(
+        initial_bonferroni_screen=initial,
+        singleton_fallback=singleton,
+        retained_candidates=expected_retained,
+        power_floor=float(simulation["power_floor"]),
+    )
+    if (
+        artifact.get("owner_decision_statement")
+        != expected_owner_decision_statement
+    ):
+        raise RuntimeError(
+            "Panel 3 owner-facing power decision changed"
+        )
     checks = artifact.get("checks")
     expected_check_keys = {
         "calibration_summary_valid",
@@ -2078,6 +2132,9 @@ def validate_decision(
                     "bootstrap_percentile"
                 ],
                 "power_floor": retention["power_floor"],
+                "owner_decision_statement": retention[
+                    "owner_decision_statement"
+                ],
             }
             observed_projection = {
                 field: artifact[field] for field in expected_projection
@@ -2205,6 +2262,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "Panel 3 calibration evidence changed during final validation"
         )
     common.atomic_create(args.output, encoded)
+    print(artifact["owner_decision_statement"])
     print(
         json.dumps(
             {
