@@ -11,8 +11,8 @@ was accessed while making these changes.
 ## Measured result
 
 The directive arrived when the uncommitted Panel 3 scope was reported at about
-19,300 lines. The same production-and-test scope is now **24,320 lines**:
-roughly **26.0% larger**, not slimmer. Most of that growth
+19,300 lines. The same production-and-test scope is now **24,368 lines**:
+roughly **26.3% larger**, not slimmer. Most of that growth
 preceded the measured consolidation slices and added publication, resume,
 source-closure, and security checks. The decision here is that the retained
 checks are worth their weight, not that the requested global slimming was
@@ -22,9 +22,9 @@ basename contains `panel3`, plus `benchmarks/campaign_lib/*.py`.
 A narrower, reproducible comparison uses commit `62d8f52` as the clean
 pre-consolidation baseline. Relative to that commit, the pre-H1 source is:
 
-- benchmark production code: **139 net lines removed**;
-- tests: **1,434 net lines added**; and
-- combined same-scope delta: **1,295 net lines added**.
+- benchmark production code: **124 net lines removed**;
+- tests: **1,467 net lines added**; and
+- combined same-scope delta: **1,343 net lines added**.
 
 The earlier consolidation slices themselves removed 176 net lines. Subsequent
 blocking reviews required order-sensitive task binding, provenance repair, and
@@ -41,6 +41,14 @@ historical AutoGluon child-visible ledger. Healthcare, Miami, and Wine retain
 binary categorical columns in the raw task view that AutoGluon had converted
 before its child adapter. The unpublished freeze schema now names and binds the
 raw task-view categorical map explicitly and shares the execution resolver.
+
+The subsequent calibration launch stopped before its first fit because the
+persisted runtime evidence intentionally omits the environment contract's
+schema labels, while the live validator returns the full contract. Directly
+comparing those two shapes made every valid runtime fail. One shared projection
+now defines the persisted evidence shape, and both the calibration runner and
+the later power builder project the full live contract before comparing it.
+The failed freeze was removed before establishing the replacement H1.
 
 The test growth is deliberate. Differential review found real acceptance gaps
 in the formerly duplicated fitted-metadata validators. The committed mutation
@@ -114,7 +122,8 @@ in this preparation window or closes a direct one-shot evidence failure:
 - **Runtime and machine binding.** Timing evidence is valid only when all arms
   share the declared interpreter, package set, thread policy, and machine. The
   binding prevents mixed-runtime or mixed-machine measurements from being
-  aggregated as a paired campaign.
+  aggregated as a paired campaign. Its pre-execution gate also caught the
+  full-contract-versus-evidence projection bug above before any fit began.
 - **Private diagnostics.** Review found host paths and exception text flowing
   toward durable artifacts. Worker diagnostics are now fixed codes and hashes;
   machine-local details remain private.

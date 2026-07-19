@@ -102,6 +102,12 @@ RUNTIME_PACKAGE_NAMES = (
     "scikit-learn",
     "scipy",
 )
+RUNTIME_EVIDENCE_FIELDS = (
+    "contract_kind",
+    "python_implementation",
+    "python_version",
+    "packages",
+)
 PANEL3_V1_RUNTIME_CONTRACT = {
     "schema_version": 1,
     "contract_name": "darkofit_panel3_exact_runtime_environment_v1",
@@ -495,6 +501,19 @@ def _validate_runtime_contract(
     evidence = {**runtime, "packages": installed}
     _validate_embedded_runtime_contract(evidence, candidate_contract)
     return evidence
+
+
+def runtime_evidence_projection(runtime: Any) -> dict[str, Any]:
+    """Project a full runtime contract onto the persisted evidence record."""
+    if (
+        not isinstance(runtime, dict)
+        or any(field not in runtime for field in RUNTIME_EVIDENCE_FIELDS)
+    ):
+        raise RuntimeError("panel-3 runtime evidence projection changed")
+    return {
+        field: runtime[field]
+        for field in RUNTIME_EVIDENCE_FIELDS
+    }
 
 
 def _validate_candidate_power_coherence(

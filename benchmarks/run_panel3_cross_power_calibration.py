@@ -236,14 +236,7 @@ def validate_source_freeze(
         or not isinstance(runtime_environment.get("packages"), dict)
     ):
         raise RuntimeError("calibration frozen runtime changed")
-    runtime = {
-        "contract_kind": runtime_environment["contract_kind"],
-        "python_implementation": runtime_environment[
-            "python_implementation"
-        ],
-        "python_version": runtime_environment["python_version"],
-        "packages": runtime_environment["packages"],
-    }
+    runtime = panel3.runtime_evidence_projection(runtime_environment)
     if require_repository_state:
         observed_files = freeze.source_file_sha256()
         if (
@@ -253,7 +246,10 @@ def validate_source_freeze(
         ):
             raise RuntimeError("calibration live source bytes changed")
         candidate_contract = common.load_json(freeze.CANDIDATE_CONTRACT)
-        if panel3._validate_runtime_contract(candidate_contract) != runtime:
+        live_runtime = panel3.runtime_evidence_projection(
+            panel3._validate_runtime_contract(candidate_contract)
+        )
+        if live_runtime != runtime:
             raise RuntimeError("calibration live runtime changed")
         if _git("status", "--porcelain"):
             raise RuntimeError("calibration execution requires a clean tree")

@@ -475,8 +475,8 @@ def _validate_decision_runtime(
             raise RuntimeError(
                 "Panel 3 candidate runtime contract is unavailable"
             )
-        observed = confirmation._validate_runtime_contract(
-            candidate_contract
+        observed = confirmation.runtime_evidence_projection(
+            confirmation._validate_runtime_contract(candidate_contract)
         )
         if runtime != observed:
             raise RuntimeError(

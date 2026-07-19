@@ -17,6 +17,7 @@ from benchmarks import analyze_panel3_cross_power_calibration as analyzer
 from benchmarks import freeze_panel3_cross_power_calibration as freeze
 from benchmarks import panel3_data_contract as data_contract
 from benchmarks import panel3_registry_common as common
+from benchmarks import run_panel3_confirmation as confirmation
 from benchmarks import run_panel3_cross_power_calibration as runner
 from benchmarks import run_tabarena_regression_followon_screen as spent
 
@@ -605,6 +606,21 @@ def test_source_freeze_rejects_mutated_runtime_contract_schema(mutation):
 
     with pytest.raises(RuntimeError, match="runtime environment changed"):
         freeze._decode_contract_snapshots(snapshots, files)
+
+
+def test_runtime_evidence_projection_matches_full_contract():
+    full = copy.deepcopy(confirmation.PANEL3_V1_RUNTIME_CONTRACT)
+
+    assert confirmation.runtime_evidence_projection(full) == {
+        field: full[field]
+        for field in confirmation.RUNTIME_EVIDENCE_FIELDS
+    }
+    assert set(confirmation.runtime_evidence_projection(full)) == {
+        "contract_kind",
+        "python_implementation",
+        "python_version",
+        "packages",
+    }
 
 
 def test_source_freeze_rejects_transient_contract_snapshot_restored_to_h1(

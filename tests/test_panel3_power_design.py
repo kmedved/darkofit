@@ -957,6 +957,23 @@ def test_historical_runtime_schema_is_independent_of_live_runner(
         )
 
 
+def test_current_runtime_validation_projects_full_contract(monkeypatch):
+    artifact = _decision_artifact()
+    monkeypatch.setattr(
+        power.confirmation,
+        "_validate_runtime_contract",
+        lambda _candidate: copy.deepcopy(
+            power.confirmation.PANEL3_V1_RUNTIME_CONTRACT
+        ),
+    )
+
+    power._validate_decision_runtime(
+        artifact["runtime"],
+        require_current_sources=True,
+        candidate_contract={},
+    )
+
+
 def test_v1_archival_constants_match_the_frozen_contract():
     contract = power.load_contract()
 
