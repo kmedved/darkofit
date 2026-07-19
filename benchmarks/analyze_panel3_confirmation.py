@@ -2398,8 +2398,11 @@ def validate_raw(
                 )
             if (
                 composite["metadata"]["engaged"] is False
-                and composite["prediction_sha256"]
-                != control["prediction_sha256"]
+                and (
+                    composite["prediction_sha256"]
+                    != control["prediction_sha256"]
+                    or composite["rmse"] != control["rmse"]
+                )
             ):
                 raise RuntimeError(
                     "panel-3 declined T5 policy is not byte-identical "

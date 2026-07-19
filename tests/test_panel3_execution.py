@@ -2137,6 +2137,24 @@ def test_raw_validator_enforces_exact_decline_and_analysis_is_independent(
             verify_current_files=False,
         )
 
+    corrupted = copy.deepcopy(raw)
+    composite = next(
+        row
+        for row in corrupted["results"]
+        if row["arm"] == "t5_composite_policy"
+    )
+    composite["rmse"] *= 0.5
+    _refresh_result_integrity(corrupted, composite)
+    _refresh_raw_digest(corrupted)
+
+    with pytest.raises(RuntimeError, match="byte-identical"):
+        analyzer.validate_raw(
+            corrupted,
+            registry,
+            registry_path=registry_path,
+            verify_current_files=False,
+        )
+
 
 def test_historical_raw_reconstructs_attempt_digest_offline(
     tmp_path,
