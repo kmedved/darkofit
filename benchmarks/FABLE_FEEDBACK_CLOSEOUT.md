@@ -58,17 +58,17 @@ The labels below mean:
 | Split conformal is the strongest current distributional product result. | The five-dataset T8 panel supports a marketable marginal-coverage claim with width shown alongside it. NLL and CRPS remain dataset-dependent; the result does not claim DarkoFit dominates NGBoost or CatBoost on every probabilistic metric. |
 | Subset-fused kernels and the measurements page are Tier-E evidence. | Behavior-exact engine work and hash-bound timing measurements ship as engineering facts under [`SHIPPING_POLICY.md`](SHIPPING_POLICY.md). The old binary engineering gate remains historically immutable but is no longer the prospective policy. |
 
-## Pending work
+## Final integration
 
-| Item | Required evidence before closure |
+| Gate | Final state |
 | --- | --- |
-| Full verification | Run the complete library and campaign suites on the exact final commit, regenerate only derived evidence whose protocols permit regeneration, verify all original/frozen versus current hashes, run independent review, and report the fresh pass/skip counts. |
-| Release integration | Merge the completed branch to `main`, push it, confirm `origin/main` equals local `main`, verify a clean worktree, and record the exact final commit. Until then, the goal is active rather than closed. |
+| Full verification | Complete. The exact final branch passed `2,671` local tests with two expected skips; strict MkDocs, generated benchmark status, source distribution, and wheel builds passed. PR #1 then passed all five GitHub lanes: Python 3.9, 3.11, and 3.13 library tests, 1,692 campaign verifiers with expected optional skips, and the docs/generated-evidence/package lane. |
+| Release integration | Complete. PR #1 merged with a merge commit, preserving every frozen provenance commit as an ancestor. Local and remote `main` were synchronized at merge commit `7312da6`; the feature branch contained no unmerged work. |
 
 ## Closure rule
 
-This ledger may be updated from **Pending** only when the named artifact or
-test exists and has been verified against the exact final commit. Historical
-campaign outcomes do not change category merely because the shipping policy
-changed. No old lockbox, spent panel, or failed campaign may be relabeled as
-fresh confirmation.
+This ledger was updated from **Pending** only after the named artifacts and
+tests existed and the merge-preserving CI completed. Historical campaign
+outcomes do not change category merely because the shipping policy changed.
+No old lockbox, spent panel, or failed campaign is relabeled as fresh
+confirmation.

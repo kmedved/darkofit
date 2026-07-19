@@ -212,8 +212,10 @@ The complete binding policy is `benchmarks/SHIPPING_POLICY.md`.
 4. **Panel 3 decision (complete):** the spent exact-policy calibration
    produced a preregistered `NO-GO`; zero candidates survived and the fresh
    lockbox was not opened.
-5. **Closeout:** independent review, complete test partitions, packaging,
-   documentation build, multi-Python CI, canonical commit and push.
+5. **Closeout (complete):** blocking review findings were repaired, the exact
+   final branch passed 2,671 local tests with two expected skips, all five
+   GitHub lanes passed, and merge commit `7312da6` preserved the evidence
+   ancestry on `main`.
 
 ## 6. What failure would actually look like
 
