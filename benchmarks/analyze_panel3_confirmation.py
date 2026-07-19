@@ -593,8 +593,8 @@ def _validate_result(
         "wall_seconds",
         "peak_rss_bytes",
         "behavior_fingerprint_sha256",
-        "worker_stdout",
-        "worker_stderr",
+        "worker_stdout_sha256",
+        "worker_stderr_sha256",
     }
     if not isinstance(result, dict) or set(result) != required:
         raise RuntimeError("panel-3 worker result fields changed")
@@ -789,14 +789,9 @@ def _validate_result(
         )
     if result["metadata"].get("kind") != arm:
         raise RuntimeError("panel-3 fitted metadata arm changed")
-    if result["worker_stdout"] is not None and not isinstance(
-        result["worker_stdout"], str
-    ):
-        raise RuntimeError("panel-3 worker stdout is invalid")
-    if result["worker_stderr"] is not None and not isinstance(
-        result["worker_stderr"], str
-    ):
-        raise RuntimeError("panel-3 worker stderr is invalid")
+    for field in ("worker_stdout_sha256", "worker_stderr_sha256"):
+        if result[field] is not None and not _is_sha256(result[field]):
+            raise RuntimeError(f"panel-3 {field} is invalid")
     behavior = {
         "coordinate": full_coordinate,
         "arm": arm,
@@ -817,10 +812,11 @@ def _validate_comparator_failure(value: Any) -> None:
         "arm",
         "status",
         "failure_kind",
+        "failure_detail",
         "returncode",
-        "worker_stdout",
-        "worker_stderr",
-        "message",
+        "worker_stdout_sha256",
+        "worker_stderr_sha256",
+        "message_sha256",
         "failure_fingerprint_sha256",
     }
     if not isinstance(value, dict) or set(value) != fields:
@@ -838,21 +834,36 @@ def _validate_comparator_failure(value: Any) -> None:
         or value["worker_key"]
         != runner._worker_key(full_coordinate, value["arm"])
         or value["failure_kind"]
-        not in {
-            "worker_launch_failure",
-            "worker_process_failure",
-            "worker_protocol_failure",
-        }
+        not in runner.COMPARATOR_FAILURE_DETAILS
+        or value["failure_detail"]
+        not in runner.COMPARATOR_FAILURE_DETAILS[value["failure_kind"]]
         or (
             value["returncode"] is not None
             and type(value["returncode"]) is not int
         )
-        or not isinstance(value["message"], str)
-        or not value["message"]
-        or any(
-            item is not None and not isinstance(item, str)
-            for item in (value["worker_stdout"], value["worker_stderr"])
+        or (
+            value["failure_kind"] == "worker_launch_failure"
+            and value["returncode"] is not None
         )
+        or (
+            value["failure_kind"] == "worker_process_failure"
+            and (
+                type(value["returncode"]) is not int
+                or value["returncode"] == 0
+            )
+        )
+        or (
+            value["failure_kind"] == "worker_protocol_failure"
+            and value["returncode"] != 0
+        )
+        or any(
+            item is not None and not _is_sha256(item)
+            for item in (
+                value["worker_stdout_sha256"],
+                value["worker_stderr_sha256"],
+            )
+        )
+        or not _is_sha256(value["message_sha256"])
         or not _is_sha256(value["failure_fingerprint_sha256"])
     ):
         raise RuntimeError("panel-3 comparator-failure record is invalid")
@@ -1999,7 +2010,7 @@ def validate_raw(
         or raw.get("default_promotion_authorized") is not False
         or raw.get("task_imputation_used") is not False
         or raw.get("task_drop_used") is not False
-        or not isinstance(raw.get("protocol_deviations"), list)
+        or raw.get("protocol_deviations") != []
     ):
         raise RuntimeError("panel-3 raw boundary is invalid")
     plan = raw.get("execution_plan")

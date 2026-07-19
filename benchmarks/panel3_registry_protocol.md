@@ -233,6 +233,12 @@ geometric reduction across the three coordinates:
 6. complete finite execution, exact source/raw/spool integrity, no imputation,
    and no protocol deviation.
 
+The v1 runner publishes a raw artifact only after deviation-free completion,
+so `protocol_deviations` is exactly empty at the raw boundary. Source,
+registry, or execution-boundary drift instead leaves a durable invalidation
+record with a hashed private diagnostic and produces no claim-bearing raw
+artifact.
+
 The hierarchical bootstrap resamples 12 datasets with replacement and, for
 each sampled dataset occurrence, samples three coordinates with replacement.
 It uses seed `20260717` and 100,000 replicates. Each replicate therefore

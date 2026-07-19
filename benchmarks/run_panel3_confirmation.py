@@ -66,6 +66,16 @@ COMPARATOR_ARMS = (
     "chimeraboost_0_15_0",
     "catboost_product_default",
 )
+COMPARATOR_FAILURE_DETAILS = {
+    "worker_launch_failure": {"launch_exception"},
+    "worker_process_failure": {"nonzero_exit"},
+    "worker_protocol_failure": {
+        "result_count",
+        "result_decode",
+        "result_identity",
+        "result_contract",
+    },
+}
 CONTROL_ARM = "current_default"
 DECISION_ARMS = (CONTROL_ARM, *CANDIDATE_ARMS)
 RUNNER_IMPLEMENTATION_COMPLETE = True
@@ -354,6 +364,18 @@ def _array_sha256(value: Any, dtype: str | None = "<f8") -> str:
 
 def _json_sha256(value: Any) -> str:
     return provenance.canonical_json_sha256(value)
+
+
+def _diagnostic_sha256(value: str | None) -> str | None:
+    """Bind private subprocess diagnostics without publishing their text."""
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise TypeError("panel-3 diagnostic must be a string or None")
+    normalized = value.strip()
+    if not normalized:
+        return None
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 
 def _json_file_bytes(value: Any) -> bytes:
@@ -2714,6 +2736,11 @@ def _invalidate_campaign(
     message: str,
 ) -> None:
     path = _campaign_invalidation_path(spool_directory)
+    message_sha256 = _diagnostic_sha256(message)
+    if message_sha256 is None:
+        message_sha256 = _diagnostic_sha256(
+            "source_or_registry_drift"
+        )
     payload = {
         "schema_version": 1,
         "name": "darkofit_panel3_campaign_invalidation_v1",
@@ -2721,7 +2748,7 @@ def _invalidate_campaign(
         "binding_sha256": (
             _json_sha256(binding) if isinstance(binding, dict) else None
         ),
-        "message": str(message),
+        "message_sha256": message_sha256,
     }
     payload["invalidation_sha256"] = _json_sha256(payload)
     encoded = (
@@ -2997,16 +3024,18 @@ def _comparator_failure(
     stdout: str | None,
     stderr: str | None,
     failure_kind: str,
+    failure_detail: str,
     message: str,
 ) -> dict[str, Any]:
     if arm not in COMPARATOR_ARMS:
         raise ValueError("only descriptive comparators may record failures")
-    if failure_kind not in {
-        "worker_launch_failure",
-        "worker_process_failure",
-        "worker_protocol_failure",
-    }:
-        raise ValueError("invalid panel-3 comparator failure kind")
+    if failure_detail not in COMPARATOR_FAILURE_DETAILS.get(
+        failure_kind, set()
+    ):
+        raise ValueError("invalid panel-3 comparator failure detail")
+    if not isinstance(message, str) or not message.strip():
+        raise ValueError("panel-3 comparator failure message is empty")
+    message_sha256 = _diagnostic_sha256(message)
     payload = {
         "worker_key": _worker_key(coordinate, arm),
         "task_id": int(coordinate["task_id"]),
@@ -3017,10 +3046,11 @@ def _comparator_failure(
         "arm": arm,
         "status": "failed",
         "failure_kind": failure_kind,
+        "failure_detail": failure_detail,
         "returncode": returncode,
-        "worker_stdout": stdout,
-        "worker_stderr": stderr,
-        "message": str(message),
+        "worker_stdout_sha256": _diagnostic_sha256(stdout),
+        "worker_stderr_sha256": _diagnostic_sha256(stderr),
+        "message_sha256": message_sha256,
     }
     payload["failure_fingerprint_sha256"] = _json_sha256(payload)
     return payload
@@ -3210,6 +3240,7 @@ def _run_one(
             stdout=None,
             stderr=None,
             failure_kind="worker_launch_failure",
+            failure_detail="launch_exception",
             message=str(exc),
         )
         failure, spool_hash, spool_file_hash = publish(failure)
@@ -3265,6 +3296,7 @@ def _run_one(
             stdout=completed.stdout.strip() or None,
             stderr=completed.stderr.strip() or None,
             failure_kind="worker_process_failure",
+            failure_detail="nonzero_exit",
             message=message,
         )
         failure, spool_hash, spool_file_hash = publish(failure)
@@ -3298,6 +3330,7 @@ def _run_one(
             stdout=completed.stdout.strip() or None,
             stderr=completed.stderr.strip() or None,
             failure_kind="worker_protocol_failure",
+            failure_detail="result_count",
             message=message,
         )
         failure, spool_hash, spool_file_hash = publish(failure)
@@ -3325,6 +3358,7 @@ def _run_one(
             stdout=completed.stdout.strip() or None,
             stderr=completed.stderr.strip() or None,
             failure_kind="worker_protocol_failure",
+            failure_detail="result_decode",
             message=str(exc),
         )
         failure, spool_hash, spool_file_hash = publish(failure)
@@ -3353,6 +3387,7 @@ def _run_one(
             stdout=completed.stdout.strip() or None,
             stderr=completed.stderr.strip() or None,
             failure_kind="worker_protocol_failure",
+            failure_detail="result_identity",
             message=message,
         )
         failure, spool_hash, spool_file_hash = publish(failure)
@@ -3366,15 +3401,16 @@ def _run_one(
             claim_file_hash,
             False,
         )
-    result["worker_stdout"] = (
+    result["worker_stdout_sha256"] = _diagnostic_sha256(
         "\n".join(
             line
             for line in completed.stdout.splitlines()
             if not line.startswith(WORKER_PREFIX)
-        ).strip()
-        or None
+        )
     )
-    result["worker_stderr"] = completed.stderr.strip() or None
+    result["worker_stderr_sha256"] = _diagnostic_sha256(
+        completed.stderr
+    )
     try:
         _validate_spool_result(result)
     except Exception as exc:
@@ -3387,6 +3423,7 @@ def _run_one(
             stdout=completed.stdout.strip() or None,
             stderr=completed.stderr.strip() or None,
             failure_kind="worker_protocol_failure",
+            failure_detail="result_contract",
             message=str(exc),
         )
         failure, spool_hash, spool_file_hash = publish(failure)

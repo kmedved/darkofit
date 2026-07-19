@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import subprocess
 import sys
@@ -15,6 +16,34 @@ from benchmarks import analyze_panel3_confirmation as analyzer
 from benchmarks import panel3_data_contract as data_contract
 from benchmarks import panel3_registry_common as common
 from benchmarks import run_panel3_confirmation as runner
+
+
+def test_diagnostic_hash_normalizes_without_publishing_text():
+    assert runner._diagnostic_sha256(None) is None
+    assert runner._diagnostic_sha256(" \n\t") is None
+    assert runner._diagnostic_sha256("  café\n") == hashlib.sha256(
+        "café".encode("utf-8")
+    ).hexdigest()
+    with pytest.raises(TypeError, match="string or None"):
+        runner._diagnostic_sha256(Path("/private/path"))
+
+
+def test_result_diagnostic_schema_rejects_legacy_and_invalid_fields():
+    result = _synthetic_result(
+        _coordinate(),
+        runner.CONTROL_ARM,
+        1.0,
+    )
+
+    legacy = copy.deepcopy(result)
+    legacy["worker_stdout"] = legacy.pop("worker_stdout_sha256")
+    with pytest.raises(RuntimeError, match="fields changed"):
+        analyzer._validate_result(legacy)
+
+    malformed = copy.deepcopy(result)
+    malformed["worker_stderr_sha256"] = "not-a-sha256"
+    with pytest.raises(RuntimeError, match="worker_stderr_sha256"):
+        analyzer._validate_result(malformed)
 
 
 def test_feature_policy_drops_exact_columns_and_reindexes_flags():
@@ -1011,8 +1040,8 @@ def _synthetic_result(coordinate, arm, ratio):
         "wall_seconds": 1.3,
         "peak_rss_bytes": 1_000_000,
         "behavior_fingerprint_sha256": runner._json_sha256(behavior),
-        "worker_stdout": None,
-        "worker_stderr": None,
+        "worker_stdout_sha256": None,
+        "worker_stderr_sha256": None,
     }
 
 
@@ -1579,14 +1608,17 @@ def test_malformed_comparator_result_becomes_nonbinding_failure(
     arm = "chimeraboost_0_15_0"
     worker_key = runner._worker_key(coordinate, arm)
     malformed = {"worker_key": worker_key, "arm": arm}
+    private_token = "/Users/private-user/.venvs/secret-token"
     completed = SimpleNamespace(
         returncode=0,
         stdout=(
-            runner.WORKER_PREFIX
+            private_token
+            + "\n"
+            + runner.WORKER_PREFIX
             + json.dumps(malformed, sort_keys=True)
             + "\n"
         ),
-        stderr="",
+        stderr=private_token,
     )
     persisted = []
     monkeypatch.setattr(
@@ -1643,7 +1675,15 @@ def test_malformed_comparator_result_becomes_nonbinding_failure(
 
     assert result["status"] == "failed"
     assert result["failure_kind"] == "worker_protocol_failure"
+    assert result["failure_detail"] == "result_contract"
     assert result["arm"] == arm
+    assert private_token not in json.dumps(result)
+    assert result["worker_stdout_sha256"] == runner._diagnostic_sha256(
+        completed.stdout
+    )
+    assert result["worker_stderr_sha256"] == runner._diagnostic_sha256(
+        completed.stderr
+    )
     assert digest == "a" * 64
     assert file_digest == "c" * 64
     assert attempt_digest == "b" * 64
@@ -1651,6 +1691,95 @@ def test_malformed_comparator_result_becomes_nonbinding_failure(
     assert claim_digest == "e" * 64
     assert claim_file_digest == "f" * 64
     assert resumed is False
+    assert persisted == [result]
+
+
+@pytest.mark.parametrize(
+    ("failure_detail", "worker_payload"),
+    [
+        ("result_count", None),
+        ("result_decode", "{"),
+        (
+            "result_identity",
+            json.dumps(
+                {
+                    "worker_key": "wrong-worker",
+                    "arm": "chimeraboost_0_15_0",
+                },
+                sort_keys=True,
+            ),
+        ),
+    ],
+)
+def test_comparator_protocol_failures_hash_private_diagnostics(
+    tmp_path,
+    monkeypatch,
+    failure_detail,
+    worker_payload,
+):
+    coordinate = _coordinate()
+    arm = "chimeraboost_0_15_0"
+    private_token = "/Users/private-user/.venvs/secret-token"
+    stdout = private_token
+    if worker_payload is not None:
+        stdout += "\n" + runner.WORKER_PREFIX + worker_payload
+    monkeypatch.setattr(
+        runner.subprocess,
+        "run",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            returncode=0,
+            stdout=stdout,
+            stderr=private_token,
+        ),
+    )
+    monkeypatch.setattr(runner, "_worker_environment", lambda: {})
+    monkeypatch.setattr(
+        runner,
+        "_guard_parent_campaign_boundary",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        runner,
+        "_create_attempt",
+        lambda *_args, **_kwargs: ("b" * 64, "d" * 64),
+    )
+    monkeypatch.setattr(
+        runner,
+        "_load_claim",
+        lambda *_args, **_kwargs: ("e" * 64, "f" * 64),
+    )
+    persisted = []
+
+    def create(
+        _path,
+        _binding,
+        _coordinate,
+        _arm,
+        result,
+        **_kwargs,
+    ):
+        persisted.append(result)
+        return result, "a" * 64, "c" * 64
+
+    monkeypatch.setattr(runner, "_create_spool", create)
+
+    result = runner._run_one(
+        tmp_path / "registry.json",
+        coordinate,
+        arm,
+        tmp_path,
+        {},
+    )[0]
+
+    assert result["failure_kind"] == "worker_protocol_failure"
+    assert result["failure_detail"] == failure_detail
+    assert result["worker_stdout_sha256"] == runner._diagnostic_sha256(
+        stdout
+    )
+    assert result["worker_stderr_sha256"] == runner._diagnostic_sha256(
+        private_token
+    )
+    assert private_token not in json.dumps(result)
     assert persisted == [result]
 
 
@@ -2358,6 +2487,7 @@ def test_descriptive_comparator_failure_cannot_veto_candidates(
     monkeypatch,
 ):
     registry, registry_path, raw = _synthetic_raw(tmp_path, monkeypatch)
+    private_token = "/Users/private-user/.venvs/secret-token"
     failed = next(
         result
         for result in raw["results"]
@@ -2374,9 +2504,10 @@ def test_descriptive_comparator_failure_cannot_veto_candidates(
             failed["arm"],
             returncode=-6,
             stdout=None,
-            stderr="synthetic crash",
+            stderr=private_token,
             failure_kind="worker_process_failure",
-            message="synthetic comparator crash",
+            failure_detail="nonzero_exit",
+            message=f"synthetic comparator crash at {private_token}",
         )
     )
     _refresh_spool_digest(raw, raw["comparator_failures"][-1])
@@ -2401,6 +2532,124 @@ def test_descriptive_comparator_failure_cannot_veto_candidates(
     assert comparator["complete"] is False
     assert comparator["failed_coordinate_count"] == 1
     assert comparator["affects_candidate_gates"] is False
+    assert private_token not in json.dumps(raw)
+    assert private_token not in json.dumps(summary)
+
+
+@pytest.mark.parametrize(
+    ("failure_kind", "failure_detail", "returncode"),
+    [
+        ("worker_launch_failure", "launch_exception", None),
+        ("worker_process_failure", "nonzero_exit", -6),
+        ("worker_protocol_failure", "result_count", 0),
+        ("worker_protocol_failure", "result_decode", 0),
+        ("worker_protocol_failure", "result_identity", 0),
+        ("worker_protocol_failure", "result_contract", 0),
+    ],
+)
+def test_comparator_failure_schema_publishes_only_diagnostic_hashes(
+    failure_kind,
+    failure_detail,
+    returncode,
+):
+    private_token = "/Users/private-user/.venvs/secret-token"
+    failure = runner._comparator_failure(
+        _coordinate(),
+        "catboost_product_default",
+        returncode=returncode,
+        stdout=private_token,
+        stderr=private_token,
+        failure_kind=failure_kind,
+        failure_detail=failure_detail,
+        message=f"failure at {private_token}",
+    )
+
+    analyzer._validate_comparator_failure(failure)
+
+    assert private_token not in json.dumps(failure)
+    assert failure["failure_detail"] == failure_detail
+    assert failure["worker_stdout_sha256"] == (
+        runner._diagnostic_sha256(private_token)
+    )
+    assert failure["worker_stderr_sha256"] == (
+        runner._diagnostic_sha256(private_token)
+    )
+    assert failure["message_sha256"] == runner._diagnostic_sha256(
+        f"failure at {private_token}"
+    )
+
+
+def test_comparator_failure_validator_rejects_legacy_and_mismatched_fields():
+    failure = runner._comparator_failure(
+        _coordinate(),
+        "catboost_product_default",
+        returncode=-6,
+        stdout=None,
+        stderr="synthetic failure",
+        failure_kind="worker_process_failure",
+        failure_detail="nonzero_exit",
+        message="synthetic comparator failure",
+    )
+
+    legacy = copy.deepcopy(failure)
+    legacy["worker_stderr"] = legacy.pop("worker_stderr_sha256")
+    with pytest.raises(RuntimeError, match="fields changed"):
+        analyzer._validate_comparator_failure(legacy)
+
+    malformed = copy.deepcopy(failure)
+    malformed["worker_stderr_sha256"] = "not-a-sha256"
+    malformed["failure_fingerprint_sha256"] = runner._json_sha256(
+        {
+            key: value
+            for key, value in malformed.items()
+            if key != "failure_fingerprint_sha256"
+        }
+    )
+    with pytest.raises(RuntimeError, match="record is invalid"):
+        analyzer._validate_comparator_failure(malformed)
+
+    mismatched = copy.deepcopy(failure)
+    mismatched["failure_detail"] = "result_count"
+    mismatched["failure_fingerprint_sha256"] = runner._json_sha256(
+        {
+            key: value
+            for key, value in mismatched.items()
+            if key != "failure_fingerprint_sha256"
+        }
+    )
+    with pytest.raises(RuntimeError, match="record is invalid"):
+        analyzer._validate_comparator_failure(mismatched)
+
+    with pytest.raises(ValueError, match="message is empty"):
+        runner._comparator_failure(
+            _coordinate(),
+            "catboost_product_default",
+            returncode=-6,
+            stdout=None,
+            stderr=None,
+            failure_kind="worker_process_failure",
+            failure_detail="nonzero_exit",
+            message=" \n",
+        )
+
+
+def test_raw_boundary_rejects_protocol_deviation_text(
+    tmp_path,
+    monkeypatch,
+):
+    registry, registry_path, raw = _synthetic_raw(tmp_path, monkeypatch)
+    raw["protocol_deviations"] = [
+        "/Users/private-user/.venvs/secret-token"
+    ]
+    _refresh_raw_digest(raw)
+
+    with pytest.raises(RuntimeError, match="raw boundary"):
+        analyzer.validate_raw(
+            raw,
+            registry,
+            registry_path=registry_path,
+            verify_current_files=False,
+        )
 
 
 def test_both_pass_uses_frozen_t5_precedence_without_metric_ranking():
@@ -2580,6 +2829,73 @@ def test_spool_record_is_create_only_and_tamper_evident(tmp_path):
             arm,
             allowed_root=tmp_path,
         )
+
+
+def test_successful_worker_diagnostics_are_hashed_before_spool(
+    tmp_path,
+    monkeypatch,
+):
+    coordinate = _coordinate()
+    arm = runner.CONTROL_ARM
+    binding = {"campaign": "panel3"}
+    result = _synthetic_result(coordinate, arm, 1.0)
+    private_token = "/Users/private-user/.venvs/secret-token"
+    monkeypatch.setattr(
+        runner,
+        "_guard_parent_campaign_boundary",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(runner, "_worker_environment", lambda: {})
+
+    def completed(*_args, **_kwargs):
+        attempt_hash, attempt_file_hash = runner._load_attempt(
+            runner._attempt_path(tmp_path, coordinate, arm),
+            binding,
+            coordinate,
+            arm,
+            allowed_root=tmp_path,
+        )
+        runner._create_claim(
+            runner._claim_path(tmp_path, coordinate, arm),
+            binding,
+            coordinate,
+            arm,
+            attempt_hash,
+            attempt_file_hash,
+            allowed_root=tmp_path,
+        )
+        return SimpleNamespace(
+            returncode=0,
+            stdout=(
+                private_token
+                + "\n"
+                + runner.WORKER_PREFIX
+                + json.dumps(result, sort_keys=True)
+                + "\n"
+            ),
+            stderr=private_token,
+        )
+
+    monkeypatch.setattr(runner.subprocess, "run", completed)
+
+    observed = runner._run_one(
+        tmp_path / "registry.json",
+        coordinate,
+        arm,
+        tmp_path,
+        binding,
+    )[0]
+
+    assert observed["worker_stdout_sha256"] == (
+        runner._diagnostic_sha256(private_token)
+    )
+    assert observed["worker_stderr_sha256"] == (
+        runner._diagnostic_sha256(private_token)
+    )
+    assert private_token not in json.dumps(observed)
+    assert private_token not in runner._spool_path(
+        tmp_path, coordinate, arm
+    ).read_text()
 
 
 def test_worker_attempt_is_create_only_and_tamper_evident(tmp_path):
@@ -2809,6 +3125,7 @@ def test_comparator_launch_failure_consumes_claim_and_persists_failure(
     coordinate = _coordinate()
     arm = "chimeraboost_0_15_0"
     binding = {"campaign": "panel3"}
+    private_token = "/Users/private-user/.venvs/secret-token"
     monkeypatch.setattr(
         runner,
         "_guard_parent_campaign_boundary",
@@ -2819,7 +3136,7 @@ def test_comparator_launch_failure_consumes_claim_and_persists_failure(
         runner.subprocess,
         "run",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
-            OSError("synthetic launch failure")
+            OSError(f"synthetic launch failure at {private_token}")
         ),
     )
 
@@ -2842,9 +3159,14 @@ def test_comparator_launch_failure_consumes_claim_and_persists_failure(
 
     assert result["status"] == "failed"
     assert result["failure_kind"] == "worker_launch_failure"
+    assert result["failure_detail"] == "launch_exception"
     assert resumed is False
     assert runner._claim_path(tmp_path, coordinate, arm).is_file()
     assert runner._spool_path(tmp_path, coordinate, arm).is_file()
+    assert private_token not in json.dumps(result)
+    assert private_token not in runner._spool_path(
+        tmp_path, coordinate, arm
+    ).read_text()
 
 
 def test_comparator_process_failure_before_claim_persists_and_resumes(
@@ -2854,6 +3176,7 @@ def test_comparator_process_failure_before_claim_persists_and_resumes(
     coordinate = _coordinate()
     arm = "chimeraboost_0_15_0"
     binding = {"campaign": "panel3"}
+    private_token = "/Users/private-user/.venvs/secret-token"
     monkeypatch.setattr(
         runner,
         "_guard_parent_campaign_boundary",
@@ -2866,7 +3189,7 @@ def test_comparator_process_failure_before_claim_persists_and_resumes(
         lambda *_args, **_kwargs: SimpleNamespace(
             returncode=9,
             stdout="",
-            stderr="synthetic pre-claim crash",
+            stderr=f"synthetic pre-claim crash at {private_token}",
         ),
     )
 
@@ -2881,10 +3204,18 @@ def test_comparator_process_failure_before_claim_persists_and_resumes(
     result = first[0]
     assert result["status"] == "failed"
     assert result["failure_kind"] == "worker_process_failure"
+    assert result["failure_detail"] == "nonzero_exit"
+    assert result["worker_stderr_sha256"] == runner._diagnostic_sha256(
+        f"synthetic pre-claim crash at {private_token}"
+    )
+    assert private_token not in json.dumps(result)
     assert first[-1] is False
     assert runner._attempt_path(tmp_path, coordinate, arm).is_file()
     assert runner._claim_path(tmp_path, coordinate, arm).is_file()
     assert runner._spool_path(tmp_path, coordinate, arm).is_file()
+    assert private_token not in runner._spool_path(
+        tmp_path, coordinate, arm
+    ).read_text()
     monkeypatch.setattr(
         runner.subprocess,
         "run",
@@ -3159,11 +3490,13 @@ def test_source_drift_marker_survives_revert_and_blocks_restart(
     monkeypatch,
 ):
     binding = {"campaign": "panel3"}
+    private_token = "/Users/private-user/.venvs/secret-token"
+    message = f"synthetic source changed at {private_token}"
     monkeypatch.setattr(
         runner,
         "_validate_parent_campaign_boundary",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
-            RuntimeError("synthetic source changed")
+            RuntimeError(message)
         ),
     )
 
@@ -3176,6 +3509,20 @@ def test_source_drift_marker_survives_revert_and_blocks_restart(
 
     marker = runner._campaign_invalidation_path(tmp_path)
     assert marker.is_file()
+    encoded = marker.read_text()
+    payload = json.loads(encoded)
+    assert private_token not in encoded
+    assert payload["reason"] == "source_or_registry_drift"
+    assert payload["message_sha256"] == runner._diagnostic_sha256(
+        message
+    )
+    assert payload["invalidation_sha256"] == runner._json_sha256(
+        {
+            key: value
+            for key, value in payload.items()
+            if key != "invalidation_sha256"
+        }
+    )
     monkeypatch.setattr(
         runner,
         "_validate_parent_campaign_boundary",
