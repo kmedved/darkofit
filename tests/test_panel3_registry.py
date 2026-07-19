@@ -394,6 +394,7 @@ def _fake_attestation(record):
             "dataset_fingerprint_sha256": registry.ctr.sha256_json(
                 record["fingerprint"]
             ),
+            "ordered_task_view_sha256": "e" * 64,
         },
     }
 
@@ -991,9 +992,40 @@ def test_target_attestation_schema_and_bindings_fail_closed():
     with pytest.raises(RuntimeError, match="malformed"):
         preflight._validate_target_attestation(changed, record)
     changed = copy.deepcopy(attestation)
+    changed["binding"].pop("ordered_task_view_sha256")
+    with pytest.raises(RuntimeError, match="malformed"):
+        preflight._validate_target_attestation(changed, record)
+    changed = copy.deepcopy(attestation)
+    changed["binding"]["ordered_task_view_sha256"] = "not-a-sha256"
+    with pytest.raises(RuntimeError, match="malformed"):
+        preflight._validate_target_attestation(changed, record)
+    changed = copy.deepcopy(attestation)
     changed["target_outcome_statistics_computed"] = True
     with pytest.raises(RuntimeError, match="malformed"):
         preflight._validate_target_attestation(changed, record)
+
+
+def test_registry_build_rejects_ordered_view_drift_after_preflight():
+    preflight_row = {
+        "target_attestation": {
+            "binding": {"ordered_task_view_sha256": "e" * 64}
+        }
+    }
+
+    registry._validate_preflight_ordered_view(
+        123,
+        preflight_row,
+        "e" * 64,
+    )
+    with pytest.raises(
+        RuntimeError,
+        match="ordered view drifted after target preflight",
+    ):
+        registry._validate_preflight_ordered_view(
+            123,
+            preflight_row,
+            "f" * 64,
+        )
 
 
 def test_related_task_id_walker_handles_list_values_everywhere():

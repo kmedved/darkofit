@@ -30,11 +30,11 @@ only through this protocol. Six source-reviewed new lineages complete the
 This is an outcome-blind but eligibility-aware design. Preflight and registry
 construction may inspect metadata, schemas, source descriptions, target
 type/finiteness, opaque target hashes, dataset fingerprints, target-free
-feature transformations, and the feature-only inputs needed to construct
-splits. They may freeze official indices or explicit target-free split
-indices. They must not compute target distribution statistics, fit a
-candidate or control, score a prediction, or inspect any candidate/control
-outcome.
+feature transformations, an opaque order-sensitive digest of the exact X/y
+task view, and the feature-only inputs needed to construct splits. They may
+freeze official indices or explicit target-free split indices. They must not
+compute target distribution statistics, fit a candidate or control, score a
+prediction, or inspect any candidate/control outcome.
 
 Before H1, Parquet-footer minimum/maximum statistics for the target columns of
 Mercari task 363377, Google QA task 363370, and Sberbank task 363495 were
@@ -87,19 +87,22 @@ The preflight reloads every exact OpenML task and target and applies
 `numeric_float64_all_finite_v1`:
 
 - a nonempty one-dimensional target;
-- exact row binding to the dataset fingerprint;
+- row-multiset binding to the contamination dataset fingerprint;
+- exact feature-column, row, and target order binding to the opaque ordered
+  task-view digest;
 - numeric float64 coercibility;
 - no Python or NumPy complex values; and
 - no NaN, positive infinity, negative infinity, masked value, or overflow.
 
 The create-only preflight artifact records pass/fail eligibility, exact
-metadata and fingerprint bindings for passes, source hashes, and explicitly
-states that no target statistic, target value, candidate/control model, or
-candidate/control outcome was persisted. A technical failure, integrity drift,
-or an ineligible primary leaves no registry output. Eligibility rejection may
-mechanically identify a predeclared reserve only for a future refrozen design;
-it cannot continue v1 and does not reveal a distribution, association, model
-score, or candidate contrast.
+metadata, contamination-fingerprint, and ordered-task-view bindings for
+passes, source hashes, and explicitly states that no target statistic, target
+value, candidate/control model, or candidate/control outcome was persisted. A
+technical failure, integrity drift, or an ineligible primary leaves no
+registry output. Eligibility rejection may mechanically identify a
+predeclared reserve only for a future refrozen design; it cannot continue v1
+and does not reveal a distribution, association, model score, or candidate
+contrast.
 
 Before the first target-column materialization or inspection, the preflight
 must also reproduce the exact three-coordinate T5 size-gate applicability
@@ -307,9 +310,12 @@ creating the retained-candidate plan: 36 coordinates times current default,
 one or two preregistered DarkoFit candidates, ChimeraBoost, and CatBoost. This comparison covers every
 task row, selected/reserve decision, feature policy, frozen split, declaration,
 and target-preflight binding; a registry's self-hash alone is not sufficient.
-Each isolated worker warms its engine, records fitted metadata, exact
-prediction hashes, RMSE, fit/predict seconds, peak RSS, categorical resolution,
-selected lanes, resolved learning rate, best iteration, and stop/refit reason.
+Before applying feature transforms or positional split indices, each isolated
+worker reloads the task, recomputes the ordered X/y task-view digest, and
+rejects any difference from the preflight-bound registry value. Each worker
+also records that digest with its fitted metadata, exact prediction hashes,
+RMSE, fit/predict seconds, peak RSS, categorical resolution, selected lanes,
+resolved learning rate, best iteration, and stop/refit reason.
 The parent applies the analyzer's complete result and fitted-metadata contract
 before publishing or reusing a create-only hash-bound spool record. It applies
 the complete raw validator, including reopening every spool, before publishing

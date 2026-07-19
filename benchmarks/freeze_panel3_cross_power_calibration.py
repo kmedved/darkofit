@@ -258,30 +258,9 @@ def _array_sha256(value: Any, dtype: str) -> str:
 
 def ordered_task_view_sha256(X: Any, y: Any) -> str:
     """Hash exact row/column order in addition to the lineage fingerprint."""
-    import numpy as np
-    import pandas as pd
+    from benchmarks import panel3_data_contract as data_contract
 
-    frame = pd.DataFrame(X)
-    target = pd.Series(y, name="__target__")
-    if len(frame) != len(target):
-        raise RuntimeError("calibration ordered-view row counts differ")
-    digest = hashlib.sha256()
-    for position in range(frame.shape[1]):
-        values = pd.util.hash_pandas_object(
-            frame.iloc[:, position],
-            index=True,
-            categorize=False,
-        ).to_numpy(dtype="<u8", copy=False)
-        digest.update(position.to_bytes(8, "big"))
-        digest.update(np.ascontiguousarray(values).tobytes())
-    target_hashes = pd.util.hash_pandas_object(
-        target,
-        index=True,
-        categorize=False,
-    ).to_numpy(dtype="<u8", copy=False)
-    digest.update(b"__target__")
-    digest.update(np.ascontiguousarray(target_hashes).tobytes())
-    return digest.hexdigest()
+    return data_contract.ordered_task_view_sha256(X, y)
 
 
 def task_view_attestations() -> dict[str, Any]:

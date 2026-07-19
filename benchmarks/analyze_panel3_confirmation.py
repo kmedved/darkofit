@@ -577,6 +577,7 @@ def _validate_result(
         "categorical_feature_names",
         "ordinal_features",
         "feature_policy",
+        "ordered_task_view_sha256",
         "train_rows",
         "test_rows",
         "train_index_sha256",
@@ -765,6 +766,7 @@ def _validate_result(
     for field in (
         "train_index_sha256",
         "test_index_sha256",
+        "ordered_task_view_sha256",
         "target_sha256",
         "prediction_sha256",
         "behavior_fingerprint_sha256",
@@ -2293,6 +2295,7 @@ def validate_raw(
             "categorical_feature_names",
             "ordinal_features",
             "feature_policy",
+            "ordered_task_view_sha256",
             "split_policy",
         )
         for field in invariants:
@@ -2316,6 +2319,8 @@ def validate_raw(
             )
             or rows[0]["feature_policy"]
             != registry_row.get("feature_policy_attestation")
+            or rows[0]["ordered_task_view_sha256"]
+            != registry_row.get("ordered_task_view_sha256")
         ):
             raise RuntimeError(
                 "panel-3 result differs from its frozen task contract"

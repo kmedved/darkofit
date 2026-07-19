@@ -46,6 +46,31 @@ def feature_schema_sha256(X: pd.DataFrame) -> str:
     return canonical_json_sha256(feature_schema(X))
 
 
+def ordered_task_view_sha256(X: Any, y: Any) -> str:
+    """Hash the exact feature-column, row, and target order of one task view."""
+    frame = pd.DataFrame(X)
+    target = pd.Series(y, name="__target__")
+    if len(frame) != len(target):
+        raise RuntimeError("panel-3 ordered-view row counts differ")
+    digest = hashlib.sha256()
+    for position in range(frame.shape[1]):
+        values = pd.util.hash_pandas_object(
+            frame.iloc[:, position],
+            index=True,
+            categorize=False,
+        ).to_numpy(dtype="<u8", copy=False)
+        digest.update(position.to_bytes(8, "big"))
+        digest.update(np.ascontiguousarray(values).tobytes())
+    target_hashes = pd.util.hash_pandas_object(
+        target,
+        index=True,
+        categorize=False,
+    ).to_numpy(dtype="<u8", copy=False)
+    digest.update(b"__target__")
+    digest.update(np.ascontiguousarray(target_hashes).tobytes())
+    return digest.hexdigest()
+
+
 def generated_values_sha256(
     generated: dict[str, np.ndarray],
 ) -> str:

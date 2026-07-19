@@ -823,13 +823,13 @@ def _load_task_record_with_splits(task_id: int) -> dict[str, Any]:
 def _load_task_feature_view(
     task_id: int,
     record: dict[str, Any],
-) -> tuple[Any, pd.DataFrame, list[bool]]:
+) -> tuple[Any, pd.DataFrame, list[bool], str]:
     """Load the exact target-separated task view without outcome statistics."""
     import openml
 
     task = openml.tasks.get_task(int(task_id), download_splits=True)
     dataset = task.get_dataset()
-    X, _target, categorical, names = dataset.get_data(
+    X, target, categorical, names = dataset.get_data(
         target=task.target_name,
         include_row_id=False,
         include_ignore_attribute=False,
@@ -851,7 +851,32 @@ def _load_task_feature_view(
         raise RuntimeError(
             f"panel-3 task {task_id} feature view changed"
         )
-    return task, X, categorical
+    numeric_target = pd.to_numeric(target, errors="raise").astype(np.float64)
+    ordered_view_sha256 = data_contract.ordered_task_view_sha256(
+        X,
+        numeric_target,
+    )
+    return task, X, categorical, ordered_view_sha256
+
+
+def _validate_preflight_ordered_view(
+    task_id: int,
+    preflight_row: dict[str, Any],
+    ordered_view_sha256: str,
+) -> None:
+    expected = (
+        preflight_row.get("target_attestation", {})
+        .get("binding", {})
+        .get("ordered_task_view_sha256")
+    )
+    if (
+        not provenance.is_sha256(ordered_view_sha256)
+        or ordered_view_sha256 != expected
+    ):
+        raise RuntimeError(
+            f"panel-3 task {task_id} ordered view drifted after "
+            "target preflight"
+        )
 
 
 def _array_sha256(values: np.ndarray) -> str:
@@ -1575,10 +1600,16 @@ def build(
                 f"panel-3 task {task_id} split dimensions changed"
             )
         row["task_record"] = split_record
-        _task, X, categorical = _load_task_feature_view(
+        _task, X, categorical, ordered_view_sha256 = _load_task_feature_view(
             task_id,
             split_record,
         )
+        _validate_preflight_ordered_view(
+            task_id,
+            preflight_rows[task_id],
+            ordered_view_sha256,
+        )
+        row["ordered_task_view_sha256"] = ordered_view_sha256
         transformed, feature_attestation = (
             data_contract.apply_feature_policy(
                 X,

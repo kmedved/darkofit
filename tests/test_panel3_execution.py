@@ -46,6 +46,26 @@ def test_result_diagnostic_schema_rejects_legacy_and_invalid_fields():
         analyzer._validate_result(malformed)
 
 
+def test_result_requires_valid_ordered_task_view_digest():
+    result = _synthetic_result(
+        _coordinate(),
+        runner.CONTROL_ARM,
+        1.0,
+    )
+    missing = copy.deepcopy(result)
+    missing.pop("ordered_task_view_sha256")
+    with pytest.raises(RuntimeError, match="result fields changed"):
+        analyzer._validate_result(missing)
+
+    malformed = copy.deepcopy(result)
+    malformed["ordered_task_view_sha256"] = "not-a-sha256"
+    with pytest.raises(
+        RuntimeError,
+        match="ordered_task_view_sha256",
+    ):
+        analyzer._validate_result(malformed)
+
+
 def test_feature_policy_drops_exact_columns_and_reindexes_flags():
     X = pd.DataFrame(
         {
@@ -411,6 +431,72 @@ def _none_feature_attestation():
     }
 
 
+def test_load_task_rejects_joint_row_reordering_before_feature_policy(
+    monkeypatch,
+):
+    original_X = pd.DataFrame({"x": [1.0, 2.0, 3.0]})
+    original_y = pd.Series([10.0, 20.0, 30.0], name="score")
+    order = [2, 0, 1]
+    reordered_X = original_X.iloc[order].reset_index(drop=True)
+    reordered_y = original_y.iloc[order].reset_index(drop=True)
+    fingerprint = runner.fingerprints.dataset_fingerprint(
+        original_X,
+        original_y,
+    )
+    assert runner.fingerprints.dataset_fingerprint(
+        reordered_X,
+        reordered_y,
+    ) == fingerprint
+
+    class Dataset:
+        dataset_id = 101
+        name = "ordered-task"
+        md5_checksum = "declared-md5"
+
+        def get_data(self, **_kwargs):
+            return reordered_X, reordered_y, [False], ["x"]
+
+    dataset = Dataset()
+    task = SimpleNamespace(
+        target_name="score",
+        get_dataset=lambda: dataset,
+    )
+    fake_openml = SimpleNamespace(
+        tasks=SimpleNamespace(
+            get_task=lambda _task_id, **_kwargs: task
+        )
+    )
+    monkeypatch.setitem(sys.modules, "openml", fake_openml)
+    monkeypatch.setattr(
+        runner,
+        "_apply_feature_policy",
+        lambda *_args, **_kwargs: pytest.fail(
+            "feature policy ran before ordered-view validation"
+        ),
+    )
+    row = {
+        "dataset_id": 101,
+        "dataset_name": "ordered-task",
+        "target_name": "score",
+        "task_record": {
+            "fingerprint": fingerprint,
+            "openml_declared_md5": "declared-md5",
+        },
+        "feature_policy": {"kind": "none"},
+        "feature_policy_attestation": _none_feature_attestation(),
+        "resolved_categorical_columns": [],
+        "ordered_task_view_sha256": (
+            data_contract.ordered_task_view_sha256(
+                original_X,
+                original_y.astype(np.float64),
+            )
+        ),
+    }
+
+    with pytest.raises(RuntimeError, match="ordered task view changed"):
+        runner._load_task(1, row)
+
+
 def _synthetic_registry():
     coordinates = [
         _coordinate(task_id=task, fold=fold)
@@ -439,6 +525,7 @@ def _synthetic_registry():
                 "lineage_cluster": f"lineage-{task}",
                 "stratum": common.STRATA[(task - 1) // 4],
                 "status": "selected",
+                "ordered_task_view_sha256": f"{task:064x}",
                 "t5_size_gate_applicability": [False, False, False],
                 "ordinal_features": {},
                 "feature_policy": {"kind": "none"},
@@ -1013,6 +1100,7 @@ def _synthetic_result(coordinate, arm, ratio):
         "categorical_feature_names": [],
         "ordinal_features": {},
         "feature_policy": _none_feature_attestation(),
+        "ordered_task_view_sha256": f"{coordinate['task_id']:064x}",
         "train_rows": 80,
         "test_rows": 20,
         "train_index_sha256": "2" * 64,
@@ -2330,6 +2418,51 @@ def test_historical_raw_rejects_worker_source_attestation_drift(
     _refresh_raw_digest(raw)
 
     with pytest.raises(RuntimeError, match="source attestation changed"):
+        analyzer.validate_raw(
+            raw,
+            registry,
+            registry_path=registry_path,
+            verify_current_files=False,
+        )
+
+
+def test_raw_rejects_cross_arm_ordered_view_digest_drift(
+    tmp_path,
+    monkeypatch,
+):
+    registry, registry_path, raw = _synthetic_raw(tmp_path, monkeypatch)
+    result = raw["results"][0]
+    result["ordered_task_view_sha256"] = "f" * 64
+    _refresh_spool_digest(raw, result)
+    _refresh_raw_digest(raw)
+
+    with pytest.raises(
+        RuntimeError,
+        match="coordinate invariant changed: ordered_task_view_sha256",
+    ):
+        analyzer.validate_raw(
+            raw,
+            registry,
+            registry_path=registry_path,
+            verify_current_files=False,
+        )
+
+
+def test_raw_rejects_ordered_view_digest_different_from_registry(
+    tmp_path,
+    monkeypatch,
+):
+    registry, registry_path, raw = _synthetic_raw(tmp_path, monkeypatch)
+    for result in raw["results"]:
+        if result["task_id"] == 1:
+            result["ordered_task_view_sha256"] = "f" * 64
+            _refresh_spool_digest(raw, result)
+    _refresh_raw_digest(raw)
+
+    with pytest.raises(
+        RuntimeError,
+        match="result differs from its frozen task contract",
+    ):
         analyzer.validate_raw(
             raw,
             registry,

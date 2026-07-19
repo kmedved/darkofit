@@ -132,6 +132,12 @@ def test_openml_attestation_is_bound_to_exact_dataset_fingerprint():
         "dataset_fingerprint_sha256": preflight.ctr.sha256_json(
             record["fingerprint"]
         ),
+        "ordered_task_view_sha256": (
+            preflight.data_contract.ordered_task_view_sha256(
+                X,
+                target.astype(np.float64),
+            )
+        ),
     }
     assert set(result) == {
         "policy",
@@ -141,6 +147,31 @@ def test_openml_attestation_is_bound_to_exact_dataset_fingerprint():
         "target_values_persisted",
         "binding",
     }
+
+
+def test_openml_attestation_binds_joint_row_order_separately_from_fingerprint():
+    X = pd.DataFrame({"feature": [1.0, 2.0, 3.0]})
+    target = pd.Series([2.0, 4.0, 6.0], name="score")
+    order = [2, 0, 1]
+    reordered_X = X.iloc[order].reset_index(drop=True)
+    reordered_target = target.iloc[order].reset_index(drop=True)
+    record = _task_record(X, target)
+
+    assert preflight.ctr.dataset_fingerprint(
+        reordered_X,
+        reordered_target,
+    ) == record["fingerprint"]
+    result = preflight.attest_openml_target(
+        record,
+        openml_module=_fake_openml(reordered_X, reordered_target),
+    )
+
+    assert result["binding"]["ordered_task_view_sha256"] != (
+        preflight.data_contract.ordered_task_view_sha256(
+            X,
+            target.astype(np.float64),
+        )
+    )
 
 
 def test_openml_attestation_fails_on_fingerprint_drift():

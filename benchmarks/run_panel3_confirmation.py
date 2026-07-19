@@ -984,6 +984,29 @@ def _validate_pre_h1_target_exclusion_boundary(
             )
 
 
+def _selected_ordered_view_bindings(
+    registry: dict[str, Any],
+) -> dict[int, str]:
+    tasks = registry.get("tasks")
+    if not isinstance(tasks, list):
+        raise RuntimeError("panel-3 selected task ledger changed")
+    bindings = {
+        int(row["task_id"]): row.get("ordered_task_view_sha256")
+        for row in tasks
+        if isinstance(row, dict)
+        and type(row.get("task_id")) is int
+        and row.get("status") == "selected"
+    }
+    if (
+        len(bindings) != 12
+        or any(not _is_sha256(value) for value in bindings.values())
+    ):
+        raise RuntimeError(
+            "panel-3 selected ordered-view binding changed"
+        )
+    return bindings
+
+
 def validate_registry(
     registry: dict[str, Any],
     *,
@@ -1058,11 +1081,8 @@ def validate_registry(
     }
     if len(identities) != 36:
         raise RuntimeError("panel-3 coordinate ledger repeats or is malformed")
-    selected = {
-        int(row["task_id"])
-        for row in registry.get("tasks", [])
-        if isinstance(row, dict) and row.get("status") == "selected"
-    }
+    ordered_view_bindings = _selected_ordered_view_bindings(registry)
+    selected = set(ordered_view_bindings)
     if len(selected) != 12 or {row[0] for row in identities} != selected:
         raise RuntimeError("panel-3 selected task ledger changed")
     if selected != {
@@ -1129,6 +1149,20 @@ def validate_registry(
         != registry.get("target_preflight_sha256")
     ):
         raise RuntimeError("panel-3 target-preflight binding changed")
+    preflight_ordered_view_bindings = {
+        int(row["task_id"]): row.get("target_attestation", {})
+        .get("binding", {})
+        .get("ordered_task_view_sha256")
+        for row in preflight["tasks"]
+        if row.get("status") == "target_eligible"
+    }
+    if any(
+        preflight_ordered_view_bindings.get(task_id) != digest
+        for task_id, digest in ordered_view_bindings.items()
+    ):
+        raise RuntimeError(
+            "panel-3 registry ordered-view binding differs from preflight"
+        )
     sources = registry.get("sources")
     if (
         not isinstance(sources, dict)
@@ -1326,14 +1360,7 @@ def validate_registry_historical(
         and set(row) == {"task_id", "repeat", "fold", "sample"}
         and all(type(value) is int and value >= 0 for value in row.values())
     }
-    tasks = registry.get("tasks")
-    selected = {
-        int(row["task_id"])
-        for row in tasks
-        if isinstance(row, dict)
-        and type(row.get("task_id")) is int
-        and row.get("status") == "selected"
-    } if isinstance(tasks, list) else set()
+    selected = set(_selected_ordered_view_bindings(registry))
     if (
         len(identities) != 36
         or len(selected) != 12
@@ -1455,6 +1482,16 @@ def _load_task(task_id: int, row: dict[str, Any]):
     y = pd.to_numeric(y, errors="raise").astype(np.float64)
     if not np.isfinite(y.to_numpy(dtype=np.float64)).all():
         raise RuntimeError(f"panel-3 task {task_id} target is nonfinite")
+    ordered_task_view_sha256 = data_contract.ordered_task_view_sha256(
+        X,
+        y,
+    )
+    if ordered_task_view_sha256 != row.get(
+        "ordered_task_view_sha256"
+    ):
+        raise RuntimeError(
+            f"panel-3 task {task_id} ordered task view changed"
+        )
     X, categorical, feature_policy = _apply_feature_policy(
         X,
         list(categorical),
@@ -1483,6 +1520,7 @@ def _load_task(task_id: int, row: dict[str, Any]):
         list(categorical_indices),
         categorical_names,
         feature_policy,
+        ordered_task_view_sha256,
     )
 
 
@@ -2325,6 +2363,7 @@ def run_worker(
         categorical_indices,
         categorical_names,
         feature_policy,
+        ordered_task_view_sha256,
     ) = _load_task(task_id, row)
     warmup_seconds = _warmup(arm)
     started = time.perf_counter_ns()
@@ -2379,6 +2418,7 @@ def run_worker(
         "categorical_feature_names": categorical_names,
         "ordinal_features": _ordinal_features(row),
         "feature_policy": feature_policy,
+        "ordered_task_view_sha256": ordered_task_view_sha256,
         **result,
         "source_attestation": source_attestation,
         "warmup_seconds": float(warmup_seconds),

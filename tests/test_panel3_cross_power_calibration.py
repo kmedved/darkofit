@@ -15,6 +15,7 @@ import pytest
 from benchmarks import analyze_panel3_confirmation as confirmation_analyzer
 from benchmarks import analyze_panel3_cross_power_calibration as analyzer
 from benchmarks import freeze_panel3_cross_power_calibration as freeze
+from benchmarks import panel3_data_contract as data_contract
 from benchmarks import panel3_registry_common as common
 from benchmarks import run_panel3_cross_power_calibration as runner
 from benchmarks import run_tabarena_regression_followon_screen as spent
@@ -796,6 +797,7 @@ def test_ordered_task_view_hash_rejects_joint_row_reordering():
         y.iloc[::-1].reset_index(drop=True),
     )
     assert original != reordered
+    assert original == data_contract.ordered_task_view_sha256(X, y)
 
 
 def test_analyzer_preserves_complete_exact_policy_census():

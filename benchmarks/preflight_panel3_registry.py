@@ -674,12 +674,16 @@ def _validate_target_attestation(
             "openml_dataset_id",
             "target_name",
             "dataset_fingerprint_sha256",
+            "ordered_task_view_sha256",
         }
         or binding["openml_task_id"] != int(record["openml_task_id"])
         or binding["openml_dataset_id"] != int(record["openml_dataset_id"])
         or binding["target_name"] != str(record["target_name"])
         or binding["dataset_fingerprint_sha256"]
         != ctr.sha256_json(record["fingerprint"])
+        or not provenance.is_sha256(
+            binding["ordered_task_view_sha256"]
+        )
     ):
         raise RuntimeError(
             f"task {record['openml_task_id']} target attestation is malformed"
