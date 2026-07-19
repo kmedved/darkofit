@@ -141,8 +141,9 @@ The complete binding policy is `benchmarks/SHIPPING_POLICY.md`.
   boosting, border count, leaf estimation/backtracking, combinations, and
   depth policy by `(n, p)`. The output is an attribution table and at most
   three frozen candidates, not a post-hoc default change. The complete
-  216-fit attribution rejected Ordered boosting, 128 borders, extra leaf
-  steps/backtracking, and CTR complexity 2 as automatic explanations. The
+  216-fit attribution rejected Ordered boosting, 128 borders, and CTR
+  complexity 2 as automatic explanations. Its leaf-estimation arm also changed
+  learning rate, so that direction remained unresolved until T7b. The
   predeclared samples-per-feature depth policy improved CatBoost's
   equal-dataset RMSE by 3.78% with three wins, no losses, and five exact
   defaults; it is frozen as the sole research candidate. See

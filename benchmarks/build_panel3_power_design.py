@@ -287,6 +287,7 @@ PANEL3_V1_SOURCE_RELATIVE_PATHS = (
     "benchmarks/tabarena_warmup.py",
     "tests/conftest.py",
     "tests/test_campaign_partition.py",
+    "tests/test_confirmation_target_preflight.py",
     "tests/test_panel3_cross_power_calibration.py",
     "tests/test_panel3_execution.py",
     "tests/test_panel3_power_design.py",

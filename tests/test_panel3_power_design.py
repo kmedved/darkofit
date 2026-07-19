@@ -321,6 +321,7 @@ def test_calibration_h1_binds_every_prospective_source_and_test():
         "benchmarks/build_panel3_registry.py",
         "benchmarks/panel3_registry_protocol.md",
         "benchmarks/confirmation_target_preflight.py",
+        "tests/test_confirmation_target_preflight.py",
         "tests/test_panel3_power_design.py",
         "tests/test_panel3_registry.py",
         "tests/test_panel3_execution.py",

@@ -726,6 +726,7 @@ def test_source_freeze_does_not_treat_uv_lock_as_runtime_contract():
         "benchmarks/tabarena_screen_adapters.py",
         "tests/conftest.py",
         "tests/test_campaign_partition.py",
+        "tests/test_confirmation_target_preflight.py",
         "tests/test_panel3_cross_power_calibration.py",
         "tests/test_panel3_execution.py",
         "tests/test_panel3_power_design.py",
