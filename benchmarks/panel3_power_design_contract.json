@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "contract_name": "darkofit_panel3_authorization_power_design_v1",
+  "calibration": {
+    "summary_name": "darkofit_panel3_cross_power_calibration_summary_v1",
+    "summary_path": "benchmarks/panel3_cross_power_calibration_summary.json",
+    "raw_path": "benchmarks/panel3_cross_power_calibration_raw.json",
+    "required_coordinate_count": 39,
+    "coordinates_per_task": 3,
+    "mapping_basis": "Source semantics, feature types, and deployment noise were assigned before the exact-policy calibration outcome existed. The mapping is not inferred from candidate performance.",
+    "minimum_distinct_source_tasks_per_stratum": 2,
+    "minimum_distinct_applicable_t5_source_tasks_per_stratum": 2,
+    "tasks": [
+      {
+        "dataset_name": "airfoil_self_noise",
+        "task_id": 363612,
+        "stratum": "smooth_numeric",
+        "expected_t5_size_gate_applicable_coordinates": 0
+      },
+      {
+        "dataset_name": "Another-Dataset-on-used-Fiat-500",
+        "task_id": 363615,
+        "stratum": "mixed_categorical",
+        "expected_t5_size_gate_applicable_coordinates": 0
+      },
+      {
+        "dataset_name": "concrete_compressive_strength",
+        "task_id": 363625,
+        "stratum": "smooth_numeric",
+        "expected_t5_size_gate_applicable_coordinates": 0
+      },
+      {
+        "dataset_name": "diamonds",
+        "task_id": 363631,
+        "stratum": "mixed_categorical",
+        "expected_t5_size_gate_applicable_coordinates": 3
+      },
+      {
+        "dataset_name": "Food_Delivery_Time",
+        "task_id": 363672,
+        "stratum": "mixed_categorical",
+        "expected_t5_size_gate_applicable_coordinates": 3
+      },
+      {
+        "dataset_name": "healthcare_insurance_expenses",
+        "task_id": 363675,
+        "stratum": "mixed_categorical",
+        "expected_t5_size_gate_applicable_coordinates": 0
+      },
+      {
+        "dataset_name": "houses",
+        "task_id": 363678,
+        "stratum": "applied_noisy",
+        "expected_t5_size_gate_applicable_coordinates": 3
+      },
+      {
+        "dataset_name": "miami_housing",
+        "task_id": 363686,
+        "stratum": "applied_noisy",
+        "expected_t5_size_gate_applicable_coordinates": 3
+      },
+      {
+        "dataset_name": "physiochemical_protein",
+        "task_id": 363693,
+        "stratum": "smooth_numeric",
+        "expected_t5_size_gate_applicable_coordinates": 3
+      },
+      {
+        "dataset_name": "QSAR-TID-11",
+        "task_id": 363697,
+        "stratum": "applied_noisy",
+        "expected_t5_size_gate_applicable_coordinates": 3
+      },
+      {
+        "dataset_name": "QSAR_fish_toxicity",
+        "task_id": 363698,
+        "stratum": "applied_noisy",
+        "expected_t5_size_gate_applicable_coordinates": 0
+      },
+      {
+        "dataset_name": "superconductivity",
+        "task_id": 363705,
+        "stratum": "smooth_numeric",
+        "expected_t5_size_gate_applicable_coordinates": 3
+      },
+      {
+        "dataset_name": "wine_quality",
+        "task_id": 363708,
+        "stratum": "applied_noisy",
+        "expected_t5_size_gate_applicable_coordinates": 3
+      }
+    ]
+  },
+  "prospective_panel": {
+    "required_strata": [
+      "smooth_numeric",
+      "mixed_categorical",
+      "applied_noisy"
+    ],
+    "required_tasks_per_stratum": 4,
+    "required_task_count": 12,
+    "coordinates_per_task": 3,
+    "authorized_only_for_exact_primary_selection": true,
+    "slots": [
+      {
+        "lineage_cluster": "asa_usnews_colleges_1993_94",
+        "task_id": 5166,
+        "stratum": "applied_noisy",
+        "t5_size_gate_applicability": [false, false, false]
+      },
+      {
+        "lineage_cluster": "brien_payne_wine_sensory_experiment",
+        "task_id": 359931,
+        "stratum": "mixed_categorical",
+        "t5_size_gate_applicability": [false, false, false]
+      },
+      {
+        "lineage_cluster": "cps_1988_wages",
+        "task_id": 361261,
+        "stratum": "mixed_categorical",
+        "t5_size_gate_applicability": [true, true, true]
+      },
+      {
+        "lineage_cluster": "kaggle_imperial_loan_default_loss",
+        "task_id": 361290,
+        "stratum": "applied_noisy",
+        "t5_size_gate_applicability": [true, true, true]
+      },
+      {
+        "lineage_cluster": "sarcos_robot_arm",
+        "task_id": 361254,
+        "stratum": "smooth_numeric",
+        "t5_size_gate_applicability": [true, true, true]
+      },
+      {
+        "lineage_cluster": "statlib_1987_mlb_hitter_salary",
+        "task_id": 4851,
+        "stratum": "applied_noisy",
+        "t5_size_gate_applicability": [false, false, false]
+      },
+      {
+        "lineage_cluster": "uci_energy_efficiency",
+        "task_id": 361617,
+        "stratum": "smooth_numeric",
+        "t5_size_gate_applicability": [false, false, false]
+      },
+      {
+        "lineage_cluster": "uci_forest_fires",
+        "task_id": 361618,
+        "stratum": "mixed_categorical",
+        "t5_size_gate_applicability": [false, false, false]
+      },
+      {
+        "lineage_cluster": "uci_garment_employee_productivity",
+        "task_id": 360993,
+        "stratum": "mixed_categorical",
+        "t5_size_gate_applicability": [false, false, false]
+      },
+      {
+        "lineage_cluster": "uci_naval_propulsion",
+        "task_id": 361247,
+        "stratum": "smooth_numeric",
+        "t5_size_gate_applicability": [true, true, true]
+      },
+      {
+        "lineage_cluster": "uk_wheat_milling_baking_quality",
+        "task_id": 363396,
+        "stratum": "applied_noisy",
+        "t5_size_gate_applicability": [false, false, false]
+      },
+      {
+        "lineage_cluster": "wave_energy_converters",
+        "task_id": 361253,
+        "stratum": "smooth_numeric",
+        "t5_size_gate_applicability": [true, true, true]
+      }
+    ]
+  },
+  "simulation": {
+    "outer_panel_simulations": 5000,
+    "outer_seed": 20260718,
+    "hierarchical_bootstrap_seed": 20260717,
+    "hierarchical_bootstrap_replicates": 100000,
+    "hierarchical_bootstrap_batch": 10000,
+    "outer_matrix_batch": 50,
+    "numpy_percentile_method": "linear",
+    "power_floor": 0.8,
+    "power_estimate_rule": "both_point_estimate_and_one_sided_wilson_lower_bound_must_meet_floor",
+    "familywise_one_sided_alpha": 0.05,
+    "initial_candidate_count": 2,
+    "initial_per_candidate_one_sided_alpha": 0.025,
+    "initial_bootstrap_percentile": 97.5,
+    "initial_power_wilson_confidence": 0.975,
+    "singleton_fallback_allowed": true,
+    "singleton_per_candidate_one_sided_alpha": 0.05,
+    "singleton_bootstrap_percentile": 95.0,
+    "singleton_power_wilson_confidence": 0.95,
+    "quality_gates": {
+      "equal_dataset_geomean_ratio_at_most": 0.995,
+      "bootstrap_upper_ratio_at_most": 1.002,
+      "leave_one_favorable_dataset_out_ratio_at_most": 0.998,
+      "worst_dataset_ratio_at_most": 1.005
+    }
+  },
+  "candidate_retention": {
+    "candidate_order": [
+      "t5_composite_policy",
+      "guarded_cross_features_policy"
+    ],
+    "initial_rule": "Evaluate both candidates independently against the two-candidate Bonferroni gate. Retain exactly the candidates whose simulated pass probability and one-sided 97.5% Wilson lower bound are both at least 0.80.",
+    "zero_initial_survivors": "Stop. Do not use a singleton calculation to rescue either candidate.",
+    "one_initial_survivor": "Recompute only that already-surviving candidate against the preregistered one-sided alpha 0.05 singleton gate and its one-sided 95% Wilson lower bound. Retain it only if both remain at least 0.80.",
+    "two_initial_survivors": "Retain both under Bonferroni. Do not rank them and do not require a joint-both-pass power probability.",
+    "post_calibration_discretion_allowed": false
+  },
+  "exchangeability": {
+    "sampling_unit": "complete_three_coordinate_dataset_triplet",
+    "within_stratum_sampling": "independent_with_replacement",
+    "coordinate_values_resampled_or_recombined_across_source_tasks": false,
+    "t5_applicable_slots_sample_only_fully_applicable_source_triplets": true,
+    "t5_known_nonapplicable_slots_are_exact_one_one_one_triplets": true,
+    "guarded_cross_slots_sample_all_source_triplets_in_the_matching_stratum": true,
+    "assumption": "Within each frozen semantic stratum and matching T5 applicability state, the 13-task spent panel is an exchangeable empirical proxy for the prospective panel. This is a transport assumption, not confirmation evidence."
+  }
+}

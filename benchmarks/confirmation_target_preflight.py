@@ -6,8 +6,10 @@ from collections.abc import Mapping
 from typing import Any
 
 import numpy as np
+import pandas as pd
 
 from benchmarks import build_ctr23_contamination_registry as ctr
+from benchmarks import panel3_data_contract as data_contract
 
 
 TARGET_POLICY = "numeric_float64_all_finite_v1"
@@ -140,6 +142,7 @@ def attest_openml_target(
         raise TargetPreflightError(
             f"task {task_id} dataset fingerprint drifted"
         )
+    numeric_target = pd.to_numeric(target, errors="raise").astype(np.float64)
     return {
         **attestation,
         "binding": {
@@ -147,5 +150,11 @@ def attest_openml_target(
             "openml_dataset_id": dataset_id,
             "target_name": str(task.target_name),
             "dataset_fingerprint_sha256": ctr.sha256_json(fingerprint),
+            "ordered_task_view_sha256": (
+                data_contract.ordered_task_view_sha256(
+                    X,
+                    numeric_target,
+                )
+            ),
         },
     }

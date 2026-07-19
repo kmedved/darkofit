@@ -1,4 +1,11 @@
 {
+  "analysis_evidence": {
+    "current_hardened_analyzer_sha256": "dd2f5798e027a7f9b1daff4c23b5193fd05f02bcd54a29e73db9975da83407c1",
+    "current_hardened_runner_sha256": "e429a2096a51239639405a66930d1f2457cddaf31616f2758512bba932bd966b",
+    "frozen_source_commit": "ce252439845b18e8a255ce034f01e7885b3ebf4b",
+    "original_frozen_analyzer_sha256": "08f2b268433d5d266a511f459357a28845e502b388698f2e844530b1d2fbd5e3",
+    "original_run_time_runner_sha256": "e429a2096a51239639405a66930d1f2457cddaf31616f2758512bba932bd966b"
+  },
   "contrasts": [
     {
       "arm": "random_strength_0",
@@ -867,5 +874,5 @@
       "origin/main": "ce252439845b18e8a255ce034f01e7885b3ebf4b"
     }
   },
-  "summary_sha256": "08dbdfcbc2273c01a9d0463f6da9f4816b763dcf013aef957e9e91e42b45da71"
+  "summary_sha256": "986851f6f5b687bbf6f9acf3aea97c5ba32ccad8a97452950cea7f801e12673b"
 }

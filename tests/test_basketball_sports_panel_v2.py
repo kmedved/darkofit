@@ -562,7 +562,22 @@ def test_v2_recorded_artifacts_reproduce_end_to_end(assert_analysis_equal):
     manifest_path = ROOT / raw["panel_manifest"]["path"]
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
+    assert stored["schema_version"] == 2
     assert stored["raw"]["sha256"] == raw_sha256
+    assert stored["raw"]["original_analyzer_sha256"] == (
+        "1752214e0451b44823557d03fd6e498fecdd8711ceacad95552c0e0dbd0d1e77"
+    )
+    assert stored["raw"]["original_analyzer_sha256"] == (
+        analyzer.ORIGINAL_ANALYZER_SHA256
+    )
+    assert stored["raw"]["current_analyzer_sha256"] == analyzer._sha256(
+        Path(analyzer.__file__).resolve()
+    )
+    assert (
+        stored["raw"]["original_analyzer_sha256"]
+        != stored["raw"]["current_analyzer_sha256"]
+    )
+    assert "analyzer_sha256" not in stored["raw"]
     assert raw["runner"]["sha256"] == analyzer._sha256(
         ROOT / raw["runner"]["path"]
     )
@@ -582,6 +597,10 @@ def test_v2_recorded_artifacts_reproduce_end_to_end(assert_analysis_equal):
     assert analyzer.render_report(stored) == REPORT_ARTIFACT.read_text(
         encoding="utf-8"
     )
+    report = REPORT_ARTIFACT.read_text(encoding="utf-8")
+    assert "Original run-time analyzer SHA-256" in report
+    assert "Current hardened analyzer SHA-256" in report
+    assert "campaign outcome were not changed or rerun" in report
 
 
 def test_v2_runner_freezes_public_row_oob_ensemble():

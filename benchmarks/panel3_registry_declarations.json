@@ -1,0 +1,729 @@
+{
+  "schema_version": 1,
+  "registry_name": "darkofit_panel3_dual_candidate_confirmation_v1",
+  "source_audit_version": "hybrid_6_ctr23_plus_6_new_v1",
+  "darkofit_prefreeze_head": "120a2e7d0a87c03e6b308ea0a6f4bbd2acb58b16",
+  "chimeraboost_head": "851ab7fa79fbb2a7f698fbc1a00952e1bd18c62d",
+  "required_per_stratum": 4,
+  "selection_rule": "Within each stratum, select the first four eligible declarations by ascending priority. selection_role is descriptive only and must agree with priority; consumers must not use it to select tasks.",
+  "ordinal_features_by_task": {
+    "361247": {},
+    "361253": {},
+    "361254": {},
+    "361617": {},
+    "361246": {},
+    "211860": {},
+    "361261": {},
+    "361618": {},
+    "360993": {},
+    "359931": {},
+    "361290": {},
+    "363396": {},
+    "5166": {},
+    "4851": {},
+    "5142": {},
+    "4873": {},
+    "5034": {}
+  },
+  "coordinate_folds": [0, 1, 2],
+  "panel_split_dimensions": {
+    "repeats": 1,
+    "folds": 3,
+    "samples": 1
+  },
+  "stratum_order": [
+    "smooth_numeric",
+    "mixed_categorical",
+    "applied_noisy"
+  ],
+  "ctr23_lockbox_policy": {
+    "status": "not_opened_by_source_review",
+    "selected_task_ids": [361247, 361253, 361254, 361617, 361261, 361618],
+    "excluded_after_refresh": {
+      "361264": {
+        "normalized_name": "socmob",
+        "reason": "Current ChimeraBoost v0.15.0 explicitly inspected and cut socmob in benchmarks/HIGHCARD_PLAN.md, so the old seven-task catalog exception is stale."
+      }
+    },
+    "claim_boundary": "The four simulator or trajectory tasks support only the semantic caveats recorded on their declarations. They do not support broad real-world deployment claims."
+  },
+  "pre_h1_target_statistic_exclusions": [
+    {
+      "task_id": 363370,
+      "dataset_id": 46657,
+      "lineage_cluster": "kaggle_google_quest_qa_annotations",
+      "stratum": "mixed_categorical",
+      "exposure_kind": "parquet_footer_target_min_max_statistics",
+      "reason": "target_parquet_footer_min_max_observed_before_h1",
+      "replacement_task_id": 359931
+    },
+    {
+      "task_id": 363377,
+      "dataset_id": 46660,
+      "lineage_cluster": "kaggle_mercari_price_suggestion",
+      "stratum": "mixed_categorical",
+      "exposure_kind": "parquet_footer_target_min_max_statistics",
+      "reason": "target_parquet_footer_min_max_observed_before_h1",
+      "replacement_task_id": 360993
+    },
+    {
+      "task_id": 363495,
+      "dataset_id": 46787,
+      "lineage_cluster": "kaggle_sberbank_russian_housing_market",
+      "stratum": "applied_noisy",
+      "exposure_kind": "parquet_footer_target_min_max_statistics",
+      "reason": "target_parquet_footer_min_max_observed_before_h1",
+      "replacement_task_id": 4851
+    }
+  ],
+  "candidates": [
+    {
+      "priority": 1,
+      "selection_role": "selected",
+      "task_id": 361247,
+      "dataset_id": 44969,
+      "origin": "ctr23_sealed_lockbox",
+      "expected_normalized_name": "naval_propulsion_plant",
+      "expected_target_name": "gt_compressor_decay_state_coefficient",
+      "expected_split_dimensions": {
+        "repeats": 1,
+        "folds": 10,
+        "samples": 1
+      },
+      "lineage_cluster": "uci_naval_propulsion",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [361247],
+      "semantic_sources": [
+        "https://archive.ics.uci.edu/dataset/316/condition+based+maintenance+of+naval+propulsion+plants"
+      ],
+      "semantic_caveat": "Gas-turbine simulator output. Official random folds estimate interpolation within the simulated operating envelope, not field or extrapolative deployment.",
+      "feature_policy": {
+        "kind": "none"
+      },
+      "split_policy": {
+        "kind": "openml_official"
+      }
+    },
+    {
+      "priority": 2,
+      "selection_role": "selected",
+      "task_id": 361253,
+      "dataset_id": 44975,
+      "origin": "ctr23_sealed_lockbox",
+      "expected_normalized_name": "wave_energy",
+      "expected_target_name": "energy_total",
+      "expected_split_dimensions": {
+        "repeats": 1,
+        "folds": 10,
+        "samples": 1
+      },
+      "lineage_cluster": "wave_energy_converters",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [361253],
+      "semantic_sources": [
+        "https://archive.ics.uci.edu/dataset/494/wave+energy+converters"
+      ],
+      "semantic_caveat": "Numerical wave-energy simulation. Official random folds estimate interpolation over simulated converter configurations.",
+      "feature_policy": {
+        "kind": "none"
+      },
+      "split_policy": {
+        "kind": "openml_official"
+      }
+    },
+    {
+      "priority": 3,
+      "selection_role": "selected",
+      "task_id": 361254,
+      "dataset_id": 44976,
+      "origin": "ctr23_sealed_lockbox",
+      "expected_normalized_name": "sarcos",
+      "expected_target_name": "V22",
+      "expected_split_dimensions": {
+        "repeats": 1,
+        "folds": 10,
+        "samples": 1
+      },
+      "lineage_cluster": "sarcos_robot_arm",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [361254],
+      "semantic_sources": [
+        "https://gaussianprocess.org/gpml/data/"
+      ],
+      "semantic_caveat": "The rows are dense robot-arm trajectory samples. The sealed official random folds measure trajectory-point interpolation and may share temporally adjacent states; they are not a cold-trajectory or new-robot test.",
+      "feature_policy": {
+        "kind": "none"
+      },
+      "split_policy": {
+        "kind": "openml_official"
+      }
+    },
+    {
+      "priority": 4,
+      "selection_role": "selected",
+      "task_id": 361617,
+      "dataset_id": 44960,
+      "origin": "ctr23_sealed_lockbox",
+      "expected_normalized_name": "energy_efficiency",
+      "expected_target_name": "heating_load",
+      "expected_split_dimensions": {
+        "repeats": 10,
+        "folds": 10,
+        "samples": 1
+      },
+      "lineage_cluster": "uci_energy_efficiency",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [361617],
+      "semantic_sources": [
+        "https://archive.ics.uci.edu/dataset/242/energy+efficiency"
+      ],
+      "semantic_caveat": "Ecotect building simulation. Official random folds estimate interpolation within the enumerated simulated design space.",
+      "feature_policy": {
+        "kind": "none"
+      },
+      "split_policy": {
+        "kind": "openml_official"
+      }
+    },
+    {
+      "priority": 5,
+      "selection_role": "reserve",
+      "task_id": 361246,
+      "dataset_id": 44968,
+      "origin": "new_source_reviewed",
+      "expected_normalized_name": "synchronous_machine",
+      "expected_target_name": "excitation_current",
+      "expected_split_dimensions": {
+        "repeats": 1,
+        "folds": 10,
+        "samples": 1
+      },
+      "lineage_cluster": "uci_synchronous_machine_experiment",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [361246],
+      "semantic_sources": [
+        "https://archive.ics.uci.edu/dataset/607/synchronous+machine"
+      ],
+      "semantic_caveat": "Real experimental motor operating points; the split estimates interpolation across measured operating conditions.",
+      "feature_policy": {
+        "kind": "none"
+      },
+      "split_policy": {
+        "kind": "target_free_split_construction_v1",
+        "constructor": {
+          "kind": "shuffled_kfold_v1",
+          "n_splits": 3,
+          "shuffle": true,
+          "random_state": 20260717,
+          "allow_unused_rows": false
+        }
+      }
+    },
+    {
+      "priority": 6,
+      "selection_role": "reserve",
+      "task_id": 211860,
+      "dataset_id": 42370,
+      "origin": "new_source_reviewed",
+      "expected_normalized_name": "yacht_hydrodynamics",
+      "expected_target_name": "Residuary.resistance",
+      "expected_split_dimensions": {
+        "repeats": 1,
+        "folds": 10,
+        "samples": 1
+      },
+      "lineage_cluster": "uci_delft_yacht_hydrodynamics",
+      "stratum": "smooth_numeric",
+      "related_task_ids": [211860],
+      "semantic_sources": [
+        "https://archive.ics.uci.edu/dataset/243/yacht+hydrodynamics"
+      ],
+      "semantic_caveat": "The same 22 hull forms are each observed at multiple Froude numbers. Grouping by hull geometry is mandatory; official random folds would leak hull identity.",
+      "feature_policy": {
+        "kind": "none"
+      },
+      "split_policy": {
+        "kind": "target_free_split_construction_v1",
+        "constructor": {
+          "kind": "size_balanced_group_kfold_v1",
+          "n_splits": 3,
+          "group_key": {
+            "kind": "typed_value_tuple_sha256_v1",
+            "source_columns": [
+              "Logitudinal.position",
+              "Prismatic.coefficient",
+              "Length.displacement.ratio",
+              "Beam.draught.ratio",
+              "Length.beam.ratio"
+            ],
+            "missing": "reject",
+            "whitespace": "preserve"
+          },
+          "group_order": "descending_row_count_then_group_sha256",
+          "fold_assignment": "minimum_row_count_then_lowest_fold",
+          "allow_unused_rows": false
+        }
+      }
+    },
+    {
+      "priority": 1,
+      "selection_role": "selected",
+      "task_id": 361261,
+      "dataset_id": 44984,
+      "origin": "ctr23_sealed_lockbox",
+      "expected_normalized_name": "cps88wages",
+      "expected_target_name": "wage",
+      "expected_split_dimensions": {
+        "repeats": 1,
+        "folds": 10,
+        "samples": 1
+      },
+      "lineage_cluster": "cps_1988_wages",
+      "stratum": "mixed_categorical",
+      "related_task_ids": [361261],
+      "semantic_sources": [
+        "https://vincentarelbundock.github.io/Rdatasets/doc/AER/CPS1988.html"
+      ],
+      "semantic_caveat": "Cross-sectional worker records; official folds estimate interpolation across people from the same survey frame.",
+      "feature_policy": {
+        "kind": "none"
+      },
+      "split_policy": {
+        "kind": "openml_official"
+      }
+    },
+    {
+      "priority": 2,
+      "selection_role": "selected",
+      "task_id": 361618,
+      "dataset_id": 44962,
+      "origin": "ctr23_sealed_lockbox",
+      "expected_normalized_name": "forest_fires",
+      "expected_target_name": "area",
+      "expected_split_dimensions": {
+        "repeats": 10,
+        "folds": 10,
+        "samples": 1
+      },
+      "lineage_cluster": "uci_forest_fires",
+      "stratum": "mixed_categorical",
+      "related_task_ids": [361618],
+      "semantic_sources": [
+        "https://archive.ics.uci.edu/dataset/162/forest+fires"
+      ],
+      "semantic_caveat": "Small real applied dataset. Month and day are categorical; official folds estimate interpolation within one regional observational sample.",
+      "feature_policy": {
+        "kind": "none"
+      },
+      "split_policy": {
+        "kind": "openml_official"
+      }
+    },
+    {
+      "priority": 3,
+      "selection_role": "selected",
+      "task_id": 360993,
+      "dataset_id": 43250,
+      "origin": "new_source_reviewed",
+      "expected_normalized_name": "18productivityprediction",
+      "expected_target_name": "actual_productivity",
+      "expected_split_dimensions": {
+        "repeats": 1,
+        "folds": 10,
+        "samples": 1
+      },
+      "lineage_cluster": "uci_garment_employee_productivity",
+      "stratum": "mixed_categorical",
+      "related_task_ids": [360993],
+      "semantic_sources": [
+        "https://archive.ics.uci.edu/dataset/597/productivity+prediction+of+garment+employees"
+      ],
+      "semantic_caveat": "Repeated team-day observations require chronological evaluation. The task estimates future-date performance for a factory whose teams may have appeared earlier.",
+      "feature_policy": {
+        "kind": "target_free_transform_v1",
+        "drop_columns": [],
+        "datetime_calendar": [
+          {
+            "source_column": "date",
+            "output_prefix": "date",
+            "format": "%m/%d/%Y",
+            "utc": false,
+            "components": ["ordinal_day", "year", "month", "quarter", "dayofweek"],
+            "drop_source": true,
+            "missing": "reject"
+          }
+        ],
+        "lexical_counts": []
+      },
+      "split_policy": {
+        "kind": "target_free_split_construction_v1",
+        "constructor": {
+          "kind": "expanding_unique_datetime_blocks_v1",
+          "source_column": "date",
+          "format": "%m/%d/%Y",
+          "utc": false,
+          "block_count": 4,
+          "never_split_equal_values": true,
+          "folds": [
+            {"fold": 0, "train_blocks": [0], "test_blocks": [1]},
+            {"fold": 1, "train_blocks": [0, 1], "test_blocks": [2]},
+            {"fold": 2, "train_blocks": [0, 1, 2], "test_blocks": [3]}
+          ],
+          "allow_unused_rows": true
+        }
+      }
+    },
+    {
+      "priority": 4,
+      "selection_role": "selected",
+      "task_id": 359931,
+      "dataset_id": 546,
+      "origin": "new_source_reviewed",
+      "expected_normalized_name": "sensory",
+      "expected_target_name": "Score",
+      "expected_split_dimensions": {
+        "repeats": 1,
+        "folds": 10,
+        "samples": 1
+      },
+      "lineage_cluster": "brien_payne_wine_sensory_experiment",
+      "stratum": "mixed_categorical",
+      "related_task_ids": [359931],
+      "semantic_sources": [
+        "https://www.openml.org/d/546"
+      ],
+      "semantic_caveat": "Repeated judge evaluations of the same wine halfplot must remain in one outer fold.",
+      "feature_policy": {
+        "kind": "target_free_transform_v1",
+        "drop_columns": ["Halfplot"],
+        "datetime_calendar": [],
+        "lexical_counts": []
+      },
+      "split_policy": {
+        "kind": "target_free_split_construction_v1",
+        "constructor": {
+          "kind": "size_balanced_group_kfold_v1",
+          "n_splits": 3,
+          "group_key": {
+            "kind": "length_prefixed_nfkc_casefold_sha256_v1",
+            "source_columns": ["Halfplot"],
+            "missing": "reject",
+            "whitespace": "preserve"
+          },
+          "group_order": "descending_row_count_then_group_sha256",
+          "fold_assignment": "minimum_row_count_then_lowest_fold",
+          "allow_unused_rows": false
+        }
+      }
+    },
+    {
+      "priority": 1,
+      "selection_role": "selected",
+      "task_id": 361290,
+      "dataset_id": 45044,
+      "origin": "new_source_reviewed",
+      "expected_normalized_name": "loandefaultprediction",
+      "expected_target_name": "loss",
+      "expected_split_dimensions": {
+        "repeats": 1,
+        "folds": 10,
+        "samples": 1
+      },
+      "lineage_cluster": "kaggle_imperial_loan_default_loss",
+      "stratum": "applied_noisy",
+      "related_task_ids": [361290],
+      "semantic_sources": [
+        "https://www.kaggle.com/c/loan-default-prediction"
+      ],
+      "semantic_caveat": "The source states that anonymized financial-transaction observations are independent. The unique upload identifier is excluded.",
+      "feature_policy": {
+        "kind": "target_free_transform_v1",
+        "drop_columns": ["id"],
+        "datetime_calendar": [],
+        "lexical_counts": []
+      },
+      "split_policy": {
+        "kind": "target_free_split_construction_v1",
+        "constructor": {
+          "kind": "shuffled_kfold_v1",
+          "n_splits": 3,
+          "shuffle": true,
+          "random_state": 20260717,
+          "allow_unused_rows": false
+        }
+      }
+    },
+    {
+      "priority": 2,
+      "selection_role": "selected",
+      "task_id": 363396,
+      "dataset_id": 46621,
+      "origin": "new_source_reviewed",
+      "expected_normalized_name": "wheat",
+      "expected_target_name": "Stability",
+      "expected_split_dimensions": {
+        "repeats": 1,
+        "folds": 10,
+        "samples": 1
+      },
+      "lineage_cluster": "uk_wheat_milling_baking_quality",
+      "stratum": "applied_noisy",
+      "related_task_ids": [363396],
+      "semantic_sources": [
+        "https://figshare.com/articles/dataset/Wheat_milling_and_baking_quality_phenotype_data/21534399",
+        "https://acsess.onlinelibrary.wiley.com/doi/10.1002/tpg2.20326"
+      ],
+      "semantic_caveat": "Varieties recur across trials, and Stability is co-measured with later rheology and bread outcomes. Evaluation is cold-variety and uses only the frozen early milling-quality feature set.",
+      "feature_policy": {
+        "kind": "target_free_transform_v1",
+        "drop_columns": [
+          "Unnamed: 0",
+          "Lid",
+          "Plot",
+          "Variety",
+          "Development_time",
+          "Softening",
+          "Bread_L",
+          "Bread_b",
+          "Bread_L.b",
+          "Bake_height",
+          "Oven_spring",
+          "Loaf_volume",
+          "Bread_score",
+          "Crumb_structure_Score",
+          "Crumb_texture_score",
+          "Crumb_colour_score"
+        ],
+        "datetime_calendar": [],
+        "lexical_counts": []
+      },
+      "split_policy": {
+        "kind": "target_free_split_construction_v1",
+        "constructor": {
+          "kind": "size_balanced_group_kfold_v1",
+          "n_splits": 3,
+          "group_key": {
+            "kind": "length_prefixed_nfkc_casefold_sha256_v1",
+            "source_columns": ["Variety"],
+            "missing": "reject",
+            "whitespace": "collapse"
+          },
+          "group_order": "descending_row_count_then_group_sha256",
+          "fold_assignment": "minimum_row_count_then_lowest_fold",
+          "allow_unused_rows": false
+        }
+      }
+    },
+    {
+      "priority": 3,
+      "selection_role": "selected",
+      "task_id": 5166,
+      "dataset_id": 538,
+      "origin": "new_source_reviewed",
+      "expected_normalized_name": "colleges_usnews",
+      "expected_target_name": "Graduation_rate",
+      "expected_split_dimensions": {
+        "repeats": 10,
+        "folds": 10,
+        "samples": 1
+      },
+      "lineage_cluster": "asa_usnews_colleges_1993_94",
+      "stratum": "applied_noisy",
+      "related_task_ids": [5166],
+      "semantic_sources": [
+        "https://www.openml.org/d/538"
+      ],
+      "semantic_caveat": "One row represents one institution. The exact OpenML task feature view already excludes the federal FICE and institution-name fields upstream; remaining predictors describe the 1993-94 institution and admissions context.",
+      "manual_contamination_adjudication": {
+        "status": "source_distinct_name_containment_exception",
+        "candidate_dataset_id": 538,
+        "candidate_lineage": "ASA 1995 Data Analysis Exposition / U.S. News 1993-94 graduation-rate data",
+        "colliding_catalog_normalized_name": "colleges",
+        "colliding_catalog_dataset_ids": [42159, 42727],
+        "colliding_catalog_lineage": "U.S. College Scorecard percent-Pell-grant data",
+        "basis": "The sources, years, targets, dataset IDs, and schemas are distinct. The alarm is caused only by conservative normalized-name containment.",
+        "required_registry_checks": [
+          "dataset IDs remain distinct",
+          "original source families remain distinct",
+          "semantic fingerprints show no row or feature-table lineage match"
+        ]
+      },
+      "feature_policy": {
+        "kind": "none"
+      },
+      "split_policy": {
+        "kind": "target_free_split_construction_v1",
+        "constructor": {
+          "kind": "shuffled_kfold_v1",
+          "n_splits": 3,
+          "shuffle": true,
+          "random_state": 20260717,
+          "allow_unused_rows": false
+        }
+      }
+    },
+    {
+      "priority": 4,
+      "selection_role": "selected",
+      "task_id": 4851,
+      "dataset_id": 525,
+      "origin": "new_source_reviewed",
+      "expected_normalized_name": "baseball_hitter",
+      "expected_target_name": "1987_annual_salary_on_opening_day_in_thousands_of_dollars",
+      "expected_split_dimensions": {
+        "repeats": 1,
+        "folds": 10,
+        "samples": 1
+      },
+      "lineage_cluster": "statlib_1987_mlb_hitter_salary",
+      "stratum": "applied_noisy",
+      "related_task_ids": [4851],
+      "semantic_sources": [
+        "https://www.openml.org/d/525"
+      ],
+      "semantic_caveat": "One row per player. The exact OpenML task feature view already excludes the unique player-name field upstream; 1986 and career statistics predict opening-day 1987 salary.",
+      "feature_policy": {
+        "kind": "none"
+      },
+      "split_policy": {
+        "kind": "target_free_split_construction_v1",
+        "constructor": {
+          "kind": "shuffled_kfold_v1",
+          "n_splits": 3,
+          "shuffle": true,
+          "random_state": 20260717,
+          "allow_unused_rows": false
+        }
+      }
+    },
+    {
+      "priority": 5,
+      "selection_role": "reserve",
+      "task_id": 5142,
+      "dataset_id": 511,
+      "origin": "new_source_reviewed",
+      "expected_normalized_name": "plasma_retinol",
+      "expected_target_name": "RETPLASMA",
+      "expected_split_dimensions": {
+        "repeats": 10,
+        "folds": 10,
+        "samples": 1
+      },
+      "lineage_cluster": "statlib_plasma_retinol_cross_section",
+      "stratum": "applied_noisy",
+      "related_task_ids": [4839, 5142],
+      "semantic_sources": [
+        "https://www.openml.org/d/511"
+      ],
+      "semantic_caveat": "Independent patient records. BETAPLASMA is a same-blood-draw co-assay and is excluded conservatively.",
+      "feature_policy": {
+        "kind": "target_free_transform_v1",
+        "drop_columns": ["BETAPLASMA"],
+        "datetime_calendar": [],
+        "lexical_counts": []
+      },
+      "split_policy": {
+        "kind": "target_free_split_construction_v1",
+        "constructor": {
+          "kind": "shuffled_kfold_v1",
+          "n_splits": 3,
+          "shuffle": true,
+          "random_state": 20260717,
+          "allow_unused_rows": false
+        }
+      }
+    },
+    {
+      "priority": 6,
+      "selection_role": "reserve",
+      "task_id": 4873,
+      "dataset_id": 549,
+      "origin": "new_source_reviewed",
+      "expected_normalized_name": "strikes",
+      "expected_target_name": "strike_volume",
+      "expected_split_dimensions": {
+        "repeats": 1,
+        "folds": 10,
+        "samples": 1
+      },
+      "lineage_cluster": "statlib_oecd_strike_volume_panel",
+      "stratum": "applied_noisy",
+      "related_task_ids": [4873],
+      "semantic_sources": [
+        "https://www.openml.org/d/549"
+      ],
+      "semantic_caveat": "Annual observations repeat within 18 OECD countries. Cold-country grouping prevents country history from appearing on both sides; the arbitrary numeric country code is excluded.",
+      "feature_policy": {
+        "kind": "target_free_transform_v1",
+        "drop_columns": ["country_code"],
+        "datetime_calendar": [],
+        "lexical_counts": []
+      },
+      "split_policy": {
+        "kind": "target_free_split_construction_v1",
+        "constructor": {
+          "kind": "size_balanced_group_kfold_v1",
+          "n_splits": 3,
+          "group_key": {
+            "kind": "typed_value_tuple_sha256_v1",
+            "source_columns": ["country_code"],
+            "missing": "reject",
+            "whitespace": "preserve"
+          },
+          "group_order": "descending_row_count_then_group_sha256",
+          "fold_assignment": "minimum_row_count_then_lowest_fold",
+          "allow_unused_rows": false
+        }
+      }
+    },
+    {
+      "priority": 7,
+      "selection_role": "reserve",
+      "task_id": 5034,
+      "dataset_id": 1092,
+      "origin": "new_source_reviewed",
+      "expected_normalized_name": "crash",
+      "expected_target_name": "Head_IC",
+      "expected_split_dimensions": {
+        "repeats": 1,
+        "folds": 10,
+        "samples": 1
+      },
+      "lineage_cluster": "ntsb_35mph_crash_dummy_tests",
+      "stratum": "applied_noisy",
+      "related_task_ids": [5034],
+      "semantic_sources": [
+        "https://www.openml.org/d/1092"
+      ],
+      "semantic_caveat": "Driver and passenger rows from the same vehicle crash must remain together. Other injury measurements are same-crash co-outcomes and are excluded.",
+      "feature_policy": {
+        "kind": "target_free_transform_v1",
+        "drop_columns": [
+          "carID",
+          "carID_and_Year",
+          "Chest_decel",
+          "L_Leg",
+          "R_Leg"
+        ],
+        "datetime_calendar": [],
+        "lexical_counts": []
+      },
+      "split_policy": {
+        "kind": "target_free_split_construction_v1",
+        "constructor": {
+          "kind": "size_balanced_group_kfold_v1",
+          "n_splits": 3,
+          "group_key": {
+            "kind": "length_prefixed_nfkc_casefold_sha256_v1",
+            "source_columns": ["carID_and_Year"],
+            "missing": "reject",
+            "whitespace": "preserve"
+          },
+          "group_order": "descending_row_count_then_group_sha256",
+          "fold_assignment": "minimum_row_count_then_lowest_fold",
+          "allow_unused_rows": false
+        }
+      }
+    }
+  ]
+}

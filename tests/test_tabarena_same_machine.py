@@ -791,6 +791,87 @@ def test_chimeraboost_source_activation_requires_exact_tag_clean_import_identity
     ).hexdigest()
 
 
+def test_chimeraboost_activation_replaces_a_preloaded_foreign_package(
+    tmp_path, monkeypatch
+):
+    checkout = tmp_path / "chimera"
+    package = checkout / "chimeraboost"
+    package.mkdir(parents=True)
+    module_path = package / "__init__.py"
+    module_path.write_text('__version__ = "0.14.1"\n', encoding="utf-8")
+    foreign = tmp_path / "foreign/chimeraboost"
+    foreign.mkdir(parents=True)
+    foreign_root = SimpleNamespace(
+        __file__=str(foreign / "__init__.py"),
+        __version__="0.15.0",
+    )
+    foreign_tree = SimpleNamespace(__file__=str(foreign / "tree.py"))
+
+    def clean_git(args, *, cwd):
+        assert cwd == checkout
+        return {
+            ("rev-parse", "HEAD"): campaign.CHIMERABOOST_TAG_COMMIT,
+            ("status", "--porcelain", "--untracked-files=all"): "",
+            ("tag", "--points-at", "HEAD"): "v0.14.1",
+            ("rev-parse", "HEAD^{tree}"): "a" * 40,
+            ("remote", "get-url", "origin"): (
+                "https://github.com/kmedved/chimeraboost.git"
+            ),
+        }[tuple(args)]
+
+    monkeypatch.setattr(campaign, "_run_git", clean_git)
+    monkeypatch.delenv("CHIMERABOOST_WARMUP", raising=False)
+    monkeypatch.setitem(sys.modules, "chimeraboost", foreign_root)
+    monkeypatch.setitem(sys.modules, "chimeraboost.tree", foreign_tree)
+    old_path = list(sys.path)
+    try:
+        provenance = campaign.activate_chimeraboost_checkout(checkout)
+        loaded = sys.modules["chimeraboost"]
+        assert loaded is not foreign_root
+        assert Path(loaded.__file__).resolve() == module_path.resolve()
+        assert "chimeraboost.tree" not in sys.modules
+    finally:
+        sys.path[:] = old_path
+
+    assert provenance["module_file"] == str(module_path.resolve())
+
+
+def test_chimeraboost_activation_rejects_an_already_mixed_namespace(
+    tmp_path, monkeypatch
+):
+    checkout = tmp_path / "chimera"
+    package = checkout / "chimeraboost"
+    package.mkdir(parents=True)
+    module_path = package / "__init__.py"
+    module_path.write_text('__version__ = "0.14.1"\n', encoding="utf-8")
+    expected_root = SimpleNamespace(
+        __file__=str(module_path),
+        __version__="0.14.1",
+    )
+    foreign_tree = SimpleNamespace(
+        __file__=str(tmp_path / "foreign/chimeraboost/tree.py")
+    )
+
+    def clean_git(args, *, cwd):
+        assert cwd == checkout
+        return {
+            ("rev-parse", "HEAD"): campaign.CHIMERABOOST_TAG_COMMIT,
+            ("status", "--porcelain", "--untracked-files=all"): "",
+            ("tag", "--points-at", "HEAD"): "v0.14.1",
+        }[tuple(args)]
+
+    monkeypatch.setattr(campaign, "_run_git", clean_git)
+    monkeypatch.delenv("CHIMERABOOST_WARMUP", raising=False)
+    monkeypatch.setitem(sys.modules, "chimeraboost", expected_root)
+    monkeypatch.setitem(sys.modules, "chimeraboost.tree", foreign_tree)
+
+    with pytest.raises(RuntimeError, match="mixed ChimeraBoost imports"):
+        campaign.activate_chimeraboost_checkout(checkout)
+
+    assert sys.modules["chimeraboost"] is expected_root
+    assert sys.modules["chimeraboost.tree"] is foreign_tree
+
+
 @pytest.mark.parametrize("value", [None, "", "0", " 0 "])
 def test_chimeraboost_hidden_warmup_accepts_only_actual_disabled_values(value):
     assert campaign._validate_chimeraboost_warmup_environment(value) == value
@@ -869,6 +950,7 @@ def test_chimeraboost_source_activation_rejects_provenance_mutations(
     try:
         with pytest.raises(RuntimeError, match=expected_error):
             campaign.activate_chimeraboost_checkout(checkout)
+        assert sys.path == old_path
     finally:
         sys.path[:] = old_path
 

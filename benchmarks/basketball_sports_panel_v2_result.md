@@ -31,4 +31,10 @@ Decision code: `close_oob_ensemble5_as_sports_automatic_policy`.
 
 The nine target-season lineages receive equal weight. Primary folds are player-disjoint. External comparisons are descriptive and cannot rescue the candidate decision. Panel 2 is spent and may not be used for retuning.
 
-Raw artifact SHA-256: `787f7f34bf1e5207d231b01bc402c7a32174e24892b2118bb71d5ff4412517b3`.
+## Evidence bindings
+
+- Frozen raw artifact SHA-256: `787f7f34bf1e5207d231b01bc402c7a32174e24892b2118bb71d5ff4412517b3`.
+- Original run-time analyzer SHA-256: `1752214e0451b44823557d03fd6e498fecdd8711ceacad95552c0e0dbd0d1e77`.
+- Current hardened analyzer SHA-256: `382cd1e590335eb52dabe53ced8764d55c54323336c9024cea80714c2794a5e8`.
+
+The original hash attests the analyzer that first published this result. The current hash attests the hardened analyzer that regenerates this derived report; the frozen raw artifact and campaign outcome were not changed or rerun.

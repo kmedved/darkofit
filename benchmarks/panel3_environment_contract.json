@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "contract_name": "darkofit_panel3_exact_runtime_environment_v1",
+  "contract_kind": "exact_active_environment_versions_v1",
+  "python_implementation": "cpython",
+  "python_version": "3.12.13",
+  "packages": {
+    "catboost": "1.2.10",
+    "darkofit": "0.10.0",
+    "numba": "0.66.0",
+    "numpy": "2.4.6",
+    "openml": "0.15.1",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.7.2",
+    "scipy": "1.16.3"
+  }
+}

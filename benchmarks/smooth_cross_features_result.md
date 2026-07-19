@@ -6,6 +6,32 @@ A development-derived 5% validation-improvement engagement margin removes the
 observed tail harm while retaining a 4.09% equal-dataset improvement. The
 margin remains a nominee, not a default; it must face fresh T5 confirmation.
 
+## Evidence bindings
+
+- Frozen raw file SHA-256:
+  `b5544bc598601862c443c237214124007ae49b72b11e2cf2888f03112450d30c`
+- Frozen margin-analysis file SHA-256:
+  `0e115192938137c8bb713f5ca533c84bad315460aae12a900b32603970ad0190`
+- Original raw-run source commit:
+  `f6d7983f537f9995739dbfd327b31e97f28cd747`
+- Original run-time runner SHA-256:
+  `473f82baaf25d692ffc298f563b5a290b6f38089c5705d268044a79e9570f308`
+- Original margin-analyzer source commit:
+  `da5e2d313e522fb9da0abe3c93853bbc8a052512`
+- Original margin-analyzer SHA-256:
+  `0c370e3380857bd86e2c632a2c26632f1c36f7e4893b6be9f865b76d02617e85`
+- Current hardened source commit:
+  `816101476bb65cf5a0e2f59cd11edaf96f46a1cc`
+- Current hardened runner/verifier SHA-256:
+  `4e831fa0ff26f7c64b4e130259d1a3fcb565b51c0310ab5ee0bd2a8da7a248eb`
+- Current hardened margin-analyzer SHA-256:
+  `dbb233f6d4d9776881bdfeaa839480c8b3e353a75a8ae60233c7da1b5a1463da`
+
+The original hashes identify the code bytes that produced the frozen raw
+screen and its margin derivation. The current hashes identify later hardened
+copies used to revalidate those existing artifacts; no benchmark outcome was
+rerun or replaced.
+
 ## Evidence boundary
 
 - Three spent CTR23 confirmation tasks: grid stability, kin8nm, and space_ga.

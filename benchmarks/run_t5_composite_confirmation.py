@@ -239,6 +239,7 @@ def _selection_record(name, model, seconds):
     if metadata["final_fit"]["stop_reason"] not in {
         "early_stopping",
         "iteration_limit",
+        "no_split",
     }:
         raise RuntimeError(f"T5 selection fit {name} stopped unexpectedly")
     result = {
@@ -399,19 +400,41 @@ def _fit_control(X_train, y_train, cat, X_test):
 
 
 def _fit_composite(X_train, y_train, cat, X_test, ordinal_features):
+    policy_started = time.perf_counter_ns()
     if len(X_train) < SIZE_GATE:
-        prediction, fit_seconds, timing, metadata = _fit_control(
-            X_train, y_train, cat, X_test
+        model, model_fit_seconds = _fit(
+            _default_model(),
+            X_train,
+            y_train,
+            cat,
         )
-        metadata.update(
-            {
-                "kind": COMPOSITE,
-                "decline_reason": "below_size_gate",
-                "size_gate": SIZE_GATE,
-                "total_selection_fit_seconds": 0.0,
-            }
+        policy_fit_seconds = (
+            time.perf_counter_ns() - policy_started
+        ) / 1e9
+        policy_overhead_seconds = policy_fit_seconds - model_fit_seconds
+        if policy_overhead_seconds < -max(
+            1e-12,
+            1e-9 * policy_fit_seconds,
+        ):
+            raise RuntimeError(
+                "T5 size-gate fit-time components are inconsistent"
+            )
+        policy_overhead_seconds = max(0.0, policy_overhead_seconds)
+        policy_fit_seconds = (
+            model_fit_seconds + policy_overhead_seconds
         )
-        return prediction, fit_seconds, timing, metadata
+        prediction, timing = _timed_predict(lambda: model.predict(X_test))
+        return prediction, policy_fit_seconds, timing, {
+            "kind": COMPOSITE,
+            "engaged": False,
+            "selected_configuration": "product_default",
+            "decline_reason": "below_size_gate",
+            "size_gate": SIZE_GATE,
+            "total_selection_fit_seconds": 0.0,
+            "policy_overhead_seconds": float(policy_overhead_seconds),
+            "final_fit_seconds": float(model_fit_seconds),
+            "final_fit": basketball.extract_fit_metadata(model),
+        }
 
     train, validation, split = _selection_split(len(X_train))
     X_select = _take(X_train, train)
@@ -550,9 +573,25 @@ def _fit_composite(X_train, y_train, cat, X_test, ordinal_features):
         selected_configuration = "product_default"
         decline_reason = "outer_validation_guard"
 
-    prediction, timing = _timed_predict(predict)
     selection_seconds = float(sum(row["fit_seconds"] for row in records))
-    total_seconds = selection_seconds + float(final_fit_seconds)
+    policy_fit_seconds = (
+        time.perf_counter_ns() - policy_started
+    ) / 1e9
+    policy_overhead_seconds = (
+        policy_fit_seconds - selection_seconds - float(final_fit_seconds)
+    )
+    if policy_overhead_seconds < -max(
+        1e-12,
+        1e-9 * policy_fit_seconds,
+    ):
+        raise RuntimeError("T5 fit-time components are inconsistent")
+    policy_overhead_seconds = max(0.0, policy_overhead_seconds)
+    total_seconds = (
+        selection_seconds
+        + float(final_fit_seconds)
+        + policy_overhead_seconds
+    )
+    prediction, timing = _timed_predict(predict)
     metadata = {
         "kind": COMPOSITE,
         "engaged": bool(engaged),
@@ -579,6 +618,7 @@ def _fit_composite(X_train, y_train, cat, X_test, ordinal_features):
         ),
         "selection_fits": records,
         "total_selection_fit_seconds": selection_seconds,
+        "policy_overhead_seconds": float(policy_overhead_seconds),
         "final_transform_seconds": float(final_transform_seconds),
         "final_fit_seconds": float(final_fit_seconds),
         "final_fit": basketball.extract_fit_metadata(final_model),

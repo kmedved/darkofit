@@ -68,6 +68,10 @@ def test_core_library_modules_stay_out_of_campaign_partition():
 def test_product_offense_evidence_verifiers_are_campaign_tests():
     for name in (
         "test_basketball_sports_panel_v2.py",
+        "test_panel3_cross_power_calibration.py",
+        "test_panel3_execution.py",
+        "test_panel3_power_design.py",
+        "test_panel3_registry.py",
         "test_rssi_linear_leaf_diagnosis.py",
         "test_smooth_cross_features.py",
         "test_smooth_cross_margin_analysis.py",

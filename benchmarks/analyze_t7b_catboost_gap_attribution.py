@@ -8,16 +8,21 @@ import hashlib
 import json
 import math
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from benchmarks import analyze_t7_catboost_attribution as t7_analyzer
 from benchmarks import run_t7b_catboost_gap_attribution as runner
 
 
-ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_INPUT = runner.DEFAULT_OUTPUT
 DEFAULT_OUTPUT = (
     ROOT / "benchmarks" / "t7b_catboost_gap_attribution_summary.json"
@@ -761,6 +766,7 @@ def analyze(raw, *, raw_file_sha256):
         if arm != "baseline"
     ]
     by_arm = {row["arm"]: row for row in contrasts}
+    frozen_sources = raw["protocol"]["source_sha256"]
     summary = {
         "schema_version": 1,
         "name": "darkofit_t7b_catboost_gap_attribution_summary_v1",
@@ -770,6 +776,17 @@ def analyze(raw, *, raw_file_sha256):
         "decision": "development_attribution_only",
         "raw_file_sha256": raw_file_sha256,
         "raw_canonical_sha256": raw["raw_sha256"],
+        "analysis_evidence": {
+            "frozen_source_commit": raw["protocol"]["source_head"],
+            "original_run_time_runner_sha256": frozen_sources["runner"],
+            "original_frozen_analyzer_sha256": frozen_sources["analyzer"],
+            "current_hardened_runner_sha256": runner._sha256(
+                Path(runner.__file__).resolve()
+            ),
+            "current_hardened_analyzer_sha256": runner._sha256(
+                Path(__file__).resolve()
+            ),
+        },
         "source": raw["source"],
         "runtime": raw["runtime"],
         "historical_darkofit_over_catboost_default_ratio": historical_gap,
@@ -801,6 +818,7 @@ def analyze(raw, *, raw_file_sha256):
 
 
 def render(summary):
+    evidence = summary["analysis_evidence"]
     rows = "\n".join(
         "| {arm} | {test:.6f} | {validation:.6f} | {lower:.6f} | "
         "{upper:.6f} | {seed4:.1%} | {all_seed:.1%} | {worst:.6f} | "
@@ -880,6 +898,24 @@ def render(summary):
 
 **Decision: `{summary['decision']}`.** This is spent development evidence and
 does not authorize a default change.
+
+## Evidence bindings
+
+- Frozen source commit: `{evidence['frozen_source_commit']}`
+- Original run-time runner SHA-256:
+  `{evidence['original_run_time_runner_sha256']}`
+- Original frozen analyzer SHA-256:
+  `{evidence['original_frozen_analyzer_sha256']}`
+- Current hardened runner SHA-256:
+  `{evidence['current_hardened_runner_sha256']}`
+- Current hardened analyzer SHA-256:
+  `{evidence['current_hardened_analyzer_sha256']}`
+- Frozen raw file SHA-256: `{summary['raw_file_sha256']}`
+- Frozen raw canonical SHA-256: `{summary['raw_canonical_sha256']}`
+
+The original hashes identify the source bytes frozen for the run and its
+analysis. The current hashes identify the later hardened copies used to
+revalidate and publish those same outcomes; no benchmark was rerun.
 
 Historical DarkoFit / CatBoost default RMSE ratio:
 `{summary['historical_darkofit_over_catboost_default_ratio']:.6f}`.

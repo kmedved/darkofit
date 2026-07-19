@@ -37,6 +37,18 @@
   Current DarkoFit remained 2.81% better than ChimeraBoost 0.15.0 and 5.26%
   worse than CatBoost 1.2.10 in equal-lineage aggregate RMSE on the same
   coordinates; no global or sports-profile default changes.
+- Complete T7b, the fixed-learning-rate, three-seed CatBoost attribution
+  follow-on. None of the tested stochastic, sampling, one-hot, L2, or
+  leaf-estimation directions explains the historical DarkoFit gap.
+  `l2_leaf_reg=1` remains a promising development configuration; one-hot 255's
+  large mean improvement failed its uncertainty and worst-task gates.
+- Close Panel 3 at its preregistered spent-data power gate. The repaired
+  117-result calibration reproduced the original substantive outcomes exactly.
+  T5 reached `50.00%` simulated pass probability (one-sided Wilson lower bound
+  `48.61%`) and guarded cross-features reached `10.64%` (`9.82%`), versus the
+  required `80.00%`. The valid create-only decision retains zero candidates
+  and authorizes no fresh target access, registry, confirmation run, default
+  change, or product claim; the CTR23 lockbox remains sealed.
 - Add the Tier-E `n_ensembles` API for deterministic row or group bootstrap
   bagging. Members select their horizons on OOB rows; regression averages
   predictions, classification soft-votes, SHAP values are averaged, and

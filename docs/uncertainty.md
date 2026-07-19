@@ -67,12 +67,13 @@ lower, upper = model.predict_interval(
 The conformal score is `abs(y - mu) / sigma`, evaluated on rows held out from
 training, early stopping, model or learning-rate selection, and
 `dist_calibration`. If the supplied validation set is needed for any of those
-steps, half is deterministically reserved for conformal calibration. Otherwise
-the entire validation set is the conformal holdout. The prediction interval
-uses the finite-sample rank `ceil((n_cal + 1) * (1 - alpha))`. If that rank
-would exceed the calibration sample count, prediction fails with guidance
-instead of silently substituting a finite interval that lacks the requested
-coverage guarantee.
+steps, a pseudorandom half is reserved for conformal calibration. That split
+is repeatable with an explicit integer `random_state`; the default
+`random_state=None` draws from system entropy. Otherwise the entire validation
+set is the conformal holdout. The prediction interval uses the finite-sample
+rank `ceil((n_cal + 1) * (1 - alpha))`. If that rank would exceed the
+calibration sample count, prediction fails with guidance instead of silently
+substituting a finite interval that lacks the requested coverage guarantee.
 
 This is deliberately explicit at prediction time. A model fitted with
 `interval_calibration="conformal"` still returns its parametric interval unless

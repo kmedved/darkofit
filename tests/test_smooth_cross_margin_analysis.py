@@ -1,14 +1,40 @@
 import copy
+import hashlib
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
 
 from benchmarks import analyze_smooth_cross_margin as analysis
+from benchmarks import run_smooth_cross_features as runner
 
 
 ROOT = Path(__file__).resolve().parents[1]
 ARTIFACT = ROOT / "benchmarks" / "smooth_cross_margin_analysis.json"
+RAW_ARTIFACT = ROOT / "benchmarks" / "smooth_cross_features.json"
+REPORT = ROOT / "benchmarks" / "smooth_cross_features_result.md"
+ORIGINAL_RAW_SOURCE_COMMIT = "f6d7983f537f9995739dbfd327b31e97f28cd747"
+ORIGINAL_RUNNER_SHA256 = (
+    "473f82baaf25d692ffc298f563b5a290b6f38089c5705d268044a79e9570f308"
+)
+ORIGINAL_ANALYZER_SOURCE_COMMIT = "da5e2d313e522fb9da0abe3c93853bbc8a052512"
+ORIGINAL_ANALYZER_SHA256 = (
+    "0c370e3380857bd86e2c632a2c26632f1c36f7e4893b6be9f865b76d02617e85"
+)
+HARDENED_SOURCE_COMMIT = "816101476bb65cf5a0e2f59cd11edaf96f46a1cc"
+HARDENED_RUNNER_SHA256 = (
+    "4e831fa0ff26f7c64b4e130259d1a3fcb565b51c0310ab5ee0bd2a8da7a248eb"
+)
+HARDENED_ANALYZER_SHA256 = (
+    "dbb233f6d4d9776881bdfeaa839480c8b3e353a75a8ae60233c7da1b5a1463da"
+)
+FROZEN_RAW_FILE_SHA256 = (
+    "b5544bc598601862c443c237214124007ae49b72b11e2cf2888f03112450d30c"
+)
+FROZEN_ANALYSIS_FILE_SHA256 = (
+    "0e115192938137c8bb713f5ca533c84bad315460aae12a900b32603970ad0190"
+)
 
 
 def _row(dataset, fold, margin, ratio, *, selected=True):
@@ -50,6 +76,63 @@ def test_margin_evaluation_declines_below_threshold_as_exact_tie():
     assert records[("a", 0)]["test_ratio"] == 1.0
     assert records[("a", 1)]["engaged"] is True
     assert result["worst_split_ratio"] == 1.0
+
+
+def test_result_discloses_original_and_hardened_evidence_bindings():
+    report = REPORT.read_text()
+    for source_commit, source_path, expected_sha256 in (
+        (
+            ORIGINAL_RAW_SOURCE_COMMIT,
+            "benchmarks/run_smooth_cross_features.py",
+            ORIGINAL_RUNNER_SHA256,
+        ),
+        (
+            ORIGINAL_ANALYZER_SOURCE_COMMIT,
+            "benchmarks/analyze_smooth_cross_margin.py",
+            ORIGINAL_ANALYZER_SHA256,
+        ),
+    ):
+        source = subprocess.run(
+            ["git", "show", f"{source_commit}:{source_path}"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+        ).stdout
+        assert hashlib.sha256(source).hexdigest() == expected_sha256
+    assert hashlib.sha256(RAW_ARTIFACT.read_bytes()).hexdigest() == (
+        FROZEN_RAW_FILE_SHA256
+    )
+    assert hashlib.sha256(ARTIFACT.read_bytes()).hexdigest() == (
+        FROZEN_ANALYSIS_FILE_SHA256
+    )
+    assert analysis._sha256(Path(runner.__file__).resolve()) == (
+        HARDENED_RUNNER_SHA256
+    )
+    assert analysis._sha256(Path(analysis.__file__).resolve()) == (
+        HARDENED_ANALYZER_SHA256
+    )
+    for label, value in (
+        ("Frozen raw file SHA-256", FROZEN_RAW_FILE_SHA256),
+        ("Frozen margin-analysis file SHA-256", FROZEN_ANALYSIS_FILE_SHA256),
+        ("Original raw-run source commit", ORIGINAL_RAW_SOURCE_COMMIT),
+        ("Original run-time runner SHA-256", ORIGINAL_RUNNER_SHA256),
+        (
+            "Original margin-analyzer source commit",
+            ORIGINAL_ANALYZER_SOURCE_COMMIT,
+        ),
+        ("Original margin-analyzer SHA-256", ORIGINAL_ANALYZER_SHA256),
+        ("Current hardened source commit", HARDENED_SOURCE_COMMIT),
+        (
+            "Current hardened runner/verifier SHA-256",
+            HARDENED_RUNNER_SHA256,
+        ),
+        (
+            "Current hardened margin-analyzer SHA-256",
+            HARDENED_ANALYZER_SHA256,
+        ),
+    ):
+        assert f"- {label}:\n  `{value}`" in report
+    assert "no benchmark outcome was\nrerun or replaced" in report
 
 
 def test_analysis_nominates_smallest_grid_margin_with_zero_observed_harm(
