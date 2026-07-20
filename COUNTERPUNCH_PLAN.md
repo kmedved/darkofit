@@ -770,7 +770,10 @@ feature implementation.
 ### H1 — audit, then fix only confirmed gaps
 
 ChimeraBoost's audit findings are prompts, not evidence that DarkoFit has the
-same bugs:
+same bugs. **Closed 2026-07-20** on the clean post-hygiene code pin
+`726e5d8e6131c580bce948db833a5007d0692dca`; the complete per-item
+dispositions and verification are in
+[`benchmarks/h1_hygiene_audit_result.md`](benchmarks/h1_hygiene_audit_result.md).
 
 - **Thread state — fixed 2026-07-20:** the confirmed same-thread gap was
   closed with nested-safe call-local save/restore around scalar,
@@ -780,12 +783,17 @@ same bugs:
   resumptions. Named regression coverage lives in
   `tests/test_thread_state_restoration.py`; the existing thread-local warmup
   coverage remains unchanged. Do not describe this as a process-global leak.
-- **Serialization:** inspect whether saved models redundantly include
-  rebuildable predictor caches; retain safe, bit-identical round trips.
-- **Loud failures and parameter resolution:** cover unseen classifier
-  `eval_set` labels, positional `sample_weight` misuse around categorical
-  arguments, NumPy integer `cat_features`, and documented handling of
-  `None`-valued constructor parameters.
+- **Serialization — not present:** safe NPZ serialization never included the
+  rebuildable flat predictor cache. Named coverage proves byte-identical
+  archives before/after cache construction and bit-identical lazy rebuilds.
+- **Loud failures and parameter resolution — closed:** unseen classifier
+  `eval_set` labels and NumPy integer `cat_features` were already correct.
+  The positional-weight failure now names the required `sample_weight=w`
+  keyword. `None` semantics are explicitly documented and depth resolutions
+  have named coverage.
+- **Adjacent compatibility — fixed:** the scikit-learn 1.0–1.5 tag fallback
+  now preserves `allow_nan`, two-dimensional-only input, and `requires_y`;
+  newer structured tags remain unchanged.
 
 For each item, publish one of: confirmed and fixed with a named regression
 test; not present with a reproducer; or intentionally different with a
