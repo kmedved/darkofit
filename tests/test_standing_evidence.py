@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -17,16 +18,25 @@ from bench_compare_revisions import (  # noqa: E402
     _standing_order_index,
 )
 from run_standing_evidence import (  # noqa: E402
+    inspection_record,
     summarize_pairs,
     validate_rows,
     validate_source_contract,
 )
+import standing_evidence as evidence_contract  # noqa: E402
 from standing_evidence import (  # noqa: E402
+    BacktestVerdict,
     M5_SENTINEL_DOMAINS,
+    M6_BACKTEST_VERDICTS,
     M6_DATASETS,
+    M6_REQUIRED_FREEZE_SIZES,
+    M6_REQUIRED_RELEASE_ANCHORS,
     M6_SMOKE_DATASETS,
+    ReleaseAnchor,
     contract_payload,
+    m6_freeze_blockers,
     m6_expected_grid,
+    validate_contract,
 )
 
 
@@ -193,9 +203,112 @@ def test_standing_contract_covers_classification_and_weighted_domains():
     assert {"regression", "binary"} <= weighted_tasks
     assert set(M6_SMOKE_DATASETS) < set(M6_DATASETS)
     payload = contract_payload()
-    assert payload["contract_version"].endswith("-v1")
+    assert payload["contract_version"].endswith("-v2")
     assert payload["m6"]["contract_frozen"] is False
     assert payload["m6"]["backtest_complete"] is False
+    assert payload["m6"]["freeze_blockers"]
+
+
+def test_m6_draft_cannot_freeze_without_medium_and_release_anchors(
+    monkeypatch,
+):
+    monkeypatch.setattr(evidence_contract, "M6_CONTRACT_FROZEN", True)
+
+    with pytest.raises(RuntimeError, match="cannot be frozen"):
+        validate_contract()
+
+    monkeypatch.setattr(
+        evidence_contract,
+        "M6_SIZES",
+        M6_REQUIRED_FREEZE_SIZES,
+    )
+    monkeypatch.setattr(
+        evidence_contract,
+        "M6_RELEASE_ANCHORS",
+        tuple(
+            ReleaseAnchor(anchor_id, "pinned-version", "pinned-source")
+            for anchor_id in M6_REQUIRED_RELEASE_ANCHORS
+        ),
+    )
+
+    assert m6_freeze_blockers() == ()
+    validate_contract()
+
+
+def test_m6_backtest_subset_is_predeclared_with_positive_and_negative_cases():
+    dispositions = {
+        verdict.expected_disposition for verdict in M6_BACKTEST_VERDICTS
+    }
+    mechanism_ids = {
+        verdict.mechanism_id for verdict in M6_BACKTEST_VERDICTS
+    }
+
+    assert dispositions == {"advance", "kill"}
+    assert "linear_leaf_selector_3pct" in mechanism_ids
+    assert all(
+        isinstance(verdict, BacktestVerdict)
+        for verdict in M6_BACKTEST_VERDICTS
+    )
+    assert all(
+        len(verdict.historical_result_sha256) == 64
+        for verdict in M6_BACKTEST_VERDICTS
+    )
+    validate_contract()
+
+
+def test_full_m6_requires_a_counted_mechanism_inspection():
+    with pytest.raises(ValueError, match="mechanism-id"):
+        inspection_record(
+            SimpleNamespace(
+                smoke=False,
+                mechanism_id=None,
+                inspection_index=1,
+            )
+        )
+    with pytest.raises(ValueError, match="positive"):
+        inspection_record(
+            SimpleNamespace(
+                smoke=False,
+                mechanism_id="candidate",
+                inspection_index=0,
+            )
+        )
+
+    assert inspection_record(
+        SimpleNamespace(
+            smoke=False,
+            mechanism_id="candidate.v2",
+            inspection_index=3,
+        )
+    ) == {
+        "counted": True,
+        "mechanism_id": "candidate.v2",
+        "inspection_index": 3,
+        "outcomes_spent": True,
+    }
+
+
+def test_m6_null_smoke_is_not_counted_or_spent():
+    assert inspection_record(
+        SimpleNamespace(
+            smoke=True,
+            mechanism_id=None,
+            inspection_index=None,
+        )
+    ) == {
+        "counted": False,
+        "mechanism_id": None,
+        "inspection_index": None,
+        "outcomes_spent": False,
+    }
+    with pytest.raises(ValueError, match="does not accept"):
+        inspection_record(
+            SimpleNamespace(
+                smoke=True,
+                mechanism_id="candidate",
+                inspection_index=1,
+            )
+        )
 
 
 def test_m6_grid_is_complete_and_unique():

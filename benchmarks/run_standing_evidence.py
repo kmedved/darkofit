@@ -14,6 +14,7 @@ import json
 import math
 import os
 import platform
+import re
 import statistics
 import subprocess
 import sys
@@ -64,8 +65,9 @@ except ImportError:  # pragma: no cover - supports `python -m benchmarks...`
     )
 
 
-RUNNER_VERSION = "standing-evidence-runner-v1"
+RUNNER_VERSION = "standing-evidence-runner-v2"
 REPO_ROOT = Path(__file__).resolve().parents[1]
+_MECHANISM_ID_RE = re.compile(r"[a-z0-9][a-z0-9._-]{0,63}")
 
 _REGRESSION_METRIC_FIELDS = (
     "rmse",
@@ -489,12 +491,65 @@ def _comparison_argv(
     ]
 
 
+def inspection_record(args: argparse.Namespace) -> dict[str, Any]:
+    """Return the manifest record that makes repeated M6 use auditable."""
+    mechanism_id = getattr(args, "mechanism_id", None)
+    inspection_index = getattr(args, "inspection_index", None)
+    if args.smoke:
+        if mechanism_id is not None or inspection_index is not None:
+            raise ValueError(
+                "M6 null smoke does not accept mechanism inspection fields"
+            )
+        return {
+            "counted": False,
+            "mechanism_id": None,
+            "inspection_index": None,
+            "outcomes_spent": False,
+        }
+    if not isinstance(mechanism_id, str) or not _MECHANISM_ID_RE.fullmatch(
+        mechanism_id
+    ):
+        raise ValueError(
+            "full M6 requires --mechanism-id matching "
+            "[a-z0-9][a-z0-9._-]{0,63}"
+        )
+    if (
+        isinstance(inspection_index, bool)
+        or not isinstance(inspection_index, int)
+        or inspection_index < 1
+    ):
+        raise ValueError(
+            "full M6 requires a positive --inspection-index"
+        )
+    return {
+        "counted": True,
+        "mechanism_id": mechanism_id,
+        "inspection_index": inspection_index,
+        "outcomes_spent": True,
+    }
+
+
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--control", type=Path, required=True)
     parser.add_argument("--candidate", type=Path, required=True)
     parser.add_argument("--csv", type=Path, required=True)
     parser.add_argument("--threads", type=int, default=M6_THREADS)
+    parser.add_argument(
+        "--mechanism-id",
+        help=(
+            "stable lowercase id for the mechanism under a full M6 "
+            "inspection"
+        ),
+    )
+    parser.add_argument(
+        "--inspection-index",
+        type=int,
+        help=(
+            "one-based count of full M6 inspections for this mechanism; "
+            "record every material run"
+        ),
+    )
     parser.add_argument(
         "--smoke",
         action="store_true",
@@ -511,6 +566,7 @@ def run(args: argparse.Namespace) -> tuple[Path, Path]:
         raise ValueError(
             f"the M6 contract requires exactly {M6_THREADS} threads"
         )
+    inspection = inspection_record(args)
     control = args.control.expanduser().resolve()
     candidate = args.candidate.expanduser().resolve()
     output = args.csv.expanduser().absolute()
@@ -584,6 +640,7 @@ def run(args: argparse.Namespace) -> tuple[Path, Path]:
             "smoke": bool(args.smoke),
             "candidate_ranking_eligible": ranking_eligible,
             "shipping_or_default_claim_eligible": False,
+            "inspection": inspection,
             "contract": contract,
             "contract_sha256": canonical_json_sha256(contract),
             "harness_source": harness_before,

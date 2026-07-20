@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import asdict, dataclass
 from itertools import product
+from pathlib import Path
 
 try:
     from benchmark_adapters import DATASETS, SIZE_SAMPLES
@@ -11,7 +13,7 @@ except ImportError:  # pragma: no cover - supports `python -m benchmarks...`
     from benchmarks.benchmark_adapters import DATASETS, SIZE_SAMPLES
 
 
-CONTRACT_VERSION = "standing-evidence-draft-v1"
+CONTRACT_VERSION = "standing-evidence-draft-v2"
 M6_CONTRACT_FROZEN = False
 M6_BACKTEST_COMPLETE = False
 
@@ -22,6 +24,25 @@ class SentinelDomain:
     task: str
     source: str
     weighted: bool = False
+
+
+@dataclass(frozen=True)
+class ReleaseAnchor:
+    id: str
+    version: str
+    source_pin: str
+
+
+@dataclass(frozen=True)
+class BacktestVerdict:
+    mechanism_id: str
+    expected_disposition: str
+    primary_axis: str
+    control_source: str
+    candidate_source: str
+    replay_adapter: str
+    historical_result: str
+    historical_result_sha256: str
 
 
 M5_SENTINEL_DOMAINS = (
@@ -93,10 +114,68 @@ M6_SMOKE_DATASETS = (
 )
 M6_MODELS = ("control_default", "candidate_default")
 M6_SIZES = ("small",)
+M6_REQUIRED_FREEZE_SIZES = ("small", "medium")
+M6_REQUIRED_RELEASE_ANCHORS = ("chimeraboost", "catboost")
+M6_RELEASE_ANCHORS: tuple[ReleaseAnchor, ...] = ()
 M6_SEED_COUNT = 3
 M6_WEIGHT_MODES = ("none", "stress")
 M6_REPEAT = 1
 M6_THREADS = 4
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+
+M6_BACKTEST_VERDICTS = (
+    BacktestVerdict(
+        mechanism_id="fused_variable_hessian",
+        expected_disposition="advance",
+        primary_axis="fit_speed",
+        control_source="7097e7ac6125cb260ae67ee353458a2cb12fe2e1",
+        candidate_source="1016e7e8d70c403a70feab7762de8837ea8fd09c",
+        replay_adapter="public_defaults_with_engagement_audit",
+        historical_result="benchmarks/fused_variable_hessian_result.md",
+        historical_result_sha256=(
+            "d22337f4bab69bba7a13b9d3bca583a41aaa873a10a1974ca11d996244febac3"
+        ),
+    ),
+    BacktestVerdict(
+        mechanism_id="forest_work_packed_router",
+        expected_disposition="kill",
+        primary_axis="predict_speed",
+        control_source="e0899435e166f8c4856e5f8f77db1e0fa71c322f",
+        candidate_source="e961bcc2ea64706169641722b5935f9f31402fa3",
+        replay_adapter="public_defaults_with_route_engagement_audit",
+        historical_result="benchmarks/basketball_packed_prediction_result.md",
+        historical_result_sha256=(
+            "9c8d636f467fab118a492ef64194ec48eb6c800f24d8f31bb73f42039296a7f4"
+        ),
+    ),
+    BacktestVerdict(
+        mechanism_id="linear_leaf_selector_3pct",
+        expected_disposition="kill",
+        primary_axis="quality",
+        control_source="29bd30cdcf476139c30efe4e09773ca812ba443f",
+        candidate_source="29bd30cdcf476139c30efe4e09773ca812ba443f",
+        replay_adapter="fresh_selector_3pct_vs_public_default",
+        historical_result="benchmarks/fresh_selector_confirmation_result.md",
+        historical_result_sha256=(
+            "3a33ec834bcebb9d9c9e2db4d69a5119f35ccbcf7623bf3dedb839d15ef71170"
+        ),
+    ),
+)
+
+
+def m6_freeze_blockers() -> tuple[str, ...]:
+    """Return concrete reasons the draft cannot yet be marked frozen."""
+    blockers = []
+    missing_sizes = sorted(set(M6_REQUIRED_FREEZE_SIZES) - set(M6_SIZES))
+    if missing_sizes:
+        blockers.append(f"missing required M6 sizes: {missing_sizes}")
+    anchor_ids = {anchor.id for anchor in M6_RELEASE_ANCHORS}
+    missing_anchors = sorted(
+        set(M6_REQUIRED_RELEASE_ANCHORS) - anchor_ids
+    )
+    if missing_anchors:
+        blockers.append(f"missing pinned M6 release anchors: {missing_anchors}")
+    return tuple(blockers)
 
 
 def validate_contract():
@@ -120,11 +199,81 @@ def validate_contract():
     unknown_sizes = sorted(set(M6_SIZES) - set(SIZE_SAMPLES))
     if unknown_sizes:
         raise RuntimeError(f"unknown M6 sizes: {unknown_sizes}")
+    anchor_ids = [anchor.id for anchor in M6_RELEASE_ANCHORS]
+    if len(anchor_ids) != len(set(anchor_ids)):
+        raise RuntimeError("M6 release anchor ids must be unique")
+    for anchor in M6_RELEASE_ANCHORS:
+        if not anchor.version or not anchor.source_pin:
+            raise RuntimeError(
+                f"M6 release anchor {anchor.id!r} is not fully pinned"
+            )
     if not set(M6_SMOKE_DATASETS).issubset(M6_DATASETS):
         raise RuntimeError("M6 smoke datasets must be a subset of the full slice")
     tasks = {DATASETS[name].task for name in M6_DATASETS}
     if tasks != {"regression", "binary", "multiclass"}:
         raise RuntimeError(f"M6 task coverage drifted: {sorted(tasks)}")
+
+    verdict_ids = [
+        verdict.mechanism_id for verdict in M6_BACKTEST_VERDICTS
+    ]
+    if len(verdict_ids) != len(set(verdict_ids)):
+        raise RuntimeError("M6 backtest mechanism ids must be unique")
+    dispositions = {
+        verdict.expected_disposition for verdict in M6_BACKTEST_VERDICTS
+    }
+    if not {"advance", "kill"}.issubset(dispositions):
+        raise RuntimeError(
+            "M6 backtest subset must include positive and negative verdicts"
+        )
+    if dispositions - {"advance", "kill"}:
+        raise RuntimeError(
+            f"unknown M6 backtest dispositions: "
+            f"{sorted(dispositions - {'advance', 'kill'})}"
+        )
+    for verdict in M6_BACKTEST_VERDICTS:
+        if not all(
+            (
+                verdict.primary_axis,
+                verdict.control_source,
+                verdict.candidate_source,
+                verdict.replay_adapter,
+                verdict.historical_result,
+                verdict.historical_result_sha256,
+            )
+        ):
+            raise RuntimeError(
+                f"M6 backtest verdict {verdict.mechanism_id!r} is incomplete"
+            )
+        if len(verdict.historical_result_sha256) != 64:
+            raise RuntimeError(
+                f"M6 backtest verdict {verdict.mechanism_id!r} has an "
+                "invalid result hash"
+            )
+        for source_pin in (verdict.control_source, verdict.candidate_source):
+            if len(source_pin) != 40 or set(source_pin) - set(
+                "0123456789abcdef"
+            ):
+                raise RuntimeError(
+                    f"M6 backtest verdict {verdict.mechanism_id!r} has an "
+                    "invalid source pin"
+                )
+        result_path = _REPO_ROOT / verdict.historical_result
+        if not result_path.is_file():
+            raise RuntimeError(
+                f"M6 backtest result is missing: {verdict.historical_result}"
+            )
+        actual_hash = hashlib.sha256(result_path.read_bytes()).hexdigest()
+        if actual_hash != verdict.historical_result_sha256:
+            raise RuntimeError(
+                f"M6 backtest result hash drifted for "
+                f"{verdict.mechanism_id!r}"
+            )
+
+    blockers = m6_freeze_blockers()
+    if M6_CONTRACT_FROZEN and blockers:
+        raise RuntimeError(
+            "M6 contract cannot be frozen: " + "; ".join(blockers)
+        )
 
 
 def m6_expected_grid(*, smoke=False):
@@ -152,14 +301,23 @@ def contract_payload():
         "m6": {
             "contract_frozen": M6_CONTRACT_FROZEN,
             "backtest_complete": M6_BACKTEST_COMPLETE,
+            "freeze_blockers": list(m6_freeze_blockers()),
             "datasets": list(M6_DATASETS),
             "smoke_datasets": list(M6_SMOKE_DATASETS),
             "models": list(M6_MODELS),
             "sizes": list(M6_SIZES),
+            "required_freeze_sizes": list(M6_REQUIRED_FREEZE_SIZES),
+            "required_release_anchors": list(M6_REQUIRED_RELEASE_ANCHORS),
+            "release_anchors": [
+                asdict(anchor) for anchor in M6_RELEASE_ANCHORS
+            ],
             "seed_count": M6_SEED_COUNT,
             "weight_modes": list(M6_WEIGHT_MODES),
             "repeat": M6_REPEAT,
             "threads": M6_THREADS,
+            "backtest_verdicts": [
+                asdict(verdict) for verdict in M6_BACKTEST_VERDICTS
+            ],
         },
     }
 

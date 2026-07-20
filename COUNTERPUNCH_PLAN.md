@@ -363,7 +363,18 @@ rerun during every inner development iteration. Report task-appropriate
 quality, fit/predict time, peak RSS where practical, failures, and resolved
 model metadata. M6 is the only standing cheap panel that may influence
 quality-oriented backlog ranking; tuning directly to its individual cells
-is prohibited, and repeated inspection makes all M6 outcomes spent.
+is prohibited, and repeated inspection makes all M6 outcomes spent. Every
+material full run receives a stable mechanism id and a monotonically
+increasing, one-based inspection index in both its manifest and testing-log
+entry. Assign the index before launch; failed attempts consume it. Missing,
+reset, or selectively omitted indices invalidate the mechanism's M6 audit.
+
+The executable contract must refuse a frozen state until medium-size cells
+and exact pinned ChimeraBoost and CatBoost release anchors are present; the
+2,500-row draft is infrastructure smoke, not a size decision. The historical
+backtest subset is committed before replay and includes both positive and
+negative verdicts, including a quality-negative selector. Changing that
+subset after inspection requires a new contract version and a fresh backtest.
 
 Building and backtesting the M6 contract is Tier-E infrastructure work
 authorized in Wave 1. It must reproduce a declared subset of prior mechanism
@@ -779,7 +790,10 @@ same bugs:
 For each item, publish one of: confirmed and fixed with a named regression
 test; not present with a reproducer; or intentionally different with a
 compatibility note. Do not rewrite already-correct input-hardening or warmup
-behavior.
+behavior. Complete H1 before freezing the M1/Q0 protocol, then commit and
+record one clean post-hygiene DarkoFit source pin for all Wave 1
+measurements. This avoids measuring a pre-audit pin or churning a frozen
+protocol when a confirmed hygiene fix lands.
 
 ### H2 — measurement documentation
 
