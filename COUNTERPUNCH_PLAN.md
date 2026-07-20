@@ -202,7 +202,10 @@ Reuse the explicit workload and matched capacity in
 24 numeric features, 500k/1M training rows, a following 100k-row holdout, 300
 trees, learning rate 0.1, depth 6, L2 1, 128 bins, full rows/features,
 minimum child weight 1, ordered boosting and early stopping off, random state
-4, and 18 threads. Preserve the protocol's product-specific controls,
+4, and a fixed equal thread budget supported by the execution machine. The
+2026-07-20 pre-freeze feasibility check found 14 logical CPUs and rejected
+the inherited 18-thread value because TBB silently capped it. Preserve the
+protocol's product-specific controls,
 including `tree_mode="catboost"`/minimum child samples 1 for DarkoFit and
 disabled product selectors for ChimeraBoost.
 
@@ -219,11 +222,19 @@ attribution. Report:
 - quality and prediction fingerprints sufficient to detect accidental
   configuration drift.
 
-M1 answers whether the historical large-n advantage survived, and the
-quantized-versus-float pair isolates the flag's effect within the current
+M1 answers the direction of the current same-machine large-n comparison, and
+the quantized-versus-float pair isolates the flag's effect within the current
 0.18 source. Attribution of the total movement since the historical
-comparison requires the optional 0.15-era diagnostic arm. M1 does not prove
-that DarkoFit should implement quantization.
+comparison requires the optional 0.15-era diagnostic arm and the original
+18-logical-CPU machine. M1 does not prove that DarkoFit should implement
+quantization.
+
+Wave 1's dated executable contract is
+[`benchmarks/m1_q0_wave1_protocol.md`](benchmarks/m1_q0_wave1_protocol.md).
+It binds the clean post-H1 DarkoFit package source
+`726e5d8e6131c580bce948db833a5007d0692dca`, the exact ChimeraBoost header
+pin, all six primary-arm permutations, and a non-certifying material-donor
+rule before any current outcome is inspected.
 
 ### M2 — current-version broad characterization (periodic milestone)
 
@@ -437,6 +448,14 @@ protocol before profiling begins, not after inspecting the profile. If the
 attainable upper bound cannot meet that pre-declared budget, record the
 profile and close Q. Do not implement a public option to match a
 competitor's architecture when DarkoFit's bottleneck is elsewhere.
+
+The frozen Wave 1 budget is 10% lower end-to-end fit time. The cheap profile
+uses only the current fused production path for its funding projection and
+screens it with a conservative 1.30x eligible-kernel prior; the forced
+unfused path decomposes histogram construction from split search but cannot
+contribute a production share. Full equations, stability rules, and the
+close-before-prototype disposition are fixed in
+[`benchmarks/m1_q0_wave1_protocol.md`](benchmarks/m1_q0_wave1_protocol.md).
 
 ### B0 — ensemble compatibility and sampling design
 
