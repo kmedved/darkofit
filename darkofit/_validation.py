@@ -364,8 +364,14 @@ def normalize_cat_features(cat_features, n_features=None):
         try:
             idx = operator.index(value)
         except TypeError as exc:
+            message = "cat_features must contain integer column indices"
+            if isinstance(value, (float, np.floating)):
+                message += (
+                    ". If these are per-sample weights, pass them by keyword "
+                    "as fit(X, y, sample_weight=w)"
+                )
             raise ValueError(
-                "cat_features must contain integer column indices"
+                message
             ) from exc
         if idx < 0:
             raise ValueError("cat_features indices must be nonnegative")

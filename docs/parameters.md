@@ -11,11 +11,17 @@ controls are below; fitted resolutions are recorded in
 | `preset` | `None` | Opt-in product profile; `"accuracy"` applies the frozen A10 managed fields. |
 | `iterations` | `1000` | Maximum boosting rounds. |
 | `learning_rate` | `None` | Automatic fitted-rate rule; pass a positive float to freeze it. |
-| `depth` | `None` | Symmetric-tree depth or non-oblivious path-depth cap. |
+| `depth` | `None` | Mode default: 6 for CatBoost/classifier depthwise trees, 2 for depthwise RMSE, and unlimited (`-1`) for LightGBM/hybrid; pass `"auto"` for the separate effective-sample-size rule. |
 | `l2_leaf_reg` | `"auto"` | Mode-aware leaf regularization. |
 | `max_bins` | `254` | Numeric bin budget. |
-| `thread_count` | `None` | Numba worker count; `None` uses the runtime limit. |
-| `random_state` | `None` | Reproducible model and sampling seed. |
+| `thread_count` | `None` | Use the Numba runtime maximum, except LightGBM/hybrid fits at 50,000 rows or fewer are capped at 2. The fitted count is recorded and reused without changing the caller's ambient mask. |
+| `random_state` | `None` | No fixed seed; pass an integer for reproducible model and sampling randomness. |
+
+`None` is parameter-specific, not a universal alias for `"auto"`.
+`learning_rate=None` selects the fitted automatic rate, while `depth=None`
+uses the mode defaults above. Structure parameters that advertise `"auto"`
+use that literal token for their data-dependent rule. Other numeric parameters
+reject `None` unless their row explicitly documents it.
 
 ## Validation and refit
 
