@@ -1,5 +1,7 @@
 """Exactness gates for bounded scalar leafwise packed prediction."""
 
+from contextlib import contextmanager
+
 import numpy as np
 import pytest
 
@@ -54,24 +56,37 @@ def _model_params(**overrides):
     return params
 
 
+@contextmanager
+def _fitted_thread_count(core):
+    import numba
+
+    previous_threads = numba.get_num_threads()
+    try:
+        core._restore_thread_count()
+        yield
+    finally:
+        numba.set_num_threads(previous_threads)
+
+
 def _loop_predict_raw(core, X):
-    core._restore_thread_count()
-    values = (
-        np.asarray(X, dtype=object)
-        if core.prep_.cat_features_
-        else np.asarray(X, dtype=np.float64)
-    )
-    X_binned = core.prep_.transform(values)
-    prediction = np.full(X_binned.shape[0], core.init_, dtype=np.float64)
-    for tree in core.trees_:
-        tree.add_predict(X_binned, prediction)
+    with _fitted_thread_count(core):
+        values = (
+            np.asarray(X, dtype=object)
+            if core.prep_.cat_features_
+            else np.asarray(X, dtype=np.float64)
+        )
+        X_binned = core.prep_.transform(values)
+        prediction = np.full(X_binned.shape[0], core.init_, dtype=np.float64)
+        for tree in core.trees_:
+            tree.add_predict(X_binned, prediction)
     return prediction
 
 
 def _assert_selected(core, n_rows):
     flat = core._flat_ensemble()
     assert isinstance(flat, FlatNonObliviousEnsemble)
-    assert flat_predict_preferred(flat, n_rows, core.tree_mode_)
+    with _fitted_thread_count(core):
+        assert flat_predict_preferred(flat, n_rows, core.tree_mode_)
     return flat
 
 
@@ -132,11 +147,12 @@ def test_leafwise_packed_direct_kernel_and_public_dispatch(
     flat = _assert_selected(core, len(X))
     X_binned = core.prep_.transform(np.asarray(X, dtype=np.float64))
 
-    packed = np.zeros(len(X), dtype=np.float64)
-    flat.add_predict_scalar_packed(X_binned, packed)
-    loop = np.zeros(len(X), dtype=np.float64)
-    for tree in core.trees_:
-        tree.add_predict(X_binned, loop)
+    with _fitted_thread_count(core):
+        packed = np.zeros(len(X), dtype=np.float64)
+        flat.add_predict_scalar_packed(X_binned, packed)
+        loop = np.zeros(len(X), dtype=np.float64)
+        for tree in core.trees_:
+            tree.add_predict(X_binned, loop)
     assert np.array_equal(packed, loop)
 
     calls = []
@@ -199,7 +215,8 @@ def test_leafwise_packed_other_threads_keep_tree_loop(
         pytest.skip(f"Numba runtime exposes fewer than {thread_count} threads")
     model, X = numeric_model
     core = model.model_
-    previous = core.n_threads_
+    previous_fitted_threads = core.n_threads_
+    previous_ambient_threads = numba.get_num_threads()
     entered = []
     selections = []
 
@@ -222,15 +239,15 @@ def test_leafwise_packed_other_threads_keep_tree_loop(
     )
     try:
         core.n_threads_ = thread_count
-        core._restore_thread_count()
         flat = core._flat_ensemble()
-        assert not flat_predict_preferred(flat, len(X), core.tree_mode_)
+        with _fitted_thread_count(core):
+            assert not flat_predict_preferred(flat, len(X), core.tree_mode_)
         assert np.array_equal(model.predict(X), _loop_predict_raw(core, X))
         assert not entered
         assert selections == [(len(X), "lightgbm", False)]
     finally:
-        core.n_threads_ = previous
-        core._restore_thread_count()
+        core.n_threads_ = previous_fitted_threads
+        numba.set_num_threads(previous_ambient_threads)
 
 
 def test_leafwise_packed_serialization_staging_and_cache(

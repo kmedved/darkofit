@@ -13,6 +13,9 @@ import operator
 import sys
 import time
 import warnings
+from contextlib import contextmanager
+from functools import wraps
+
 import numpy as np
 
 from ._numba_runtime import numba_thread_setup
@@ -102,6 +105,62 @@ def _apply_thread_count(thread_count):
             n = max(1, min(int(thread_count), max_threads))
         numba.set_num_threads(n)
         return n
+
+
+@contextmanager
+def _numba_thread_count_scope():
+    """Restore this thread's Numba mask when the enclosed operation ends."""
+    with numba_thread_setup():
+        import numba
+        previous_threads = numba.get_num_threads()
+    try:
+        yield
+    finally:
+        with numba_thread_setup():
+            numba.set_num_threads(previous_threads)
+
+
+def _preserve_numba_thread_count(operation):
+    """Run an operation without leaking changes to its caller's Numba mask."""
+    @wraps(operation)
+    def wrapped(*args, **kwargs):
+        with _numba_thread_count_scope():
+            return operation(*args, **kwargs)
+
+    return wrapped
+
+
+def _use_fitted_thread_count(operation):
+    """Run a prediction operation under its model's fitted Numba mask."""
+    @wraps(operation)
+    def wrapped(self, *args, **kwargs):
+        with _numba_thread_count_scope():
+            self._restore_thread_count()
+            return operation(self, *args, **kwargs)
+
+    return wrapped
+
+
+def _iterate_with_fitted_thread_count(operation):
+    """Run each staged-prediction resumption under the fitted Numba mask."""
+    @wraps(operation)
+    def wrapped(self, *args, **kwargs):
+        iterator = operation(self, *args, **kwargs)
+        try:
+            while True:
+                with _numba_thread_count_scope():
+                    self._restore_thread_count()
+                    try:
+                        value = next(iterator)
+                    except StopIteration:
+                        return
+                yield value
+        finally:
+            close = getattr(iterator, "close", None)
+            if close is not None:
+                close()
+
+    return wrapped
 
 
 def _fit_thread_count(thread_count, tree_mode_, n_samples):
@@ -1641,14 +1700,13 @@ class _BaseBooster:
         return X
 
     def _restore_thread_count(self):
-        """Restore this model's fitted Numba thread mask."""
+        """Apply this model's fitted Numba thread mask."""
         fitted_threads = getattr(self, "n_threads_", None)
         if fitted_threads is not None:
             _apply_thread_count(fitted_threads)
 
     def _prepare_predict_X(self, X, *, validated=False):
-        """Restore fitted threading and validate prediction input."""
-        self._restore_thread_count()
+        """Validate prediction input."""
         return X if validated else self._coerce_predict_X(X)
 
     def _alloc_multiclass_hist_buffers(self, n_classes, n_features, n_bins):
@@ -2340,6 +2398,7 @@ class GradientBoosting(_BaseBooster):
             and self.loss_name in {"Logloss", "RMSE"}
         )
 
+    @_preserve_numba_thread_count
     def fit(self, X, y, cat_features=None, eval_set=None, sample_weight=None,
             eval_sample_weight=None, callbacks=None):
         """Fit the additive model. Optionally pass `cat_features` (column indices
@@ -2714,6 +2773,7 @@ class GradientBoosting(_BaseBooster):
     def _build_flat_ensemble(self):
         return build_flat_ensemble(self.trees_)
 
+    @_use_fitted_thread_count
     def predict_raw(self, X, *, _validated=False):
         """Return raw additive scores (pre-link): the regression prediction, or
         the log-odds for binary classification."""
@@ -2733,17 +2793,17 @@ class GradientBoosting(_BaseBooster):
                 tree.add_predict(X_binned, F)
         return F
 
+    @_iterate_with_fitted_thread_count
     def staged_predict_raw(self, X, *, _validated=False):
         """Yield the cumulative raw prediction after each tree (1..n_trees)."""
         X = self._prepare_predict_X(X, validated=_validated)
         X_binned = self.prep_.transform(X)
         F = np.full(X_binned.shape[0], self.init_, dtype=np.float64)
-        for stage, tree in enumerate(self.trees_):
-            if stage:
-                self._restore_thread_count()
+        for tree in self.trees_:
             tree.add_predict(X_binned, F)
             yield F.copy()
 
+    @_use_fitted_thread_count
     def shap_values(
         self,
         X,
@@ -2837,6 +2897,7 @@ class GradientBoosting(_BaseBooster):
 class MulticlassBoosting(_BaseBooster):
     """Softmax multiclass booster: fits K trees per round (one per class)."""
 
+    @_preserve_numba_thread_count
     def fit(self, X, y, cat_features=None, eval_set=None, sample_weight=None,
             eval_sample_weight=None, callbacks=None):
         """Fit K trees per boosting round (one per class) under softmax loss.
@@ -3334,6 +3395,7 @@ class MulticlassBoosting(_BaseBooster):
     def _build_flat_ensemble(self):
         return build_flat_multiclass_ensemble(self.trees_, self.n_classes_)
 
+    @_use_fitted_thread_count
     def predict_raw(self, X, *, _validated=False):
         """Return the (n_samples, n_classes) matrix of raw per-class scores
         (pre-softmax)."""
@@ -3352,14 +3414,13 @@ class MulticlassBoosting(_BaseBooster):
                         round_trees[k].add_predict(X_binned, F[k])
         return F.T
 
+    @_iterate_with_fitted_thread_count
     def staged_predict_raw(self, X, *, _validated=False):
         """Yield raw scores after each complete multiclass boosting round."""
         X = self._prepare_predict_X(X, validated=_validated)
         X_binned = self.prep_.transform(X)
         F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
-        for stage, round_trees in enumerate(self.trees_):
-            if stage:
-                self._restore_thread_count()
+        for round_trees in self.trees_:
             if hasattr(round_trees, "add_predict_class_major"):
                 round_trees.add_predict_class_major(X_binned, F)
             else:
@@ -3516,6 +3577,7 @@ class DistributionalBoosting(_BaseBooster):
             return self.loss_.variance_from_params(*params)
         return self.loss_.variance_from_raw(self._raw_to_internal_scale(raw))
 
+    @_preserve_numba_thread_count
     def fit(self, X, y, cat_features=None, eval_set=None, sample_weight=None,
             eval_sample_weight=None, callbacks=None):
         """Fit a shared-vector distributional regression model."""
@@ -3957,6 +4019,7 @@ class DistributionalBoosting(_BaseBooster):
     def _build_flat_ensemble(self):
         return build_flat_multiclass_ensemble(self.trees_, self.n_outputs_)
 
+    @_use_fitted_thread_count
     def predict_raw(self, X, *, _validated=False):
         """Return sample-major raw scores for the fitted distribution head."""
         X = self._prepare_predict_X(X, validated=_validated)
@@ -3978,13 +4041,12 @@ class DistributionalBoosting(_BaseBooster):
         raw = self.predict_raw(X)
         return self.variance_from_raw(raw)
 
+    @_iterate_with_fitted_thread_count
     def staged_predict_raw(self, X, *, _validated=False):
         """Yield sample-major raw scores after each vector-tree round."""
         X = self._prepare_predict_X(X, validated=_validated)
         X_binned = self.prep_.transform(X)
         F = np.tile(self.init_[:, None], (1, X_binned.shape[0]))
-        for stage, tree in enumerate(self.trees_):
-            if stage:
-                self._restore_thread_count()
+        for tree in self.trees_:
             tree.add_predict_class_major(X_binned, F)
             yield self._raw_to_target_scale(F.T).copy()

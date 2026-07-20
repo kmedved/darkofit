@@ -25,7 +25,6 @@ from .booster import (
     GradientBoosting,
     MulticlassBoosting,
     _EMITTED_DIAGNOSTIC_WARNING_CODES,
-    _apply_thread_count,
     _normalize_diagnostic_warnings,
     _normalize_tree_mode,
 )
@@ -4495,8 +4494,6 @@ class _RefitParamsMixin:
                     )
                 ),
             })
-        if hasattr(best_model, "n_threads_"):
-            _apply_thread_count(best_model.n_threads_)
         return best_model, best_probe_metadata, metadata
 
     def _wrapper_state_header(self):

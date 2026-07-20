@@ -6583,19 +6583,16 @@ def test_tree_mode_selection_score_uses_retained_model_score():
     assert helper._tree_mode_selection_score(truncated) == 1.0
 
 
-def test_tree_mode_auto_restores_selected_model_thread_count(monkeypatch):
-    import darkofit.sklearn_api as sklearn_api
+def test_tree_mode_auto_preserves_callers_numba_thread_mask():
+    import numba
 
-    restored = []
-
-    def fake_apply_thread_count(n_threads):
-        restored.append(int(n_threads))
-        return int(n_threads)
+    if numba.config.NUMBA_NUM_THREADS <= 1:
+        pytest.skip("requires two available Numba threads")
 
     class FakeAutoModel:
         def __init__(self, kwargs):
             self.tree_mode_ = kwargs["tree_mode"]
-            self.n_threads_ = 8 if self.tree_mode_ == "catboost" else 2
+            self.n_threads_ = 1 if self.tree_mode_ == "catboost" else 2
             self.best_score_ = 0.0 if self.tree_mode_ == "catboost" else 10.0
             self.valid_history_ = [self.best_score_]
             self.use_best_model_ = False
@@ -6606,27 +6603,30 @@ def test_tree_mode_auto_restores_selected_model_thread_count(monkeypatch):
         def fit(self, *args, **kwargs):
             return self
 
-    monkeypatch.setattr(
-        sklearn_api, "_apply_thread_count", fake_apply_thread_count
-    )
-    helper = DarkoRegressor(tree_mode="auto")
-    X = np.zeros((6, 2), dtype=np.float64)
-    y = np.zeros(6, dtype=np.float64)
+    previous_threads = numba.get_num_threads()
+    ambient_threads = min(4, numba.config.NUMBA_NUM_THREADS)
+    numba.set_num_threads(ambient_threads)
+    try:
+        helper = DarkoRegressor(tree_mode="auto")
+        X = np.zeros((6, 2), dtype=np.float64)
+        y = np.zeros(6, dtype=np.float64)
 
-    model, _, metadata = helper._fit_tree_mode_auto(
-        lambda kwargs: FakeAutoModel(kwargs),
-        {"iterations": 1},
-        X,
-        y,
-        cat_features=None,
-        eval_set=(X[:2], y[:2]),
-        sample_weight=None,
-        eval_sample_weight=None,
-    )
+        model, _, metadata = helper._fit_tree_mode_auto(
+            lambda kwargs: FakeAutoModel(kwargs),
+            {"iterations": 1},
+            X,
+            y,
+            cat_features=None,
+            eval_set=(X[:2], y[:2]),
+            sample_weight=None,
+            eval_sample_weight=None,
+        )
 
-    assert model.tree_mode_ == "catboost"
-    assert metadata["selected_tree_mode"] == "catboost"
-    assert restored[-1] == model.n_threads_
+        assert model.tree_mode_ == "catboost"
+        assert metadata["selected_tree_mode"] == "catboost"
+        assert numba.get_num_threads() == ambient_threads
+    finally:
+        numba.set_num_threads(previous_threads)
 
 
 def test_learning_rate_probe_scores_retained_model_prefix():
