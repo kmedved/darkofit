@@ -27,6 +27,7 @@ import standing_evidence as evidence_contract  # noqa: E402
 from standing_evidence import (  # noqa: E402
     BacktestVerdict,
     M5_SENTINEL_DOMAINS,
+    M5_SENTINEL_CASES,
     M6_BACKTEST_VERDICTS,
     M6_DATASETS,
     M6_REQUIRED_FREEZE_SIZES,
@@ -34,6 +35,8 @@ from standing_evidence import (  # noqa: E402
     M6_SMOKE_DATASETS,
     ReleaseAnchor,
     contract_payload,
+    m5_expected_grid,
+    m5_freeze_blockers,
     m6_freeze_blockers,
     m6_expected_grid,
     validate_contract,
@@ -205,6 +208,8 @@ def test_standing_contract_covers_classification_and_weighted_domains():
     assert set(M6_SMOKE_DATASETS) < set(M6_DATASETS)
     payload = contract_payload()
     assert payload["contract_version"] == "standing-evidence-v3"
+    assert payload["m5"]["contract_frozen"] is False
+    assert payload["m5"]["freeze_blockers"]
     assert payload["m6"]["contract_frozen"] is True
     assert payload["m6"]["backtest_complete"] is False
     assert payload["m6"]["backtest_terminal"] is True
@@ -240,6 +245,24 @@ def test_m6_draft_cannot_freeze_without_hash_bound_release_anchor_evidence(
 
     assert m6_freeze_blockers() == ()
     validate_contract()
+
+
+def test_m5_contract_has_one_frozen_case_per_required_domain():
+    domains = {domain.id for domain in M5_SENTINEL_DOMAINS}
+    cases = {case.domain_id for case in M5_SENTINEL_CASES}
+    grid = m5_expected_grid()
+
+    assert cases == domains
+    assert len(grid) == 38
+    assert len(set(grid)) == 38
+    assert {
+        case.domain_id
+        for case in M5_SENTINEL_CASES
+        if case.known_floor
+    } == {"binary_classification", "multiclass_classification"}
+    assert m5_freeze_blockers() == (
+        "missing hash-bound M5 baseline evidence",
+    )
 
 
 def test_m6_backtest_subset_is_predeclared_with_positive_and_negative_cases():

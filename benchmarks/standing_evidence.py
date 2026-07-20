@@ -30,6 +30,13 @@ M6_BACKTEST_FAILURE_EVIDENCE_PATH = (
 M6_BACKTEST_FAILURE_EVIDENCE_SHA256 = (
     "18b902e6099a4686b8eda71fac9ac327a0b5243872b80b5da79c5e01e5e2c201"
 )
+M5_CONTRACT_VERSION = "m5-sentinels-v1"
+M5_CONTRACT_FROZEN = False
+M5_BASELINE_EVIDENCE_PATH = ""
+M5_BASELINE_EVIDENCE_SHA256 = ""
+M5_CONTROL_SOURCE = "726e5d8e6131c580bce948db833a5007d0692dca"
+M5_THREADS = 4
+M5_ARMS = ("control", "candidate")
 
 
 @dataclass(frozen=True)
@@ -38,6 +45,17 @@ class SentinelDomain:
     task: str
     source: str
     weighted: bool = False
+
+
+@dataclass(frozen=True)
+class SentinelCase:
+    domain_id: str
+    dataset_key: str
+    seeds: tuple[int, ...]
+    model_profile: str
+    expected_normalized_loss_max: float
+    known_floor: str = ""
+    dataset_sha256: str = ""
 
 
 @dataclass(frozen=True)
@@ -109,6 +127,89 @@ M5_SENTINEL_DOMAINS = (
         "binary",
         "benchmark_adapters",
         weighted=True,
+    ),
+)
+
+M5_SENTINEL_CASES = (
+    SentinelCase(
+        "grouped_entity_regression",
+        "generic:grouped-entity-v1",
+        (0, 1),
+        "group_ensemble",
+        1.10,
+    ),
+    SentinelCase(
+        "smooth_numeric_regression",
+        "syn:df1/311",
+        (0, 1),
+        "standard",
+        1.10,
+        dataset_sha256=(
+            "a323d3f5ddaaf570ecc765b7810d7415344d81de7e3d01bd44d3cacda52822ae"
+        ),
+    ),
+    SentinelCase(
+        "noisy_numeric_regression",
+        "syn:df1/241",
+        (0, 1),
+        "standard",
+        1.10,
+        dataset_sha256=(
+            "99d3068ded75bc7704c689a751d4582c33ff500b72da840f328bfbba733bcbb0"
+        ),
+    ),
+    SentinelCase(
+        "categorical_missing_regression",
+        "syn:df1/234",
+        (0, 1),
+        "standard",
+        1.10,
+        dataset_sha256=(
+            "cf660a560e6ec769fb10ec259863156d22dadec2fa64036dc3558403a86902dc"
+        ),
+    ),
+    SentinelCase(
+        "high_row_numeric",
+        "adapter:friedman_numeric:large",
+        (0,),
+        "high_row",
+        1.10,
+    ),
+    SentinelCase(
+        "binary_classification",
+        "syn:df1/647",
+        (0, 1, 2),
+        "canary",
+        1.10,
+        known_floor="excess_brier_mean<=0.005;worst<=0.01",
+        dataset_sha256=(
+            "35df5d94bdd4aaa96924ea7ed1d06cef964e780720065b969939e61dd3bd0fda"
+        ),
+    ),
+    SentinelCase(
+        "multiclass_classification",
+        "syn:df1/077",
+        (0, 1, 2),
+        "canary",
+        1.10,
+        known_floor="excess_brier_mean<=0.005;worst<=0.01",
+        dataset_sha256=(
+            "fe0a27a60186de31e22197b853966ceb9b857ea5bc91af9dff4f061c4f4fa658"
+        ),
+    ),
+    SentinelCase(
+        "weighted_regression",
+        "adapter:wide_numeric_reg:medium",
+        (0, 1),
+        "standard",
+        1.10,
+    ),
+    SentinelCase(
+        "weighted_classification",
+        "adapter:numeric_binary:medium",
+        (0, 1),
+        "standard",
+        1.10,
     ),
 )
 
@@ -251,6 +352,13 @@ def m6_freeze_blockers() -> tuple[str, ...]:
     return tuple(blockers)
 
 
+def m5_freeze_blockers() -> tuple[str, ...]:
+    blockers = []
+    if not M5_BASELINE_EVIDENCE_PATH or not M5_BASELINE_EVIDENCE_SHA256:
+        blockers.append("missing hash-bound M5 baseline evidence")
+    return tuple(blockers)
+
+
 def _validate_evidence_binding(path: str, expected_sha256: str, label: str):
     if not path and not expected_sha256:
         return
@@ -283,6 +391,48 @@ def validate_contract():
     }
     if not {"regression", "binary"}.issubset(weighted_tasks):
         raise RuntimeError("M5 must cover weighted regression and classification")
+    case_domains = [case.domain_id for case in M5_SENTINEL_CASES]
+    if len(case_domains) != len(set(case_domains)):
+        raise RuntimeError("M5 sentinel case domains must be unique")
+    if set(case_domains) != set(domain_ids):
+        raise RuntimeError("M5 sentinel cases do not cover the domain registry")
+    for case in M5_SENTINEL_CASES:
+        if (
+            not case.seeds
+            or any(
+                isinstance(seed, bool) or not isinstance(seed, int) or seed < 0
+                for seed in case.seeds
+            )
+            or len(case.seeds) != len(set(case.seeds))
+        ):
+            raise RuntimeError(
+                f"M5 sentinel {case.domain_id!r} has invalid seeds"
+            )
+        if (
+            not math.isfinite(case.expected_normalized_loss_max)
+            or case.expected_normalized_loss_max <= 0.0
+        ):
+            raise RuntimeError(
+                f"M5 sentinel {case.domain_id!r} has an invalid quality range"
+            )
+        if case.dataset_sha256 and (
+            len(case.dataset_sha256) != 64
+            or set(case.dataset_sha256) - set("0123456789abcdef")
+        ):
+            raise RuntimeError(
+                f"M5 sentinel {case.domain_id!r} has an invalid dataset hash"
+            )
+    if M5_CONTRACT_FROZEN:
+        blockers = m5_freeze_blockers()
+        if blockers:
+            raise RuntimeError(
+                "M5 contract cannot be frozen: " + "; ".join(blockers)
+            )
+        _validate_evidence_binding(
+            M5_BASELINE_EVIDENCE_PATH,
+            M5_BASELINE_EVIDENCE_SHA256,
+            "M5 baseline",
+        )
 
     unknown_datasets = sorted(set(M6_DATASETS) - set(DATASETS))
     if unknown_datasets:
@@ -423,13 +573,37 @@ def m6_expected_grid(*, smoke=False):
     )
 
 
+def m5_expected_grid():
+    return tuple(
+        (arm, case.domain_id, seed)
+        for case in M5_SENTINEL_CASES
+        for seed in case.seeds
+        for arm in M5_ARMS
+    )
+
+
 def contract_payload():
     """Return a JSON-ready representation suitable for provenance hashing."""
     return {
         "contract_version": CONTRACT_VERSION,
-        "m5_sentinel_domains": [
-            asdict(domain) for domain in M5_SENTINEL_DOMAINS
-        ],
+        "m5": {
+            "contract_version": M5_CONTRACT_VERSION,
+            "contract_frozen": M5_CONTRACT_FROZEN,
+            "freeze_blockers": list(m5_freeze_blockers()),
+            "control_source": M5_CONTROL_SOURCE,
+            "threads": M5_THREADS,
+            "arms": list(M5_ARMS),
+            "sentinel_domains": [
+                asdict(domain) for domain in M5_SENTINEL_DOMAINS
+            ],
+            "sentinel_cases": [
+                asdict(case) for case in M5_SENTINEL_CASES
+            ],
+            "baseline_evidence": {
+                "path": M5_BASELINE_EVIDENCE_PATH,
+                "sha256": M5_BASELINE_EVIDENCE_SHA256,
+            },
+        },
         "m6": {
             "contract_frozen": M6_CONTRACT_FROZEN,
             "backtest_complete": M6_BACKTEST_COMPLETE,

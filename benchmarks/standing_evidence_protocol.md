@@ -14,12 +14,42 @@ slice:
   Its repeatedly inspected results may rank or kill development ideas, but
   cannot authorize shipping or a default change.
 
-The machine-readable draft contract is
-[`standing_evidence.py`](standing_evidence.py). The M5 domain registry is in
-place, including binary, multiclass, weighted, grouped/entity, categorical,
-missing-value, and high-row coverage. Its generators, fingerprints, and
-expected ranges are not frozen yet; calling those registry entries completed
-sentinels would overstate the current infrastructure.
+The machine-readable contract is
+[`standing_evidence.py`](standing_evidence.py).
+
+## M5 v1 coordinates
+
+| Domain | Dataset | Seeds | Profile |
+| --- | --- | --- | --- |
+| Grouped/entity regression | generic group-disjoint generator v1 | 0, 1 | three-member group bootstrap |
+| Smooth numeric regression | SynthGen df1/311 | 0, 1 | fixed 300-tree profile |
+| Noisy numeric regression | SynthGen df1/241 | 0, 1 | fixed 300-tree profile |
+| Categorical + missing regression | SynthGen df1/234 | 0, 1 | fixed 300-tree profile |
+| High-row numeric | Friedman adapter, 50,000 rows | 0 | fixed 120-tree profile |
+| Binary classification | earned SynthGen canary df1/647 | 0, 1, 2 | frozen canary profile |
+| Multiclass classification | earned SynthGen canary df1/077 | 0, 1, 2 | frozen canary profile |
+| Weighted regression | wide-numeric adapter, 10,000 rows | 0, 1 | stress weights |
+| Weighted classification | numeric-binary adapter, 10,000 rows | 0, 1 | stress weights |
+
+That is 19 cells and 38 fresh-worker rows against the exact post-H1 control
+source `726e5d8`. Every row requires finite task-appropriate quality, a
+normalized loss no worse than `1.10` times a train-only trivial predictor,
+valid probabilities where applicable, exact save/load predictions, resolved
+metadata, prediction fingerprints, and dataset/split hashes. Each earned
+canary must retain mean excess Brier at most `0.005` and worst-seed excess at
+most `0.01`. The initial behavior-identical control/candidate run establishes
+the fingerprints and same-machine paired performance ratios; future checks
+bind to that artifact. No value is an acceptance or ranking score.
+
+The baseline contract remains unfrozen until the complete create-only
+artifact hash is embedded:
+
+```bash
+/opt/anaconda3/envs/darko311/bin/python benchmarks/run_m5_sentinels.py \
+  --control /private/tmp/darkofit-wave1-source-726e5d8 \
+  --candidate /Users/konstantinmedvedovsky/code/darkofit \
+  --output benchmarks/m5_sentinel_baseline.json
+```
 
 ## M6 v3 coordinates
 
