@@ -97,13 +97,23 @@ def test_backtest_source_validation_requires_all_exact_clean_pins():
         "head": "851ab7fa79fbb2a7f698fbc1a00952e1bd18c62d",
     }
 
-    validate_sources(state, fused, packed, selector, chimera)
+    validate_sources(
+        **{
+            "harness": state,
+            "fused": fused,
+            "packed": packed,
+            "selector": selector,
+            "chimeraboost_015": chimera,
+        }
+    )
 
     with pytest.raises(RuntimeError, match="expected"):
         validate_sources(
-            state,
-            {**fused, "head": "0" * 40},
-            packed,
-            selector,
-            chimera,
+            **{
+                "harness": state,
+                "fused": {**fused, "head": "0" * 40},
+                "packed": packed,
+                "selector": selector,
+                "chimeraboost_015": chimera,
+            }
         )

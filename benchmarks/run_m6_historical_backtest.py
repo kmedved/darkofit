@@ -123,14 +123,14 @@ def validate_sources(
     fused: dict[str, Any],
     packed: dict[str, Any],
     selector: dict[str, Any],
-    chimera_015: dict[str, Any],
+    chimeraboost_015: dict[str, Any],
 ) -> None:
     states = {
         "harness": harness,
         "fused": fused,
         "packed": packed,
         "selector": selector,
-        "chimeraboost_015": chimera_015,
+        "chimeraboost_015": chimeraboost_015,
     }
     dirty = [name for name, state in states.items() if not state["clean"]]
     if dirty:
