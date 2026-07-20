@@ -371,6 +371,47 @@ evidence.
 12. **Terminal decision:** Q is eligible for the G-M funding decision; no
     prototype, public option, or default change is authorized.
 
+### 16. Wave 1 M1 current large-n comparison
+
+1. **Execution boundary:** 2026-07-20; DarkoFit package source
+   `726e5d8e6131c580bce948db833a5007d0692dca`; harness
+   `c39c15e26ea545e19c822505ff0fbc345815aec2`.
+2. **Comparator:** exact ChimeraBoost source
+   `f14be606b641f1bf0dc92bb14b3951f1fe631c6b`
+   (`v0.18.0-6-gf14be60`).
+3. **Evidence class:** Tier-E matched-capacity product-path characterization
+   on deterministic synthetic data; spent; no fresh or sealed data.
+4. **Data:** seed 20260717, 24 numeric features, scalar RMSE target, 500,000
+   and 1,000,000 training rows plus the following 100,000-row holdout.
+5. **Arms:** DarkoFit float, ChimeraBoost quantized, and the same
+   ChimeraBoost source with `quantize_gradients=False`; 300 matched-capacity
+   symmetric trees and all product selectors disabled.
+6. **Resources:** arm64 macOS 26.5.2, 14 logical CPUs, fixed 14-thread budget,
+   all six arm-order permutations at both sizes, fresh workers, same-arm
+   5,000-row/three-tree fit plus 256-row prediction warmup.
+7. **Command:** `python benchmarks/run_m1_q0_wave1.py --campaign m1
+   --darkofit-source /private/tmp/darkofit-wave1-source-726e5d8
+   --chimeraboost-source /Users/konstantinmedvedovsky/code/chimeraboost`.
+8. **Artifacts:** raw [`m1_wave1.json`](m1_wave1.json) SHA-256
+   `74fd4c9c85948a4c19664a57534e19be3efb0483c78c13767c2521194626eb7a`;
+   protocol SHA-256
+   `7b25851753f83916c8dd542d8dd0f8d569c5b871b9ef38cb8e933f0f46ff2a34`;
+   runner/analyzer SHA-256
+   `83690fa0873f017512e9d9c82f42a6be464547832b935786f627debbbb6ab2ab`;
+   summary [`m1_wave1_result.md`](m1_wave1_result.md).
+9. **Primary result:** DarkoFit/current-quantized-Chimera equal-size fit ratio
+   `0.844722`; DarkoFit/float-Chimera `0.762876`; quantized/float Chimera
+   `0.903595`.
+10. **Gates:** all source, metadata, behavior, engagement, stderr, and timing
+    stability checks passed. Quantized/float RMSE was within `1.002`, but the
+    fit ratio missed the predeclared `0.90` material-donor threshold.
+11. **Limitations:** current-machine matched capacity, not byte-identical
+    preprocessing; 14 rather than the historical 18 threads; no 0.15-era arm,
+    so no release-movement attribution.
+12. **Terminal decision:** `no_material_quantization_donor_signal`; publish
+    once, do not rerun or relax the threshold. Combined with Q0, the
+    provisional G-M Q disposition is close/do-not-fund.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

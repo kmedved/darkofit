@@ -16,6 +16,10 @@ Q0_ARTIFACT = (
 Q0_ARTIFACT_SHA256 = (
     "9111f14ae4d0d89e122f541b53f85c76c6bd5e76f4fa781c69039c1020c04e1c"
 )
+M1_ARTIFACT = Path(__file__).parents[1] / "benchmarks" / "m1_wave1.json"
+M1_ARTIFACT_SHA256 = (
+    "74fd4c9c85948a4c19664a57534e19be3efb0483c78c13767c2521194626eb7a"
+)
 
 
 def _m1_row(arm, rows, block, fit, rmse=1.0):
@@ -304,3 +308,36 @@ def test_recorded_q0_profile_is_immutable_and_reanalyzes_exactly():
         "eligible_for_g_m_quantization_funding_decision"
     )
     assert experiment.analyze_q0(artifact["results"]) == artifact["analysis"]
+
+
+def test_recorded_m1_characterization_is_immutable_and_reanalyzes_exactly():
+    raw = M1_ARTIFACT.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == M1_ARTIFACT_SHA256
+    artifact = json.loads(raw)
+
+    assert artifact["campaign"] == "m1"
+    assert artifact["sources"]["darkofit"]["head"] == (
+        experiment.DARKO_SOURCE_HEAD
+    )
+    assert artifact["sources"]["chimeraboost"]["head"] == (
+        experiment.CHIMERA_SOURCE_HEAD
+    )
+    assert artifact["protocol"]["runner_sha256"] == (
+        "83690fa0873f017512e9d9c82f42a6be464547832b935786f627debbbb6ab2ab"
+    )
+    assert artifact["analysis"]["integrity"] == {
+        "all_behavior_stable": True,
+        "darkofit_fused_engaged": True,
+        "metadata_valid": True,
+        "no_worker_stderr": True,
+    }
+    assert artifact["analysis"]["descriptive_verdicts"][
+        "darkofit_faster_than_current_quantized_chimera"
+    ] is True
+    assert artifact["analysis"]["descriptive_verdicts"][
+        "material_quantization_donor_signal"
+    ] is False
+    assert artifact["analysis"]["g_m_input"] == (
+        "no_material_quantization_donor_signal"
+    )
+    assert experiment.analyze_m1(artifact["results"]) == artifact["analysis"]

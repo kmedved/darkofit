@@ -236,6 +236,13 @@ It binds the clean post-H1 DarkoFit package source
 pin, all six primary-arm permutations, and a non-certifying material-donor
 rule before any current outcome is inspected.
 
+M1 completed on 2026-07-20 with all integrity checks passing. DarkoFit was
+15.53% faster than current quantized ChimeraBoost in the equal-size
+geometric mean. ChimeraBoost quantization improved its own fit time by 9.64%
+with neutral quality, narrowly missing the frozen 10% material-donor rule.
+The result is terminal and will not be rerun to cross the threshold; see
+[`benchmarks/m1_wave1_result.md`](benchmarks/m1_wave1_result.md).
+
 ### M2 — current-version broad characterization (periodic milestone)
 
 M2 is a periodic milestone, not an upfront prerequisite: run it after a
@@ -464,6 +471,12 @@ unfused diagnostic was unexpectedly faster on the current 14-logical-CPU
 machine; that hardware-dispatch signal is recorded but did not enter the
 frozen quantization projection. See
 [`benchmarks/q0_wave1_profile_result.md`](benchmarks/q0_wave1_profile_result.md).
+
+Taken together, M1 and Q0 do not satisfy Q's conjunctive G-M funding
+condition: Q0 passed its local projection screen, while M1 did not establish
+the predeclared material donor opportunity. The provisional Q disposition is
+therefore close/do-not-fund; the final portfolio record belongs in G-M after
+M3a.
 
 ### B0 — ensemble compatibility and sampling design
 
