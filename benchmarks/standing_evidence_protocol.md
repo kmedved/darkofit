@@ -33,8 +33,9 @@ The first executable draft pins:
 - unweighted and deterministic stress-weighted fits;
 - public defaults for both source trees;
 - four threads; and
-- one fresh worker per arm and cell, with control/candidate order reversed on
-  alternating cells.
+- one fresh worker per arm and cell, with control/candidate order alternating
+  across dataset/size/seed blocks within each weight stratum and opposite
+  orders for the two weight modes.
 
 That is 60 matched cells and 120 raw rows. Missing-value coverage belongs to
 M5 until an adapter supports it. Medium-size coordinates, peak RSS, and pinned
@@ -48,7 +49,9 @@ ratios. A full run requires clean committed source trees and a candidate tree
 different from the control. Output and its adjacent `.manifest.json` are
 create-only. While the contract's `contract_frozen` and `backtest_complete`
 flags remain false, even a full run is labeled contract-development evidence
-and is not ranking-eligible.
+and is not ranking-eligible. The checkout supplying this runner and the
+dataset builders is also required clean, recorded in the manifest, and checked
+for changes across execution.
 
 ## Harness null check
 

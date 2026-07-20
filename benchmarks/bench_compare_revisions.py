@@ -382,6 +382,11 @@ def _ordered_variants(variants, *, policy_suite, cell_index):
     return list(variants)
 
 
+def _standing_order_index(block_index, weight_index):
+    """Balance arm order within each M6 weight stratum across data blocks."""
+    return int(block_index) + int(weight_index)
+
+
 def parse_args(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--upstream", type=Path, default=None)
@@ -514,12 +519,14 @@ def main(argv=None):
             writer = csv.DictWriter(fh, fieldnames=CSV_FIELDS)
             writer.writeheader()
             fh.flush()
-            cell_index = 0
+            block_index = 0
             for size in args.sizes:
                 for dataset in datasets:
                     for seed in range(args.seeds):
                         spec, X, y, cat_features = build_dataset(dataset, size, seed)
-                        for weight_mode in args.weight_modes:
+                        for weight_index, weight_mode in enumerate(
+                            args.weight_modes
+                        ):
                             weights = make_sample_weight(y, spec.task, weight_mode)
                             split = split_case(X, y, spec.task, seed, weights)
                             data_path = tmpdir / f"{dataset}-{size}-{seed}-{weight_mode}.npz"
@@ -527,7 +534,10 @@ def main(argv=None):
                             ordered_variants = _ordered_variants(
                                 variants,
                                 policy_suite=args.policy_suite,
-                                cell_index=cell_index,
+                                cell_index=_standing_order_index(
+                                    block_index,
+                                    weight_index,
+                                ),
                             )
                             for variant in ordered_variants:
                                 payload = {
@@ -554,7 +564,7 @@ def main(argv=None):
                                     f"weights={weight_mode}",
                                     flush=True,
                                 )
-                            cell_index += 1
+                        block_index += 1
     finally:
         if args.keep_case_files:
             print(f"kept case files in {tmpdir}")

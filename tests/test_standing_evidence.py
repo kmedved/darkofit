@@ -12,7 +12,10 @@ if str(BENCH_DIR) not in sys.path:
     sys.path.insert(0, str(BENCH_DIR))
 
 from benchmark_adapters import RevisionSpec, standing_slice_specs  # noqa: E402
-from bench_compare_revisions import _ordered_variants  # noqa: E402
+from bench_compare_revisions import (  # noqa: E402
+    _ordered_variants,
+    _standing_order_index,
+)
 from run_standing_evidence import (  # noqa: E402
     summarize_pairs,
     validate_rows,
@@ -42,7 +45,7 @@ def _row(
     }
     source = control if variant == "control_default" else candidate
     task = task_by_dataset[dataset]
-    return {
+    row = {
         "status": "ok",
         "error": "",
         "variant": variant,
@@ -70,6 +73,35 @@ def _row(
         ),
         "primary_value": str(primary_value),
     }
+    if task == "regression":
+        rmse = primary_value if weight_mode == "none" else 1.0
+        weighted_rmse = (
+            primary_value if weight_mode == "stress" else rmse
+        )
+        row.update(
+            rmse=str(rmse),
+            mae="0.8",
+            r2="0.2",
+            weighted_rmse=str(weighted_rmse),
+            weighted_mae="0.8",
+            weighted_r2="0.2",
+        )
+    else:
+        log_loss = primary_value if weight_mode == "none" else 0.5
+        weighted_log_loss = (
+            primary_value if weight_mode == "stress" else log_loss
+        )
+        row.update(
+            accuracy="0.7",
+            f1_macro="0.6",
+            log_loss=str(log_loss),
+            brier="0.3",
+            weighted_accuracy="0.7",
+            weighted_f1_macro="0.6",
+            weighted_log_loss=str(weighted_log_loss),
+            weighted_brier="0.3",
+        )
+    return row
 
 
 def _smoke_rows(control: Path, candidate: Path):
@@ -114,6 +146,41 @@ def test_standing_order_rotates_only_for_m6_cells():
     ] == ["control", "candidate"]
 
 
+def test_standing_order_is_balanced_within_each_weight_stratum():
+    variants = [RevisionSpec("control", "/c"), RevisionSpec("candidate", "/n")]
+
+    orders = {
+        weight_index: [
+            [
+                variant.label
+                for variant in _ordered_variants(
+                    variants,
+                    policy_suite="standing-slice",
+                    cell_index=_standing_order_index(
+                        block_index,
+                        weight_index,
+                    ),
+                )
+            ]
+            for block_index in range(4)
+        ]
+        for weight_index in range(2)
+    }
+
+    assert orders[0] == [
+        ["control", "candidate"],
+        ["candidate", "control"],
+        ["control", "candidate"],
+        ["candidate", "control"],
+    ]
+    assert orders[1] == [
+        ["candidate", "control"],
+        ["control", "candidate"],
+        ["candidate", "control"],
+        ["control", "candidate"],
+    ]
+
+
 def test_standing_contract_covers_classification_and_weighted_domains():
     domain_ids = [domain.id for domain in M5_SENTINEL_DOMAINS]
     tasks = {domain.task for domain in M5_SENTINEL_DOMAINS}
@@ -142,6 +209,14 @@ def test_m6_grid_is_complete_and_unique():
 
 
 def test_source_contract_requires_a_same_clean_checkout_for_null_smoke():
+    harness = {
+        "path": "/harness",
+        "head": "h",
+        "tree": "tree-h",
+        "branch": "main",
+        "clean": True,
+        "status": [],
+    }
     source = {
         "path": "/repo",
         "head": "a",
@@ -151,23 +226,40 @@ def test_source_contract_requires_a_same_clean_checkout_for_null_smoke():
         "status": [],
     }
 
-    validate_source_contract(source, dict(source), smoke=True)
+    validate_source_contract(harness, source, dict(source), smoke=True)
 
     with pytest.raises(RuntimeError, match="same checkout"):
         validate_source_contract(
+            harness,
             source,
             {**source, "path": "/other"},
             smoke=True,
         )
     with pytest.raises(RuntimeError, match="clean committed"):
         validate_source_contract(
+            harness,
             {**source, "clean": False, "status": ["M file"]},
             {**source, "clean": False, "status": ["M file"]},
+            smoke=True,
+        )
+    with pytest.raises(RuntimeError, match="harness checkout"):
+        validate_source_contract(
+            {**harness, "clean": False, "status": ["M runner"]},
+            source,
+            dict(source),
             smoke=True,
         )
 
 
 def test_source_contract_requires_clean_distinct_trees_for_full_m6():
+    harness = {
+        "path": "/harness",
+        "head": "h",
+        "tree": "tree-h",
+        "branch": "main",
+        "clean": True,
+        "status": [],
+    }
     control = {
         "path": "/control",
         "head": "a",
@@ -183,16 +275,18 @@ def test_source_contract_requires_clean_distinct_trees_for_full_m6():
         "tree": "tree-b",
     }
 
-    validate_source_contract(control, candidate, smoke=False)
+    validate_source_contract(harness, control, candidate, smoke=False)
 
     with pytest.raises(RuntimeError, match="clean committed"):
         validate_source_contract(
+            harness,
             control,
             {**candidate, "clean": False, "status": ["M file"]},
             smoke=False,
         )
     with pytest.raises(RuntimeError, match="distinct"):
         validate_source_contract(
+            harness,
             control,
             {**candidate, "tree": control["tree"]},
             smoke=False,
@@ -233,6 +327,36 @@ def test_validate_rows_rejects_broken_smoke_grid(tmp_path, failure):
         rows[0]["error"] = "boom"
 
     with pytest.raises(RuntimeError):
+        validate_rows(
+            rows,
+            smoke=True,
+            control=control,
+            candidate=candidate,
+        )
+
+
+def test_validate_rows_rejects_nonfinite_secondary_metric(tmp_path):
+    control = tmp_path / "control"
+    candidate = tmp_path / "candidate"
+    rows = _smoke_rows(control, candidate)
+    rows[0]["r2"] = "nan"
+
+    with pytest.raises(RuntimeError, match="non-finite metric 'r2'"):
+        validate_rows(
+            rows,
+            smoke=True,
+            control=control,
+            candidate=candidate,
+        )
+
+
+def test_validate_rows_rejects_primary_metric_value_disagreement(tmp_path):
+    control = tmp_path / "control"
+    candidate = tmp_path / "candidate"
+    rows = _smoke_rows(control, candidate)
+    rows[0]["rmse"] = "1.1"
+
+    with pytest.raises(RuntimeError, match="primary value disagrees"):
         validate_rows(
             rows,
             smoke=True,

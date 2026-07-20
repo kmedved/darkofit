@@ -65,6 +65,26 @@ except ImportError:  # pragma: no cover - supports `python -m benchmarks...`
 
 
 RUNNER_VERSION = "standing-evidence-runner-v1"
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+_REGRESSION_METRIC_FIELDS = (
+    "rmse",
+    "mae",
+    "r2",
+    "weighted_rmse",
+    "weighted_mae",
+    "weighted_r2",
+)
+_CLASSIFICATION_METRIC_FIELDS = (
+    "accuracy",
+    "f1_macro",
+    "log_loss",
+    "brier",
+    "weighted_accuracy",
+    "weighted_f1_macro",
+    "weighted_log_loss",
+    "weighted_brier",
+)
 
 
 def _git(repository: Path, *arguments: str) -> str:
@@ -125,12 +145,17 @@ def _require_unchanged(
 
 
 def validate_source_contract(
+    harness: dict[str, Any],
     control: dict[str, Any],
     candidate: dict[str, Any],
     *,
     smoke: bool,
 ) -> None:
     """Enforce null-smoke and full-development source boundaries."""
+    if not harness["clean"]:
+        raise RuntimeError(
+            "M6 requires a clean committed harness checkout"
+        )
     if smoke:
         if control["path"] != candidate["path"]:
             raise RuntimeError(
@@ -179,6 +204,20 @@ def _finite_value(
         condition = "negative" if nonnegative else "non-positive"
         raise RuntimeError(
             f"M6 row has {condition} or non-finite {field!r}: {value!r}"
+        )
+    return value
+
+
+def _finite_metric(row: dict[str, str], field: str) -> float:
+    try:
+        value = float(row[field])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise RuntimeError(
+            f"M6 row has invalid metric {field!r}: {row.get(field)!r}"
+        ) from exc
+    if not math.isfinite(value):
+        raise RuntimeError(
+            f"M6 row has non-finite metric {field!r}: {value!r}"
         )
     return value
 
@@ -247,7 +286,22 @@ def validate_rows(
             raise RuntimeError(f"M6 row primary metric drifted: {identity}")
         _finite_value(row, "fit_seconds")
         _finite_value(row, "predict_seconds")
-        _finite_value(row, "primary_value", nonnegative=True)
+        primary_value = _finite_value(
+            row, "primary_value", nonnegative=True
+        )
+        metric_fields = (
+            _REGRESSION_METRIC_FIELDS
+            if row["task"] == "regression"
+            else _CLASSIFICATION_METRIC_FIELDS
+        )
+        metric_values = {}
+        for field in metric_fields:
+            metric_values[field] = _finite_metric(row, field)
+        if primary_value != metric_values[expected_primary]:
+            raise RuntimeError(
+                f"M6 row primary value disagrees with "
+                f"{expected_primary!r}: {identity}"
+            )
     if failures:
         raise RuntimeError(f"M6 worker failures: {failures}")
     return {
@@ -465,9 +519,11 @@ def run(args: argparse.Namespace) -> tuple[Path, Path]:
         if path.exists() or path.is_symlink():
             raise FileExistsError(f"refusing to overwrite {path}")
 
+    harness_before = source_state(REPO_ROOT)
     control_before = source_state(control)
     candidate_before = source_state(candidate)
     validate_source_contract(
+        harness_before,
         control_before,
         candidate_before,
         smoke=args.smoke,
@@ -489,8 +545,10 @@ def run(args: argparse.Namespace) -> tuple[Path, Path]:
             control=control,
             candidate=candidate,
         )
+        harness_after = source_state(REPO_ROOT)
         control_after = source_state(control)
         candidate_after = source_state(candidate)
+        _require_unchanged(harness_before, harness_after, label="harness")
         _require_unchanged(control_before, control_after, label="control")
         _require_unchanged(candidate_before, candidate_after, label="candidate")
 
@@ -528,6 +586,7 @@ def run(args: argparse.Namespace) -> tuple[Path, Path]:
             "shipping_or_default_claim_eligible": False,
             "contract": contract,
             "contract_sha256": canonical_json_sha256(contract),
+            "harness_source": harness_before,
             "control_source": control_before,
             "candidate_source": candidate_before,
             "hardware": hardware_fingerprint(),
@@ -541,7 +600,9 @@ def run(args: argparse.Namespace) -> tuple[Path, Path]:
                 "weight_modes": list(M6_WEIGHT_MODES),
                 "models": list(M6_MODELS),
                 "repeat": M6_REPEAT,
-                "variant_order": "control_first_even_cells_candidate_first_odd_cells",
+                "variant_order": (
+                    "parity_of_dataset_size_seed_block_plus_weight_index"
+                ),
             },
             "raw_csv": {
                 "path": str(output),
