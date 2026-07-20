@@ -1,8 +1,12 @@
 # COUNTERPUNCH_PLAN — evidence-led response to ChimeraBoost 0.18
 
-> **Status:** draft reviewed 2026-07-19; not authorized for execution.
-> Nothing in this document freezes a protocol, starts a benchmark, changes a
-> public API, opens fresh data, or authorizes a default change.
+> **Status:** draft reviewed 2026-07-19; reframed 2026-07-20 to the
+> strongest-library goal; revised 2026-07-20 to mechanism-led sequencing;
+> Wave 1 authorized by the owner 2026-07-20.
+> Wave 1 authorization covers the H1 audit and confirmed fixes, M1 plus the
+> Q0 profiling half, M3a, and construction of M5/M6 infrastructure. It does
+> not authorize a public prototype, default change, fresh confirmation
+> access, or sealed-lockbox access.
 
 DarkoFit comparison pin: `v0.10.0` at
 `ec66a64654becaf948592588a047bfb8205decc8`.
@@ -18,6 +22,61 @@ Every material run must append a 12-field entry to
 [`benchmarks/TESTING_LOG.md`](benchmarks/TESTING_LOG.md).
 Frozen artifacts are immutable.
 
+## 0. Purpose and framing
+
+DarkoFit's north star is a mechanism-led, general-purpose fitting library —
+optimizing the accuracy–speed–memory–reliability Pareto frontier — with
+sports as the home workload, not the design target and not a leaderboard
+entry. ChimeraBoost is the friendly rival and primary source of competitive
+ideas; CatBoost, LightGBM, and others are additional idea donors and
+ceilings. CatBoost remains the quality ceiling on record — it leads DarkoFit
+on the broad 13-dataset record and dominates it on the sports panel — but
+the CatBoost gap is a backlog of candidate mechanisms, not a campaign or a
+strategic center (owner decision 2026-07-20).
+
+Four standing constraints follow:
+
+1. **No sports overfit, and no sports-specific code.** Sports evidence
+   alone cannot justify a default. Defaults need broad-panel plus
+   sports-panel joint evidence under
+   [`benchmarks/SHIPPING_POLICY.md`](benchmarks/SHIPPING_POLICY.md), and
+   sports-only wins ship as explicit opt-ins. Candidate generation must not
+   be exclusively sports-sourced. Sports needs enter the library only as
+   reusable generic abstractions — `groups`, group-safe validation and OOB,
+   weights, deterministic sampling — never as basketball-specific branches
+   or defaults.
+2. **TabArena is a thermometer, not a target — ChimeraBoost is the
+   calibrated yardstick.** ChimeraBoost maintains a strong published
+   TabArena-Lite position at pinned versions, and its own sealed-holdout
+   discipline keeps that position honest. The cheap standing test of
+   general quality is therefore beating a pinned ChimeraBoost on the
+   internal broad panel at its milestone cadence (M2); the rival's TabArena
+   spend calibrates the yardstick at no cost to this repo. Routine breadth
+   protection between M2 milestones comes from the M5 diversity sentinels
+   plus the M6 fast general development slice, not from TabArena or the
+   broad panel. TabArena-Lite itself runs at most once per minor release as
+   a descriptive drift check (M4) that validates this proxy rather than
+   replacing it; no benchmaxing, and the CTR23 lockbox discipline is
+   unchanged. The proxy only covers what the internal panels cover: today
+   that is regression-weighted evidence, and classification — where
+   ChimeraBoost earned much of its TabArena position — remains outside the
+   broad proxy until a comparative classification slice exists. M5/M6
+   reduce that risk between milestones but do not erase it.
+3. **Absorption with bounded complexity.** Ideas adopted from other
+   libraries enter through the normal Tier-E/Tier-D machinery. An absorbed
+   surface should displace or consolidate existing code where possible; a
+   genuinely net-new capability may instead carry an explicit complexity
+   budget, maintenance owner, and review date (see Track I and Track Z).
+4. **One mechanism at a time.** The unit of development is a mechanism
+   moving through a fixed pipeline: profile → smallest private prototype →
+   correctness invariants → M5 diversity sentinels → M6 fast general
+   development slice → sports panel → M2 broad checkpoint only if it
+   survives. Mechanism-specific synthetic tests and profilers establish
+   causal behavior; M5 detects drift; the spent M6 slice may rank or kill
+   development candidates; sports and M2 characterize progressively broader
+   product value. Tier-D rigor is unchanged for defaults; explicit Tier-E
+   capabilities may move faster once correct and honestly characterized.
+
 ## 1. Executive decision
 
 The strategy is sound, but the original proposal advanced several mechanisms
@@ -27,10 +86,16 @@ feasibility gate, not an immediate implementation program.
 1. Establish a clean documentation checkpoint and audit the specific
    post-0.18 hygiene concerns without assuming ChimeraBoost bugs exist in
    DarkoFit.
-2. Refresh three stale comparisons: large-n engine throughput, the broad
-   13-dataset panel, and shipped ensemble behavior.
-3. Publish one owner-facing decision after those measurements:
-   continue, defer, or close quantization and ensemble-v3 work.
+2. Refresh the stale comparisons that gate funding decisions: large-n
+   engine throughput (M1, with the cheap Q0 profile alongside it) and
+   shipped ensemble behavior (M3a). The broad 13-dataset panel (M2) is a
+   periodic milestone — run it after a mechanism survives the cheaper
+   stages or before a meaningful release, never as an upfront tollbooth.
+3. Publish one owner-facing decision after M1, the Q0 profile, and M3a:
+   fund the quantization prototype, ensemble v3, neither, or both in
+   sequence — whichever shows the more convincing general Pareto gain.
+   CatBoost-gap and cross-feature mechanisms compete through the Track I
+   backlog rather than as pre-specified campaigns.
 4. Only surviving mechanisms enter opt-in implementation.
 5. Any automatic resolver or default change follows the complete Tier-D path
    on prospectively frozen fresh evidence.
@@ -53,7 +118,7 @@ design will materially help DarkoFit's already-fused histogram lanes.
 | Product breadth and conformal result | ChimeraBoost 0.18 did not directly test these DarkoFit capabilities. | Unchallenged, not re-won or newly improved. |
 | Sports early stopping + exact refit | The prior candidate lost 7/10 creator folds, worsened the overlap-exposed holdout, and was only 11.7% faster. | Closed predecessor; any successor needs a distinct causal hypothesis. |
 | Panel 3 | Power was 50.00% for T5 and 10.64% for guarded cross features versus the required 80%; no candidate was retained and the lockbox stayed sealed. | Closed and immutable. A new guard is a new campaign. |
-| CatBoost quality gap | CatBoost remains ahead on the relevant broad-tabular and sports records. | Open research problem. |
+| CatBoost quality gap | CatBoost remains ahead on the relevant broad-tabular and sports records. | Quality ceiling on record; mechanisms feed the Track I backlog. |
 
 The current evidence does **not** support a blanket statement that everything
 else held or improved against 0.18. Only the spent basketball diagnostic has
@@ -63,14 +128,15 @@ been refreshed.
 
 | Track | State | Evidence class | Entry condition | Exit artifact | Stop rule |
 | --- | --- | --- | --- | --- | --- |
-| H — hygiene | Ready for audit after owner authorization | Tier-E engineering | Clean documentation checkpoint | Audit chips and, only for confirmed gaps, tested fixes | Close each item as fixed or not present |
-| M — measurements | Ready after owner authorization | Tier-E descriptive | Exact pins, new dated protocols, exclusive machine access | M1, M2, and M3a results plus testing-log entries | Publish once; no rerun to improve a result |
+| H — hygiene | Wave 1 authorized; thread-state fix complete | Tier-E engineering | Clean documentation checkpoint | Audit chips and, only for confirmed gaps, tested fixes | Close each item as fixed or not present |
+| M — measurements | Wave 1 authorized | Tier-E descriptive | Exact pins, new dated protocols, exclusive machine access | M1 and M3a results plus testing-log entries; M2 at milestone cadence; M5 sentinels and M6 fast development slice as standing infrastructure | Publish once; no rerun to improve a result |
 | Q — quantization | Conditional | Q0 engineering, Q1/Q2 Tier-E opt-in, Q3 Tier-D automatic | M1 shows a material opportunity and Q0 shows a credible DarkoFit hotspot | Opt-in result or a documented closure; separate default-policy result if nominated | Close if the profile or prototype cannot plausibly meet the declared speed budget |
 | B — ensemble v3 | Conditional | Tier-E explicit opt-in; Tier-D for any changed default | M3a shows useful quality/cost room and B0 produces a compatible API | Explicit v3 mode and M3b attribution, or closure | Preserve current behavior if no robust Pareto improvement |
-| X — cross features | Conditional | Tier-E explicit research opt-in; Tier-D for automatic engagement | X0 defines separate force and guarded semantics plus full product obligations | Narrow opt-in result or deferral | No general safety claim from the three-task spent result |
+| X — cross features | Rolling backlog via Track I | Tier-E explicit research opt-in; Tier-D for automatic engagement | Promotion from the backlog; X0 then defines separate force and guarded semantics plus full product obligations | Narrow opt-in result or deferral | No general safety claim from the three-task spent result |
 | S — sports speed | Conditional successor to a failed candidate | Tier-D if automatic | One justified, preregistered group-safe candidate | Spent screen, then fresh result only if powered | Close automatic route on a failed spent screen |
 | P — harm-bounded composite | New campaign only | Tier-D | New exact candidate and new protocol identity | Published power GO/NO-GO; fresh result only after GO and owner authorization | No fresh access below the preregistered 80% power bar |
-| C — CatBoost gap | Research backlog | Development screen, then Tier-D if automatic | Higher-priority M/Q/B work no longer blocks it | Hypothesis result with bounded claim | Do not tune repeatedly on the same spent outcomes |
+| C — CatBoost gap | Rolling mechanism backlog via Track I | Development screen, then Tier-D if automatic | A C mechanism reaches the top of the Track I backlog | Hypothesis result with bounded claim | Do not tune repeatedly on the same spent outcomes |
+| I — idea intake | Standing backlog | Scouting notes; normal tiers on adoption | An external idea with a stated primary Pareto axis and expected value on M6 and sports | Rated two-shortlist entry, then a normal track on adoption | Drop entries without either consolidation or a bounded-complexity case |
 | Z — 1.0 cleanup | Conditional | Engineering/API | Surviving surfaces stable and deprecation inventory approved | Compatibility report, removal diff, release notes | No deletion for a line-count target |
 
 ## 4. Non-goals
@@ -78,6 +144,10 @@ been refreshed.
 - No CTR23 or other sealed lockbox access without a new, published,
   power-qualified authorization and explicit owner approval.
 - No sports or noisy-data default justified by overlap-permitting folds.
+- No default justified by sports evidence alone; joint broad-panel evidence
+  is required.
+- No TabArena benchmaxing. TabArena-Lite is a per-release descriptive drift
+  check (M4), never a per-decision input or an optimization target.
 - No automatic policy from spent evidence alone.
 - No multiclass cross-feature program in this cycle.
 - No new grow-kernel program unless profiling contradicts the current
@@ -94,24 +164,38 @@ been refreshed.
 These are new dated characterizations that reuse declared coordinates. They
 do not amend or masquerade as reruns of frozen protocols under changed source.
 All timed campaigns run exclusively on the machine; M1, M2, and M3a may not
-overlap each other or unrelated heavy work.
+overlap each other or unrelated heavy work. Every ChimeraBoost arm in this
+gate resolves to the header pin `f14be60` (`v0.18.0-6-gf14be60`) — six
+commits past the `v0.18.0` release tag, not the tag itself — and results
+must be labeled with that exact pin.
 
 ### M0 — documentation checkpoint
 
-After owner authorization, land the reviewed documentation already pending in
-the worktree, including this plan, the testing log, the 0.18 diagnostic, and
-their pointer updates. Record the exact clean source pins used by subsequent
+The initial checkpoint landed at `f9b642c` (this plan) and `2dcb1c1` (the
+testing log, the 0.18 diagnostic, and pointer updates). Land subsequent
+documentation revisions, including this reframed plan, the same way: as
+standalone documentation commits before any benchmark protocol binds new
+source pins. Record the exact clean source pins used by subsequent
 protocols. This is a provenance step, not feature work.
 
 ### M1 — large-n matched engine characterization
 
-The primary estimand is matched-core engine throughput, not product-default
-performance. Freeze one common configuration matching the historical
-large-n comparison and compare:
+The primary estimand is matched-capacity product-path throughput, not
+product-default performance and not isolated "matched-core" throughput: the
+inherited workload keeps each product's own public border construction
+(DarkoFit's 200k border sample versus ChimeraBoost's full-data borders), so
+preprocessing above 200k rows is matched in capacity, not byte-identical.
+Claims must be worded accordingly. Freeze one common configuration matching
+the historical large-n comparison and compare:
 
 - DarkoFit 0.10 under the common configuration;
 - ChimeraBoost 0.18 quantized under the same configuration; and
 - ChimeraBoost 0.18 with `quantize_gradients=False`.
+
+An optional ChimeraBoost 0.15-era float arm under the same configuration may
+be added as a labeled diagnostic outside the primary blocks; without it, no
+claim may attribute movement since the historical comparison to 0.18
+specifically rather than to accumulated changes since the old pin.
 
 Reuse the explicit workload and matched capacity in
 [`benchmarks/large_n_engine_protocol.md`](benchmarks/large_n_engine_protocol.md):
@@ -135,26 +219,38 @@ attribution. Report:
 - quality and prediction fingerprints sufficient to detect accidental
   configuration drift.
 
-M1 answers whether the historical large-n crown survived and whether
-ChimeraBoost's quantized lane, rather than unrelated 0.18 changes, explains
-the movement. It does not prove that DarkoFit should implement quantization.
+M1 answers whether the historical large-n advantage survived, and the
+quantized-versus-float pair isolates the flag's effect within the current
+0.18 source. Attribution of the total movement since the historical
+comparison requires the optional 0.15-era diagnostic arm. M1 does not prove
+that DarkoFit should implement quantization.
 
-### M2 — current-version broad characterization
+### M2 — current-version broad characterization (periodic milestone)
+
+M2 is a periodic milestone, not an upfront prerequisite: run it after a
+mechanism survives the M5, M6, and sports stages of the pipeline, or before
+a meaningful release. It is the broad checkpoint of the mechanism pipeline
+and the operative test of the calibrated-yardstick proxy in §0. G-M does
+not wait for it.
 
 Create a new dated protocol that reuses the exact 13 datasets and
 `r0f0/r1f1/r2f2` coordinates from the historical panel while preserving all
 old artifacts. Primary arms:
 
-- DarkoFit 0.10 default;
+- the exact frozen pre-mechanism DarkoFit default control;
+- the candidate DarkoFit source and nominated public configuration (or the
+  release-candidate default for a release milestone);
 - ChimeraBoost 0.18 default; and
 - CatBoost 1.2.10 default.
 
 Add ChimeraBoost 0.18 float as a clearly labeled diagnostic arm for
-quantization attribution. Keep shared splits, preprocessing boundaries,
-thread budgets, early-stopping rules, fresh-worker execution, equal-dataset
-aggregation, full per-coordinate rows, fit/predict time, and RSS. Publish
-current-version quality and cost; do not use this spent panel to authorize a
-new default.
+quantization attribution. The protocol must bind both DarkoFit source hashes
+and distinguish candidate-versus-control attribution from
+candidate-versus-rival positioning. Keep shared splits, preprocessing
+boundaries, thread budgets, early-stopping rules, fresh-worker execution,
+equal-dataset aggregation, full per-coordinate rows, fit/predict time, and
+RSS. Publish current-version quality and cost; do not use this spent panel
+to authorize a new default.
 
 ### M3a — shipped ensemble comparison
 
@@ -175,8 +271,21 @@ Diagnostic arms:
 
 Primary scoring is the spent player-disjoint sports panel, including
 held-team and cold-player views. Creator folds are a secondary,
-overlap-permitting diagnostic. Report the quality/cost Pareto: fit, predict,
+overlap-permitting diagnostic. The panel's nine cells are three targets
+across three seasons with shared players and overlapping rows; they are not
+nine independent lineages. Aggregate uncertainty must use paired,
+season-clustered inference, with held-team and cold-player views as
+declared guardrails, and cross-season generalization claims require
+genuinely unseen seasons. Report the quality/cost Pareto: fit, predict,
 peak RSS, model bytes, and available OOB/member telemetry.
+
+M3a is quality-first: run the quality scoring pass before committing to
+repeated timing. If group-safe ensemble value does not survive the
+player-disjoint view, record single descriptive timings only and skip the
+repeat series. Supplement the sports scoring with selected non-sports M6
+cells run with `n_ensembles` as descriptive context, while M5 checks
+invariants and drift. This keeps an ensemble verdict from being sports-only
+without turning the sentinel suite into a scoreboard.
 
 Label DarkoFit's shipped row-bootstrap member selection as player-overlap
 exposed and its group-bootstrap selection as player-disjoint. Apply the same
@@ -193,16 +302,98 @@ excluded from timing decisions.
 The proposed DarkoFit 0.8 subagging and member-tuned policy do **not** belong
 in M3a because they do not yet exist. They move to B and M3b.
 
+### M4 — TabArena-Lite drift check (release cadence, optional)
+
+A descriptive Tier-E TabArena-Lite run placing DarkoFit on the same scale
+already published for ChimeraBoost and CatBoost. At most once per minor
+release, never per-decision, and never an input to any gate. Its job is to
+validate the calibrated-yardstick proxy in §0: confirm that the internal
+panels' verdict against a pinned ChimeraBoost still transfers to TabArena
+position, so routine general-quality tracking can stay on the cheap
+internal comparison. It is not to be optimized. M4 may run after G-M, must
+not contend with M1–M3a machine time, and touches no sealed lockbox.
+
+### M5 — standing diversity sentinel suite
+
+A small, fixed, fast regression-detection suite — minutes, not hours —
+built largely from SynthGen generators plus a few small pinned real
+datasets. It is the routine drift guard between M2 milestones, not a quality
+ranking panel. Reserve *canary* for SynthGen datasets whose fixed verifier
+has earned the known floor; earned canaries may be components of M5.
+
+Fixed coverage domains:
+
+- grouped/entity regression through a generic group-bearing generator;
+- smooth numeric regression;
+- noisy numeric regression;
+- categorical and missing-value regression;
+- high-row-count numeric fitting and prediction;
+- binary classification;
+- multiclass classification;
+- weighted regression; and
+- weighted classification.
+
+Each domain pins datasets, seeds, configurations, correctness invariants,
+behavior fingerprints, and expected quality ranges. Hard failures are
+crashes, invalid/non-finite outputs, exactness or serialization breaks, and
+violations of a frozen known-floor invariant. Other quality drift triggers
+investigation and blocks advancement until explained, but is not itself an
+acceptance score; no mechanism may be tuned to M5. Performance sentinels use
+paired ratios against a pinned control in same-machine blocks with a hardware
+fingerprint, never portable absolute-second ranges. M5's classification and
+weighted domains reduce the current proxy blind spot but do not establish
+comparative classification strength.
+
+Building M5 is standing Tier-E infrastructure work authorized in Wave 1.
+
+### M6 — fast general development slice
+
+M6 is the missing quality-development rung: a small, pinned, explicitly spent
+comparative slice that may rank or kill mechanisms but cannot support a
+shipping or default claim. Its initial dataset contract reuses the existing
+`benchmarks/benchmark_adapters.py` builders and weight modes rather than
+creating a second data layer: numeric and categorical regression, binary and
+multiclass classification, missing-value coverage where supported, and
+unweighted plus stress-weighted cases at fixed small/medium sizes and seeds.
+
+Every mechanism evaluation includes the exact frozen pre-mechanism DarkoFit
+control and the candidate source. Pinned ChimeraBoost and CatBoost anchors
+are established when M6 is frozen and refreshed at release cadence, not
+rerun during every inner development iteration. Report task-appropriate
+quality, fit/predict time, peak RSS where practical, failures, and resolved
+model metadata. M6 is the only standing cheap panel that may influence
+quality-oriented backlog ranking; tuning directly to its individual cells
+is prohibited, and repeated inspection makes all M6 outcomes spent.
+
+Building and backtesting the M6 contract is Tier-E infrastructure work
+authorized in Wave 1. It must reproduce a declared subset of prior mechanism
+verdicts before it can rank new work.
+
 ### G-M — owner-facing decision
 
-Publish one short decision after M1–M3a:
+G-M is an owner portfolio judgment informed by declared descriptive
+measurements. It is not itself an evidence gate: no Tier-E measurement
+becomes a pass/fail certification through it, and the binding evidence
+rules live at Tier-D. Each of M1 and M3a may publish its result and a
+provisional per-track disposition as it completes rather than waiting for
+the other; G-M is the single short portfolio note that sets priority
+afterward. G-M does not wait for M2. Out of G-M, fund at most one private
+engineering prototype at a time.
 
-- **Q0 fund** only if M1/M2 show a material current engine opportunity;
-  otherwise defer or close Q. Q0—not G-M—later decides whether Q1 is
-  justified.
+Publish one short decision after M1, the Q0 profile, and M3a:
+
+- **Q prototype fund** only if M1 and the Q0 profile show a material
+  current engine opportunity; otherwise defer or close Q. Q0's prototype
+  result—not G-M—later decides whether Q1 is justified.
 - **B continue** only if ensemble quality survives the player-disjoint view
   at an acceptable quality/cost position; otherwise preserve the current
   opt-in without a v3 program.
+- **C and X mechanisms** are not G-M peers (owner decision 2026-07-20):
+  they compete through the Track I backlog. If neither Q nor B earns
+  funding, the top backlog mechanism — currently the T7b-derived quality
+  levers — is the natural next bet.
+- At G-M, **close** is the default outcome for a track that does not earn
+  its slot; **defer** requires a named re-entry condition.
 - M3a may inform a documented recipe. It cannot change an ensemble default.
 
 ---
@@ -210,6 +401,11 @@ Publish one short decision after M1–M3a:
 ## 6. Gate F — feasibility before public implementation
 
 ### Q0 — quantization attribution and prototype
+
+Q0 has two halves with different costs. The profiling half is cheap and
+runs alongside M1, before G-M; its output feeds the G-M funding call. The
+prototype half is the fundable private engineering bet and is built only
+if G-M funds it.
 
 Profile DarkoFit's current scalar training path at the M1 workload shapes.
 Measure the fraction attributable to gradient/Hessian preparation, histogram
@@ -224,9 +420,12 @@ Advance to Q1 only if:
   arithmetic and maintenance surface; and
 - a written arithmetic design can prove safe accumulation and fallback.
 
-If the attainable upper bound cannot meet the subsequently declared speed
-budget, record the profile and close Q. Do not implement a public option to
-match a competitor's architecture when DarkoFit's bottleneck is elsewhere.
+Declare Q0's speed budget — the minimum end-to-end fit improvement that
+would justify Q1's added arithmetic and maintenance surface — in the Q0
+protocol before profiling begins, not after inspecting the profile. If the
+attainable upper bound cannot meet that pre-declared budget, record the
+profile and close Q. Do not implement a public option to match a
+competitor's architecture when DarkoFit's bottleneck is elsewhere.
 
 ### B0 — ensemble compatibility and sampling design
 
@@ -380,6 +579,14 @@ T10 sports automatic-ensemble refutation remains in force.
 
 ## 9. Track X — cross-feature research opt-ins
 
+Tier note, requiring owner ratification: the shipping policy assigns
+"automatic policies" to Tier-D. This plan reads that as governing
+default-on automation. A guarded selector that runs only when the user
+explicitly invokes it is treated as a Tier-E opt-in surface whose internal
+automation ships with mandatory disclosure; any default-on engagement of
+the same mechanism is Tier-D. If the owner rejects this reading, guarded X
+moves to Tier-D or is dropped.
+
 After X0, a force-on research surface may ship under Tier-E once its product
 correctness obligations are met. A guarded surface may also be offered
 explicitly, but its documentation must say:
@@ -484,28 +691,84 @@ C1 and C2 are development screens on declared spent evidence. If the same
 outcomes shape a policy, do not call a later view of those tasks
 outcome-unseen. Reserve separate spent development-holdout coordinates within
 the screen where possible. Any automatic DarkoFit policy that survives still
-needs a fresh Tier-D confirmation campaign. Keep this track behind the M/Q/B
-decision unless new evidence changes the priority.
+needs a fresh Tier-D confirmation campaign.
+
+C is a rolling mechanism backlog managed through Track I, not a standing
+campaign and not a G-M peer (owner decision 2026-07-20): the CatBoost gap
+is a source of candidate mechanisms and a quality ceiling, not the
+strategic center. The T7b-derived mechanisms stay near the top of the
+backlog because they are the only current quality levers with attribution
+evidence, and CatBoost's sports-panel dominance — better quality at lower
+fit time — marks quality-plus-sports-speed as the weakest region of
+DarkoFit's Pareto frontier. Source at least part of the C candidate set
+from M6 and the broad panel's worst datasets, not only from sports, so
+candidate generation stays unbiased.
 
 ---
 
-## 13. Track H — hygiene and documentation
+## 13. Track I — external idea intake
+
+A standing, origin-agnostic scouting backlog. Any library or paper is a
+valid source; ChimeraBoost holds no privileged position beyond the existing
+NOTICE-based porting practice. Each entry records the mechanism, its
+source, its primary Pareto axis, expected value on M6 and the sports panel,
+estimated implementation surface, and the code it would displace or
+consolidate. A genuinely net-new capability instead records a bounded
+complexity budget, maintenance owner, and review date. Entries without
+either a consolidation story or a justified bounded-complexity case are
+dropped.
+
+Track C's quality mechanisms and Track X's cross-feature surfaces compete
+through this backlog (owner decision 2026-07-20). Ranking must credit
+quality-Pareto movement explicitly: a mechanism-led pipeline naturally
+favors speed mechanisms, whose value appears in a profiler, over quality
+mechanisms, whose value only shows up on panels — the backlog must not
+drift all-speed. Maintain separate quality/reliability/capability and
+speed/memory/maintainability shortlists. Every portfolio decision compares
+the best evidence-adjusted candidate from each shortlist before funding the
+single next prototype; profiler evidence alone cannot make a speed candidate
+win by default.
+
+Initial backlog, unrated and unauthorized:
+
+- **Monotonic and interaction constraints** (CatBoost/LightGBM/XGBoost):
+  mainstream general-tabular capability, direct sports value as domain
+  priors, absent from DarkoFit today. Treat as a high-value capability gap,
+  with rank still to be earned against M6 value and implementation cost.
+- **Exclusive feature bundling** (LightGBM): sparse and high-cardinality
+  fit speed, orthogonal to quantization.
+- **Langevin boosting / SGLB** (CatBoost): cheap ensemble diversity; a
+  potential Track B interaction.
+- CatBoost's `l2_leaf_reg` and samples-per-feature depth heuristics:
+  already Track C candidates via the T7b attribution.
+
+Adoption is never authorized from this backlog directly. A promoted entry
+becomes a normal track with its own evidence class, gates, and stop rule.
+
+---
+
+## 14. Track H — hygiene and documentation
 
 ### H0 — clean documentation checkpoint
 
-When authorized, commit the reviewed pending documentation as a standalone
-checkpoint before benchmark protocols bind new source hashes. Do not mix it
-with feature implementation.
+The original checkpoint has landed (see M0). When authorized, commit any
+subsequently revised documentation the same way: as a standalone checkpoint
+before benchmark protocols bind new source hashes. Do not mix it with
+feature implementation.
 
 ### H1 — audit, then fix only confirmed gaps
 
 ChimeraBoost's audit findings are prompts, not evidence that DarkoFit has the
 same bugs:
 
-- **Thread state:** test call-local thread-count restoration at fit and
-  predict, including subprocess concurrency boundaries. Numba thread masks
-  are thread-local; do not describe an unverified process-global leak.
-  Preserve the existing decision to reject unsafe background warmup.
+- **Thread state — fixed 2026-07-20:** the confirmed same-thread gap was
+  closed with nested-safe call-local save/restore around scalar,
+  multiclass, and distributional fit/predict operations. The fitted
+  `n_threads_` mask still governs kernels; the caller's thread-local ambient
+  mask is restored afterward, including predict-during-fit and staged
+  resumptions. Named regression coverage lives in
+  `tests/test_thread_state_restoration.py`; the existing thread-local warmup
+  coverage remains unchanged. Do not describe this as a process-global leak.
 - **Serialization:** inspect whether saved models redundantly include
   rebuildable predictor caches; retain safe, bit-identical round trips.
 - **Loud failures and parameter resolution:** cover unseen classifier
@@ -525,13 +788,19 @@ Older records keep their source/version boundaries and are never overwritten.
 
 ---
 
-## 14. Track Z — conditional 1.0 cleanup
+## 15. Track Z — conditional 1.0 cleanup
 
 Do not use an arbitrary 12–15k-line target. Start from the deprecations already
 announced in `CHANGELOG.md`, build an API/serialization compatibility
 inventory, and measure the actual removal. Delete code because an approved
 deprecation matured and coverage proves the replacement—not to hit a line
 count.
+
+Under the strongest-library goal this track is a competitive feature, not
+housekeeping: a high shipped-to-carried ratio is part of what "best
+available" means, and it is the counterweight to Track I's absorption. Z
+stays independent of the speculative tracks and may proceed whenever the
+deprecation inventory is approved.
 
 Quantization and ensemble v3 are not prerequisites for 1.0 and must not be
 rushed into the release to “break once.” They ship only if their own tracks
@@ -550,24 +819,24 @@ bounded:
 
 ---
 
-## 15. Execution dependencies and rough effort
+## 16. Execution dependencies and rough effort
 
 These are planning ranges, not delivery promises.
 
 | Wave | Work | Approximate effort | Decision |
 | --- | --- | --- | --- |
 | 0 | Owner reviews this plan; H0 documentation checkpoint | Hours | Authorize or revise Gate M |
-| 1 | H1 audit; M1, M2, M3a run sequentially on an otherwise idle machine | Roughly 1–3 machine-days plus analysis | Publish G-M continue/defer/close |
-| 2 | Q0, B0, X0 feasibility/contracts | Roughly 2–5 engineering days | Approve only justified prototypes |
-| 3 | Surviving Q1, B1–B3/M3b, and X implementation | Roughly 1–3 weeks depending on survivors | Ship explicit opt-ins, defer, or close |
+| 1 | Remaining H1 audit (thread-state sub-item fixed); corrected M1 plus the Q0 profile; M3a quality-first; M5 sentinel and M6 development-slice build | Roughly 1–3 machine-days plus analysis | Publish G-M: fund the Q prototype, B, neither, or both in sequence |
+| 2 | The one funded prototype (Q0 prototype or B0 design) | Roughly 2–5 engineering days | Approve only the justified prototype |
+| 3 | Surviving Q1 or B1–B3/M3b implementation; M2 broad milestone once a mechanism survives M5, M6, and sports | Roughly 1–3 weeks depending on survivors | Ship explicit opt-ins, defer, or close |
 | 4 | Q3, S, or P-next Tier-D campaigns | Separately estimated and power-gated | One fresh campaign per qualified automatic policy |
-| Later | C research and Z cleanup | Independent backlog | No coupling to unfinished speculative tracks |
+| Later | Track I backlog (C and X mechanisms included), M4 drift check, and Z cleanup | Independent backlog | No coupling to unfinished speculative tracks |
 
 Benchmark waves use fresh workers and exclusive machine access. Parallelize
 code review and analysis, not timed model jobs that would contend for CPU,
 memory bandwidth, or cache.
 
-## 16. Evidence and stopping discipline
+## 17. Evidence and stopping discipline
 
 - New source pins require new dated characterization artifacts; do not call a
   changed-source run a frozen-protocol rerun.
