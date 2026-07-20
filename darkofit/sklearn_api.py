@@ -3844,7 +3844,10 @@ class _RefitParamsMixin:
     def __sklearn_tags__(self):
         parent = getattr(super(), "__sklearn_tags__", None)
         if parent is None:
-            return self._more_tags()
+            return {
+                **_RefitParamsMixin._more_tags(self),
+                "requires_y": True,
+            }
         tags = parent()
         tags.input_tags.allow_nan = True
         tags.input_tags.sparse = False

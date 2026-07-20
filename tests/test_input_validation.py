@@ -556,9 +556,14 @@ def test_sklearn_messages_and_tags():
             iterations=3, thread_count=1, diagnostic_warnings="never"
         ).fit(X, np.zeros(len(y)))
 
-    tags = _regressor().__sklearn_tags__()
-    assert tags.input_tags.allow_nan
-    assert not tags.input_tags.sparse
+    for estimator in (_regressor(), DarkoClassifier(iterations=3)):
+        tags = estimator.__sklearn_tags__()
+        if isinstance(tags, dict):
+            assert tags["allow_nan"]
+            assert "sparse" not in tags.get("X_types", ())
+        else:
+            assert tags.input_tags.allow_nan
+            assert not tags.input_tags.sparse
 
 
 @pytest.mark.parametrize("estimator", [DarkoRegressor, DarkoClassifier])
