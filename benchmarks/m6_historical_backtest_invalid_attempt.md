@@ -14,3 +14,18 @@ validation test from positional to the exact keyword call used by the parent.
 The declared subset, source pins, cases, thresholds, analyzers, and model
 policies are unchanged. Because the failure occurred before replay execution,
 the same frozen backtest may be relaunched after the repair commit.
+
+## Second no-outcome launch
+
+The next launch passed source validation but stopped while importing the
+fused historical runner, again before any model fit or replay outcome. The
+parent had inherited a workstation `PYTHONPATH` containing another
+repository's `benchmarks` package. Because the exact historical source root
+also appeared later on that path, the historical runner did not move it to
+the front and imported the wrong package.
+
+The repair removes inherited `PYTHONPATH` from every replay-worker
+environment. Each exact historical runner inserts its own repository root,
+and the selector worker explicitly prepends its pinned source. A named test
+now enforces the isolated environment. The declared evidence contract remains
+unchanged, and no raw or combined artifact was created.

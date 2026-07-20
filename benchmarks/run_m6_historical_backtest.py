@@ -478,6 +478,7 @@ def _selector_worker_main(payload_path: Path) -> None:
 
 def _environment(cache_dir: Path) -> dict[str, str]:
     environment = os.environ.copy()
+    environment.pop("PYTHONPATH", None)
     for key in THREAD_ENV_KEYS:
         environment[key] = str(M6_THREADS)
     environment.update(

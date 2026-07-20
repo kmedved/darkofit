@@ -14,6 +14,7 @@ if str(BENCH_DIR) not in sys.path:
 
 from run_m6_historical_backtest import (  # noqa: E402
     SELECTOR_CASES,
+    _environment,
     analyze_fused,
     analyze_packed,
     analyze_selector,
@@ -117,3 +118,13 @@ def test_backtest_source_validation_requires_all_exact_clean_pins():
                 "chimeraboost_015": chimera,
             }
         )
+
+
+def test_backtest_worker_environment_drops_inherited_pythonpath(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setenv("PYTHONPATH", "/wrong/repository")
+
+    environment = _environment(tmp_path)
+
+    assert "PYTHONPATH" not in environment
