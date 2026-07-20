@@ -854,7 +854,8 @@ memory bandwidth, or cache.
 - A failed gate is recorded and closed. It is not relaxed or retried on the
   same evidence.
 
-The program reaches a clean stopping point when M1–M3a have a published
-current-version answer; every downstream track is explicitly shipped,
-deferred, or closed; no default claim rests on spent evidence; the testing log
-and public claim surfaces agree; and any unused lockbox remains sealed.
+The program reaches a clean stopping point when M1, the Q0 profile, and M3a
+have published current-version answers; every downstream track is explicitly
+shipped, deferred, or closed; any M2 milestone that became due is published;
+no default claim rests on spent evidence; the testing log and public claim
+surfaces agree; and any unused lockbox remains sealed.
