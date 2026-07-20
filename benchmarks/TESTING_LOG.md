@@ -498,6 +498,63 @@ evidence.
 9. **Decision:** M5 v1 is frozen. It detects hard failure and unexplained
    drift; it does not rank or accept mechanisms.
 
+### 20. Wave 1 M3a shipped-ensemble comparison
+
+1. **Execution boundary:** 2026-07-20; exact post-H1 DarkoFit package source
+   `726e5d8e6131c580bce948db833a5007d0692dca`; clean frozen harness
+   `dae36ac435064722f955ed8d0d4586dae1a26d2d`.
+2. **Comparator:** exact ChimeraBoost source
+   `f14be606b641f1bf0dc92bb14b3951f1fe631c6b`, version 0.18.0.
+3. **Evidence class:** Tier-E quality-first characterization on spent data;
+   no fresh or sealed data, no default or cross-season claim.
+4. **Data:** frozen sports-panel-v2 SHA-256
+   `8f7eab3765b4166740b150ed372f9607bcd6dd9673e0e73cc6541583230a59e6`;
+   three seasons x three targets, exact player-disjoint folds, creator-fold
+   diagnostic, held-team/seen/cold views. General context used six fixed
+   medium M6-adapter regression cells (three datasets x seeds 0/1).
+5. **Arms:** DarkoFit single, group8, row5/8, and group5; ChimeraBoost
+   quantized single/ensemble8 and float single/ensemble8. DarkoFit row arms
+   and ChimeraBoost subagging are player-overlap exposed internally; DarkoFit
+   group arms are player-disjoint.
+6. **Resources:** arm64 macOS, 14 logical CPUs, fixed 14-thread budget, one
+   fresh worker per arm, same-arm warmup, sampled aggregate parent-plus-child
+   RSS. Repeat timing was conditional on the frozen group8 quality gate.
+7. **Commands:** `python benchmarks/run_m3a_wave1.py --phase
+   primary-quality --output
+   /private/tmp/darkofit-m3a-primary-quality-dae36ac.json`; then the
+   analogous `--phase diagnostics` command. The analyzer combined the two
+   shards; no `primary-repeats` command was authorized or run.
+8. **Artifacts:** contract SHA-256
+   `930d405e75947747892337851d2a767a0a789069ad86eaf726d7396fb0a435b8`;
+   protocol `965296a3ef1bd1547a93e5061cacad20885ac6c015ae00ce73a48c816f2833a6`;
+   runner `f971b28a83d6a14291141dbc0a657ab28f95fb31e9459a77bd72a42c942c8cd7`;
+   analyzer `876e79aab5f05263d8acb779d9004891785f0ef1a72358f832c26ca04f176dba`;
+   primary shard
+   `3671d12eaa2e2647ff2677304173fec339eb2c5197c39bf8211a1ff5042e00fd`;
+   diagnostic shard
+   `a9452207e81a4891d1ba47592a5be488998e782f4dc1d54f01e885d8ea4eb9bf`;
+   combined [`m3a_wave1.json`](m3a_wave1.json) SHA-256
+   `c811c8b04cbbaff6edb8226d7e8f5dbac3f9229adf18c3f8b658129ba7fc459a`;
+   summary [`m3a_wave1_result.md`](m3a_wave1_result.md).
+9. **Primary result:** DarkoFit group8/single player-disjoint ratio
+   `1.025482`, clustered p95 `1.032391`, held `1.016048`, cold `1.015661`;
+   fit/predict/model-bytes/RSS ratios
+   `4.770486/3.898647/3.929268/1.091085`. ChimeraBoost ensemble8/single was
+   `0.950230` on sports with 9/9 wins and `0.947797` on the six general cells
+   with 6/6 wins.
+10. **Gates:** all source, target, grid, RSS, and stderr integrity checks
+    passed. DarkoFit group8 failed the aggregate, clustered, held, cold,
+    worst-season, and worst-cell quality gates; all four bounded-cost checks
+    passed.
+11. **Limitations/non-claims:** only three spent season clusters; creator
+    folds are overlap exposed; the general slice is small and M6 remains
+    non-ranking; primary costs are single descriptive observations because
+    quality failed; no unseen-season, broad-panel, or default claim.
+12. **Terminal decision:** M3a closes the current DarkoFit ensemble route and
+    forbids repeat timing. G-M separately funds a new private B0/B1/B2
+    mechanism attribution based on the predeclared ChimeraBoost donor arm;
+    see [`wave1_gm_decision.md`](wave1_gm_decision.md).
+
 ## Product behavior established by the testing
 
 ### Defaults retained
