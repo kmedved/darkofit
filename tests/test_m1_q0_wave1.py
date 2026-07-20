@@ -261,3 +261,12 @@ def test_wave1_source_pins_and_speed_budget_are_explicit():
     assert experiment.Q_REQUIRED_EQUAL_SHARE == pytest.approx(
         0.43333333333333335
     )
+
+
+def test_terminal_disposition_handles_both_campaign_analysis_shapes():
+    assert experiment._terminal_disposition(
+        {"disposition": "q0-result"}
+    ) == "q0-result"
+    assert experiment._terminal_disposition(
+        {"g_m_input": "m1-result"}
+    ) == "m1-result"

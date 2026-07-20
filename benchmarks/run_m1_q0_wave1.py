@@ -1261,6 +1261,12 @@ def _artifact_base(
     }
 
 
+def _terminal_disposition(analysis: dict[str, Any]) -> str:
+    if "disposition" in analysis:
+        return str(analysis["disposition"])
+    return str(analysis["g_m_input"])
+
+
 def run_parent(args: argparse.Namespace) -> dict[str, Any]:
     if args.output.exists() or args.output.is_symlink():
         raise RuntimeError(f"refusing existing output: {args.output}")
@@ -1357,7 +1363,7 @@ def run_parent(args: argparse.Namespace) -> dict[str, Any]:
             + "\n"
         ).encode("utf-8"),
     )
-    print(f"disposition: {analysis.get('disposition', analysis['g_m_input'])}")
+    print(f"disposition: {_terminal_disposition(analysis)}")
     print(f"wrote {args.output}")
     return artifact
 
