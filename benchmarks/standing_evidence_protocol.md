@@ -1,6 +1,7 @@
 # Standing M5/M6 evidence protocol
 
-Status: Wave 1 infrastructure draft, authorized 2026-07-20.
+Status: M6 contract frozen after release-anchor establishment; historical
+backtest pending, authorized 2026-07-20.
 
 This protocol creates the cheap middle rung in
 [`COUNTERPUNCH_PLAN.md`](../COUNTERPUNCH_PLAN.md). It is deliberately split
@@ -76,8 +77,11 @@ thread count and random seed fixed around product defaults:
   --output benchmarks/m6_release_anchors.json
 ```
 
-The create-only artifact must contain all 240 product rows before its hash can
-be embedded and the contract reviewed for freeze.
+The create-only artifact contains all 240 product rows and is embedded at
+SHA-256
+`59747bc08d48a2ddad9b3cec05c965ecbd9edf21025c537f17dc58d816385409`.
+The contract is therefore frozen. Candidate ranking remains disabled until
+the separate historical backtest artifact is complete and hash-bound.
 
 ## Harness null check
 

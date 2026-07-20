@@ -412,6 +412,33 @@ evidence.
     once, do not rerun or relax the threshold. Combined with Q0, the
     provisional G-M Q disposition is close/do-not-fund.
 
+### 17. M6 release-anchor establishment
+
+1. **Execution boundary:** 2026-07-20; clean harness `d509111`; ChimeraBoost
+   `f14be606b641f1bf0dc92bb14b3951f1fe631c6b`; CatBoost 1.2.10 with
+   installed-wheel `RECORD` SHA-256
+   `9c20fb35750d9ff814309323b225e836b538c1496745f357c8fd50187e7824ed`.
+2. **Evidence class:** Tier-E spent release-anchor establishment; no fresh or
+   sealed data and no shipping/default authority.
+3. **Data:** the ten M6 adapter datasets at small and medium sizes, seeds
+   0–2, unweighted and deterministic stress-weighted; 120 matched cells.
+4. **Arms:** ChimeraBoost and CatBoost product defaults, fixing only four
+   threads and the random seed.
+5. **Resources:** one sequential fresh worker per product/cell and a
+   same-product three-tree warmup outside timing.
+6. **Artifact:** [`m6_release_anchors.json`](m6_release_anchors.json),
+   SHA-256
+   `59747bc08d48a2ddad9b3cec05c965ecbd9edf21025c537f17dc58d816385409`;
+   summary
+   [`m6_release_anchors_result.md`](m6_release_anchors_result.md).
+7. **Integrity:** 240/240 rows succeeded, data fingerprints matched within
+   every product pair, and worker stderr was empty.
+8. **Descriptive result:** CatBoost/ChimeraBoost primary-loss geometric mean
+   `0.841814`; CatBoost/ChimeraBoost fit-time geometric mean `3.343943`.
+9. **Decision:** exact release anchors are established and hash-bound, so the
+   M6 contract is frozen. M6 remains ineligible to rank candidates until its
+   separately predeclared historical backtest completes.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

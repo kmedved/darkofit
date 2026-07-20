@@ -15,10 +15,12 @@ except ImportError:  # pragma: no cover - supports `python -m benchmarks...`
 
 
 CONTRACT_VERSION = "standing-evidence-draft-v3"
-M6_CONTRACT_FROZEN = False
+M6_CONTRACT_FROZEN = True
 M6_BACKTEST_COMPLETE = False
-M6_RELEASE_ANCHOR_EVIDENCE_PATH = ""
-M6_RELEASE_ANCHOR_EVIDENCE_SHA256 = ""
+M6_RELEASE_ANCHOR_EVIDENCE_PATH = "benchmarks/m6_release_anchors.json"
+M6_RELEASE_ANCHOR_EVIDENCE_SHA256 = (
+    "59747bc08d48a2ddad9b3cec05c965ecbd9edf21025c537f17dc58d816385409"
+)
 M6_BACKTEST_EVIDENCE_PATH = ""
 M6_BACKTEST_EVIDENCE_SHA256 = ""
 
@@ -242,6 +244,24 @@ def m6_freeze_blockers() -> tuple[str, ...]:
     return tuple(blockers)
 
 
+def _validate_evidence_binding(path: str, expected_sha256: str, label: str):
+    if not path and not expected_sha256:
+        return
+    if not path or Path(path).is_absolute() or ".." in Path(path).parts:
+        raise RuntimeError(f"{label} evidence path is invalid")
+    if (
+        len(expected_sha256) != 64
+        or set(expected_sha256) - set("0123456789abcdef")
+    ):
+        raise RuntimeError(f"{label} evidence hash is invalid")
+    evidence_path = _REPO_ROOT / path
+    if not evidence_path.is_file() or evidence_path.is_symlink():
+        raise RuntimeError(f"{label} evidence is missing: {path}")
+    actual = hashlib.sha256(evidence_path.read_bytes()).hexdigest()
+    if actual != expected_sha256:
+        raise RuntimeError(f"{label} evidence hash drifted")
+
+
 def validate_contract():
     """Fail closed if the standing contract drifts out of adapter coverage."""
     domain_ids = [domain.id for domain in M5_SENTINEL_DOMAINS]
@@ -352,6 +372,11 @@ def validate_contract():
         raise RuntimeError(
             "M6 contract cannot be frozen: " + "; ".join(blockers)
         )
+    _validate_evidence_binding(
+        M6_RELEASE_ANCHOR_EVIDENCE_PATH,
+        M6_RELEASE_ANCHOR_EVIDENCE_SHA256,
+        "M6 release-anchor",
+    )
     if M6_BACKTEST_COMPLETE:
         if not M6_CONTRACT_FROZEN:
             raise RuntimeError("M6 backtest cannot complete before contract freeze")
@@ -359,6 +384,11 @@ def validate_contract():
             raise RuntimeError(
                 "M6 backtest cannot complete without hash-bound evidence"
             )
+        _validate_evidence_binding(
+            M6_BACKTEST_EVIDENCE_PATH,
+            M6_BACKTEST_EVIDENCE_SHA256,
+            "M6 backtest",
+        )
 
 
 def m6_expected_grid(*, smoke=False):

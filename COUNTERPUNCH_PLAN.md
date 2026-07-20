@@ -393,10 +393,11 @@ and exact pinned ChimeraBoost and CatBoost release anchors are present; the
 backtest subset is committed before replay and includes both positive and
 negative verdicts, including a quality-negative selector. Changing that
 subset after inspection requires a new contract version and a fresh backtest.
-Draft v3 now includes both sizes, worker peak RSS, exact external source pins,
-and machine-readable replay cases and gates. Freeze remains false until the
-complete release-anchor artifact is create-only and hash-bound; backtest
-completion likewise requires a separate hash-bound replay artifact.
+Draft v3 includes both sizes, worker peak RSS, exact external source pins,
+and machine-readable replay cases and gates. The complete 240-row
+release-anchor artifact is now create-only and hash-bound, so the M6 contract
+is frozen. Candidate ranking remains false until the separate historical
+replay artifact is complete and hash-bound.
 
 Building and backtesting the M6 contract is Tier-E infrastructure work
 authorized in Wave 1. It must reproduce a declared subset of prior mechanism

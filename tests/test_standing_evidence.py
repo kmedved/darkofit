@@ -205,26 +205,33 @@ def test_standing_contract_covers_classification_and_weighted_domains():
     assert set(M6_SMOKE_DATASETS) < set(M6_DATASETS)
     payload = contract_payload()
     assert payload["contract_version"].endswith("-v3")
-    assert payload["m6"]["contract_frozen"] is False
+    assert payload["m6"]["contract_frozen"] is True
     assert payload["m6"]["backtest_complete"] is False
-    assert payload["m6"]["freeze_blockers"]
+    assert payload["m6"]["freeze_blockers"] == []
 
 
 def test_m6_draft_cannot_freeze_without_hash_bound_release_anchor_evidence(
     monkeypatch,
 ):
-    monkeypatch.setattr(evidence_contract, "M6_CONTRACT_FROZEN", True)
+    monkeypatch.setattr(
+        evidence_contract, "M6_RELEASE_ANCHOR_EVIDENCE_PATH", ""
+    )
+    monkeypatch.setattr(
+        evidence_contract, "M6_RELEASE_ANCHOR_EVIDENCE_SHA256", ""
+    )
 
     with pytest.raises(RuntimeError, match="cannot be frozen"):
         validate_contract()
 
     monkeypatch.setattr(
-        evidence_contract, "M6_RELEASE_ANCHOR_EVIDENCE_PATH", "anchors.json"
+        evidence_contract,
+        "M6_RELEASE_ANCHOR_EVIDENCE_PATH",
+        "benchmarks/fused_variable_hessian_result.md",
     )
     monkeypatch.setattr(
         evidence_contract,
         "M6_RELEASE_ANCHOR_EVIDENCE_SHA256",
-        "a" * 64,
+        "d22337f4bab69bba7a13b9d3bca583a41aaa873a10a1974ca11d996244febac3",
     )
 
     assert m6_freeze_blockers() == ()
