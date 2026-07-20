@@ -44,6 +44,7 @@ try:
         make_sample_weight,
         policy_suite_specs,
         split_case,
+        standing_slice_specs,
     )
     from weighted_metrics import metric_bundle
 except ImportError:  # pragma: no cover - supports `python -m benchmarks...`
@@ -58,6 +59,7 @@ except ImportError:  # pragma: no cover - supports `python -m benchmarks...`
         make_sample_weight,
         policy_suite_specs,
         split_case,
+        standing_slice_specs,
     )
     from benchmarks.weighted_metrics import metric_bundle
 
@@ -373,19 +375,29 @@ def _complete_row(row):
     return {field: row.get(field, "") for field in CSV_FIELDS}
 
 
+def _ordered_variants(variants, *, policy_suite, cell_index):
+    """Rotate M6 control/candidate order to limit systematic timing bias."""
+    if policy_suite == "standing-slice" and cell_index % 2:
+        return list(reversed(variants))
+    return list(variants)
+
+
 def parse_args(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--upstream", type=Path, default=None)
     parser.add_argument("--fork", type=Path, default=None)
+    parser.add_argument("--control", type=Path, default=None)
     parser.add_argument("--candidate", type=Path, default=Path("."))
     parser.add_argument(
         "--policy-suite",
-        choices=["revision", "default-regret"],
+        choices=["revision", "default-regret", "standing-slice"],
         default="revision",
         help=(
             "'revision' preserves the historical upstream/fork/candidate "
             "comparison. 'default-regret' runs named policies for one candidate "
-            "checkout so benchmarks can be summarized by default regret."
+            "checkout so benchmarks can be summarized by default regret. "
+            "'standing-slice' compares frozen control and candidate defaults "
+            "for the M6 fast general development slice."
         ),
     )
     parser.add_argument("--sizes", nargs="+", choices=SIZE_SAMPLES, default=["tiny"])
@@ -445,6 +457,15 @@ def main(argv=None):
         if not args.candidate:
             raise SystemExit("--policy-suite default-regret requires --candidate")
         variants = policy_suite_specs(str(args.candidate), suite=args.policy_suite)
+    elif args.policy_suite == "standing-slice":
+        if not args.control or not args.candidate:
+            raise SystemExit(
+                "--policy-suite standing-slice requires --control and --candidate"
+            )
+        variants = standing_slice_specs(
+            str(args.control),
+            str(args.candidate),
+        )
     else:
         variants = default_revision_specs(
             upstream=str(args.upstream) if args.upstream else None,
@@ -493,6 +514,7 @@ def main(argv=None):
             writer = csv.DictWriter(fh, fieldnames=CSV_FIELDS)
             writer.writeheader()
             fh.flush()
+            cell_index = 0
             for size in args.sizes:
                 for dataset in datasets:
                     for seed in range(args.seeds):
@@ -502,7 +524,12 @@ def main(argv=None):
                             split = split_case(X, y, spec.task, seed, weights)
                             data_path = tmpdir / f"{dataset}-{size}-{seed}-{weight_mode}.npz"
                             _save_case(data_path, split)
-                            for variant in variants:
+                            ordered_variants = _ordered_variants(
+                                variants,
+                                policy_suite=args.policy_suite,
+                                cell_index=cell_index,
+                            )
+                            for variant in ordered_variants:
                                 payload = {
                                     "variant": asdict(variant),
                                     "fit_config": asdict(config),
@@ -527,6 +554,7 @@ def main(argv=None):
                                     f"weights={weight_mode}",
                                     flush=True,
                                 )
+                            cell_index += 1
     finally:
         if args.keep_case_files:
             print(f"kept case files in {tmpdir}")

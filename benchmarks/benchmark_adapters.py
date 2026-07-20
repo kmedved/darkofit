@@ -398,6 +398,14 @@ def default_revision_specs(upstream=None, fork=None, candidate=None):
     return specs
 
 
+def standing_slice_specs(control: str, candidate: str):
+    """Return the two default-policy sources used by the M6 development slice."""
+    return [
+        RevisionSpec("control_default", control, use_defaults=True),
+        RevisionSpec("candidate_default", candidate, use_defaults=True),
+    ]
+
+
 def policy_suite_specs(candidate: str, suite: str = "default-regret"):
     """Return named candidate policies for default-quality benchmark decisions.
 
