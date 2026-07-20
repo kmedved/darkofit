@@ -1,10 +1,21 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import random
+from pathlib import Path
 
 import pytest
 
 from benchmarks import run_m1_q0_wave1 as experiment
+
+
+Q0_ARTIFACT = (
+    Path(__file__).parents[1] / "benchmarks" / "q0_wave1_profile.json"
+)
+Q0_ARTIFACT_SHA256 = (
+    "9111f14ae4d0d89e122f541b53f85c76c6bd5e76f4fa781c69039c1020c04e1c"
+)
 
 
 def _m1_row(arm, rows, block, fit, rmse=1.0):
@@ -270,3 +281,26 @@ def test_terminal_disposition_handles_both_campaign_analysis_shapes():
     assert experiment._terminal_disposition(
         {"g_m_input": "m1-result"}
     ) == "m1-result"
+
+
+def test_recorded_q0_profile_is_immutable_and_reanalyzes_exactly():
+    raw = Q0_ARTIFACT.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == Q0_ARTIFACT_SHA256
+    artifact = json.loads(raw)
+
+    assert artifact["campaign"] == "q0"
+    assert artifact["sources"]["darkofit"]["head"] == (
+        experiment.DARKO_SOURCE_HEAD
+    )
+    assert artifact["sources"]["chimeraboost"]["head"] == (
+        experiment.CHIMERA_SOURCE_HEAD
+    )
+    assert artifact["protocol"]["runner_sha256"] == (
+        "793f764c7287a3007b20d83dc452917fd1ed56339195d508db71a5544ab8f179"
+    )
+    assert artifact["analysis"]["integrity"]["passed"] is True
+    assert artifact["analysis"]["profile_supports_q_funding"] is True
+    assert artifact["analysis"]["disposition"] == (
+        "eligible_for_g_m_quantization_funding_decision"
+    )
+    assert experiment.analyze_q0(artifact["results"]) == artifact["analysis"]

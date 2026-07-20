@@ -457,6 +457,14 @@ contribute a production share. Full equations, stability rules, and the
 close-before-prototype disposition are fixed in
 [`benchmarks/m1_q0_wave1_protocol.md`](benchmarks/m1_q0_wave1_protocol.md).
 
+The profiling half completed on 2026-07-20 with all integrity checks passing.
+Its preregistered projection was a 13.28% end-to-end reduction, so Q remains
+eligible for G-M rather than being closed before prototype. The behavior-exact
+unfused diagnostic was unexpectedly faster on the current 14-logical-CPU
+machine; that hardware-dispatch signal is recorded but did not enter the
+frozen quantization projection. See
+[`benchmarks/q0_wave1_profile_result.md`](benchmarks/q0_wave1_profile_result.md).
+
 ### B0 — ensemble compatibility and sampling design
 
 Specify a new explicit ensemble-v3 mode without changing the current

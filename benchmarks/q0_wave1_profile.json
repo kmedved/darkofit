@@ -1,0 +1,1431 @@
+{
+  "analysis": {
+    "disposition": "eligible_for_g_m_quantization_funding_decision",
+    "integrity": {
+      "behavior_exact_across_modes": true,
+      "component_accounting_valid": true,
+      "metadata_valid": true,
+      "no_worker_stderr": true,
+      "passed": true,
+      "production_fused_engaged": true,
+      "reference_histogram_and_split_decomposed": true,
+      "sibling_subtraction_inactive": true
+    },
+    "profile_supports_q_funding": true,
+    "projection": {
+      "conservative_projection_clears_budget": true,
+      "end_to_end_reduction_at_1_30x_kernel": 0.13275755849669735,
+      "geomean_ratio_at_1_30x_kernel": 0.8672424415033027,
+      "infinite_kernel_speed_geomean_ratio": 0.4219716905850302,
+      "infinite_kernel_speed_reduction": 0.5780283094149699
+    },
+    "prototype_or_public_change_authorized": false,
+    "sizes": {
+      "1000000": {
+        "behavior_exact_across_modes": true,
+        "eligible_fused_share_median": 0.6261292419682535,
+        "eligible_fused_share_values": [
+          0.6261292419682535,
+          0.622322260168535,
+          0.6297613117501973
+        ],
+        "infinite_kernel_speed_ratio": 0.3738707580317465,
+        "production_component_seconds_median": {
+          "fused_histogram_split": 0.6710684059999995,
+          "histogram_construction": 0.0,
+          "leaf_routing": 0.032956125,
+          "leaf_values": 0.060814910999999985,
+          "sibling_subtraction": 0.0,
+          "split_search": 0.0
+        },
+        "production_fit_seconds": [
+          1.129678834,
+          1.052035458,
+          1.065591667
+        ],
+        "production_phase_seconds_median": {
+          "grad_hess": 0.013268123995658243,
+          "loss_eval": 0.0,
+          "preprocess": 0.22829162500056555,
+          "train_update": 0.015470082980755251,
+          "tree_build": 0.7927295460031019,
+          "validation_predict": 0.0
+        },
+        "projected_ratio_at_1_30x_kernel": 0.8555086364688645,
+        "reference_component_seconds_median": {
+          "fused_histogram_split": 0.0,
+          "histogram_construction": 0.6194957960000005,
+          "leaf_routing": 0.025198574,
+          "leaf_values": 0.060266294999999984,
+          "sibling_subtraction": 0.0,
+          "split_search": 0.019686037999999996
+        },
+        "reference_fit_seconds": [
+          1.018879875,
+          1.032325,
+          1.051547459
+        ],
+        "reference_over_production_fit_ratio": {
+          "denominator_values_seconds": [
+            1.129678834,
+            1.052035458,
+            1.065591667
+          ],
+          "iqr_over_median": 0.04326067458049231,
+          "iqr_ratio": 0.04245016225138176,
+          "max_iqr_over_median": 0.1,
+          "median_ratio": 0.9812644546815265,
+          "median_seconds_budget": null,
+          "numerator_median_seconds": 1.032325,
+          "numerator_values_seconds": [
+            1.018879875,
+            1.032325,
+            1.051547459
+          ],
+          "paired_ratios": [
+            0.9019199478070421,
+            0.9812644546815265,
+            0.9868202723098058
+          ],
+          "q1_ratio": 0.9415922012442843,
+          "q3_ratio": 0.9840423634956661,
+          "repetitions": 3,
+          "seconds_budget_passed": null,
+          "stable": true
+        }
+      },
+      "500000": {
+        "behavior_exact_across_modes": true,
+        "eligible_fused_share_median": 0.5237388754536699,
+        "eligible_fused_share_values": [
+          0.4546209487049678,
+          0.5328313859641626,
+          0.5237388754536699
+        ],
+        "infinite_kernel_speed_ratio": 0.4762611245463301,
+        "production_component_seconds_median": {
+          "fused_histogram_split": 0.36323095599999994,
+          "histogram_construction": 0.0,
+          "leaf_routing": 0.02955195999999999,
+          "leaf_values": 0.031140582000000003,
+          "sibling_subtraction": 0.0,
+          "split_search": 0.0
+        },
+        "production_fit_seconds": [
+          0.745490541,
+          0.681699625,
+          0.701439166
+        ],
+        "production_phase_seconds_median": {
+          "grad_hess": 0.006840580983407563,
+          "loss_eval": 0.0,
+          "preprocess": 0.21853366700088372,
+          "train_update": 0.00803404401813168,
+          "tree_build": 0.4421772890018474,
+          "validation_predict": 0.0
+        },
+        "projected_ratio_at_1_30x_kernel": 0.8791371825876146,
+        "reference_component_seconds_median": {
+          "fused_histogram_split": 0.0,
+          "histogram_construction": 0.325008793,
+          "leaf_routing": 0.016540370000000002,
+          "leaf_values": 0.030592295000000002,
+          "sibling_subtraction": 0.0,
+          "split_search": 0.014631088000000002
+        },
+        "reference_fit_seconds": [
+          0.645416625,
+          0.639715875,
+          0.632004541
+        ],
+        "reference_over_production_fit_ratio": {
+          "denominator_values_seconds": [
+            0.745490541,
+            0.681699625,
+            0.701439166
+          ],
+          "iqr_over_median": 0.040317001574909674,
+          "iqr_ratio": 0.03632606975762609,
+          "max_iqr_over_median": 0.1,
+          "median_ratio": 0.9010111947470011,
+          "median_seconds_budget": null,
+          "numerator_median_seconds": 0.639715875,
+          "numerator_values_seconds": [
+            0.645416625,
+            0.639715875,
+            0.632004541
+          ],
+          "paired_ratios": [
+            0.8657609848868625,
+            0.9384131244021148,
+            0.9010111947470011
+          ],
+          "q1_ratio": 0.8833860898169318,
+          "q3_ratio": 0.9197121595745579,
+          "repetitions": 3,
+          "seconds_budget_passed": null,
+          "stable": true
+        }
+      }
+    },
+    "speed_budget": {
+      "equal_share_required_at_prior": 0.43333333333333324,
+      "kernel_speedup_prior": 1.3,
+      "maximum_geomean_candidate_control_ratio": 0.9,
+      "maximum_single_size_ratio": 1.02,
+      "minimum_end_to_end_reduction": 0.1
+    }
+  },
+  "campaign": "q0",
+  "campaign_protocol": {
+    "block_orders": [
+      [
+        "production",
+        "unfused_reference"
+      ],
+      [
+        "unfused_reference",
+        "production"
+      ],
+      [
+        "production",
+        "unfused_reference"
+      ]
+    ],
+    "iterations": 40,
+    "kernel_speedup_prior": 1.3,
+    "max_geomean_ratio": 0.9,
+    "max_size_ratio": 1.02,
+    "minimum_end_to_end_reduction": 0.1,
+    "modes": [
+      "production",
+      "unfused_reference"
+    ],
+    "required_equal_share": 0.43333333333333324
+  },
+  "created_at": "2026-07-20T20:43:59.550327+00:00",
+  "environment": {
+    "dependencies": {
+      "catboost": null,
+      "joblib": "1.4.2",
+      "numba": "0.60.0",
+      "numpy": "1.26.4",
+      "pandas": "2.2.2",
+      "scikit-learn": "1.5.1"
+    },
+    "machine": {
+      "cpu_brand": "arm",
+      "logical_cpu_count": 14,
+      "machine": "arm64",
+      "platform": "macOS-26.5.2-arm64-arm-64bit",
+      "python": "3.12.7 | packaged by Anaconda, Inc. | (main, Oct  4 2024, 08:22:19) [Clang 14.0.6 ]",
+      "python_executable": "/opt/anaconda3/bin/python"
+    }
+  },
+  "protocol": {
+    "default_change_authorized": false,
+    "features": 24,
+    "holdout_rows": 100000,
+    "lockbox_data_used": false,
+    "name": "wave1_m1_q0_20260720",
+    "path": "benchmarks/m1_q0_wave1_protocol.md",
+    "runner_sha256": "793f764c7287a3007b20d83dc452917fd1ed56339195d508db71a5544ab8f179",
+    "sha256": "7b25851753f83916c8dd542d8dd0f8d569c5b871b9ef38cb8e933f0f46ff2a34",
+    "threads": 14,
+    "train_rows": [
+      500000,
+      1000000
+    ],
+    "warmup_iterations": 3,
+    "warmup_rows": 5000
+  },
+  "results": [
+    {
+      "behavior_fingerprint_sha256": "b1c2e831b0b69eb4160cd0690b98c4a21a38a1d4330d6eadb734e7bc84378a7f",
+      "block": 0,
+      "components": {
+        "fused_histogram_split": {
+          "calls": 240,
+          "seconds": 0.33891561699999967
+        },
+        "histogram_construction": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "leaf_routing": {
+          "calls": 240,
+          "seconds": 0.12059199200000002
+        },
+        "leaf_values": {
+          "calls": 40,
+          "seconds": 0.031140582000000003
+        },
+        "sibling_subtraction": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "split_search": {
+          "calls": 0,
+          "seconds": 0.0
+        }
+      },
+      "data_probe_sha256": "a4453fb4b06857e2c468fefc2045b6fd581a880f87ad5a750c5ef8a0586860fb",
+      "features": 24,
+      "fit_seconds": 0.745490541,
+      "fused_engagement_count": 240,
+      "holdout_rows": 100000,
+      "iterations": 40,
+      "metadata": {
+        "bin_sample_count": 200000,
+        "fitted_tree_count": 40,
+        "histogram_dtype": "float64",
+        "linear_leaves_active": false,
+        "resolved_depth": 6,
+        "resolved_learning_rate": 0.1,
+        "resolved_thread_count": 14,
+        "tree_mode": "catboost"
+      },
+      "mode": "production",
+      "package_import_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "peak_rss_bytes": 535281664,
+      "phase_seconds": {
+        "grad_hess": 0.006840580983407563,
+        "loss_eval": 0.0,
+        "preprocess": 0.21479824999914854,
+        "train_update": 0.007761871987895574,
+        "tree_build": 0.5080911210061458,
+        "validation_predict": 0.0
+      },
+      "position": 0,
+      "predict_seconds": 0.144050209,
+      "prediction_sha256": "ec34138243c926b264042aa67ac1636baba309c55191b0455d6e52f5fda7ec8b",
+      "profile_accounting": {
+        "production_histogram_and_split_are_fused": true,
+        "timed_tree_components_seconds": 0.49064819099999973,
+        "tree_build_seconds": 0.5080911210061458,
+        "unattributed_tree_build_seconds": 0.017442930006146107
+      },
+      "rmse": 0.6309096607864707,
+      "thread_environment": {
+        "BLIS_NUM_THREADS": "14",
+        "CHIMERABOOST_WARMUP": "0",
+        "ENABLE_IPC": "1",
+        "JOBLIB_MULTIPROCESSING": null,
+        "JOBLIB_START_METHOD": null,
+        "JOBLIB_TEMP_FOLDER": null,
+        "LOKY_MAX_CPU_COUNT": null,
+        "LOKY_MAX_DEPTH": null,
+        "LOKY_PICKLER": null,
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_CACHE_DIR": "/private/tmp/darkofit-wave1-numba-cache",
+        "NUMBA_CPU_FEATURES": null,
+        "NUMBA_CPU_NAME": null,
+        "NUMBA_DISABLE_JIT": "0",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMBA_THREADING_LAYER": null,
+        "NUMBA_THREADING_LAYER_PRIORITY": null,
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0",
+        "TBB_NUM_THREADS": "14",
+        "VECLIB_MAXIMUM_THREADS": "14"
+      },
+      "train_rows": 500000,
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "behavior_fingerprint_sha256": "b1c2e831b0b69eb4160cd0690b98c4a21a38a1d4330d6eadb734e7bc84378a7f",
+      "block": 0,
+      "components": {
+        "fused_histogram_split": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "histogram_construction": {
+          "calls": 240,
+          "seconds": 0.333413667
+        },
+        "leaf_routing": {
+          "calls": 240,
+          "seconds": 0.016536548999999994
+        },
+        "leaf_values": {
+          "calls": 40,
+          "seconds": 0.030569583999999993
+        },
+        "sibling_subtraction": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "split_search": {
+          "calls": 240,
+          "seconds": 0.014729610999999991
+        }
+      },
+      "data_probe_sha256": "a4453fb4b06857e2c468fefc2045b6fd581a880f87ad5a750c5ef8a0586860fb",
+      "features": 24,
+      "fit_seconds": 0.645416625,
+      "fused_engagement_count": 0,
+      "holdout_rows": 100000,
+      "iterations": 40,
+      "metadata": {
+        "bin_sample_count": 200000,
+        "fitted_tree_count": 40,
+        "histogram_dtype": "float64",
+        "linear_leaves_active": false,
+        "resolved_depth": 6,
+        "resolved_learning_rate": 0.1,
+        "resolved_thread_count": 14,
+        "tree_mode": "catboost"
+      },
+      "mode": "unfused_reference",
+      "package_import_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "peak_rss_bytes": 522240000,
+      "phase_seconds": {
+        "grad_hess": 0.006527375982841477,
+        "loss_eval": 0.0,
+        "preprocess": 0.2105171250004787,
+        "train_update": 0.007815621989720967,
+        "tree_build": 0.4125780019967351,
+        "validation_predict": 0.0
+      },
+      "position": 1,
+      "predict_seconds": 0.007073625,
+      "prediction_sha256": "ec34138243c926b264042aa67ac1636baba309c55191b0455d6e52f5fda7ec8b",
+      "profile_accounting": {
+        "production_histogram_and_split_are_fused": false,
+        "timed_tree_components_seconds": 0.395249411,
+        "tree_build_seconds": 0.4125780019967351,
+        "unattributed_tree_build_seconds": 0.017328590996735116
+      },
+      "rmse": 0.6309096607864707,
+      "thread_environment": {
+        "BLIS_NUM_THREADS": "14",
+        "CHIMERABOOST_WARMUP": "0",
+        "ENABLE_IPC": "1",
+        "JOBLIB_MULTIPROCESSING": null,
+        "JOBLIB_START_METHOD": null,
+        "JOBLIB_TEMP_FOLDER": null,
+        "LOKY_MAX_CPU_COUNT": null,
+        "LOKY_MAX_DEPTH": null,
+        "LOKY_PICKLER": null,
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_CACHE_DIR": "/private/tmp/darkofit-wave1-numba-cache",
+        "NUMBA_CPU_FEATURES": null,
+        "NUMBA_CPU_NAME": null,
+        "NUMBA_DISABLE_JIT": "0",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMBA_THREADING_LAYER": null,
+        "NUMBA_THREADING_LAYER_PRIORITY": null,
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0",
+        "TBB_NUM_THREADS": "14",
+        "VECLIB_MAXIMUM_THREADS": "14"
+      },
+      "train_rows": 500000,
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "behavior_fingerprint_sha256": "8028211f715369c6aa7f43bf874e766d80bf415800bb49485e572e48e56938f8",
+      "block": 0,
+      "components": {
+        "fused_histogram_split": {
+          "calls": 240,
+          "seconds": 0.7073249520000003
+        },
+        "histogram_construction": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "leaf_routing": {
+          "calls": 240,
+          "seconds": 0.04143361899999998
+        },
+        "leaf_values": {
+          "calls": 40,
+          "seconds": 0.061169332000000014
+        },
+        "sibling_subtraction": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "split_search": {
+          "calls": 0,
+          "seconds": 0.0
+        }
+      },
+      "data_probe_sha256": "f8680317954adcdd6d8c01fe45b3917f8802456d5ca77f6fc2abb15668572b1b",
+      "features": 24,
+      "fit_seconds": 1.129678834,
+      "fused_engagement_count": 240,
+      "holdout_rows": 100000,
+      "iterations": 40,
+      "metadata": {
+        "bin_sample_count": 200000,
+        "fitted_tree_count": 40,
+        "histogram_dtype": "float64",
+        "linear_leaves_active": false,
+        "resolved_depth": 6,
+        "resolved_learning_rate": 0.1,
+        "resolved_thread_count": 14,
+        "tree_mode": "catboost"
+      },
+      "mode": "production",
+      "package_import_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "peak_rss_bytes": 709804032,
+      "phase_seconds": {
+        "grad_hess": 0.01442813000176102,
+        "loss_eval": 0.0,
+        "preprocess": 0.2368569579994073,
+        "train_update": 0.015640248002455337,
+        "tree_build": 0.8430902940126543,
+        "validation_predict": 0.0
+      },
+      "position": 0,
+      "predict_seconds": 0.006506292,
+      "prediction_sha256": "fda1a9941fff34e51504f8c1ccc8d4b5579b87c06bf8f4cab3141e347d00e6b2",
+      "profile_accounting": {
+        "production_histogram_and_split_are_fused": true,
+        "timed_tree_components_seconds": 0.8099279030000003,
+        "tree_build_seconds": 0.8430902940126543,
+        "unattributed_tree_build_seconds": 0.03316239101265406
+      },
+      "rmse": 0.6255393779168541,
+      "thread_environment": {
+        "BLIS_NUM_THREADS": "14",
+        "CHIMERABOOST_WARMUP": "0",
+        "ENABLE_IPC": "1",
+        "JOBLIB_MULTIPROCESSING": null,
+        "JOBLIB_START_METHOD": null,
+        "JOBLIB_TEMP_FOLDER": null,
+        "LOKY_MAX_CPU_COUNT": null,
+        "LOKY_MAX_DEPTH": null,
+        "LOKY_PICKLER": null,
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_CACHE_DIR": "/private/tmp/darkofit-wave1-numba-cache",
+        "NUMBA_CPU_FEATURES": null,
+        "NUMBA_CPU_NAME": null,
+        "NUMBA_DISABLE_JIT": "0",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMBA_THREADING_LAYER": null,
+        "NUMBA_THREADING_LAYER_PRIORITY": null,
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0",
+        "TBB_NUM_THREADS": "14",
+        "VECLIB_MAXIMUM_THREADS": "14"
+      },
+      "train_rows": 1000000,
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "behavior_fingerprint_sha256": "8028211f715369c6aa7f43bf874e766d80bf415800bb49485e572e48e56938f8",
+      "block": 0,
+      "components": {
+        "fused_histogram_split": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "histogram_construction": {
+          "calls": 240,
+          "seconds": 0.6175951360000002
+        },
+        "leaf_routing": {
+          "calls": 240,
+          "seconds": 0.02471721400000001
+        },
+        "leaf_values": {
+          "calls": 40,
+          "seconds": 0.05990133099999999
+        },
+        "sibling_subtraction": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "split_search": {
+          "calls": 240,
+          "seconds": 0.015704503999999998
+        }
+      },
+      "data_probe_sha256": "f8680317954adcdd6d8c01fe45b3917f8802456d5ca77f6fc2abb15668572b1b",
+      "features": 24,
+      "fit_seconds": 1.018879875,
+      "fused_engagement_count": 0,
+      "holdout_rows": 100000,
+      "iterations": 40,
+      "metadata": {
+        "bin_sample_count": 200000,
+        "fitted_tree_count": 40,
+        "histogram_dtype": "float64",
+        "linear_leaves_active": false,
+        "resolved_depth": 6,
+        "resolved_learning_rate": 0.1,
+        "resolved_thread_count": 14,
+        "tree_mode": "catboost"
+      },
+      "mode": "unfused_reference",
+      "package_import_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "peak_rss_bytes": 702234624,
+      "phase_seconds": {
+        "grad_hess": 0.013125248999131145,
+        "loss_eval": 0.0,
+        "preprocess": 0.22777458299970021,
+        "train_update": 0.015131500011193566,
+        "tree_build": 0.7459475430041493,
+        "validation_predict": 0.0
+      },
+      "position": 1,
+      "predict_seconds": 0.006289791,
+      "prediction_sha256": "fda1a9941fff34e51504f8c1ccc8d4b5579b87c06bf8f4cab3141e347d00e6b2",
+      "profile_accounting": {
+        "production_histogram_and_split_are_fused": false,
+        "timed_tree_components_seconds": 0.7179181850000002,
+        "tree_build_seconds": 0.7459475430041493,
+        "unattributed_tree_build_seconds": 0.028029358004149185
+      },
+      "rmse": 0.6255393779168541,
+      "thread_environment": {
+        "BLIS_NUM_THREADS": "14",
+        "CHIMERABOOST_WARMUP": "0",
+        "ENABLE_IPC": "1",
+        "JOBLIB_MULTIPROCESSING": null,
+        "JOBLIB_START_METHOD": null,
+        "JOBLIB_TEMP_FOLDER": null,
+        "LOKY_MAX_CPU_COUNT": null,
+        "LOKY_MAX_DEPTH": null,
+        "LOKY_PICKLER": null,
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_CACHE_DIR": "/private/tmp/darkofit-wave1-numba-cache",
+        "NUMBA_CPU_FEATURES": null,
+        "NUMBA_CPU_NAME": null,
+        "NUMBA_DISABLE_JIT": "0",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMBA_THREADING_LAYER": null,
+        "NUMBA_THREADING_LAYER_PRIORITY": null,
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0",
+        "TBB_NUM_THREADS": "14",
+        "VECLIB_MAXIMUM_THREADS": "14"
+      },
+      "train_rows": 1000000,
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "behavior_fingerprint_sha256": "b1c2e831b0b69eb4160cd0690b98c4a21a38a1d4330d6eadb734e7bc84378a7f",
+      "block": 1,
+      "components": {
+        "fused_histogram_split": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "histogram_construction": {
+          "calls": 240,
+          "seconds": 0.325008793
+        },
+        "leaf_routing": {
+          "calls": 240,
+          "seconds": 0.016706454
+        },
+        "leaf_values": {
+          "calls": 40,
+          "seconds": 0.030777750999999996
+        },
+        "sibling_subtraction": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "split_search": {
+          "calls": 240,
+          "seconds": 0.014631088000000002
+        }
+      },
+      "data_probe_sha256": "a4453fb4b06857e2c468fefc2045b6fd581a880f87ad5a750c5ef8a0586860fb",
+      "features": 24,
+      "fit_seconds": 0.639715875,
+      "fused_engagement_count": 0,
+      "holdout_rows": 100000,
+      "iterations": 40,
+      "metadata": {
+        "bin_sample_count": 200000,
+        "fitted_tree_count": 40,
+        "histogram_dtype": "float64",
+        "linear_leaves_active": false,
+        "resolved_depth": 6,
+        "resolved_learning_rate": 0.1,
+        "resolved_thread_count": 14,
+        "tree_mode": "catboost"
+      },
+      "mode": "unfused_reference",
+      "package_import_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "peak_rss_bytes": 509870080,
+      "phase_seconds": {
+        "grad_hess": 0.006701080987113528,
+        "loss_eval": 0.0,
+        "preprocess": 0.2127224590003607,
+        "train_update": 0.007959373000630876,
+        "tree_build": 0.40381045898175216,
+        "validation_predict": 0.0
+      },
+      "position": 0,
+      "predict_seconds": 0.007061333,
+      "prediction_sha256": "ec34138243c926b264042aa67ac1636baba309c55191b0455d6e52f5fda7ec8b",
+      "profile_accounting": {
+        "production_histogram_and_split_are_fused": false,
+        "timed_tree_components_seconds": 0.38712408600000003,
+        "tree_build_seconds": 0.40381045898175216,
+        "unattributed_tree_build_seconds": 0.01668637298175213
+      },
+      "rmse": 0.6309096607864707,
+      "thread_environment": {
+        "BLIS_NUM_THREADS": "14",
+        "CHIMERABOOST_WARMUP": "0",
+        "ENABLE_IPC": "1",
+        "JOBLIB_MULTIPROCESSING": null,
+        "JOBLIB_START_METHOD": null,
+        "JOBLIB_TEMP_FOLDER": null,
+        "LOKY_MAX_CPU_COUNT": null,
+        "LOKY_MAX_DEPTH": null,
+        "LOKY_PICKLER": null,
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_CACHE_DIR": "/private/tmp/darkofit-wave1-numba-cache",
+        "NUMBA_CPU_FEATURES": null,
+        "NUMBA_CPU_NAME": null,
+        "NUMBA_DISABLE_JIT": "0",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMBA_THREADING_LAYER": null,
+        "NUMBA_THREADING_LAYER_PRIORITY": null,
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0",
+        "TBB_NUM_THREADS": "14",
+        "VECLIB_MAXIMUM_THREADS": "14"
+      },
+      "train_rows": 500000,
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "behavior_fingerprint_sha256": "b1c2e831b0b69eb4160cd0690b98c4a21a38a1d4330d6eadb734e7bc84378a7f",
+      "block": 1,
+      "components": {
+        "fused_histogram_split": {
+          "calls": 240,
+          "seconds": 0.36323095599999994
+        },
+        "histogram_construction": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "leaf_routing": {
+          "calls": 240,
+          "seconds": 0.02955195999999999
+        },
+        "leaf_values": {
+          "calls": 40,
+          "seconds": 0.030711914
+        },
+        "sibling_subtraction": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "split_search": {
+          "calls": 0,
+          "seconds": 0.0
+        }
+      },
+      "data_probe_sha256": "a4453fb4b06857e2c468fefc2045b6fd581a880f87ad5a750c5ef8a0586860fb",
+      "features": 24,
+      "fit_seconds": 0.681699625,
+      "fused_engagement_count": 240,
+      "holdout_rows": 100000,
+      "iterations": 40,
+      "metadata": {
+        "bin_sample_count": 200000,
+        "fitted_tree_count": 40,
+        "histogram_dtype": "float64",
+        "linear_leaves_active": false,
+        "resolved_depth": 6,
+        "resolved_learning_rate": 0.1,
+        "resolved_thread_count": 14,
+        "tree_mode": "catboost"
+      },
+      "mode": "production",
+      "package_import_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "peak_rss_bytes": 520273920,
+      "phase_seconds": {
+        "grad_hess": 0.006768500988982851,
+        "loss_eval": 0.0,
+        "preprocess": 0.21853366700088372,
+        "train_update": 0.00803404401813168,
+        "tree_build": 0.44070503998955246,
+        "validation_predict": 0.0
+      },
+      "position": 1,
+      "predict_seconds": 0.006051125,
+      "prediction_sha256": "ec34138243c926b264042aa67ac1636baba309c55191b0455d6e52f5fda7ec8b",
+      "profile_accounting": {
+        "production_histogram_and_split_are_fused": true,
+        "timed_tree_components_seconds": 0.42349482999999993,
+        "tree_build_seconds": 0.44070503998955246,
+        "unattributed_tree_build_seconds": 0.017210209989552527
+      },
+      "rmse": 0.6309096607864707,
+      "thread_environment": {
+        "BLIS_NUM_THREADS": "14",
+        "CHIMERABOOST_WARMUP": "0",
+        "ENABLE_IPC": "1",
+        "JOBLIB_MULTIPROCESSING": null,
+        "JOBLIB_START_METHOD": null,
+        "JOBLIB_TEMP_FOLDER": null,
+        "LOKY_MAX_CPU_COUNT": null,
+        "LOKY_MAX_DEPTH": null,
+        "LOKY_PICKLER": null,
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_CACHE_DIR": "/private/tmp/darkofit-wave1-numba-cache",
+        "NUMBA_CPU_FEATURES": null,
+        "NUMBA_CPU_NAME": null,
+        "NUMBA_DISABLE_JIT": "0",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMBA_THREADING_LAYER": null,
+        "NUMBA_THREADING_LAYER_PRIORITY": null,
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0",
+        "TBB_NUM_THREADS": "14",
+        "VECLIB_MAXIMUM_THREADS": "14"
+      },
+      "train_rows": 500000,
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "behavior_fingerprint_sha256": "8028211f715369c6aa7f43bf874e766d80bf415800bb49485e572e48e56938f8",
+      "block": 1,
+      "components": {
+        "fused_histogram_split": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "histogram_construction": {
+          "calls": 240,
+          "seconds": 0.6194957960000005
+        },
+        "leaf_routing": {
+          "calls": 240,
+          "seconds": 0.02622203399999999
+        },
+        "leaf_values": {
+          "calls": 40,
+          "seconds": 0.060266294999999984
+        },
+        "sibling_subtraction": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "split_search": {
+          "calls": 240,
+          "seconds": 0.019686037999999996
+        }
+      },
+      "data_probe_sha256": "f8680317954adcdd6d8c01fe45b3917f8802456d5ca77f6fc2abb15668572b1b",
+      "features": 24,
+      "fit_seconds": 1.032325,
+      "fused_engagement_count": 0,
+      "holdout_rows": 100000,
+      "iterations": 40,
+      "metadata": {
+        "bin_sample_count": 200000,
+        "fitted_tree_count": 40,
+        "histogram_dtype": "float64",
+        "linear_leaves_active": false,
+        "resolved_depth": 6,
+        "resolved_learning_rate": 0.1,
+        "resolved_thread_count": 14,
+        "tree_mode": "catboost"
+      },
+      "mode": "unfused_reference",
+      "package_import_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "peak_rss_bytes": 732102656,
+      "phase_seconds": {
+        "grad_hess": 0.01353812600063975,
+        "loss_eval": 0.0,
+        "preprocess": 0.23134808300164877,
+        "train_update": 0.015432626008987427,
+        "tree_build": 0.7554258320051304,
+        "validation_predict": 0.0
+      },
+      "position": 0,
+      "predict_seconds": 0.006904625,
+      "prediction_sha256": "fda1a9941fff34e51504f8c1ccc8d4b5579b87c06bf8f4cab3141e347d00e6b2",
+      "profile_accounting": {
+        "production_histogram_and_split_are_fused": false,
+        "timed_tree_components_seconds": 0.7256701630000005,
+        "tree_build_seconds": 0.7554258320051304,
+        "unattributed_tree_build_seconds": 0.029755669005129826
+      },
+      "rmse": 0.6255393779168541,
+      "thread_environment": {
+        "BLIS_NUM_THREADS": "14",
+        "CHIMERABOOST_WARMUP": "0",
+        "ENABLE_IPC": "1",
+        "JOBLIB_MULTIPROCESSING": null,
+        "JOBLIB_START_METHOD": null,
+        "JOBLIB_TEMP_FOLDER": null,
+        "LOKY_MAX_CPU_COUNT": null,
+        "LOKY_MAX_DEPTH": null,
+        "LOKY_PICKLER": null,
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_CACHE_DIR": "/private/tmp/darkofit-wave1-numba-cache",
+        "NUMBA_CPU_FEATURES": null,
+        "NUMBA_CPU_NAME": null,
+        "NUMBA_DISABLE_JIT": "0",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMBA_THREADING_LAYER": null,
+        "NUMBA_THREADING_LAYER_PRIORITY": null,
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0",
+        "TBB_NUM_THREADS": "14",
+        "VECLIB_MAXIMUM_THREADS": "14"
+      },
+      "train_rows": 1000000,
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "behavior_fingerprint_sha256": "8028211f715369c6aa7f43bf874e766d80bf415800bb49485e572e48e56938f8",
+      "block": 1,
+      "components": {
+        "fused_histogram_split": {
+          "calls": 240,
+          "seconds": 0.6547050839999998
+        },
+        "histogram_construction": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "leaf_routing": {
+          "calls": 240,
+          "seconds": 0.032956125
+        },
+        "leaf_values": {
+          "calls": 40,
+          "seconds": 0.059785333999999996
+        },
+        "sibling_subtraction": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "split_search": {
+          "calls": 0,
+          "seconds": 0.0
+        }
+      },
+      "data_probe_sha256": "f8680317954adcdd6d8c01fe45b3917f8802456d5ca77f6fc2abb15668572b1b",
+      "features": 24,
+      "fit_seconds": 1.052035458,
+      "fused_engagement_count": 240,
+      "holdout_rows": 100000,
+      "iterations": 40,
+      "metadata": {
+        "bin_sample_count": 200000,
+        "fitted_tree_count": 40,
+        "histogram_dtype": "float64",
+        "linear_leaves_active": false,
+        "resolved_depth": 6,
+        "resolved_learning_rate": 0.1,
+        "resolved_thread_count": 14,
+        "tree_mode": "catboost"
+      },
+      "mode": "production",
+      "package_import_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "peak_rss_bytes": 748650496,
+      "phase_seconds": {
+        "grad_hess": 0.013268123995658243,
+        "loss_eval": 0.0,
+        "preprocess": 0.22829162500056555,
+        "train_update": 0.015468339002836728,
+        "tree_build": 0.7771348770147597,
+        "validation_predict": 0.0
+      },
+      "position": 1,
+      "predict_seconds": 0.006654375,
+      "prediction_sha256": "fda1a9941fff34e51504f8c1ccc8d4b5579b87c06bf8f4cab3141e347d00e6b2",
+      "profile_accounting": {
+        "production_histogram_and_split_are_fused": true,
+        "timed_tree_components_seconds": 0.7474465429999998,
+        "tree_build_seconds": 0.7771348770147597,
+        "unattributed_tree_build_seconds": 0.0296883340147599
+      },
+      "rmse": 0.6255393779168541,
+      "thread_environment": {
+        "BLIS_NUM_THREADS": "14",
+        "CHIMERABOOST_WARMUP": "0",
+        "ENABLE_IPC": "1",
+        "JOBLIB_MULTIPROCESSING": null,
+        "JOBLIB_START_METHOD": null,
+        "JOBLIB_TEMP_FOLDER": null,
+        "LOKY_MAX_CPU_COUNT": null,
+        "LOKY_MAX_DEPTH": null,
+        "LOKY_PICKLER": null,
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_CACHE_DIR": "/private/tmp/darkofit-wave1-numba-cache",
+        "NUMBA_CPU_FEATURES": null,
+        "NUMBA_CPU_NAME": null,
+        "NUMBA_DISABLE_JIT": "0",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMBA_THREADING_LAYER": null,
+        "NUMBA_THREADING_LAYER_PRIORITY": null,
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0",
+        "TBB_NUM_THREADS": "14",
+        "VECLIB_MAXIMUM_THREADS": "14"
+      },
+      "train_rows": 1000000,
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "behavior_fingerprint_sha256": "b1c2e831b0b69eb4160cd0690b98c4a21a38a1d4330d6eadb734e7bc84378a7f",
+      "block": 2,
+      "components": {
+        "fused_histogram_split": {
+          "calls": 240,
+          "seconds": 0.36737096000000014
+        },
+        "histogram_construction": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "leaf_routing": {
+          "calls": 240,
+          "seconds": 0.022762742999999995
+        },
+        "leaf_values": {
+          "calls": 40,
+          "seconds": 0.03266288
+        },
+        "sibling_subtraction": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "split_search": {
+          "calls": 0,
+          "seconds": 0.0
+        }
+      },
+      "data_probe_sha256": "a4453fb4b06857e2c468fefc2045b6fd581a880f87ad5a750c5ef8a0586860fb",
+      "features": 24,
+      "fit_seconds": 0.701439166,
+      "fused_engagement_count": 240,
+      "holdout_rows": 100000,
+      "iterations": 40,
+      "metadata": {
+        "bin_sample_count": 200000,
+        "fitted_tree_count": 40,
+        "histogram_dtype": "float64",
+        "linear_leaves_active": false,
+        "resolved_depth": 6,
+        "resolved_learning_rate": 0.1,
+        "resolved_thread_count": 14,
+        "tree_mode": "catboost"
+      },
+      "mode": "production",
+      "package_import_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "peak_rss_bytes": 535347200,
+      "phase_seconds": {
+        "grad_hess": 0.007333789002586855,
+        "loss_eval": 0.0,
+        "preprocess": 0.23430191599982209,
+        "train_update": 0.00842824499704875,
+        "tree_build": 0.4421772890018474,
+        "validation_predict": 0.0
+      },
+      "position": 0,
+      "predict_seconds": 0.007042584,
+      "prediction_sha256": "ec34138243c926b264042aa67ac1636baba309c55191b0455d6e52f5fda7ec8b",
+      "profile_accounting": {
+        "production_histogram_and_split_are_fused": true,
+        "timed_tree_components_seconds": 0.4227965830000001,
+        "tree_build_seconds": 0.4421772890018474,
+        "unattributed_tree_build_seconds": 0.01938070600184727
+      },
+      "rmse": 0.6309096607864707,
+      "thread_environment": {
+        "BLIS_NUM_THREADS": "14",
+        "CHIMERABOOST_WARMUP": "0",
+        "ENABLE_IPC": "1",
+        "JOBLIB_MULTIPROCESSING": null,
+        "JOBLIB_START_METHOD": null,
+        "JOBLIB_TEMP_FOLDER": null,
+        "LOKY_MAX_CPU_COUNT": null,
+        "LOKY_MAX_DEPTH": null,
+        "LOKY_PICKLER": null,
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_CACHE_DIR": "/private/tmp/darkofit-wave1-numba-cache",
+        "NUMBA_CPU_FEATURES": null,
+        "NUMBA_CPU_NAME": null,
+        "NUMBA_DISABLE_JIT": "0",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMBA_THREADING_LAYER": null,
+        "NUMBA_THREADING_LAYER_PRIORITY": null,
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0",
+        "TBB_NUM_THREADS": "14",
+        "VECLIB_MAXIMUM_THREADS": "14"
+      },
+      "train_rows": 500000,
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "behavior_fingerprint_sha256": "b1c2e831b0b69eb4160cd0690b98c4a21a38a1d4330d6eadb734e7bc84378a7f",
+      "block": 2,
+      "components": {
+        "fused_histogram_split": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "histogram_construction": {
+          "calls": 240,
+          "seconds": 0.3180314590000001
+        },
+        "leaf_routing": {
+          "calls": 240,
+          "seconds": 0.016540370000000002
+        },
+        "leaf_values": {
+          "calls": 40,
+          "seconds": 0.030592295000000002
+        },
+        "sibling_subtraction": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "split_search": {
+          "calls": 240,
+          "seconds": 0.014470495000000003
+        }
+      },
+      "data_probe_sha256": "a4453fb4b06857e2c468fefc2045b6fd581a880f87ad5a750c5ef8a0586860fb",
+      "features": 24,
+      "fit_seconds": 0.632004541,
+      "fused_engagement_count": 0,
+      "holdout_rows": 100000,
+      "iterations": 40,
+      "metadata": {
+        "bin_sample_count": 200000,
+        "fitted_tree_count": 40,
+        "histogram_dtype": "float64",
+        "linear_leaves_active": false,
+        "resolved_depth": 6,
+        "resolved_learning_rate": 0.1,
+        "resolved_thread_count": 14,
+        "tree_mode": "catboost"
+      },
+      "mode": "unfused_reference",
+      "package_import_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "peak_rss_bytes": 509493248,
+      "phase_seconds": {
+        "grad_hess": 0.006556252985319588,
+        "loss_eval": 0.0,
+        "preprocess": 0.21400883400201565,
+        "train_update": 0.007727128995611565,
+        "tree_build": 0.39595545501288143,
+        "validation_predict": 0.0
+      },
+      "position": 1,
+      "predict_seconds": 0.006288459,
+      "prediction_sha256": "ec34138243c926b264042aa67ac1636baba309c55191b0455d6e52f5fda7ec8b",
+      "profile_accounting": {
+        "production_histogram_and_split_are_fused": false,
+        "timed_tree_components_seconds": 0.3796346190000002,
+        "tree_build_seconds": 0.39595545501288143,
+        "unattributed_tree_build_seconds": 0.016320836012881257
+      },
+      "rmse": 0.6309096607864707,
+      "thread_environment": {
+        "BLIS_NUM_THREADS": "14",
+        "CHIMERABOOST_WARMUP": "0",
+        "ENABLE_IPC": "1",
+        "JOBLIB_MULTIPROCESSING": null,
+        "JOBLIB_START_METHOD": null,
+        "JOBLIB_TEMP_FOLDER": null,
+        "LOKY_MAX_CPU_COUNT": null,
+        "LOKY_MAX_DEPTH": null,
+        "LOKY_PICKLER": null,
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_CACHE_DIR": "/private/tmp/darkofit-wave1-numba-cache",
+        "NUMBA_CPU_FEATURES": null,
+        "NUMBA_CPU_NAME": null,
+        "NUMBA_DISABLE_JIT": "0",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMBA_THREADING_LAYER": null,
+        "NUMBA_THREADING_LAYER_PRIORITY": null,
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0",
+        "TBB_NUM_THREADS": "14",
+        "VECLIB_MAXIMUM_THREADS": "14"
+      },
+      "train_rows": 500000,
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "behavior_fingerprint_sha256": "8028211f715369c6aa7f43bf874e766d80bf415800bb49485e572e48e56938f8",
+      "block": 2,
+      "components": {
+        "fused_histogram_split": {
+          "calls": 240,
+          "seconds": 0.6710684059999995
+        },
+        "histogram_construction": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "leaf_routing": {
+          "calls": 240,
+          "seconds": 0.030578085999999997
+        },
+        "leaf_values": {
+          "calls": 40,
+          "seconds": 0.060814910999999985
+        },
+        "sibling_subtraction": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "split_search": {
+          "calls": 0,
+          "seconds": 0.0
+        }
+      },
+      "data_probe_sha256": "f8680317954adcdd6d8c01fe45b3917f8802456d5ca77f6fc2abb15668572b1b",
+      "features": 24,
+      "fit_seconds": 1.065591667,
+      "fused_engagement_count": 240,
+      "holdout_rows": 100000,
+      "iterations": 40,
+      "metadata": {
+        "bin_sample_count": 200000,
+        "fitted_tree_count": 40,
+        "histogram_dtype": "float64",
+        "linear_leaves_active": false,
+        "resolved_depth": 6,
+        "resolved_learning_rate": 0.1,
+        "resolved_thread_count": 14,
+        "tree_mode": "catboost"
+      },
+      "mode": "production",
+      "package_import_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "peak_rss_bytes": 724615168,
+      "phase_seconds": {
+        "grad_hess": 0.013083666020975215,
+        "loss_eval": 0.0,
+        "preprocess": 0.22708179099936388,
+        "train_update": 0.015470082980755251,
+        "tree_build": 0.7927295460031019,
+        "validation_predict": 0.0
+      },
+      "position": 0,
+      "predict_seconds": 0.006264791,
+      "prediction_sha256": "fda1a9941fff34e51504f8c1ccc8d4b5579b87c06bf8f4cab3141e347d00e6b2",
+      "profile_accounting": {
+        "production_histogram_and_split_are_fused": true,
+        "timed_tree_components_seconds": 0.7624614029999995,
+        "tree_build_seconds": 0.7927295460031019,
+        "unattributed_tree_build_seconds": 0.03026814300310232
+      },
+      "rmse": 0.6255393779168541,
+      "thread_environment": {
+        "BLIS_NUM_THREADS": "14",
+        "CHIMERABOOST_WARMUP": "0",
+        "ENABLE_IPC": "1",
+        "JOBLIB_MULTIPROCESSING": null,
+        "JOBLIB_START_METHOD": null,
+        "JOBLIB_TEMP_FOLDER": null,
+        "LOKY_MAX_CPU_COUNT": null,
+        "LOKY_MAX_DEPTH": null,
+        "LOKY_PICKLER": null,
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_CACHE_DIR": "/private/tmp/darkofit-wave1-numba-cache",
+        "NUMBA_CPU_FEATURES": null,
+        "NUMBA_CPU_NAME": null,
+        "NUMBA_DISABLE_JIT": "0",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMBA_THREADING_LAYER": null,
+        "NUMBA_THREADING_LAYER_PRIORITY": null,
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0",
+        "TBB_NUM_THREADS": "14",
+        "VECLIB_MAXIMUM_THREADS": "14"
+      },
+      "train_rows": 1000000,
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "behavior_fingerprint_sha256": "8028211f715369c6aa7f43bf874e766d80bf415800bb49485e572e48e56938f8",
+      "block": 2,
+      "components": {
+        "fused_histogram_split": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "histogram_construction": {
+          "calls": 240,
+          "seconds": 0.6383905460000003
+        },
+        "leaf_routing": {
+          "calls": 240,
+          "seconds": 0.025198574
+        },
+        "leaf_values": {
+          "calls": 40,
+          "seconds": 0.06029012800000001
+        },
+        "sibling_subtraction": {
+          "calls": 0,
+          "seconds": 0.0
+        },
+        "split_search": {
+          "calls": 240,
+          "seconds": 0.021037202000000015
+        }
+      },
+      "data_probe_sha256": "f8680317954adcdd6d8c01fe45b3917f8802456d5ca77f6fc2abb15668572b1b",
+      "features": 24,
+      "fit_seconds": 1.051547459,
+      "fused_engagement_count": 0,
+      "holdout_rows": 100000,
+      "iterations": 40,
+      "metadata": {
+        "bin_sample_count": 200000,
+        "fitted_tree_count": 40,
+        "histogram_dtype": "float64",
+        "linear_leaves_active": false,
+        "resolved_depth": 6,
+        "resolved_learning_rate": 0.1,
+        "resolved_thread_count": 14,
+        "tree_mode": "catboost"
+      },
+      "mode": "unfused_reference",
+      "package_import_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "peak_rss_bytes": 709787648,
+      "phase_seconds": {
+        "grad_hess": 0.013589254012913443,
+        "loss_eval": 0.0,
+        "preprocess": 0.22887125000124797,
+        "train_update": 0.015180081983999116,
+        "tree_build": 0.7751276689923543,
+        "validation_predict": 0.0
+      },
+      "position": 1,
+      "predict_seconds": 0.0072105,
+      "prediction_sha256": "fda1a9941fff34e51504f8c1ccc8d4b5579b87c06bf8f4cab3141e347d00e6b2",
+      "profile_accounting": {
+        "production_histogram_and_split_are_fused": false,
+        "timed_tree_components_seconds": 0.7449164500000004,
+        "tree_build_seconds": 0.7751276689923543,
+        "unattributed_tree_build_seconds": 0.030211218992353905
+      },
+      "rmse": 0.6255393779168541,
+      "thread_environment": {
+        "BLIS_NUM_THREADS": "14",
+        "CHIMERABOOST_WARMUP": "0",
+        "ENABLE_IPC": "1",
+        "JOBLIB_MULTIPROCESSING": null,
+        "JOBLIB_START_METHOD": null,
+        "JOBLIB_TEMP_FOLDER": null,
+        "LOKY_MAX_CPU_COUNT": null,
+        "LOKY_MAX_DEPTH": null,
+        "LOKY_PICKLER": null,
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_CACHE_DIR": "/private/tmp/darkofit-wave1-numba-cache",
+        "NUMBA_CPU_FEATURES": null,
+        "NUMBA_CPU_NAME": null,
+        "NUMBA_DISABLE_JIT": "0",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMBA_THREADING_LAYER": null,
+        "NUMBA_THREADING_LAYER_PRIORITY": null,
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0",
+        "TBB_NUM_THREADS": "14",
+        "VECLIB_MAXIMUM_THREADS": "14"
+      },
+      "train_rows": 1000000,
+      "worker_stderr": null,
+      "worker_stdout": null
+    }
+  ],
+  "schema_version": 1,
+  "sources": {
+    "chimeraboost": {
+      "branch": "main",
+      "clean": true,
+      "describe": "v0.18.0-6-gf14be60",
+      "head": "f14be606b641f1bf0dc92bb14b3951f1fe631c6b",
+      "path": "/Users/konstantinmedvedovsky/code/chimeraboost",
+      "remotes": {
+        "origin": "https://github.com/kmedved/chimeraboost.git",
+        "upstream": "https://github.com/bbstats/chimeraboost.git"
+      },
+      "status": [],
+      "tracked_main_refs": {
+        "origin/main": "f14be606b641f1bf0dc92bb14b3951f1fe631c6b",
+        "upstream/main": "0be8d109d6d6c664870ddec959d32e5356cb624c"
+      }
+    },
+    "darkofit": {
+      "branch": "",
+      "clean": true,
+      "describe": "v0.10.0-10-g726e5d8",
+      "head": "726e5d8e6131c580bce948db833a5007d0692dca",
+      "path": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "remotes": {
+        "origin": "https://github.com/kmedved/darkofit.git"
+      },
+      "status": [],
+      "tracked_main_refs": {
+        "origin/main": "2dcb1c10b5d3739d50df5d86d4b29756251abac8"
+      }
+    },
+    "harness": {
+      "branch": "main",
+      "clean": true,
+      "describe": "v0.10.0-12-g18bc48c",
+      "head": "18bc48c7778eed0980efa430ad6fa722310919bb",
+      "path": "/Users/konstantinmedvedovsky/code/darkofit",
+      "remotes": {
+        "origin": "https://github.com/kmedved/darkofit.git"
+      },
+      "status": [],
+      "tracked_main_refs": {
+        "origin/main": "2dcb1c10b5d3739d50df5d86d4b29756251abac8"
+      }
+    }
+  }
+}

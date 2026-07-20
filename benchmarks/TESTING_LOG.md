@@ -328,6 +328,49 @@ The broad 13-dataset panel has not been rerun against 0.18, so the old
 same-machine regression comparison must not be relabeled as current-version
 evidence.
 
+### 15. Wave 1 Q0 scalar-path attribution
+
+1. **Execution boundary:** 2026-07-20; DarkoFit package source
+   `726e5d8e6131c580bce948db833a5007d0692dca`; harness
+   `18bc48c7778eed0980efa430ad6fa722310919bb`.
+2. **Comparator:** ChimeraBoost
+   `f14be606b641f1bf0dc92bb14b3951f1fe631c6b` was source-attested for the
+   shared Wave 1 boundary but not executed in Q0.
+3. **Evidence class:** Tier-E engineering profile on deterministic synthetic
+   data; spent; no fresh or sealed data.
+4. **Data:** seed 20260717, 24 numeric features, scalar RMSE target, 500,000
+   and 1,000,000 training rows plus the following 100,000-row holdout.
+5. **Arms:** current fused DarkoFit production path and private
+   behavior-exact `fused_oblivious_kernel=False` reference; 40 trees.
+6. **Resources:** arm64 macOS 26.5.2, 14 logical CPUs, fixed 14-thread budget,
+   three reciprocal fresh-worker blocks, same-path 5,000-row/three-tree fit
+   plus 256-row prediction warmup.
+7. **Command:** `python benchmarks/run_m1_q0_wave1.py --campaign q0
+   --darkofit-source /private/tmp/darkofit-wave1-source-726e5d8
+   --chimeraboost-source /Users/konstantinmedvedovsky/code/chimeraboost`.
+8. **Artifacts:** raw
+   [`q0_wave1_profile.json`](q0_wave1_profile.json) SHA-256
+   `9111f14ae4d0d89e122f541b53f85c76c6bd5e76f4fa781c69039c1020c04e1c`;
+   protocol SHA-256
+   `7b25851753f83916c8dd542d8dd0f8d569c5b871b9ef38cb8e933f0f46ff2a34`;
+   executed runner/analyzer SHA-256
+   `793f764c7287a3007b20d83dc452917fd1ed56339195d508db71a5544ab8f179`;
+   summary
+   [`q0_wave1_profile_result.md`](q0_wave1_profile_result.md).
+9. **Primary result:** eligible fused share was 52.37% at 500k and 62.61% at
+   1M; the frozen 1.30x-kernel projection implied ratio `0.867242`, or 13.28%
+   lower end-to-end fit time, clearing the 10% screen.
+10. **Gates:** all behavior, engagement, decomposition, sibling-inactivity,
+    component-accounting, metadata, and stderr integrity checks passed.
+11. **Limitations/deviation:** 40-tree numeric scalar profile only. The
+    unfused reference was unexpectedly faster but cannot enter the production
+    share. All workers and the immutable artifact write completed; a
+    post-write disposition-print bug then produced a nonzero exit. The
+    artifact was not rerun or replaced, reanalysis matched exactly, and
+    `bb40018` fixes only that presentation path.
+12. **Terminal decision:** Q is eligible for the G-M funding decision; no
+    prototype, public option, or default change is authorized.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
