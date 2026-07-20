@@ -366,8 +366,9 @@ Building M5 is standing Tier-E infrastructure work authorized in Wave 1.
 Its v1 executable contract predeclares 19 cells across all nine domains, the
 exact post-H1 control, task-normalized quality ranges, two earned canary
 floors, serialization/prediction invariants, and paired resource reporting.
-It remains unfrozen until its first behavior-identical create-only baseline
-is complete and hash-bound.
+Its 38-row behavior-identical baseline completed without failure and is
+create-only and hash-bound; M5 v1 is frozen for future non-ranking drift
+checks.
 
 ### M6 — fast general development slice
 

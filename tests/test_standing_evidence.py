@@ -208,8 +208,8 @@ def test_standing_contract_covers_classification_and_weighted_domains():
     assert set(M6_SMOKE_DATASETS) < set(M6_DATASETS)
     payload = contract_payload()
     assert payload["contract_version"] == "standing-evidence-v3"
-    assert payload["m5"]["contract_frozen"] is False
-    assert payload["m5"]["freeze_blockers"]
+    assert payload["m5"]["contract_frozen"] is True
+    assert payload["m5"]["freeze_blockers"] == []
     assert payload["m6"]["contract_frozen"] is True
     assert payload["m6"]["backtest_complete"] is False
     assert payload["m6"]["backtest_terminal"] is True
@@ -260,9 +260,7 @@ def test_m5_contract_has_one_frozen_case_per_required_domain():
         for case in M5_SENTINEL_CASES
         if case.known_floor
     } == {"binary_classification", "multiclass_classification"}
-    assert m5_freeze_blockers() == (
-        "missing hash-bound M5 baseline evidence",
-    )
+    assert m5_freeze_blockers() == ()
 
 
 def test_m6_backtest_subset_is_predeclared_with_positive_and_negative_cases():

@@ -468,6 +468,36 @@ evidence.
 9. **Terminal decision:** `backtest_complete=false`,
    `backtest_terminal=true`; M6 remains non-ranking and v3 reruns are closed.
 
+### 19. M5 diversity-sentinel baseline
+
+1. **Execution boundary:** 2026-07-20; clean harness `682dddf`; exact
+   post-H1 control `726e5d8`; control/candidate package tree
+   `e1fe956f32df0440e321805511ae2d96e383735c`.
+2. **Evidence class:** Tier-E non-ranking drift baseline; no fresh or sealed
+   data and no shipping/default authority.
+3. **Data:** 19 cells across grouped/entity, smooth, noisy,
+   categorical-missing, high-row, binary, multiclass, weighted regression,
+   and weighted classification domains; 38 paired fresh-worker rows.
+4. **Invariants:** finite task-appropriate output, normalized loss at most
+   `1.10` times a train-only trivial predictor, exact save/load predictions,
+   pinned data/splits, resolved metadata, and behavior fingerprints.
+5. **Known floors:** binary df1/647 mean/worst excess Brier
+   `0.00314483/0.00343480`; multiclass df1/077
+   `0.00009772/0.00013069`, both inside mean `0.005` and worst `0.01`.
+6. **Resources:** four threads, one fresh worker per arm/cell, alternating
+   order, same-source three-tree warmup outside timing. Median
+   candidate/control fit, predict, and RSS ratios were
+   `0.998818/1.001768/0.995723`.
+7. **Integrity:** 38/38 rows succeeded, paired behavior fingerprints matched,
+   all serialization roundtrips were exact, and worker stderr was empty.
+8. **Artifact:** [`m5_sentinel_baseline.json`](m5_sentinel_baseline.json),
+   SHA-256
+   `0971e06d4ed307d352d75e1e6400b849c0001b5e11f40243173d7080b6c5859d`;
+   summary
+   [`m5_sentinel_baseline_result.md`](m5_sentinel_baseline_result.md).
+9. **Decision:** M5 v1 is frozen. It detects hard failure and unexplained
+   drift; it does not rank or accept mechanisms.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

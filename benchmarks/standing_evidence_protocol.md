@@ -1,7 +1,7 @@
 # Standing M5/M6 evidence protocol
 
-Status: M6 contract frozen; historical backtest terminal-failed 2026-07-20,
-so candidate ranking remains disabled.
+Status: M5 v1 baseline frozen; M6 contract frozen but historical backtest
+terminal-failed 2026-07-20, so candidate ranking remains disabled.
 
 This protocol creates the cheap middle rung in
 [`COUNTERPUNCH_PLAN.md`](../COUNTERPUNCH_PLAN.md). It is deliberately split
@@ -41,8 +41,9 @@ most `0.01`. The initial behavior-identical control/candidate run establishes
 the fingerprints and same-machine paired performance ratios; future checks
 bind to that artifact. No value is an acceptance or ranking score.
 
-The baseline contract remains unfrozen until the complete create-only
-artifact hash is embedded:
+The complete create-only baseline is embedded at SHA-256
+`0971e06d4ed307d352d75e1e6400b849c0001b5e11f40243173d7080b6c5859d`
+and M5 v1 is frozen:
 
 ```bash
 /opt/anaconda3/envs/darko311/bin/python benchmarks/run_m5_sentinels.py \
