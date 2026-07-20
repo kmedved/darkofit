@@ -204,7 +204,7 @@ def test_standing_contract_covers_classification_and_weighted_domains():
     assert {"regression", "binary"} <= weighted_tasks
     assert set(M6_SMOKE_DATASETS) < set(M6_DATASETS)
     payload = contract_payload()
-    assert payload["contract_version"].endswith("-v3")
+    assert payload["contract_version"] == "standing-evidence-v3"
     assert payload["m6"]["contract_frozen"] is True
     assert payload["m6"]["backtest_complete"] is False
     assert payload["m6"]["freeze_blockers"] == []

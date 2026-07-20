@@ -21,7 +21,7 @@ missing-value, and high-row coverage. Its generators, fingerprints, and
 expected ranges are not frozen yet; calling those registry entries completed
 sentinels would overstate the current infrastructure.
 
-## M6 draft-v3 coordinates
+## M6 v3 coordinates
 
 M6 reuses the ten deterministic builders in
 [`benchmark_adapters.py`](benchmark_adapters.py): four regression, three
@@ -159,3 +159,13 @@ Every material full run receives the 12-field entry required by
 index in the notes. No individual cell may be used as a tuning target, and a
 candidate that advances still needs the sports and milestone evidence required
 by the plan and shipping policy.
+
+The committed replay executor is
+[`run_m6_historical_backtest.py`](run_m6_historical_backtest.py). It runs the
+fused and packed mechanisms through the exact historical candidate-source
+runners (including their private reference/legacy and observed-engagement
+paths), and runs the selector at source `29bd30c` on the six declared M6
+cells. All source clones must be clean and exact; the packed replay also
+requires the SHA-pinned historical basketball cache and ChimeraBoost 0.15
+source. The executor and its frozen-rule unit tests are committed before the
+first replay.

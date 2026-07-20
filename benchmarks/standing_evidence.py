@@ -14,7 +14,7 @@ except ImportError:  # pragma: no cover - supports `python -m benchmarks...`
     from benchmarks.benchmark_adapters import DATASETS, SIZE_SAMPLES
 
 
-CONTRACT_VERSION = "standing-evidence-draft-v3"
+CONTRACT_VERSION = "standing-evidence-v3"
 M6_CONTRACT_FROZEN = True
 M6_BACKTEST_COMPLETE = False
 M6_RELEASE_ANCHOR_EVIDENCE_PATH = "benchmarks/m6_release_anchors.json"
@@ -154,7 +154,7 @@ M6_BACKTEST_VERDICTS = (
         primary_axis="fit_speed",
         control_source="7097e7ac6125cb260ae67ee353458a2cb12fe2e1",
         candidate_source="1016e7e8d70c403a70feab7762de8837ea8fd09c",
-        replay_adapter="public_defaults_with_engagement_audit",
+        replay_adapter="exact_historical_internal_toggle_runner",
         historical_result="benchmarks/fused_variable_hessian_result.md",
         historical_result_sha256=(
             "d22337f4bab69bba7a13b9d3bca583a41aaa873a10a1974ca11d996244febac3"
@@ -173,7 +173,7 @@ M6_BACKTEST_VERDICTS = (
         primary_axis="predict_speed",
         control_source="e0899435e166f8c4856e5f8f77db1e0fa71c322f",
         candidate_source="e961bcc2ea64706169641722b5935f9f31402fa3",
-        replay_adapter="public_defaults_with_route_engagement_audit",
+        replay_adapter="exact_historical_candidate_vs_legacy_runner",
         historical_result="benchmarks/basketball_packed_prediction_result.md",
         historical_result_sha256=(
             "9c8d636f467fab118a492ef64194ec48eb6c800f24d8f31bb73f42039296a7f4"
@@ -200,7 +200,7 @@ M6_BACKTEST_VERDICTS = (
         primary_axis="quality",
         control_source="29bd30cdcf476139c30efe4e09773ca812ba443f",
         candidate_source="29bd30cdcf476139c30efe4e09773ca812ba443f",
-        replay_adapter="fresh_selector_3pct_vs_public_default",
+        replay_adapter="source_pinned_m6_selector_3pct",
         historical_result="benchmarks/fresh_selector_confirmation_result.md",
         historical_result_sha256=(
             "3a33ec834bcebb9d9c9e2db4d69a5119f35ccbcf7623bf3dedb839d15ef71170"
