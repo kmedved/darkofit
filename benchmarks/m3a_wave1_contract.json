@@ -1,0 +1,201 @@
+{
+  "arms": {
+    "diagnostic": [
+      "darkofit_row_ensemble5",
+      "darkofit_row_ensemble8",
+      "darkofit_group_ensemble5",
+      "chimeraboost_float_single",
+      "chimeraboost_float_ensemble8"
+    ],
+    "disclosures": {
+      "chimeraboost_ensemble8": "0.8 row subagging; player-overlap exposed",
+      "chimeraboost_float_ensemble8": "float 0.8 row subagging; player-overlap exposed",
+      "chimeraboost_float_single": "float single; group-aware internal validation on sports rows",
+      "chimeraboost_single": "single; group-aware internal validation on sports rows",
+      "darkofit_group_ensemble5": "group bootstrap; player-disjoint",
+      "darkofit_group_ensemble8": "group-bootstrap member/OOB selection; player-disjoint",
+      "darkofit_row_ensemble5": "row bootstrap; player-overlap exposed",
+      "darkofit_row_ensemble8": "row bootstrap; player-overlap exposed",
+      "darkofit_single": "single; group-aware internal validation on sports rows"
+    },
+    "primary": [
+      "darkofit_single",
+      "darkofit_group_ensemble8",
+      "chimeraboost_single",
+      "chimeraboost_ensemble8"
+    ]
+  },
+  "bound_files": {
+    "analyzer": {
+      "bytes": 30984,
+      "path": "benchmarks/analyze_m3a_wave1.py",
+      "sha256": "876e79aab5f05263d8acb779d9004891785f0ef1a72358f832c26ca04f176dba"
+    },
+    "freezer": {
+      "bytes": 8891,
+      "path": "benchmarks/freeze_m3a_wave1.py",
+      "sha256": "fa1ce296fb27ba08be86652fa2bd8f77bd83c288cb15b25c470140265bce1ff2"
+    },
+    "m5_baseline": {
+      "bytes": 88853,
+      "path": "benchmarks/m5_sentinel_baseline.json",
+      "sha256": "0971e06d4ed307d352d75e1e6400b849c0001b5e11f40243173d7080b6c5859d"
+    },
+    "m6_adapter": {
+      "bytes": 14095,
+      "path": "benchmarks/benchmark_adapters.py",
+      "sha256": "21b42e904b421405fc5a63d9e3f5711b7283abfcfd1fef4b60eb4aa1015675a8"
+    },
+    "protocol": {
+      "bytes": 7444,
+      "path": "benchmarks/m3a_wave1_protocol.md",
+      "sha256": "965296a3ef1bd1547a93e5061cacad20885ac6c015ae00ce73a48c816f2833a6"
+    },
+    "runner": {
+      "bytes": 42235,
+      "path": "benchmarks/run_m3a_wave1.py",
+      "sha256": "f971b28a83d6a14291141dbc0a657ab28f95fb31e9459a77bd72a42c942c8cd7"
+    },
+    "sports_manifest": {
+      "bytes": 147286,
+      "path": "benchmarks/basketball_sports_panel_v2_manifest.json",
+      "sha256": "2e5a16c22b9ca8a9f92d263a28204b2d5bf972a6e43ce694c4ad3a95c727c0af"
+    }
+  },
+  "claims": {
+    "cross_season_generalization_authorized": false,
+    "default_change_authorized": false,
+    "m5_used_as_scoreboard": false,
+    "m6_ranking_authorized": false,
+    "tier": "E"
+  },
+  "contract_frozen": true,
+  "creator_folds": {
+    "seasons": {
+      "2014": {
+        "folds": 10,
+        "rows": 221,
+        "sha256": "b8ff44dc147cd62759db291ff279bd01b1c4fa12a73444658cfb41b8ab6a98d8"
+      },
+      "2015": {
+        "folds": 10,
+        "rows": 246,
+        "sha256": "4b12eae7469e5429d04896f39f3117717a7404ff98afccd372f1f9cdfdf3e215"
+      },
+      "2016": {
+        "folds": 10,
+        "rows": 232,
+        "sha256": "af71e982cb9995a2a867eb4fd5454c45fdf2f4502067c98a2d16fe3f35f939ec"
+      }
+    },
+    "seed_formula": "20260720 + season",
+    "strategy": "KFold(n_splits=10, shuffle=True)"
+  },
+  "execution": {
+    "fresh_worker_per_arm": true,
+    "orders": {
+      "diagnostics": [
+        [
+          "darkofit_row_ensemble5",
+          "chimeraboost_float_single",
+          "darkofit_group_ensemble5",
+          "chimeraboost_float_ensemble8",
+          "darkofit_row_ensemble8"
+        ]
+      ],
+      "primary-quality": [
+        [
+          "darkofit_single",
+          "chimeraboost_single",
+          "darkofit_group_ensemble8",
+          "chimeraboost_ensemble8"
+        ]
+      ],
+      "primary-repeats": [
+        [
+          "chimeraboost_ensemble8",
+          "darkofit_group_ensemble8",
+          "chimeraboost_single",
+          "darkofit_single"
+        ],
+        [
+          "darkofit_group_ensemble8",
+          "darkofit_single",
+          "chimeraboost_ensemble8",
+          "chimeraboost_single"
+        ]
+      ]
+    },
+    "quality_first": true,
+    "repeat_rule": "run primary-repeats only when frozen primary decision survives",
+    "same_arm_warmup": true
+  },
+  "frozen_at": "2026-07-20T22:09:52.967316+00:00",
+  "general": {
+    "adapter": "frozen M6 benchmark_adapters",
+    "arms": [
+      "darkofit_single",
+      "darkofit_row_ensemble8",
+      "chimeraboost_single",
+      "chimeraboost_ensemble8"
+    ],
+    "datasets": [
+      "friedman_numeric",
+      "wide_numeric_reg",
+      "categorical_reg"
+    ],
+    "descriptive_only": true,
+    "m6_ranking_authorized": false,
+    "rows": 10000,
+    "seeds": [
+      0,
+      1
+    ],
+    "size": "medium",
+    "weight_mode": "none"
+  },
+  "inference": {
+    "clusters": 3,
+    "descriptive_only": true,
+    "resamples": 100000,
+    "seed": 20260720,
+    "unit": "season"
+  },
+  "name": "wave1_m3a_20260720",
+  "outcomes_opened": false,
+  "schema_version": 1,
+  "sources": {
+    "chimeraboost": "f14be606b641f1bf0dc92bb14b3951f1fe631c6b",
+    "darkofit": "726e5d8e6131c580bce948db833a5007d0692dca"
+  },
+  "sports_panel": {
+    "player_fold_strategy": "GroupKFold(bref_id, n_splits=10)",
+    "processed_bytes": 379702,
+    "processed_sha256": "8f7eab3765b4166740b150ed372f9607bcd6dd9673e0e73cc6541583230a59e6",
+    "seasons": [
+      2014,
+      2015,
+      2016
+    ],
+    "spent": true,
+    "split_manifest_sha256": "6aaa1748e8868fb3c7b8420cb5ce0f57d1d90ef5848a6969d661e0bcd9cc306f",
+    "targets": [
+      "minutes_per_game",
+      "game_score",
+      "box_plus_minus"
+    ]
+  },
+  "survival_gates": {
+    "cold_geomean_at_most": 1.005,
+    "fit_ratio_at_most": 9.0,
+    "held_geomean_at_most": 1.005,
+    "model_bytes_ratio_at_most": 9.0,
+    "peak_rss_ratio_at_most": 4.0,
+    "player_cluster_p95_at_most": 1.0,
+    "player_geomean_at_most": 0.995,
+    "predict_ratio_at_most": 9.0,
+    "worst_player_cell_at_most": 1.03,
+    "worst_season_at_most": 1.01
+  },
+  "threads": 14
+}
