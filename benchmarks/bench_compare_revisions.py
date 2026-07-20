@@ -22,6 +22,7 @@ import argparse
 import csv
 import inspect
 import json
+import resource
 import subprocess
 import sys
 import tempfile
@@ -87,6 +88,7 @@ CSV_FIELDS = [
     "n_features",
     "fit_seconds",
     "predict_seconds",
+    "worker_peak_rss_bytes",
     "boost_seconds",
     "selection_overhead_seconds",
     "timing_scope",
@@ -158,6 +160,15 @@ def _load_case(path):
 def _truncate_error(text):
     text = str(text or "")
     return text if len(text) <= 4000 else text[:3997] + "..."
+
+
+def _peak_rss_bytes():
+    value = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+    if sys.platform != "darwin":
+        value *= 1024
+    if value <= 0:
+        raise RuntimeError("worker peak RSS is unavailable")
+    return value
 
 
 def _prepare_revision_import(revision_path):
@@ -299,6 +310,7 @@ def _fit_worker(payload):
         "other_rate": kwargs.get("other_rate", ""),
         "fit_seconds": float(fit_seconds),
         "predict_seconds": float(predict_seconds),
+        "worker_peak_rss_bytes": _peak_rss_bytes(),
         "boost_seconds": "" if boost_seconds is None else float(boost_seconds),
         "best_iteration": _best_iteration(best_model) or "",
     }

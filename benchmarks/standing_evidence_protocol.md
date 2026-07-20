@@ -20,15 +20,15 @@ missing-value, and high-row coverage. Its generators, fingerprints, and
 expected ranges are not frozen yet; calling those registry entries completed
 sentinels would overstate the current infrastructure.
 
-## M6 draft-v2 coordinates
+## M6 draft-v3 coordinates
 
 M6 reuses the ten deterministic builders in
 [`benchmark_adapters.py`](benchmark_adapters.py): four regression, three
 binary, and three multiclass datasets, with numeric and categorical coverage.
 The first executable draft pins:
 
-- size `small` (2,500 requested rows; pinned real datasets retain their
-  naturally smaller row counts);
+- sizes `small` and `medium` (2,500 and 10,000 requested rows; pinned real
+  datasets retain their naturally smaller row counts);
 - seeds 0, 1, and 2;
 - unweighted and deterministic stress-weighted fits;
 - public defaults for both source trees;
@@ -37,15 +37,18 @@ The first executable draft pins:
   across dataset/size/seed blocks within each weight stratum and opposite
   orders for the two weight modes.
 
-That is 60 matched cells and 120 raw rows. Missing-value coverage belongs to
-M5 until an adapter supports it. This is intentionally not the freeze shape:
-the executable contract refuses `contract_frozen=true` until a medium size
-and exact ChimeraBoost and CatBoost release anchors are present. Peak RSS
-must also be added before the freeze review. The current small-only draft is
-not allowed to become the comparative contract by inertia.
+That is 120 matched cells and 240 raw rows. Missing-value coverage belongs to
+M5 until an adapter supports it. The exact release anchors are ChimeraBoost
+commit `f14be606b641f1bf0dc92bb14b3951f1fe631c6b` and CatBoost 1.2.10 whose
+installed wheel `RECORD` hashes to
+`9c20fb35750d9ff814309323b225e836b538c1496745f357c8fd50187e7824ed`.
+The executable contract still refuses `contract_frozen=true` until a
+create-only release-anchor artifact is complete and its SHA-256 is embedded
+in the contract. Thus adding the names alone cannot satisfy the freeze.
 
 The runner records task-appropriate primary loss (RMSE or log loss), the
-existing secondary metrics, fit and prediction time, source commit/tree
+existing secondary metrics, fit and prediction time, worker peak RSS,
+source commit/tree
 identity, machine details, contract hash, CSV hash, and paired candidate/control
 ratios. A full run requires clean committed source trees, a candidate tree
 different from the control, a stable mechanism id, and a positive one-based
@@ -62,6 +65,20 @@ is labeled contract-development evidence and is not ranking-eligible. The
 checkout supplying this runner and the dataset builders is also required
 clean, recorded in the manifest, and checked for changes across execution.
 
+Release anchors are established once with one fresh worker per
+product/cell, a same-product three-tree warmup outside timing, and only the
+thread count and random seed fixed around product defaults:
+
+```bash
+/opt/anaconda3/envs/darko311/bin/python \
+  benchmarks/run_m6_release_anchors.py \
+  --chimeraboost-source /Users/konstantinmedvedovsky/code/chimeraboost \
+  --output benchmarks/m6_release_anchors.json
+```
+
+The create-only artifact must contain all 240 product rows before its hash can
+be embedded and the contract reviewed for freeze.
+
 ## Harness null check
 
 The three-dataset smoke is a harness test, not evidence and not a testing-log
@@ -75,7 +92,7 @@ python benchmarks/run_standing_evidence.py \
   --csv /private/tmp/darkofit-m6-smoke.csv
 ```
 
-It must produce 12 successful rows, complete matched pairs, identical primary
+It must produce 24 successful rows, complete matched pairs, identical primary
 loss within each pair, and a provenance manifest. Timing ratios need not equal
 one.
 
@@ -103,6 +120,24 @@ adapters, lives in `standing_evidence.py`.
 | Fused variable-Hessian lane | Advance | Fit speed | `7097e7a` → `1016e7e` |
 | Forest-work packed router | Kill | Prediction speed | `e089943` → `e961bcc` |
 | 3% linear-leaf selector | Kill | Quality | control and candidate policy at `29bd30c` |
+
+The replay gates are also predeclared, not chosen from replay output:
+
+- fused variable Hessian uses its 50,000-row binary-Logloss and
+  stress-weighted-RMSE cases; exact behavior and measured engagement are
+  mandatory, the fit-ratio geometric mean must be at most `0.90`, and each
+  paired series must have IQR/median at most `0.10`;
+- the packed router uses the frozen repeated-row cases at 127, 525, 585,
+  2,409, 8,192, and 100,000 rows; predictions and observed dispatch must be
+  exact, the two small gated cases must be at least 2x faster than legacy,
+  both large cases must have candidate/legacy core ratios at most `1.10`, and
+  every timing series must have IQR/median at most `0.30`; and
+- the selector uses the small and medium Friedman, wide-numeric, and
+  categorical-regression cells. Its exact deterministic 20% internal
+  validation split selects linear leaves only for relative validation-RMSE
+  improvement at least `0.03`. Advancement requires selector/default
+  geometric-mean outer RMSE at most `0.98`, at least four wins in six cells,
+  and no cell above `1.02`.
 
 The selector is deliberately included so the backtest must demonstrate that
 M6 can reject a quality mechanism, not merely confirm profiler-visible speed

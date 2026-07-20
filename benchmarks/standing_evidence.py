@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 from dataclasses import asdict, dataclass
 from itertools import product
 from pathlib import Path
@@ -13,9 +14,13 @@ except ImportError:  # pragma: no cover - supports `python -m benchmarks...`
     from benchmarks.benchmark_adapters import DATASETS, SIZE_SAMPLES
 
 
-CONTRACT_VERSION = "standing-evidence-draft-v2"
+CONTRACT_VERSION = "standing-evidence-draft-v3"
 M6_CONTRACT_FROZEN = False
 M6_BACKTEST_COMPLETE = False
+M6_RELEASE_ANCHOR_EVIDENCE_PATH = ""
+M6_RELEASE_ANCHOR_EVIDENCE_SHA256 = ""
+M6_BACKTEST_EVIDENCE_PATH = ""
+M6_BACKTEST_EVIDENCE_SHA256 = ""
 
 
 @dataclass(frozen=True)
@@ -43,6 +48,9 @@ class BacktestVerdict:
     replay_adapter: str
     historical_result: str
     historical_result_sha256: str
+    replay_cases: tuple[str, ...]
+    advance_rule: str
+    max_stability_iqr_fraction: float
 
 
 M5_SENTINEL_DOMAINS = (
@@ -113,10 +121,24 @@ M6_SMOKE_DATASETS = (
     "categorical_binary",
 )
 M6_MODELS = ("control_default", "candidate_default")
-M6_SIZES = ("small",)
+M6_SIZES = ("small", "medium")
 M6_REQUIRED_FREEZE_SIZES = ("small", "medium")
 M6_REQUIRED_RELEASE_ANCHORS = ("chimeraboost", "catboost")
-M6_RELEASE_ANCHORS: tuple[ReleaseAnchor, ...] = ()
+M6_RELEASE_ANCHORS = (
+    ReleaseAnchor(
+        "chimeraboost",
+        "0.18.0.dev6",
+        "git:f14be606b641f1bf0dc92bb14b3951f1fe631c6b",
+    ),
+    ReleaseAnchor(
+        "catboost",
+        "1.2.10",
+        (
+            "record-sha256:"
+            "9c20fb35750d9ff814309323b225e836b538c1496745f357c8fd50187e7824ed"
+        ),
+    ),
+)
 M6_SEED_COUNT = 3
 M6_WEIGHT_MODES = ("none", "stress")
 M6_REPEAT = 1
@@ -135,6 +157,13 @@ M6_BACKTEST_VERDICTS = (
         historical_result_sha256=(
             "d22337f4bab69bba7a13b9d3bca583a41aaa873a10a1974ca11d996244febac3"
         ),
+        replay_cases=("binary_logloss_50k", "weighted_rmse_50k"),
+        advance_rule=(
+            "advance iff behavior is exact, candidate engagement is positive, "
+            "reference engagement is zero, the fit-ratio geometric mean is "
+            "<=0.90, and every paired fit series has IQR/median <=0.10"
+        ),
+        max_stability_iqr_fraction=0.10,
     ),
     BacktestVerdict(
         mechanism_id="forest_work_packed_router",
@@ -147,6 +176,21 @@ M6_BACKTEST_VERDICTS = (
         historical_result_sha256=(
             "9c8d636f467fab118a492ef64194ec48eb6c800f24d8f31bb73f42039296a7f4"
         ),
+        replay_cases=(
+            "repeated_127",
+            "repeated_525",
+            "repeated_585",
+            "repeated_2409",
+            "repeated_8192",
+            "repeated_100000",
+        ),
+        advance_rule=(
+            "advance iff predictions are exact, the candidate route engages, "
+            "all timing series have IQR/median <=0.30, the 525- and 585-row "
+            "candidate cores are >=2x faster than legacy, and the 8192- and "
+            "100000-row candidate/legacy core ratios are <=1.10"
+        ),
+        max_stability_iqr_fraction=0.30,
     ),
     BacktestVerdict(
         mechanism_id="linear_leaf_selector_3pct",
@@ -159,6 +203,21 @@ M6_BACKTEST_VERDICTS = (
         historical_result_sha256=(
             "3a33ec834bcebb9d9c9e2db4d69a5119f35ccbcf7623bf3dedb839d15ef71170"
         ),
+        replay_cases=(
+            "friedman_numeric_small",
+            "friedman_numeric_medium",
+            "wide_numeric_reg_small",
+            "wide_numeric_reg_medium",
+            "categorical_reg_small",
+            "categorical_reg_medium",
+        ),
+        advance_rule=(
+            "advance iff the selector/default geometric-mean RMSE ratio is "
+            "<=0.98, it wins at least 4 of 6 cells, no cell ratio exceeds "
+            "1.02, and every selected arm is chosen by the frozen 3% internal "
+            "validation-margin policy"
+        ),
+        max_stability_iqr_fraction=0.0,
     ),
 )
 
@@ -175,6 +234,11 @@ def m6_freeze_blockers() -> tuple[str, ...]:
     )
     if missing_anchors:
         blockers.append(f"missing pinned M6 release anchors: {missing_anchors}")
+    if (
+        not M6_RELEASE_ANCHOR_EVIDENCE_PATH
+        or not M6_RELEASE_ANCHOR_EVIDENCE_SHA256
+    ):
+        blockers.append("missing hash-bound M6 release-anchor evidence")
     return tuple(blockers)
 
 
@@ -206,6 +270,10 @@ def validate_contract():
         if not anchor.version or not anchor.source_pin:
             raise RuntimeError(
                 f"M6 release anchor {anchor.id!r} is not fully pinned"
+            )
+        if ":" not in anchor.source_pin:
+            raise RuntimeError(
+                f"M6 release anchor {anchor.id!r} has an untyped source pin"
             )
     if not set(M6_SMOKE_DATASETS).issubset(M6_DATASETS):
         raise RuntimeError("M6 smoke datasets must be a subset of the full slice")
@@ -239,6 +307,8 @@ def validate_contract():
                 verdict.replay_adapter,
                 verdict.historical_result,
                 verdict.historical_result_sha256,
+                verdict.replay_cases,
+                verdict.advance_rule,
             )
         ):
             raise RuntimeError(
@@ -248,6 +318,14 @@ def validate_contract():
             raise RuntimeError(
                 f"M6 backtest verdict {verdict.mechanism_id!r} has an "
                 "invalid result hash"
+            )
+        if (
+            not math.isfinite(verdict.max_stability_iqr_fraction)
+            or verdict.max_stability_iqr_fraction < 0.0
+        ):
+            raise RuntimeError(
+                f"M6 backtest verdict {verdict.mechanism_id!r} has an "
+                "invalid stability limit"
             )
         for source_pin in (verdict.control_source, verdict.candidate_source):
             if len(source_pin) != 40 or set(source_pin) - set(
@@ -274,6 +352,13 @@ def validate_contract():
         raise RuntimeError(
             "M6 contract cannot be frozen: " + "; ".join(blockers)
         )
+    if M6_BACKTEST_COMPLETE:
+        if not M6_CONTRACT_FROZEN:
+            raise RuntimeError("M6 backtest cannot complete before contract freeze")
+        if not M6_BACKTEST_EVIDENCE_PATH or not M6_BACKTEST_EVIDENCE_SHA256:
+            raise RuntimeError(
+                "M6 backtest cannot complete without hash-bound evidence"
+            )
 
 
 def m6_expected_grid(*, smoke=False):
@@ -311,6 +396,10 @@ def contract_payload():
             "release_anchors": [
                 asdict(anchor) for anchor in M6_RELEASE_ANCHORS
             ],
+            "release_anchor_evidence": {
+                "path": M6_RELEASE_ANCHOR_EVIDENCE_PATH,
+                "sha256": M6_RELEASE_ANCHOR_EVIDENCE_SHA256,
+            },
             "seed_count": M6_SEED_COUNT,
             "weight_modes": list(M6_WEIGHT_MODES),
             "repeat": M6_REPEAT,
@@ -318,6 +407,10 @@ def contract_payload():
             "backtest_verdicts": [
                 asdict(verdict) for verdict in M6_BACKTEST_VERDICTS
             ],
+            "backtest_evidence": {
+                "path": M6_BACKTEST_EVIDENCE_PATH,
+                "sha256": M6_BACKTEST_EVIDENCE_SHA256,
+            },
         },
     }
 

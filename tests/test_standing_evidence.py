@@ -68,6 +68,7 @@ def _row(
         "weight_mode": weight_mode,
         "fit_seconds": "2.0",
         "predict_seconds": "0.2",
+        "worker_peak_rss_bytes": "1000000",
         "primary_metric": (
             "weighted_rmse"
             if task == "regression" and weight_mode == "stress"
@@ -203,13 +204,13 @@ def test_standing_contract_covers_classification_and_weighted_domains():
     assert {"regression", "binary"} <= weighted_tasks
     assert set(M6_SMOKE_DATASETS) < set(M6_DATASETS)
     payload = contract_payload()
-    assert payload["contract_version"].endswith("-v2")
+    assert payload["contract_version"].endswith("-v3")
     assert payload["m6"]["contract_frozen"] is False
     assert payload["m6"]["backtest_complete"] is False
     assert payload["m6"]["freeze_blockers"]
 
 
-def test_m6_draft_cannot_freeze_without_medium_and_release_anchors(
+def test_m6_draft_cannot_freeze_without_hash_bound_release_anchor_evidence(
     monkeypatch,
 ):
     monkeypatch.setattr(evidence_contract, "M6_CONTRACT_FROZEN", True)
@@ -218,17 +219,12 @@ def test_m6_draft_cannot_freeze_without_medium_and_release_anchors(
         validate_contract()
 
     monkeypatch.setattr(
-        evidence_contract,
-        "M6_SIZES",
-        M6_REQUIRED_FREEZE_SIZES,
+        evidence_contract, "M6_RELEASE_ANCHOR_EVIDENCE_PATH", "anchors.json"
     )
     monkeypatch.setattr(
         evidence_contract,
-        "M6_RELEASE_ANCHORS",
-        tuple(
-            ReleaseAnchor(anchor_id, "pinned-version", "pinned-source")
-            for anchor_id in M6_REQUIRED_RELEASE_ANCHORS
-        ),
+        "M6_RELEASE_ANCHOR_EVIDENCE_SHA256",
+        "a" * 64,
     )
 
     assert m6_freeze_blockers() == ()
@@ -315,10 +311,10 @@ def test_m6_grid_is_complete_and_unique():
     full = m6_expected_grid()
     smoke = m6_expected_grid(smoke=True)
 
-    assert len(full) == 120
-    assert len(set(full)) == 120
-    assert len(smoke) == 12
-    assert len(set(smoke)) == 12
+    assert len(full) == 240
+    assert len(set(full)) == 240
+    assert len(smoke) == 24
+    assert len(set(smoke)) == 24
 
 
 def test_source_contract_requires_a_same_clean_checkout_for_null_smoke():
@@ -419,8 +415,8 @@ def test_validate_rows_accepts_complete_smoke_grid(tmp_path):
     )
 
     assert result == {
-        "expected_rows": 12,
-        "actual_rows": 12,
+        "expected_rows": 24,
+        "actual_rows": 24,
         "all_rows_ok": True,
         "grid_complete": True,
     }
@@ -490,8 +486,8 @@ def test_pair_summary_uses_matched_candidate_over_control_ratios(tmp_path):
 
     summary = summarize_pairs(rows)
 
-    assert summary["paired_cells"] == 6
-    assert summary["candidate_loss_wins"] == 6
+    assert summary["paired_cells"] == 12
+    assert summary["candidate_loss_wins"] == 12
     assert summary["candidate_loss_ties"] == 0
     assert summary["candidate_loss_losses"] == 0
     assert summary["candidate_over_control_primary_loss_ratio"]["median"] == 0.9

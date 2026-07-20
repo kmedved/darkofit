@@ -288,6 +288,7 @@ def validate_rows(
             raise RuntimeError(f"M6 row primary metric drifted: {identity}")
         _finite_value(row, "fit_seconds")
         _finite_value(row, "predict_seconds")
+        _finite_value(row, "worker_peak_rss_bytes")
         primary_value = _finite_value(
             row, "primary_value", nonnegative=True
         )
