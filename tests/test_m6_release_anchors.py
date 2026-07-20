@@ -15,6 +15,7 @@ if str(BENCH_DIR) not in sys.path:
 
 from run_m6_release_anchors import (  # noqa: E402
     _catboost_frames,
+    _numeric_metric_values,
     expected_coordinates,
     validate_rows,
     validate_sources,
@@ -30,6 +31,18 @@ def test_release_anchor_grid_includes_full_small_medium_weighted_slice():
     assert {row[2] for row in full} == {"small", "medium"}
     assert {row[4] for row in full} == {"none", "stress"}
     assert len(smoke) == 6
+
+
+def test_metric_validation_excludes_the_primary_metric_name():
+    values = _numeric_metric_values(
+        {
+            "primary_metric": "log_loss",
+            "primary_value": 0.4,
+            "accuracy": 0.8,
+        }
+    )
+
+    assert np.array_equal(values, np.asarray([0.4, 0.8]))
 
 
 def test_catboost_transport_preserves_numeric_columns_and_tokens_categories():

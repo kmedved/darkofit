@@ -214,6 +214,17 @@ def _peak_rss_bytes() -> int:
     return value
 
 
+def _numeric_metric_values(metrics: dict[str, Any]) -> np.ndarray:
+    return np.asarray(
+        [
+            value
+            for key, value in metrics.items()
+            if key != "primary_metric"
+        ],
+        dtype=np.float64,
+    )
+
+
 def _catboost_frames(
     X_train: Any,
     X_test: Any,
@@ -408,7 +419,7 @@ def run_worker(payload: dict[str, Any]) -> dict[str, Any]:
         labels=labels,
         sample_weight=split["w_test"],
     )
-    values = np.asarray(list(metrics.values()), dtype=np.float64)
+    values = _numeric_metric_values(metrics)
     if not np.isfinite(values).all():
         raise RuntimeError("release-anchor metrics are non-finite")
     return {
