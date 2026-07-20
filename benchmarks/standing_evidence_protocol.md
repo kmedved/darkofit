@@ -168,4 +168,8 @@ paths), and runs the selector at source `29bd30c` on the six declared M6
 cells. All source clones must be clean and exact; the packed replay also
 requires the SHA-pinned historical basketball cache and ChimeraBoost 0.15
 source. The executor and its frozen-rule unit tests are committed before the
-first replay.
+first replay. Historical runners use an explicitly named clean Python
+installation because the active development environment exposes an unrelated
+regular `benchmarks` package through a site path; the exact historical runners
+spawn nested workers and therefore cannot rely only on the parent's import
+shim.

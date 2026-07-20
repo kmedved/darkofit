@@ -39,3 +39,20 @@ package shim whose only search path is the exact historical source's
 `benchmarks/` directory, then places that shim and source first for the fused
 and packed subprocess trees. The historical clones remain byte-unchanged and
 clean. A regression test pins the shim contents and path order.
+
+## Third no-outcome launch
+
+The fused parent imported successfully through the shim and announced its
+first reference block. Its nested worker then replaced `PYTHONPATH` with the
+historical repository root, as the exact runner prescribes, and again resolved
+the unrelated installed regular package. The nested worker failed during
+import before constructing data or fitting the reference model; no replay
+outcome or artifact was produced.
+
+The machine's base Python 3.12 installation has the required numerical
+dependencies and no competing regular `benchmarks` package. The executor now
+requires that historical-worker Python explicitly, records it in the
+artifact, and continues to use the active `darko311` interpreter for the
+source-pinned selector adapter. This preserves both historical runners
+byte-for-byte, including their nested-worker behavior. The evidence subset,
+models, cases, and gates remain unchanged.

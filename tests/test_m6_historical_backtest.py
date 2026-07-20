@@ -20,6 +20,7 @@ from run_m6_historical_backtest import (  # noqa: E402
     analyze_fused,
     analyze_packed,
     analyze_selector,
+    parse_args,
     validate_sources,
 )
 
@@ -149,3 +150,23 @@ def test_historical_environment_shims_namespace_only_benchmarks(tmp_path):
     ).read_text() == (
         "__path__ = [" + repr(str(source / "benchmarks")) + "]\n"
     )
+
+
+def test_backtest_requires_an_explicit_historical_python():
+    with pytest.raises(SystemExit):
+        parse_args(
+            [
+                "--fused-source",
+                "/fused",
+                "--packed-source",
+                "/packed",
+                "--selector-source",
+                "/selector",
+                "--chimeraboost-015-source",
+                "/chimera",
+                "--basketball-cache",
+                "/cache",
+                "--output",
+                "/output",
+            ]
+        )

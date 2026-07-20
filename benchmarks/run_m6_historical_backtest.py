@@ -613,6 +613,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--selector-source", type=Path, required=True)
     parser.add_argument("--chimeraboost-015-source", type=Path, required=True)
     parser.add_argument("--basketball-cache", type=Path, required=True)
+    parser.add_argument(
+        "--historical-python",
+        type=Path,
+        required=True,
+        help=(
+            "Python executable for exact historical runners and their nested "
+            "workers; must not expose a competing regular benchmarks package"
+        ),
+    )
     parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args(argv)
 
@@ -636,6 +645,11 @@ def run(args: argparse.Namespace) -> Path:
     cache = args.basketball_cache.expanduser().resolve()
     if not cache.is_file() or cache.is_symlink():
         raise RuntimeError("pinned basketball cache is unavailable")
+    historical_python = args.historical_python.expanduser().resolve()
+    if not historical_python.is_file() or not os.access(
+        historical_python, os.X_OK
+    ):
+        raise RuntimeError("historical Python executable is unavailable")
 
     with tempfile.TemporaryDirectory(prefix="darkofit-m6-backtest-") as directory:
         temporary = Path(directory)
@@ -643,7 +657,7 @@ def run(args: argparse.Namespace) -> Path:
         fused_output = temporary / "fused.json"
         fused_execution = _run_command(
             [
-                sys.executable,
+                str(historical_python),
                 str(
                     args.fused_source
                     / "benchmarks"
@@ -673,7 +687,7 @@ def run(args: argparse.Namespace) -> Path:
         packed_output = temporary / "packed.json"
         packed_execution = _run_command(
             [
-                sys.executable,
+                str(historical_python),
                 str(
                     args.packed_source
                     / "benchmarks"
@@ -747,6 +761,7 @@ def run(args: argparse.Namespace) -> Path:
                 "machine": platform.machine(),
                 "python": platform.python_version(),
                 "python_executable": sys.executable,
+                "historical_python_executable": str(historical_python),
                 "logical_cpu_count": os.cpu_count(),
             },
             "replays": {
