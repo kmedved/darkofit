@@ -492,6 +492,29 @@ def _environment(cache_dir: Path) -> dict[str, str]:
     return environment
 
 
+def _historical_environment(
+    base: dict[str, str],
+    source: Path,
+    temporary: Path,
+    label: str,
+) -> dict[str, str]:
+    """Make an old namespace-only ``benchmarks`` tree import deterministically."""
+    source = source.resolve()
+    shim_package = temporary / f"{label}-import-shim" / "benchmarks"
+    shim_package.mkdir(parents=True, exist_ok=False)
+    shim_package.joinpath("__init__.py").write_text(
+        "__path__ = ["
+        + repr(str(source / "benchmarks"))
+        + "]\n",
+        encoding="utf-8",
+    )
+    environment = dict(base)
+    environment["PYTHONPATH"] = os.pathsep.join(
+        (str(shim_package.parent), str(source))
+    )
+    return environment
+
+
 def _run_command(
     command: list[str],
     *,
@@ -630,7 +653,12 @@ def run(args: argparse.Namespace) -> Path:
                 str(fused_output),
             ],
             cwd=args.fused_source,
-            environment=environment,
+            environment=_historical_environment(
+                environment,
+                args.fused_source,
+                temporary,
+                "fused",
+            ),
             label="fused variable Hessian",
         )
         fused_artifact = json.loads(fused_output.read_text())
@@ -661,7 +689,12 @@ def run(args: argparse.Namespace) -> Path:
                 str(packed_output),
             ],
             cwd=args.packed_source,
-            environment=environment,
+            environment=_historical_environment(
+                environment,
+                args.packed_source,
+                temporary,
+                "packed",
+            ),
             label="forest-work packed router",
         )
         packed_artifact = json.loads(packed_output.read_text())

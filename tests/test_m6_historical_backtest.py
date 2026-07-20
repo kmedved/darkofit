@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -15,6 +16,7 @@ if str(BENCH_DIR) not in sys.path:
 from run_m6_historical_backtest import (  # noqa: E402
     SELECTOR_CASES,
     _environment,
+    _historical_environment,
     analyze_fused,
     analyze_packed,
     analyze_selector,
@@ -128,3 +130,22 @@ def test_backtest_worker_environment_drops_inherited_pythonpath(
     environment = _environment(tmp_path)
 
     assert "PYTHONPATH" not in environment
+
+
+def test_historical_environment_shims_namespace_only_benchmarks(tmp_path):
+    source = tmp_path / "source"
+    (source / "benchmarks").mkdir(parents=True)
+
+    environment = _historical_environment(
+        {}, source, tmp_path / "runtime", "historical"
+    )
+
+    shim_root, source_root = environment["PYTHONPATH"].split(
+        os.pathsep
+    )
+    assert Path(source_root) == source
+    assert (
+        Path(shim_root) / "benchmarks" / "__init__.py"
+    ).read_text() == (
+        "__path__ = [" + repr(str(source / "benchmarks")) + "]\n"
+    )

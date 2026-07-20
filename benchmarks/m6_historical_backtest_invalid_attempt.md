@@ -29,3 +29,13 @@ environment. Each exact historical runner inserts its own repository root,
 and the selector worker explicitly prepends its pinned source. A named test
 now enforces the isolated environment. The declared evidence contract remains
 unchanged, and no raw or combined artifact was created.
+
+An outcome-free import probe before the next launch then established why
+removing the variable alone was insufficient on this workstation: the
+historical `benchmarks/` directories are namespace-only, while an unrelated
+installed checkout exposes a regular `benchmarks` package and therefore wins
+Python's package resolution. The executor now creates a temporary regular
+package shim whose only search path is the exact historical source's
+`benchmarks/` directory, then places that shim and source first for the fused
+and packed subprocess trees. The historical clones remain byte-unchanged and
+clean. A regression test pins the shim contents and path order.
