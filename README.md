@@ -80,6 +80,9 @@ The user guide is organized under [`docs/`](docs/index.md):
 [TreeSHAP](docs/shap.md),
 [benchmarks](docs/benchmarks.md), and
 [development](docs/development.md).
+The chronological [testing log](benchmarks/TESTING_LOG.md) connects the
+correctness suites, benchmark campaigns, lockbox decisions, comparator
+versions, and release-verification checkpoints to their controlling evidence.
 Historical implementation plans are retained in
 [`docs/archive/`](docs/archive/README.md).
 

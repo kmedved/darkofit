@@ -2,6 +2,10 @@
 
 This file is the current checkpoint for DarkoFit benchmark work. For the
 longer historical speed investigation, see [benchmarks/FINDINGS.md](benchmarks/FINDINGS.md).
+For the chronological record across correctness testing, development screens,
+fresh confirmations, engine measurements, lockbox decisions, and release
+verification, see the canonical
+[testing log](benchmarks/TESTING_LOG.md).
 
 ## TabArena-Lite Three-Dataset Smoke
 

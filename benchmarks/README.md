@@ -3,6 +3,12 @@
 DarkoFit treats benchmark artifacts as provenance records, not a pool of
 numbers to retune after the fact.
 
+The canonical chronological index is
+[`TESTING_LOG.md`](TESTING_LOG.md). It records the question, source/version
+boundary, evidence class, result, limitations, and terminal decision for the
+major correctness, benchmark, confirmation, and release-verification work.
+Individual frozen artifacts remain authoritative.
+
 The binding decision constitution is
 [`SHIPPING_POLICY.md`](SHIPPING_POLICY.md). The active agenda is
 [`../PRODUCT_OFFENSE_PLAN.md`](../PRODUCT_OFFENSE_PLAN.md).

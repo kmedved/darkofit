@@ -12,6 +12,11 @@ concentration, explicit harm bounds, and declared cost budgets—not win counts.
 
 The current high-level record is in
 [Benchmark notes](https://github.com/kmedved/darkofit/blob/main/BENCHMARK_NOTES.md).
+The detailed chronological record is the
+[Testing log](https://github.com/kmedved/darkofit/blob/main/benchmarks/TESTING_LOG.md),
+which connects correctness suites, spent screens, fresh confirmations,
+lockbox decisions, comparator revisions, and release gates to their
+authoritative artifacts.
 The active ceiling ledger is
 [Beyond parity](https://github.com/kmedved/darkofit/blob/main/BEYOND_PARITY_PLAN.md).
 The release-level same-machine frontier is regenerated in
