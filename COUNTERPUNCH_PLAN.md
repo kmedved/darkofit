@@ -398,8 +398,11 @@ and machine-readable replay cases and gates. The complete 240-row
 release-anchor artifact is now create-only and hash-bound, so the M6 contract
 is frozen. Its replay executor binds the exact historical fused and packed
 runners plus the source-pinned six-cell selector adapter before outcome
-access. Candidate ranking remains false until the separate historical replay
-artifact is complete and hash-bound.
+access. The first outcome-bearing replay terminal-failed: fused disagreed
+with its known positive verdict, and the exact 18-thread packed runner was
+unexecutable on the current 14-thread machine before model access. The
+selector was not opened. The failure is hash-bound, reruns are closed, and
+M6 remains non-ranking under v3.
 
 Building and backtesting the M6 contract is Tier-E infrastructure work
 authorized in Wave 1. It must reproduce a declared subset of prior mechanism

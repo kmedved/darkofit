@@ -207,6 +207,10 @@ def test_standing_contract_covers_classification_and_weighted_domains():
     assert payload["contract_version"] == "standing-evidence-v3"
     assert payload["m6"]["contract_frozen"] is True
     assert payload["m6"]["backtest_complete"] is False
+    assert payload["m6"]["backtest_terminal"] is True
+    assert payload["m6"]["backtest_failure_evidence"]["sha256"] == (
+        "18b902e6099a4686b8eda71fac9ac327a0b5243872b80b5da79c5e01e5e2c201"
+    )
     assert payload["m6"]["freeze_blockers"] == []
 
 

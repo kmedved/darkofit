@@ -28,6 +28,7 @@ try:
     from campaign_lib.provenance import canonical_json_sha256, file_sha256
     from standing_evidence import (
         M6_BACKTEST_COMPLETE,
+        M6_BACKTEST_TERMINAL,
         M6_BACKTEST_VERDICTS,
         M6_CONTRACT_FROZEN,
         M6_THREADS,
@@ -41,6 +42,7 @@ except ImportError:  # pragma: no cover - supports `python -m benchmarks...`
     )
     from benchmarks.standing_evidence import (
         M6_BACKTEST_COMPLETE,
+        M6_BACKTEST_TERMINAL,
         M6_BACKTEST_VERDICTS,
         M6_CONTRACT_FROZEN,
         M6_THREADS,
@@ -627,9 +629,13 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 
 def run(args: argparse.Namespace) -> Path:
-    if not M6_CONTRACT_FROZEN or M6_BACKTEST_COMPLETE:
+    if (
+        not M6_CONTRACT_FROZEN
+        or M6_BACKTEST_COMPLETE
+        or M6_BACKTEST_TERMINAL
+    ):
         raise RuntimeError(
-            "M6 replay requires a frozen contract with backtest incomplete"
+            "M6 replay requires a frozen, incomplete, non-terminal backtest"
         )
     output = args.output.expanduser().absolute()
     if output.exists() or output.is_symlink():

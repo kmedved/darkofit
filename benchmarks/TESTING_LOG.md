@@ -439,6 +439,35 @@ evidence.
    M6 contract is frozen. M6 remains ineligible to rank candidates until its
    separately predeclared historical backtest completes.
 
+### 18. M6 historical-backtest failure
+
+1. **Execution boundary:** 2026-07-20; frozen executor commit `59f7613`;
+   exact historical DarkoFit sources `1016e7e`, `e961bcc`, and `29bd30c`;
+   ChimeraBoost 0.15 at `851ab7f`.
+2. **Evidence class:** Tier-E spent infrastructure backtest; no shipping or
+   default authority.
+3. **Declared subset:** fused variable Hessian (`advance`), forest-work
+   packed router (`kill`), and 3% linear-leaf selector (`kill`).
+4. **Execution:** three no-outcome launch failures were recorded separately.
+   On the only outcome-bearing launch, the exact fused replay completed and
+   the frozen analyzer returned `kill`, disagreeing with the known positive
+   verdict.
+5. **Packed boundary:** the exact runner called
+   `numba.set_num_threads(18)` before loading data; the current runtime allows
+   at most 14 and raised `ValueError`. This is `lacks_power`, not agreement.
+6. **Selector boundary:** not run after the terminal prerequisite failure.
+7. **Artifact:** [`m6_historical_backtest_failure.json`](m6_historical_backtest_failure.json),
+   SHA-256
+   `18b902e6099a4686b8eda71fac9ac327a0b5243872b80b5da79c5e01e5e2c201`;
+   summary
+   [`m6_historical_backtest_result.md`](m6_historical_backtest_result.md).
+8. **Limitation:** the combined fail-closed executor kept replay shards in a
+   temporary directory and the later packed exception removed the fused raw
+   shard. The emitted analyzer disposition is preserved; it is not
+   reconstructed by rerunning spent evidence.
+9. **Terminal decision:** `backtest_complete=false`,
+   `backtest_terminal=true`; M6 remains non-ranking and v3 reruns are closed.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

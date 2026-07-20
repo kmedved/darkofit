@@ -17,12 +17,19 @@ except ImportError:  # pragma: no cover - supports `python -m benchmarks...`
 CONTRACT_VERSION = "standing-evidence-v3"
 M6_CONTRACT_FROZEN = True
 M6_BACKTEST_COMPLETE = False
+M6_BACKTEST_TERMINAL = True
 M6_RELEASE_ANCHOR_EVIDENCE_PATH = "benchmarks/m6_release_anchors.json"
 M6_RELEASE_ANCHOR_EVIDENCE_SHA256 = (
     "59747bc08d48a2ddad9b3cec05c965ecbd9edf21025c537f17dc58d816385409"
 )
 M6_BACKTEST_EVIDENCE_PATH = ""
 M6_BACKTEST_EVIDENCE_SHA256 = ""
+M6_BACKTEST_FAILURE_EVIDENCE_PATH = (
+    "benchmarks/m6_historical_backtest_failure.json"
+)
+M6_BACKTEST_FAILURE_EVIDENCE_SHA256 = (
+    "18b902e6099a4686b8eda71fac9ac327a0b5243872b80b5da79c5e01e5e2c201"
+)
 
 
 @dataclass(frozen=True)
@@ -389,6 +396,16 @@ def validate_contract():
             M6_BACKTEST_EVIDENCE_SHA256,
             "M6 backtest",
         )
+    if M6_BACKTEST_TERMINAL:
+        if M6_BACKTEST_COMPLETE:
+            raise RuntimeError(
+                "M6 backtest cannot be both complete and terminal-failed"
+            )
+        _validate_evidence_binding(
+            M6_BACKTEST_FAILURE_EVIDENCE_PATH,
+            M6_BACKTEST_FAILURE_EVIDENCE_SHA256,
+            "M6 backtest failure",
+        )
 
 
 def m6_expected_grid(*, smoke=False):
@@ -416,6 +433,7 @@ def contract_payload():
         "m6": {
             "contract_frozen": M6_CONTRACT_FROZEN,
             "backtest_complete": M6_BACKTEST_COMPLETE,
+            "backtest_terminal": M6_BACKTEST_TERMINAL,
             "freeze_blockers": list(m6_freeze_blockers()),
             "datasets": list(M6_DATASETS),
             "smoke_datasets": list(M6_SMOKE_DATASETS),
@@ -440,6 +458,10 @@ def contract_payload():
             "backtest_evidence": {
                 "path": M6_BACKTEST_EVIDENCE_PATH,
                 "sha256": M6_BACKTEST_EVIDENCE_SHA256,
+            },
+            "backtest_failure_evidence": {
+                "path": M6_BACKTEST_FAILURE_EVIDENCE_PATH,
+                "sha256": M6_BACKTEST_FAILURE_EVIDENCE_SHA256,
             },
         },
     }

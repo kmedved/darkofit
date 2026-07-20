@@ -1,7 +1,7 @@
 # Standing M5/M6 evidence protocol
 
-Status: M6 contract frozen after release-anchor establishment; historical
-backtest pending, authorized 2026-07-20.
+Status: M6 contract frozen; historical backtest terminal-failed 2026-07-20,
+so candidate ranking remains disabled.
 
 This protocol creates the cheap middle rung in
 [`COUNTERPUNCH_PLAN.md`](../COUNTERPUNCH_PLAN.md). It is deliberately split
@@ -80,8 +80,10 @@ thread count and random seed fixed around product defaults:
 The create-only artifact contains all 240 product rows and is embedded at
 SHA-256
 `59747bc08d48a2ddad9b3cec05c965ecbd9edf21025c537f17dc58d816385409`.
-The contract is therefore frozen. Candidate ranking remains disabled until
-the separate historical backtest artifact is complete and hash-bound.
+The contract is therefore frozen. The separate historical backtest later
+failed and is hash-bound at
+`18b902e6099a4686b8eda71fac9ac327a0b5243872b80b5da79c5e01e5e2c201`;
+candidate ranking remains disabled.
 
 ## Harness null check
 
@@ -173,3 +175,11 @@ installation because the active development environment exposes an unrelated
 regular `benchmarks` package through a site path; the exact historical runners
 spawn nested workers and therefore cannot rely only on the parent's import
 shim.
+
+The first outcome-bearing launch was terminal: the fused replay disagreed
+with its historical positive verdict, then the exact packed runner proved
+unexecutable on the current 14-thread machine because it hard-requires 18
+Numba threads. The selector was not opened. The failure record is
+[`m6_historical_backtest_result.md`](m6_historical_backtest_result.md).
+`backtest_complete` remains false, `backtest_terminal` is true, and the
+executor refuses another launch under v3.
