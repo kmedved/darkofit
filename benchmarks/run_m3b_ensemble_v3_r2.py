@@ -18,7 +18,7 @@ if str(BENCH_DIR) not in sys.path:
 
 
 def _load_isolated_base():
-    name = "_darkofit_m3b_r2_base_runner"
+    name = f"{__name__.replace('.', '_')}_base_runner"
     module = sys.modules.get(name)
     if module is not None:
         return module
