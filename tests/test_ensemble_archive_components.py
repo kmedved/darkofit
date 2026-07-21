@@ -7,6 +7,7 @@ import pytest
 from benchmarks.analyze_ensemble_archive_components import (
     R3_REQUIRED_SHARE_PER_DUPLICATE,
     analyze_archive,
+    main,
 )
 from darkofit import DarkoRegressor
 from darkofit.sklearn_api import _fit_private_ensemble_v3
@@ -122,3 +123,32 @@ def test_archive_component_census_output_is_json_serializable(tmp_path):
     restored = json.loads(json.dumps(result, allow_nan=False))
     assert restored["analysis"] == "ensemble_archive_component_census"
     assert restored["non_loadable_size_simulation"] is True
+
+
+@pytest.mark.parametrize("linked_input", ["ensemble", "single"])
+def test_archive_component_census_rejects_symlink_inputs(
+    tmp_path, linked_input
+):
+    ensemble, single = _archives(tmp_path)
+    target = ensemble if linked_input == "ensemble" else single
+    link = tmp_path / f"{linked_input}-link.npz"
+    link.symlink_to(target)
+
+    with pytest.raises(ValueError, match="must be a regular file"):
+        analyze_archive(
+            link if linked_input == "ensemble" else ensemble,
+            single_path=link if linked_input == "single" else single,
+        )
+
+
+def test_archive_component_census_create_only_output_rejects_dangling_symlink(
+    tmp_path,
+):
+    ensemble, _ = _archives(tmp_path)
+    target = tmp_path / "redirected-output.json"
+    link = tmp_path / "output-link.json"
+    link.symlink_to(target)
+
+    with pytest.raises(FileExistsError):
+        main([str(ensemble), "--output", str(link)])
+    assert not target.exists()

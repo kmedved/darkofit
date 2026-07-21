@@ -186,9 +186,10 @@ def analyze_archive(
     reference_ratio: float | None = None,
     reference_member_count: int | None = None,
 ) -> dict[str, Any]:
-    ensemble = Path(ensemble_path).expanduser().resolve()
+    ensemble = Path(ensemble_path).expanduser()
     if not ensemble.is_file() or ensemble.is_symlink():
         raise ValueError("ensemble archive must be a regular file")
+    ensemble = ensemble.resolve()
     if not np.isfinite(gate) or gate <= 0.0:
         raise ValueError("gate must be a positive finite number")
     if reference_ratio is not None and (
@@ -308,9 +309,10 @@ def analyze_archive(
 
     single = None
     if single_path is not None:
-        single = Path(single_path).expanduser().resolve()
+        single = Path(single_path).expanduser()
         if not single.is_file() or single.is_symlink():
             raise ValueError("single archive must be a regular file")
+        single = single.resolve()
         single_arrays, single_header = _read_npz(single)
         if single_header.get("archive_kind") == "darkofit_ensemble":
             raise ValueError("single archive must contain one fitted model")
@@ -471,7 +473,7 @@ def main(argv=None) -> int:
     )
     rendered = json.dumps(result, indent=2, sort_keys=True) + "\n"
     if args.output is not None:
-        output = args.output.expanduser().resolve()
+        output = args.output.expanduser()
         output.parent.mkdir(parents=True, exist_ok=True)
         with output.open("x", encoding="utf-8") as handle:
             handle.write(rendered)
