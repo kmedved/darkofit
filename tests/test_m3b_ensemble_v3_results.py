@@ -8,6 +8,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from benchmarks import analyze_m3b_ensemble_v3_r3 as analyzer
 from benchmarks import run_m3b_ensemble_v3_r3 as runner
 
@@ -28,6 +30,30 @@ def _load(path: Path) -> dict:
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _assert_cross_runtime_equal(actual: object, expected: object) -> None:
+    """Compare JSON values while allowing only last-bit float differences."""
+    if isinstance(expected, dict):
+        assert isinstance(actual, dict)
+        assert actual.keys() == expected.keys()
+        for key, value in expected.items():
+            _assert_cross_runtime_equal(actual[key], value)
+        return
+
+    if isinstance(expected, list):
+        assert isinstance(actual, list)
+        assert len(actual) == len(expected)
+        for actual_item, expected_item in zip(actual, expected):
+            _assert_cross_runtime_equal(actual_item, expected_item)
+        return
+
+    if isinstance(expected, float):
+        assert isinstance(actual, float)
+        assert actual == pytest.approx(expected, rel=1e-14, abs=1e-15)
+        return
+
+    assert actual == expected
 
 
 def test_m3b_terminal_attempts_match_their_failure_records():
@@ -69,7 +95,7 @@ def test_m3b_r3_published_artifacts_validate_and_cover_the_frozen_grids():
     assert gate["eligible_candidates"] == list(runner.CANDIDATE_ARMS)
 
 
-def test_m3b_r3_result_hash_chain_and_frozen_disposition_regenerate_exactly():
+def test_m3b_r3_result_hash_chain_and_frozen_disposition_regenerate_portably():
     stored = _load(RESULT)
     regenerated = analyzer.build_final_result(QUALITY, GATE, TIMING, CONTRACT)
 
@@ -78,7 +104,7 @@ def test_m3b_r3_result_hash_chain_and_frozen_disposition_regenerate_exactly():
     assert stored["gate_sha256"] == _sha256(GATE)
     assert stored["timing_artifact_sha256"] == _sha256(TIMING)
     regenerated["analyzed_at"] = stored["analyzed_at"]
-    assert regenerated == stored
+    _assert_cross_runtime_equal(regenerated, stored)
 
     rendered = subprocess.run(
         [
