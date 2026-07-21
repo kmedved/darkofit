@@ -1,0 +1,744 @@
+{
+  "arms": {
+    "b1_b2_combined": {
+      "kind": "private_ensemble_v3",
+      "member_policy": "donor_balanced_v1",
+      "sample_fraction": 0.8,
+      "sampling": "without_replacement"
+    },
+    "b1_sampling": {
+      "kind": "private_ensemble_v3",
+      "member_policy": "none",
+      "sample_fraction": 0.8,
+      "sampling": "without_replacement"
+    },
+    "b2_member_policy": {
+      "kind": "private_ensemble_v3",
+      "member_policy": "donor_balanced_v1",
+      "sample_fraction": null,
+      "sampling": "bootstrap"
+    },
+    "control": {
+      "kind": "private_ensemble_v3",
+      "member_policy": "none",
+      "sample_fraction": null,
+      "sampling": "bootstrap"
+    },
+    "single_reference": {
+      "kind": "single"
+    }
+  },
+  "attempt_lineage": {
+    "attempt1_completed_rows": 0,
+    "attempt1_contract_sha256": "bb483cfbf55eb7081cd201750b7165ece8845c0025ebb8f0c4a460f35a2e9a54",
+    "attempt1_failure_record_sha256": "ab679db946766b69e3e328d637eda162c59cae2df77f803497aa51d6461144fa",
+    "attempt1_model_outcomes_opened": false,
+    "attempt1_rerun": false,
+    "attempt1_terminal_artifact_sha256": "2f6b75d766ed21cd9b5cbb76873a48cb8938a4fb11d419befa173c67f3235e24",
+    "attempt2_completed_rows_discarded": 1,
+    "attempt2_contract_sha256": "ee8fc8a281e950ebd1626fb1ce0d9b826d6d40333fe095c3d36348fdc6d00de7",
+    "attempt2_failure_record_sha256": "e30439e818a6417b644bb43c9a1edea4df9628cc0f439b3bfe7d8542693d07e1",
+    "attempt2_rerun": false,
+    "attempt2_results_inspected": false,
+    "attempt2_results_published": false,
+    "attempt2_terminal_artifact_sha256": "5c6d014582140abf5913e0a8fdbe1c44ba91f82f4763a3cafb0f6bcd8d88c427",
+    "sole_amendment": "self-worker RSS with capability preflight",
+    "source_fix": "allow variable sampled row counts for group bootstrap"
+  },
+  "bound_files": {
+    "attempt1_analyzer": {
+      "bytes": 32974,
+      "path": "benchmarks/analyze_m3b_ensemble_v3.py",
+      "sha256": "888635d6643f463417189f562ada9e4e904fe057264226db6764f767fd25e10a"
+    },
+    "attempt1_contract": {
+      "bytes": 23663,
+      "path": "benchmarks/m3b_ensemble_v3_contract.json",
+      "sha256": "bb483cfbf55eb7081cd201750b7165ece8845c0025ebb8f0c4a460f35a2e9a54"
+    },
+    "attempt1_failure": {
+      "bytes": 1312,
+      "path": "benchmarks/m3b_ensemble_v3_attempt1_failure_record.json",
+      "sha256": "ab679db946766b69e3e328d637eda162c59cae2df77f803497aa51d6461144fa"
+    },
+    "attempt1_freezer": {
+      "bytes": 4348,
+      "path": "benchmarks/freeze_m3b_ensemble_v3.py",
+      "sha256": "f83c5e459c42b45f7654b9c485bcf2edb9de3613eef839009695650348da9bb6"
+    },
+    "attempt1_protocol": {
+      "bytes": 6806,
+      "path": "benchmarks/m3b_ensemble_v3_protocol.md",
+      "sha256": "419458422eef908ceeaf3c3eafdaa4b33edd2972dd6aca5ce78710e333b82a08"
+    },
+    "attempt1_runner": {
+      "bytes": 39590,
+      "path": "benchmarks/run_m3b_ensemble_v3.py",
+      "sha256": "c161288619ff78e24e46a134925c42320c2980b2246d63e3743abc32f6777258"
+    },
+    "attempt1_tests": {
+      "bytes": 20137,
+      "path": "tests/test_m3b_ensemble_v3.py",
+      "sha256": "d6011fcdfc352eeb1baf76d50467af1bdccacdc1894c84cc6ebae0925408edc6"
+    },
+    "attempt2_analyzer": {
+      "bytes": 2775,
+      "path": "benchmarks/analyze_m3b_ensemble_v3_r2.py",
+      "sha256": "5a23583e77955db1341fa3afa7e808099e4c53efd4aba1805319993bd717b1eb"
+    },
+    "attempt2_contract": {
+      "bytes": 25809,
+      "path": "benchmarks/m3b_ensemble_v3_r2_contract.json",
+      "sha256": "ee8fc8a281e950ebd1626fb1ce0d9b826d6d40333fe095c3d36348fdc6d00de7"
+    },
+    "attempt2_failure": {
+      "bytes": 1290,
+      "path": "benchmarks/m3b_ensemble_v3_attempt2_failure_record.json",
+      "sha256": "e30439e818a6417b644bb43c9a1edea4df9628cc0f439b3bfe7d8542693d07e1"
+    },
+    "attempt2_freezer": {
+      "bytes": 6156,
+      "path": "benchmarks/freeze_m3b_ensemble_v3_r2.py",
+      "sha256": "eacd95655c6ddeaf16cbd4deddc66e73c88843acfdd8efcb2abc4a8d217d0b3a"
+    },
+    "attempt2_protocol": {
+      "bytes": 2981,
+      "path": "benchmarks/m3b_ensemble_v3_r2_protocol.md",
+      "sha256": "89b4707c16b147a70fd87a8c3841632c18bc4ce46f52ef0f3dab041207403548"
+    },
+    "attempt2_runner": {
+      "bytes": 5908,
+      "path": "benchmarks/run_m3b_ensemble_v3_r2.py",
+      "sha256": "2604409e7c82e9208485d8463eb442adceb7eadb8f3f113a9d0f4016c570eeee"
+    },
+    "attempt2_tests": {
+      "bytes": 4678,
+      "path": "tests/test_m3b_ensemble_v3_r2.py",
+      "sha256": "036a7f8fc057a65b0cd49c990911c5332edea17f0d5bfd80c4520c38a385a263"
+    },
+    "attempt3_analyzer": {
+      "bytes": 1306,
+      "path": "benchmarks/analyze_m3b_ensemble_v3_r3.py",
+      "sha256": "e7a2c801e3b42c5a851ad64b186f7fc7311a308fe10070d83b16505ceceae3ef"
+    },
+    "attempt3_freezer": {
+      "bytes": 7121,
+      "path": "benchmarks/freeze_m3b_ensemble_v3_r3.py",
+      "sha256": "7c62e3425f4207a98d12b8851e313abc867a5f89ecbbb69e0ca8092a1d142fa7"
+    },
+    "attempt3_protocol": {
+      "bytes": 2559,
+      "path": "benchmarks/m3b_ensemble_v3_r3_protocol.md",
+      "sha256": "c7663573fb2f49ccc6ba42e4b633577192c8961c4001f4c86aeb341d1b264409"
+    },
+    "attempt3_runner": {
+      "bytes": 4794,
+      "path": "benchmarks/run_m3b_ensemble_v3_r3.py",
+      "sha256": "c37b445fcb4ba9959cb972562f1d60cef4f9385a945f5362e6f5c42674cc1b15"
+    },
+    "attempt3_tests": {
+      "bytes": 4067,
+      "path": "tests/test_m3b_ensemble_v3_r3.py",
+      "sha256": "6d3e7c2f58d67d342ea9891e36ab183cfd15a4801cc4d1d33db5764b640f039e"
+    },
+    "b0_contract": {
+      "bytes": 8854,
+      "path": "benchmarks/b0_ensemble_v3_contract.md",
+      "sha256": "60e4b927718066bf65cab6961c2bc872c93d70adb6bc660c6428e43aed5593f5"
+    },
+    "implementation": {
+      "bytes": 355363,
+      "path": "darkofit/sklearn_api.py",
+      "sha256": "0cc3986a5db095729739dc7c435d127839a9d8379d8f50726226b2b0f964f564"
+    },
+    "implementation_tests": {
+      "bytes": 16945,
+      "path": "tests/test_private_ensemble_v3.py",
+      "sha256": "5366460975308f4f5f76ea6fc1adb30850a03de6603a4dcc670c2c75d82dc643"
+    },
+    "m3a_contract": {
+      "bytes": 6028,
+      "path": "benchmarks/m3a_wave1_contract.json",
+      "sha256": "930d405e75947747892337851d2a767a0a789069ad86eaf726d7396fb0a435b8"
+    },
+    "m3a_runner": {
+      "bytes": 42235,
+      "path": "benchmarks/run_m3a_wave1.py",
+      "sha256": "f971b28a83d6a14291141dbc0a657ab28f95fb31e9459a77bd72a42c942c8cd7"
+    },
+    "m6_adapter": {
+      "bytes": 14095,
+      "path": "benchmarks/benchmark_adapters.py",
+      "sha256": "21b42e904b421405fc5a63d9e3f5711b7283abfcfd1fef4b60eb4aa1015675a8"
+    },
+    "paired_execution": {
+      "bytes": 30813,
+      "path": "benchmarks/paired_evidence_contract.py",
+      "sha256": "63c63d4f0b7c6f649b7155325ee064faf6e5981094ed3cb79ac91b6b8fefedf9"
+    },
+    "sports_manifest": {
+      "bytes": 147286,
+      "path": "benchmarks/basketball_sports_panel_v2_manifest.json",
+      "sha256": "2e5a16c22b9ca8a9f92d263a28204b2d5bf972a6e43ce694c4ad3a95c727c0af"
+    }
+  },
+  "case_fingerprints": {
+    "general_categorical_multiclass": {
+      "case_sha256": "6cbed5568493125396e514ee958931ec4b239ec0caeaf11ce35d0984297b5684",
+      "dataset_sha256": "860f5ea4ef2aa75d020e5a978c1ecda583b6835b3b30f8b8dd42ae2edf5e91d3",
+      "split_sha256": "66f15ba2e7c18a3501cd709a951b35c9d7c2de71eb107dd66ae9964dcdf55218",
+      "weight_sha256": "c4687224c205fc8d8ae063f30632bb1d4c23917b7a27090186131fa07cdc9c08"
+    },
+    "general_categorical_reg": {
+      "case_sha256": "df4f83e0f53415aa2a3fd89ac4a68562c4ff62f107db34469224559d3eb8ce82",
+      "dataset_sha256": "6a03d593411cb53da6b398999047453fefea2dc02ea146dfffa17b5cf0450439",
+      "split_sha256": "984b0e56f7a78ab0e049a3fa3704c7e0bdf67b10558b265f48a010f91eb2c00d",
+      "weight_sha256": "3b750906252e8026ff8fac3bc860c71a328ac84c0a4440df2ae57b773b689a21"
+    },
+    "general_friedman_numeric": {
+      "case_sha256": "0369aa4e3418043609ae82ba9a6ab915815be6cc2e670d49e30e29c18cba1589",
+      "dataset_sha256": "1559c497096dd7421e971f02a3756c1ff766fda062a162f5c90cbc99d4cec9b6",
+      "split_sha256": "2b82a6af55ad4e79c44757f793662596c31e77dafea7d831d88cb637e942aee5",
+      "weight_sha256": "378a14dab00abd23e9ae42c352bf6044ec6e41d5246c594cde235f4b5295247e"
+    },
+    "general_numeric_binary": {
+      "case_sha256": "e2c828dcf3d18c4e9220ebf65854d3cb09af1f067886fb6f31f096f6f17144a9",
+      "dataset_sha256": "cfff46e19209ebc91052e4ac39b8ba99ee07da27aea41e159cb9fd29e02e1b60",
+      "split_sha256": "fddf360db0a6bf9ba0217e12f5666fdc3979112f79c60843f821ca03a6f39383",
+      "weight_sha256": "beeb96737971792bb64607e51cc2e1215aace9df643924cba615b9ca93373063"
+    },
+    "sports_2014_box_plus_minus": {
+      "case_sha256": "5ef55ab6dd5e69bb10627d45496def73f1a78f54c19024f4a552cdfba87f4880",
+      "dataset_sha256": "6ea65e3375612cbf824b8b47a956015e14c557b33b2c0be479e6c46c77634450",
+      "split_sha256": "016583436255659ec452ce44bbc45ecb18a242a44511cf53d8a2bfa77df104d5",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2014_game_score": {
+      "case_sha256": "e35bc194aa36dcbbaeed9d3db2ec982c1bd3a7b4ca19faf3e05134e5232a450c",
+      "dataset_sha256": "93ff2c8390d6dc967b9d06210650ec41ae1e17669268318e6ae1c45dadeab822",
+      "split_sha256": "aede51b29f865a67070eb82ec66f182e0e99d40368b14bc9f23fb15726aafeda",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2014_minutes_per_game": {
+      "case_sha256": "c42b6132305c228e05a825815e506e638994022d69ce6314dd11dd5c30a6caa2",
+      "dataset_sha256": "ee0e7943a6adf9e04f70bf5154d154d1790e745ea6a24d994d971feec772545d",
+      "split_sha256": "148e4a11ae70a0361a38574b54c336cedf16d03d872b0105cb8739fb7b765bcf",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2015_box_plus_minus": {
+      "case_sha256": "a4fd0f5dc35da2a5f6a3523b0ba8cbfff669ccf682330683fb8b6f0d13f0f129",
+      "dataset_sha256": "1c2ed4dab3e978c4f0e2c3d11a72da6180e0b5948fb1ddd48f0c62d839abd3ba",
+      "split_sha256": "7e06b911aaf699361400a73dab73286e3924e6f1c93dfaf111135caad77c61a7",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2015_game_score": {
+      "case_sha256": "e83acf48784293b507fd1f5b44b048940302b578e3efafbace0111e26224085e",
+      "dataset_sha256": "15ec3a7c5cc56c5e9ffeae3763b21e270ae0f1afd3c72f87806b74c54b4120c9",
+      "split_sha256": "6a882c06042173e9743dd2e68e48dd9c493cf0ba0e51ff4e41f416f5b4022599",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2015_minutes_per_game": {
+      "case_sha256": "8a827d3f9beee6fb225a42da5b0458154b9be29c8861506cf802225eb9484fa4",
+      "dataset_sha256": "ab7b59e8e0d9ad1460928b1374a58d14719c08b56dacff38d53973711f47c43a",
+      "split_sha256": "f0af2b701ab5058f74b8c4529467c222f20044d8dbc8229d71ec215fd50f9c00",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2016_box_plus_minus": {
+      "case_sha256": "545c2dd15de872e023a848191ed851c4d9886ab355c9ac1dc986598195ca1195",
+      "dataset_sha256": "83e84a46f21320399343da8a72d15aea68b8825170e0c237140d3ab4fe22c07b",
+      "split_sha256": "d58edfc33e53e9a36b028e3e02a7f8aaa20d9231b1dec5f9c7bf4e28f33ca574",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2016_game_score": {
+      "case_sha256": "1d9edd586ad426fc4ef4ec30f34da8f8b10761c888e499c2c061558bcb778a6d",
+      "dataset_sha256": "e11d73e3c304c90afd95ba99bff5992ed076cb7c6e6e7200a35486e07786e3db",
+      "split_sha256": "8c59397eb0bbbd42381e4057ea01541e54ff69f4457cd504f17c3fd7af6c9285",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2016_minutes_per_game": {
+      "case_sha256": "34f0081c4dd3ba8aa979c6e43a39eba1540e70658e0875e84f5212c5bf89f918",
+      "dataset_sha256": "74cf5edcecd31047d90a78a3b53e842c5bfea6de48b7ed64b75f8fb592eac9b8",
+      "split_sha256": "7c5d8edaae599396ed6b89fef1dbf75a518f4e0e92c1ad27a4b73459be7aae00",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    }
+  },
+  "case_manifests": {
+    "general_categorical_multiclass": {
+      "class_count": 3,
+      "feature_count": 9,
+      "fingerprints": {
+        "case_sha256": "6cbed5568493125396e514ee958931ec4b239ec0caeaf11ce35d0984297b5684",
+        "dataset_sha256": "860f5ea4ef2aa75d020e5a978c1ecda583b6835b3b30f8b8dd42ae2edf5e91d3",
+        "split_sha256": "66f15ba2e7c18a3501cd709a951b35c9d7c2de71eb107dd66ae9964dcdf55218",
+        "weight_sha256": "c4687224c205fc8d8ae063f30632bb1d4c23917b7a27090186131fa07cdc9c08"
+      },
+      "fit_rows": 7500,
+      "primary_rows": 2500,
+      "test_rows": 2500
+    },
+    "general_categorical_reg": {
+      "class_count": null,
+      "feature_count": 10,
+      "fingerprints": {
+        "case_sha256": "df4f83e0f53415aa2a3fd89ac4a68562c4ff62f107db34469224559d3eb8ce82",
+        "dataset_sha256": "6a03d593411cb53da6b398999047453fefea2dc02ea146dfffa17b5cf0450439",
+        "split_sha256": "984b0e56f7a78ab0e049a3fa3704c7e0bdf67b10558b265f48a010f91eb2c00d",
+        "weight_sha256": "3b750906252e8026ff8fac3bc860c71a328ac84c0a4440df2ae57b773b689a21"
+      },
+      "fit_rows": 7500,
+      "primary_rows": 2500,
+      "test_rows": 2500
+    },
+    "general_friedman_numeric": {
+      "class_count": null,
+      "feature_count": 20,
+      "fingerprints": {
+        "case_sha256": "0369aa4e3418043609ae82ba9a6ab915815be6cc2e670d49e30e29c18cba1589",
+        "dataset_sha256": "1559c497096dd7421e971f02a3756c1ff766fda062a162f5c90cbc99d4cec9b6",
+        "split_sha256": "2b82a6af55ad4e79c44757f793662596c31e77dafea7d831d88cb637e942aee5",
+        "weight_sha256": "378a14dab00abd23e9ae42c352bf6044ec6e41d5246c594cde235f4b5295247e"
+      },
+      "fit_rows": 7500,
+      "primary_rows": 2500,
+      "test_rows": 2500
+    },
+    "general_numeric_binary": {
+      "class_count": 2,
+      "feature_count": 40,
+      "fingerprints": {
+        "case_sha256": "e2c828dcf3d18c4e9220ebf65854d3cb09af1f067886fb6f31f096f6f17144a9",
+        "dataset_sha256": "cfff46e19209ebc91052e4ac39b8ba99ee07da27aea41e159cb9fd29e02e1b60",
+        "split_sha256": "fddf360db0a6bf9ba0217e12f5666fdc3979112f79c60843f821ca03a6f39383",
+        "weight_sha256": "beeb96737971792bb64607e51cc2e1215aace9df643924cba615b9ca93373063"
+      },
+      "fit_rows": 7500,
+      "primary_rows": 2500,
+      "test_rows": 2500
+    },
+    "sports_2014_box_plus_minus": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "5ef55ab6dd5e69bb10627d45496def73f1a78f54c19024f4a552cdfba87f4880",
+        "dataset_sha256": "6ea65e3375612cbf824b8b47a956015e14c557b33b2c0be479e6c46c77634450",
+        "split_sha256": "016583436255659ec452ce44bbc45ecb18a242a44511cf53d8a2bfa77df104d5",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 221,
+      "primary_rows": 115,
+      "test_rows": 121
+    },
+    "sports_2014_game_score": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "e35bc194aa36dcbbaeed9d3db2ec982c1bd3a7b4ca19faf3e05134e5232a450c",
+        "dataset_sha256": "93ff2c8390d6dc967b9d06210650ec41ae1e17669268318e6ae1c45dadeab822",
+        "split_sha256": "aede51b29f865a67070eb82ec66f182e0e99d40368b14bc9f23fb15726aafeda",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 221,
+      "primary_rows": 115,
+      "test_rows": 121
+    },
+    "sports_2014_minutes_per_game": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "c42b6132305c228e05a825815e506e638994022d69ce6314dd11dd5c30a6caa2",
+        "dataset_sha256": "ee0e7943a6adf9e04f70bf5154d154d1790e745ea6a24d994d971feec772545d",
+        "split_sha256": "148e4a11ae70a0361a38574b54c336cedf16d03d872b0105cb8739fb7b765bcf",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 221,
+      "primary_rows": 115,
+      "test_rows": 121
+    },
+    "sports_2015_box_plus_minus": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "a4fd0f5dc35da2a5f6a3523b0ba8cbfff669ccf682330683fb8b6f0d13f0f129",
+        "dataset_sha256": "1c2ed4dab3e978c4f0e2c3d11a72da6180e0b5948fb1ddd48f0c62d839abd3ba",
+        "split_sha256": "7e06b911aaf699361400a73dab73286e3924e6f1c93dfaf111135caad77c61a7",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 246,
+      "primary_rows": 125,
+      "test_rows": 134
+    },
+    "sports_2015_game_score": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "e83acf48784293b507fd1f5b44b048940302b578e3efafbace0111e26224085e",
+        "dataset_sha256": "15ec3a7c5cc56c5e9ffeae3763b21e270ae0f1afd3c72f87806b74c54b4120c9",
+        "split_sha256": "6a882c06042173e9743dd2e68e48dd9c493cf0ba0e51ff4e41f416f5b4022599",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 246,
+      "primary_rows": 125,
+      "test_rows": 134
+    },
+    "sports_2015_minutes_per_game": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "8a827d3f9beee6fb225a42da5b0458154b9be29c8861506cf802225eb9484fa4",
+        "dataset_sha256": "ab7b59e8e0d9ad1460928b1374a58d14719c08b56dacff38d53973711f47c43a",
+        "split_sha256": "f0af2b701ab5058f74b8c4529467c222f20044d8dbc8229d71ec215fd50f9c00",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 246,
+      "primary_rows": 125,
+      "test_rows": 134
+    },
+    "sports_2016_box_plus_minus": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "545c2dd15de872e023a848191ed851c4d9886ab355c9ac1dc986598195ca1195",
+        "dataset_sha256": "83e84a46f21320399343da8a72d15aea68b8825170e0c237140d3ab4fe22c07b",
+        "split_sha256": "d58edfc33e53e9a36b028e3e02a7f8aaa20d9231b1dec5f9c7bf4e28f33ca574",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 232,
+      "primary_rows": 117,
+      "test_rows": 120
+    },
+    "sports_2016_game_score": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "1d9edd586ad426fc4ef4ec30f34da8f8b10761c888e499c2c061558bcb778a6d",
+        "dataset_sha256": "e11d73e3c304c90afd95ba99bff5992ed076cb7c6e6e7200a35486e07786e3db",
+        "split_sha256": "8c59397eb0bbbd42381e4057ea01541e54ff69f4457cd504f17c3fd7af6c9285",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 232,
+      "primary_rows": 117,
+      "test_rows": 120
+    },
+    "sports_2016_minutes_per_game": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "34f0081c4dd3ba8aa979c6e43a39eba1540e70658e0875e84f5212c5bf89f918",
+        "dataset_sha256": "74cf5edcecd31047d90a78a3b53e842c5bfea6de48b7ed64b75f8fb592eac9b8",
+        "split_sha256": "7c5d8edaae599396ed6b89fef1dbf75a518f4e0e92c1ad27a4b73459be7aae00",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 232,
+      "primary_rows": 117,
+      "test_rows": 120
+    }
+  },
+  "cases": [
+    {
+      "case_id": "sports_2014_minutes_per_game",
+      "domain": "sports",
+      "sampling_unit": "groups",
+      "season": 2014,
+      "target": "minutes_per_game",
+      "task": "regression",
+      "weight_mode": "none"
+    },
+    {
+      "case_id": "sports_2014_game_score",
+      "domain": "sports",
+      "sampling_unit": "groups",
+      "season": 2014,
+      "target": "game_score",
+      "task": "regression",
+      "weight_mode": "none"
+    },
+    {
+      "case_id": "sports_2014_box_plus_minus",
+      "domain": "sports",
+      "sampling_unit": "groups",
+      "season": 2014,
+      "target": "box_plus_minus",
+      "task": "regression",
+      "weight_mode": "none"
+    },
+    {
+      "case_id": "sports_2015_minutes_per_game",
+      "domain": "sports",
+      "sampling_unit": "groups",
+      "season": 2015,
+      "target": "minutes_per_game",
+      "task": "regression",
+      "weight_mode": "none"
+    },
+    {
+      "case_id": "sports_2015_game_score",
+      "domain": "sports",
+      "sampling_unit": "groups",
+      "season": 2015,
+      "target": "game_score",
+      "task": "regression",
+      "weight_mode": "none"
+    },
+    {
+      "case_id": "sports_2015_box_plus_minus",
+      "domain": "sports",
+      "sampling_unit": "groups",
+      "season": 2015,
+      "target": "box_plus_minus",
+      "task": "regression",
+      "weight_mode": "none"
+    },
+    {
+      "case_id": "sports_2016_minutes_per_game",
+      "domain": "sports",
+      "sampling_unit": "groups",
+      "season": 2016,
+      "target": "minutes_per_game",
+      "task": "regression",
+      "weight_mode": "none"
+    },
+    {
+      "case_id": "sports_2016_game_score",
+      "domain": "sports",
+      "sampling_unit": "groups",
+      "season": 2016,
+      "target": "game_score",
+      "task": "regression",
+      "weight_mode": "none"
+    },
+    {
+      "case_id": "sports_2016_box_plus_minus",
+      "domain": "sports",
+      "sampling_unit": "groups",
+      "season": 2016,
+      "target": "box_plus_minus",
+      "task": "regression",
+      "weight_mode": "none"
+    },
+    {
+      "case_id": "general_friedman_numeric",
+      "dataset": "friedman_numeric",
+      "domain": "general",
+      "sampling_unit": "rows",
+      "seed": 0,
+      "size": "medium",
+      "split_seed": 20260720,
+      "task": "regression",
+      "test_fraction": 0.25,
+      "weight_mode": "stress"
+    },
+    {
+      "case_id": "general_categorical_reg",
+      "dataset": "categorical_reg",
+      "domain": "general",
+      "sampling_unit": "rows",
+      "seed": 0,
+      "size": "medium",
+      "split_seed": 20260720,
+      "task": "regression",
+      "test_fraction": 0.25,
+      "weight_mode": "stress"
+    },
+    {
+      "case_id": "general_numeric_binary",
+      "dataset": "numeric_binary",
+      "domain": "general",
+      "sampling_unit": "rows",
+      "seed": 0,
+      "size": "medium",
+      "split_seed": 20260720,
+      "task": "binary",
+      "test_fraction": 0.25,
+      "weight_mode": "stress"
+    },
+    {
+      "case_id": "general_categorical_multiclass",
+      "dataset": "categorical_multiclass",
+      "domain": "general",
+      "sampling_unit": "rows",
+      "seed": 0,
+      "size": "medium",
+      "split_seed": 20260720,
+      "task": "multiclass",
+      "test_fraction": 0.25,
+      "weight_mode": "stress"
+    }
+  ],
+  "claims": {
+    "b3_authorized": false,
+    "fresh_confirmation_authorized": false,
+    "lockbox_access_authorized": false,
+    "public_or_default_change_authorized": false,
+    "spent_private_development_evidence": true,
+    "tabarena_authorized": false,
+    "tier": "E"
+  },
+  "contract_frozen": true,
+  "decision_rules": {
+    "common_final": {
+      "archive_to_control_at_most": 1.05,
+      "median_archive_to_single_at_most": 4.0,
+      "median_rss_to_single_at_most": 2.0,
+      "predict_ratio_at_most": 1.1,
+      "rss_to_control_at_most": 1.1
+    },
+    "quality": {
+      "all_primary_geomean_at_most": 1.005,
+      "general_primary_geomean_at_most": 1.005,
+      "sports_cold_geomean_at_most": 1.005,
+      "sports_held_geomean_at_most": 1.01,
+      "worst_primary_at_most": 1.03
+    },
+    "timing_repeats": [
+      1,
+      2
+    ],
+    "value": {
+      "b1_b2_combined": {
+        "pareto_fit_at_most": 0.9,
+        "pareto_primary_at_most": 1.002,
+        "quality_route_at_most": 0.995
+      },
+      "b1_sampling": {
+        "all_primary_at_most": 1.002,
+        "fit_ratio_at_most": 0.9
+      },
+      "b2_member_policy": {
+        "all_primary_at_most": 0.995,
+        "fit_ratio_at_most": 1.1
+      }
+    }
+  },
+  "execution": {
+    "attempt1_terminal_failure_bound": true,
+    "attempt2_terminal_failure_bound": true,
+    "early_stopping_rounds": 30,
+    "ensemble_members": 8,
+    "failed_attempts_terminal": true,
+    "fresh_worker_per_case_arm_repeat": true,
+    "group_bootstrap_loader_fix_bound": true,
+    "iterations": 600,
+    "quality_first": true,
+    "random_state": 4,
+    "rss_capability_preflight": true,
+    "rss_scope": "self_worker_process",
+    "same_arm_warmup_outside_measurement": true,
+    "selective_timing_only_after_frozen_gate": true
+  },
+  "frozen_at": "2026-07-21T04:14:40.841961+00:00",
+  "m3a_sports_archive": {
+    "contract_sha256": "930d405e75947747892337851d2a767a0a789069ad86eaf726d7396fb0a435b8",
+    "historical_files_preserved": true,
+    "spent": true
+  },
+  "name": "wave2_m3b_ensemble_v3_r3_20260720",
+  "outcomes_opened": false,
+  "paired_execution_contract": "paired-evidence-v1",
+  "panel_cache": {
+    "bytes": 379702,
+    "contract_path": ".cache/basketball-sports-panel-v2/panel.csv",
+    "sha256": "8f7eab3765b4166740b150ed372f9607bcd6dd9673e0e73cc6541583230a59e6"
+  },
+  "quality_orders": {
+    "general_categorical_multiclass": [
+      "b1_sampling",
+      "b2_member_policy",
+      "b1_b2_combined",
+      "single_reference",
+      "control"
+    ],
+    "general_categorical_reg": [
+      "single_reference",
+      "control",
+      "b1_sampling",
+      "b2_member_policy",
+      "b1_b2_combined"
+    ],
+    "general_friedman_numeric": [
+      "b1_b2_combined",
+      "single_reference",
+      "control",
+      "b1_sampling",
+      "b2_member_policy"
+    ],
+    "general_numeric_binary": [
+      "control",
+      "b1_sampling",
+      "b2_member_policy",
+      "b1_b2_combined",
+      "single_reference"
+    ],
+    "sports_2014_box_plus_minus": [
+      "b1_sampling",
+      "b2_member_policy",
+      "b1_b2_combined",
+      "single_reference",
+      "control"
+    ],
+    "sports_2014_game_score": [
+      "control",
+      "b1_sampling",
+      "b2_member_policy",
+      "b1_b2_combined",
+      "single_reference"
+    ],
+    "sports_2014_minutes_per_game": [
+      "single_reference",
+      "control",
+      "b1_sampling",
+      "b2_member_policy",
+      "b1_b2_combined"
+    ],
+    "sports_2015_box_plus_minus": [
+      "single_reference",
+      "control",
+      "b1_sampling",
+      "b2_member_policy",
+      "b1_b2_combined"
+    ],
+    "sports_2015_game_score": [
+      "b1_b2_combined",
+      "single_reference",
+      "control",
+      "b1_sampling",
+      "b2_member_policy"
+    ],
+    "sports_2015_minutes_per_game": [
+      "b2_member_policy",
+      "b1_b2_combined",
+      "single_reference",
+      "control",
+      "b1_sampling"
+    ],
+    "sports_2016_box_plus_minus": [
+      "b2_member_policy",
+      "b1_b2_combined",
+      "single_reference",
+      "control",
+      "b1_sampling"
+    ],
+    "sports_2016_game_score": [
+      "b1_sampling",
+      "b2_member_policy",
+      "b1_b2_combined",
+      "single_reference",
+      "control"
+    ],
+    "sports_2016_minutes_per_game": [
+      "control",
+      "b1_sampling",
+      "b2_member_policy",
+      "b1_b2_combined",
+      "single_reference"
+    ]
+  },
+  "rss_scope": "self_worker_process",
+  "schema_version": 1,
+  "sources": {
+    "darkofit": "6d063f98128d457f8b8bbf610c7aec46e675d844",
+    "harness": "74ac6cc32adcc3ece3179ffd9a77d34517906c6d",
+    "m3a_chimeraboost": "f14be606b641f1bf0dc92bb14b3951f1fe631c6b",
+    "m3a_darkofit": "726e5d8e6131c580bce948db833a5007d0692dca"
+  },
+  "threads": 4
+}
