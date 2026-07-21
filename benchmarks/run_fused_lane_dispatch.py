@@ -310,6 +310,7 @@ def require_authorization(
         raise RuntimeError("fused-lane execution is not owner-authorized")
     authorization = json.loads(authorization_path.read_text(encoding="utf-8"))
     expected_contract_hash = campaign.file_sha256(contract_path.resolve())
+    execution_identity = contract.get("execution_identity")
     if (
         not isinstance(authorization, dict)
         or authorization.get("schema_version") != campaign.SCHEMA_VERSION
@@ -319,6 +320,10 @@ def require_authorization(
         or authorization.get("execution_contract_sha256")
         != expected_contract_hash
         or authorization.get("source") != contract.get("source")
+        or (
+            execution_identity is not None
+            and authorization.get("execution_identity") != execution_identity
+        )
         or not isinstance(authorization.get("owner_decision"), str)
         or not authorization["owner_decision"].strip()
     ):
@@ -732,6 +737,7 @@ def _run_or_terminal(
     phase: str,
     contract_path: Path,
     source: str,
+    execution_identity: str | None,
 ) -> dict[str, Any]:
     try:
         result = operation()
@@ -742,6 +748,7 @@ def _run_or_terminal(
             "schema_version": campaign.SCHEMA_VERSION,
             "campaign": campaign.CAMPAIGN_NAME,
             "phase": phase,
+            "execution_identity": execution_identity,
             "terminal": True,
             "rerun_allowed": False,
             "source": source,
@@ -798,6 +805,7 @@ def run_calibration(
             "schema_version": campaign.SCHEMA_VERSION,
             "campaign": campaign.CAMPAIGN_NAME,
             "phase": "calibration",
+            "execution_identity": contract.get("execution_identity"),
             "source": source,
             "execution_contract_sha256": campaign.file_sha256(contract_path),
             "authorization_sha256": campaign.file_sha256(authorization_path),
@@ -813,6 +821,7 @@ def run_calibration(
         phase="calibration",
         contract_path=contract_path,
         source=source,
+        execution_identity=contract.get("execution_identity"),
     )
 
 
@@ -884,6 +893,7 @@ def run_validation(
             "schema_version": campaign.SCHEMA_VERSION,
             "campaign": campaign.CAMPAIGN_NAME,
             "phase": "validation",
+            "execution_identity": contract.get("execution_identity"),
             "source": source,
             "threshold": threshold,
             "threshold_sha256": campaign.file_sha256(threshold_path),
@@ -901,6 +911,7 @@ def run_validation(
         phase="validation",
         contract_path=contract_path,
         source=source,
+        execution_identity=contract.get("execution_identity"),
     )
 
 
@@ -930,6 +941,8 @@ def analyze_raw(
         or raw.get("campaign") != campaign.CAMPAIGN_NAME
         or contract.get("phase") != phase
         or contract.get("source") != raw.get("source")
+        or contract.get("execution_identity")
+        != raw.get("execution_identity")
         or campaign.file_sha256(contract_path)
         != raw.get("execution_contract_sha256")
         or raw.get("authorization") != authorization
@@ -962,6 +975,7 @@ def analyze_raw(
         {
             "raw_sha256": campaign.file_sha256(raw_path),
             "source": raw.get("source"),
+            "execution_identity": raw.get("execution_identity"),
             "execution_contract_sha256": raw.get("execution_contract_sha256"),
         }
     )

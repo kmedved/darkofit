@@ -11,6 +11,7 @@ import pytest
 
 from benchmarks import fused_lane_dispatch_campaign as campaign
 from benchmarks import freeze_fused_lane_dispatch_calibration as freezer
+from benchmarks import freeze_fused_lane_dispatch_calibration_v2 as freezer_v2
 from benchmarks import run_fused_lane_dispatch as runner
 
 
@@ -375,12 +376,36 @@ def test_freezer_binds_harness_runtime_and_keeps_execution_unauthorized(
     )
 
 
+def test_v2_freezer_preserves_science_and_uses_a_new_execution_identity(
+    monkeypatch,
+):
+    source = "b" * 40
+    monkeypatch.setattr(
+        runner, "git_state", lambda *_args: {"head": source, "status": ""}
+    )
+
+    contract = freezer_v2.build_contract()
+
+    assert contract["source"] == source
+    assert contract["execution_identity"] == "calibration_v2"
+    assert contract["supersedes"]["contract_sha256"] == (
+        freezer_v2.V1_CONTRACT_SHA256
+    )
+    assert contract["supersedes"]["outcomes_opened"] is False
+    assert contract["supersedes"]["scientific_grid_or_gate_changed"] is False
+    assert contract["execution"]["scientific_change_from_v1"] is False
+    assert contract["outputs"]["raw"].endswith("_raw_v2.json")
+    assert contract["execution_authorized"] is False
+    assert contract["outcomes_opened"] is False
+
+
 def test_execution_requires_hash_bound_owner_authorization(tmp_path, monkeypatch):
     monkeypatch.setattr(runner, "ROOT", tmp_path)
     contract_path = tmp_path / "contract.json"
     contract_path.write_text("{}", encoding="utf-8")
     contract = {
         "source": "a" * 40,
+        "execution_identity": "calibration_v2",
         "outputs": {"authorization": "authorization.json"},
     }
     missing = tmp_path / "authorization.json"
@@ -400,6 +425,7 @@ def test_execution_requires_hash_bound_owner_authorization(tmp_path, monkeypatch
         "execution_authorized": True,
         "execution_contract_sha256": campaign.file_sha256(contract_path),
         "source": "a" * 40,
+        "execution_identity": "calibration_v2",
         "owner_decision": "explicit test authority",
     }
     authorization_path.write_text(json.dumps(authorization), encoding="utf-8")
