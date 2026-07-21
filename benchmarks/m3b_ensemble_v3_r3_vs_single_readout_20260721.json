@@ -1,0 +1,119 @@
+{
+  "amends_frozen_m3b_result": false,
+  "arms_vs_single": {
+    "b1_b2_combined": {
+      "all_case_geometric_mean": 0.9655130355873516,
+      "case_count": 13,
+      "general_geometric_mean": 0.9755692524591789,
+      "per_case_primary_ratio": {
+        "general_categorical_multiclass": 0.991888335079713,
+        "general_categorical_reg": 0.9589867434730964,
+        "general_friedman_numeric": 0.976369349010174,
+        "general_numeric_binary": 0.975310482604166,
+        "sports_2014_box_plus_minus": 0.9909230310341064,
+        "sports_2014_game_score": 0.9437525943501416,
+        "sports_2014_minutes_per_game": 0.9505146785048093,
+        "sports_2015_box_plus_minus": 0.9875067711802458,
+        "sports_2015_game_score": 0.9532660518869941,
+        "sports_2015_minutes_per_game": 0.9482990867025995,
+        "sports_2016_box_plus_minus": 0.9774211908947587,
+        "sports_2016_game_score": 0.9323479994952607,
+        "sports_2016_minutes_per_game": 0.9674024468086841
+      },
+      "sports_geometric_mean": 0.9610769432150231,
+      "wins_vs_single": 13,
+      "worst_case_ratio": 0.991888335079713
+    },
+    "b1_sampling": {
+      "all_case_geometric_mean": 0.9735016333371297,
+      "case_count": 13,
+      "general_geometric_mean": 0.9860721229921124,
+      "per_case_primary_ratio": {
+        "general_categorical_multiclass": 0.9917945387580264,
+        "general_categorical_reg": 0.960192251474846,
+        "general_friedman_numeric": 0.9793737652529289,
+        "general_numeric_binary": 1.0136927694608204,
+        "sports_2014_box_plus_minus": 0.9853879984948014,
+        "sports_2014_game_score": 0.9642971235231362,
+        "sports_2014_minutes_per_game": 0.9688269174633352,
+        "sports_2015_box_plus_minus": 0.974327089254229,
+        "sports_2015_game_score": 0.9700069339927612,
+        "sports_2015_minutes_per_game": 0.9548661504404089,
+        "sports_2016_box_plus_minus": 0.9746351419710138,
+        "sports_2016_game_score": 0.9461045521526146,
+        "sports_2016_minutes_per_game": 0.973810661419597
+      },
+      "sports_geometric_mean": 0.9679663090798788,
+      "wins_vs_single": 12,
+      "worst_case_ratio": 1.0136927694608204
+    },
+    "b2_member_policy": {
+      "all_case_geometric_mean": 0.9820262314401327,
+      "case_count": 13,
+      "general_geometric_mean": 0.9847414717227388,
+      "per_case_primary_ratio": {
+        "general_categorical_multiclass": 1.0174883688632665,
+        "general_categorical_reg": 0.9656252876071576,
+        "general_friedman_numeric": 0.9843594732960408,
+        "general_numeric_binary": 0.9722928771776916,
+        "sports_2014_box_plus_minus": 1.028993096310926,
+        "sports_2014_game_score": 1.0290997282047232,
+        "sports_2014_minutes_per_game": 0.9243284660121545,
+        "sports_2015_box_plus_minus": 0.987997104279498,
+        "sports_2015_game_score": 0.9969013472443161,
+        "sports_2015_minutes_per_game": 0.9474348882900263,
+        "sports_2016_box_plus_minus": 1.0020545176636129,
+        "sports_2016_game_score": 0.9317542218966226,
+        "sports_2016_minutes_per_game": 0.9850653409623227
+      },
+      "sports_geometric_mean": 0.980821862369325,
+      "wins_vs_single": 9,
+      "worst_case_ratio": 1.0290997282047232
+    },
+    "control": {
+      "all_case_geometric_mean": 0.9855813093220192,
+      "case_count": 13,
+      "general_geometric_mean": 0.9908863938378686,
+      "per_case_primary_ratio": {
+        "general_categorical_multiclass": 1.009824994256478,
+        "general_categorical_reg": 0.9650561547208937,
+        "general_friedman_numeric": 0.9800437861667616,
+        "general_numeric_binary": 1.0093720624269873,
+        "sports_2014_box_plus_minus": 1.0490623884440486,
+        "sports_2014_game_score": 1.0066892242066037,
+        "sports_2014_minutes_per_game": 0.9428947429980408,
+        "sports_2015_box_plus_minus": 0.9808211014046809,
+        "sports_2015_game_score": 0.9835822460257104,
+        "sports_2015_minutes_per_game": 0.9582884809343196,
+        "sports_2016_box_plus_minus": 1.0120320343221902,
+        "sports_2016_game_score": 0.9435225386106376,
+        "sports_2016_minutes_per_game": 0.977019578045194
+      },
+      "sports_geometric_mean": 0.983232619979197,
+      "wins_vs_single": 8,
+      "worst_case_ratio": 1.0490623884440486
+    }
+  },
+  "dated": "2026-07-21",
+  "evidence_scope": "spent_post_hoc_development_readout",
+  "finding": {
+    "combined_beats_single_all_cases": true,
+    "combined_case_count": 13,
+    "combined_median_archive_to_single": 5.534767493867151,
+    "combined_survived_frozen_gate": false,
+    "frozen_archive_to_single_limit": 4.0,
+    "frozen_disposition": "close_b1_b2_preserve_existing_opt_in",
+    "serialization_authorized": false
+  },
+  "frozen_result_artifact": {
+    "path": "benchmarks/m3b_ensemble_v3_r3_result.json",
+    "sha256": "3e6d0750e772c156b6c4daed948eb6baa640564ce87fe1ffee7414b3fe03c8bc"
+  },
+  "name": "wave2_m3b_r3_vs_single_readout_20260721",
+  "quality_artifact": {
+    "path": "benchmarks/m3b_ensemble_v3_r3_quality.json",
+    "sha256": "5fec218cbc0ec97ef4b3fec10f65a89131a377cf026dbb80da809d6396ead6c3"
+  },
+  "schema_version": 1,
+  "sports_primary_scope": "player-disjoint cold-player rows within the frozen held-team view"
+}
