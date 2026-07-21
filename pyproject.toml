@@ -33,7 +33,7 @@ Repository = "https://github.com/kmedved/darkofit"
 Issues = "https://github.com/kmedved/darkofit/issues"
 
 [project.optional-dependencies]
-dev = ["pytest", "optuna>=4", "pandas"]
+dev = ["pytest", "optuna>=4", "pandas", "psutil"]
 tuning = ["optuna>=4"]
 docs = ["mkdocs>=1.6"]
 
