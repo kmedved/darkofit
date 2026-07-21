@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Performance
+
+- Activate the behavior-exact static fused/unfused kernel dispatcher for new
+  eligible scalar CatBoost-mode fits within the measured macOS-arm64 shape
+  envelope. `oblivious_kernel="auto"` now uses the recorded `scan_work`
+  threshold `1048576`; explicit lane overrides and fused fallback outside the
+  envelope are unchanged. This is an owner-promoted product policy, not a
+  validated cross-hardware speed claim.
+
 ### Fixes
 
 - Make row- and group-bootstrap classifier ensembles retry until every class

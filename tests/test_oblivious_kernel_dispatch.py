@@ -1,5 +1,6 @@
 import json
 from copy import deepcopy
+from pathlib import Path
 
 import numba
 import numpy as np
@@ -115,6 +116,50 @@ def test_oblivious_dispatch_rule_is_static_and_threshold_ties_choose_unfused():
     assert tied["scan_work"] == scan_work
     assert below["resolved"] == "fused"
     assert below["reason"] == "below_threshold"
+
+
+def test_configured_auto_threshold_promotes_the_owner_selected_candidate():
+    assert booster_module._OBLIVIOUS_KERNEL_AUTO_THRESHOLD == 1_048_576
+    inputs = {
+        "functional_ineligibility": None,
+        "n_active_features": 15,
+        "n_threads": 4,
+        "depth": 6,
+        "max_realized_bins": 129,
+        "platform_system": "Darwin",
+        "platform_machine": "arm64",
+        "logical_cpu_count": 14,
+    }
+
+    below, below_instrument = _resolve_oblivious_kernel_dispatch(
+        "auto", n_rows=131_072, **inputs
+    )
+    tied, tied_instrument = _resolve_oblivious_kernel_dispatch(
+        "auto", n_rows=262_144, **inputs
+    )
+
+    assert below_instrument is tied_instrument is True
+    assert below["threshold"] == tied["threshold"] == 1_048_576
+    assert below["scan_work"] == 524_288
+    assert below["resolved"] == "fused"
+    assert below["reason"] == "below_threshold"
+    assert tied["scan_work"] == 1_048_576
+    assert tied["resolved"] == "unfused"
+    assert tied["reason"] == "at_or_above_threshold"
+
+
+def test_owner_promotion_record_preserves_the_failed_campaign_verdict():
+    root = Path(__file__).resolve().parents[1]
+    decision = (
+        root
+        / "benchmarks"
+        / "fused_lane_dispatch_owner_promotion_20260721.md"
+    ).read_text(encoding="utf-8")
+
+    assert "1048576" in decision
+    assert "qualifies=false" in decision
+    assert "close_dispatch_campaign" in decision
+    assert "does not create or imply a validated 3% speed claim" in decision
 
 
 @pytest.mark.parametrize(
@@ -254,6 +299,32 @@ def test_auto_threshold_injection_engages_unfused_without_runtime_racing(
     assert metadata["threshold"] == 0
     assert metadata["unfused_level_count"] > 0
     assert metadata["fused_level_count"] == 0
+
+
+def test_safe_load_preserves_a_pre_promotion_auto_decision(
+    monkeypatch, tmp_path
+):
+    X, y = _numeric_data(seed=20260722, n_rows=8_192, n_features=8)
+    monkeypatch.setattr(booster_module.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(booster_module.platform, "machine", lambda: "arm64")
+    monkeypatch.setattr(booster_module.os, "cpu_count", lambda: 14)
+    monkeypatch.setattr(booster_module, "_OBLIVIOUS_KERNEL_AUTO_THRESHOLD", None)
+    fitted = GradientBoosting(
+        **_core_params(iterations=1), oblivious_kernel="auto"
+    ).fit(X, y)
+    path = tmp_path / "pre-promotion-auto.npz"
+    fitted.save_model(path)
+
+    monkeypatch.setattr(
+        booster_module, "_OBLIVIOUS_KERNEL_AUTO_THRESHOLD", 1_048_576
+    )
+    loaded = GradientBoosting.load_model(path)
+
+    metadata = loaded.oblivious_kernel_dispatch_
+    assert metadata["threshold"] is None
+    assert metadata["resolved"] == "fused"
+    assert metadata["reason"] == "threshold_unavailable"
+    np.testing.assert_array_equal(loaded.predict_raw(X), fitted.predict_raw(X))
 
 
 def test_auto_fallback_records_actual_fused_level_engagement(monkeypatch):

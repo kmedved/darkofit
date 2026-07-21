@@ -87,7 +87,9 @@ _MAX_CONSECUTIVE_SAMPLED_DEPTH0_RETRIES = 10
 LINEAR_LEAVES_MIN_SAMPLES = 1000
 _EMITTED_DIAGNOSTIC_WARNING_CODES = set()
 _OBLIVIOUS_KERNEL_MODES = frozenset({"auto", "fused", "unfused"})
-_OBLIVIOUS_KERNEL_AUTO_THRESHOLD = None
+# Owner-promoted behavior-exact candidate; the campaign itself remains closed.
+# See benchmarks/fused_lane_dispatch_owner_promotion_20260721.md.
+_OBLIVIOUS_KERNEL_AUTO_THRESHOLD = 1_048_576
 _OBLIVIOUS_DISPATCH_SCHEMA_VERSION = 1
 _OBLIVIOUS_FUNCTIONAL_INELIGIBILITY_CODES = frozenset({
     "non_scalar_booster",

@@ -1123,6 +1123,27 @@ change._
     perform no validation phase, and return the next mechanism slot to the
     quality-first shortlist. Q remains closed unless independently re-funded.
 
+### 30. Post-close owner product promotion (2026-07-21)
+
+After section 29 and its immutable artifacts were published, the owner
+directed **promote**. The separate create-only
+[`owner decision`](fused_lane_dispatch_owner_promotion_20260721.md) activates
+the selected `scan_work` threshold `1048576` for new
+`oblivious_kernel="auto"` fits inside the existing macOS-arm64 automatic
+envelope. Values below the threshold use fused; ties and values above it use
+unfused. Explicit overrides, persisted metadata, safe-load validation, and
+fused fallback outside the envelope are unchanged.
+
+This product override does not rewrite section 29: the calibration remains
+`qualifies=false` with disposition `close_dispatch_campaign`. No selected-
+threshold evidence artifact, validation phase, 3% speed claim, portability
+claim, release authorization, fresh-data access, or lockbox access is created.
+No validation is authorized or created by this product decision.
+The owner accepts the marginal and timing-stability risk on the strength of
+30/30 behavior exactness, both-lane selection, worst ratio `1.0`, and the
+bounded explicit-fused rollback. The next mechanism slot remains
+quality-first.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
@@ -1151,7 +1172,9 @@ change._
 - source-declared ordinal features;
 - capped lane audition with full-budget refit semantics;
 - split-conformal Gaussian intervals;
-- exact supported-lane TreeSHAP; and
+- exact supported-lane TreeSHAP;
+- owner-promoted, statically recorded macOS-arm64 fused/unfused dispatch
+  (behavior-exact, without a validated speed or portability claim); and
 - generated, hash-bound engineering measurements.
 
 ### Closed automatic/default routes
@@ -1169,10 +1192,6 @@ change._
 - B-archive canonical-preprocessor serialization (effective median
   `4.152525×` missed the frozen `4.0×` archive limit, so no serializer was
   authorized);
-- automatic fused/unfused crossover dispatch (all 30 calibration cells were
-  exact, but stability failed and selected geomean `0.973846` missed the
-  frozen `0.97` limit; explicit overrides remain available);
-  and
 - any CTR23 lockbox run without a newly powered candidate.
 
 ## Verification and release log

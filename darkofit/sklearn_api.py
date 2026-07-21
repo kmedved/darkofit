@@ -7165,8 +7165,9 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         leaf ``l2_leaf_reg`` remains the intercept penalty.
     oblivious_kernel : {"auto", "fused", "unfused"}, default "auto"
         Static fused-kernel dispatch for eligible scalar CatBoost-mode fits.
-        Explicit modes are an observability and escape-hatch surface; automatic
-        switching remains disabled until a calibrated threshold is retained.
+        On macOS arm64 within the measured shape envelope, ``"auto"`` uses a
+        fixed scan-work threshold to select the fused or unfused lane. Explicit
+        modes remain an observability and escape-hatch surface.
     preset : {None, "accuracy"}, default None
         Optional profile. ``"accuracy"`` applies the frozen A10 development
         configuration during fit without changing the conservative default.
@@ -8575,6 +8576,8 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         ``ensemble_bootstrap="groups"`` requires ``groups`` in :meth:`fit`.
     oblivious_kernel : {"auto", "fused", "unfused"}, default "auto"
         Static fused-kernel dispatch for eligible binary CatBoost-mode fits.
+        On macOS arm64 within the measured shape envelope, ``"auto"`` uses a
+        fixed scan-work threshold to select the fused or unfused lane.
         Multiclass and non-oblivious fits retain their current kernels under
         ``"auto"`` and reject explicit modes.
     """
