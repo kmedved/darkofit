@@ -5270,7 +5270,8 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                          root_histograms=None, random_strength=0.0,
                          split_seed=0, tree_iteration=0,
                          leaf_dtype="int64", fused_oblivious_kernel=True,
-                         fused_oblivious_counter=None):
+                         fused_oblivious_counter=None,
+                         unfused_oblivious_counter=None):
     """Grow one oblivious tree level by level and return an ObliviousTree.
 
     X_hist_binned: optional feature-contiguous view/copy of X_binned used only
@@ -5321,6 +5322,9 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     fused_oblivious_counter: optional one-element integer array incremented
     once for every actual fused level invocation. This is benchmark
     observability only; requesting the candidate does not count as engagement.
+    unfused_oblivious_counter: optional one-element integer array incremented
+    once per level when the caller explicitly requests the existing unfused
+    reference path. This is likewise benchmark-only observability.
     """
     if X_hist_binned is None:
         X_hist_binned = X_binned
@@ -5339,6 +5343,15 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
         ):
             raise ValueError(
                 "fused_oblivious_counter must be a one-element integer array"
+            )
+    if unfused_oblivious_counter is not None:
+        unfused_oblivious_counter = np.asarray(unfused_oblivious_counter)
+        if (
+            unfused_oblivious_counter.shape != (1,)
+            or not np.issubdtype(unfused_oblivious_counter.dtype, np.integer)
+        ):
+            raise ValueError(
+                "unfused_oblivious_counter must be a one-element integer array"
             )
     n_samples = X_binned.shape[0]
     n_features = X_binned.shape[1]
@@ -5569,7 +5582,13 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                     split_scratch[4],
                     split_scratch[5],
                 )
-        elif use_serial_kernels:
+        else:
+            if (
+                not bool(fused_oblivious_kernel)
+                and unfused_oblivious_counter is not None
+            ):
+                unfused_oblivious_counter[0] += 1
+        if not fused_lane and use_serial_kernels:
             if root_copy:
                 pass
             elif subtract_level:
@@ -5632,7 +5651,7 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
                     hg, hh, n_bins_per_feature, l2, feature_mask,
                     min_child_weight, n_leaves
                 )
-        else:
+        elif not fused_lane:
             if root_copy:
                 pass
             elif subtract_level:
