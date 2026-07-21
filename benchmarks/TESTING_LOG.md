@@ -1,7 +1,8 @@
 # DarkoFit testing log
 
 _Canonical navigation ledger. Updated 2026-07-21 after the GitHub-only
-`v0.10.1` release and the frozen B-archive v2 close._
+`v0.10.1` release, frozen B-archive v2 close, and outcome-blind Wave 4
+fused-dispatch calibration freeze._
 
 This file records what DarkoFit has tested, why it was tested, what happened,
 and which artifact controls the conclusion. It is intentionally broader than
@@ -710,6 +711,75 @@ evidence.
     implement canonical serialization or generalized member deltas. Promote
     behavior-exact fused-lane dispatch to the next Track I mechanism slot,
     where it still requires a new prospective contract before implementation.
+
+### 23. Wave 4 fused-lane dispatch staged implementation and calibration freeze
+
+1. **Execution boundary:** 2026-07-21; staged product implementation
+   `eb2b6cf4b0f927316d82450eeaeef60e961cfad8`; outcome-blind harness and
+   measured-source pin `0e67eb157c79e2e42171bd1c779210d6cf1909ec`;
+   create-only calibration-contract commit `518aede`. No calibration or
+   validation worker has run and no campaign outcome has been opened.
+2. **Comparator:** the existing forced-fused histogram-plus-split kernel is
+   the prospective control; the existing forced-unfused builder-plus-search
+   kernel is the prospective candidate lane. This checkpoint contains no
+   measured comparison and makes no speed claim.
+3. **Evidence class:** product verification plus a prospectively frozen,
+   outcome-unopened Tier-E kernel-calibration identity. It is generic
+   synthetic infrastructure, not sports, quality, M2/M4, Q re-entry, fresh
+   confirmation, or lockbox evidence.
+4. **Data:** the unexecuted calibration grid is the frozen 30-coordinate
+   Cartesian product of five row counts, three feature/thread shapes, and
+   unit/variable Hessians at depth 6 and 128 realized bins, seed `20260721`.
+   Generators and required per-array hashes are source-bound; no raw artifact
+   exists.
+5. **Arms:** seven paired alternating-order repetitions of forced fused and
+   forced unfused after two untimed warmups per lane. The product surface is
+   `oblivious_kernel={"auto","fused","unfused"}` with an absent automatic
+   threshold, so effective `auto` behavior remains fused.
+6. **Resources:** exact frozen fingerprint: Apple M4 Pro, hardware model
+   `Mac16,7`, 14 physical/logical CPUs, 24 GiB RAM, Darwin `25.5.0`, Python
+   3.11.8, NumPy 2.2.6, Numba 0.61.2, and llvmlite 0.44.0. Workers fix every
+   common thread variable to 4, 9, or 14 by coordinate and require unchanged
+   Numba ceiling/current state.
+7. **Execution:** only
+   `python benchmarks/freeze_fused_lane_dispatch_calibration.py` ran, from a
+   clean tree, to create the non-authorizing contract. Formal execution would
+   require a separate clean detached source worktree, the contract's exact
+   authorization/raw/terminal paths, and an explicit hash-bound owner record.
+   Alternate output names and copied authorization paths are rejected.
+8. **Artifacts:** design v1 SHA-256
+   `68d0dd6ef42f29d164943ef16e766821c5bd53319840b22a59b1bd449191cf1a`;
+   design v2 `ed032758dfa5829766ae324bdde54b9a1724ed0063d3997f55f3d72f7907240e`;
+   bin erratum `18847b3118f6873d68bed57b9730ebd18fb07b8418260a37059dc1b3700217db`;
+   protocol `4f85112d89845f13320fd1758e98dbaae59b9ca7cc870203177c0ceee0f93d76`;
+   campaign/analyzer `034893ef265f8c3c2a9d6ab62368d0b9c47076e23656005b31a21551ba81ac73`;
+   runner `721a8d71654b732c346e47ad81ca6b14317c8af213529d0938b0c8bf0762a691`;
+   freezer `41ef4bcea83da7d772d9865f782be6401cd8953f983bec5b1404a0a63c3ffc2c`;
+   and execution contract
+   `3d7f8a653a71d6a9712f57f51bb01421765b42fcd105902f1fb0c6a611f7712d`.
+9. **Primary result:** none. Calibration fit ratios, regret, threshold, and
+   qualification are unopened. Product/golden verification currently passes
+   109 focused dispatch, kernel, thread, loss, and evidence-contract tests;
+   the committed contract reloads with all bound hashes and the exact runtime.
+   The full local checkout run passed 2,915 tests with 30 skips; its sole
+   failure was the pre-existing Panel 3 historical-sibling guard because the
+   clean neighboring ChimeraBoost checkout is now at `919a80a`, not Panel 3's
+   frozen `851ab7f` source. The guard was preserved and no sibling state was
+   changed.
+10. **Gates:** staged API, eligibility, deterministic resolution, persistence,
+    tamper rejection, exactness projection, thread restoration, source pin,
+    runtime fingerprint, formal-path, create-only, and owner-authorization
+    invariants pass. The calibration exactness, stability, `0.97` geomean,
+    `1.02` worst-cell, mixed-lane, and every validation gate remain untested.
+11. **Limitations/non-claims:** no speed, crossover, portability, quality,
+    sports, release, or default-change claim follows. The campaign is scoped
+    to the recorded Apple-arm64 host and declared envelope. B remains closed;
+    Q must rebase only after a retained dispatch; the next mechanism slot is
+    quality-first regardless of this campaign's result.
+12. **Current decision:** `await_explicit_calibration_authorization`. The
+    authorization, raw, terminal, analysis, threshold, and validation-contract
+    artifacts do not exist. Without a matching owner record, the runner must
+    refuse execution and Wave 4 remains paused at this frozen checkpoint.
 
 ## Product behavior established by the testing
 

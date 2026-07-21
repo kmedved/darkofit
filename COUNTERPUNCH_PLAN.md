@@ -7,7 +7,10 @@
 > Wave 3 B-archive feasibility completed and closed 2026-07-21;
 > Wave 4 fused-lane-dispatch v1 design contract frozen 2026-07-21; the
 > pre-implementation v2 observability/override successor was frozen the same
-> day before any campaign outcome access.
+> day before any campaign outcome access. The staged selector implementation,
+> invariant suite, outcome-blind calibration harness, and create-only
+> calibration execution contract are now frozen; calibration remains
+> explicitly unauthorized and unrun, with no outcome opened.
 > Wave 1 authorization covers the H1 audit and confirmed fixes, M1 plus the
 > Q0 profiling half, M3a, and construction of M5/M6 infrastructure. It does
 > not authorize a public prototype, default change, fresh confirmation
@@ -163,6 +166,21 @@ The binding machine-readable result is
 the create-only Markdown note's inherited v1 heading is corrected without
 rewriting it by
 [`benchmarks/barchive_v2_result_heading_erratum_20260721.md`](benchmarks/barchive_v2_result_heading_erratum_20260721.md).
+
+**Wave 4 checkpoint (2026-07-21):** the v2-authorized staged product surface
+is implemented at `eb2b6cf`: deterministic `auto`/`fused`/`unfused`
+resolution, explicit rejection outside functional eligibility, schema-checked
+persisted dispatch metadata, and safe-NPZ round trips. The automatic threshold
+is deliberately absent, so `auto` still resolves to the prior fused behavior.
+The outcome-blind calibration harness is pinned at `0e67eb1`; its create-only
+execution contract has SHA-256
+`3d7f8a653a71d6a9712f57f51bb01421765b42fcd105902f1fb0c6a611f7712d`
+and source pin `0e67eb157c79e2e42171bd1c779210d6cf1909ec`. It binds the exact M4 Pro
+runtime, fixed formal paths, generators, counters, exactness analysis, and
+gates while recording `execution_authorized=false` and
+`outcomes_opened=false`. No authorization, raw, terminal, analysis, selected
+threshold, or validation artifact exists. The sole possible next Wave 4
+action is an explicit owner authorization for this exact calibration identity.
 
 ## 2. Verified evidence and open questions
 
@@ -1022,7 +1040,8 @@ Initial backlog, unrated and unauthorized:
   or lockbox access is authorized. The M3b sports view remains player-disjoint
   cold-player evidence within held teams; the seeded 75/25 split applies only
   to the general weighted view.
-- **Next nominated — behavior-exact fused-lane dispatch** (internal, from Q0): the
+- **In progress, frozen before outcomes — behavior-exact fused-lane dispatch**
+  (internal, from Q0): the
   forced-unfused reference was behavior-exact and faster than the fused
   production lane on the current 14-CPU machine (paired fit ratios `0.901`
   at 500k rows, `0.981` at 1M) against a hotspot worth 52–63% of fit time.
@@ -1043,9 +1062,15 @@ Initial backlog, unrated and unauthorized:
   exactness oracle to exclude only those declared fields. Its create-only
   [`realized-bin-width erratum`](benchmarks/fused_lane_dispatch_v2_bin_width_erratum_20260721.md)
   corrects configured `max_bins=64--254` to realized widths `65--255` without
-  changing a frozen cell or gate. The combined contract authorizes only
-  selector/override/metadata implementation and invariants; calibration and
-  validation still require separate create-only execution freezes.
+  changing a frozen cell or gate. The staged implementation is pinned at
+  `eb2b6cf`; the outcome-blind harness is pinned at `0e67eb1`; and the
+  create-only
+  [`calibration execution contract`](benchmarks/fused_lane_dispatch_calibration_contract.json)
+  binds source `0e67eb157c79e2e42171bd1c779210d6cf1909ec` while recording both
+  execution and outcome access as false. Calibration has not run. A separate
+  owner authorization is required to create its one formal raw identity; a
+  qualifying threshold would then require a committed threshold, new product
+  source pin, and separate validation freeze.
 - **Q re-entry microbenchmark** (internal): a DarkoFit-specific private
   histogram-bandwidth prototype at the Q0 hotspot (frozen conservative
   projection `0.867242`), pursued only as the distinct causal case the Q
@@ -1151,7 +1176,7 @@ These are planning ranges, not delivery promises.
 | 1 | **Complete:** H1 audit; M1/Q0; M3a quality-first; M5 baseline; M6 infrastructure/backtest; G-M | Completed 2026-07-20 | Q and current ensembles closed; one private B0/B1/B2 mechanism prototype funded |
 | 2 | **Complete:** B0 contract, private sequential B1/B2 prototype and invariants, prospectively frozen M3b attribution | Completed 2026-07-20 | No arm cleared every final gate; close B1/B2 and preserve the existing opt-in |
 | 3 | **Complete:** M3b matched-single readout, B-archive component feasibility, v1 terminal lineage, and corrected frozen v2 campaign | Completed 2026-07-21 | Exact canonical factoring missed `4.0×`; close B-archive with no serializer and nominate fused-lane dispatch |
-| 4 | **In progress:** behavior-exact fused-lane dispatch; v1 plus its pre-outcome v2 observability/override successor frozen before implementation, with calibration and validation execution freezes still required. M2 waits for a survivor; Q1 remains sequenced after the post-dispatch baseline | Contracts frozen 2026-07-21; implementation separately estimated | Retain exact dispatch, defer, or close |
+| 4 | **In progress, paused at owner gate:** behavior-exact fused-lane dispatch design, staged implementation, invariants, outcome-blind harness, and calibration execution contract are frozen. `auto` remains fused; calibration is unauthorized/unrun and validation has no freeze. M2 waits for a survivor; Q1 remains sequenced after the post-dispatch baseline | Frozen checkpoint 2026-07-21; only explicit owner authorization can open calibration | Retain exact dispatch, defer, or close |
 | 5 | Q3, S, or P-next Tier-D campaigns | Separately estimated and power-gated | One fresh campaign per qualified automatic policy |
 | Later | Track I backlog (C and X mechanisms included), M4 drift check, and Z cleanup | Independent backlog | No coupling to unfinished speculative tracks |
 
