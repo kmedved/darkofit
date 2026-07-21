@@ -34,12 +34,28 @@ def test_m5_worker_environment_overrides_inherited_numba_ceiling(
 ):
     monkeypatch.setenv("NUMBA_NUM_THREADS", "1")
     monkeypatch.setenv("NUMBA_DISABLE_JIT", "1")
+    monkeypatch.setenv("NUMBA_BOUNDSCHECK", "1")
+    monkeypatch.setenv("NUMBA_THREADING_LAYER", "workqueue")
+    monkeypatch.setenv("OMP_DYNAMIC", "TRUE")
+    monkeypatch.setenv("OMP_THREAD_LIMIT", "1")
+    monkeypatch.setenv("KMP_AFFINITY", "compact")
+    monkeypatch.setenv("MKL_DYNAMIC", "TRUE")
+    monkeypatch.setenv("PYTHONOPTIMIZE", "2")
+    monkeypatch.setenv("PYTHONWARNINGS", "error")
     monkeypatch.setenv("PYTHONPATH", "/wrong/repository")
 
     environment = _worker_environment(tmp_path)
 
     assert environment["NUMBA_NUM_THREADS"] == str(M5_THREADS)
     assert environment["NUMBA_DISABLE_JIT"] == "0"
+    assert environment["OMP_DYNAMIC"] == "FALSE"
+    assert environment["OMP_THREAD_LIMIT"] == str(M5_THREADS)
+    assert environment["MKL_DYNAMIC"] == "FALSE"
+    assert "NUMBA_BOUNDSCHECK" not in environment
+    assert "NUMBA_THREADING_LAYER" not in environment
+    assert "KMP_AFFINITY" not in environment
+    assert "PYTHONOPTIMIZE" not in environment
+    assert "PYTHONWARNINGS" not in environment
     assert "PYTHONPATH" not in environment
 
 
@@ -179,6 +195,14 @@ def test_m5_analyzer_revalidates_worker_invariants():
     rows[0]["roundtrip_exact"] = False
 
     with pytest.raises(RuntimeError, match="row invariant"):
+        analyze_rows(rows, establishing=True)
+
+
+def test_m5_analyzer_rejects_thread_environment_drift():
+    rows = _baseline_rows()
+    rows[0]["thread_environment"]["OMP_NUM_THREADS"] = "1"
+
+    with pytest.raises(RuntimeError, match="thread environment"):
         analyze_rows(rows, establishing=True)
 
 

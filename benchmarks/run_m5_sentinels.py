@@ -693,15 +693,29 @@ def _worker_main(payload_path: Path) -> None:
 
 def _worker_environment(cache_dir: Path) -> dict[str, str]:
     environment = os.environ.copy()
-    environment.pop("PYTHONPATH", None)
+    thread_prefixes = (
+        "NUMBA_",
+        "OMP_",
+        "KMP_",
+        "MKL_",
+        "OPENBLAS_",
+        "VECLIB_",
+        "NUMEXPR_",
+    )
+    for key in tuple(environment):
+        if key.startswith("PYTHON") or key.startswith(thread_prefixes):
+            environment.pop(key)
     for key in THREAD_ENV_KEYS:
         environment[key] = str(M5_THREADS)
     environment.update(
         {
             "DARKOFIT_WARMUP": "0",
+            "MKL_DYNAMIC": "FALSE",
             "NUMBA_DISABLE_JIT": "0",
             "NUMBA_CACHE_DIR": str(cache_dir),
             "NUMBA_NUM_THREADS": str(M5_THREADS),
+            "OMP_DYNAMIC": "FALSE",
+            "OMP_THREAD_LIMIT": str(M5_THREADS),
             "PYTHONHASHSEED": "0",
         }
     )
@@ -875,6 +889,16 @@ def _validate_row(row: dict[str, Any]) -> None:
         or not classes_are_valid
     ):
         raise RuntimeError(f"M5 model metadata is invalid: {identity}")
+    thread_environment = row.get("thread_environment")
+    if (
+        not isinstance(thread_environment, dict)
+        or set(thread_environment) != set(THREAD_ENV_KEYS)
+        or any(
+            thread_environment[key] != str(M5_THREADS)
+            for key in THREAD_ENV_KEYS
+        )
+    ):
+        raise RuntimeError(f"M5 thread environment is invalid: {identity}")
     excess_brier = row.get("excess_brier")
     if case.known_floor:
         if (
