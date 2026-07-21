@@ -34,6 +34,7 @@ try:
     )
     from campaign_lib.provenance import canonical_json_sha256, file_sha256
     from standing_evidence import (
+        M6_BACKTEST_TERMINAL,
         M6_DATASETS,
         M6_RELEASE_ANCHORS,
         M6_SEED_COUNT,
@@ -56,6 +57,7 @@ except ImportError:  # pragma: no cover - supports `python -m benchmarks...`
         file_sha256,
     )
     from benchmarks.standing_evidence import (
+        M6_BACKTEST_TERMINAL,
         M6_DATASETS,
         M6_RELEASE_ANCHORS,
         M6_SEED_COUNT,
@@ -756,7 +758,16 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def _require_nonterminal_contract() -> None:
+    if M6_BACKTEST_TERMINAL:
+        raise RuntimeError(
+            "M6 v3 is terminal; its published release anchors are frozen "
+            "and cannot be rerun under the legacy contract"
+        )
+
+
 def run(args: argparse.Namespace) -> Path:
+    _require_nonterminal_contract()
     output = args.output.expanduser().absolute()
     if output.exists() or output.is_symlink():
         raise FileExistsError(f"refusing to overwrite {output}")
@@ -856,6 +867,7 @@ def run(args: argparse.Namespace) -> Path:
 def main(argv: Optional[list[str]] = None) -> None:
     arguments = list(sys.argv[1:] if argv is None else argv)
     if arguments[:1] == ["--worker"]:
+        _require_nonterminal_contract()
         if len(arguments) != 2:
             raise SystemExit("--worker requires one payload path")
         _worker_main(Path(arguments[1]))

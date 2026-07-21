@@ -64,6 +64,29 @@ except ImportError:  # pragma: no cover - supports `python -m benchmarks...`
     )
     from benchmarks.weighted_metrics import metric_bundle
 
+if __package__:
+    from .paired_evidence_contract import (
+        CONTRACT_THREADS as PAIRED_EVIDENCE_THREADS,
+        CONTRACT_VERSION as PAIRED_EVIDENCE_CONTRACT,
+        EVIDENCE_EXTRA_FIELDS,
+        assert_worker_contract,
+        evidence_row_metadata,
+        fixed_worker_environment,
+        load_and_validate_csv as load_and_validate_evidence_csv,
+        write_create_only as write_evidence_csv_create_only,
+    )
+else:  # pragma: no cover - exercised by script-mode benchmark workers
+    from paired_evidence_contract import (
+        CONTRACT_THREADS as PAIRED_EVIDENCE_THREADS,
+        CONTRACT_VERSION as PAIRED_EVIDENCE_CONTRACT,
+        EVIDENCE_EXTRA_FIELDS,
+        assert_worker_contract,
+        evidence_row_metadata,
+        fixed_worker_environment,
+        load_and_validate_csv as load_and_validate_evidence_csv,
+        write_create_only as write_evidence_csv_create_only,
+    )
+
 
 CSV_FIELDS = [
     "status",
@@ -116,6 +139,7 @@ CSV_FIELDS = [
     "timing_validation_predict",
     "timing_loss_eval",
 ]
+EVIDENCE_CSV_FIELDS = [*CSV_FIELDS, *EVIDENCE_EXTRA_FIELDS]
 
 
 def _json_default(value):
@@ -142,19 +166,19 @@ def _save_case(path, split):
 
 
 def _load_case(path):
-    data = np.load(path, allow_pickle=True)
-    has_weights = bool(data["has_weights"][0])
-    return {
-        "X_fit": data["X_fit"],
-        "X_val": data["X_val"],
-        "X_test": data["X_test"],
-        "y_fit": data["y_fit"],
-        "y_val": data["y_val"],
-        "y_test": data["y_test"],
-        "w_fit": data["w_fit"] if has_weights else None,
-        "w_val": data["w_val"] if has_weights else None,
-        "w_test": data["w_test"] if has_weights else None,
-    }
+    with np.load(path, allow_pickle=True) as data:
+        has_weights = bool(data["has_weights"][0])
+        return {
+            "X_fit": data["X_fit"],
+            "X_val": data["X_val"],
+            "X_test": data["X_test"],
+            "y_fit": data["y_fit"],
+            "y_val": data["y_val"],
+            "y_test": data["y_test"],
+            "w_fit": data["w_fit"] if has_weights else None,
+            "w_val": data["w_val"] if has_weights else None,
+            "w_test": data["w_test"] if has_weights else None,
+        }
 
 
 def _truncate_error(text):
@@ -242,6 +266,17 @@ def _selection_timing_fields(model, fit_seconds, boost_seconds):
 def _fit_worker(payload):
     variant = RevisionSpec(**payload["variant"])
     config = FitConfig(**payload["fit_config"])
+    evidence_contract = payload.get("evidence_contract")
+    if evidence_contract:
+        if evidence_contract != PAIRED_EVIDENCE_CONTRACT:
+            raise RuntimeError(
+                f"unknown paired evidence contract: {evidence_contract!r}"
+            )
+        if config.threads != PAIRED_EVIDENCE_THREADS:
+            raise RuntimeError(
+                "paired evidence worker received the wrong thread budget"
+            )
+        assert_worker_contract(config.threads)
     data = _load_case(payload["data_path"])
     _prepare_revision_import(variant.path)
 
@@ -252,6 +287,18 @@ def _fit_worker(payload):
 
     task = payload["task"]
     estimator_cls = DarkoRegressor if task == "regression" else DarkoClassifier
+    implementation_path = ""
+    if evidence_contract:
+        implementation_path = str(Path(inspect.getfile(estimator_cls)).resolve())
+        try:
+            Path(implementation_path).relative_to(
+                Path(variant.path).resolve() / "darkofit"
+            )
+        except ValueError as exc:
+            raise RuntimeError(
+                f"estimator imported from {implementation_path}, not "
+                f"{Path(variant.path).resolve() / 'darkofit'}"
+            ) from exc
     kwargs = estimator_kwargs(estimator_cls, config, variant, payload["seed"])
     if "sampling" in kwargs:
         kwargs["sampling"] = _effective_sampling(task, config)
@@ -333,6 +380,20 @@ def _fit_worker(payload):
     row.update(_selection_timing_fields(best_model, fit_seconds, boost_seconds))
     row.update(metrics)
     row.update(_timing_fields(best_model))
+    if evidence_contract:
+        row.update(
+            evidence_row_metadata(
+                model=best_model,
+                implementation_path=implementation_path,
+                data_path=Path(payload["data_path"]),
+                data=data,
+                task=task,
+                prediction=pred,
+                probability=proba,
+                labels=labels,
+                requested_threads=config.threads,
+            )
+        )
     return row
 
 
@@ -348,9 +409,15 @@ def _worker_main(argv):
     print(json.dumps(row, default=_json_default))
 
 
-def _run_worker(payload_path):
+def _run_worker(payload_path, *, environment=None):
     cmd = [sys.executable, str(Path(__file__).resolve()), "--worker", "--payload", str(payload_path)]
-    proc = subprocess.run(cmd, text=True, capture_output=True, check=False)
+    proc = subprocess.run(
+        cmd,
+        text=True,
+        capture_output=True,
+        check=False,
+        env=environment,
+    )
     if proc.returncode != 0:
         return {
             "status": "error",
@@ -399,8 +466,17 @@ def _base_row(variant, spec, size, seed, weight_mode, split, config):
     }
 
 
-def _complete_row(row):
-    return {field: row.get(field, "") for field in CSV_FIELDS}
+def _expected_class_count(spec, split):
+    if spec.task == "regression":
+        return 0
+    labels = np.concatenate(
+        [split["y_fit"], split["y_val"], split["y_test"]]
+    )
+    return int(len(np.unique(labels)))
+
+
+def _complete_row(row, *, fields=CSV_FIELDS):
+    return {field: row.get(field, "") for field in fields}
 
 
 def _ordered_variants(variants, *, policy_suite, cell_index):
@@ -481,11 +557,38 @@ def parse_args(argv):
         default=Path("benchmarks/tri_compare_raw.csv"),
     )
     parser.add_argument("--keep-case-files", action="store_true")
+    parser.add_argument(
+        "--evidence-contract",
+        choices=[PAIRED_EVIDENCE_CONTRACT],
+        default=None,
+        help=(
+            "opt in to the strict successor paired-execution contract; "
+            "this is separate from frozen M6 v3 and is non-ranking"
+        ),
+    )
     return parser.parse_args(argv)
 
 
 def main(argv=None):
     args = parse_args(sys.argv[1:] if argv is None else argv)
+    if args.seeds < 1:
+        raise SystemExit("--seeds must be a positive integer")
+    if args.repeat < 1:
+        raise SystemExit("--repeat must be a positive integer")
+    if args.evidence_contract:
+        if args.policy_suite != "standing-slice":
+            raise SystemExit(
+                "--evidence-contract requires --policy-suite standing-slice"
+            )
+        if args.threads != PAIRED_EVIDENCE_THREADS:
+            raise SystemExit(
+                f"{args.evidence_contract} requires exactly "
+                f"{PAIRED_EVIDENCE_THREADS} threads"
+            )
+        if args.csv.exists() or args.csv.is_symlink():
+            raise FileExistsError(
+                f"paired evidence refuses to overwrite {args.csv}"
+            )
     if args.policy_suite == "default-regret":
         if not args.candidate:
             raise SystemExit("--policy-suite default-regret requires --candidate")
@@ -511,6 +614,13 @@ def main(argv=None):
         missing = wanted - {v.label for v in variants}
         if missing:
             raise SystemExit(f"unknown or unavailable variants: {sorted(missing)}")
+    if args.evidence_contract and {
+        variant.label for variant in variants
+    } != {"control_default", "candidate_default"}:
+        raise SystemExit(
+            "paired evidence requires both control_default and "
+            "candidate_default arms"
+        )
     if not variants:
         raise SystemExit("no revisions to run; pass --upstream/--fork/--candidate")
 
@@ -543,8 +653,24 @@ def main(argv=None):
         tmp_ctx = tempfile.TemporaryDirectory(prefix="cb-revision-bench-", dir=None)
         tmpdir = Path(tmp_ctx.name)
     try:
-        with args.csv.open("w", newline="") as fh:
-            writer = csv.DictWriter(fh, fieldnames=CSV_FIELDS)
+        fieldnames = (
+            EVIDENCE_CSV_FIELDS if args.evidence_contract else CSV_FIELDS
+        )
+        worker_environment = (
+            fixed_worker_environment(
+                tmpdir / "numba-cache",
+                threads=args.threads,
+            )
+            if args.evidence_contract
+            else None
+        )
+        raw_csv_path = (
+            tmpdir / "paired-evidence-raw.csv"
+            if args.evidence_contract
+            else args.csv
+        )
+        with raw_csv_path.open("w", newline="") as fh:
+            writer = csv.DictWriter(fh, fieldnames=fieldnames)
             writer.writeheader()
             fh.flush()
             block_index = 0
@@ -577,15 +703,39 @@ def main(argv=None):
                                     "seed": seed,
                                     "repeat": args.repeat,
                                 }
+                                if args.evidence_contract:
+                                    payload["evidence_contract"] = (
+                                        args.evidence_contract
+                                    )
                                 payload_path = tmpdir / f"payload-{variant.label}-{dataset}-{size}-{seed}-{weight_mode}.json"
                                 payload_path.write_text(json.dumps(payload, default=_json_default))
                                 row = _base_row(
                                     variant, spec, size, seed, weight_mode,
                                     split, config,
                                 )
-                                row.update(_run_worker(payload_path))
-                                writer.writerow(_complete_row(row))
+                                if args.evidence_contract:
+                                    row["expected_class_count"] = (
+                                        _expected_class_count(spec, split)
+                                    )
+                                row.update(
+                                    _run_worker(
+                                        payload_path,
+                                        environment=worker_environment,
+                                    )
+                                )
+                                writer.writerow(
+                                    _complete_row(row, fields=fieldnames)
+                                )
                                 fh.flush()
+                                if (
+                                    args.evidence_contract
+                                    and row.get("status") != "ok"
+                                ):
+                                    raise RuntimeError(
+                                        "paired evidence worker failed; "
+                                        "no output was published: "
+                                        f"{row.get('error', '')}"
+                                    )
                                 print(
                                     f"{row['status']:5s} {variant.label:24s} "
                                     f"{dataset:23s} {size:6s} seed={seed} "
@@ -593,6 +743,33 @@ def main(argv=None):
                                     flush=True,
                                 )
                         block_index += 1
+        if args.evidence_contract:
+            _, validation = load_and_validate_evidence_csv(
+                raw_csv_path,
+                expected_fields=fieldnames,
+                expected_sources={
+                    variant.label: Path(variant.path)
+                    for variant in variants
+                },
+                threads=args.threads,
+                expected_pair_keys=[
+                    (dataset, size, str(seed), weight_mode)
+                    for size in args.sizes
+                    for dataset in datasets
+                    for seed in range(args.seeds)
+                    for weight_mode in args.weight_modes
+                ],
+            )
+            print(
+                "validated "
+                f"{validation['paired_cells']} paired cells under "
+                f"{args.evidence_contract}",
+                flush=True,
+            )
+            write_evidence_csv_create_only(
+                args.csv,
+                raw_csv_path.read_bytes(),
+            )
     finally:
         if args.keep_case_files:
             print(f"kept case files in {tmpdir}")

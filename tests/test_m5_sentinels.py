@@ -17,13 +17,30 @@ if str(BENCH_DIR) not in sys.path:
     sys.path.insert(0, str(BENCH_DIR))
 
 from run_m5_sentinels import (  # noqa: E402
+    M5_THREADS,
     _assert_darkofit_source,
+    _valid_probability_matrix,
+    _worker_environment,
     _write_create_only,
     _quality_baseline,
     analyze_rows,
     source_state,
     validate_sources,
 )
+
+
+def test_m5_worker_environment_overrides_inherited_numba_ceiling(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setenv("NUMBA_NUM_THREADS", "1")
+    monkeypatch.setenv("NUMBA_DISABLE_JIT", "1")
+    monkeypatch.setenv("PYTHONPATH", "/wrong/repository")
+
+    environment = _worker_environment(tmp_path)
+
+    assert environment["NUMBA_NUM_THREADS"] == str(M5_THREADS)
+    assert environment["NUMBA_DISABLE_JIT"] == "0"
+    assert "PYTHONPATH" not in environment
 
 
 def test_quality_baseline_handles_weighted_regression_and_classification():
@@ -44,6 +61,31 @@ def test_quality_baseline_handles_weighted_regression_and_classification():
 
     assert regression > 0.0
     assert classification > 0.0
+
+
+def test_m5_probability_validation_uses_an_absolute_tolerance_and_bounds():
+    valid = np.asarray([[0.25, 0.75], [0.6, 0.4]])
+    relative_tolerance_only = np.asarray([[0.25, 0.750005], [0.6, 0.4]])
+    out_of_range = np.asarray([[-0.1, 1.1], [0.6, 0.4]])
+    phantom_binary_class = np.asarray(
+        [[0.2, 0.7, 0.1], [0.3, 0.6, 0.1]]
+    )
+
+    assert _valid_probability_matrix(
+        valid,
+        expected_rows=2,
+        expected_columns=2,
+    )
+    assert not _valid_probability_matrix(
+        relative_tolerance_only,
+        expected_rows=2,
+    )
+    assert not _valid_probability_matrix(out_of_range, expected_rows=2)
+    assert not _valid_probability_matrix(
+        phantom_binary_class,
+        expected_rows=2,
+        expected_columns=2,
+    )
 
 
 def test_m5_source_validation_requires_exact_control_and_baseline_parity():
@@ -137,4 +179,26 @@ def test_m5_analyzer_revalidates_worker_invariants():
     rows[0]["roundtrip_exact"] = False
 
     with pytest.raises(RuntimeError, match="row invariant"):
+        analyze_rows(rows, establishing=True)
+
+
+def test_m5_analyzer_rejects_task_class_cardinality_drift():
+    rows = _baseline_rows()
+    row = next(
+        item for item in rows if item["domain_id"] == "binary_classification"
+    )
+    row["model_metadata"]["classes"] = [0, 1, 2]
+
+    with pytest.raises(RuntimeError, match="model metadata"):
+        analyze_rows(rows, establishing=True)
+
+
+def test_m5_analyzer_rejects_duplicate_class_metadata():
+    rows = _baseline_rows()
+    row = next(
+        item for item in rows if item["domain_id"] == "binary_classification"
+    )
+    row["model_metadata"]["classes"] = [0, 0]
+
+    with pytest.raises(RuntimeError, match="model metadata"):
         analyze_rows(rows, establishing=True)

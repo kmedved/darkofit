@@ -22,10 +22,22 @@ from run_m6_release_anchors import (  # noqa: E402
     _numeric_metric_values,
     _assert_module_under,
     expected_coordinates,
+    main as main_release_anchors,
+    run as run_release_anchors,
     source_state,
     validate_rows,
     validate_sources,
 )
+
+
+def test_terminal_m6_v3_release_anchor_runner_refuses_new_execution():
+    with pytest.raises(RuntimeError, match="terminal"):
+        run_release_anchors(SimpleNamespace())
+
+
+def test_terminal_m6_v3_release_anchor_worker_cli_refuses_new_execution():
+    with pytest.raises(RuntimeError, match="terminal"):
+        main_release_anchors(["--worker", "/nonexistent/payload.json"])
 
 
 def test_release_anchor_grid_includes_full_small_medium_weighted_slice():

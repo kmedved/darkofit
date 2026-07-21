@@ -31,6 +31,7 @@ try:
     from standing_evidence import (
         M6_DATASETS,
         M6_BACKTEST_COMPLETE,
+        M6_BACKTEST_TERMINAL,
         M6_CONTRACT_FROZEN,
         M6_MODELS,
         M6_REPEAT,
@@ -52,6 +53,7 @@ except ImportError:  # pragma: no cover - supports `python -m benchmarks...`
     from benchmarks.standing_evidence import (
         M6_DATASETS,
         M6_BACKTEST_COMPLETE,
+        M6_BACKTEST_TERMINAL,
         M6_CONTRACT_FROZEN,
         M6_MODELS,
         M6_REPEAT,
@@ -565,6 +567,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 
 def run(args: argparse.Namespace) -> tuple[Path, Path]:
+    if M6_BACKTEST_TERMINAL:
+        raise RuntimeError(
+            "M6 v3 is terminal and cannot execute again; use a new "
+            "mechanism-specific contract built on paired-evidence-v1"
+        )
     if args.threads != M6_THREADS:
         raise ValueError(
             f"the M6 contract requires exactly {M6_THREADS} threads"

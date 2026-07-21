@@ -431,6 +431,33 @@ def _peak_rss_bytes() -> int:
     return value
 
 
+def _valid_probability_matrix(
+    probability: Any,
+    *,
+    expected_rows: int,
+    expected_columns: Optional[int] = None,
+) -> bool:
+    values = np.asarray(probability, dtype=np.float64)
+    return bool(
+        values.ndim == 2
+        and values.shape[0] == expected_rows
+        and values.shape[1] >= 2
+        and (
+            expected_columns is None
+            or values.shape[1] == expected_columns
+        )
+        and np.isfinite(values).all()
+        and np.min(values) >= -1e-12
+        and np.max(values) <= 1.0 + 1e-12
+        and np.allclose(
+            values.sum(axis=1),
+            1.0,
+            rtol=0.0,
+            atol=1e-12,
+        )
+    )
+
+
 def _quality_baseline(
     task: str,
     y_train: np.ndarray,
@@ -534,15 +561,28 @@ def run_worker(payload: dict[str, Any]) -> dict[str, Any]:
         else np.asarray(model.predict_proba(data["X_test"]), dtype=np.float64)
     )
     predict_seconds = (time.perf_counter_ns() - started) / 1e9
+    expected_classes = (
+        None
+        if data["task"] == "regression"
+        else np.unique(np.asarray(data["y_train"]))
+    )
+    model_classes = (
+        None
+        if data["task"] == "regression"
+        else np.asarray(getattr(model, "classes_", ()))
+    )
     if (
         prediction.shape != (len(data["y_test"]),)
         or not np.isfinite(np.asarray(prediction, dtype=np.float64)).all()
         or (
             probability is not None
             and (
-                probability.shape[0] != len(data["y_test"])
-                or not np.isfinite(probability).all()
-                or not np.allclose(probability.sum(axis=1), 1.0, atol=1e-12)
+                not np.array_equal(model_classes, expected_classes)
+                or not _valid_probability_matrix(
+                    probability,
+                    expected_rows=len(data["y_test"]),
+                    expected_columns=len(expected_classes),
+                )
             )
         )
     ):
@@ -661,6 +701,7 @@ def _worker_environment(cache_dir: Path) -> dict[str, str]:
             "DARKOFIT_WARMUP": "0",
             "NUMBA_DISABLE_JIT": "0",
             "NUMBA_CACHE_DIR": str(cache_dir),
+            "NUMBA_NUM_THREADS": str(M5_THREADS),
             "PYTHONHASHSEED": "0",
         }
     )
@@ -805,6 +846,24 @@ def _validate_row(row: dict[str, Any]) -> None:
         raise RuntimeError(f"M5 primary metrics are invalid: {identity}")
     metadata = row.get("model_metadata")
     expected_members = 3 if case.model_profile == "group_ensemble" else 1
+    classes = None if not isinstance(metadata, dict) else metadata.get("classes")
+    classes_are_valid = (
+        classes is None
+        if domain.task == "regression"
+        else (
+            isinstance(classes, list)
+            and not any(isinstance(value, (list, dict)) for value in classes)
+            and len(
+                {(type(value).__name__, repr(value)) for value in classes}
+            )
+            == len(classes)
+            and (
+                len(classes) == 2
+                if domain.task == "binary"
+                else len(classes) >= 3
+            )
+        )
+    )
     if (
         not isinstance(metadata, dict)
         or isinstance(metadata.get("member_count"), bool)
@@ -813,6 +872,7 @@ def _validate_row(row: dict[str, Any]) -> None:
         or isinstance(metadata.get("tree_count"), bool)
         or not isinstance(metadata.get("tree_count"), int)
         or metadata["tree_count"] <= 0
+        or not classes_are_valid
     ):
         raise RuntimeError(f"M5 model metadata is invalid: {identity}")
     excess_brier = row.get("excess_brier")

@@ -21,6 +21,7 @@ from bench_compare_revisions import (  # noqa: E402
 from run_standing_evidence import (  # noqa: E402
     _write_create_only,
     inspection_record,
+    run as run_m6,
     summarize_pairs,
     validate_rows,
     validate_source_contract,
@@ -40,6 +41,11 @@ from standing_evidence import (  # noqa: E402
     m6_expected_grid,
     validate_contract,
 )
+
+
+def test_terminal_m6_v3_runner_refuses_new_execution():
+    with pytest.raises(RuntimeError, match="terminal"):
+        run_m6(SimpleNamespace())
 
 
 def _row(
