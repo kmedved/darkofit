@@ -1,0 +1,10 @@
+{
+  "campaign": "fused_lane_dispatch_calibration_v1_20260721",
+  "execution_authorized": true,
+  "execution_contract_sha256": "fab0784beee165b4643b817f12076b79ff832d95224469bc244cc15c839e9c7f",
+  "execution_identity": "calibration_v4",
+  "owner_decision": "Owner authorized the frozen calibration_v4 execution on 2026-07-21: okay - turn this into a goal and proceed.",
+  "phase": "calibration",
+  "schema_version": 1,
+  "source": "05a7a0d996fcd797cbc925026f7eba48db4becd5"
+}
