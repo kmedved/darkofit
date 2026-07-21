@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "name": "wave2_m3b_ensemble_v3_20260720_attempt1_failure_record",
+  "failed_contract": {
+    "path": "benchmarks/m3b_ensemble_v3_contract.json",
+    "sha256": "bb483cfbf55eb7081cd201750b7165ece8845c0025ebb8f0c4a460f35a2e9a54"
+  },
+  "terminal_artifact": {
+    "bytes": 8314,
+    "sha256": "2f6b75d766ed21cd9b5cbb76873a48cb8938a4fb11d419befa173c67f3235e24",
+    "created_at": "2026-07-21T03:55:16.969331+00:00",
+    "phase": "quality",
+    "status": "failed",
+    "completed_rows_discarded": 0,
+    "rows": null
+  },
+  "source": {
+    "darkofit": "210434ff09bf54f8356f1268e990af72dc7a5129",
+    "harness": "6b18d45bf1788a29cf9da04883e54a629b47cc24",
+    "clean_before_and_after": true
+  },
+  "failure": {
+    "stage": "first worker RSS sampler entry before model fit",
+    "case_id": "sports_2014_minutes_per_game",
+    "arm": "single_reference",
+    "type": "PermissionError",
+    "message": "macOS denied psutil process-tree enumeration via sysctl(KERN_PROC_ALL)",
+    "model_outcomes_opened": false
+  },
+  "disposition": {
+    "attempt_terminal": true,
+    "rerun_same_identity": false,
+    "successor_allowed": true,
+    "successor_scope": "evidence-only RSS capability and measurement correction; model implementation, data, arms, order, and decision rules remain unchanged"
+  }
+}
