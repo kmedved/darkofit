@@ -9,6 +9,8 @@ import json
 import os
 import platform
 import resource
+import secrets
+import stat
 import subprocess
 import sys
 import tempfile
@@ -29,6 +31,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RUNNER_PATH = Path(__file__).resolve()
 CALIBRATION_PREFIX = "FUSED_LANE_CALIBRATION_RESULT="
 VALIDATION_PREFIX = "FUSED_LANE_VALIDATION_RESULT="
+WORKER_CAPABILITY_SCHEMA_VERSION = 1
 THREAD_ENV_KEYS = (
     "OMP_NUM_THREADS",
     "OPENBLAS_NUM_THREADS",
@@ -468,6 +471,177 @@ def _load_validation_threshold(
     return threshold_record, int(threshold), threshold_path
 
 
+def _assert_declared_outputs_unused(
+    contract: Mapping[str, Any],
+) -> tuple[Path, Path]:
+    raw = _declared_output_path(contract, "raw")
+    terminal = _declared_output_path(contract, "terminal")
+    if (
+        raw.exists()
+        or raw.is_symlink()
+        or terminal.exists()
+        or terminal.is_symlink()
+    ):
+        raise RuntimeError("fused-lane execution identity was already used")
+    return raw, terminal
+
+
+def _issue_worker_capability(
+    *,
+    contract: Mapping[str, Any],
+    contract_path: Path,
+    authorization_path: Path,
+    phase: str,
+    spec: Mapping[str, Any],
+    source: str,
+    source_root: Path,
+    arm: str | None = None,
+    block: int | None = None,
+    threshold_path: Path | None = None,
+) -> dict[str, Any]:
+    """Create one parent-issued, coordinate-bound worker capability."""
+    canonical_contract = load_execution_contract(contract_path, phase=phase)
+    if canonical_contract != dict(contract):
+        raise RuntimeError("fused-lane worker capability contract drifted")
+    require_authorization(
+        authorization_path,
+        contract_path=contract_path,
+        contract=canonical_contract,
+        phase=phase,
+    )
+    if git_state(source_root) != {"head": source, "status": ""}:
+        raise RuntimeError("fused-lane worker capability source is not frozen")
+    if contract.get("phase") != phase or source != contract.get("source"):
+        raise RuntimeError("fused-lane worker capability phase is invalid")
+    frozen_spec = _require_frozen_worker_spec(contract, spec)
+    threshold_sha256 = None
+    if phase == "calibration":
+        if arm is not None or block is not None or threshold_path is not None:
+            raise RuntimeError("fused-lane calibration capability is invalid")
+    elif phase == "validation":
+        if arm is None or block is None or threshold_path is None:
+            raise RuntimeError("fused-lane validation capability is invalid")
+        _require_frozen_validation_coordinate(contract, arm=arm, block=block)
+        _record, _threshold, threshold_path = _load_validation_threshold(
+            contract, threshold_path
+        )
+        threshold_sha256 = campaign.file_sha256(threshold_path)
+    else:
+        raise RuntimeError("fused-lane worker capability phase is invalid")
+    raw, terminal = _assert_declared_outputs_unused(contract)
+    return {
+        "schema_version": WORKER_CAPABILITY_SCHEMA_VERSION,
+        "nonce": secrets.token_hex(32),
+        "parent_pid": os.getpid(),
+        "phase": phase,
+        "execution_identity": contract.get("execution_identity"),
+        "source": source,
+        "execution_contract_sha256": campaign.file_sha256(
+            contract_path.expanduser().resolve()
+        ),
+        "authorization_sha256": campaign.file_sha256(
+            authorization_path.expanduser().resolve()
+        ),
+        "raw_path": str(raw),
+        "terminal_path": str(terminal),
+        "spec": frozen_spec,
+        "spec_sha256": campaign.json_sha256(frozen_spec),
+        "arm": arm,
+        "block": block,
+        "threshold_sha256": threshold_sha256,
+    }
+
+
+def _read_worker_capability(capability_fd: int | None) -> dict[str, Any]:
+    """Consume a capability delivered through an inherited anonymous pipe."""
+    if (
+        capability_fd is None
+        or isinstance(capability_fd, bool)
+        or not isinstance(capability_fd, int)
+        or capability_fd < 0
+    ):
+        raise RuntimeError("fused-lane worker parent capability is required")
+    try:
+        descriptor_state = os.fstat(capability_fd)
+        if not stat.S_ISFIFO(descriptor_state.st_mode):
+            raise RuntimeError(
+                "fused-lane worker parent capability is not an inherited pipe"
+            )
+        chunks = []
+        total = 0
+        while True:
+            chunk = os.read(capability_fd, 65536)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > 65536:
+                raise RuntimeError("fused-lane worker parent capability is invalid")
+            chunks.append(chunk)
+    except OSError as exc:
+        raise RuntimeError(
+            "fused-lane worker parent capability is unavailable"
+        ) from exc
+    finally:
+        try:
+            os.close(capability_fd)
+        except OSError:
+            pass
+    try:
+        capability = json.loads(b"".join(chunks).decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError(
+            "fused-lane worker parent capability is invalid"
+        ) from exc
+    if not isinstance(capability, dict):
+        raise RuntimeError("fused-lane worker parent capability is invalid")
+    return capability
+
+
+def _validate_worker_capability(
+    capability: Mapping[str, Any],
+    *,
+    contract: Mapping[str, Any],
+    contract_path: Path,
+    authorization_path: Path,
+    phase: str,
+    spec: Mapping[str, Any],
+    source: str,
+    arm: str | None,
+    block: int | None,
+    threshold_path: Path | None,
+) -> None:
+    raw, terminal = _assert_declared_outputs_unused(contract)
+    threshold_sha256 = (
+        None
+        if threshold_path is None
+        else campaign.file_sha256(threshold_path.expanduser().resolve())
+    )
+    nonce = capability.get("nonce")
+    if (
+        capability.get("schema_version")
+        != WORKER_CAPABILITY_SCHEMA_VERSION
+        or not _is_hex_digest(nonce, 64)
+        or capability.get("parent_pid") != os.getppid()
+        or capability.get("phase") != phase
+        or capability.get("execution_identity")
+        != contract.get("execution_identity")
+        or capability.get("source") != source
+        or capability.get("execution_contract_sha256")
+        != campaign.file_sha256(contract_path.expanduser().resolve())
+        or capability.get("authorization_sha256")
+        != campaign.file_sha256(authorization_path.expanduser().resolve())
+        or capability.get("raw_path") != str(raw)
+        or capability.get("terminal_path") != str(terminal)
+        or capability.get("spec") != dict(spec)
+        or capability.get("spec_sha256")
+        != campaign.json_sha256(dict(spec))
+        or capability.get("arm") != arm
+        or capability.get("block") != block
+        or capability.get("threshold_sha256") != threshold_sha256
+    ):
+        raise RuntimeError("fused-lane worker parent capability is invalid")
+
+
 def _authorize_worker_invocation(
     *,
     contract_path: Path,
@@ -478,7 +652,9 @@ def _authorize_worker_invocation(
     arm: str | None = None,
     block: int | None = None,
     threshold_path: Path | None = None,
+    capability_fd: int | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], int | None]:
+    capability = _read_worker_capability(capability_fd)
     contract = load_execution_contract(contract_path, phase=phase)
     authorization = require_authorization(
         authorization_path,
@@ -502,6 +678,18 @@ def _authorize_worker_invocation(
         )
     else:
         raise RuntimeError("fused-lane worker phase is invalid")
+    _validate_worker_capability(
+        capability,
+        contract=contract,
+        contract_path=contract_path,
+        authorization_path=authorization_path,
+        phase=phase,
+        spec=frozen_spec,
+        source=source,
+        arm=arm,
+        block=block,
+        threshold_path=threshold_path,
+    )
     expected_environment = _worker_environment_record(
         contract, int(frozen_spec["threads"])
     )
@@ -558,6 +746,12 @@ def _calibration_buffers(spec: Mapping[str, Any]):
     return hist, split
 
 
+def _calibration_builder_views(X: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Match production's shared Fortran routing and histogram layout."""
+    production_view = np.asfortranarray(X)
+    return production_view, production_view
+
+
 def _activate_source(source_root: Path, source: str) -> dict[str, str]:
     source_root = source_root.expanduser().resolve()
     state = git_state(source_root)
@@ -574,6 +768,7 @@ def calibration_worker(
     authorization_path: Path,
     source: str,
     source_root: Path,
+    capability_fd: int | None = None,
 ) -> dict[str, Any]:
     contract, _authorization, runtime_before, _threshold = (
         _authorize_worker_invocation(
@@ -582,6 +777,7 @@ def calibration_worker(
             phase="calibration",
             spec=spec,
             source=source,
+            capability_fd=capability_fd,
         )
     )
     state_before = _activate_source(source_root, source)
@@ -597,7 +793,7 @@ def calibration_worker(
 
     values, fingerprints = campaign.generate_calibration_case(spec)
     X = values["X"]
-    X_hist = np.asfortranarray(X)
+    X_hist, X_route = _calibration_builder_views(X)
     grad = values["grad"]
     hess = values["hess"]
     n_bins = values["n_bins"]
@@ -622,7 +818,7 @@ def calibration_worker(
             split_buffers=split_buffers,
             return_training_state=True,
             X_hist_binned=X_hist,
-            X_route_binned=X,
+            X_route_binned=X_route,
             constant_hessian=spec["hessian"] == "unit",
             level_histogram_subtraction=False,
             random_strength=0.0,
@@ -726,6 +922,7 @@ def validation_worker(
     authorization_path: Path,
     source: str,
     source_root: Path,
+    capability_fd: int | None = None,
 ) -> dict[str, Any]:
     contract, _authorization, runtime_before, threshold = (
         _authorize_worker_invocation(
@@ -737,6 +934,7 @@ def validation_worker(
             arm=arm,
             block=block,
             threshold_path=threshold_path,
+            capability_fd=capability_fd,
         )
     )
     if threshold is None:
@@ -894,6 +1092,11 @@ def _run_worker(
     args: list[str],
     *,
     threads: int,
+    phase: str,
+    spec: Mapping[str, Any],
+    arm: str | None = None,
+    block: int | None = None,
+    threshold_path: Path | None = None,
     contract: Mapping[str, Any],
     contract_path: Path,
     authorization_path: Path,
@@ -901,27 +1104,53 @@ def _run_worker(
     source_root: Path,
     prefix: str,
 ) -> dict[str, Any]:
-    command = [
-        sys.executable,
-        str(RUNNER_PATH),
-        *args,
-        "--contract",
-        str(contract_path.expanduser().resolve()),
-        "--authorization",
-        str(authorization_path.expanduser().resolve()),
-        "--source",
-        source,
-        "--source-root",
-        str(source_root.expanduser().resolve()),
-    ]
-    completed = subprocess.run(
-        command,
-        cwd=ROOT,
-        env=_worker_process_environment(contract, threads),
-        check=False,
-        capture_output=True,
-        text=True,
+    capability = _issue_worker_capability(
+        contract=contract,
+        contract_path=contract_path,
+        authorization_path=authorization_path,
+        phase=phase,
+        spec=spec,
+        source=source,
+        source_root=source_root,
+        arm=arm,
+        block=block,
+        threshold_path=threshold_path,
     )
+    read_fd, write_fd = os.pipe()
+    try:
+        payload = _json_payload(capability)
+        handle = os.fdopen(write_fd, "wb")
+        write_fd = -1
+        with handle:
+            handle.write(payload)
+        command = [
+            sys.executable,
+            str(RUNNER_PATH),
+            *args,
+            "--contract",
+            str(contract_path.expanduser().resolve()),
+            "--authorization",
+            str(authorization_path.expanduser().resolve()),
+            "--source",
+            source,
+            "--source-root",
+            str(source_root.expanduser().resolve()),
+            "--capability-fd",
+            str(read_fd),
+        ]
+        completed = subprocess.run(
+            command,
+            cwd=ROOT,
+            env=_worker_process_environment(contract, threads),
+            check=False,
+            capture_output=True,
+            text=True,
+            pass_fds=(read_fd,),
+        )
+    finally:
+        if write_fd >= 0:
+            os.close(write_fd)
+        os.close(read_fd)
     if completed.returncode:
         raise RuntimeError(
             "fused-lane worker failed: "
@@ -1017,6 +1246,8 @@ def run_calibration(
                 _run_worker(
                     ["calibration-worker", "--spec-json", json.dumps(spec)],
                     threads=int(spec["threads"]),
+                    phase="calibration",
+                    spec=spec,
                     contract=contract,
                     contract_path=contract_path,
                     authorization_path=authorization_path,
@@ -1098,6 +1329,11 @@ def run_validation(
                                 str(threshold_path),
                             ],
                             threads=int(spec["threads"]),
+                            phase="validation",
+                            spec=spec,
+                            arm=arm,
+                            block=block,
+                            threshold_path=threshold_path,
                             contract=contract,
                             contract_path=contract_path,
                             authorization_path=authorization_path,
@@ -1242,6 +1478,9 @@ def build_parser() -> argparse.ArgumentParser:
     calibration_worker_parser.add_argument("--authorization", type=Path, required=True)
     calibration_worker_parser.add_argument("--source", required=True)
     calibration_worker_parser.add_argument("--source-root", type=Path, required=True)
+    calibration_worker_parser.add_argument(
+        "--capability-fd", type=int, required=True, help=argparse.SUPPRESS
+    )
 
     validation_worker_parser = commands.add_parser("validation-worker")
     validation_worker_parser.add_argument(
@@ -1258,6 +1497,9 @@ def build_parser() -> argparse.ArgumentParser:
     validation_worker_parser.add_argument("--authorization", type=Path, required=True)
     validation_worker_parser.add_argument("--source", required=True)
     validation_worker_parser.add_argument("--source-root", type=Path, required=True)
+    validation_worker_parser.add_argument(
+        "--capability-fd", type=int, required=True, help=argparse.SUPPRESS
+    )
 
     for name in ("calibration", "validation"):
         phase_parser = commands.add_parser(name)
@@ -1285,6 +1527,7 @@ def main(argv: list[str] | None = None) -> int:
             authorization_path=args.authorization,
             source=args.source,
             source_root=args.source_root,
+            capability_fd=args.capability_fd,
         )
         print(CALIBRATION_PREFIX + json.dumps(result, sort_keys=True, allow_nan=False))
     elif args.command == "validation-worker":
@@ -1297,6 +1540,7 @@ def main(argv: list[str] | None = None) -> int:
             authorization_path=args.authorization,
             source=args.source,
             source_root=args.source_root,
+            capability_fd=args.capability_fd,
         )
         print(VALIDATION_PREFIX + json.dumps(result, sort_keys=True, allow_nan=False))
     elif args.command == "calibration":

@@ -333,10 +333,18 @@ def _ensemble_class_partitions_are_usable(
     required_class_count,
     weights,
 ):
-    """Return whether both ensemble partitions retain every weighted class."""
+    """Return whether both partitions retain each class and its usable mass."""
     if required_class_count is None:
         return True
     class_count = int(required_class_count)
+    positive_mass_classes = None
+    if weights is not None:
+        full_class_weight = np.bincount(
+            class_codes,
+            weights=weights,
+            minlength=class_count,
+        )
+        positive_mass_classes = full_class_weight > 0.0
     for indices in (sampled, oob):
         partition_codes = class_codes[indices]
         observations = np.bincount(
@@ -351,7 +359,7 @@ def _ensemble_class_partitions_are_usable(
                 weights=weights[indices],
                 minlength=class_count,
             )
-            if np.any(class_weight <= 0.0):
+            if np.any(class_weight[positive_mass_classes] <= 0.0):
                 return False
     return True
 
@@ -1443,6 +1451,24 @@ def _validate_loaded_wrapper_fitted_params(params, booster):
             "invalid DarkoFit model: wrapper loss does not match the loaded "
             "booster"
         )
+    fitted_oblivious_kernel = getattr(booster, "oblivious_kernel", None)
+    if "oblivious_kernel" in params and fitted_oblivious_kernel is not None:
+        try:
+            saved_oblivious_kernel = _normalize_oblivious_kernel(
+                params["oblivious_kernel"]
+            )
+            fitted_oblivious_kernel = _normalize_oblivious_kernel(
+                fitted_oblivious_kernel
+            )
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "invalid DarkoFit model: wrapper oblivious kernel is invalid"
+            ) from exc
+        if saved_oblivious_kernel != fitted_oblivious_kernel:
+            raise ValueError(
+                "invalid DarkoFit model: wrapper oblivious kernel does not "
+                "match the loaded booster"
+            )
     if fitted_loss == "Quantile" and "alpha" in params:
         saved_alpha = params["alpha"]
         fitted_alpha = getattr(booster, "loss_kwargs", {}).get("alpha")
@@ -3938,6 +3964,23 @@ class _RefitParamsMixin:
             params["loss"] = fitted_loss
         if "alpha" in params and fitted_loss == "Quantile":
             params["alpha"] = float(first.model_.loss_kwargs["alpha"])
+        if "oblivious_kernel" in params:
+            fitted_kernels = {
+                _normalize_oblivious_kernel(member.model_.oblivious_kernel)
+                for member in self.estimators_
+            }
+            member_kernels = {
+                _normalize_oblivious_kernel(
+                    member._wrapper_params_header()["oblivious_kernel"]
+                )
+                for member in self.estimators_
+            }
+            if len(fitted_kernels) != 1 or member_kernels != fitted_kernels:
+                raise ValueError(
+                    "cannot save ensemble whose oblivious kernel differs "
+                    "across member payloads"
+                )
+            params["oblivious_kernel"] = next(iter(fitted_kernels))
         for name in (
             "early_stopping",
             "use_best_model",
@@ -4154,6 +4197,7 @@ class _RefitParamsMixin:
                 "interval_calibration",
                 "dist_calibration",
                 "sigma_calibration",
+                "oblivious_kernel",
             ):
                 if not hasattr(est, name):
                     continue
@@ -5597,6 +5641,10 @@ class _RefitParamsMixin:
             params["loss"] = fitted_loss
         if "alpha" in params and fitted_loss == "Quantile":
             params["alpha"] = float(model.loss_kwargs["alpha"])
+        if "oblivious_kernel" in params and model is not None:
+            params["oblivious_kernel"] = _normalize_oblivious_kernel(
+                model.oblivious_kernel
+            )
         if "preset" in params:
             params["preset"] = getattr(self, "preset_", None)
         if "interval_calibration" in params:
@@ -8393,10 +8441,12 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             )
             return
         from .serialization import save_booster
+        params = self._wrapper_params_header()
+        _validate_loaded_wrapper_fitted_params(params, self.model_)
         save_booster(
             self.model_, path,
             wrapper_header={"wrapper_class": type(self).__name__,
-                            "params": self._wrapper_params_header(),
+                            "params": params,
                             "state": self._wrapper_state_header()},
             wrapper_arrays=self._wrapper_arrays(),
         )
@@ -8454,6 +8504,8 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 est.alpha = float(booster.loss_kwargs["alpha"])
         if "random_state" not in params:
             est.random_state = getattr(booster, "random_state", None)
+        if "oblivious_kernel" not in params:
+            est.oblivious_kernel = getattr(booster, "oblivious_kernel", "auto")
         state = wrapper_header.get("state", {})
         if not isinstance(state, Mapping):
             raise ValueError(
@@ -9137,10 +9189,12 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
             wrapper_arrays = {"classes": values, "classes_kinds": kinds}
         else:
             wrapper_arrays = {"classes": cls_arr}
+        params = self._wrapper_params_header()
+        _validate_loaded_wrapper_fitted_params(params, self.model_)
         save_booster(
             self.model_, path,
             wrapper_header={"wrapper_class": type(self).__name__,
-                            "params": self._wrapper_params_header(),
+                            "params": params,
                             "state": self._wrapper_state_header()},
             wrapper_arrays=wrapper_arrays,
         )
@@ -9187,6 +9241,8 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         est.model_ = booster
         if "random_state" not in params:
             est.random_state = getattr(booster, "random_state", None)
+        if "oblivious_kernel" not in params:
+            est.oblivious_kernel = getattr(booster, "oblivious_kernel", "auto")
         state = wrapper_header.get("state", {})
         if not isinstance(state, Mapping):
             raise ValueError(

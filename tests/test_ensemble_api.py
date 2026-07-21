@@ -998,6 +998,7 @@ def test_classifier_load_rejects_invalid_binary_class_labels(
         ("params", "random_state", 17.0, "random state"),
         ("params", "random_state", 999, "random state"),
         ("params", "loss", "MAE", "ensemble loss"),
+        ("params", "oblivious_kernel", "unfused", "oblivious_kernel"),
     ],
 )
 def test_ensemble_load_rejects_payload_metadata_mismatches(
@@ -1044,6 +1045,7 @@ def test_ensemble_save_freezes_fitted_ensemble_params(tmp_path):
         interval_calibration="conformal",
         dist_calibration="affine",
         sigma_calibration="scalar",
+        oblivious_kernel="unfused",
         linear_residual=True,
         linear_residual_alpha=2.0,
         linear_residual_fit_intercept=False,
@@ -1069,6 +1071,11 @@ def test_ensemble_save_freezes_fitted_ensemble_params(tmp_path):
     assert restored.interval_calibration is None
     assert restored.dist_calibration is None
     assert restored.sigma_calibration is None
+    assert restored.oblivious_kernel == "auto"
+    assert all(
+        member.oblivious_kernel == member.model_.oblivious_kernel == "auto"
+        for member in restored.estimators_
+    )
     assert restored.linear_residual is False
     assert restored.linear_residual_alpha == 1.0
     assert restored.linear_residual_fit_intercept is True

@@ -381,22 +381,57 @@ def test_parent_worker_environment_uses_exact_frozen_cache_path(
 def test_parent_passes_exact_frozen_environment_to_worker(
     tmp_path, monkeypatch
 ):
+    monkeypatch.setattr(runner, "ROOT", tmp_path)
     threads = 4
+    source = "a" * 40
+    spec = {"coordinate_id": "test", "threads": threads}
     cache_dir = tmp_path / "threads-4"
     expected_process = runner.fixed_worker_environment(threads, cache_dir)
     expected_record = {
         name: expected_process.get(name) for name in runner.WORKER_ENV_KEYS
     }
     contract = {
+        "phase": "calibration",
+        "source": source,
+        "execution_identity": "calibration_test",
+        "generator": {"specs": [spec]},
+        "outputs": {
+            "raw": "raw.json",
+            "terminal": "raw_terminal.json",
+        },
         "runtime": {
             "worker_environments": {str(threads): expected_record}
         }
     }
+    contract_path = tmp_path / "contract.json"
+    authorization_path = tmp_path / "authorization.json"
+    contract_path.write_text(json.dumps(contract), encoding="utf-8")
+    authorization_path.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(
+        runner,
+        "load_execution_contract",
+        lambda *_args, **_kwargs: contract,
+    )
+    monkeypatch.setattr(
+        runner,
+        "require_authorization",
+        lambda *_args, **_kwargs: {"execution_authorized": True},
+    )
+    monkeypatch.setattr(
+        runner,
+        "git_state",
+        lambda *_args, **_kwargs: {"head": source, "status": ""},
+    )
     captured = {}
 
     def fake_run(command, **kwargs):
         captured["command"] = command
         captured["environment"] = kwargs["env"]
+        captured["pass_fds"] = kwargs["pass_fds"]
+        capability_fd = kwargs["pass_fds"][0]
+        captured["capability"] = json.loads(
+            runner.os.read(capability_fd, 65536).decode("utf-8")
+        )
         return SimpleNamespace(
             returncode=0,
             stdout=runner.CALIBRATION_PREFIX + json.dumps({"ok": True}),
@@ -405,12 +440,14 @@ def test_parent_passes_exact_frozen_environment_to_worker(
 
     monkeypatch.setattr(runner.subprocess, "run", fake_run)
     result = runner._run_worker(
-        ["calibration-worker", "--spec-json", "{}"],
+        ["calibration-worker", "--spec-json", json.dumps(spec)],
         threads=threads,
+        phase="calibration",
+        spec=spec,
         contract=contract,
-        contract_path=tmp_path / "contract.json",
-        authorization_path=tmp_path / "authorization.json",
-        source="a" * 40,
+        contract_path=contract_path,
+        authorization_path=authorization_path,
+        source=source,
         source_root=tmp_path,
         prefix=runner.CALIBRATION_PREFIX,
     )
@@ -422,6 +459,11 @@ def test_parent_passes_exact_frozen_environment_to_worker(
     } == expected_record
     assert "--contract" in captured["command"]
     assert "--authorization" in captured["command"]
+    assert "--capability-fd" in captured["command"]
+    assert len(captured["pass_fds"]) == 1
+    assert captured["capability"]["phase"] == "calibration"
+    assert captured["capability"]["spec"] == spec
+    assert captured["capability"]["raw_path"] == str(tmp_path / "raw.json")
 
 
 def test_freezer_binds_harness_runtime_and_keeps_execution_unauthorized(
@@ -552,23 +594,19 @@ def test_execution_identity_refuses_existing_result_or_terminal(tmp_path):
         runner._assert_fresh_output(output)
 
 
-def test_worker_authorization_precedes_case_generation(tmp_path, monkeypatch):
+def test_worker_parent_capability_precedes_case_generation(tmp_path, monkeypatch):
     generated = False
-
-    def reject(*_args, **_kwargs):
-        raise RuntimeError("not owner-authorized")
 
     def fail_if_generated(*_args, **_kwargs):
         nonlocal generated
         generated = True
         raise AssertionError("case generation must not start")
 
-    monkeypatch.setattr(runner, "_authorize_worker_invocation", reject)
     monkeypatch.setattr(
         campaign, "generate_calibration_case", fail_if_generated
     )
 
-    with pytest.raises(RuntimeError, match="not owner-authorized"):
+    with pytest.raises(RuntimeError, match="parent capability is required"):
         runner.calibration_worker(
             {"threads": 4},
             contract_path=tmp_path / "contract.json",
@@ -579,25 +617,21 @@ def test_worker_authorization_precedes_case_generation(tmp_path, monkeypatch):
     assert generated is False
 
 
-def test_validation_worker_authorization_precedes_case_generation(
+def test_validation_worker_parent_capability_precedes_case_generation(
     tmp_path, monkeypatch
 ):
     generated = False
-
-    def reject(*_args, **_kwargs):
-        raise RuntimeError("not owner-authorized")
 
     def fail_if_generated(*_args, **_kwargs):
         nonlocal generated
         generated = True
         raise AssertionError("case generation must not start")
 
-    monkeypatch.setattr(runner, "_authorize_worker_invocation", reject)
     monkeypatch.setattr(
         campaign, "generate_validation_case", fail_if_generated
     )
 
-    with pytest.raises(RuntimeError, match="not owner-authorized"):
+    with pytest.raises(RuntimeError, match="parent capability is required"):
         runner.validation_worker(
             {"threads": 4},
             arm="fused",
@@ -615,7 +649,7 @@ def test_validation_worker_authorization_precedes_case_generation(
     "command",
     ["calibration-worker", "validation-worker"],
 )
-def test_worker_subcommands_require_contract_and_authorization(command):
+def test_worker_subcommands_require_parent_capability(command):
     arguments = [
         command,
         "--spec-json",
@@ -624,6 +658,10 @@ def test_worker_subcommands_require_contract_and_authorization(command):
         "a" * 40,
         "--source-root",
         ".",
+        "--contract",
+        "contract.json",
+        "--authorization",
+        "authorization.json",
     ]
     if command == "validation-worker":
         arguments.extend(
@@ -664,6 +702,7 @@ def test_direct_worker_rejects_off_grid_spec_before_case_generation(
         "require_authorization",
         lambda *_args, **_kwargs: {"execution_authorized": True},
     )
+    monkeypatch.setattr(runner, "_read_worker_capability", lambda _fd: {})
 
     def fail_if_generated(*_args, **_kwargs):
         nonlocal generated
@@ -844,3 +883,15 @@ def test_small_noncampaign_worker_proves_both_counters_and_exactness(
         assert repetition["unfused_level_count"] > 0
         assert repetition["fused_opposite_level_count"] == 0
         assert repetition["unfused_opposite_level_count"] == 0
+
+
+def test_calibration_uses_production_fortran_layout_for_routing_and_histograms():
+    X = np.arange(60, dtype=np.uint16).reshape(12, 5)
+    assert X.flags.c_contiguous
+
+    histogram, routing = runner._calibration_builder_views(X)
+
+    assert histogram is routing
+    assert histogram.flags.f_contiguous
+    assert histogram is not X
+    np.testing.assert_array_equal(histogram, X)

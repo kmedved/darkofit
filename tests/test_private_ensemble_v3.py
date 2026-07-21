@@ -181,6 +181,31 @@ def test_ensemble_plans_require_positive_weight_for_each_class_on_both_sides(
         call(**kwargs)
 
 
+@pytest.mark.parametrize("sampling", ["bootstrap", "without_replacement"])
+def test_ensemble_plans_allow_observed_classes_with_zero_total_weight(sampling):
+    y = np.resize(np.array([0, 1]), 80)
+    weights = np.where(y == 0, 1.0, 0.0)
+    kwargs = {
+        "n_rows": len(y),
+        "seed": 12,
+        "y": y,
+        "required_class_count": 2,
+        "sample_weight": weights,
+        "max_attempts": 128,
+    }
+    if sampling == "bootstrap":
+        plan = _ensemble_bootstrap_plan(bootstrap="rows", **kwargs)
+    else:
+        plan = _ensemble_without_replacement_plan(
+            sampling_unit="rows", sample_fraction=0.8, **kwargs
+        )
+
+    assert np.unique(y[plan["sampled"]]).tolist() == [0, 1]
+    assert np.unique(y[plan["oob"]]).tolist() == [0, 1]
+    assert weights[plan["sampled"]].sum() > 0.0
+    assert weights[plan["oob"]].sum() > 0.0
+
+
 def test_private_plan_rejects_nonpositive_weight_partition():
     weights = np.zeros(20)
     weights[0] = 1.0

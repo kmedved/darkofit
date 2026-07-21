@@ -76,6 +76,15 @@ def _rewrite_dispatch_metadata(source, destination, mutate):
     np.savez_compressed(destination, **arrays)
 
 
+def _rewrite_wrapper_oblivious_kernel(source, destination, value):
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {name: archive[name].copy() for name in archive.files}
+    header = json.loads(str(arrays["header"]))
+    header["wrapper"]["params"]["oblivious_kernel"] = value
+    arrays["header"] = np.array(json.dumps(header, sort_keys=True))
+    np.savez_compressed(destination, **arrays)
+
+
 def test_oblivious_dispatch_rule_is_static_and_threshold_ties_choose_unfused():
     inputs = {
         "functional_ineligibility": None,
@@ -483,6 +492,37 @@ def test_wrapper_clone_and_safe_load_preserve_forced_dispatch_metadata(tmp_path)
     resaved = tmp_path / "wrapper-unfused-resaved.npz"
     loaded.save_model(resaved)
     _assert_projected_archives_exact(path, resaved)
+
+
+def test_wrapper_save_uses_fitted_oblivious_kernel_after_param_mutation(tmp_path):
+    X, y = _numeric_data(seed=54)
+    fitted = DarkoRegressor(
+        **_core_params(), oblivious_kernel="fused"
+    ).fit(X, y)
+    fitted.set_params(oblivious_kernel="unfused")
+
+    path = tmp_path / "wrapper-fitted-kernel.npz"
+    fitted.save_model(path)
+    loaded = DarkoRegressor.load_model(path)
+
+    assert loaded.oblivious_kernel == "fused"
+    assert loaded.model_.oblivious_kernel == "fused"
+
+
+def test_wrapper_load_rejects_oblivious_kernel_that_differs_from_booster(
+    tmp_path,
+):
+    X, y = _numeric_data(seed=56)
+    fitted = DarkoRegressor(
+        **_core_params(), oblivious_kernel="fused"
+    ).fit(X, y)
+    source = tmp_path / "wrapper-kernel-source.npz"
+    tampered = tmp_path / "wrapper-kernel-tampered.npz"
+    fitted.save_model(source)
+    _rewrite_wrapper_oblivious_kernel(source, tampered, "unfused")
+
+    with pytest.raises(ValueError, match="oblivious kernel.*loaded booster"):
+        DarkoRegressor.load_model(tampered)
 
 
 def test_safe_load_rejects_inconsistent_dispatch_metadata(tmp_path):
