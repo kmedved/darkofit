@@ -439,6 +439,35 @@ def test_public_ensemble_fit_remains_version_one_bootstrap():
     assert "private_prototype" not in model.ensemble_metadata_
 
 
+def test_private_control_is_prediction_exact_to_public_bootstrap():
+    X, y = _regression_data(n=120)
+    public = DarkoRegressor(**_params(iterations=5)).fit(X, y)
+    private = _fit_private_ensemble_v3(
+        DarkoRegressor(**_params(iterations=5)),
+        X,
+        y,
+        sampling="bootstrap",
+        sampling_unit="rows",
+        member_policy="none",
+    )
+
+    np.testing.assert_array_equal(private.predict(X), public.predict(X))
+    assert [
+        record["bootstrap_indices_sha256"]
+        for record in public.ensemble_metadata_["members"]
+    ] == [
+        record["sampled_indices_sha256"]
+        for record in private.ensemble_metadata_["members"]
+    ]
+    assert [
+        record["oob_indices_sha256"]
+        for record in public.ensemble_metadata_["members"]
+    ] == [
+        record["oob_indices_sha256"]
+        for record in private.ensemble_metadata_["members"]
+    ]
+
+
 @pytest.mark.parametrize(
     "kwargs",
     [
