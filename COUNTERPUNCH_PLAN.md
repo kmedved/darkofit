@@ -445,6 +445,16 @@ Building and backtesting the M6 contract is Tier-E infrastructure work
 authorized in Wave 1. It must reproduce a declared subset of prior mechanism
 verdicts before it can rank new work.
 
+The 2026-07-20 historical backtest failed terminally — the frozen analyzer
+classified a known-advance mechanism as kill — so M6 v3 is non-ranking
+(see [`benchmarks/m6_historical_backtest_result.md`](benchmarks/m6_historical_backtest_result.md)).
+Rehabilitation, if ever pursued, requires a new contract identity with a
+newly declared verdict subset, never a relax or rerun of the failed replay,
+and every replay in the new subset must be executable within the current
+machine's limits: the failed round's packed replay hard-required 18 Numba
+threads on a 14-thread machine and could therefore only record
+`lacks_power`.
+
 ### G-M — owner-facing decision
 
 G-M is an owner portfolio judgment informed by declared descriptive
@@ -684,10 +694,16 @@ member policy remains closed as a quality route.
    worker-failure propagation, and peak-memory accounting. Test model
    equivalence at the same per-member thread count separately from throughput
    under divided CPU budgets.
-4. **M3b — attribution:** compare sampling, member policy, and parallelism in
-   separable arms on the spent player-disjoint panel and a small broad-tabular
-   development set. Include fit, predict, RSS, archive bytes, and OOB
-   telemetry.
+4. **M3b — attribution:** compare sampling-only, member-policy-only, and
+   combined arms on the spent player-disjoint panel and a small
+   broad-tabular development set. Include fit, predict, RSS, archive bytes,
+   and OOB telemetry. Freeze the M3b protocol before inspecting any
+   prototype outcome. The funded M3b excludes a parallelism arm; it joins
+   only if B3 is later unlocked by a separate decision.
+
+M3a's v1 runner, analyzer, freezer, and contract remain byte-preserved
+historical evidence. M3b must use a new contract identity and must not reuse
+M3a's `--contract` option with modified contract contents.
 
 M3b may nominate a documented opt-in recipe or explicit v3 preset. A general
 default change requires a separate Tier-D campaign across numeric,
@@ -860,6 +876,11 @@ Initial backlog, unrated and unauthorized:
   potential Track B interaction.
 - CatBoost's `l2_leaf_reg` and samples-per-feature depth heuristics:
   already Track C candidates via the T7b attribution.
+- **Q re-entry microbenchmark** (internal): a DarkoFit-specific private
+  histogram-bandwidth prototype at the Q0 hotspot (frozen conservative
+  projection `0.867242`), pursued only as the distinct causal case the Q
+  re-entry contract requires — no donor dependence. Competes here; it does
+  not reopen Q by itself.
 
 Adoption is never authorized from this backlog directly. A promoted entry
 becomes a normal track with its own evidence class, gates, and stop rule.
@@ -958,7 +979,7 @@ These are planning ranges, not delivery promises.
 | 0 | Owner reviews this plan; H0 documentation checkpoint | Hours | Authorize or revise Gate M |
 | 1 | **Complete:** H1 audit; M1/Q0; M3a quality-first; M5 baseline; M6 infrastructure/backtest; G-M | Completed 2026-07-20 | Q and current ensembles closed; one private B0/B1/B2 mechanism prototype funded |
 | 2 | Funded B0 contract plus the smallest private sequential B1/B2 sampling/member-policy attribution prototype | Roughly 2–5 engineering days | Continue only an attributed quality mechanism |
-| 3 | Surviving Q1 or B1–B3/M3b implementation; M2 broad milestone once a mechanism survives M5, M6, and sports | Roughly 1–3 weeks depending on survivors | Ship explicit opt-ins, defer, or close |
+| 3 | Surviving B implementation and frozen M3b; M2 broad milestone once a mechanism survives M5 invariants, spent development evidence, and sports. Q1 only after an authorized Q re-entry | Roughly 1–3 weeks depending on survivors | Ship explicit opt-ins, defer, or close |
 | 4 | Q3, S, or P-next Tier-D campaigns | Separately estimated and power-gated | One fresh campaign per qualified automatic policy |
 | Later | Track I backlog (C and X mechanisms included), M4 drift check, and Z cleanup | Independent backlog | No coupling to unfinished speculative tracks |
 
@@ -990,7 +1011,7 @@ shipped, deferred, or closed; any M2 milestone that became due is published;
 no default claim rests on spent evidence; the testing log and public claim
 surfaces agree; and any unused lockbox remains sealed.
 
-Wave 1 reached that stopping point on 2026-07-20. M2 did not become due
-because no mechanism survived through M5, ranking-eligible M6, and sports;
-the newly funded B mechanism starts a new private prototype cycle. The
-lockbox remains sealed.
+Wave 1 reached that stopping point on 2026-07-20. M2 did not become due:
+the current candidates did not survive their sports gates, and M6 v3 never
+became ranking-eligible after its terminal replay failure. The newly funded
+B mechanism starts a new private prototype cycle. The lockbox remains sealed.

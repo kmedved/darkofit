@@ -20,9 +20,15 @@ failures and no worker stderr.
   SHA-256
   `59747bc08d48a2ddad9b3cec05c965ecbd9edf21025c537f17dc58d816385409`.
 
-The hash is now embedded in the executable contract, so M6 may be marked
-`contract_frozen`. It is still not ranking-eligible until the separately
-predeclared historical backtest completes and its own artifact is hash-bound.
+The hash was embedded in the executable contract, allowing M6 to be marked
+`contract_frozen`. The separately predeclared historical backtest later
+failed terminally, so v3 never became ranking-eligible; see
+[`m6_historical_backtest_result.md`](m6_historical_backtest_result.md).
+
+A same-day post-publication harness audit verified all 50 hashed CatBoost
+wheel files against that pinned `RECORD` and strengthened future anchor runs
+to assert the imported module path and recheck installation state after
+execution. It did not rerun or alter the 240-row artifact.
 
 ## Descriptive context
 

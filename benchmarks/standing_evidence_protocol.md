@@ -74,9 +74,9 @@ M5 until an adapter supports it. The exact release anchors are ChimeraBoost
 commit `f14be606b641f1bf0dc92bb14b3951f1fe631c6b` and CatBoost 1.2.10 whose
 installed wheel `RECORD` hashes to
 `9c20fb35750d9ff814309323b225e836b538c1496745f357c8fd50187e7824ed`.
-The executable contract still refuses `contract_frozen=true` until a
-create-only release-anchor artifact is complete and its SHA-256 is embedded
-in the contract. Thus adding the names alone cannot satisfy the freeze.
+The executable contract refused `contract_frozen=true` until a create-only
+release-anchor artifact was complete and its SHA-256 was embedded in the
+contract. Thus adding the names alone could not satisfy the freeze.
 
 The runner records task-appropriate primary loss (RMSE or log loss), the
 existing secondary metrics, fit and prediction time, worker peak RSS,
@@ -91,11 +91,13 @@ and need an invalid-attempt note. The adjacent `TESTING_LOG.md` entry repeats
 the id and index, making panel grinding visible. A skipped or reset index
 invalidates the mechanism's M6 audit.
 
-Output and its adjacent `.manifest.json` are create-only. While the contract's
-`contract_frozen` and `backtest_complete` flags remain false, even a full run
-is labeled contract-development evidence and is not ranking-eligible. The
-checkout supplying this runner and the dataset builders is also required
-clean, recorded in the manifest, and checked for changes across execution.
+Output and its adjacent `.manifest.json` are create-only. A full run is
+ranking-eligible only when both `contract_frozen` and `backtest_complete` are
+true. This v3 contract is frozen, but its terminal failed backtest leaves
+`backtest_complete=false`; every v3 run therefore remains non-ranking
+contract-development evidence. The checkout supplying this runner and the
+dataset builders is also required clean, recorded in the manifest, and
+checked for changes across execution.
 
 Release anchors are established once with one fresh worker per
 product/cell, a same-product three-tree warmup outside timing, and only the
