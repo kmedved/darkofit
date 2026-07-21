@@ -34,7 +34,7 @@ inspired by CatBoost.
 DarkoFit is distributed from tagged GitHub releases rather than PyPI:
 
 ```bash
-python -m pip install "darkofit @ git+https://github.com/kmedved/darkofit.git@v0.10.0"
+python -m pip install "darkofit @ git+https://github.com/kmedved/darkofit.git@v0.10.1"
 ```
 
 Then:
@@ -641,7 +641,7 @@ model = search.best_estimator_
 Install the optional dependency from the same tag:
 
 ```bash
-python -m pip install "darkofit[tuning] @ git+https://github.com/kmedved/darkofit.git@v0.10.0"
+python -m pip install "darkofit[tuning] @ git+https://github.com/kmedved/darkofit.git@v0.10.1"
 ```
 
 The tuner owns the CV folds, passes explicit validation sets to the wrappers,

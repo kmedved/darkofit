@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.10.1 - 2026-07-20
+
+### Fixes
+
+- Restore each caller thread's ambient Numba thread mask after model fit and
+  prediction operations, including nested evaluation prediction, staged
+  prediction, SHAP, and exception paths. Fitted kernels still run at the
+  resolved `n_threads_` value, and that fitted value remains serialized and
+  reported unchanged.
+- Preserve dense-array input tags on scikit-learn 1.0 through 1.5 while also
+  publishing `requires_y=True`. The legacy `__sklearn_tags__` fallback no
+  longer drops the wrapper's `X_types=["2darray"]` capability declaration.
+- Require setuptools 77.0.3 or newer when building the package, matching the
+  existing PEP 639 SPDX license-expression metadata instead of advertising an
+  older backend that rejects the project configuration.
+
 ## 0.10.0 - 2026-07-19
 
 ### Final closeout additions
