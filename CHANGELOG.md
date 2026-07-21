@@ -12,9 +12,12 @@
 - Preserve dense-array input tags on scikit-learn 1.0 through 1.5 while also
   publishing `requires_y=True`. The legacy `__sklearn_tags__` fallback no
   longer drops the wrapper's `X_types=["2darray"]` capability declaration.
-- Require setuptools 77.0.3 or newer when building the package, matching the
-  existing PEP 639 SPDX license-expression metadata instead of advertising an
-  older backend that rejects the project configuration.
+- Improve the error for positional `sample_weight` misuse near
+  `cat_features`: floating per-sample values now point users to the required
+  `fit(X, y, sample_weight=w)` keyword form.
+- Document that constructor `None` semantics are parameter-specific, including
+  the distinct automatic-rate and mode-default behavior of
+  `learning_rate=None` and `depth=None`.
 
 ## 0.10.0 - 2026-07-19
 
