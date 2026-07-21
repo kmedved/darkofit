@@ -31,7 +31,8 @@ inspired by CatBoost.
 
 * **How?**
 
-DarkoFit is distributed from tagged GitHub releases rather than PyPI:
+DarkoFit is installed from version tags in its GitHub repository rather than
+PyPI:
 
 ```bash
 python -m pip install "darkofit @ git+https://github.com/kmedved/darkofit.git@v0.10.1"
