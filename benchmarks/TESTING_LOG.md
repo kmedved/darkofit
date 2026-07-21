@@ -555,6 +555,77 @@ evidence.
     mechanism attribution based on the predeclared ChimeraBoost donor arm;
     see [`wave1_gm_decision.md`](wave1_gm_decision.md).
 
+### 21. Wave 2 M3b private ensemble-v3 attribution
+
+1. **Execution boundary:** 2026-07-20; exact corrected private-model source
+   `6d063f98128d457f8b8bbf610c7aec46e675d844`; successor harness source
+   `74ac6cc32adcc3ece3179ffd9a77d34517906c6d`; clean execution head
+   `826fe82d3738d1a5dd57f4fb3e2fab79fa83ea8e`, which adds only the frozen
+   create-only contract to that harness.
+2. **Comparator:** internal private controls at the same source pin: an
+   eight-member bootstrap/base-policy control plus a single-model reference.
+   No external-library outcome is part of the acceptance decision.
+3. **Evidence class:** Tier-E spent private mechanism attribution; no fresh,
+   TabArena, or sealed-lockbox data and no public/default claim.
+4. **Data:** 13 fixed medium cases: nine player-disjoint sports cells (three
+   seasons x three targets) and four general numeric/categorical,
+   regression/binary/multiclass cells with stress weights. Exact data, split,
+   weight, case, and panel-cache fingerprints are bound in
+   [`m3b_ensemble_v3_r3_contract.json`](m3b_ensemble_v3_r3_contract.json).
+5. **Arms:** single reference; bootstrap/base-policy control; B1 80%
+   without-replacement sampling with base policy; B2 bootstrap with named
+   `donor_balanced_v1` member policy; and the combined B1+B2 arm. Group cases
+   use group-disjoint train/OOB partitions; all eight members fit
+   sequentially.
+6. **Resources:** arm64 macOS; fixed four-thread worker contract; fresh worker
+   per case/arm/repeat; same-arm two-round warmup outside measurement;
+   600-round fits with patience 30; peak self-worker-process RSS sampled at
+   10 ms. Quality ran once for all 65 rows; two timing repeats produced 130
+   rows after every candidate cleared the frozen quality gate.
+7. **Execution:** source-attested
+   [`run_m3b_ensemble_v3_r3.py`](run_m3b_ensemble_v3_r3.py) ran `quality`
+   then, after create-only gate analysis, `timing`; source-attested
+   [`analyze_m3b_ensemble_v3_r3.py`](analyze_m3b_ensemble_v3_r3.py) created
+   the gate and final result. All formal outputs were create-only in
+   `/private/tmp` before their exact bytes were copied into this directory.
+8. **Artifacts:** protocol SHA-256
+   `c7663573fb2f49ccc6ba42e4b633577192c8961c4001f4c86aeb341d1b264409`;
+   runner `c37b445fcb4ba9959cb972562f1d60cef4f9385a945f5362e6f5c42674cc1b15`;
+   analyzer `e7a2c801e3b42c5a851ad64b186f7fc7311a308fe10070d83b16505ceceae3ef`;
+   contract `5889e130c7afbadbc8e0f082673eb1a80961b5cb396ca906efbe9a5d32ea8b50`;
+   quality `5fec218cbc0ec97ef4b3fec10f65a89131a377cf026dbb80da809d6396ead6c3`;
+   gate `68c40a92a75ed9c8288445bb0fd46677e1bc9178d468ff4c354da02492f2ba68`;
+   timing `7048041c7a5edb2ec83c34920a657d6f0286946d216837bc2d482c36117e032e`;
+   result `3e6d0750e772c156b6c4daed948eb6baa640564ce87fe1ffee7414b3fe03c8bc`;
+   summary `3095b84ee93edbbb53e8c01ae635591ea1a5400945f34054563216e618070421`.
+   Attempt-1 and attempt-2 terminal artifacts and failure records are also
+   preserved beside the final evidence.
+9. **Primary result:** B1/control aggregate loss `0.987744`, fit `1.041601`,
+   archive/single `7.842030`; B2/control loss `0.996393`, fit `0.690735`,
+   archive/single `5.905469`; combined/control loss `0.979638`, general loss
+   `0.984542`, sports cold `0.977466`, sports held `0.976667`, worst cell
+   `1.008081`, fit `0.557873`, predict `0.753550`, archive `0.708856`, and
+   RSS `0.976841`. Combined/single archive was `5.534767` and RSS `1.069201`.
+10. **Gates:** source, grid, fingerprint, runtime, prediction, probability,
+    serialization, fitted-metadata, OOB, warning, RSS, and quality gates all
+    passed in attempt 3. B1 and B2 failed both their arm-specific value and
+    common archive/single checks. Combined passed every quality/value and
+    other resource check but failed archive/single (`5.534767` observed;
+    `4.0` maximum). No candidate survived all final checks.
+11. **Limitations/non-claims:** all data are spent; the general slice has four
+    medium cells and the sports slice has only three seasons; RSS covers the
+    sequential worker process because B3 child workers do not exist; the
+    prototype is private; the result neither validates a general ensemble
+    default nor authorizes tuning on these outcomes. Attempt 1 ended before
+    model fit on sandbox-denied process-tree RSS. Attempt 2 discarded one
+    completed, uninspected row after a group-bootstrap safe-load defect; the
+    corrected loader received a new source and contract identity.
+12. **Terminal decision:**
+    `close_b1_b2_preserve_existing_opt_in`. Retain no private arm; preserve
+    the existing shipped opt-in; do not proceed to B3, a public/default
+    surface, fresh confirmation, TabArena, or lockbox access. Any successor
+    requires a distinct mechanism and a new prospective contract.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
@@ -596,7 +667,9 @@ evidence.
 - the tested cross-feature and categorical-combination donor routes;
 - the tested standalone calibration candidates;
 - T5 composite confirmation as originally registered;
-- both Panel 3 candidates; and
+- both Panel 3 candidates;
+- the private B1/B2 ensemble-v3 attribution (no arm cleared every M3b gate);
+  and
 - any CTR23 lockbox run without a newly powered candidate.
 
 ## Verification and release log

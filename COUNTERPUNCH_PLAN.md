@@ -3,13 +3,14 @@
 > **Status:** draft reviewed 2026-07-19; reframed 2026-07-20 to the
 > strongest-library goal; revised 2026-07-20 to mechanism-led sequencing;
 > Wave 1 authorized by the owner 2026-07-20 and completed 2026-07-20;
-> G-M published 2026-07-20.
+> G-M published 2026-07-20; Wave 2 completed and closed 2026-07-20.
 > Wave 1 authorization covers the H1 audit and confirmed fixes, M1 plus the
 > Q0 profiling half, M3a, and construction of M5/M6 infrastructure. It does
 > not authorize a public prototype, default change, fresh confirmation
 > access, or sealed-lockbox access.
-> G-M closes Q and the current DarkoFit ensemble route, and funds only B0 plus
-> one private sequential B1/B2 mechanism-attribution prototype. B3
+> G-M closed Q and the shipped DarkoFit ensemble route, then funded only B0
+> plus one private sequential B1/B2 mechanism-attribution prototype. M3b
+> closed that prototype after no arm cleared every frozen gate. B3
 > parallelism, public surfaces, default changes, M2, and fresh access remain
 > unauthorized.
 
@@ -126,6 +127,19 @@ This is not authorization to retune the failed bootstrap arms or to ship an
 ensemble surface. The binding record is
 [`benchmarks/wave1_gm_decision.md`](benchmarks/wave1_gm_decision.md).
 
+**Wave 2 outcome (2026-07-20):** B0 and the private sequential B1/B2
+prototype completed, including row- and group-safe without-replacement
+sampling, named member-policy resolution with explicit-user precedence,
+OOB metadata, failure behavior, and safe serialization. In the frozen M3b
+attribution all three candidates earned timing, but none cleared every final
+gate. The combined arm improved aggregate loss to `0.979638` and fit time to
+`0.557873` of the frozen control while keeping peak RSS at `1.069201` of a
+single model; its archive remained `5.534767` times a single model against
+the frozen `4.0` ceiling. The binding disposition therefore closes B1/B2,
+preserves the existing opt-in, and authorizes no B3, public/default change,
+fresh confirmation, TabArena, or lockbox access. See
+[`benchmarks/m3b_ensemble_v3_r3_result.md`](benchmarks/m3b_ensemble_v3_r3_result.md).
+
 ## 2. Verified evidence and open questions
 
 | Topic | Current evidence | Status |
@@ -134,6 +148,7 @@ ensemble surface. The binding record is
 | Basketball speed | On that panel ChimeraBoost fit 2.77× faster and predicted 1.42× faster. On the creator's overlap-permitting folds, DarkoFit's single-model median wall time was 24.70% lower. | Current but workload-specific. |
 | ChimeraBoost ensemble | M3a ensemble8/single was `0.950230` on player-disjoint sports RMSE with 9/9 cell wins, `0.977935` on cold players, and `0.947797` on six selected general medium cells with 6/6 wins. | Current Tier-E donor signal at `f14be60`; three spent sports seasons and a small general slice, not a default claim. |
 | DarkoFit ensembles | M3a group8/single was `1.025482` on player-disjoint sports RMSE; row5, row8, and group5 were also worse. Row8/single was `1.019556` on the selected general slice. | Current Tier-E closure of the shipped bootstrap/member policy; no repeat timing. |
+| Private ensemble-v3 attribution | M3b combined/control was `0.979638` for aggregate loss and `0.557873` for fit time, but combined/single archive bytes were `5.534767` against the frozen `4.0` ceiling. B1 and B2 also failed their value and archive/single checks. | Current spent private evidence; B1/B2 closed with no retained arm and no shipping authorization. |
 | Quantization on sports | ChimeraBoost's default quantization mildly worsened its player-disjoint sports quality. M3a float/quantized ratios were `1.001949` for singles and `1.002315` for ensembles. | Current only for this small, noisy workload. |
 | Large-n engine comparison | M1 DarkoFit/current-quantized-Chimera fit ratio was `0.844722`; Chimera quantized/float was `0.903595`, missing the frozen `0.90` donor bar. | Current Tier-E matched-capacity result; Q closed under its conjunctive rule. |
 | Broad 13-dataset comparison | The historical DarkoFit/ChimeraBoost RMSE ratio was 1.0125 and training-time ratio was 0.9093 against ChimeraBoost 0.14.1. | Historically valid for its pins; stale for 0.18. |
@@ -154,7 +169,7 @@ been refreshed.
 | H — hygiene | Complete for Wave 1 | Tier-E engineering | Clean documentation checkpoint | Published H1 audit and tested fixes | Reopen only for a newly confirmed gap |
 | M — measurements | Wave 1 complete | Tier-E descriptive | Exact pins, new dated protocols, exclusive machine access | M1, Q0, M3a, M5, M6, testing-log entries, and G-M published; M2 remains milestone cadence | Published once; no rerun to improve a result |
 | Q — quantization | Closed at G-M | Q0 engineering, Q1/Q2 Tier-E opt-in, Q3 Tier-D automatic | Re-entry requires a new material donor result or distinct DarkoFit-specific causal case | [`benchmarks/wave1_gm_decision.md`](benchmarks/wave1_gm_decision.md) | Do not relax M1's `0.90` near miss |
-| B — ensemble v3 | Funded narrowly at G-M | Private B0/B1/B2 attribution; Tier-E only after a survivor; Tier-D for any changed default | New candidate identity isolating without-replacement sampling and named member policy | B0 contract plus private sequential attribution, then M3b only if correct | Current bootstrap arms stay closed; stop if no robust Pareto improvement |
+| B — ensemble v3 | Closed at M3b | Spent private B0/B1/B2 attribution; Tier-E only after a survivor; Tier-D for any changed default | Re-entry requires a distinct mechanism and new contract identity | [`benchmarks/m3b_ensemble_v3_r3_result.md`](benchmarks/m3b_ensemble_v3_r3_result.md) | No arm cleared every frozen final gate; preserve existing opt-in and do not continue B3 |
 | X — cross features | Rolling backlog via Track I | Tier-E explicit research opt-in; Tier-D for automatic engagement | Promotion from the backlog; X0 then defines separate force and guarded semantics plus full product obligations | Narrow opt-in result or deferral | No general safety claim from the three-task spent result |
 | S — sports speed | Conditional successor to a failed candidate | Tier-D if automatic | One justified, preregistered group-safe candidate | Spent screen, then fresh result only if powered | Close automatic route on a failed spent screen |
 | P — harm-bounded composite | New campaign only | Tier-D | New exact candidate and new protocol identity | Published power GO/NO-GO; fresh result only after GO and owner authorization | No fresh access below the preregistered 80% power bar |
@@ -560,8 +575,10 @@ M3a.
 
 ### B0 — ensemble compatibility and sampling design
 
-Specify a new explicit ensemble-v3 mode without changing the current
-full-size bootstrap semantics. The design must cover:
+Completed 2026-07-20 as the private contract in
+[`benchmarks/b0_ensemble_v3_contract.md`](benchmarks/b0_ensemble_v3_contract.md),
+without changing the current full-size bootstrap semantics. The design
+covers:
 
 - row subsampling without replacement for ordinary tabular data;
 - group subsampling without replacement for entity/player workloads, with
@@ -685,10 +702,11 @@ successful Q1/Q2 opt-in may remain.
 ## 8. Track B — explicit ensemble-v3 mode
 
 B0 plus one private sequential B1/B2 attribution prototype were funded at
-G-M on 2026-07-20. B3, a public option, and any default remain conditional.
-The funded work adds a new candidate identity without silently changing the
-meaning of existing `n_ensembles` configurations. The current bootstrap
-member policy remains closed as a quality route.
+G-M on 2026-07-20 and completed the same day. The work used a new private
+candidate identity without silently changing the meaning of existing
+`n_ensembles` configurations. M3b retained no arm, so B3, a public option,
+and any default are closed rather than merely conditional. The current
+bootstrap member policy also remains closed as a quality route.
 
 1. **B1 — sampling:** add explicit row and group subsampling without
    replacement, with a declared fraction. Preserve the existing bootstrap
@@ -725,6 +743,35 @@ M3b may nominate a documented opt-in recipe or explicit v3 preset. A general
 default change requires a separate Tier-D campaign across numeric,
 categorical, classification, weighted, and relevant grouped workloads. The
 T10 sports automatic-ensemble refutation remains in force.
+
+### M3b disposition — closed 2026-07-20
+
+The prospective campaign preserved three immutable attempt identities:
+
+- Attempt 1 terminated before model fit with zero completed rows when the
+  inherited process-tree RSS sampler hit a macOS sandbox denial. Its terminal
+  artifact and failure record are preserved; no model outcome was opened.
+- Attempt 2 replaced only the RSS measurement with self-worker-process RSS,
+  then terminated during safe reload of the first group-bootstrap control.
+  One completed row was discarded and not published or inspected. The
+  failure exposed a real loader defect: group bootstrap can legitimately
+  sample a row count different from the input row count. The implementation
+  fix and uneven-group regression test landed under a new source pin.
+- Attempt 3 bound both failures, the corrected source, the unchanged cases,
+  arms, ordering, and decision rules. It completed the 65-row quality grid,
+  frozen gate, and 130-row repeated-timing grid. All three candidates were
+  quality-eligible, but none survived the final rules.
+
+The binding attempt-3 result is
+[`benchmarks/m3b_ensemble_v3_r3_result.json`](benchmarks/m3b_ensemble_v3_r3_result.json),
+with the human-readable record in
+[`benchmarks/m3b_ensemble_v3_r3_result.md`](benchmarks/m3b_ensemble_v3_r3_result.md).
+B1 sampling failed both its value and archive/single checks; B2 member policy
+failed both; the combined arm passed its quality/value, fit, predict, RSS,
+and archive/control checks but failed the predeclared archive/single limit
+(`5.534767` observed versus `4.0` maximum). The deterministic disposition is
+`close_b1_b2_preserve_existing_opt_in`: no retained private arm, B3, public
+or default surface, fresh confirmation, TabArena, or lockbox access.
 
 ---
 
@@ -1005,8 +1052,8 @@ These are planning ranges, not delivery promises.
 | --- | --- | --- | --- |
 | 0 | Owner reviews this plan; H0 documentation checkpoint | Hours | Authorize or revise Gate M |
 | 1 | **Complete:** H1 audit; M1/Q0; M3a quality-first; M5 baseline; M6 infrastructure/backtest; G-M | Completed 2026-07-20 | Q and current ensembles closed; one private B0/B1/B2 mechanism prototype funded |
-| 2 | Funded B0 contract plus the smallest private sequential B1/B2 sampling/member-policy attribution prototype | Roughly 2–5 engineering days | Continue only an attributed quality mechanism |
-| 3 | Surviving B implementation and frozen M3b; M2 broad milestone once a mechanism survives M5 invariants, spent development evidence, and sports. Q1 only after an authorized Q re-entry | Roughly 1–3 weeks depending on survivors | Ship explicit opt-ins, defer, or close |
+| 2 | **Complete:** B0 contract, private sequential B1/B2 prototype and invariants, prospectively frozen M3b attribution | Completed 2026-07-20 | No arm cleared every final gate; close B1/B2 and preserve the existing opt-in |
+| 3 | A future promoted Track I mechanism; M2 only once a mechanism survives M5 invariants, eligible spent development evidence, and sports. Q1 only after an authorized Q re-entry | Separately estimated after promotion | Ship an explicit opt-in, defer, or close |
 | 4 | Q3, S, or P-next Tier-D campaigns | Separately estimated and power-gated | One fresh campaign per qualified automatic policy |
 | Later | Track I backlog (C and X mechanisms included), M4 drift check, and Z cleanup | Independent backlog | No coupling to unfinished speculative tracks |
 
