@@ -1,0 +1,115 @@
+{
+  "case_fingerprints": {
+    "general_categorical_multiclass": {
+      "case_sha256": "6cbed5568493125396e514ee958931ec4b239ec0caeaf11ce35d0984297b5684",
+      "dataset_sha256": "860f5ea4ef2aa75d020e5a978c1ecda583b6835b3b30f8b8dd42ae2edf5e91d3",
+      "split_sha256": "66f15ba2e7c18a3501cd709a951b35c9d7c2de71eb107dd66ae9964dcdf55218",
+      "weight_sha256": "c4687224c205fc8d8ae063f30632bb1d4c23917b7a27090186131fa07cdc9c08"
+    },
+    "general_categorical_reg": {
+      "case_sha256": "df4f83e0f53415aa2a3fd89ac4a68562c4ff62f107db34469224559d3eb8ce82",
+      "dataset_sha256": "6a03d593411cb53da6b398999047453fefea2dc02ea146dfffa17b5cf0450439",
+      "split_sha256": "984b0e56f7a78ab0e049a3fa3704c7e0bdf67b10558b265f48a010f91eb2c00d",
+      "weight_sha256": "3b750906252e8026ff8fac3bc860c71a328ac84c0a4440df2ae57b773b689a21"
+    },
+    "general_friedman_numeric": {
+      "case_sha256": "0369aa4e3418043609ae82ba9a6ab915815be6cc2e670d49e30e29c18cba1589",
+      "dataset_sha256": "1559c497096dd7421e971f02a3756c1ff766fda062a162f5c90cbc99d4cec9b6",
+      "split_sha256": "2b82a6af55ad4e79c44757f793662596c31e77dafea7d831d88cb637e942aee5",
+      "weight_sha256": "378a14dab00abd23e9ae42c352bf6044ec6e41d5246c594cde235f4b5295247e"
+    },
+    "general_numeric_binary": {
+      "case_sha256": "e2c828dcf3d18c4e9220ebf65854d3cb09af1f067886fb6f31f096f6f17144a9",
+      "dataset_sha256": "cfff46e19209ebc91052e4ac39b8ba99ee07da27aea41e159cb9fd29e02e1b60",
+      "split_sha256": "fddf360db0a6bf9ba0217e12f5666fdc3979112f79c60843f821ca03a6f39383",
+      "weight_sha256": "beeb96737971792bb64607e51cc2e1215aace9df643924cba615b9ca93373063"
+    },
+    "sports_2014_box_plus_minus": {
+      "case_sha256": "5ef55ab6dd5e69bb10627d45496def73f1a78f54c19024f4a552cdfba87f4880",
+      "dataset_sha256": "6ea65e3375612cbf824b8b47a956015e14c557b33b2c0be479e6c46c77634450",
+      "split_sha256": "016583436255659ec452ce44bbc45ecb18a242a44511cf53d8a2bfa77df104d5",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2014_game_score": {
+      "case_sha256": "e35bc194aa36dcbbaeed9d3db2ec982c1bd3a7b4ca19faf3e05134e5232a450c",
+      "dataset_sha256": "93ff2c8390d6dc967b9d06210650ec41ae1e17669268318e6ae1c45dadeab822",
+      "split_sha256": "aede51b29f865a67070eb82ec66f182e0e99d40368b14bc9f23fb15726aafeda",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2014_minutes_per_game": {
+      "case_sha256": "c42b6132305c228e05a825815e506e638994022d69ce6314dd11dd5c30a6caa2",
+      "dataset_sha256": "ee0e7943a6adf9e04f70bf5154d154d1790e745ea6a24d994d971feec772545d",
+      "split_sha256": "148e4a11ae70a0361a38574b54c336cedf16d03d872b0105cb8739fb7b765bcf",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2015_box_plus_minus": {
+      "case_sha256": "a4fd0f5dc35da2a5f6a3523b0ba8cbfff669ccf682330683fb8b6f0d13f0f129",
+      "dataset_sha256": "1c2ed4dab3e978c4f0e2c3d11a72da6180e0b5948fb1ddd48f0c62d839abd3ba",
+      "split_sha256": "7e06b911aaf699361400a73dab73286e3924e6f1c93dfaf111135caad77c61a7",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2015_game_score": {
+      "case_sha256": "e83acf48784293b507fd1f5b44b048940302b578e3efafbace0111e26224085e",
+      "dataset_sha256": "15ec3a7c5cc56c5e9ffeae3763b21e270ae0f1afd3c72f87806b74c54b4120c9",
+      "split_sha256": "6a882c06042173e9743dd2e68e48dd9c493cf0ba0e51ff4e41f416f5b4022599",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2015_minutes_per_game": {
+      "case_sha256": "8a827d3f9beee6fb225a42da5b0458154b9be29c8861506cf802225eb9484fa4",
+      "dataset_sha256": "ab7b59e8e0d9ad1460928b1374a58d14719c08b56dacff38d53973711f47c43a",
+      "split_sha256": "f0af2b701ab5058f74b8c4529467c222f20044d8dbc8229d71ec215fd50f9c00",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2016_box_plus_minus": {
+      "case_sha256": "545c2dd15de872e023a848191ed851c4d9886ab355c9ac1dc986598195ca1195",
+      "dataset_sha256": "83e84a46f21320399343da8a72d15aea68b8825170e0c237140d3ab4fe22c07b",
+      "split_sha256": "d58edfc33e53e9a36b028e3e02a7f8aaa20d9231b1dec5f9c7bf4e28f33ca574",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2016_game_score": {
+      "case_sha256": "1d9edd586ad426fc4ef4ec30f34da8f8b10761c888e499c2c061558bcb778a6d",
+      "dataset_sha256": "e11d73e3c304c90afd95ba99bff5992ed076cb7c6e6e7200a35486e07786e3db",
+      "split_sha256": "8c59397eb0bbbd42381e4057ea01541e54ff69f4457cd504f17c3fd7af6c9285",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2016_minutes_per_game": {
+      "case_sha256": "34f0081c4dd3ba8aa979c6e43a39eba1540e70658e0875e84f5212c5bf89f918",
+      "dataset_sha256": "74cf5edcecd31047d90a78a3b53e842c5bfea6de48b7ed64b75f8fb592eac9b8",
+      "split_sha256": "7c5d8edaae599396ed6b89fef1dbf75a518f4e0e92c1ad27a4b73459be7aae00",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    }
+  },
+  "completed_rows_discarded": 0,
+  "contract_path": "/Users/konstantinmedvedovsky/code/darkofit/benchmarks/m3b_ensemble_v3_contract.json",
+  "contract_sha256": "bb483cfbf55eb7081cd201750b7165ece8845c0025ebb8f0c4a460f35a2e9a54",
+  "error": {
+    "message": "M3b worker failed for sports_2014_minutes_per_game/single_reference:\nstdout:\n\nstderr:\nTraceback (most recent call last):\n  File \"/Users/konstantinmedvedovsky/code/darkofit/benchmarks/run_m3b_ensemble_v3.py\", line 1114, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"/Users/konstantinmedvedovsky/code/darkofit/benchmarks/run_m3b_ensemble_v3.py\", line 1102, in main\n    result = run_worker(args)\n             ^^^^^^^^^^^^^^^^\n  File \"/Users/konstantinmedvedovsky/code/darkofit/benchmarks/run_m3b_ensemble_v3.py\", line 662, in run_worker\n    with m3a.AggregateRSSSampler() as rss:\n  File \"/Users/konstantinmedvedovsky/code/darkofit/benchmarks/run_m3a_wave1.py\", line 378, in __enter__\n    self._sample_once()\n  File \"/Users/konstantinmedvedovsky/code/darkofit/benchmarks/run_m3a_wave1.py\", line 355, in _sample_once\n    processes = [root, *root.children(recursive=True)]\n                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/anaconda3/envs/darko311/lib/python3.11/site-packages/psutil/__init__.py\", line 278, in wrapper\n    return fun(self, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/anaconda3/envs/darko311/lib/python3.11/site-packages/psutil/__init__.py\", line 906, in children\n    ppid_map = _ppid_map()\n               ^^^^^^^^^^^\n  File \"/opt/anaconda3/envs/darko311/lib/python3.11/site-packages/psutil/__init__.py\", line 258, in _ppid_map\n    for pid in pids():\n               ^^^^^^\n  File \"/opt/anaconda3/envs/darko311/lib/python3.11/site-packages/psutil/__init__.py\", line 1372, in pids\n    ret = sorted(_psplatform.pids())\n                 ^^^^^^^^^^^^^^^^^^\n  File \"/opt/anaconda3/envs/darko311/lib/python3.11/site-packages/psutil/_psosx.py\", line 310, in pids\n    ls = cext.pids()\n         ^^^^^^^^^^^\nPermissionError: [Errno 1] Operation not permitted (originated from sysctl(KERN_PROC_ALL))\n",
+    "type": "RuntimeError"
+  },
+  "failed_at": "2026-07-21T03:55:16.969331+00:00",
+  "harness_state_after": {
+    "head": "6b18d45bf1788a29cf9da04883e54a629b47cc24",
+    "path": "/Users/konstantinmedvedovsky/code/darkofit",
+    "status": ""
+  },
+  "harness_state_before": {
+    "head": "6b18d45bf1788a29cf9da04883e54a629b47cc24",
+    "path": "/Users/konstantinmedvedovsky/code/darkofit",
+    "status": ""
+  },
+  "name": "wave2_m3b_ensemble_v3_20260720",
+  "phase": "quality",
+  "rows": null,
+  "schema_version": 1,
+  "source_state_after": {
+    "head": "210434ff09bf54f8356f1268e990af72dc7a5129",
+    "path": "/private/tmp/darkofit-m3b-source-210434f",
+    "status": ""
+  },
+  "source_state_before": {
+    "head": "210434ff09bf54f8356f1268e990af72dc7a5129",
+    "path": "/private/tmp/darkofit-m3b-source-210434f",
+    "status": ""
+  },
+  "status": "failed"
+}

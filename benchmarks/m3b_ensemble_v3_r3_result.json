@@ -1,0 +1,167 @@
+{
+  "analyzed_at": "2026-07-21T04:23:47.480725+00:00",
+  "b3_authorized": false,
+  "candidates": {
+    "b1_b2_combined": {
+      "checks": {
+        "archive_to_control": true,
+        "archive_to_single": false,
+        "predict": true,
+        "quality_eligible": true,
+        "rss_to_control": true,
+        "rss_to_single": true,
+        "value": true
+      },
+      "quality": {
+        "all_primary_geomean": 0.9796381348298168,
+        "checks": {
+          "all_primary_geomean": true,
+          "general_primary_geomean": true,
+          "sports_cold_geomean": true,
+          "sports_held_geomean": true,
+          "worst_primary": true
+        },
+        "eligible": true,
+        "general_primary_geomean": 0.984541980317881,
+        "per_case_primary": {
+          "general_categorical_multiclass": 0.9822378538075583,
+          "general_categorical_reg": 0.9937108206417764,
+          "general_friedman_numeric": 0.9962507418459746,
+          "general_numeric_binary": 0.9662546833910562,
+          "sports_2014_box_plus_minus": 0.9445796951159658,
+          "sports_2014_game_score": 0.9374815699392591,
+          "sports_2014_minutes_per_game": 1.0080814275011654,
+          "sports_2015_box_plus_minus": 1.0068164008359832,
+          "sports_2015_game_score": 0.9691777741401771,
+          "sports_2015_minutes_per_game": 0.9895757964011207,
+          "sports_2016_box_plus_minus": 0.9658006443930283,
+          "sports_2016_game_score": 0.9881565742649543,
+          "sports_2016_minutes_per_game": 0.9901566647663789
+        },
+        "sports_cold_geomean": 0.9774664954010146,
+        "sports_held_geomean": 0.9766666382784108,
+        "worst_primary": 1.0080814275011654
+      },
+      "resources": {
+        "archive_to_control_geomean": 0.7088561249552482,
+        "fit_to_control_geomean": 0.5578731459062372,
+        "median_archive_to_single": 5.534767493867151,
+        "median_rss_to_single": 1.0692008418904266,
+        "predict_to_control_geomean": 0.7535500349772742,
+        "rss_to_control_geomean": 0.9768406045862468
+      },
+      "survives": false
+    },
+    "b1_sampling": {
+      "checks": {
+        "archive_to_control": true,
+        "archive_to_single": false,
+        "predict": true,
+        "quality_eligible": true,
+        "rss_to_control": true,
+        "rss_to_single": true,
+        "value": false
+      },
+      "quality": {
+        "all_primary_geomean": 0.9877436028152775,
+        "checks": {
+          "all_primary_geomean": true,
+          "general_primary_geomean": true,
+          "sports_cold_geomean": true,
+          "sports_held_geomean": true,
+          "worst_primary": true
+        },
+        "eligible": true,
+        "general_primary_geomean": 0.99514145024526,
+        "per_case_primary": {
+          "general_categorical_multiclass": 0.9821449700680785,
+          "general_categorical_reg": 0.9949599790413706,
+          "general_friedman_numeric": 0.9993163357359232,
+          "general_numeric_binary": 1.0042805890856978,
+          "sports_2014_box_plus_minus": 0.9393035241272084,
+          "sports_2014_game_score": 0.9578895853217484,
+          "sports_2014_minutes_per_game": 1.0275027246231536,
+          "sports_2015_box_plus_minus": 0.9933790044472416,
+          "sports_2015_game_score": 0.9861980916310741,
+          "sports_2015_minutes_per_game": 0.996428705382565,
+          "sports_2016_box_plus_minus": 0.9630477187649271,
+          "sports_2016_game_score": 1.0027365679528748,
+          "sports_2016_minutes_per_game": 0.9967156066288689
+        },
+        "sports_cold_geomean": 0.9844733478231824,
+        "sports_held_geomean": 0.984309065997076,
+        "worst_primary": 1.0275027246231536
+      },
+      "resources": {
+        "archive_to_control_geomean": 1.038160354554124,
+        "fit_to_control_geomean": 1.0416006207636226,
+        "median_archive_to_single": 7.842030006912161,
+        "median_rss_to_single": 1.0850333651096282,
+        "predict_to_control_geomean": 1.01703084833054,
+        "rss_to_control_geomean": 0.9968618547045597
+      },
+      "survives": false
+    },
+    "b2_member_policy": {
+      "checks": {
+        "archive_to_control": true,
+        "archive_to_single": false,
+        "predict": true,
+        "quality_eligible": true,
+        "rss_to_control": true,
+        "rss_to_single": true,
+        "value": false
+      },
+      "quality": {
+        "all_primary_geomean": 0.996392912641239,
+        "checks": {
+          "all_primary_geomean": true,
+          "general_primary_geomean": true,
+          "sports_cold_geomean": true,
+          "sports_held_geomean": true,
+          "worst_primary": true
+        },
+        "eligible": true,
+        "general_primary_geomean": 0.9937985604067794,
+        "per_case_primary": {
+          "general_categorical_multiclass": 1.007588814547446,
+          "general_categorical_reg": 1.0005897406938238,
+          "general_friedman_numeric": 1.0044035656265513,
+          "general_numeric_binary": 0.9632650965590028,
+          "sports_2014_box_plus_minus": 0.9808693054348376,
+          "sports_2014_game_score": 1.0222615912232313,
+          "sports_2014_minutes_per_game": 0.9803092793508925,
+          "sports_2015_box_plus_minus": 1.0073163218700536,
+          "sports_2015_game_score": 1.0135414209359952,
+          "sports_2015_minutes_per_game": 0.9886739819373481,
+          "sports_2016_box_plus_minus": 0.9901411058936886,
+          "sports_2016_game_score": 0.9875272542706355,
+          "sports_2016_minutes_per_game": 1.008235006849327
+        },
+        "sports_cold_geomean": 0.9975481309703467,
+        "sports_held_geomean": 0.9971947506561043,
+        "worst_primary": 1.0222615912232313
+      },
+      "resources": {
+        "archive_to_control_geomean": 0.7512366515699639,
+        "fit_to_control_geomean": 0.6907348606654689,
+        "median_archive_to_single": 5.905469417074394,
+        "median_rss_to_single": 1.0749316201259462,
+        "predict_to_control_geomean": 0.7900136882369315,
+        "rss_to_control_geomean": 0.9937788678003512
+      },
+      "survives": false
+    }
+  },
+  "contract_sha256": "5889e130c7afbadbc8e0f082673eb1a80961b5cb396ca906efbe9a5d32ea8b50",
+  "disposition": "close_b1_b2_preserve_existing_opt_in",
+  "fresh_confirmation_authorized": false,
+  "gate_sha256": "68c40a92a75ed9c8288445bb0fd46677e1bc9178d468ff4c354da02492f2ba68",
+  "name": "wave2_m3b_ensemble_v3_r3_20260720",
+  "public_or_default_change_authorized": false,
+  "quality_artifact_sha256": "5fec218cbc0ec97ef4b3fec10f65a89131a377cf026dbb80da809d6396ead6c3",
+  "retained_private_arms": [],
+  "rss_scope": "self_worker_process",
+  "schema_version": 1,
+  "timing_artifact_sha256": "7048041c7a5edb2ec83c34920a657d6f0286946d216837bc2d482c36117e032e"
+}
