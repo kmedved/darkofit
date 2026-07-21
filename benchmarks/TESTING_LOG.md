@@ -2,7 +2,7 @@
 
 _Canonical navigation ledger. Updated 2026-07-21 after the GitHub-only
 `v0.10.1` release, frozen B-archive v2 close, and outcome-blind Wave 4
-fused-dispatch calibration-v3 gate-repair freeze._
+fused-dispatch calibration-v4 capability/layout freeze._
 
 This file records what DarkoFit has tested, why it was tested, what happened,
 and which artifact controls the conclusion. It is intentionally broader than
@@ -901,6 +901,77 @@ the v3 lineage below._
     follows. V1 and v2 remain immutable pre-outcome predecessors.
 12. **Current decision:** `await_explicit_calibration_v3_authorization`. V3
     records `execution_authorized=false` and `outcomes_opened=false`; no v3
+    authorization, raw, terminal, analysis, threshold, or validation-contract
+    artifact exists. The next mechanism slot remains quality-first regardless
+    of Wave 4's result.
+
+_This execution identity was also superseded before authorization, formal
+worker execution, or outcome access. Its immutable contract remains part of
+the v4 lineage below._
+
+### 26. Wave 4 calibration-v4 pre-outcome capability/layout supersession
+
+1. **Execution boundary:** 2026-07-21; a second independent review occurred
+   before any v3 authorization or formal worker. Correctness repair is commit
+   `1115bdd621d3dfe5612f22f9198c5a995b8eaed6`; prospective v4
+   protocol/freezer is `05a7a0d996fcd797cbc925026f7eba48db4becd5`;
+   immutable v4 contract commit is
+   `6230993635bd20c645457be27225dc6b40de9e7e`.
+2. **Comparator:** unchanged prospective forced-fused control and
+   forced-unfused candidate. No timing comparison occurred.
+3. **Evidence class:** pre-authorization worker-capability, fitted-constructor,
+   weighted-class, and timing-layout repair plus a prospectively frozen,
+   outcome-unopened Tier-E execution identity. This is neither performance
+   evidence nor permission to execute.
+4. **Data:** unchanged 30 synthetic calibration coordinates, generator seed,
+   array fingerprints, and separately frozen six-cell validation design. No
+   raw row exists under v1, v2, v3, or v4.
+5. **Arms:** unchanged lanes, two untimed warmups, seven paired
+   alternating-order repetitions, selector family, threshold candidates, tie
+   rule, acceptance limits, and absent automatic threshold. Both timed lanes
+   now share production's Fortran routing/histogram view; the canonical input
+   and fingerprint are unchanged.
+6. **Resources:** v4 carries forward v3's exact M4 Pro runtime and complete
+   per-thread environment records, including the same absolute cache paths.
+   No runtime or resource limit changed.
+7. **Execution:** only correctness/infrastructure tests and
+   `python benchmarks/freeze_fused_lane_dispatch_calibration_v4.py` ran. The
+   freezer ran in a clean detached worktree at source `05a7a0d` because
+   unrelated documentation edits remained in the main checkout. Each formal
+   parent must now revalidate contract, authorization, clean source, unused
+   raw/terminal paths, and coordinate before issuing a one-use inherited-pipe
+   capability. Workers reject authorization alone before case generation.
+8. **Artifacts:** immutable v3 contract SHA-256
+   `c55ee50fccda5b9ba24e004ae8a27285e4db92e52a9c17a668bc1b417b0fa648`;
+   v4 protocol `828d063b524fe7dd622905dcfb076269c71c75ebe0582b53b820dfd1bbb3eb33`;
+   v4 freezer `db7e842cfd2689d04a9c36f9cbb2acbcb930dfc65f7583255fa7666860e6dae6`;
+   repaired runner `4133a24e749689de393878c1f1845714e6f5b8224fc0e80ff41719147d7ec97e`;
+   repaired public API
+   `80a66c7abe5ec6971bb74850530817a2de08e3232783b77484a88217f519e1fa`;
+   and v4 execution contract
+   `fab0784beee165b4643b817f12076b79ff832d95224469bc244cc15c839e9c7f`.
+9. **Primary result:** none; every speed ratio, regret, crossover threshold,
+   and qualification outcome remains unopened. The focused repaired surface
+   passes 206 tests. V4/v3 freezer plus campaign-contract tests pass 25 tests.
+   The CI-equivalent local library partition passes 1,217 tests with 2 skips
+   and 4 deselections. The complete local suite passes 2,936 tests with 30
+   skips after deselecting only the documented Panel 3 historical-sibling
+   HEAD guard.
+10. **Gates:** parent capability issuance and binding, authorization-only
+    rejection, exact coordinate/environment/source/output binding,
+    production-equivalent routing layout, wrapper/member/booster
+    `oblivious_kernel` consistency, positive-mass-only weighted class safety,
+    actual builder counters, safe serialization, and all prior product
+    invariants pass. All performance and validation outcome gates remain
+    untested.
+11. **Limitations/non-claims:** the inherited capability enforces the formal
+    runner boundary; it is not a security boundary against an operator who can
+    rewrite and execute arbitrary repository code. Safe-NPZ integrity remains
+    structural rather than externally signed. No speed, crossover,
+    portability, quality, sports, release, default, M2/M4, Q, fresh-data, or
+    lockbox claim follows. V1--v3 remain immutable pre-outcome predecessors.
+12. **Current decision:** `await_explicit_calibration_v4_authorization`. V4
+    records `execution_authorized=false` and `outcomes_opened=false`; no v4
     authorization, raw, terminal, analysis, threshold, or validation-contract
     artifact exists. The next mechanism slot remains quality-first regardless
     of Wave 4's result.

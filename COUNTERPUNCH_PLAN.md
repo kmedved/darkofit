@@ -9,10 +9,12 @@
 > pre-implementation v2 observability/override successor was frozen the same
 > day before any campaign outcome access. The staged selector implementation,
 > invariant suite, outcome-blind calibration harness, and create-only
-> calibration execution contract are now frozen. Execution identities v1 and
-> v2 were superseded pre-outcome: first for a host-dependent test expectation,
-> then for pre-authorization execution/provenance gate defects. Corrected
-> execution identity v3 changes no scientific rule.
+> calibration execution contract are now frozen. Execution identities v1--v3
+> were superseded pre-outcome: first for a host-dependent test expectation,
+> then for pre-authorization execution/provenance defects, and finally for a
+> stricter parent-capability gate plus wrapper, weighted-class, and
+> production-layout repairs. Corrected execution identity v4 changes no grid,
+> acceptance rule, or worker environment.
 > Calibration remains explicitly unauthorized and unrun, with no outcome
 > opened.
 > Wave 1 authorization covers the H1 audit and confirmed fixes, M1 plus the
@@ -209,9 +211,22 @@ has SHA-256
 source `691f5a3a110c6d5a0f7a17ed3b6f04e296c97419`, the identical grid, gates,
 and v2 worker environments, and unique v3 formal paths. It records
 `execution_authorized=false` and `outcomes_opened=false`; none of its
+authorization or result artifacts exists. A second independent
+pre-authorization review confirmed the actual-builder-counter repair but
+found that authorization alone still permitted direct partial worker calls;
+it also found wrapper/member/booster `oblivious_kernel` provenance gaps, an
+overstrict zero-mass-class retry rule, and a calibration routing layout that
+did not match production. Repair commit `1115bdd` closes those paths. V3 is
+immutable and unexecuted. The outcome-blind
+[`v4 execution contract`](benchmarks/fused_lane_dispatch_calibration_contract_v4.json)
+has SHA-256
+`fab0784beee165b4643b817f12076b79ff832d95224469bc244cc15c839e9c7f`,
+source `05a7a0d996fcd797cbc925026f7eba48db4becd5`, the identical grid, gates,
+and v3 worker environments, plus unique v4 formal paths. It records
+`execution_authorized=false` and `outcomes_opened=false`; none of its
 authorization or result artifacts exists. The sole possible next Wave 4
 action is explicit owner authorization for execution identity
-`calibration_v3` and this exact contract hash.
+`calibration_v4` and this exact contract hash.
 
 ## 2. Verified evidence and open questions
 
@@ -1107,9 +1122,15 @@ Initial backlog, unrated and unauthorized:
   without execution and produced the gate-repaired, outcome-blind
   [`calibration v3 contract`](benchmarks/fused_lane_dispatch_calibration_contract_v3.json),
   which preserves the grid, gates, and exact v2 worker environments while
-  binding source `691f5a3` and unique v3 paths. Calibration has not run. A
-  separate owner authorization matching execution identity `calibration_v3`
-  is required to
+  binding source `691f5a3` and unique v3 paths. A second pre-authorization
+  review superseded v3 without execution through the outcome-blind
+  [`calibration v4 contract`](benchmarks/fused_lane_dispatch_calibration_contract_v4.json),
+  which adds a parent-issued pipe capability, binds wrapper/member/booster
+  dispatch provenance, restores positive-mass-only weighted-class semantics,
+  and makes calibration routing match production while preserving the grid,
+  gates, and exact worker environments. Calibration has not run. A separate
+  owner authorization matching execution identity `calibration_v4` is
+  required to
   create its one formal raw identity; a
   qualifying threshold would then require a committed threshold, new product
   source pin, and separate validation freeze.
@@ -1218,7 +1239,7 @@ These are planning ranges, not delivery promises.
 | 1 | **Complete:** H1 audit; M1/Q0; M3a quality-first; M5 baseline; M6 infrastructure/backtest; G-M | Completed 2026-07-20 | Q and current ensembles closed; one private B0/B1/B2 mechanism prototype funded |
 | 2 | **Complete:** B0 contract, private sequential B1/B2 prototype and invariants, prospectively frozen M3b attribution | Completed 2026-07-20 | No arm cleared every final gate; close B1/B2 and preserve the existing opt-in |
 | 3 | **Complete:** M3b matched-single readout, B-archive component feasibility, v1 terminal lineage, and corrected frozen v2 campaign | Completed 2026-07-21 | Exact canonical factoring missed `4.0×`; close B-archive with no serializer and nominate fused-lane dispatch |
-| 4 | **In progress, paused at owner gate:** behavior-exact fused-lane dispatch design, staged implementation, invariants, outcome-blind harness, and gate-repaired calibration execution identity v3 are frozen. V1 and v2 were superseded pre-outcome; no scientific rule or v2 worker environment changed. `auto` remains fused; calibration is unauthorized/unrun and validation has no freeze. M2 waits for a survivor; Q1 remains sequenced after the post-dispatch baseline | Frozen v3 checkpoint 2026-07-21; only explicit owner authorization for `calibration_v3` can open calibration | Retain exact dispatch, defer, or close |
+| 4 | **In progress, paused at owner gate:** behavior-exact fused-lane dispatch design, staged implementation, invariants, outcome-blind harness, and gate-repaired calibration execution identity v4 are frozen. V1--v3 were superseded pre-outcome; no grid, acceptance rule, or frozen worker environment changed. `auto` remains fused; calibration is unauthorized/unrun and validation has no freeze. M2 waits for a survivor; Q1 remains sequenced after the post-dispatch baseline | Frozen v4 checkpoint 2026-07-21; only explicit owner authorization for `calibration_v4` can open calibration | Retain exact dispatch, defer, or close |
 | 5 | Q3, S, or P-next Tier-D campaigns | Separately estimated and power-gated | One fresh campaign per qualified automatic policy |
 | Later | Track I backlog (C and X mechanisms included), M4 drift check, and Z cleanup | Independent backlog | No coupling to unfinished speculative tracks |
 
