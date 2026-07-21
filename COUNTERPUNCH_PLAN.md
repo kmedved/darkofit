@@ -773,6 +773,15 @@ and archive/control checks but failed the predeclared archive/single limit
 `close_b1_b2_preserve_existing_opt_in`: no retained private arm, B3, public
 or default surface, fresh confirmation, TabArena, or lockbox access.
 
+A post-close contract audit found two implementation gaps outside the frozen
+result: bootstrap classification had enforced full class coverage only on the
+training draw, and private safe-load could validate only the syntax of index
+digests. The follow-up fix requires every class, with positive mass when
+weighted, on both training and OOB sides and binds private archive digests to
+stored index payloads. Public ensemble archives remain format 1. These are
+post-campaign correctness fixes; they neither amend attempt 3's source pin nor
+reopen its outcome or disposition.
+
 ---
 
 ## 9. Track X — cross-feature research opt-ins
@@ -941,6 +950,19 @@ Initial backlog, unrated and unauthorized:
   potential Track B interaction.
 - CatBoost's `l2_leaf_reg` and samples-per-feature depth heuristics:
   already Track C candidates via the T7b attribution.
+- **B-archive: shared-component ensemble serialization** (internal, from
+  Wave 2 M3b): the r3 combined B1/B2 arm improved on the single reference in
+  all 13 development cases (pooled primary geomean `0.9655` versus single,
+  recomputable from the immutable r3 quality artifact) and failed only the
+  prospectively frozen `median_archive_to_single_at_most: 4.0` gate, at
+  `5.53×`. A behavior-exact archive mechanism may deduplicate only the
+  verified-equivalent binner and feature-map payload for
+  `numeric_target_free` ensembles; categorical, ordinal, and member-local
+  preprocessing stays complete per member. This attacks the failed gate
+  without touching sampling or member policy. Advancing requires a new
+  campaign identity (r3 stays immutable). The M3b sports view was already
+  cold-player held-team and player-disjoint; the seeded, overlap-exposed
+  75/25 split applied only to the general weighted view.
 - **Behavior-exact fused-lane dispatch** (internal, from Q0): the
   forced-unfused reference was behavior-exact and faster than the fused
   production lane on the current 14-CPU machine (paired fit ratios `0.901`
