@@ -1,0 +1,22 @@
+{
+  "authoritative_result": {
+    "bytes": 6986,
+    "path": "benchmarks/barchive_v2_result.json",
+    "sha256": "8773d152b81bc5236e66f5cdfc1deb60d5059e7d01582a7a6721f3128ce9ff7b"
+  },
+  "correction": {
+    "correct_heading": "# Wave 3 B-archive v2 result",
+    "incorrect_heading": "# Wave 3 B-archive v1 result",
+    "scope": "markdown_heading_only"
+  },
+  "disposition_changed": false,
+  "frozen_evidence_changed": false,
+  "name": "barchive_v2_result_heading_erratum_20260721",
+  "original_note": {
+    "bytes": 640,
+    "path": "benchmarks/barchive_v2_result.md",
+    "sha256": "2a3a0e9529ac70ec97ff8624f06fef6fef03f3036e847c00f8292200431e7e6f"
+  },
+  "result_identity": "wave3_barchive_v2_20260721",
+  "schema_version": 1
+}
