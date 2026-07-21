@@ -22,26 +22,31 @@ GATE = BENCHMARKS / "m3b_ensemble_v3_r3_gate.json"
 TIMING = BENCHMARKS / "m3b_ensemble_v3_r3_timing.json"
 RESULT = BENCHMARKS / "m3b_ensemble_v3_r3_result.json"
 NOTE = BENCHMARKS / "m3b_ensemble_v3_r3_result.md"
-HISTORICAL_SOURCE_PATHS = frozenset({
-    "darkofit/sklearn_api.py",
-    "tests/test_private_ensemble_v3.py",
-})
+HISTORICAL_MODEL_PATHS = frozenset(
+    {
+        "darkofit/sklearn_api.py",
+        "tests/test_private_ensemble_v3.py",
+    }
+)
 
 
 @pytest.fixture(autouse=True)
 def _bind_closed_campaign_to_its_historical_source(monkeypatch):
-    """Validate closed M3b inputs from its pin, not the evolving worktree."""
-    original = runner._base._bound_file_ok
+    """Validate closed M3b inputs from Git, not the evolving worktree."""
+    contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
 
     def historical_bound_file_ok(record):
         relative = record.get("path")
-        if relative not in HISTORICAL_SOURCE_PATHS:
-            return original(record)
+        commit = (
+            runner.MODEL_SOURCE_HEAD
+            if relative in HISTORICAL_MODEL_PATHS
+            else contract["sources"]["harness"]
+        )
         completed = subprocess.run(
             [
                 "git",
                 "show",
-                f"{runner.MODEL_SOURCE_HEAD}:{relative}",
+                f"{commit}:{relative}",
             ],
             cwd=ROOT,
             check=False,

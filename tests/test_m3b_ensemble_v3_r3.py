@@ -4,17 +4,54 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
 
 from benchmarks import analyze_m3b_ensemble_v3_r3 as analyzer
-from benchmarks import freeze_m3b_ensemble_v3_r3 as freezer
 from benchmarks import run_m3b_ensemble_v3_r2 as attempt2_runner
 from benchmarks import run_m3b_ensemble_v3_r3 as runner
 
 
 ROOT = Path(__file__).resolve().parents[1]
+CONTRACT = json.loads(runner.CONTRACT_PATH.read_text(encoding="utf-8"))
+PINNED_SOURCE_PATHS = frozenset(
+    {"darkofit/sklearn_api.py", "tests/test_private_ensemble_v3.py"}
+)
+
+
+@pytest.fixture(autouse=True)
+def _validate_closed_campaign_from_its_historical_commits(monkeypatch):
+    """Closed evidence binds Git objects, not the evolving worktree."""
+
+    def historical_bound_file_ok(record):
+        relative = record.get("path")
+        commit = (
+            runner.MODEL_SOURCE_HEAD
+            if relative in PINNED_SOURCE_PATHS
+            else CONTRACT["sources"]["harness"]
+        )
+        completed = subprocess.run(
+            ["git", "show", f"{commit}:{relative}"],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+        )
+        payload = completed.stdout
+        expected_bytes = record.get("bytes")
+        expected_digest = record.get("sha256")
+        return (
+            completed.returncode == 0
+            and not isinstance(expected_bytes, bool)
+            and isinstance(expected_bytes, int)
+            and expected_bytes == len(payload)
+            and isinstance(expected_digest, str)
+            and len(expected_digest) == 64
+            and expected_digest == hashlib.sha256(payload).hexdigest()
+        )
+
+    monkeypatch.setattr(runner._base, "_bound_file_ok", historical_bound_file_ok)
 
 
 def _sha256(path: Path) -> str:
@@ -56,18 +93,20 @@ def test_m3b_attempt2_failure_record_is_bound_and_uninspected():
 
 def test_m3b_r3_uses_corrected_source_pin():
     assert runner.MODEL_SOURCE_HEAD == "6d063f98128d457f8b8bbf610c7aec46e675d844"
-    assert (
-        runner._git(
-            ROOT,
-            "diff",
-            "--name-only",
-            runner.MODEL_SOURCE_HEAD,
-            "--",
-            "darkofit/sklearn_api.py",
-            "tests/test_private_ensemble_v3.py",
+    for relative in PINNED_SOURCE_PATHS:
+        record = next(
+            value
+            for value in CONTRACT["bound_files"].values()
+            if value["path"] == relative
         )
-        == ""
-    )
+        payload = subprocess.run(
+            ["git", "show", f"{runner.MODEL_SOURCE_HEAD}:{relative}"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+        ).stdout
+        assert len(payload) == record["bytes"]
+        assert hashlib.sha256(payload).hexdigest() == record["sha256"]
 
 
 def test_m3b_r3_analyzer_routes_to_attempt3_runner():
@@ -77,7 +116,7 @@ def test_m3b_r3_analyzer_routes_to_attempt3_runner():
 
 
 def test_m3b_r3_freezer_binds_both_terminal_predecessors():
-    contract = freezer.build_contract()
+    contract = CONTRACT
     attempt2 = json.loads(
         (ROOT / "benchmarks" / "m3b_ensemble_v3_r2_contract.json").read_text(
             encoding="utf-8"
