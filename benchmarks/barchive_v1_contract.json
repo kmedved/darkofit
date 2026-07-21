@@ -1,0 +1,605 @@
+{
+  "bound_files": {
+    "analyzer": {
+      "bytes": 24716,
+      "path": "benchmarks/analyze_barchive_v1.py",
+      "sha256": "f1cb8da0b30bb695174a843057b0aad31984bad9830aa9e039def4e70b6d62f4"
+    },
+    "component_analyzer": {
+      "bytes": 17655,
+      "path": "benchmarks/analyze_ensemble_archive_components.py",
+      "sha256": "dccf90115970584d99ee57cb0a209e510c1327117f0e826205c9ed451fa496c4"
+    },
+    "freezer": {
+      "bytes": 6282,
+      "path": "benchmarks/freeze_barchive_v1.py",
+      "sha256": "17f4388c1a26ffd1ce20b93570e6d33508729975c1db59552689e0319057a624"
+    },
+    "m3a_contract": {
+      "bytes": 6028,
+      "path": "benchmarks/m3a_wave1_contract.json",
+      "sha256": "930d405e75947747892337851d2a767a0a789069ad86eaf726d7396fb0a435b8"
+    },
+    "m3a_runner": {
+      "bytes": 42235,
+      "path": "benchmarks/run_m3a_wave1.py",
+      "sha256": "f971b28a83d6a14291141dbc0a657ab28f95fb31e9459a77bd72a42c942c8cd7"
+    },
+    "m3b_r3_contract": {
+      "bytes": 27817,
+      "path": "benchmarks/m3b_ensemble_v3_r3_contract.json",
+      "sha256": "5889e130c7afbadbc8e0f082673eb1a80961b5cb396ca906efbe9a5d32ea8b50"
+    },
+    "m3b_r3_quality": {
+      "bytes": 870409,
+      "path": "benchmarks/m3b_ensemble_v3_r3_quality.json",
+      "sha256": "5fec218cbc0ec97ef4b3fec10f65a89131a377cf026dbb80da809d6396ead6c3"
+    },
+    "m3b_r3_result": {
+      "bytes": 6735,
+      "path": "benchmarks/m3b_ensemble_v3_r3_result.json",
+      "sha256": "3e6d0750e772c156b6c4daed948eb6baa640564ce87fe1ffee7414b3fe03c8bc"
+    },
+    "m3b_runner": {
+      "bytes": 39590,
+      "path": "benchmarks/run_m3b_ensemble_v3.py",
+      "sha256": "c161288619ff78e24e46a134925c42320c2980b2246d63e3743abc32f6777258"
+    },
+    "m3b_vs_single_readout": {
+      "bytes": 5261,
+      "path": "benchmarks/m3b_ensemble_v3_r3_vs_single_readout_20260721.json",
+      "sha256": "99d693063c46a0708eb45a704af0b46611fa8ed89dbe4d6469b47c7cd4a27c64"
+    },
+    "m6_adapter": {
+      "bytes": 14095,
+      "path": "benchmarks/benchmark_adapters.py",
+      "sha256": "21b42e904b421405fc5a63d9e3f5711b7283abfcfd1fef4b60eb4aa1015675a8"
+    },
+    "paired_execution": {
+      "bytes": 30813,
+      "path": "benchmarks/paired_evidence_contract.py",
+      "sha256": "63c63d4f0b7c6f649b7155325ee064faf6e5981094ed3cb79ac91b6b8fefedf9"
+    },
+    "private_ensemble_tests": {
+      "bytes": 26409,
+      "path": "tests/test_private_ensemble_v3.py",
+      "sha256": "a36ca21bb3437bc54f7f6db4fe5212949dda8ad520d59d74207f925263c0ffa3"
+    },
+    "protocol": {
+      "bytes": 5058,
+      "path": "benchmarks/barchive_v1_protocol.md",
+      "sha256": "85feb7e2e804d666eddea412a0d80e502d099cfbc19ec2559af4e4f7f75c0c22"
+    },
+    "runner": {
+      "bytes": 27348,
+      "path": "benchmarks/run_barchive_v1.py",
+      "sha256": "a9885c319a69c7dd1cd839d51de71974f1f4620bf0e49d8022eb72bb1962f729"
+    },
+    "serialization": {
+      "bytes": 94789,
+      "path": "darkofit/serialization.py",
+      "sha256": "3fa7b56cee19cb0e4eab91de0674395d28ddb5417fa030dfbb276f2b8eddff24"
+    },
+    "sklearn_api": {
+      "bytes": 370674,
+      "path": "darkofit/sklearn_api.py",
+      "sha256": "14a48bb38b7a82488619b0dc6aea5f967f19588e1bf016b4ea555e75f707edc8"
+    },
+    "sports_manifest": {
+      "bytes": 147286,
+      "path": "benchmarks/basketball_sports_panel_v2_manifest.json",
+      "sha256": "2e5a16c22b9ca8a9f92d263a28204b2d5bf972a6e43ce694c4ad3a95c727c0af"
+    },
+    "tests": {
+      "bytes": 13387,
+      "path": "tests/test_barchive_v1.py",
+      "sha256": "6dbc4cad2570460ef7119f6a80a8852c32d0d229cb98ddcf5c9a1bea6ad76f75"
+    }
+  },
+  "case_fingerprints": {
+    "general_categorical_multiclass": {
+      "case_sha256": "6cbed5568493125396e514ee958931ec4b239ec0caeaf11ce35d0984297b5684",
+      "dataset_sha256": "860f5ea4ef2aa75d020e5a978c1ecda583b6835b3b30f8b8dd42ae2edf5e91d3",
+      "split_sha256": "66f15ba2e7c18a3501cd709a951b35c9d7c2de71eb107dd66ae9964dcdf55218",
+      "weight_sha256": "c4687224c205fc8d8ae063f30632bb1d4c23917b7a27090186131fa07cdc9c08"
+    },
+    "general_categorical_reg": {
+      "case_sha256": "df4f83e0f53415aa2a3fd89ac4a68562c4ff62f107db34469224559d3eb8ce82",
+      "dataset_sha256": "6a03d593411cb53da6b398999047453fefea2dc02ea146dfffa17b5cf0450439",
+      "split_sha256": "984b0e56f7a78ab0e049a3fa3704c7e0bdf67b10558b265f48a010f91eb2c00d",
+      "weight_sha256": "3b750906252e8026ff8fac3bc860c71a328ac84c0a4440df2ae57b773b689a21"
+    },
+    "general_friedman_numeric": {
+      "case_sha256": "0369aa4e3418043609ae82ba9a6ab915815be6cc2e670d49e30e29c18cba1589",
+      "dataset_sha256": "1559c497096dd7421e971f02a3756c1ff766fda062a162f5c90cbc99d4cec9b6",
+      "split_sha256": "2b82a6af55ad4e79c44757f793662596c31e77dafea7d831d88cb637e942aee5",
+      "weight_sha256": "378a14dab00abd23e9ae42c352bf6044ec6e41d5246c594cde235f4b5295247e"
+    },
+    "general_numeric_binary": {
+      "case_sha256": "e2c828dcf3d18c4e9220ebf65854d3cb09af1f067886fb6f31f096f6f17144a9",
+      "dataset_sha256": "cfff46e19209ebc91052e4ac39b8ba99ee07da27aea41e159cb9fd29e02e1b60",
+      "split_sha256": "fddf360db0a6bf9ba0217e12f5666fdc3979112f79c60843f821ca03a6f39383",
+      "weight_sha256": "beeb96737971792bb64607e51cc2e1215aace9df643924cba615b9ca93373063"
+    },
+    "sports_2014_box_plus_minus": {
+      "case_sha256": "5ef55ab6dd5e69bb10627d45496def73f1a78f54c19024f4a552cdfba87f4880",
+      "dataset_sha256": "6ea65e3375612cbf824b8b47a956015e14c557b33b2c0be479e6c46c77634450",
+      "split_sha256": "016583436255659ec452ce44bbc45ecb18a242a44511cf53d8a2bfa77df104d5",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2014_game_score": {
+      "case_sha256": "e35bc194aa36dcbbaeed9d3db2ec982c1bd3a7b4ca19faf3e05134e5232a450c",
+      "dataset_sha256": "93ff2c8390d6dc967b9d06210650ec41ae1e17669268318e6ae1c45dadeab822",
+      "split_sha256": "aede51b29f865a67070eb82ec66f182e0e99d40368b14bc9f23fb15726aafeda",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2014_minutes_per_game": {
+      "case_sha256": "c42b6132305c228e05a825815e506e638994022d69ce6314dd11dd5c30a6caa2",
+      "dataset_sha256": "ee0e7943a6adf9e04f70bf5154d154d1790e745ea6a24d994d971feec772545d",
+      "split_sha256": "148e4a11ae70a0361a38574b54c336cedf16d03d872b0105cb8739fb7b765bcf",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2015_box_plus_minus": {
+      "case_sha256": "a4fd0f5dc35da2a5f6a3523b0ba8cbfff669ccf682330683fb8b6f0d13f0f129",
+      "dataset_sha256": "1c2ed4dab3e978c4f0e2c3d11a72da6180e0b5948fb1ddd48f0c62d839abd3ba",
+      "split_sha256": "7e06b911aaf699361400a73dab73286e3924e6f1c93dfaf111135caad77c61a7",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2015_game_score": {
+      "case_sha256": "e83acf48784293b507fd1f5b44b048940302b578e3efafbace0111e26224085e",
+      "dataset_sha256": "15ec3a7c5cc56c5e9ffeae3763b21e270ae0f1afd3c72f87806b74c54b4120c9",
+      "split_sha256": "6a882c06042173e9743dd2e68e48dd9c493cf0ba0e51ff4e41f416f5b4022599",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2015_minutes_per_game": {
+      "case_sha256": "8a827d3f9beee6fb225a42da5b0458154b9be29c8861506cf802225eb9484fa4",
+      "dataset_sha256": "ab7b59e8e0d9ad1460928b1374a58d14719c08b56dacff38d53973711f47c43a",
+      "split_sha256": "f0af2b701ab5058f74b8c4529467c222f20044d8dbc8229d71ec215fd50f9c00",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2016_box_plus_minus": {
+      "case_sha256": "545c2dd15de872e023a848191ed851c4d9886ab355c9ac1dc986598195ca1195",
+      "dataset_sha256": "83e84a46f21320399343da8a72d15aea68b8825170e0c237140d3ab4fe22c07b",
+      "split_sha256": "d58edfc33e53e9a36b028e3e02a7f8aaa20d9231b1dec5f9c7bf4e28f33ca574",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2016_game_score": {
+      "case_sha256": "1d9edd586ad426fc4ef4ec30f34da8f8b10761c888e499c2c061558bcb778a6d",
+      "dataset_sha256": "e11d73e3c304c90afd95ba99bff5992ed076cb7c6e6e7200a35486e07786e3db",
+      "split_sha256": "8c59397eb0bbbd42381e4057ea01541e54ff69f4457cd504f17c3fd7af6c9285",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    },
+    "sports_2016_minutes_per_game": {
+      "case_sha256": "34f0081c4dd3ba8aa979c6e43a39eba1540e70658e0875e84f5212c5bf89f918",
+      "dataset_sha256": "74cf5edcecd31047d90a78a3b53e842c5bfea6de48b7ed64b75f8fb592eac9b8",
+      "split_sha256": "7c5d8edaae599396ed6b89fef1dbf75a518f4e0e92c1ad27a4b73459be7aae00",
+      "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+    }
+  },
+  "case_manifests": {
+    "general_categorical_multiclass": {
+      "class_count": 3,
+      "feature_count": 9,
+      "fingerprints": {
+        "case_sha256": "6cbed5568493125396e514ee958931ec4b239ec0caeaf11ce35d0984297b5684",
+        "dataset_sha256": "860f5ea4ef2aa75d020e5a978c1ecda583b6835b3b30f8b8dd42ae2edf5e91d3",
+        "split_sha256": "66f15ba2e7c18a3501cd709a951b35c9d7c2de71eb107dd66ae9964dcdf55218",
+        "weight_sha256": "c4687224c205fc8d8ae063f30632bb1d4c23917b7a27090186131fa07cdc9c08"
+      },
+      "fit_rows": 7500,
+      "primary_rows": 2500,
+      "test_rows": 2500
+    },
+    "general_categorical_reg": {
+      "class_count": null,
+      "feature_count": 10,
+      "fingerprints": {
+        "case_sha256": "df4f83e0f53415aa2a3fd89ac4a68562c4ff62f107db34469224559d3eb8ce82",
+        "dataset_sha256": "6a03d593411cb53da6b398999047453fefea2dc02ea146dfffa17b5cf0450439",
+        "split_sha256": "984b0e56f7a78ab0e049a3fa3704c7e0bdf67b10558b265f48a010f91eb2c00d",
+        "weight_sha256": "3b750906252e8026ff8fac3bc860c71a328ac84c0a4440df2ae57b773b689a21"
+      },
+      "fit_rows": 7500,
+      "primary_rows": 2500,
+      "test_rows": 2500
+    },
+    "general_friedman_numeric": {
+      "class_count": null,
+      "feature_count": 20,
+      "fingerprints": {
+        "case_sha256": "0369aa4e3418043609ae82ba9a6ab915815be6cc2e670d49e30e29c18cba1589",
+        "dataset_sha256": "1559c497096dd7421e971f02a3756c1ff766fda062a162f5c90cbc99d4cec9b6",
+        "split_sha256": "2b82a6af55ad4e79c44757f793662596c31e77dafea7d831d88cb637e942aee5",
+        "weight_sha256": "378a14dab00abd23e9ae42c352bf6044ec6e41d5246c594cde235f4b5295247e"
+      },
+      "fit_rows": 7500,
+      "primary_rows": 2500,
+      "test_rows": 2500
+    },
+    "general_numeric_binary": {
+      "class_count": 2,
+      "feature_count": 40,
+      "fingerprints": {
+        "case_sha256": "e2c828dcf3d18c4e9220ebf65854d3cb09af1f067886fb6f31f096f6f17144a9",
+        "dataset_sha256": "cfff46e19209ebc91052e4ac39b8ba99ee07da27aea41e159cb9fd29e02e1b60",
+        "split_sha256": "fddf360db0a6bf9ba0217e12f5666fdc3979112f79c60843f821ca03a6f39383",
+        "weight_sha256": "beeb96737971792bb64607e51cc2e1215aace9df643924cba615b9ca93373063"
+      },
+      "fit_rows": 7500,
+      "primary_rows": 2500,
+      "test_rows": 2500
+    },
+    "sports_2014_box_plus_minus": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "5ef55ab6dd5e69bb10627d45496def73f1a78f54c19024f4a552cdfba87f4880",
+        "dataset_sha256": "6ea65e3375612cbf824b8b47a956015e14c557b33b2c0be479e6c46c77634450",
+        "split_sha256": "016583436255659ec452ce44bbc45ecb18a242a44511cf53d8a2bfa77df104d5",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 221,
+      "primary_rows": 115,
+      "test_rows": 121
+    },
+    "sports_2014_game_score": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "e35bc194aa36dcbbaeed9d3db2ec982c1bd3a7b4ca19faf3e05134e5232a450c",
+        "dataset_sha256": "93ff2c8390d6dc967b9d06210650ec41ae1e17669268318e6ae1c45dadeab822",
+        "split_sha256": "aede51b29f865a67070eb82ec66f182e0e99d40368b14bc9f23fb15726aafeda",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 221,
+      "primary_rows": 115,
+      "test_rows": 121
+    },
+    "sports_2014_minutes_per_game": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "c42b6132305c228e05a825815e506e638994022d69ce6314dd11dd5c30a6caa2",
+        "dataset_sha256": "ee0e7943a6adf9e04f70bf5154d154d1790e745ea6a24d994d971feec772545d",
+        "split_sha256": "148e4a11ae70a0361a38574b54c336cedf16d03d872b0105cb8739fb7b765bcf",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 221,
+      "primary_rows": 115,
+      "test_rows": 121
+    },
+    "sports_2015_box_plus_minus": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "a4fd0f5dc35da2a5f6a3523b0ba8cbfff669ccf682330683fb8b6f0d13f0f129",
+        "dataset_sha256": "1c2ed4dab3e978c4f0e2c3d11a72da6180e0b5948fb1ddd48f0c62d839abd3ba",
+        "split_sha256": "7e06b911aaf699361400a73dab73286e3924e6f1c93dfaf111135caad77c61a7",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 246,
+      "primary_rows": 125,
+      "test_rows": 134
+    },
+    "sports_2015_game_score": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "e83acf48784293b507fd1f5b44b048940302b578e3efafbace0111e26224085e",
+        "dataset_sha256": "15ec3a7c5cc56c5e9ffeae3763b21e270ae0f1afd3c72f87806b74c54b4120c9",
+        "split_sha256": "6a882c06042173e9743dd2e68e48dd9c493cf0ba0e51ff4e41f416f5b4022599",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 246,
+      "primary_rows": 125,
+      "test_rows": 134
+    },
+    "sports_2015_minutes_per_game": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "8a827d3f9beee6fb225a42da5b0458154b9be29c8861506cf802225eb9484fa4",
+        "dataset_sha256": "ab7b59e8e0d9ad1460928b1374a58d14719c08b56dacff38d53973711f47c43a",
+        "split_sha256": "f0af2b701ab5058f74b8c4529467c222f20044d8dbc8229d71ec215fd50f9c00",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 246,
+      "primary_rows": 125,
+      "test_rows": 134
+    },
+    "sports_2016_box_plus_minus": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "545c2dd15de872e023a848191ed851c4d9886ab355c9ac1dc986598195ca1195",
+        "dataset_sha256": "83e84a46f21320399343da8a72d15aea68b8825170e0c237140d3ab4fe22c07b",
+        "split_sha256": "d58edfc33e53e9a36b028e3e02a7f8aaa20d9231b1dec5f9c7bf4e28f33ca574",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 232,
+      "primary_rows": 117,
+      "test_rows": 120
+    },
+    "sports_2016_game_score": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "1d9edd586ad426fc4ef4ec30f34da8f8b10761c888e499c2c061558bcb778a6d",
+        "dataset_sha256": "e11d73e3c304c90afd95ba99bff5992ed076cb7c6e6e7200a35486e07786e3db",
+        "split_sha256": "8c59397eb0bbbd42381e4057ea01541e54ff69f4457cd504f17c3fd7af6c9285",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 232,
+      "primary_rows": 117,
+      "test_rows": 120
+    },
+    "sports_2016_minutes_per_game": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "34f0081c4dd3ba8aa979c6e43a39eba1540e70658e0875e84f5212c5bf89f918",
+        "dataset_sha256": "74cf5edcecd31047d90a78a3b53e842c5bfea6de48b7ed64b75f8fb592eac9b8",
+        "split_sha256": "7c5d8edaae599396ed6b89fef1dbf75a518f4e0e92c1ad27a4b73459be7aae00",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 232,
+      "primary_rows": 117,
+      "test_rows": 120
+    }
+  },
+  "cases": [
+    {
+      "case_id": "sports_2014_minutes_per_game",
+      "domain": "sports",
+      "sampling_unit": "groups",
+      "season": 2014,
+      "target": "minutes_per_game",
+      "task": "regression",
+      "weight_mode": "none"
+    },
+    {
+      "case_id": "sports_2014_game_score",
+      "domain": "sports",
+      "sampling_unit": "groups",
+      "season": 2014,
+      "target": "game_score",
+      "task": "regression",
+      "weight_mode": "none"
+    },
+    {
+      "case_id": "sports_2014_box_plus_minus",
+      "domain": "sports",
+      "sampling_unit": "groups",
+      "season": 2014,
+      "target": "box_plus_minus",
+      "task": "regression",
+      "weight_mode": "none"
+    },
+    {
+      "case_id": "sports_2015_minutes_per_game",
+      "domain": "sports",
+      "sampling_unit": "groups",
+      "season": 2015,
+      "target": "minutes_per_game",
+      "task": "regression",
+      "weight_mode": "none"
+    },
+    {
+      "case_id": "sports_2015_game_score",
+      "domain": "sports",
+      "sampling_unit": "groups",
+      "season": 2015,
+      "target": "game_score",
+      "task": "regression",
+      "weight_mode": "none"
+    },
+    {
+      "case_id": "sports_2015_box_plus_minus",
+      "domain": "sports",
+      "sampling_unit": "groups",
+      "season": 2015,
+      "target": "box_plus_minus",
+      "task": "regression",
+      "weight_mode": "none"
+    },
+    {
+      "case_id": "sports_2016_minutes_per_game",
+      "domain": "sports",
+      "sampling_unit": "groups",
+      "season": 2016,
+      "target": "minutes_per_game",
+      "task": "regression",
+      "weight_mode": "none"
+    },
+    {
+      "case_id": "sports_2016_game_score",
+      "domain": "sports",
+      "sampling_unit": "groups",
+      "season": 2016,
+      "target": "game_score",
+      "task": "regression",
+      "weight_mode": "none"
+    },
+    {
+      "case_id": "sports_2016_box_plus_minus",
+      "domain": "sports",
+      "sampling_unit": "groups",
+      "season": 2016,
+      "target": "box_plus_minus",
+      "task": "regression",
+      "weight_mode": "none"
+    },
+    {
+      "case_id": "general_friedman_numeric",
+      "dataset": "friedman_numeric",
+      "domain": "general",
+      "sampling_unit": "rows",
+      "seed": 0,
+      "size": "medium",
+      "split_seed": 20260720,
+      "task": "regression",
+      "test_fraction": 0.25,
+      "weight_mode": "stress"
+    },
+    {
+      "case_id": "general_categorical_reg",
+      "dataset": "categorical_reg",
+      "domain": "general",
+      "sampling_unit": "rows",
+      "seed": 0,
+      "size": "medium",
+      "split_seed": 20260720,
+      "task": "regression",
+      "test_fraction": 0.25,
+      "weight_mode": "stress"
+    },
+    {
+      "case_id": "general_numeric_binary",
+      "dataset": "numeric_binary",
+      "domain": "general",
+      "sampling_unit": "rows",
+      "seed": 0,
+      "size": "medium",
+      "split_seed": 20260720,
+      "task": "binary",
+      "test_fraction": 0.25,
+      "weight_mode": "stress"
+    },
+    {
+      "case_id": "general_categorical_multiclass",
+      "dataset": "categorical_multiclass",
+      "domain": "general",
+      "sampling_unit": "rows",
+      "seed": 0,
+      "size": "medium",
+      "split_seed": 20260720,
+      "task": "multiclass",
+      "test_fraction": 0.25,
+      "weight_mode": "stress"
+    }
+  ],
+  "claims": {
+    "b3_authorized": false,
+    "fresh_confirmation_authorized": false,
+    "lockbox_access_authorized": false,
+    "m2_authorized": false,
+    "m3b_r3_amended": false,
+    "public_or_default_change_authorized": false,
+    "serializer_implementation_authorized_before_advance": false,
+    "spent_development_evidence": true,
+    "tabarena_or_m4_authorized": false,
+    "tier": "E"
+  },
+  "contract_frozen": true,
+  "decision_rules": {
+    "advance_disposition": "advance_to_canonical_serializer_prototype",
+    "allowed_canonical_arrays": [
+      "bin__block_widths",
+      "bin__border_offsets",
+      "bin__borders_flat",
+      "bin__n_bins",
+      "prep__cat_features",
+      "prep__feature_map",
+      "prep__num_features"
+    ],
+    "allowed_canonical_header_fields": [
+      "feature_names_in",
+      "n_input_features",
+      "prep",
+      "random_state"
+    ],
+    "close_disposition": "close_barchive_nominate_fused_lane_dispatch",
+    "expected_case_count": 13,
+    "expected_numeric_target_free_cases": 11,
+    "median_effective_archive_to_single_at_most": 4.0,
+    "member_local_effective_size": "current_ensemble_bytes",
+    "numeric_target_free_effective_size": "canonical_preprocessor_simulated_bytes"
+  },
+  "execution": {
+    "combined": {
+      "kind": "private_ensemble_v3",
+      "member_policy": "donor_balanced_v1",
+      "sample_fraction": 0.8,
+      "sampling": "without_replacement"
+    },
+    "early_stopping_rounds": 30,
+    "ensemble_members": 8,
+    "failed_attempt_terminal": true,
+    "fresh_worker_per_case": true,
+    "frozen_runtime": {
+      "numba": "0.61.2",
+      "numpy": "2.2.6",
+      "pandas": "2.2.3",
+      "python": "3.11.8",
+      "scikit_learn": "1.7.1",
+      "scipy": "1.15.1"
+    },
+    "iterations": 600,
+    "paired_execution_contract": "paired-evidence-v1",
+    "partial_rows_published": false,
+    "random_state": 4,
+    "simulation_loadable": false,
+    "single_reference": {
+      "kind": "single"
+    },
+    "threads": 4
+  },
+  "expected_shared_preprocessing": {
+    "general_categorical_multiclass": "member_local",
+    "general_categorical_reg": "member_local",
+    "general_friedman_numeric": "numeric_target_free",
+    "general_numeric_binary": "numeric_target_free",
+    "sports_2014_box_plus_minus": "numeric_target_free",
+    "sports_2014_game_score": "numeric_target_free",
+    "sports_2014_minutes_per_game": "numeric_target_free",
+    "sports_2015_box_plus_minus": "numeric_target_free",
+    "sports_2015_game_score": "numeric_target_free",
+    "sports_2015_minutes_per_game": "numeric_target_free",
+    "sports_2016_box_plus_minus": "numeric_target_free",
+    "sports_2016_game_score": "numeric_target_free",
+    "sports_2016_minutes_per_game": "numeric_target_free"
+  },
+  "frozen_at": "2026-07-21T13:37:24.707762+00:00",
+  "m3b_r3_lineage": {
+    "archive_to_single_limit": 4.0,
+    "combined_beats_matched_single_cases": 13,
+    "combined_case_count": 13,
+    "combined_median_archive_to_single": 5.534767493867151,
+    "contract": {
+      "bytes": 27817,
+      "path": "benchmarks/m3b_ensemble_v3_r3_contract.json",
+      "sha256": "5889e130c7afbadbc8e0f082673eb1a80961b5cb396ca906efbe9a5d32ea8b50"
+    },
+    "frozen_disposition": "close_b1_b2_preserve_existing_opt_in",
+    "lineage_valid": true,
+    "quality": {
+      "bytes": 870409,
+      "path": "benchmarks/m3b_ensemble_v3_r3_quality.json",
+      "sha256": "5fec218cbc0ec97ef4b3fec10f65a89131a377cf026dbb80da809d6396ead6c3"
+    },
+    "result": {
+      "bytes": 6735,
+      "path": "benchmarks/m3b_ensemble_v3_r3_result.json",
+      "sha256": "3e6d0750e772c156b6c4daed948eb6baa640564ce87fe1ffee7414b3fe03c8bc"
+    },
+    "serialization_authorized": false,
+    "sports_primary_scope": "player-disjoint cold-player rows within the frozen held-team view",
+    "vs_single_readout": {
+      "bytes": 5261,
+      "path": "benchmarks/m3b_ensemble_v3_r3_vs_single_readout_20260721.json",
+      "sha256": "99d693063c46a0708eb45a704af0b46611fa8ed89dbe4d6469b47c7cd4a27c64"
+    }
+  },
+  "name": "wave3_barchive_v1_20260721",
+  "outcomes_opened": false,
+  "panel_cache": {
+    "bytes": 379702,
+    "contract_path": ".cache/basketball-sports-panel-v2/panel.csv",
+    "sha256": "8f7eab3765b4166740b150ed372f9607bcd6dd9673e0e73cc6541583230a59e6"
+  },
+  "schema_version": 1,
+  "sources": {
+    "darkofit": "858ac14c30e280491d7bd5232da56f7050561782",
+    "harness": "7232c42984b838403b1941a2e73022fcc412a0ee"
+  }
+}
