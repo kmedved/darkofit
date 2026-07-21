@@ -782,6 +782,26 @@ stored index payloads. Public ensemble archives remain format 1. These are
 post-campaign correctness fixes; they neither amend attempt 3's source pin nor
 reopen its outcome or disposition.
 
+A second post-close review confirmed three further live implementation gaps;
+its weighted-classification and digest concerns were already closed by the
+preceding hardening. The private prototype now rejects a non-`None` preset
+before sampling so a fit-time profile cannot override B2 or explicit-`None`
+precedence, enforces the physical group-count/row-count bounds on safe load,
+and uses private metadata schema 3. Schema 3 records the canonical base wrapper
+constructor, every member wrapper constructor after only the frozen mechanical
+and B2 overrides, and every fitted booster's original constructor inputs. Safe
+load binds all three maps and rejects obsolete private schema 2; automatic
+tree-mode selection and the deprecated automatic learning-rate probe are
+outside this constructor-bound private identity. The fitted numeric learning
+rate is stored separately from the constructor input. These corrections use a
+new implementation pin and do not rewrite or reinterpret the immutable r3
+artifacts.
+
+The schema-3 correctness implementation is commit `e44de0f`. The focused
+private and serialization/ensemble regressions passed before checkpointing;
+the historical r3 source-pin guards remain intentionally bound to their old
+implementation rather than being rewritten.
+
 ---
 
 ## 9. Track X — cross-feature research opt-ins
@@ -955,14 +975,33 @@ Initial backlog, unrated and unauthorized:
   all 13 development cases (pooled primary geomean `0.9655` versus single,
   recomputable from the immutable r3 quality artifact) and failed only the
   prospectively frozen `median_archive_to_single_at_most: 4.0` gate, at
-  `5.53×`. A behavior-exact archive mechanism may deduplicate only the
-  verified-equivalent binner and feature-map payload for
-  `numeric_target_free` ensembles; categorical, ordinal, and member-local
-  preprocessing stays complete per member. This attacks the failed gate
-  without touching sampling or member policy. Advancing requires a new
-  campaign identity (r3 stays immutable). The M3b sports view was already
-  cold-player held-team and player-disjoint; the seeded, overlap-exposed
-  75/25 split applied only to the general weighted view.
+  `5.53×`. Closing that gap by factoring seven duplicate member copies needs
+  an exactly shareable component worth at least `0.219252` matched-single
+  archives per copy (`(5.534767 - 4.0) / 7`) under first-order byte accounting.
+  The first action is therefore a standalone component census, not a serializer
+  change; kill B-archive immediately if even perfect exact factoring cannot
+  reach `4.0×`. A behavior-exact implementation may factor only complete
+  sections proven byte-identical across all members and must bind any canonical
+  shared-preprocessor section with one digest over its complete configuration
+  and payload. Generalized member/header deltas are out of scope. Categorical,
+  ordinal, and member-local preprocessing stays complete per member. Advancing
+  requires a new campaign identity (r3 stays immutable). The M3b sports view
+  was already cold-player held-team and player-disjoint; the seeded,
+  overlap-exposed 75/25 split applied only to the general weighted view.
+
+  The first explicitly exploratory size screen used the read-only analyzer at
+  `b847c19` on a deterministic numeric case with 10,000 rows, 24 features,
+  eight combined members, and a separately fitted same-base single. The only
+  byte-identical member sections were the seven complete `prep__*`/`bin__*`
+  arrays plus their canonical preprocessing header. Factoring them reduced the
+  non-loadable size model from 819,785 to 652,126 bytes. The probe itself did
+  not clear `4.0×` (`13.8519×` to `11.0190×`) because its single stopped at 60
+  rounds while members retained 94–120, so it cannot authorize implementation.
+  Its canonical saving was `0.404706` of that same-base single per duplicate,
+  above r3's `0.219252` first-order requirement; B-archive therefore is not
+  killed by the component-size lower bound alone. The probe is spent and
+  non-ranking. Any next measurement must prospectively freeze a new,
+  representative multi-case identity; no serializer change is authorized.
 - **Behavior-exact fused-lane dispatch** (internal, from Q0): the
   forced-unfused reference was behavior-exact and faster than the fused
   production lane on the current 14-CPU machine (paired fit ratios `0.901`
