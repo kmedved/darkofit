@@ -1040,7 +1040,10 @@ Initial backlog, unrated and unauthorized:
   proven fused and unfused paths, with generic synthetic calibration separated
   from six outcome-unseen validation cells. V2 adds a deterministic explicit
   override and schema-validated fitted dispatch metadata, and corrects the
-  exactness oracle to exclude only those declared fields. It authorizes only
+  exactness oracle to exclude only those declared fields. Its create-only
+  [`realized-bin-width erratum`](benchmarks/fused_lane_dispatch_v2_bin_width_erratum_20260721.md)
+  corrects configured `max_bins=64--254` to realized widths `65--255` without
+  changing a frozen cell or gate. The combined contract authorizes only
   selector/override/metadata implementation and invariants; calibration and
   validation still require separate create-only execution freezes.
 - **Q re-entry microbenchmark** (internal): a DarkoFit-specific private
