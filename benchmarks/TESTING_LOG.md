@@ -2,7 +2,7 @@
 
 _Canonical navigation ledger. Updated 2026-07-21 after the GitHub-only
 `v0.10.1` release, frozen B-archive v2 close, and outcome-blind Wave 4
-fused-dispatch calibration-v2 freeze._
+fused-dispatch calibration-v3 gate-repair freeze._
 
 This file records what DarkoFit has tested, why it was tested, what happened,
 and which artifact controls the conclusion. It is intentionally broader than
@@ -837,6 +837,73 @@ corrected v2 identity below. Its frozen contract remains immutable._
     closed before execution. V2 records `execution_authorized=false` and
     `outcomes_opened=false`; no authorization or result artifact exists. The
     next mechanism slot remains quality-first regardless of Wave 4's result.
+
+_This execution identity was also superseded before authorization, formal
+worker execution, or outcome access. Its immutable contract remains part of
+the v3 lineage below._
+
+### 25. Wave 4 calibration-v3 pre-outcome evidence-gate supersession
+
+1. **Execution boundary:** 2026-07-21; independent review occurred before any
+   v2 authorization or formal worker. Gate repair is commit
+   `a8cec9b4efbfd4afdcf1345c4088c7d17162eeb8`; prospective v3 protocol/freezer
+   is `691f5a3a110c6d5a0f7a17ed3b6f04e296c97419`; immutable v3 contract commit
+   is `4a07594716cabffba8fab8d4ea981480bb3e1b0e`.
+2. **Comparator:** unchanged prospective forced-fused control and
+   forced-unfused candidate. No timing comparison occurred.
+3. **Evidence class:** pre-authorization harness/product provenance repair and
+   a prospectively frozen, outcome-unopened Tier-E execution identity. This is
+   neither campaign performance evidence nor permission to execute.
+4. **Data:** unchanged 30 synthetic calibration coordinates, generator seed,
+   array fingerprint rules, and separately frozen six-cell validation design.
+   No raw row exists under v1, v2, or v3.
+5. **Arms:** unchanged lanes, two untimed warmups, seven paired
+   alternating-order repetitions, selector family, timing region, threshold
+   candidates, tie rule, acceptance limits, and absent automatic threshold.
+6. **Resources:** v3 carries forward v2's exact M4 Pro runtime and complete
+   per-thread environment records, including absolute cache paths ending in
+   `calibration/threads-{4,9,14}`. The repair enforces those records rather
+   than introducing per-coordinate cache directories.
+7. **Execution:** only correctness/infrastructure tests and
+   `python benchmarks/freeze_fused_lane_dispatch_calibration_v3.py` ran. The
+   freezer ran in a clean detached worktree at the exact source pin because
+   unrelated documentation edits were present in the main checkout. No
+   calibration or validation worker ran. Direct workers now self-load the
+   canonical contract and owner authorization, reject off-grid coordinates,
+   and validate the exact frozen environment before product import or timing.
+8. **Artifacts:** immutable v2 contract SHA-256
+   `b2075f9c45df3b3fb674c74fe0b47cd9ddd1ec3bae790f5379308e15a327061a`;
+   v3 protocol `ee60b26183cc7003234c90301b7148f4661955664843c76162cb224a11e973fe`;
+   v3 freezer `4410a18d76a3a89ec4154017d313a6912df7fa9602c115eaf0ba0c2b6443ab36`;
+   repaired runner `6a6f8fbb3026ebad7f9158e62fc97b723343406d6d0ae837f17551911fa355d7`;
+   and v3 execution contract
+   `c55ee50fccda5b9ba24e004ae8a27285e4db92e52a9c17a668bc1b417b0fa648`.
+9. **Primary result:** none; every speed ratio, regret, crossover threshold,
+   and qualification outcome remains unopened. The repaired focused matrix
+   passes 120 dispatch, kernel, private-provenance, and contract tests. The
+   CI-equivalent local library partition passes 1,210 tests with 2 skips and
+   the four immutable historical M3b modules excluded exactly as in CI. The
+   campaign partition passes 1,693 tests with 27 skips after deselecting the
+   one documented Panel 3 historical-sibling guard; the unfiltered run
+   reproduced only that guard because the neighboring ChimeraBoost checkout
+   differs from its frozen historical HEAD.
+10. **Gates:** direct-worker authorization, copied-authorization rejection,
+    exact coordinate binding, exact complete worker environment, actual
+    builder-counter truth, zero-iteration semantics, hash-bound threshold
+    analysis, normalized group-code persistence, plausible group-count
+    forgery rejection, deterministic safe re-save, and all prior product
+    invariants pass. All performance and validation outcome gates remain
+    untested.
+11. **Limitations/non-claims:** private group codes establish structural
+    consistency, not cryptographic authenticity of original-fit history. No
+    speed, crossover, portability, quality, sports, release, public/private
+    ensemble promotion, default change, M2/M4, Q, fresh-data, or lockbox claim
+    follows. V1 and v2 remain immutable pre-outcome predecessors.
+12. **Current decision:** `await_explicit_calibration_v3_authorization`. V3
+    records `execution_authorized=false` and `outcomes_opened=false`; no v3
+    authorization, raw, terminal, analysis, threshold, or validation-contract
+    artifact exists. The next mechanism slot remains quality-first regardless
+    of Wave 4's result.
 
 ## Product behavior established by the testing
 
