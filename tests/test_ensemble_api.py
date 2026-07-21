@@ -312,6 +312,19 @@ def test_ensemble_safe_roundtrip(tmp_path, estimator, target):
     assert len(restored.estimators_) == 3
 
 
+def test_public_ensemble_archives_remain_format_one(tmp_path):
+    X, y = _regression_data(n=100)
+    model = DarkoRegressor(**_params(n_ensembles=2)).fit(X, y)
+    path = tmp_path / "ensemble.npz"
+    model.save_model(path)
+    with np.load(path, allow_pickle=False) as archive:
+        header = json.loads(str(archive["header"]))
+        assert header["ensemble_format_version"] == 1
+
+    restored = DarkoRegressor.load_model(path)
+    np.testing.assert_array_equal(restored.predict(X), model.predict(X))
+
+
 def test_ensemble_preserves_arrow_feature_schema_and_roundtrips(tmp_path):
     pa = pytest.importorskip("pyarrow")
     X, y = _regression_data(n=120)

@@ -24,6 +24,7 @@ Categories must be str, float, int, or bool; anything else raises at save
 time.
 """
 
+import hashlib
 import io
 import json
 import zipfile
@@ -46,7 +47,7 @@ from .tree import (
 
 FORMAT_VERSION = 4
 BASE_FORMAT_VERSION = 2
-ENSEMBLE_FORMAT_VERSION = 1
+ENSEMBLE_FORMAT_VERSION = 2
 MAX_ENSEMBLE_MEMBERS = 256
 
 _KIND_STR = 0
@@ -149,6 +150,14 @@ def save_ensemble(estimators, path, *, wrapper_class, params, metadata):
             f"ensemble must contain 2 to {MAX_ENSEMBLE_MEMBERS} members"
         )
     arrays = {}
+    private_provenance = metadata.get("version") == 2
+    records = metadata.get("members") if private_provenance else None
+    if private_provenance and (
+        not isinstance(records, list) or len(records) != len(estimators)
+    ):
+        raise ValueError(
+            "cannot save private ensemble without complete member provenance"
+        )
     for index, estimator in enumerate(estimators):
         buffer = io.BytesIO()
         estimator.save_model(buffer)
@@ -158,9 +167,38 @@ def save_ensemble(estimators, path, *, wrapper_class, params, metadata):
         arrays[f"member_{index:04d}"] = np.frombuffer(
             payload, dtype=np.uint8
         ).copy()
+        if private_provenance:
+            for partition in ("sampled", "oob"):
+                values = getattr(
+                    estimator,
+                    f"_ensemble_{partition}_indices_",
+                    None,
+                )
+                values = np.asarray(values)
+                if (
+                    values.ndim != 1
+                    or values.size == 0
+                    or not np.issubdtype(values.dtype, np.integer)
+                ):
+                    raise ValueError(
+                        "cannot save private ensemble without valid index "
+                        "provenance"
+                    )
+                values = np.ascontiguousarray(values, dtype="<i8")
+                digest = hashlib.sha256(values.tobytes()).hexdigest()
+                if not isinstance(records[index], dict) or records[index].get(
+                    f"{partition}_indices_sha256"
+                ) != digest:
+                    raise ValueError(
+                        "cannot save private ensemble with contradictory "
+                        "index provenance"
+                    )
+                arrays[
+                    f"member_{index:04d}_{partition}_indices"
+                ] = values
     header = {
         "archive_kind": "darkofit_ensemble",
-        "ensemble_format_version": ENSEMBLE_FORMAT_VERSION,
+        "ensemble_format_version": 2 if private_provenance else 1,
         "wrapper_class": str(wrapper_class),
         "member_count": len(estimators),
         "params": _jsonify(params),
@@ -212,19 +250,47 @@ def _load_ensemble_payload(path):
             _invalid_model("ensemble params must be an object")
         if not isinstance(header.get("metadata"), dict):
             _invalid_model("ensemble metadata must be an object")
+        private_provenance = header["metadata"].get("version") == 2
+        if private_provenance and version < 2:
+            _invalid_model(
+                "private ensemble index provenance payload is missing"
+            )
         expected = {
             "header",
             *(f"member_{index:04d}" for index in range(member_count)),
         }
+        if private_provenance:
+            expected.update(
+                f"member_{index:04d}_{partition}_indices"
+                for index in range(member_count)
+                for partition in ("sampled", "oob")
+            )
         if set(data.files) != expected:
             _invalid_model("ensemble member payloads do not match the header")
         payloads = []
+        index_provenance = [] if private_provenance else None
         for index in range(member_count):
             values = np.asarray(data[f"member_{index:04d}"])
             if values.ndim != 1 or values.dtype != np.uint8 or values.size == 0:
                 _invalid_model("ensemble member payload is invalid")
             payloads.append(values.tobytes())
-    return header, payloads
+            if private_provenance:
+                record = {}
+                for partition in ("sampled", "oob"):
+                    values = np.asarray(
+                        data[f"member_{index:04d}_{partition}_indices"]
+                    )
+                    if (
+                        values.ndim != 1
+                        or values.size == 0
+                        or values.dtype != np.dtype("<i8")
+                    ):
+                        _invalid_model(
+                            "private ensemble index provenance is invalid"
+                        )
+                    record[partition] = values.copy()
+                index_provenance.append(record)
+    return header, payloads, index_provenance
 
 
 def load_ensemble(path):

@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+- Make row- and group-bootstrap classifier ensembles retry until every class
+  has positive-weight representation in both member-training and OOB rows;
+  impossible partitions now fail closed instead of early-stopping against an
+  incomplete OOB class set.
+- Bind private ensemble sampling fingerprints to compact index payloads in the
+  pickle-free archive, so safe-load rejects forged digest metadata while
+  preserving exact prediction and re-save round trips. Public ensemble
+  archives remain on the backward-compatible format 1.
+
 ## 0.10.1 - 2026-07-20
 
 ### Fixes

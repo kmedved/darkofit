@@ -6,6 +6,7 @@ import pytest
 
 from darkofit import DarkoClassifier, DarkoRegressor
 from darkofit.sklearn_api import (
+    _ensemble_bootstrap_plan,
     _ensemble_without_replacement_plan,
     _fit_private_ensemble_v3,
     _resolve_private_ensemble_v3_policy,
@@ -110,6 +111,53 @@ def test_private_plan_retries_for_class_safety_and_fails_when_impossible():
             required_class_count=2,
             max_attempts=8,
         )
+
+
+@pytest.mark.parametrize("bootstrap", ["rows", "groups"])
+def test_bootstrap_plan_requires_every_class_in_training_and_oob(bootstrap):
+    impossible = np.zeros(40, dtype=np.int64)
+    impossible[0] = 1
+    groups = None
+    if bootstrap == "groups":
+        groups = np.repeat(np.arange(8), 5)
+        impossible[:5] = 1
+
+    with pytest.raises(RuntimeError, match="class-safe"):
+        _ensemble_bootstrap_plan(
+            len(impossible),
+            12,
+            bootstrap=bootstrap,
+            groups=groups,
+            y=impossible,
+            required_class_count=2,
+            max_attempts=8,
+        )
+
+
+@pytest.mark.parametrize("sampling", ["bootstrap", "without_replacement"])
+def test_ensemble_plans_require_positive_weight_for_each_class_on_both_sides(
+    sampling,
+):
+    y = np.resize(np.array([0, 1]), 40)
+    weights = np.zeros(len(y))
+    weights[:2] = 1.0
+    kwargs = {
+        "n_rows": len(y),
+        "seed": 12,
+        "y": y,
+        "required_class_count": 2,
+        "sample_weight": weights,
+        "max_attempts": 8,
+    }
+    if sampling == "bootstrap":
+        call = _ensemble_bootstrap_plan
+        kwargs["bootstrap"] = "rows"
+    else:
+        call = _ensemble_without_replacement_plan
+        kwargs.update(sampling_unit="rows", sample_fraction=0.8)
+
+    with pytest.raises(RuntimeError, match="class-safe"):
+        call(**kwargs)
 
 
 def test_private_plan_rejects_nonpositive_weight_partition():
@@ -335,6 +383,16 @@ def test_private_classifier_soft_votes_and_safe_roundtrips(tmp_path):
 
     path = tmp_path / "private-classifier.npz"
     model.save_model(path)
+    with np.load(path, allow_pickle=False) as archive:
+        header = json.loads(str(archive["header"]))
+        assert header["ensemble_format_version"] == 2
+        for index in range(len(model.estimators_)):
+            assert archive[f"member_{index:04d}_sampled_indices"].dtype == np.dtype(
+                "<i8"
+            )
+            assert archive[f"member_{index:04d}_oob_indices"].dtype == np.dtype(
+                "<i8"
+            )
     restored = DarkoClassifier.load_model(path)
     np.testing.assert_array_equal(restored.predict_proba(X), expected)
     assert restored.ensemble_metadata_ == model.ensemble_metadata_
@@ -369,6 +427,18 @@ def test_private_classifier_soft_votes_and_safe_roundtrips(tmp_path):
             "sample counts",
         ),
         (
+            lambda metadata: metadata["members"][0].__setitem__(
+                "sampled_indices_sha256", "0" * 64
+            ),
+            "index digest",
+        ),
+        (
+            lambda metadata: metadata["members"][0].__setitem__(
+                "oob_indices_sha256", "f" * 64
+            ),
+            "index digest",
+        ),
+        (
             lambda metadata: metadata.__setitem__(
                 "explicit_user_params", [["colsample"]]
             ),
@@ -393,6 +463,45 @@ def test_private_safe_load_rejects_forged_metadata(
 
     with pytest.raises(ValueError, match=message):
         DarkoRegressor.load_model(corrupt)
+
+
+def test_private_safe_load_rejects_forged_index_payload(tmp_path):
+    X, y = _regression_data(n=100)
+    model = _fit_private(DarkoRegressor(**_params(iterations=4)), X, y)
+    source = tmp_path / "private-source.npz"
+    corrupt = tmp_path / "private-corrupt.npz"
+    model.save_model(source)
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {name: archive[name].copy() for name in archive.files}
+    sampled = arrays["member_0000_sampled_indices"]
+    sampled[0] = (sampled[0] + 1) % len(X)
+    np.savez_compressed(corrupt, **arrays)
+
+    with pytest.raises(ValueError, match="index (digest|provenance)"):
+        DarkoRegressor.load_model(corrupt)
+
+
+def test_private_safe_load_rejects_legacy_archive_without_index_payloads(
+    tmp_path,
+):
+    X, y = _regression_data(n=100)
+    model = _fit_private(DarkoRegressor(**_params(iterations=4)), X, y)
+    source = tmp_path / "private-source.npz"
+    legacy = tmp_path / "private-legacy.npz"
+    model.save_model(source)
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {
+            name: archive[name].copy()
+            for name in archive.files
+            if not name.endswith(("_sampled_indices", "_oob_indices"))
+        }
+    header = json.loads(str(arrays["header"]))
+    header["ensemble_format_version"] = 1
+    arrays["header"] = np.array(json.dumps(header))
+    np.savez_compressed(legacy, **arrays)
+
+    with pytest.raises(ValueError, match="index provenance payload is missing"):
+        DarkoRegressor.load_model(legacy)
 
 
 def test_private_fit_failure_restores_fresh_and_previously_fitted_state(

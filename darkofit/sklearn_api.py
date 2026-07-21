@@ -279,6 +279,36 @@ def _index_sha256(indices):
     return hashlib.sha256(values.tobytes()).hexdigest()
 
 
+def _ensemble_class_partitions_are_usable(
+    class_codes,
+    sampled,
+    oob,
+    required_class_count,
+    weights,
+):
+    """Return whether both ensemble partitions retain every weighted class."""
+    if required_class_count is None:
+        return True
+    class_count = int(required_class_count)
+    for indices in (sampled, oob):
+        partition_codes = class_codes[indices]
+        observations = np.bincount(
+            partition_codes,
+            minlength=class_count,
+        )
+        if np.count_nonzero(observations) != class_count:
+            return False
+        if weights is not None:
+            class_weight = np.bincount(
+                partition_codes,
+                weights=weights[indices],
+                minlength=class_count,
+            )
+            if np.any(class_weight <= 0.0):
+                return False
+    return True
+
+
 def _ensemble_bootstrap_plan(
     n_rows,
     seed,
@@ -322,6 +352,10 @@ def _ensemble_bootstrap_plan(
         else np.asarray(sample_weight, dtype=np.float64)
     )
     labels = None if y is None else np.asarray(y)
+    class_codes = None
+    if required_class_count is not None:
+        _, class_codes = np.unique(labels, return_inverse=True)
+        class_codes = np.asarray(class_codes, dtype=np.int64)
     for attempt in range(1, int(max_attempts) + 1):
         if bootstrap == "rows":
             sampled = rng.integers(
@@ -353,9 +387,12 @@ def _ensemble_bootstrap_plan(
             or float(np.sum(weights[oob])) <= 0.0
         ):
             continue
-        if (
-            required_class_count is not None
-            and np.unique(labels[sampled]).size != int(required_class_count)
+        if not _ensemble_class_partitions_are_usable(
+            class_codes,
+            sampled,
+            oob,
+            required_class_count,
+            weights,
         ):
             continue
         return {
@@ -437,6 +474,10 @@ def _ensemble_without_replacement_plan(
         else np.asarray(sample_weight, dtype=np.float64)
     )
     labels = None if y is None else np.asarray(y)
+    class_codes = None
+    if required_class_count is not None:
+        _, class_codes = np.unique(labels, return_inverse=True)
+        class_codes = np.asarray(class_codes, dtype=np.int64)
     unit_count = n_rows if sampling_unit == "rows" else unique_group_count
     sample_count = min(
         unit_count - 1,
@@ -467,9 +508,12 @@ def _ensemble_without_replacement_plan(
             or float(np.sum(weights[oob])) <= 0.0
         ):
             continue
-        if required_class_count is not None and (
-            np.unique(labels[sampled]).size != int(required_class_count)
-            or np.unique(labels[oob]).size != int(required_class_count)
+        if not _ensemble_class_partitions_are_usable(
+            class_codes,
+            sampled,
+            oob,
+            required_class_count,
+            weights,
         ):
             continue
         return {
@@ -495,7 +539,7 @@ def _ensemble_without_replacement_plan(
 
 
 def _validate_loaded_private_ensemble_v3_metadata(
-    metadata, members, *, classification
+    metadata, members, *, classification, index_provenance
 ):
     """Fail closed on private B1/B2 fitted and persistence provenance."""
     if (
@@ -653,13 +697,15 @@ def _validate_loaded_private_ensemble_v3_metadata(
         or not isinstance(records, list)
         or len(seeds) != member_count
         or len(records) != member_count
+        or not isinstance(index_provenance, list)
+        or len(index_provenance) != member_count
     ):
         raise ValueError(
             "invalid DarkoFit model: private ensemble-v3 member provenance is invalid"
         )
 
-    for index, (seed, record, member) in enumerate(
-        zip(seeds, records, members)
+    for index, (seed, record, member, provenance) in enumerate(
+        zip(seeds, records, members, index_provenance)
     ):
         model = getattr(member, "model_", None)
         if classification:
@@ -704,15 +750,57 @@ def _validate_loaded_private_ensemble_v3_metadata(
             raise ValueError(
                 "invalid DarkoFit model: private ensemble-v3 member identity is invalid"
             )
-        for name in ("sampled_indices_sha256", "oob_indices_sha256"):
+        if not isinstance(provenance, Mapping) or set(provenance) != {
+            "sampled",
+            "oob",
+        }:
+            raise ValueError(
+                "invalid DarkoFit model: private ensemble-v3 index provenance "
+                "is invalid"
+            )
+        sampled_indices = np.asarray(provenance["sampled"])
+        oob_indices = np.asarray(provenance["oob"])
+        if (
+            sampled_indices.ndim != 1
+            or oob_indices.ndim != 1
+            or sampled_indices.dtype != np.dtype("<i8")
+            or oob_indices.dtype != np.dtype("<i8")
+            or sampled_indices.size == 0
+            or oob_indices.size == 0
+            or np.any(sampled_indices < 0)
+            or np.any(sampled_indices >= input_rows)
+            or np.any(oob_indices < 0)
+            or np.any(oob_indices >= input_rows)
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: private ensemble-v3 index provenance "
+                "is invalid"
+            )
+        sampled_unique = np.unique(sampled_indices)
+        expected_oob = np.setdiff1d(
+            np.arange(input_rows, dtype=np.int64),
+            sampled_unique,
+            assume_unique=True,
+        )
+        if not np.array_equal(oob_indices, expected_oob):
+            raise ValueError(
+                "invalid DarkoFit model: private ensemble-v3 index provenance "
+                "is contradictory"
+            )
+        for name, values in (
+            ("sampled_indices_sha256", sampled_indices),
+            ("oob_indices_sha256", oob_indices),
+        ):
             digest = record.get(name)
             if (
                 not isinstance(digest, str)
                 or len(digest) != 64
                 or any(char not in "0123456789abcdef" for char in digest)
+                or digest != _index_sha256(values)
             ):
                 raise ValueError(
-                    "invalid DarkoFit model: private ensemble-v3 index digest is invalid"
+                    "invalid DarkoFit model: private ensemble-v3 index digest "
+                    "is invalid"
                 )
         for name in (
             "sampling_attempts",
@@ -734,6 +822,9 @@ def _validate_loaded_private_ensemble_v3_metadata(
                 )
         if (
             record["sampling_attempts"] > 128
+            or record["sampled_rows"] != sampled_indices.size
+            or record["sampled_unique_rows"] != sampled_unique.size
+            or record["oob_rows"] != oob_indices.size
             or record["sampled_unique_rows"] > record["sampled_rows"]
             or record["sampled_unique_rows"] + record["oob_rows"]
             != input_rows
@@ -862,12 +953,21 @@ def _validate_loaded_private_ensemble_v3_metadata(
             )
 
 
-def _validate_loaded_ensemble_metadata(metadata, members, *, classification):
+def _validate_loaded_ensemble_metadata(
+    metadata,
+    members,
+    *,
+    classification,
+    index_provenance=None,
+):
     """Fail closed on contradictory fitted-ensemble provenance."""
     version = metadata.get("version")
     if version == 2:
         return _validate_loaded_private_ensemble_v3_metadata(
-            metadata, members, classification=classification
+            metadata,
+            members,
+            classification=classification,
+            index_provenance=index_provenance,
         )
     if (
         isinstance(version, bool)
@@ -3660,7 +3760,7 @@ class _RefitParamsMixin:
         archive = load_ensemble(path)
         if archive is None:
             return None
-        header, payloads = archive
+        header, payloads, index_provenance = archive
         saved_class = header["wrapper_class"]
         if saved_class != cls.__name__:
             raise TypeError(
@@ -3695,6 +3795,7 @@ class _RefitParamsMixin:
             metadata,
             members,
             classification=classification,
+            index_provenance=index_provenance,
         )
         if metadata.get("version") == 2:
             for name in _PRIVATE_ENSEMBLE_V3_POLICY_FIELDS:
@@ -3971,6 +4072,12 @@ class _RefitParamsMixin:
                     "invalid DarkoFit model: ensemble members disagree on "
                     "class labels"
                 )
+        if index_provenance is not None:
+            for member, provenance in zip(members, index_provenance):
+                member._ensemble_sampled_indices_ = provenance[
+                    "sampled"
+                ].copy()
+                member._ensemble_oob_indices_ = provenance["oob"].copy()
         return est._adopt_ensemble(members, metadata)
 
     def _fit_ensemble(
@@ -6500,6 +6607,12 @@ def _fit_private_ensemble_v3(
                     "private ensemble-v3 member did not bind training/OOB rows"
                 )
             sampled_unique_rows = int(np.unique(sampled).size)
+            member._ensemble_sampled_indices_ = np.ascontiguousarray(
+                sampled, dtype="<i8"
+            )
+            member._ensemble_oob_indices_ = np.ascontiguousarray(
+                oob, dtype="<i8"
+            )
             member_metadata.append({
                 "member": member_index,
                 "seed": member_seed,
