@@ -4,7 +4,8 @@
 > strongest-library goal; revised 2026-07-20 to mechanism-led sequencing;
 > Wave 1 authorized by the owner 2026-07-20 and completed 2026-07-20;
 > G-M published 2026-07-20; Wave 2 completed and closed 2026-07-20;
-> Wave 3 B-archive feasibility completed and closed 2026-07-21.
+> Wave 3 B-archive feasibility completed and closed 2026-07-21;
+> Wave 4 fused-lane-dispatch design contract frozen 2026-07-21.
 > Wave 1 authorization covers the H1 audit and confirmed fixes, M1 plus the
 > Q0 profiling half, M3a, and construction of M5/M6 infrastructure. It does
 > not authorize a public prototype, default change, fresh confirmation
@@ -1025,7 +1026,14 @@ Initial backlog, unrated and unauthorized:
   Q re-entry work: quantization must beat the post-dispatch engine, not the
   current one. B-archive's frozen close promotes this to the next mechanism
   slot, but implementation still requires a new prospective dispatch contract
-  with exact behavior and bounded speed/resource acceptance rules.
+  with exact behavior and bounded speed/resource acceptance rules. That design
+  contract is now frozen in
+  [`benchmarks/fused_lane_dispatch_v1_contract.md`](benchmarks/fused_lane_dispatch_v1_contract.md):
+  it permits one macOS-arm64, shape-aware scalar threshold between the existing
+  proven fused and unfused paths, with generic synthetic calibration separated
+  from six outcome-unseen validation cells. It authorizes only the private
+  selector and invariants; calibration and validation still require separate
+  create-only execution freezes.
 - **Q re-entry microbenchmark** (internal): a DarkoFit-specific private
   histogram-bandwidth prototype at the Q0 hotspot (frozen conservative
   projection `0.867242`), pursued only as the distinct causal case the Q
@@ -1131,7 +1139,7 @@ These are planning ranges, not delivery promises.
 | 1 | **Complete:** H1 audit; M1/Q0; M3a quality-first; M5 baseline; M6 infrastructure/backtest; G-M | Completed 2026-07-20 | Q and current ensembles closed; one private B0/B1/B2 mechanism prototype funded |
 | 2 | **Complete:** B0 contract, private sequential B1/B2 prototype and invariants, prospectively frozen M3b attribution | Completed 2026-07-20 | No arm cleared every final gate; close B1/B2 and preserve the existing opt-in |
 | 3 | **Complete:** M3b matched-single readout, B-archive component feasibility, v1 terminal lineage, and corrected frozen v2 campaign | Completed 2026-07-21 | Exact canonical factoring missed `4.0×`; close B-archive with no serializer and nominate fused-lane dispatch |
-| 4 | Behavior-exact fused-lane dispatch under a new prospective contract; M2 only after a mechanism survives the cheaper evidence stages. Q1 remains sequenced after the post-dispatch baseline | Separately estimated after protocol freeze | Retain exact dispatch, defer, or close |
+| 4 | **In progress:** behavior-exact fused-lane dispatch; design contract frozen before implementation, with calibration and validation execution freezes still required. M2 waits for a survivor; Q1 remains sequenced after the post-dispatch baseline | Contract frozen 2026-07-21; implementation separately estimated | Retain exact dispatch, defer, or close |
 | 5 | Q3, S, or P-next Tier-D campaigns | Separately estimated and power-gated | One fresh campaign per qualified automatic policy |
 | Later | Track I backlog (C and X mechanisms included), M4 drift check, and Z cleanup | Independent backlog | No coupling to unfinished speculative tracks |
 
