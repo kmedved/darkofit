@@ -26,6 +26,7 @@ from .booster import (
     MulticlassBoosting,
     _EMITTED_DIAGNOSTIC_WARNING_CODES,
     _normalize_diagnostic_warnings,
+    _normalize_oblivious_kernel,
     _normalize_tree_mode,
 )
 from .auto_params import (
@@ -7045,6 +7046,10 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
     linear_lambda : float, default 1.0
         Nonnegative ridge penalty applied to local-linear slopes. The regular
         leaf ``l2_leaf_reg`` remains the intercept penalty.
+    oblivious_kernel : {"auto", "fused", "unfused"}, default "auto"
+        Static fused-kernel dispatch for eligible scalar CatBoost-mode fits.
+        Explicit modes are an observability and escape-hatch surface; automatic
+        switching remains disabled until a calibrated threshold is retained.
     preset : {None, "accuracy"}, default None
         Optional profile. ``"accuracy"`` applies the frozen A10 development
         configuration during fit without changing the conservative default.
@@ -7103,7 +7108,8 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                  linear_leaves=False, linear_lambda=1.0,
                  preset=None, selection_rounds=None, n_ensembles=1,
                  ensemble_bootstrap="rows",
-                 ensemble_shared_preprocessing=True):
+                 ensemble_shared_preprocessing=True,
+                 oblivious_kernel="auto"):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -7167,6 +7173,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self.n_ensembles = n_ensembles
         self.ensemble_bootstrap = ensemble_bootstrap
         self.ensemble_shared_preprocessing = ensemble_shared_preprocessing
+        self.oblivious_kernel = oblivious_kernel
         self.auto_learning_rate_probe = auto_learning_rate_probe
         self.auto_learning_rate_probe_values = auto_learning_rate_probe_values
         self.auto_learning_rate_probe_iterations = auto_learning_rate_probe_iterations
@@ -7176,6 +7183,13 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             sample_weight=None, eval_sample_weight=None, callbacks=None,
             ordinal_features=None):
         """Fit the model, resolving any opt-in product preset."""
+        oblivious_kernel = _normalize_oblivious_kernel(self.oblivious_kernel)
+        if oblivious_kernel != "auto" and _is_auto_tree_mode(self.tree_mode):
+            raise ValueError(
+                "an explicit oblivious_kernel requires an explicit "
+                "tree_mode='catboost'; tree_mode='auto' auditions "
+                "non-oblivious modes"
+            )
         self._clear_ensemble_state()
         if not getattr(self, "_suppress_wrapper_deprecation_warning", False):
             self._warn_wrapper_deprecated_options(stacklevel=4)
@@ -7252,6 +7266,13 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             candidate fits. Callbacks are not supported with automatic
             learning-rate probes or refitting.
         """
+        oblivious_kernel = _normalize_oblivious_kernel(self.oblivious_kernel)
+        if oblivious_kernel != "auto" and _is_auto_tree_mode(self.tree_mode):
+            raise ValueError(
+                "an explicit oblivious_kernel requires an explicit "
+                "tree_mode='catboost'; tree_mode='auto' auditions "
+                "non-oblivious modes"
+            )
         ensemble = self._fit_ensemble(
             X,
             y,
@@ -8430,6 +8451,10 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         Number of OOB-selected bootstrap members, from 1 through 256. Values
         above one opt into soft-vote aggregation.
         ``ensemble_bootstrap="groups"`` requires ``groups`` in :meth:`fit`.
+    oblivious_kernel : {"auto", "fused", "unfused"}, default "auto"
+        Static fused-kernel dispatch for eligible binary CatBoost-mode fits.
+        Multiclass and non-oblivious fits retain their current kernels under
+        ``"auto"`` and reject explicit modes.
     """
 
     def __init__(self, iterations=1000, learning_rate=None, depth=None,
@@ -8458,7 +8483,8 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                  target_ordered_cat_codes="off",
                  selection_rounds=None, n_ensembles=1,
                  ensemble_bootstrap="rows",
-                 ensemble_shared_preprocessing=True):
+                 ensemble_shared_preprocessing=True,
+                 oblivious_kernel="auto"):
         self.iterations = iterations
         self.learning_rate = learning_rate
         self.depth = depth
@@ -8505,6 +8531,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         self.n_ensembles = n_ensembles
         self.ensemble_bootstrap = ensemble_bootstrap
         self.ensemble_shared_preprocessing = ensemble_shared_preprocessing
+        self.oblivious_kernel = oblivious_kernel
         self.auto_learning_rate_probe = auto_learning_rate_probe
         self.auto_learning_rate_probe_values = auto_learning_rate_probe_values
         self.auto_learning_rate_probe_iterations = auto_learning_rate_probe_iterations
@@ -8549,6 +8576,13 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
             candidate fits. Callbacks are not supported with automatic
             learning-rate probes or refitting.
         """
+        oblivious_kernel = _normalize_oblivious_kernel(self.oblivious_kernel)
+        if oblivious_kernel != "auto" and _is_auto_tree_mode(self.tree_mode):
+            raise ValueError(
+                "an explicit oblivious_kernel requires an explicit "
+                "tree_mode='catboost'; tree_mode='auto' auditions "
+                "non-oblivious modes"
+            )
         self._clear_ensemble_state()
         if not getattr(self, "_suppress_wrapper_deprecation_warning", False):
             self._warn_wrapper_deprecated_options(stacklevel=4)

@@ -10,6 +10,8 @@ import copy
 import ctypes
 import hashlib
 import operator
+import os
+import platform
 import sys
 import time
 import warnings
@@ -84,6 +86,525 @@ _LOW_EFFECTIVE_SAMPLE_FRACTION = 0.3
 _MAX_CONSECUTIVE_SAMPLED_DEPTH0_RETRIES = 10
 LINEAR_LEAVES_MIN_SAMPLES = 1000
 _EMITTED_DIAGNOSTIC_WARNING_CODES = set()
+_OBLIVIOUS_KERNEL_MODES = frozenset({"auto", "fused", "unfused"})
+_OBLIVIOUS_KERNEL_AUTO_THRESHOLD = None
+_OBLIVIOUS_DISPATCH_SCHEMA_VERSION = 1
+_OBLIVIOUS_FUNCTIONAL_INELIGIBILITY_CODES = frozenset({
+    "non_scalar_booster",
+    "tree_mode_not_catboost",
+    "row_sampling_active",
+    "feature_sampling_active",
+    "split_randomness_active",
+    "insufficient_threads",
+    "row_parallel_histograms_active",
+    "non_float64_histograms",
+})
+_OBLIVIOUS_DISPATCH_REASON_CODES = frozenset({
+    *_OBLIVIOUS_FUNCTIONAL_INELIGIBILITY_CODES,
+    "unsupported_platform",
+    "rows_outside_envelope",
+    "features_outside_envelope",
+    "threads_outside_envelope",
+    "depth_outside_envelope",
+    "bins_outside_envelope",
+    "threshold_unavailable",
+    "below_threshold",
+    "at_or_above_threshold",
+    "user_forced_fused",
+    "user_forced_unfused",
+})
+_OBLIVIOUS_DISPATCH_INPUT_FIELDS = frozenset({
+    "platform_system",
+    "platform_machine",
+    "logical_cpu_count",
+    "n_rows",
+    "n_active_features",
+    "n_threads",
+    "depth",
+    "max_realized_bins",
+})
+_OBLIVIOUS_DISPATCH_FIELDS = frozenset({
+    "schema_version",
+    "requested",
+    "resolved",
+    "reason",
+    "functional_eligible",
+    "automatic_eligible",
+    "threshold",
+    "scan_work",
+    "engaged",
+    "fused_level_count",
+    "unfused_level_count",
+    "inputs",
+})
+_USE_CONFIGURED_OBLIVIOUS_THRESHOLD = object()
+
+
+def _normalize_oblivious_kernel(value):
+    if not isinstance(value, str) or value not in _OBLIVIOUS_KERNEL_MODES:
+        valid = ", ".join(repr(mode) for mode in sorted(_OBLIVIOUS_KERNEL_MODES))
+        raise ValueError(f"oblivious_kernel must be one of {valid}")
+    return value
+
+
+def _nonnegative_metadata_integer(name, value, *, allow_none=False):
+    if allow_none and value is None:
+        return None
+    if isinstance(value, (bool, np.bool_)) or not isinstance(
+        value, (int, np.integer)
+    ):
+        raise ValueError(f"oblivious dispatch metadata {name} must be an integer")
+    value = int(value)
+    if value < 0:
+        raise ValueError(
+            f"oblivious dispatch metadata {name} must be nonnegative"
+        )
+    return value
+
+
+def _oblivious_scan_work(n_rows, n_active_features, n_threads):
+    if n_rows < 1 or n_active_features < 1 or n_threads < 1:
+        return None
+    active_threads = min(n_threads, n_active_features)
+    scans_per_row = (
+        n_active_features + active_threads - 1
+    ) // active_threads
+    return n_rows * scans_per_row
+
+
+def _oblivious_automatic_ineligibility(
+    functional_ineligibility,
+    *,
+    system,
+    machine,
+    n_rows,
+    n_active_features,
+    n_threads,
+    depth,
+    max_realized_bins,
+):
+    if functional_ineligibility is not None:
+        return functional_ineligibility
+    if system != "Darwin" or machine != "arm64":
+        return "unsupported_platform"
+    if not 8_192 <= n_rows <= 1_200_000:
+        return "rows_outside_envelope"
+    if not 8 <= n_active_features <= 64:
+        return "features_outside_envelope"
+    if not 3 <= n_threads <= 14:
+        return "threads_outside_envelope"
+    if depth is None or not 4 <= depth <= 8:
+        return "depth_outside_envelope"
+    if not 65 <= max_realized_bins <= 255:
+        return "bins_outside_envelope"
+    return None
+
+
+def _validate_oblivious_kernel_dispatch_metadata(metadata, requested):
+    """Validate and copy persisted fused-lane dispatch metadata."""
+    requested = _normalize_oblivious_kernel(requested)
+    if not isinstance(metadata, dict):
+        raise ValueError("oblivious dispatch metadata must be an object")
+    if set(metadata) != _OBLIVIOUS_DISPATCH_FIELDS:
+        raise ValueError("oblivious dispatch metadata fields are invalid")
+    schema_version = _nonnegative_metadata_integer(
+        "schema_version", metadata.get("schema_version")
+    )
+    if schema_version != _OBLIVIOUS_DISPATCH_SCHEMA_VERSION:
+        raise ValueError("oblivious dispatch metadata schema is unsupported")
+    if metadata.get("requested") != requested:
+        raise ValueError(
+            "oblivious dispatch metadata request disagrees with constructor"
+        )
+    resolved = metadata.get("resolved")
+    if resolved not in {"fused", "unfused"}:
+        raise ValueError("oblivious dispatch metadata resolved lane is invalid")
+    reason = metadata.get("reason")
+    if reason not in _OBLIVIOUS_DISPATCH_REASON_CODES:
+        raise ValueError("oblivious dispatch metadata reason is invalid")
+    for name in ("functional_eligible", "automatic_eligible", "engaged"):
+        if not isinstance(metadata.get(name), (bool, np.bool_)):
+            raise ValueError(
+                f"oblivious dispatch metadata {name} must be a boolean"
+            )
+    functional_eligible = bool(metadata["functional_eligible"])
+    automatic_eligible = bool(metadata["automatic_eligible"])
+    engaged = bool(metadata["engaged"])
+    if automatic_eligible and not functional_eligible:
+        raise ValueError(
+            "oblivious dispatch automatic eligibility requires functional eligibility"
+        )
+    threshold = _nonnegative_metadata_integer(
+        "threshold", metadata.get("threshold"), allow_none=True
+    )
+    scan_work = _nonnegative_metadata_integer(
+        "scan_work", metadata.get("scan_work"), allow_none=True
+    )
+    fused_levels = _nonnegative_metadata_integer(
+        "fused_level_count", metadata.get("fused_level_count")
+    )
+    unfused_levels = _nonnegative_metadata_integer(
+        "unfused_level_count", metadata.get("unfused_level_count")
+    )
+    if engaged != (fused_levels + unfused_levels > 0):
+        raise ValueError(
+            "oblivious dispatch engagement disagrees with level counters"
+        )
+    if resolved == "fused" and unfused_levels:
+        raise ValueError(
+            "fused oblivious dispatch cannot report unfused engagement"
+        )
+    if resolved == "unfused" and fused_levels:
+        raise ValueError(
+            "unfused oblivious dispatch cannot report fused engagement"
+        )
+    if resolved == "unfused" and reason not in {
+        "at_or_above_threshold", "user_forced_unfused"
+    }:
+        raise ValueError("unfused oblivious dispatch reason is inconsistent")
+    if requested == "fused" and reason != "user_forced_fused":
+        raise ValueError("forced-fused oblivious dispatch reason is inconsistent")
+    if requested == "unfused" and reason != "user_forced_unfused":
+        raise ValueError("forced-unfused oblivious dispatch reason is inconsistent")
+    if reason in {"below_threshold", "at_or_above_threshold"} and threshold is None:
+        raise ValueError("automatic oblivious dispatch requires a threshold")
+    inputs = metadata.get("inputs")
+    if not isinstance(inputs, dict) or set(inputs) != _OBLIVIOUS_DISPATCH_INPUT_FIELDS:
+        raise ValueError("oblivious dispatch metadata inputs are invalid")
+    for name in ("platform_system", "platform_machine"):
+        if not isinstance(inputs.get(name), str) or not inputs[name]:
+            raise ValueError(
+                f"oblivious dispatch metadata input {name} must be nonempty"
+            )
+    normalized_inputs = {
+        "platform_system": inputs["platform_system"],
+        "platform_machine": inputs["platform_machine"],
+        "logical_cpu_count": _nonnegative_metadata_integer(
+            "logical_cpu_count", inputs.get("logical_cpu_count")
+        ),
+        "n_rows": _nonnegative_metadata_integer("n_rows", inputs.get("n_rows")),
+        "n_active_features": _nonnegative_metadata_integer(
+            "n_active_features", inputs.get("n_active_features")
+        ),
+        "n_threads": _nonnegative_metadata_integer(
+            "n_threads", inputs.get("n_threads")
+        ),
+        "depth": _nonnegative_metadata_integer(
+            "depth", inputs.get("depth"), allow_none=True
+        ),
+        "max_realized_bins": _nonnegative_metadata_integer(
+            "max_realized_bins", inputs.get("max_realized_bins")
+        ),
+    }
+    if normalized_inputs["logical_cpu_count"] < 1:
+        raise ValueError("oblivious dispatch logical CPU count must be positive")
+    if normalized_inputs["n_rows"] < 1:
+        raise ValueError("oblivious dispatch row count must be positive")
+    if normalized_inputs["n_active_features"] < 1:
+        raise ValueError("oblivious dispatch feature count must be positive")
+    if normalized_inputs["n_threads"] < 1:
+        raise ValueError("oblivious dispatch thread count must be positive")
+    if normalized_inputs["max_realized_bins"] < 1:
+        raise ValueError("oblivious dispatch realized bins must be positive")
+    expected_scan_work = _oblivious_scan_work(
+        normalized_inputs["n_rows"],
+        normalized_inputs["n_active_features"],
+        normalized_inputs["n_threads"],
+    )
+    if scan_work != expected_scan_work:
+        raise ValueError(
+            "oblivious dispatch scan work disagrees with its inputs"
+        )
+
+    if functional_eligible:
+        functional_ineligibility = None
+    else:
+        if requested != "auto" or reason not in (
+            _OBLIVIOUS_FUNCTIONAL_INELIGIBILITY_CODES
+        ):
+            raise ValueError(
+                "oblivious dispatch functional eligibility is inconsistent"
+            )
+        functional_ineligibility = reason
+    automatic_reason = _oblivious_automatic_ineligibility(
+        functional_ineligibility,
+        system=normalized_inputs["platform_system"],
+        machine=normalized_inputs["platform_machine"],
+        n_rows=normalized_inputs["n_rows"],
+        n_active_features=normalized_inputs["n_active_features"],
+        n_threads=normalized_inputs["n_threads"],
+        depth=normalized_inputs["depth"],
+        max_realized_bins=normalized_inputs["max_realized_bins"],
+    )
+    if automatic_eligible != (automatic_reason is None):
+        raise ValueError(
+            "oblivious dispatch automatic eligibility is inconsistent"
+        )
+    if requested == "fused":
+        expected_resolved, expected_reason = "fused", "user_forced_fused"
+    elif requested == "unfused":
+        expected_resolved, expected_reason = (
+            "unfused", "user_forced_unfused"
+        )
+    elif automatic_reason is not None:
+        expected_resolved, expected_reason = "fused", automatic_reason
+    elif threshold is None:
+        expected_resolved, expected_reason = "fused", "threshold_unavailable"
+    elif scan_work < threshold:
+        expected_resolved, expected_reason = "fused", "below_threshold"
+    else:
+        expected_resolved, expected_reason = (
+            "unfused", "at_or_above_threshold"
+        )
+    if (resolved, reason) != (expected_resolved, expected_reason):
+        raise ValueError(
+            "oblivious dispatch resolution disagrees with its inputs"
+        )
+    if not functional_eligible and (fused_levels or unfused_levels):
+        raise ValueError(
+            "ineligible oblivious dispatch cannot report level engagement"
+        )
+    return {
+        "schema_version": schema_version,
+        "requested": requested,
+        "resolved": resolved,
+        "reason": reason,
+        "functional_eligible": functional_eligible,
+        "automatic_eligible": automatic_eligible,
+        "threshold": threshold,
+        "scan_work": scan_work,
+        "engaged": engaged,
+        "fused_level_count": fused_levels,
+        "unfused_level_count": unfused_levels,
+        "inputs": normalized_inputs,
+    }
+
+
+def _resolve_oblivious_kernel_dispatch(
+    requested,
+    *,
+    functional_ineligibility,
+    n_rows,
+    n_active_features,
+    n_threads,
+    depth,
+    max_realized_bins,
+    platform_system=None,
+    platform_machine=None,
+    logical_cpu_count=None,
+    threshold=_USE_CONFIGURED_OBLIVIOUS_THRESHOLD,
+):
+    """Resolve one deterministic fit-wide fused/unfused kernel request."""
+    requested = _normalize_oblivious_kernel(requested)
+    system = platform.system() if platform_system is None else platform_system
+    machine = platform.machine() if platform_machine is None else platform_machine
+    system = str(system) or "unknown"
+    machine = str(machine) or "unknown"
+    cpu_count = os.cpu_count() if logical_cpu_count is None else logical_cpu_count
+    cpu_count = max(1, int(cpu_count or 1))
+    n_rows = int(n_rows)
+    n_active_features = int(n_active_features)
+    n_threads = int(n_threads)
+    depth = None if depth is None else int(depth)
+    max_realized_bins = int(max_realized_bins)
+    if threshold is _USE_CONFIGURED_OBLIVIOUS_THRESHOLD:
+        threshold = _OBLIVIOUS_KERNEL_AUTO_THRESHOLD
+    threshold = None if threshold is None else int(threshold)
+    if threshold is not None and threshold < 0:
+        raise ValueError("oblivious kernel threshold must be nonnegative")
+    scan_work = _oblivious_scan_work(
+        n_rows, n_active_features, n_threads
+    )
+    functional_eligible = functional_ineligibility is None
+    if requested != "auto" and not functional_eligible:
+        reason = str(functional_ineligibility).replace("_", " ")
+        raise ValueError(
+            f"oblivious_kernel={requested!r} requires the scalar full-row, "
+            f"full-feature CatBoost lane; failed eligibility: {reason}"
+        )
+
+    automatic_reason = _oblivious_automatic_ineligibility(
+        functional_ineligibility,
+        system=system,
+        machine=machine,
+        n_rows=n_rows,
+        n_active_features=n_active_features,
+        n_threads=n_threads,
+        depth=depth,
+        max_realized_bins=max_realized_bins,
+    )
+    automatic_eligible = automatic_reason is None
+
+    instrument = requested != "auto"
+    if requested == "fused":
+        resolved, reason = "fused", "user_forced_fused"
+    elif requested == "unfused":
+        resolved, reason = "unfused", "user_forced_unfused"
+    elif not automatic_eligible:
+        resolved, reason = "fused", automatic_reason
+    elif threshold is None:
+        resolved, reason = "fused", "threshold_unavailable"
+    elif scan_work < threshold:
+        instrument = True
+        resolved, reason = "fused", "below_threshold"
+    else:
+        instrument = True
+        resolved, reason = "unfused", "at_or_above_threshold"
+
+    metadata = {
+        "schema_version": _OBLIVIOUS_DISPATCH_SCHEMA_VERSION,
+        "requested": requested,
+        "resolved": resolved,
+        "reason": reason,
+        "functional_eligible": bool(functional_eligible),
+        "automatic_eligible": bool(automatic_eligible),
+        "threshold": threshold,
+        "scan_work": scan_work,
+        "engaged": False,
+        "fused_level_count": 0,
+        "unfused_level_count": 0,
+        "inputs": {
+            "platform_system": system,
+            "platform_machine": machine,
+            "logical_cpu_count": cpu_count,
+            "n_rows": n_rows,
+            "n_active_features": n_active_features,
+            "n_threads": n_threads,
+            "depth": depth,
+            "max_realized_bins": max_realized_bins,
+        },
+    }
+    return _validate_oblivious_kernel_dispatch_metadata(
+        metadata, requested
+    ), instrument
+
+
+def _validate_oblivious_kernel_dispatch_fitted_state(booster):
+    """Cross-check persisted dispatch metadata against a decoded fitted model."""
+    metadata = _validate_oblivious_kernel_dispatch_metadata(
+        booster.oblivious_kernel_dispatch_, booster.oblivious_kernel
+    )
+    inputs = metadata["inputs"]
+    prep = booster.prep_
+    n_bins = np.asarray(prep.n_bins_, dtype=np.int64)
+    if inputs["n_active_features"] != len(n_bins):
+        raise ValueError(
+            "oblivious dispatch feature count disagrees with fitted preprocessing"
+        )
+    expected_max_bins = int(n_bins.max()) if len(n_bins) else 1
+    if inputs["max_realized_bins"] != expected_max_bins:
+        raise ValueError(
+            "oblivious dispatch realized bins disagree with fitted preprocessing"
+        )
+    if inputs["n_threads"] != int(booster.n_threads_):
+        raise ValueError(
+            "oblivious dispatch thread count disagrees with fitted state"
+        )
+
+    auto_params = booster.auto_params_
+    target = auto_params.get("target")
+    if not isinstance(target, dict):
+        raise ValueError("oblivious dispatch requires fitted target metadata")
+    n_rows = target.get("n_samples")
+    if (
+        isinstance(n_rows, (bool, np.bool_))
+        or not isinstance(n_rows, (int, np.integer))
+        or int(n_rows) != inputs["n_rows"]
+    ):
+        raise ValueError(
+            "oblivious dispatch row count disagrees with fitted metadata"
+        )
+
+    tree_metadata = auto_params.get("tree")
+    if not isinstance(tree_metadata, dict):
+        raise ValueError("oblivious dispatch requires fitted tree metadata")
+    scalar_oblivious = type(booster).__name__ == "GradientBoosting"
+    if scalar_oblivious and booster.tree_mode_ == "catboost":
+        expected_depth = tree_metadata.get("max_tree_depth")
+        if (
+            isinstance(expected_depth, (bool, np.bool_))
+            or not isinstance(expected_depth, (int, np.integer))
+            or int(expected_depth) < 1
+        ):
+            raise ValueError("oblivious dispatch fitted depth is invalid")
+        expected_depth = int(expected_depth)
+    else:
+        expected_depth = None
+    if inputs["depth"] != expected_depth:
+        raise ValueError(
+            "oblivious dispatch depth disagrees with fitted metadata"
+        )
+
+    threading = auto_params.get("threading")
+    if not isinstance(threading, dict) or not isinstance(
+        threading.get("row_parallel_histograms_active"), (bool, np.bool_)
+    ):
+        raise ValueError("oblivious dispatch requires fitted threading metadata")
+    rowpar_active = bool(threading["row_parallel_histograms_active"])
+    functional_ineligibility = booster._oblivious_functional_ineligibility(
+        scalar_oblivious=scalar_oblivious,
+        rowpar_buffers=object() if rowpar_active else None,
+    )
+    expected, _ = _resolve_oblivious_kernel_dispatch(
+        booster.oblivious_kernel,
+        functional_ineligibility=functional_ineligibility,
+        n_rows=inputs["n_rows"],
+        n_active_features=inputs["n_active_features"],
+        n_threads=inputs["n_threads"],
+        depth=inputs["depth"],
+        max_realized_bins=inputs["max_realized_bins"],
+        platform_system=inputs["platform_system"],
+        platform_machine=inputs["platform_machine"],
+        logical_cpu_count=inputs["logical_cpu_count"],
+        threshold=metadata["threshold"],
+    )
+    decision_fields = _OBLIVIOUS_DISPATCH_FIELDS - {
+        "engaged", "fused_level_count", "unfused_level_count"
+    }
+    if any(metadata[name] != expected[name] for name in decision_fields):
+        raise ValueError(
+            "oblivious dispatch decision disagrees with fitted state"
+        )
+
+    selected_count = metadata[
+        f"{metadata['resolved']}_level_count"
+    ]
+    retained_levels = sum(
+        int(getattr(tree, "depth", 0))
+        for tree in booster._iter_tree_objects()
+    )
+    if metadata["functional_eligible"] and selected_count < retained_levels:
+        raise ValueError(
+            "oblivious dispatch engagement disagrees with fitted trees"
+        )
+    training = auto_params.get("training")
+    if training is None:
+        # Archives predating fitted training metadata are still supported.
+        # Their decoded trees provide the strongest available lower bound;
+        # _restore_training_metadata supplies an explicit legacy record later.
+        return metadata
+    if not isinstance(training, dict):
+        raise ValueError("oblivious dispatch requires fitted training metadata")
+    iterations_attempted = training.get("iterations_attempted")
+    if (
+        isinstance(iterations_attempted, (bool, np.bool_))
+        or not isinstance(iterations_attempted, (int, np.integer))
+        or int(iterations_attempted) < 0
+    ):
+        raise ValueError(
+            "oblivious dispatch fitted iteration count is invalid"
+        )
+    iterations_attempted = int(iterations_attempted)
+    if metadata["functional_eligible"]:
+        if bool(selected_count) != bool(iterations_attempted):
+            raise ValueError(
+                "oblivious dispatch engagement disagrees with fitted iterations"
+            )
+        if selected_count > iterations_attempted * expected_depth:
+            raise ValueError(
+                "oblivious dispatch level count exceeds fitted iterations"
+            )
+    return metadata
 
 
 def reset_diagnostic_warning_registry():
@@ -567,7 +1088,8 @@ class _BaseBooster:
                  target_ordered_cat_codes="off", eval_metric=None,
                  rho_learning_rate_multiplier=1.0,
                  rho_l2_leaf_reg_multiplier=1.0,
-                 linear_leaves=False, linear_lambda=1.0):
+                 linear_leaves=False, linear_lambda=1.0,
+                 oblivious_kernel="auto"):
         self.iterations = _normalize_iterations(iterations)
         self.learning_rate = learning_rate
         self._depth_input = depth
@@ -646,6 +1168,7 @@ class _BaseBooster:
             raise TypeError("linear_leaves must be a bool")
         self.linear_leaves = bool(linear_leaves)
         self.linear_lambda = float(linear_lambda)
+        self.oblivious_kernel = _normalize_oblivious_kernel(oblivious_kernel)
         if self.bagging_temperature < 0.0:
             raise ValueError("bagging_temperature must be nonnegative")
         if self.mvs_reg < 0.0:
@@ -942,6 +1465,101 @@ class _BaseBooster:
             or self._mvs_active()
             or (self.sampling_ == "uniform" and self.subsample < 1.0)
         )
+
+    def _oblivious_functional_ineligibility(
+        self, *, scalar_oblivious, rowpar_buffers
+    ):
+        if not scalar_oblivious:
+            return "non_scalar_booster"
+        if self.tree_mode_ != "catboost":
+            return "tree_mode_not_catboost"
+        if self._row_sampling_active() or self._bayesian_bootstrap_active():
+            return "row_sampling_active"
+        if self.colsample < 1.0:
+            return "feature_sampling_active"
+        if self.random_strength > 0.0:
+            return "split_randomness_active"
+        if self.n_threads_ <= 2:
+            return "insufficient_threads"
+        if rowpar_buffers is not None:
+            return "row_parallel_histograms_active"
+        if self.histogram_dtype_ != "float64":
+            return "non_float64_histograms"
+        return None
+
+    def _prepare_oblivious_kernel_dispatch(
+        self,
+        *,
+        n_samples,
+        X_binned,
+        n_bins,
+        rowpar_buffers,
+        scalar_oblivious,
+    ):
+        ineligibility = self._oblivious_functional_ineligibility(
+            scalar_oblivious=scalar_oblivious,
+            rowpar_buffers=rowpar_buffers,
+        )
+        depth = (
+            self._max_tree_depth()
+            if scalar_oblivious and self.tree_mode_ == "catboost"
+            else None
+        )
+        max_realized_bins = int(n_bins.max()) if len(n_bins) else 1
+        metadata, instrument = _resolve_oblivious_kernel_dispatch(
+            self.oblivious_kernel,
+            functional_ineligibility=ineligibility,
+            n_rows=n_samples,
+            n_active_features=X_binned.shape[1],
+            n_threads=self.n_threads_,
+            depth=depth,
+            max_realized_bins=max_realized_bins,
+        )
+        self._oblivious_dispatch_instrument_ = bool(instrument)
+        self._oblivious_kernel_use_fused_ = metadata["resolved"] == "fused"
+        self._fused_oblivious_level_counter_ = np.zeros(1, dtype=np.int64)
+        self._unfused_oblivious_level_counter_ = np.zeros(1, dtype=np.int64)
+        self.oblivious_kernel_dispatch_ = metadata
+
+    def _record_oblivious_kernel_dispatch(self):
+        if not isinstance(getattr(self, "auto_params_", None), dict):
+            return
+        metadata = _validate_oblivious_kernel_dispatch_metadata(
+            self.oblivious_kernel_dispatch_, self.oblivious_kernel
+        )
+        self.oblivious_kernel_dispatch_ = metadata
+        self.auto_params_["oblivious_kernel_dispatch"] = copy.deepcopy(metadata)
+
+    def _record_oblivious_tree_dispatch_engagement(self, tree):
+        """Count selected-lane levels without changing the builder call surface."""
+        metadata = self.oblivious_kernel_dispatch_
+        if not metadata["functional_eligible"]:
+            return
+        max_depth = self._max_tree_depth()
+        attempted_levels = int(tree.depth)
+        if attempted_levels < max_depth:
+            # The builder enters one final level before learning that no legal
+            # split exists. That invocation is real dispatch engagement even
+            # though it does not become part of the retained tree.
+            attempted_levels += 1
+        if metadata["resolved"] == "fused":
+            self._fused_oblivious_level_counter_[0] += attempted_levels
+        else:
+            self._unfused_oblivious_level_counter_[0] += attempted_levels
+
+    def _finalize_oblivious_kernel_dispatch(self):
+        metadata = copy.deepcopy(self.oblivious_kernel_dispatch_)
+        fused_levels = int(self._fused_oblivious_level_counter_[0])
+        unfused_levels = int(self._unfused_oblivious_level_counter_[0])
+        metadata["fused_level_count"] = fused_levels
+        metadata["unfused_level_count"] = unfused_levels
+        metadata["engaged"] = bool(fused_levels + unfused_levels)
+        self.oblivious_kernel_dispatch_ = (
+            _validate_oblivious_kernel_dispatch_metadata(
+                metadata, self.oblivious_kernel
+            )
+        )
+        self._record_oblivious_kernel_dispatch()
 
     def _reset_stochastic_diagnostics(self):
         self._stochastic_diagnostics_ = {
@@ -2283,6 +2901,13 @@ class _BaseBooster:
             "tree_iteration": int(tree_iteration),
             "leaf_dtype": self.leaf_dtype_,
         }
+        if (
+            self.tree_mode_ == "catboost"
+            and getattr(self, "_oblivious_dispatch_instrument_", False)
+        ):
+            kwargs.update(
+                fused_oblivious_kernel=self._oblivious_kernel_use_fused_,
+            )
         if self.tree_mode_ in {"lightgbm", "hybrid"}:
             kwargs.update(
                 max_leaves=self._max_tree_leaves(),
@@ -2514,6 +3139,13 @@ class GradientBoosting(_BaseBooster):
         rowpar_buffers = self._alloc_rowpar_buffers(
             X_binned.shape[1], n_bins, n_samples
         )
+        self._prepare_oblivious_kernel_dispatch(
+            n_samples=n_samples,
+            X_binned=X_binned,
+            n_bins=n_bins,
+            rowpar_buffers=rowpar_buffers,
+            scalar_oblivious=True,
+        )
         self._importance = np.zeros(self.prep_.n_input_features_)
 
         Xv_binned = Fv = None
@@ -2549,6 +3181,7 @@ class GradientBoosting(_BaseBooster):
             eval_sample_weight=wv,
             rowpar_buffers=rowpar_buffers,
         )
+        self._record_oblivious_kernel_dispatch()
         self._record_linear_leaf_metadata()
         self._emit_auto_param_warnings()
         self._reset_stochastic_diagnostics()
@@ -2607,6 +3240,7 @@ class GradientBoosting(_BaseBooster):
                     tree_iteration=m,
                 ),
             )
+            self._record_oblivious_tree_dispatch_engagement(tree)
             # A depth-0 tree found no legal split; subsequent rounds on the same
             # gradients would too, so stop rather than append empty trees.
             if tree.depth == 0:
@@ -2732,6 +3366,7 @@ class GradientBoosting(_BaseBooster):
             self.best_score_ = self.train_history_[-1]
         else:
             self.best_score_ = self.loss_.eval(y, F, w)
+        self._finalize_oblivious_kernel_dispatch()
         self._record_input_feature_metadata(n_features, feature_names)
         return self
 
@@ -3017,6 +3652,13 @@ class MulticlassBoosting(_BaseBooster):
         rowpar_buffers = self._alloc_rowpar_buffers(
             X_binned.shape[1], n_bins, n_samples
         )
+        self._prepare_oblivious_kernel_dispatch(
+            n_samples=n_samples,
+            X_binned=X_binned,
+            n_bins=n_bins,
+            rowpar_buffers=rowpar_buffers,
+            scalar_oblivious=False,
+        )
         use_shared_lightgbm_multiclass = (
             can_use_shared_lightgbm_multiclass
             and strategy in {"auto", "shared_vector"}
@@ -3087,6 +3729,7 @@ class MulticlassBoosting(_BaseBooster):
                 }
             },
         )
+        self._record_oblivious_kernel_dispatch()
         self._emit_auto_param_warnings()
         self._reset_stochastic_diagnostics()
 
@@ -3389,6 +4032,7 @@ class MulticlassBoosting(_BaseBooster):
             self.best_score_ = self.train_history_[-1]
         else:
             self.best_score_ = self.loss_.eval_class_major_labels(y_idx, F, w)
+        self._finalize_oblivious_kernel_dispatch()
         self._record_input_feature_metadata(n_features, feature_names)
         return self
 
@@ -3708,6 +4352,13 @@ class DistributionalBoosting(_BaseBooster):
         hist_buffers = self._alloc_multiclass_hist_buffers(
             K, X_binned.shape[1], n_bins
         )
+        self._prepare_oblivious_kernel_dispatch(
+            n_samples=n_samples,
+            X_binned=X_binned,
+            n_bins=n_bins,
+            rowpar_buffers=None,
+            scalar_oblivious=False,
+        )
         self._importance = np.zeros(self.prep_.n_input_features_)
 
         Xv_binned = Fv = None
@@ -3763,6 +4414,7 @@ class DistributionalBoosting(_BaseBooster):
                 }
             },
         )
+        self._record_oblivious_kernel_dispatch()
         self._emit_auto_param_warnings()
         self._reset_stochastic_diagnostics()
 
@@ -3985,6 +4637,7 @@ class DistributionalBoosting(_BaseBooster):
             self.best_score_ = self.train_history_[-1]
         else:
             self.best_score_ = self._eval_metric_class_major(y_fit, F, w)
+        self._finalize_oblivious_kernel_dispatch()
         self._record_input_feature_metadata(n_features, feature_names)
         return self
 

@@ -64,6 +64,7 @@ _BOOSTER_CONSTRUCTOR_PARAM_NAMES = (
     "random_strength", "diagnostic_warnings", "histogram_dtype",
     "leaf_dtype", "ts_permutations", "target_ordered_cat_codes",
     "rho_learning_rate_multiplier", "rho_l2_leaf_reg_multiplier",
+    "oblivious_kernel",
 )
 _BOOSTER_LINEAR_CONSTRUCTOR_PARAM_NAMES = ("linear_leaves", "linear_lambda")
 _BOOSTER_CONSTRUCTOR_INPUT_ATTRS = {
@@ -1463,10 +1464,21 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
         DistributionalBoosting,
         GradientBoosting,
         MulticlassBoosting,
+        _validate_oblivious_kernel_dispatch_fitted_state,
     )
 
     if not hasattr(booster, "trees_"):
         raise ValueError("cannot save an unfitted model")
+    dispatch = getattr(booster, "oblivious_kernel_dispatch_", None)
+    auto_dispatch = getattr(booster, "auto_params_", {}).get(
+        "oblivious_kernel_dispatch"
+    )
+    if dispatch != auto_dispatch:
+        raise ValueError(
+            "oblivious dispatch fitted attribute disagrees with auto_params_"
+        )
+    if dispatch is not None:
+        _validate_oblivious_kernel_dispatch_fitted_state(booster)
     prep = booster.prep_
     arrays = {}
     header = {
@@ -1674,6 +1686,8 @@ def _load_booster_payload(path, return_wrapper_payload=False):
         MulticlassBoosting,
         _normalize_eval_metric,
         _normalize_tree_mode,
+        _validate_oblivious_kernel_dispatch_metadata,
+        _validate_oblivious_kernel_dispatch_fitted_state,
     )
 
     wrapper_header = {}
@@ -1842,6 +1856,25 @@ def _load_booster_payload(path, return_wrapper_payload=False):
             and not isinstance(booster.auto_params_["diagnostics"], dict)
         ):
             _invalid_model("diagnostics metadata must be an object")
+        saved_oblivious_dispatch = booster.auto_params_.get(
+            "oblivious_kernel_dispatch"
+        )
+        if saved_oblivious_dispatch is None:
+            booster.oblivious_kernel_dispatch_ = None
+        else:
+            try:
+                saved_oblivious_dispatch = (
+                    _validate_oblivious_kernel_dispatch_metadata(
+                        saved_oblivious_dispatch,
+                        booster.oblivious_kernel,
+                    )
+                )
+            except ValueError as exc:
+                _invalid_model(str(exc))
+            booster.oblivious_kernel_dispatch_ = saved_oblivious_dispatch
+            booster.auto_params_["oblivious_kernel_dispatch"] = _jsonify(
+                saved_oblivious_dispatch
+            )
         saved_linear_metadata = booster.auto_params_.get("linear_leaves")
         if saved_linear_metadata is not None:
             if not isinstance(saved_linear_metadata, dict):
@@ -2173,6 +2206,17 @@ def _load_booster_payload(path, return_wrapper_payload=False):
                 _invalid_model("feature_names_in must match input features")
             booster.feature_names_in_ = np.asarray(
                 feature_names, dtype=object
+            )
+        if saved_oblivious_dispatch is not None:
+            try:
+                saved_oblivious_dispatch = (
+                    _validate_oblivious_kernel_dispatch_fitted_state(booster)
+                )
+            except ValueError as exc:
+                _invalid_model(str(exc))
+            booster.oblivious_kernel_dispatch_ = saved_oblivious_dispatch
+            booster.auto_params_["oblivious_kernel_dispatch"] = _jsonify(
+                saved_oblivious_dispatch
             )
         linear_trees = [
             tree

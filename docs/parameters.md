@@ -89,6 +89,14 @@ oblivious-tree fits. It is default-off. `ordinal_features={column: order}`
 explicitly maps declared ordered categories into the numeric binner; unknown
 non-missing values fail closed.
 
+`oblivious_kernel` is a bounded observability and escape-hatch option for the
+eligible scalar CatBoost lane. `"fused"` and `"unfused"` force the two
+behavior-equivalent histogram/split implementations; unsupported explicit
+configurations fail loudly. The default `"auto"` records its deterministic
+resolution in `oblivious_kernel_dispatch_` and fitted `auto_params_`. Until a
+prospective calibration retains a crossover threshold, automatic dispatch
+keeps the established fused path.
+
 See [Feature recipes](recipes.md) for measured benefits and failure boundaries.
 
 ## Sampling and categoricals
