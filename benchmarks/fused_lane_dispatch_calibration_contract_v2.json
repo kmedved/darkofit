@@ -1,0 +1,585 @@
+{
+  "authorization_contract": {
+    "required_fields": {
+      "campaign": "fused_lane_dispatch_calibration_v1_20260721",
+      "execution_authorized": true,
+      "execution_contract_sha256": "<this contract SHA-256>",
+      "execution_identity": "calibration_v2",
+      "owner_decision": "<nonempty explicit decision>",
+      "phase": "calibration",
+      "schema_version": 1,
+      "source": "cf6a667cff5eaa2d36b9c16c9304470e0feac083"
+    },
+    "separate_create_only_record_required": true
+  },
+  "bound_files": {
+    "bin_width_erratum": {
+      "bytes": 1577,
+      "path": "benchmarks/fused_lane_dispatch_v2_bin_width_erratum_20260721.md",
+      "sha256": "18847b3118f6873d68bed57b9730ebd18fb07b8418260a37059dc1b3700217db"
+    },
+    "campaign": {
+      "bytes": 30272,
+      "path": "benchmarks/fused_lane_dispatch_campaign.py",
+      "sha256": "034893ef265f8c3c2a9d6ab62368d0b9c47076e23656005b31a21551ba81ac73"
+    },
+    "campaign_tests": {
+      "bytes": 19634,
+      "path": "tests/test_fused_lane_dispatch_campaign.py",
+      "sha256": "9f478a02affb02bf64edf844634309a95b6b3d4d06b8ee44cf6070e8b751f169"
+    },
+    "design_v1": {
+      "bytes": 10611,
+      "path": "benchmarks/fused_lane_dispatch_v1_contract.md",
+      "sha256": "68d0dd6ef42f29d164943ef16e766821c5bd53319840b22a59b1bd449191cf1a"
+    },
+    "design_v2": {
+      "bytes": 8869,
+      "path": "benchmarks/fused_lane_dispatch_v2_contract.md",
+      "sha256": "ed032758dfa5829766ae324bdde54b9a1724ed0063d3997f55f3d72f7907240e"
+    },
+    "dispatch_tests": {
+      "bytes": 19270,
+      "path": "tests/test_oblivious_kernel_dispatch.py",
+      "sha256": "b08e55a77dff29d5317b61fb1ecd8896da989953b7004681af7e103c9cb8c3e5"
+    },
+    "execution_contract_v1": {
+      "bytes": 15615,
+      "path": "benchmarks/fused_lane_dispatch_calibration_contract.json",
+      "sha256": "3d7f8a653a71d6a9712f57f51bb01421765b42fcd105902f1fb0c6a611f7712d"
+    },
+    "execution_protocol_v1": {
+      "bytes": 5323,
+      "path": "benchmarks/fused_lane_dispatch_calibration_protocol.md",
+      "sha256": "4f85112d89845f13320fd1758e98dbaae59b9ca7cc870203177c0ceee0f93d76"
+    },
+    "execution_protocol_v2": {
+      "bytes": 2278,
+      "path": "benchmarks/fused_lane_dispatch_calibration_v2_protocol.md",
+      "sha256": "c07e9565e8f337317c6c564b03cf9d8cd60af684be4ed7c487114d17c1e91e8c"
+    },
+    "freezer_v1": {
+      "bytes": 7438,
+      "path": "benchmarks/freeze_fused_lane_dispatch_calibration.py",
+      "sha256": "41ef4bcea83da7d772d9865f782be6401cd8953f983bec5b1404a0a63c3ffc2c"
+    },
+    "freezer_v2": {
+      "bytes": 3840,
+      "path": "benchmarks/freeze_fused_lane_dispatch_calibration_v2.py",
+      "sha256": "44e746f117151ff199ee9fd5428bec88fe5dae93e9f0d8f52a6610263adcbf30"
+    },
+    "fused_expanded_tests": {
+      "bytes": 8295,
+      "path": "tests/test_fused_oblivious_expanded.py",
+      "sha256": "cdcb1b36fec2f7c0d49d54c54b6adf1aa75ecf959d73ec67a650b41d7fe6297f"
+    },
+    "fused_kernel_tests": {
+      "bytes": 15094,
+      "path": "tests/test_fused_oblivious_kernel.py",
+      "sha256": "75d268c37ace76bfb35066b09e6b2904954863f7b2dc69c2ef37c88b68d19274"
+    },
+    "loss_determinism": {
+      "bytes": 47622,
+      "path": "darkofit/losses.py",
+      "sha256": "1fe628fe8042f380d857c0b56917dc8215ac2f24a2e3cc48a7b08b049cfb68dc"
+    },
+    "loss_tests": {
+      "bytes": 856,
+      "path": "tests/test_loss_determinism.py",
+      "sha256": "495f74d230ff34f038b6bd8dae981682acddc521ddfb0b7970a4dc0196c331c2"
+    },
+    "persistence": {
+      "bytes": 96661,
+      "path": "darkofit/serialization.py",
+      "sha256": "f7c31114f42116797b643de32cd72753aea81a1d5462b23260ffd0d132c2cf5b"
+    },
+    "public_api": {
+      "bytes": 372584,
+      "path": "darkofit/sklearn_api.py",
+      "sha256": "c7eaeadb3a56406180ac7a2c3cccad337f10ce673b09e9dd01d5c80e1f9d93a1"
+    },
+    "runner": {
+      "bytes": 39078,
+      "path": "benchmarks/run_fused_lane_dispatch.py",
+      "sha256": "0248d8182758d95d0c37ef96d3591530170cf12735b4728f4ad7e6f93d9c6a0f"
+    },
+    "selector": {
+      "bytes": 197413,
+      "path": "darkofit/booster.py",
+      "sha256": "4c79e8d4c3c8b8bd9760603cf6da04354d00db0964505e288742250b5a05dfb0"
+    },
+    "thread_tests": {
+      "bytes": 4014,
+      "path": "tests/test_thread_state_restoration.py",
+      "sha256": "72c16319264e51d2bf54b274d8ede01d871118efc7e426cec9987b191ba30008"
+    }
+  },
+  "campaign": "fused_lane_dispatch_calibration_v1_20260721",
+  "contract_frozen": true,
+  "decision_rules": {
+    "all_cells_exact": true,
+    "both_lanes_must_be_selected": true,
+    "selected_fused_geomean_at_most": 0.97,
+    "stability_iqr_over_median_at_most": 0.1,
+    "threshold_tie_policy": "largest_never_switch_largest",
+    "threshold_tie_tolerance": 0.001,
+    "worst_selected_fused_at_most": 1.02
+  },
+  "downstream": {
+    "auto_threshold_change_authorized": false,
+    "calibration_execution_authorized": false,
+    "m2_m4_q_or_lockbox_authorized": false,
+    "next_mechanism_slot": "quality_first",
+    "release_authorized": false,
+    "speed_claim_authorized": false,
+    "validation_execution_authorized": false
+  },
+  "execution": {
+    "both_lanes_per_worker": true,
+    "create_only": true,
+    "fresh_worker_per_coordinate": true,
+    "orders": [
+      [
+        "fused",
+        "unfused"
+      ],
+      [
+        "unfused",
+        "fused"
+      ],
+      [
+        "fused",
+        "unfused"
+      ],
+      [
+        "unfused",
+        "fused"
+      ],
+      [
+        "fused",
+        "unfused"
+      ],
+      [
+        "unfused",
+        "fused"
+      ],
+      [
+        "fused",
+        "unfused"
+      ]
+    ],
+    "paired_repetitions": 7,
+    "partial_rows_published": false,
+    "scientific_change_from_v1": false,
+    "shared_input_and_buffer_allocation_timed": false,
+    "terminal_failure_nonrerunnable": true,
+    "timed_region": "build_oblivious_tree_only",
+    "v1_formal_worker_started": false,
+    "warmups_per_lane": 2
+  },
+  "execution_authorized": false,
+  "execution_identity": "calibration_v2",
+  "frozen_at": "2026-07-21T17:10:57.892873+00:00",
+  "generator": {
+    "seed": 20260721,
+    "specs": [
+      {
+        "bins": 128,
+        "coordinate_id": "r8192_f15_t4_unit",
+        "depth": 6,
+        "features": 15,
+        "hessian": "unit",
+        "rows": 8192,
+        "scan_work": 32768,
+        "threads": 4
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r8192_f15_t4_variable",
+        "depth": 6,
+        "features": 15,
+        "hessian": "variable",
+        "rows": 8192,
+        "scan_work": 32768,
+        "threads": 4
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r8192_f24_t9_unit",
+        "depth": 6,
+        "features": 24,
+        "hessian": "unit",
+        "rows": 8192,
+        "scan_work": 24576,
+        "threads": 9
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r8192_f24_t9_variable",
+        "depth": 6,
+        "features": 24,
+        "hessian": "variable",
+        "rows": 8192,
+        "scan_work": 24576,
+        "threads": 9
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r8192_f48_t14_unit",
+        "depth": 6,
+        "features": 48,
+        "hessian": "unit",
+        "rows": 8192,
+        "scan_work": 32768,
+        "threads": 14
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r8192_f48_t14_variable",
+        "depth": 6,
+        "features": 48,
+        "hessian": "variable",
+        "rows": 8192,
+        "scan_work": 32768,
+        "threads": 14
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r32768_f15_t4_unit",
+        "depth": 6,
+        "features": 15,
+        "hessian": "unit",
+        "rows": 32768,
+        "scan_work": 131072,
+        "threads": 4
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r32768_f15_t4_variable",
+        "depth": 6,
+        "features": 15,
+        "hessian": "variable",
+        "rows": 32768,
+        "scan_work": 131072,
+        "threads": 4
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r32768_f24_t9_unit",
+        "depth": 6,
+        "features": 24,
+        "hessian": "unit",
+        "rows": 32768,
+        "scan_work": 98304,
+        "threads": 9
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r32768_f24_t9_variable",
+        "depth": 6,
+        "features": 24,
+        "hessian": "variable",
+        "rows": 32768,
+        "scan_work": 98304,
+        "threads": 9
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r32768_f48_t14_unit",
+        "depth": 6,
+        "features": 48,
+        "hessian": "unit",
+        "rows": 32768,
+        "scan_work": 131072,
+        "threads": 14
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r32768_f48_t14_variable",
+        "depth": 6,
+        "features": 48,
+        "hessian": "variable",
+        "rows": 32768,
+        "scan_work": 131072,
+        "threads": 14
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r131072_f15_t4_unit",
+        "depth": 6,
+        "features": 15,
+        "hessian": "unit",
+        "rows": 131072,
+        "scan_work": 524288,
+        "threads": 4
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r131072_f15_t4_variable",
+        "depth": 6,
+        "features": 15,
+        "hessian": "variable",
+        "rows": 131072,
+        "scan_work": 524288,
+        "threads": 4
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r131072_f24_t9_unit",
+        "depth": 6,
+        "features": 24,
+        "hessian": "unit",
+        "rows": 131072,
+        "scan_work": 393216,
+        "threads": 9
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r131072_f24_t9_variable",
+        "depth": 6,
+        "features": 24,
+        "hessian": "variable",
+        "rows": 131072,
+        "scan_work": 393216,
+        "threads": 9
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r131072_f48_t14_unit",
+        "depth": 6,
+        "features": 48,
+        "hessian": "unit",
+        "rows": 131072,
+        "scan_work": 524288,
+        "threads": 14
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r131072_f48_t14_variable",
+        "depth": 6,
+        "features": 48,
+        "hessian": "variable",
+        "rows": 131072,
+        "scan_work": 524288,
+        "threads": 14
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r524288_f15_t4_unit",
+        "depth": 6,
+        "features": 15,
+        "hessian": "unit",
+        "rows": 524288,
+        "scan_work": 2097152,
+        "threads": 4
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r524288_f15_t4_variable",
+        "depth": 6,
+        "features": 15,
+        "hessian": "variable",
+        "rows": 524288,
+        "scan_work": 2097152,
+        "threads": 4
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r524288_f24_t9_unit",
+        "depth": 6,
+        "features": 24,
+        "hessian": "unit",
+        "rows": 524288,
+        "scan_work": 1572864,
+        "threads": 9
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r524288_f24_t9_variable",
+        "depth": 6,
+        "features": 24,
+        "hessian": "variable",
+        "rows": 524288,
+        "scan_work": 1572864,
+        "threads": 9
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r524288_f48_t14_unit",
+        "depth": 6,
+        "features": 48,
+        "hessian": "unit",
+        "rows": 524288,
+        "scan_work": 2097152,
+        "threads": 14
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r524288_f48_t14_variable",
+        "depth": 6,
+        "features": 48,
+        "hessian": "variable",
+        "rows": 524288,
+        "scan_work": 2097152,
+        "threads": 14
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r1048576_f15_t4_unit",
+        "depth": 6,
+        "features": 15,
+        "hessian": "unit",
+        "rows": 1048576,
+        "scan_work": 4194304,
+        "threads": 4
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r1048576_f15_t4_variable",
+        "depth": 6,
+        "features": 15,
+        "hessian": "variable",
+        "rows": 1048576,
+        "scan_work": 4194304,
+        "threads": 4
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r1048576_f24_t9_unit",
+        "depth": 6,
+        "features": 24,
+        "hessian": "unit",
+        "rows": 1048576,
+        "scan_work": 3145728,
+        "threads": 9
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r1048576_f24_t9_variable",
+        "depth": 6,
+        "features": 24,
+        "hessian": "variable",
+        "rows": 1048576,
+        "scan_work": 3145728,
+        "threads": 9
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r1048576_f48_t14_unit",
+        "depth": 6,
+        "features": 48,
+        "hessian": "unit",
+        "rows": 1048576,
+        "scan_work": 4194304,
+        "threads": 14
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r1048576_f48_t14_variable",
+        "depth": 6,
+        "features": 48,
+        "hessian": "variable",
+        "rows": 1048576,
+        "scan_work": 4194304,
+        "threads": 14
+      }
+    ]
+  },
+  "outcomes_opened": false,
+  "outputs": {
+    "analysis": "benchmarks/fused_lane_dispatch_calibration_analysis_v2.json",
+    "authorization": "benchmarks/fused_lane_dispatch_calibration_authorization_v2.json",
+    "raw": "benchmarks/fused_lane_dispatch_calibration_raw_v2.json",
+    "terminal": "benchmarks/fused_lane_dispatch_calibration_raw_v2_terminal.json"
+  },
+  "phase": "calibration",
+  "runtime": {
+    "fingerprint": {
+      "cpu_identifier": "Apple M4 Pro",
+      "hardware_model": "Mac16,7",
+      "llvmlite": "0.44.0",
+      "logical_cpu_count": 14,
+      "memory_bytes": 25769803776,
+      "numba": "0.61.2",
+      "numpy": "2.2.6",
+      "physical_cpu_count": 14,
+      "platform_machine": "arm64",
+      "platform_release": "25.5.0",
+      "platform_system": "Darwin",
+      "python_executable": "/opt/anaconda3/envs/darko311/bin/python3.11",
+      "python_implementation": "CPython",
+      "python_version": "3.11.8",
+      "sha256": "76753400de34df20f34d48b2324316993747b1949d242300946b94dd2a01decb"
+    },
+    "worker_environments": {
+      "14": {
+        "DARKOFIT_WARMUP": "0",
+        "MKL_DYNAMIC": "FALSE",
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_CACHE_DIR": "/Users/konstantinmedvedovsky/code/darkofit/.cache/fused_lane_dispatch_calibration_v1_20260721/calibration/threads-14",
+        "NUMBA_DISABLE_JIT": "0",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMBA_THREADING_LAYER": "default",
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "14",
+        "OMP_THREAD_LIMIT": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0",
+        "PYTHONPATH": null,
+        "VECLIB_MAXIMUM_THREADS": "14"
+      },
+      "4": {
+        "DARKOFIT_WARMUP": "0",
+        "MKL_DYNAMIC": "FALSE",
+        "MKL_NUM_THREADS": "4",
+        "NUMBA_CACHE_DIR": "/Users/konstantinmedvedovsky/code/darkofit/.cache/fused_lane_dispatch_calibration_v1_20260721/calibration/threads-4",
+        "NUMBA_DISABLE_JIT": "0",
+        "NUMBA_NUM_THREADS": "4",
+        "NUMBA_THREADING_LAYER": "default",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "4",
+        "OMP_THREAD_LIMIT": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "PYTHONHASHSEED": "0",
+        "PYTHONPATH": null,
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "9": {
+        "DARKOFIT_WARMUP": "0",
+        "MKL_DYNAMIC": "FALSE",
+        "MKL_NUM_THREADS": "9",
+        "NUMBA_CACHE_DIR": "/Users/konstantinmedvedovsky/code/darkofit/.cache/fused_lane_dispatch_calibration_v1_20260721/calibration/threads-9",
+        "NUMBA_DISABLE_JIT": "0",
+        "NUMBA_NUM_THREADS": "9",
+        "NUMBA_THREADING_LAYER": "default",
+        "NUMEXPR_NUM_THREADS": "9",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "9",
+        "OMP_THREAD_LIMIT": "9",
+        "OPENBLAS_NUM_THREADS": "9",
+        "PYTHONHASHSEED": "0",
+        "PYTHONPATH": null,
+        "VECLIB_MAXIMUM_THREADS": "9"
+      }
+    }
+  },
+  "schema_version": 1,
+  "source": "cf6a667cff5eaa2d36b9c16c9304470e0feac083",
+  "source_worktree": {
+    "clean": true,
+    "detached_at_source": true,
+    "import_must_resolve_inside_worktree": true,
+    "required": true
+  },
+  "supersedes": {
+    "contract_path": "benchmarks/fused_lane_dispatch_calibration_contract.json",
+    "contract_sha256": "3d7f8a653a71d6a9712f57f51bb01421765b42fcd105902f1fb0c6a611f7712d",
+    "execution_identity": "calibration_v1",
+    "formal_worker_started": false,
+    "outcomes_opened": false,
+    "reason": "host-platform-dependent product test expectation",
+    "scientific_grid_or_gate_changed": false
+  }
+}
