@@ -989,11 +989,12 @@ Initial backlog, unrated and unauthorized:
   was already cold-player held-team and player-disjoint; the seeded,
   overlap-exposed 75/25 split applied only to the general weighted view.
 
-  The first explicitly exploratory size screen used the read-only analyzer at
-  `b847c19` on a deterministic numeric case with 10,000 rows, 24 features,
-  eight combined members, and a separately fitted same-base single. The only
-  byte-identical member sections were the seven complete `prep__*`/`bin__*`
-  arrays plus their canonical preprocessing header. Factoring them reduced the
+  The first explicitly exploratory size screen used the read-only analyzer,
+  last hardened at `27116f5`, on a deterministic numeric case with 10,000
+  rows, 24 features, eight combined members, and a separately fitted
+  same-base single. The only byte-identical member sections were the seven
+  complete `prep__*`/`bin__*` arrays plus their canonical preprocessing
+  header. Factoring them reduced the
   non-loadable size model from 819,785 to 652,126 bytes. The probe itself did
   not clear `4.0×` (`13.8519×` to `11.0190×`) because its single stopped at 60
   rounds while members retained 94–120, so it cannot authorize implementation.
