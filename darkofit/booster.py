@@ -1506,7 +1506,7 @@ class _BaseBooster:
             else None
         )
         max_realized_bins = int(n_bins.max()) if len(n_bins) else 1
-        metadata, instrument = _resolve_oblivious_kernel_dispatch(
+        metadata, _ = _resolve_oblivious_kernel_dispatch(
             self.oblivious_kernel,
             functional_ineligibility=ineligibility,
             n_rows=n_samples,
@@ -1515,7 +1515,6 @@ class _BaseBooster:
             depth=depth,
             max_realized_bins=max_realized_bins,
         )
-        self._oblivious_dispatch_instrument_ = bool(instrument)
         self._oblivious_kernel_use_fused_ = metadata["resolved"] == "fused"
         self._fused_oblivious_level_counter_ = np.zeros(1, dtype=np.int64)
         self._unfused_oblivious_level_counter_ = np.zeros(1, dtype=np.int64)
@@ -1530,27 +1529,32 @@ class _BaseBooster:
         self.oblivious_kernel_dispatch_ = metadata
         self.auto_params_["oblivious_kernel_dispatch"] = copy.deepcopy(metadata)
 
-    def _record_oblivious_tree_dispatch_engagement(self, tree):
-        """Count selected-lane levels without changing the builder call surface."""
-        metadata = self.oblivious_kernel_dispatch_
-        if not metadata["functional_eligible"]:
-            return
-        max_depth = self._max_tree_depth()
-        attempted_levels = int(tree.depth)
-        if attempted_levels < max_depth:
-            # The builder enters one final level before learning that no legal
-            # split exists. That invocation is real dispatch engagement even
-            # though it does not become part of the retained tree.
-            attempted_levels += 1
-        if metadata["resolved"] == "fused":
-            self._fused_oblivious_level_counter_[0] += attempted_levels
-        else:
-            self._unfused_oblivious_level_counter_[0] += attempted_levels
-
     def _finalize_oblivious_kernel_dispatch(self):
         metadata = copy.deepcopy(self.oblivious_kernel_dispatch_)
         fused_levels = int(self._fused_oblivious_level_counter_[0])
         unfused_levels = int(self._unfused_oblivious_level_counter_[0])
+        if metadata["functional_eligible"]:
+            attempted_rounds = int(
+                self.training_metadata_.get("iterations_attempted", 0)
+            )
+            selected_levels = (
+                fused_levels
+                if metadata["resolved"] == "fused"
+                else unfused_levels
+            )
+            opposite_levels = (
+                unfused_levels
+                if metadata["resolved"] == "fused"
+                else fused_levels
+            )
+            if (
+                bool(selected_levels) != bool(attempted_rounds)
+                or opposite_levels
+            ):
+                raise RuntimeError(
+                    "oblivious dispatch metadata disagrees with actual builder "
+                    "engagement"
+                )
         metadata["fused_level_count"] = fused_levels
         metadata["unfused_level_count"] = unfused_levels
         metadata["engaged"] = bool(fused_levels + unfused_levels)
@@ -2903,10 +2907,14 @@ class _BaseBooster:
         }
         if (
             self.tree_mode_ == "catboost"
-            and getattr(self, "_oblivious_dispatch_instrument_", False)
+            and self.oblivious_kernel_dispatch_["functional_eligible"]
         ):
             kwargs.update(
                 fused_oblivious_kernel=self._oblivious_kernel_use_fused_,
+                fused_oblivious_counter=self._fused_oblivious_level_counter_,
+                unfused_oblivious_counter=(
+                    self._unfused_oblivious_level_counter_
+                ),
             )
         if self.tree_mode_ in {"lightgbm", "hybrid"}:
             kwargs.update(
@@ -3240,7 +3248,6 @@ class GradientBoosting(_BaseBooster):
                     tree_iteration=m,
                 ),
             )
-            self._record_oblivious_tree_dispatch_engagement(tree)
             # A depth-0 tree found no legal split; subsequent rounds on the same
             # gradients would too, so stop rather than append empty trees.
             if tree.depth == 0:

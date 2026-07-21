@@ -1,3 +1,4 @@
+import hashlib
 import io
 import json
 
@@ -291,7 +292,7 @@ def test_private_combined_regression_is_deterministic_mean_and_records_contract(
     np.testing.assert_array_equal(left.shap_values(X[:8]), expected_shap)
     assert left.ensemble_metadata_ == right.ensemble_metadata_
     metadata = left.ensemble_metadata_
-    assert metadata["version"] == 3
+    assert metadata["version"] == 4
     assert metadata["sampling"] == "without_replacement"
     assert metadata["sample_fraction"] == 0.8
     assert metadata["member_policy"] == "donor_balanced_v1"
@@ -352,10 +353,29 @@ def test_private_group_bootstrap_with_uneven_groups_survives_safe_roundtrip(
 
     path = tmp_path / "private-group-bootstrap.npz"
     model.save_model(path)
+    with np.load(path, allow_pickle=False) as archive:
+        header = json.loads(str(archive["header"]))
+        group_codes = archive["private_group_codes"]
+        assert header["ensemble_format_version"] == 3
+        assert group_codes.dtype == np.dtype("<i8")
+        assert group_codes.shape == (len(X),)
+        assert np.array_equal(
+            np.unique(group_codes), np.arange(len(group_sizes))
+        )
+        assert (
+            hashlib.sha256(group_codes.tobytes()).hexdigest()
+            == header["metadata"]["group_codes_sha256"]
+        )
     restored = DarkoRegressor.load_model(path)
 
     np.testing.assert_array_equal(restored.predict(X), model.predict(X))
+    np.testing.assert_array_equal(
+        restored._ensemble_group_codes_, model._ensemble_group_codes_
+    )
     assert restored.ensemble_metadata_ == model.ensemble_metadata_
+    resaved = tmp_path / "private-group-bootstrap-resaved.npz"
+    restored.save_model(resaved)
+    assert resaved.read_bytes() == path.read_bytes()
 
 
 def test_private_explicit_none_and_normal_default_survive_safe_roundtrip(tmp_path):
@@ -463,7 +483,7 @@ def test_private_classifier_soft_votes_and_safe_roundtrips(tmp_path):
     model.save_model(path)
     with np.load(path, allow_pickle=False) as archive:
         header = json.loads(str(archive["header"]))
-        assert header["ensemble_format_version"] == 2
+        assert header["ensemble_format_version"] == 3
         for index in range(len(model.estimators_)):
             assert archive[f"member_{index:04d}_sampled_indices"].dtype == np.dtype(
                 "<i8"
@@ -543,7 +563,7 @@ def test_private_safe_load_rejects_forged_metadata(
         DarkoRegressor.load_model(corrupt)
 
 
-def test_private_safe_load_rejects_impossible_group_count_provenance(tmp_path):
+def test_private_safe_load_rejects_plausible_group_count_forgery(tmp_path):
     groups = np.repeat(np.arange(20), 5)
     X, y = _regression_data(n=len(groups))
     model = _fit_private_ensemble_v3(
@@ -562,15 +582,41 @@ def test_private_safe_load_rejects_impossible_group_count_provenance(tmp_path):
         arrays = {name: archive[name].copy() for name in archive.files}
     header = json.loads(str(arrays["header"]))
     record = header["metadata"]["members"][0]
-    record["sampled_unique_groups"] = record["sampled_unique_rows"] + 1
-    record["oob_groups"] = record["oob_rows"] + 1
-    record["sampled_group_draws"] = (
+    assert record["oob_groups"] > 1
+    record["sampled_unique_groups"] += 1
+    record["oob_groups"] -= 1
+    assert (
         record["sampled_unique_groups"] + record["oob_groups"]
+        == record["sampled_group_draws"]
     )
     arrays["header"] = np.array(json.dumps(header))
     np.savez_compressed(corrupt, **arrays)
 
     with pytest.raises(ValueError, match="group-sampling metadata"):
+        DarkoRegressor.load_model(corrupt)
+
+
+def test_private_safe_load_rejects_forged_group_code_payload(tmp_path):
+    groups = np.repeat(np.arange(20), 5)
+    X, y = _regression_data(n=len(groups))
+    model = _fit_private_ensemble_v3(
+        DarkoRegressor(**_params(iterations=4)),
+        X,
+        y,
+        sampling="bootstrap",
+        sampling_unit="groups",
+        member_policy="none",
+        groups=groups,
+    )
+    source = tmp_path / "private-group-source.npz"
+    corrupt = tmp_path / "private-group-corrupt.npz"
+    model.save_model(source)
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {name: archive[name].copy() for name in archive.files}
+    arrays["private_group_codes"][0] = 1
+    np.savez_compressed(corrupt, **arrays)
+
+    with pytest.raises(ValueError, match="group-code provenance"):
         DarkoRegressor.load_model(corrupt)
 
 
@@ -603,8 +649,8 @@ def test_private_safe_load_binds_wrapper_params_to_booster_inputs(tmp_path):
 def test_private_safe_load_rejects_obsolete_metadata_version(tmp_path):
     X, y = _regression_data(n=100)
     model = _fit_private(DarkoRegressor(**_params(iterations=4)), X, y)
-    source = tmp_path / "private-v3.npz"
-    obsolete = tmp_path / "private-v2.npz"
+    source = tmp_path / "private-v4.npz"
+    obsolete = tmp_path / "private-v3.npz"
     model.save_model(source)
     with np.load(source, allow_pickle=False) as archive:
         arrays = {name: archive[name].copy() for name in archive.files}
@@ -652,7 +698,7 @@ def test_private_safe_load_rejects_legacy_archive_without_index_payloads(
     arrays["header"] = np.array(json.dumps(header))
     np.savez_compressed(legacy, **arrays)
 
-    with pytest.raises(ValueError, match="index provenance payload is missing"):
+    with pytest.raises(ValueError, match="provenance payload is missing"):
         DarkoRegressor.load_model(legacy)
 
 

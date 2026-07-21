@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
+from types import SimpleNamespace
 
 import numba
 import numpy as np
@@ -351,6 +352,78 @@ def test_worker_environment_is_fresh_and_thread_bounded(tmp_path):
     assert "PYTHONPATH" not in environment
 
 
+def test_parent_worker_environment_uses_exact_frozen_cache_path(
+    tmp_path, monkeypatch
+):
+    threads = 4
+    cache_dir = tmp_path / "threads-4"
+    expected = runner.fixed_worker_environment(threads, cache_dir)
+    contract = {
+        "runtime": {
+            "worker_environments": {
+                str(threads): {
+                    name: expected.get(name)
+                    for name in runner.WORKER_ENV_KEYS
+                }
+            }
+        }
+    }
+    monkeypatch.setenv("NUMBA_CACHE_DIR", str(tmp_path / "ambient"))
+
+    environment = runner._worker_process_environment(contract, threads)
+
+    assert environment["NUMBA_CACHE_DIR"] == str(cache_dir.resolve())
+    assert {
+        name: environment.get(name) for name in runner.WORKER_ENV_KEYS
+    } == contract["runtime"]["worker_environments"][str(threads)]
+
+
+def test_parent_passes_exact_frozen_environment_to_worker(
+    tmp_path, monkeypatch
+):
+    threads = 4
+    cache_dir = tmp_path / "threads-4"
+    expected_process = runner.fixed_worker_environment(threads, cache_dir)
+    expected_record = {
+        name: expected_process.get(name) for name in runner.WORKER_ENV_KEYS
+    }
+    contract = {
+        "runtime": {
+            "worker_environments": {str(threads): expected_record}
+        }
+    }
+    captured = {}
+
+    def fake_run(command, **kwargs):
+        captured["command"] = command
+        captured["environment"] = kwargs["env"]
+        return SimpleNamespace(
+            returncode=0,
+            stdout=runner.CALIBRATION_PREFIX + json.dumps({"ok": True}),
+            stderr="",
+        )
+
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    result = runner._run_worker(
+        ["calibration-worker", "--spec-json", "{}"],
+        threads=threads,
+        contract=contract,
+        contract_path=tmp_path / "contract.json",
+        authorization_path=tmp_path / "authorization.json",
+        source="a" * 40,
+        source_root=tmp_path,
+        prefix=runner.CALIBRATION_PREFIX,
+    )
+
+    assert result == {"ok": True}
+    assert {
+        name: captured["environment"].get(name)
+        for name in runner.WORKER_ENV_KEYS
+    } == expected_record
+    assert "--contract" in captured["command"]
+    assert "--authorization" in captured["command"]
+
+
 def test_freezer_binds_harness_runtime_and_keeps_execution_unauthorized(
     monkeypatch,
 ):
@@ -479,7 +552,245 @@ def test_execution_identity_refuses_existing_result_or_terminal(tmp_path):
         runner._assert_fresh_output(output)
 
 
-def test_small_noncampaign_worker_proves_both_counters_and_exactness(monkeypatch):
+def test_worker_authorization_precedes_case_generation(tmp_path, monkeypatch):
+    generated = False
+
+    def reject(*_args, **_kwargs):
+        raise RuntimeError("not owner-authorized")
+
+    def fail_if_generated(*_args, **_kwargs):
+        nonlocal generated
+        generated = True
+        raise AssertionError("case generation must not start")
+
+    monkeypatch.setattr(runner, "_authorize_worker_invocation", reject)
+    monkeypatch.setattr(
+        campaign, "generate_calibration_case", fail_if_generated
+    )
+
+    with pytest.raises(RuntimeError, match="not owner-authorized"):
+        runner.calibration_worker(
+            {"threads": 4},
+            contract_path=tmp_path / "contract.json",
+            authorization_path=tmp_path / "authorization.json",
+            source="a" * 40,
+            source_root=runner.ROOT,
+        )
+    assert generated is False
+
+
+def test_validation_worker_authorization_precedes_case_generation(
+    tmp_path, monkeypatch
+):
+    generated = False
+
+    def reject(*_args, **_kwargs):
+        raise RuntimeError("not owner-authorized")
+
+    def fail_if_generated(*_args, **_kwargs):
+        nonlocal generated
+        generated = True
+        raise AssertionError("case generation must not start")
+
+    monkeypatch.setattr(runner, "_authorize_worker_invocation", reject)
+    monkeypatch.setattr(
+        campaign, "generate_validation_case", fail_if_generated
+    )
+
+    with pytest.raises(RuntimeError, match="not owner-authorized"):
+        runner.validation_worker(
+            {"threads": 4},
+            arm="fused",
+            block=0,
+            threshold_path=tmp_path / "threshold.json",
+            contract_path=tmp_path / "contract.json",
+            authorization_path=tmp_path / "authorization.json",
+            source="a" * 40,
+            source_root=runner.ROOT,
+        )
+    assert generated is False
+
+
+@pytest.mark.parametrize(
+    "command",
+    ["calibration-worker", "validation-worker"],
+)
+def test_worker_subcommands_require_contract_and_authorization(command):
+    arguments = [
+        command,
+        "--spec-json",
+        "{}",
+        "--source",
+        "a" * 40,
+        "--source-root",
+        ".",
+    ]
+    if command == "validation-worker":
+        arguments.extend(
+            [
+                "--arm",
+                "fused",
+                "--block",
+                "0",
+                "--threshold-artifact",
+                "threshold.json",
+            ]
+        )
+    with pytest.raises(SystemExit):
+        runner.build_parser().parse_args(arguments)
+
+
+def test_direct_worker_rejects_off_grid_spec_before_case_generation(
+    tmp_path, monkeypatch
+):
+    frozen = {
+        "coordinate_id": "frozen",
+        "rows": 128,
+        "features": 8,
+        "threads": 4,
+    }
+    contract = {
+        "source": "a" * 40,
+        "generator": {"specs": [frozen]},
+    }
+    generated = False
+    monkeypatch.setattr(
+        runner,
+        "load_execution_contract",
+        lambda *_args, **_kwargs: contract,
+    )
+    monkeypatch.setattr(
+        runner,
+        "require_authorization",
+        lambda *_args, **_kwargs: {"execution_authorized": True},
+    )
+
+    def fail_if_generated(*_args, **_kwargs):
+        nonlocal generated
+        generated = True
+        raise AssertionError("case generation must not start")
+
+    monkeypatch.setattr(
+        campaign, "generate_calibration_case", fail_if_generated
+    )
+
+    with pytest.raises(RuntimeError, match="not a frozen coordinate"):
+        runner.calibration_worker(
+            {**frozen, "rows": 129},
+            contract_path=tmp_path / "contract.json",
+            authorization_path=tmp_path / "authorization.json",
+            source="a" * 40,
+            source_root=runner.ROOT,
+        )
+    assert generated is False
+
+
+def test_validation_threshold_is_loaded_from_hash_bound_artifact(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(runner, "ROOT", tmp_path)
+    threshold_path = tmp_path / "threshold.json"
+    threshold_path.write_text(
+        json.dumps({"qualifies": True, "selected": {"threshold": 123}}),
+        encoding="utf-8",
+    )
+    contract = {
+        "calibration_threshold_path": "threshold.json",
+        "calibration_threshold_sha256": campaign.file_sha256(threshold_path),
+    }
+
+    _record, threshold, resolved = runner._load_validation_threshold(
+        contract, threshold_path
+    )
+    assert threshold == 123
+    assert resolved == threshold_path.resolve()
+
+    threshold_path.write_text(
+        json.dumps({"qualifies": True, "selected": {"threshold": 124}}),
+        encoding="utf-8",
+    )
+    with pytest.raises(RuntimeError, match="threshold artifact is invalid"):
+        runner._load_validation_threshold(contract, threshold_path)
+
+
+def test_validation_analysis_rejects_raw_threshold_mismatch_before_output(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(runner, "ROOT", tmp_path)
+    monkeypatch.setattr(runner, "_validate_bound_files", lambda _contract: None)
+    source = "a" * 40
+    authorization = {"execution_authorized": True}
+    authorization_path = tmp_path / "authorization.json"
+    authorization_path.write_text(
+        json.dumps(authorization), encoding="utf-8"
+    )
+    threshold_path = tmp_path / "threshold.json"
+    threshold_path.write_text(
+        json.dumps({"qualifies": True, "selected": {"threshold": 123}}),
+        encoding="utf-8",
+    )
+    contract_path = tmp_path / "contract.json"
+    raw_path = tmp_path / "raw.json"
+    output = tmp_path / "analysis.json"
+    contract = {
+        "phase": "validation",
+        "source": source,
+        "execution_identity": "validation_v1",
+        "outputs": {
+            "authorization": "authorization.json",
+            "raw": "raw.json",
+            "analysis": "analysis.json",
+        },
+        "calibration_threshold_path": "threshold.json",
+        "calibration_threshold_sha256": campaign.file_sha256(threshold_path),
+    }
+    contract_path.write_text(json.dumps(contract), encoding="utf-8")
+    contract_sha256 = campaign.file_sha256(contract_path)
+    authorization_sha256 = campaign.file_sha256(authorization_path)
+    raw = {
+        "schema_version": campaign.SCHEMA_VERSION,
+        "campaign": campaign.CAMPAIGN_NAME,
+        "phase": "validation",
+        "execution_identity": "validation_v1",
+        "source": source,
+        "execution_contract_sha256": contract_sha256,
+        "authorization_sha256": authorization_sha256,
+        "authorization": authorization,
+        "source_state": {"head": source, "status": ""},
+        "harness_state": {"head": source, "status": ""},
+        "threshold": 123,
+        "threshold_sha256": campaign.file_sha256(threshold_path),
+        "rows": [
+            {
+                "source": source,
+                "execution_identity": "validation_v1",
+                "execution_contract_sha256": contract_sha256,
+                "authorization_sha256": authorization_sha256,
+                "threshold": 124,
+                "threshold_sha256": campaign.file_sha256(threshold_path),
+            }
+        ],
+    }
+    raw_path.write_text(json.dumps(raw), encoding="utf-8")
+    monkeypatch.setattr(
+        runner,
+        "require_authorization",
+        lambda *_args, **_kwargs: authorization,
+    )
+
+    with pytest.raises(RuntimeError, match="threshold binding is invalid"):
+        runner.analyze_raw(
+            raw_path=raw_path,
+            contract_path=contract_path,
+            output=output,
+            threshold_path=threshold_path,
+        )
+    assert not output.exists()
+
+
+def test_small_noncampaign_worker_proves_both_counters_and_exactness(
+    tmp_path, monkeypatch
+):
     source = "a" * 40
     threads = int(numba.get_num_threads())
     if threads <= 2:
@@ -495,21 +806,34 @@ def test_small_noncampaign_worker_proves_both_counters_and_exactness(monkeypatch
         "scan_work": campaign.scan_work(192, 8, threads),
     }
     state = {"head": source, "status": ""}
+    contract_path = tmp_path / "contract.json"
+    authorization_path = tmp_path / "authorization.json"
+    contract_path.write_text("{}", encoding="utf-8")
+    authorization_path.write_text("{}", encoding="utf-8")
     monkeypatch.setattr(runner, "_activate_source", lambda *_args: state)
     monkeypatch.setattr(runner, "git_state", lambda *_args: state)
     monkeypatch.setattr(
         runner,
-        "assert_worker_environment",
-        lambda _threads: {
-            "ceiling": threads,
-            "current": threads,
-            "threading_layer": "test",
-            "environment": {},
-        },
+        "_authorize_worker_invocation",
+        lambda **_kwargs: (
+            {"execution_identity": "test"},
+            {"execution_authorized": True},
+            {
+                "ceiling": threads,
+                "current": threads,
+                "threading_layer": "test",
+                "environment": {},
+            },
+            None,
+        ),
     )
 
     result = runner.calibration_worker(
-        spec, source=source, source_root=runner.ROOT
+        spec,
+        contract_path=contract_path,
+        authorization_path=authorization_path,
+        source=source,
+        source_root=runner.ROOT,
     )
 
     assert result["thread_mask_restored"] is True

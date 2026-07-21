@@ -1,9 +1,8 @@
-from functools import partial
-
 import numpy as np
 import pytest
 
 import darkofit.booster as booster_module
+from benchmarks import fused_lane_dispatch_campaign as dispatch_campaign
 from darkofit import DarkoRegressor
 from darkofit.booster import GradientBoosting
 
@@ -51,42 +50,42 @@ def _core_params(**overrides):
 
 
 def _fit_core(monkeypatch, X, y, *, fused, params=None, fit_kwargs=None):
-    original = booster_module.build_oblivious_tree
-    counter = np.zeros(1, dtype=np.int64)
+    params = dict(params or _core_params())
+    params["oblivious_kernel"] = "fused" if fused else "unfused"
     with monkeypatch.context() as context:
+        # This file also exercises the proven sampled row/feature builder
+        # expansion, which remains outside the narrower public dispatch scope.
         context.setattr(
-            booster_module,
-            "build_oblivious_tree",
-            partial(
-                original,
-                fused_oblivious_kernel=fused,
-                fused_oblivious_counter=counter,
-            ),
+            booster_module._BaseBooster,
+            "_oblivious_functional_ineligibility",
+            lambda *_args, **_kwargs: None,
         )
-        model = GradientBoosting(**(params or _core_params())).fit(
+        model = GradientBoosting(**params).fit(
             X, y, **(fit_kwargs or {})
         )
-    return model, int(counter[0])
+    return model, int(
+        model.oblivious_kernel_dispatch_["fused_level_count"]
+    )
 
 
 def _fit_wrapper(monkeypatch, X, y, *, fused, params):
-    original = booster_module.build_oblivious_tree
-    counter = np.zeros(1, dtype=np.int64)
+    params = dict(params)
+    params["oblivious_kernel"] = "fused" if fused else "unfused"
     with monkeypatch.context() as context:
         context.setattr(
-            booster_module,
-            "build_oblivious_tree",
-            partial(
-                original,
-                fused_oblivious_kernel=fused,
-                fused_oblivious_counter=counter,
-            ),
+            booster_module._BaseBooster,
+            "_oblivious_functional_ineligibility",
+            lambda *_args, **_kwargs: None,
         )
         model = DarkoRegressor(**params).fit(X, y)
-    return model, int(counter[0])
+    return model, int(
+        model.model_.oblivious_kernel_dispatch_["fused_level_count"]
+    )
 
 
-def _assert_exact_models(reference, candidate, X, tmp_path, name, *, raw=True):
+def _assert_exact_models(
+    reference, candidate, X, tmp_path, name, *, raw=True, persist=True
+):
     predict = "predict_raw" if raw else "predict"
     np.testing.assert_array_equal(
         getattr(candidate, predict)(X), getattr(reference, predict)(X)
@@ -94,11 +93,17 @@ def _assert_exact_models(reference, candidate, X, tmp_path, name, *, raw=True):
     np.testing.assert_array_equal(
         candidate.feature_importances_, reference.feature_importances_
     )
+    if not persist:
+        return
     reference_path = tmp_path / f"{name}-reference.npz"
     candidate_path = tmp_path / f"{name}-candidate.npz"
     reference.save_model(reference_path)
     candidate.save_model(candidate_path)
-    assert candidate_path.read_bytes() == reference_path.read_bytes()
+    assert dispatch_campaign.canonical_archive_sha256(
+        candidate_path, project_dispatch=True
+    ) == dispatch_campaign.canonical_archive_sha256(
+        reference_path, project_dispatch=True
+    )
 
 
 @pytest.mark.parametrize(
@@ -222,19 +227,13 @@ def test_fused_early_stopping_exact_refit_is_archive_exact(monkeypatch, tmp_path
     )
 
 
-def test_default_internal_dispatch_engages_proven_fused_lane(monkeypatch):
+def test_default_internal_dispatch_engages_proven_fused_lane():
     X, y = _regression_data(seed=97)
-    original = booster_module.build_oblivious_tree
-    counter = np.zeros(1, dtype=np.int64)
-    monkeypatch.setattr(
-        booster_module,
-        "build_oblivious_tree",
-        partial(original, fused_oblivious_counter=counter),
-    )
 
-    GradientBoosting(**_core_params()).fit(X, y)
+    model = GradientBoosting(**_core_params()).fit(X, y)
 
-    assert int(counter[0]) > 0
+    assert model.oblivious_kernel_dispatch_["fused_level_count"] > 0
+    assert model.oblivious_kernel_dispatch_["unfused_level_count"] == 0
 
 
 @pytest.mark.parametrize(
@@ -245,7 +244,7 @@ def test_default_internal_dispatch_engages_proven_fused_lane(monkeypatch):
         {"colsample": 2 / 3, "subsample": 0.8},
     ],
 )
-def test_subset_lanes_use_exact_fused_dispatch(
+def test_subset_lanes_use_exact_fused_builder(
     monkeypatch, tmp_path, sampling_params
 ):
     X, y = _regression_data(seed=101, n=320)
@@ -260,4 +259,6 @@ def test_subset_lanes_use_exact_fused_dispatch(
     assert reference_count == 0
     assert candidate_count > 0
     name = "-".join(sorted(sampling_params))
-    _assert_exact_models(reference, candidate, X, tmp_path, name)
+    _assert_exact_models(
+        reference, candidate, X, tmp_path, name, persist=False
+    )

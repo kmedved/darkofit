@@ -5320,11 +5320,11 @@ def build_oblivious_tree(X_binned, grad, hess, n_bins_per_feature,
     parameter. The sampled expansion is behavior-exact and remains bounded to
     the same non-randomized, feature-parallel eligibility conditions.
     fused_oblivious_counter: optional one-element integer array incremented
-    once for every actual fused level invocation. This is benchmark
-    observability only; requesting the candidate does not count as engagement.
+    once for every actual fused level invocation. Requesting the candidate does
+    not count as engagement.
     unfused_oblivious_counter: optional one-element integer array incremented
     once per level when the caller explicitly requests the existing unfused
-    reference path. This is likewise benchmark-only observability.
+    reference path.
     """
     if X_hist_binned is None:
         X_hist_binned = X_binned

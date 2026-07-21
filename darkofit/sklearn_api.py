@@ -163,7 +163,7 @@ _PRIVATE_ENSEMBLE_V3_POLICY_VALUES = {
     "colsample": 0.85,
 }
 _PRIVATE_ENSEMBLE_V3_PROTOTYPE = "ensemble_v3_b1_b2"
-_PRIVATE_ENSEMBLE_V3_METADATA_VERSION = 3
+_PRIVATE_ENSEMBLE_V3_METADATA_VERSION = 4
 _PRIVATE_ENSEMBLE_V3_MEMBER_OVERRIDES = frozenset({
     "n_ensembles",
     "random_state",
@@ -356,6 +356,26 @@ def _ensemble_class_partitions_are_usable(
     return True
 
 
+def _normalize_ensemble_group_codes(groups, n_rows, *, context):
+    group_values = np.asarray(groups)
+    if group_values.ndim != 1 or len(group_values) != int(n_rows):
+        raise ValueError(
+            f"{context} groups must be one-dimensional with one value per "
+            "training row"
+        )
+    try:
+        _, group_codes = np.unique(group_values, return_inverse=True)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            f"{context} groups must contain consistently comparable scalar values"
+        ) from exc
+    group_codes = np.ascontiguousarray(group_codes, dtype="<i8")
+    unique_group_count = int(group_codes.max()) + 1
+    if unique_group_count < 2:
+        raise ValueError(f"{context} group sampling requires at least two groups")
+    return group_codes, unique_group_count
+
+
 def _ensemble_bootstrap_plan(
     n_rows,
     seed,
@@ -375,23 +395,9 @@ def _ensemble_bootstrap_plan(
     group_codes = None
     unique_group_count = None
     if bootstrap == "groups":
-        group_values = np.asarray(groups)
-        if group_values.ndim != 1 or len(group_values) != n_rows:
-            raise ValueError(
-                "groups must be one-dimensional with one value per training row"
-            )
-        try:
-            _, group_codes = np.unique(group_values, return_inverse=True)
-        except (TypeError, ValueError) as exc:
-            raise ValueError(
-                "groups must contain consistently comparable scalar values"
-            ) from exc
-        group_codes = np.asarray(group_codes, dtype=np.int64)
-        unique_group_count = int(group_codes.max()) + 1
-        if unique_group_count < 2:
-            raise ValueError(
-                "ensemble_bootstrap='groups' requires at least two groups"
-            )
+        group_codes, unique_group_count = _normalize_ensemble_group_codes(
+            groups, n_rows, context="ensemble bootstrap"
+        )
 
     weights = (
         None
@@ -497,23 +503,9 @@ def _ensemble_without_replacement_plan(
     group_codes = None
     unique_group_count = None
     if sampling_unit == "groups":
-        group_values = np.asarray(groups)
-        if group_values.ndim != 1 or len(group_values) != n_rows:
-            raise ValueError(
-                "groups must be one-dimensional with one value per training row"
-            )
-        try:
-            _, group_codes = np.unique(group_values, return_inverse=True)
-        except (TypeError, ValueError) as exc:
-            raise ValueError(
-                "groups must contain consistently comparable scalar values"
-            ) from exc
-        group_codes = np.asarray(group_codes, dtype=np.int64)
-        unique_group_count = int(group_codes.max()) + 1
-        if unique_group_count < 2:
-            raise ValueError(
-                "private group sampling requires at least two groups"
-            )
+        group_codes, unique_group_count = _normalize_ensemble_group_codes(
+            groups, n_rows, context="private"
+        )
 
     weights = (
         None
@@ -591,6 +583,7 @@ def _validate_loaded_private_ensemble_v3_metadata(
     *,
     classification,
     index_provenance,
+    group_codes,
     base_constructor_params,
 ):
     """Fail closed on private B1/B2 fitted and persistence provenance."""
@@ -756,6 +749,38 @@ def _validate_loaded_private_ensemble_v3_metadata(
         raise ValueError(
             "invalid DarkoFit model: private ensemble-v3 input shape is invalid"
         )
+    input_group_count = metadata.get("input_group_count")
+    group_codes_sha256 = metadata.get("group_codes_sha256")
+    if sampling_unit == "rows":
+        if (
+            group_codes is not None
+            or input_group_count is not None
+            or group_codes_sha256 is not None
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: private row-sampling group provenance "
+                "is invalid"
+            )
+    else:
+        group_codes = np.asarray(group_codes)
+        if (
+            group_codes.ndim != 1
+            or group_codes.dtype != np.dtype("<i8")
+            or group_codes.size != input_rows
+            or np.any(group_codes < 0)
+            or isinstance(input_group_count, bool)
+            or not isinstance(input_group_count, int)
+            or input_group_count < 2
+            or not np.array_equal(
+                np.unique(group_codes),
+                np.arange(input_group_count, dtype=np.int64),
+            )
+            or not isinstance(group_codes_sha256, str)
+            or group_codes_sha256 != _index_sha256(group_codes)
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: private group-code provenance is invalid"
+            )
     shared = metadata.get("shared_preprocessing")
     shared_requested = metadata.get("shared_preprocessing_requested")
     fallback_reason = metadata.get("shared_preprocessing_fallback_reason")
@@ -1025,34 +1050,64 @@ def _validate_loaded_private_ensemble_v3_metadata(
                 or record[name] < 1
                 for name in group_fields
             )
-            if sampling == "without_replacement":
-                total_groups = (
-                    record["sampled_unique_groups"] + record["oob_groups"]
+            row_multiplicities = np.bincount(
+                sampled_indices, minlength=input_rows
+            )
+            group_multiplicities = np.empty(
+                input_group_count, dtype=np.int64
+            )
+            complete_group_sampling = True
+            for group in range(input_group_count):
+                counts = row_multiplicities[group_codes == group]
+                if counts.size == 0 or np.any(counts != counts[0]):
+                    complete_group_sampling = False
+                    break
+                group_multiplicities[group] = counts[0]
+            if complete_group_sampling:
+                expected_group_draws = int(group_multiplicities.sum())
+                expected_unique_groups = int(
+                    np.count_nonzero(group_multiplicities)
                 )
-                invalid_group_relation = (
-                    record["sampled_unique_groups"]
-                    != record["sampled_group_draws"]
-                    or record["sampled_unique_groups"]
-                    != min(
-                        total_groups - 1,
-                        max(
-                            1,
-                            int(math.floor(0.8 * total_groups + 0.5)),
-                        ),
-                    )
+                expected_oob_groups = int(
+                    input_group_count - expected_unique_groups
                 )
+                sampled_group_codes = np.unique(group_codes[sampled_unique])
+                oob_group_codes = np.unique(group_codes[oob_indices])
+                group_disjoint = not np.intersect1d(
+                    sampled_group_codes, oob_group_codes
+                ).size
             else:
-                invalid_group_relation = (
-                    record["sampled_unique_groups"] + record["oob_groups"]
-                    != record["sampled_group_draws"]
-                )
+                expected_group_draws = -1
+                expected_unique_groups = -1
+                expected_oob_groups = -1
+                group_disjoint = False
+            expected_without_replacement_groups = min(
+                input_group_count - 1,
+                max(
+                    1,
+                    int(math.floor(0.8 * input_group_count + 0.5)),
+                ),
+            )
             if (
                 invalid_group_fields
-                or invalid_group_relation
-                or record["sampled_group_draws"] > record["sampled_rows"]
-                or record["sampled_unique_groups"]
-                > record["sampled_unique_rows"]
-                or record["oob_groups"] > record["oob_rows"]
+                or not complete_group_sampling
+                or record["sampled_group_draws"] != expected_group_draws
+                or record["sampled_unique_groups"] != expected_unique_groups
+                or record["oob_groups"] != expected_oob_groups
+                or (
+                    sampling == "without_replacement"
+                    and (
+                        expected_group_draws != expected_unique_groups
+                        or expected_unique_groups
+                        != expected_without_replacement_groups
+                        or np.any(group_multiplicities > 1)
+                    )
+                )
+                or (
+                    sampling == "bootstrap"
+                    and expected_group_draws != input_group_count
+                )
+                or not group_disjoint
                 or record.get("group_disjoint") is not True
             ):
                 raise ValueError(
@@ -1109,6 +1164,7 @@ def _validate_loaded_ensemble_metadata(
     *,
     classification,
     index_provenance=None,
+    group_codes=None,
     base_constructor_params=None,
 ):
     """Fail closed on contradictory fitted-ensemble provenance."""
@@ -1119,6 +1175,7 @@ def _validate_loaded_ensemble_metadata(
             members,
             classification=classification,
             index_provenance=index_provenance,
+            group_codes=group_codes,
             base_constructor_params=base_constructor_params,
         )
     if (
@@ -3776,6 +3833,7 @@ class _RefitParamsMixin:
         for name in (
             "estimators_",
             "ensemble_metadata_",
+            "_ensemble_group_codes_",
             "ensemble_best_iterations_",
             "ensemble_learning_rates_",
             "expected_value_",
@@ -3918,7 +3976,7 @@ class _RefitParamsMixin:
         archive = load_ensemble(path)
         if archive is None:
             return None
-        header, payloads, index_provenance = archive
+        header, payloads, index_provenance, group_codes = archive
         saved_class = header["wrapper_class"]
         if saved_class != cls.__name__:
             raise TypeError(
@@ -3955,6 +4013,7 @@ class _RefitParamsMixin:
             members,
             classification=classification,
             index_provenance=index_provenance,
+            group_codes=group_codes,
             base_constructor_params=params,
         )
         if (
@@ -4233,7 +4292,10 @@ class _RefitParamsMixin:
                     "sampled"
                 ].copy()
                 member._ensemble_oob_indices_ = provenance["oob"].copy()
-        return est._adopt_ensemble(members, metadata)
+        result = est._adopt_ensemble(members, metadata)
+        if group_codes is not None:
+            result._ensemble_group_codes_ = group_codes.copy()
+        return result
 
     def _fit_ensemble(
         self,
@@ -6731,17 +6793,17 @@ def _fit_private_ensemble_v3(
                 "sampling_unit='groups' to keep entities intact"
             )
         group_values = None
+        group_codes = None
+        input_group_count = None
         if sampling_unit == "groups":
             if groups is None:
                 raise ValueError(
                     "private group sampling requires groups in fit"
                 )
             group_values = np.asarray(groups)
-            if group_values.ndim != 1 or len(group_values) != len(X_checked):
-                raise ValueError(
-                    "groups must be one-dimensional with one value per "
-                    "training row"
-                )
+            group_codes, input_group_count = _normalize_ensemble_group_codes(
+                group_values, len(X_checked), context="private"
+            )
 
         fit_seed = normalize_random_state_seed(estimator.random_state)
         member_seeds = tuple(
@@ -7013,9 +7075,16 @@ def _fit_private_ensemble_v3(
             ),
             "input_row_count": int(len(X_checked)),
             "input_feature_count": int(n_features),
+            "input_group_count": input_group_count,
+            "group_codes_sha256": (
+                None if group_codes is None else _index_sha256(group_codes)
+            ),
             "members": member_metadata,
         }
-        return estimator._adopt_ensemble(estimators, metadata)
+        result = estimator._adopt_ensemble(estimators, metadata)
+        if group_codes is not None:
+            result._ensemble_group_codes_ = group_codes.copy()
+        return result
     except BaseException:
         estimator.__dict__.clear()
         estimator.__dict__.update(previous_state)
@@ -8320,6 +8389,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 wrapper_class=type(self).__name__,
                 params=self._ensemble_params_header(),
                 metadata=self.ensemble_metadata_,
+                group_codes=getattr(self, "_ensemble_group_codes_", None),
             )
             return
         from .serialization import save_booster
@@ -9056,6 +9126,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                 wrapper_class=type(self).__name__,
                 params=self._ensemble_params_header(),
                 metadata=self.ensemble_metadata_,
+                group_codes=getattr(self, "_ensemble_group_codes_", None),
             )
             return
         from .serialization import _encode_categories, save_booster

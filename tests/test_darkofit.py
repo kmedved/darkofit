@@ -8685,6 +8685,15 @@ def test_level_subtraction_float_quality_parity(monkeypatch):
                            random_state=5)
     original = tree_mod.build_oblivious_tree
 
+    # This test deliberately forces a builder path that the fitted dispatch
+    # selector never chooses at this thread count. Keep it outside dispatch
+    # engagement claims while comparing the two internal arithmetic paths.
+    monkeypatch.setattr(
+        booster_mod._BaseBooster,
+        "_oblivious_functional_ineligibility",
+        lambda *_args, **_kwargs: "row_parallel_histograms_active",
+    )
+
     def forced(setting):
         def build(*args, **kwargs):
             kwargs["level_histogram_subtraction"] = setting

@@ -263,6 +263,41 @@ def test_auto_fallback_records_actual_fused_level_engagement(monkeypatch):
     assert metadata["unfused_level_count"] == 0
 
 
+def test_fit_fails_if_builder_counters_disagree_with_selected_lane(monkeypatch):
+    X, y = _numeric_data(seed=44)
+    original = booster_module.build_oblivious_tree
+
+    def contradictory_builder(*args, **kwargs):
+        fused_counter = kwargs.pop("fused_oblivious_counter", None)
+        unfused_counter = kwargs.pop("unfused_oblivious_counter", None)
+        assert fused_counter is not None
+        assert unfused_counter is not None
+        result = original(*args, **kwargs)
+        unfused_counter[0] += 1
+        return result
+
+    monkeypatch.setattr(
+        booster_module, "build_oblivious_tree", contradictory_builder
+    )
+
+    with pytest.raises(RuntimeError, match="actual builder engagement"):
+        GradientBoosting(
+            **_core_params(iterations=1), oblivious_kernel="fused"
+        ).fit(X, y)
+
+
+def test_zero_iteration_fit_records_no_builder_engagement():
+    X, y = _numeric_data(seed=45)
+    model = GradientBoosting(
+        **_core_params(iterations=0), oblivious_kernel="fused"
+    ).fit(X, y)
+
+    metadata = model.oblivious_kernel_dispatch_
+    assert metadata["engaged"] is False
+    assert metadata["fused_level_count"] == 0
+    assert metadata["unfused_level_count"] == 0
+
+
 @pytest.mark.parametrize(
     "overrides",
     [
