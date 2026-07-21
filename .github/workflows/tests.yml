@@ -85,15 +85,18 @@ jobs:
         run: |
           python -m pytest -q -m campaign
           # These files predate their campaign-lane routing and are immutable
-          # inputs to M3b. The two deselected freezer constructors require the
-          # intentionally untracked, hash-pinned local sports-panel cache; the
-          # committed contract/result chain is verified separately.
+          # inputs to M3b. The freezer constructors require the intentionally
+          # untracked sports-panel cache. The source-pin/live-tree checks are
+          # pre-execution guards: after closure, the result verifier reads the
+          # implementation inputs from the contract's historical Git pin.
           python -m pytest -q \
             tests/test_m3b_ensemble_v3.py \
             tests/test_m3b_ensemble_v3_r2.py \
             tests/test_m3b_ensemble_v3_r3.py \
             --deselect=tests/test_m3b_ensemble_v3.py::test_m3b_freezer_binds_source_cases_and_nonshipping_claims \
-            --deselect=tests/test_m3b_ensemble_v3_r3.py::test_m3b_r3_freezer_binds_both_terminal_predecessors
+            --deselect=tests/test_m3b_ensemble_v3_r3.py::test_m3b_r3_uses_corrected_source_pin \
+            --deselect=tests/test_m3b_ensemble_v3_r3.py::test_m3b_r3_freezer_binds_both_terminal_predecessors \
+            --deselect=tests/test_m3b_ensemble_v3_r3.py::test_m3b_r3_frozen_contract_loads_when_present
 
   docs-and-package:
     runs-on: ubuntu-latest

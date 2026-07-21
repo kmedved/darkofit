@@ -22,6 +22,50 @@ GATE = BENCHMARKS / "m3b_ensemble_v3_r3_gate.json"
 TIMING = BENCHMARKS / "m3b_ensemble_v3_r3_timing.json"
 RESULT = BENCHMARKS / "m3b_ensemble_v3_r3_result.json"
 NOTE = BENCHMARKS / "m3b_ensemble_v3_r3_result.md"
+HISTORICAL_SOURCE_PATHS = frozenset({
+    "darkofit/sklearn_api.py",
+    "tests/test_private_ensemble_v3.py",
+})
+
+
+@pytest.fixture(autouse=True)
+def _bind_closed_campaign_to_its_historical_source(monkeypatch):
+    """Validate closed M3b inputs from its pin, not the evolving worktree."""
+    original = runner._base._bound_file_ok
+
+    def historical_bound_file_ok(record):
+        relative = record.get("path")
+        if relative not in HISTORICAL_SOURCE_PATHS:
+            return original(record)
+        completed = subprocess.run(
+            [
+                "git",
+                "show",
+                f"{runner.MODEL_SOURCE_HEAD}:{relative}",
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+        )
+        payload = completed.stdout
+        expected_bytes = record.get("bytes")
+        expected_digest = record.get("sha256")
+        return (
+            completed.returncode == 0
+            and not isinstance(expected_bytes, bool)
+            and isinstance(expected_bytes, int)
+            and expected_bytes == len(payload)
+            and isinstance(expected_digest, str)
+            and len(expected_digest) == 64
+            and all(char in "0123456789abcdef" for char in expected_digest)
+            and expected_digest == hashlib.sha256(payload).hexdigest()
+        )
+
+    monkeypatch.setattr(
+        runner._base,
+        "_bound_file_ok",
+        historical_bound_file_ok,
+    )
 
 
 def _load(path: Path) -> dict:
