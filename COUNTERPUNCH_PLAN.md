@@ -16,9 +16,12 @@
 > production-layout repairs. Corrected execution identity v4 changes no grid,
 > acceptance rule, or worker environment.
 > Owner authorization for execution identity `calibration_v4` was published
-> 2026-07-21 at `9ed122f`. Calibration remains unrun and outcome-unopened;
-> execution is paused until the benchmark machine is available without
-> material background CPU contention.
+> 2026-07-21 at `9ed122f`, and that identity was executed exactly once the
+> same day. All 30 cells were behavior-exact, but six missed the frozen
+> stability limit and the selected rule's `0.973846` geomean missed the
+> required `<=0.970000`. The binding disposition is
+> `close_dispatch_campaign`: Wave 4 is complete, no threshold or validation
+> phase is authorized, and `auto` remains fused.
 > Wave 1 authorization covers the H1 audit and confirmed fixes, M1 plus the
 > Q0 profiling half, M3a, and construction of M5/M6 infrastructure. It does
 > not authorize a public prototype, default change, fresh confirmation
@@ -29,8 +32,9 @@
 > parallelism, public surfaces, default changes, M2, and fresh access remain
 > unauthorized. B-archive v2 then showed that exact canonical-preprocessor
 > factoring reaches `4.152525×`, missing the unchanged `4.0×` archive gate;
-> no serializer prototype is authorized, and behavior-exact fused-lane
-> dispatch is the next nominated Track I mechanism.
+> no serializer prototype is authorized. Behavior-exact fused-lane dispatch
+> also closed under its frozen calibration gates, so the next mechanism slot
+> returns to the quality-first shortlist.
 
 DarkoFit comparison pin: `v0.10.0` at
 `ec66a64654becaf948592588a047bfb8205decc8`.
@@ -231,8 +235,22 @@ authorization is deliberately separate. The create-only
 has SHA-256
 `42fb0ab01f8a7b271cda2610c59a953d5815e93657ca0a5ab3a003e38dfea775`
 and was published at `9ed122f`. No raw, terminal, analysis, selected-threshold,
-or validation artifact exists. The sole possible next Wave 4 action is the
-one-shot `calibration_v4` execution on an otherwise idle benchmark machine.
+or validation artifact existed at authorization. The one-shot execution then
+created the binding
+[`raw artifact`](benchmarks/fused_lane_dispatch_calibration_raw_v4.json)
+(SHA-256
+`27a94aa8b93626ec1ae5db329d281b528b52e62beaf0ba3f416d0877a203fea0`)
+and
+[`analysis`](benchmarks/fused_lane_dispatch_calibration_analysis_v4.json)
+(SHA-256
+`c47314191eaec43e6ceb5fa7a2eca870b7af2308cc736dae23c12b9735f3bf9b`).
+All 30 cells were exact. Six cells exceeded the frozen `0.10` stability
+limit, and the selected threshold candidate `1048576` produced a
+selected/current-fused geomean of `0.973846` against `<=0.97`, despite a
+passing worst ratio of `1.0` and selection of both lanes (18 fused, 12
+unfused). The binding disposition is `close_dispatch_campaign`; no terminal,
+selected-threshold, validation-contract, validation-authorization, or
+validation-result artifact exists, and none may be created from this result.
 
 ## 2. Verified evidence and open questions
 
@@ -243,7 +261,8 @@ one-shot `calibration_v4` execution on an otherwise idle benchmark machine.
 | ChimeraBoost ensemble | M3a ensemble8/single was `0.950230` on player-disjoint sports RMSE with 9/9 cell wins, `0.977935` on cold players, and `0.947797` on six selected general medium cells with 6/6 wins. | Current Tier-E donor signal at `f14be60`; three spent sports seasons and a small general slice, not a default claim. |
 | DarkoFit ensembles | M3a group8/single was `1.025482` on player-disjoint sports RMSE; row5, row8, and group5 were also worse. Row8/single was `1.019556` on the selected general slice. | Current Tier-E closure of the shipped bootstrap/member policy; no repeat timing. |
 | Private ensemble-v3 attribution | M3b combined/control was `0.979638` for aggregate loss and `0.557873` for fit time, but combined/single archive bytes were `5.534767` against the frozen `4.0` ceiling. B1 and B2 also failed their value and archive/single checks. | Current spent private evidence; B1/B2 closed with no retained arm and no shipping authorization. |
-| B-archive exact-factoring feasibility | Across the same 13-case portfolio, current combined/single archive bytes had median `6.032405`; exact canonical numeric-preprocessor factoring produced an effective median `4.152525` against the unchanged `4.0` limit. Eleven numeric cases were eligible; two member-local categorical cases remained unchanged. | Current spent Tier-E size evidence; B-archive closed, no serializer prototype authorized, fused-lane dispatch nominated next. |
+| B-archive exact-factoring feasibility | Across the same 13-case portfolio, current combined/single archive bytes had median `6.032405`; exact canonical numeric-preprocessor factoring produced an effective median `4.152525` against the unchanged `4.0` limit. Eleven numeric cases were eligible; two member-local categorical cases remained unchanged. | Current spent Tier-E size evidence; B-archive closed and its fused-lane-dispatch successor also closed under separate frozen gates. |
+| Fused-lane dispatch calibration | The one-shot v4 calibration was exact on 30/30 cells. Its selected threshold candidate used both lanes and had worst ratio `1.0`, but six cells missed the stability limit and selected/current-fused geomean was `0.973846` against `<=0.97`. | Binding Tier-E close; no threshold, validation, automatic-policy change, or speed claim. `auto` remains fused. |
 | Quantization on sports | ChimeraBoost's default quantization mildly worsened its player-disjoint sports quality. M3a float/quantized ratios were `1.001949` for singles and `1.002315` for ensembles. | Current only for this small, noisy workload. |
 | Large-n engine comparison | M1 DarkoFit/current-quantized-Chimera fit ratio was `0.844722`; Chimera quantized/float was `0.903595`, missing the frozen `0.90` donor bar. | Current Tier-E matched-capacity result; Q closed under its conjunctive rule. |
 | Broad 13-dataset comparison | The historical DarkoFit/ChimeraBoost RMSE ratio was 1.0125 and training-time ratio was 0.9093 against ChimeraBoost 0.14.1. | Historically valid for its pins; stale for 0.18. |
@@ -1092,7 +1111,7 @@ Initial backlog, unrated and unauthorized:
   or lockbox access is authorized. The M3b sports view remains player-disjoint
   cold-player evidence within held teams; the seeded 75/25 split applies only
   to the general weighted view.
-- **In progress, frozen before outcomes — behavior-exact fused-lane dispatch**
+- **Closed — behavior-exact fused-lane dispatch**
   (internal, from Q0): the
   forced-unfused reference was behavior-exact and faster than the fused
   production lane on the current 14-CPU machine (paired fit ratios `0.901`
@@ -1136,11 +1155,15 @@ Initial backlog, unrated and unauthorized:
   and makes calibration routing match production while preserving the grid,
   gates, and exact worker environments. The separate create-only owner
   authorization matching execution identity `calibration_v4` was published
-  at `9ed122f`; calibration has not run and remains outcome-unopened while
-  awaiting exclusive machine access. Its one formal raw identity may be
-  created only by that authorized execution; a
-  qualifying threshold would then require a committed threshold, new product
-  source pin, and separate validation freeze.
+  at `9ed122f`. Calibration then ran exactly once and produced the immutable
+  [`raw artifact`](benchmarks/fused_lane_dispatch_calibration_raw_v4.json)
+  and
+  [`analysis`](benchmarks/fused_lane_dispatch_calibration_analysis_v4.json).
+  All 30 cells were behavior-exact, but six exceeded the frozen stability
+  limit and the selected `1048576` candidate's `0.973846` geomean missed the
+  `<=0.97` gate. The binding disposition is `close_dispatch_campaign`.
+  No threshold is committed, no validation phase is frozen or authorized,
+  `auto` remains fused, and this campaign will not be rerun or relaxed.
 - **Q re-entry microbenchmark** (internal): a DarkoFit-specific private
   histogram-bandwidth prototype at the Q0 hotspot (frozen conservative
   projection `0.867242`), pursued only as the distinct causal case the Q
@@ -1246,7 +1269,7 @@ These are planning ranges, not delivery promises.
 | 1 | **Complete:** H1 audit; M1/Q0; M3a quality-first; M5 baseline; M6 infrastructure/backtest; G-M | Completed 2026-07-20 | Q and current ensembles closed; one private B0/B1/B2 mechanism prototype funded |
 | 2 | **Complete:** B0 contract, private sequential B1/B2 prototype and invariants, prospectively frozen M3b attribution | Completed 2026-07-20 | No arm cleared every final gate; close B1/B2 and preserve the existing opt-in |
 | 3 | **Complete:** M3b matched-single readout, B-archive component feasibility, v1 terminal lineage, and corrected frozen v2 campaign | Completed 2026-07-21 | Exact canonical factoring missed `4.0×`; close B-archive with no serializer and nominate fused-lane dispatch |
-| 4 | **In progress, authorized and paused for exclusive machine access:** behavior-exact fused-lane dispatch design, staged implementation, invariants, outcome-blind harness, and gate-repaired calibration execution identity v4 are frozen. V1--v3 were superseded pre-outcome; no grid, acceptance rule, or frozen worker environment changed. `auto` remains fused; owner authorization is published, calibration remains unrun/outcome-unopened, and validation has no freeze. M2 waits for a survivor; Q1 remains sequenced after the post-dispatch baseline | Run the one-shot `calibration_v4` identity only when the benchmark machine has no material background CPU contention | Retain exact dispatch, defer, or close |
+| 4 | **Complete and closed:** behavior-exact fused-lane dispatch design, staged implementation, invariants, outcome-blind harness, and gate-repaired calibration execution identity v4 were frozen. V1--v3 were superseded pre-outcome; v4 ran exactly once with 30/30 exact cells. Six cells missed stability and the selected geomean was `0.973846` against `<=0.97`. | Completed 2026-07-21; no rerun, threshold, validation, automatic-policy change, or speed claim | Keep `auto` fused and return the next mechanism slot to the quality-first shortlist |
 | 5 | Q3, S, or P-next Tier-D campaigns | Separately estimated and power-gated | One fresh campaign per qualified automatic policy |
 | Later | Track I backlog (C and X mechanisms included), M4 drift check, and Z cleanup | Independent backlog | No coupling to unfinished speculative tracks |
 

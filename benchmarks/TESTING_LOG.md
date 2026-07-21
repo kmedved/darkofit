@@ -1,8 +1,8 @@
 # DarkoFit testing log
 
 _Canonical navigation ledger. Updated 2026-07-21 after the GitHub-only
-`v0.10.1` release, frozen B-archive v2 close, and outcome-blind Wave 4
-fused-dispatch calibration-v4 capability/layout freeze._
+`v0.10.1` release, frozen B-archive v2 close, and binding Wave 4
+fused-dispatch calibration-v4 close._
 
 This file records what DarkoFit has tested, why it was tested, what happened,
 and which artifact controls the conclusion. It is intentionally broader than
@@ -1063,6 +1063,66 @@ change._
     authorized v4 identity until exclusive machine access is available, then
     execute it once under the frozen contract.
 
+### 29. Wave 4 calibration-v4 binding execution and close
+
+1. **Execution boundary:** 2026-07-21; the create-only owner-authorized
+   `calibration_v4` identity ran exactly once from clean harness commit
+   `9ed122facc849ecb2816e240e15d2fc07e1def93` against clean detached product
+   source `05a7a0d996fcd797cbc925026f7eba48db4becd5`. No rerun occurred.
+2. **Comparator:** forced-unfused candidate versus the forced-fused current
+   production lane, paired inside each fresh coordinate worker.
+3. **Evidence class:** binding Tier-E synthetic kernel calibration under the
+   prospectively frozen v4 contract. It is generic engineering evidence, not
+   sports, quality, portability, release, M2/M4, fresh-data, or lockbox
+   evidence.
+4. **Data:** all 30 frozen coordinates completed: five row counts, three
+   feature/thread shapes, and unit plus positive-variable Hessians under seed
+   `20260721`. Every frozen array and combined dataset fingerprint validated.
+5. **Arms:** each coordinate used two untimed warmups per lane and seven
+   paired timed repetitions in the frozen alternating order. Timing covered
+   only `build_oblivious_tree`; no coordinate, threshold candidate, tie rule,
+   acceptance limit, or analyzer changed after outcome access.
+6. **Resources:** the frozen Apple M4 Pro / 14-CPU `darko311` fingerprint and
+   exact per-thread environments were revalidated. Chrome Remote Desktop was
+   absent before launch; there was no concurrent timed repository job. The
+   owner accepted ordinary host background activity because lane pairing,
+   alternating order, repetitions, and the frozen stability gate adjudicate
+   timing noise rather than permitting a rerun.
+7. **Execution:** the formal runner command was
+   `python benchmarks/run_fused_lane_dispatch.py calibration` with the v4
+   contract, v4 authorization, detached source worktree, and declared raw
+   path. It returned zero, published all rows atomically, and emitted no
+   terminal-failure record. The frozen analyzer then ran once without a
+   threshold argument and created the declared analysis artifact.
+8. **Artifacts:** contract SHA-256
+   `fab0784beee165b4643b817f12076b79ff832d95224469bc244cc15c839e9c7f`;
+   authorization SHA-256
+   `42fb0ab01f8a7b271cda2610c59a953d5815e93657ca0a5ab3a003e38dfea775`;
+   raw
+   [`fused_lane_dispatch_calibration_raw_v4.json`](fused_lane_dispatch_calibration_raw_v4.json)
+   SHA-256
+   `27a94aa8b93626ec1ae5db329d281b528b52e62beaf0ba3f416d0877a203fea0`;
+   analysis
+   [`fused_lane_dispatch_calibration_analysis_v4.json`](fused_lane_dispatch_calibration_analysis_v4.json)
+   SHA-256
+   `c47314191eaec43e6ceb5fa7a2eca870b7af2308cc736dae23c12b9735f3bf9b`.
+9. **Primary result:** all 30 cells were behavior-exact. Minimum-regret
+   selection chose threshold `1048576`, with 18 fused and 12 unfused cells,
+   geomean regret `1.002833`, worst selected/current-fused ratio `1.0`, and
+   selected/current-fused geomean `0.973846`.
+10. **Gates:** exactness, both-lanes-selected, and worst-ratio gates passed.
+    The selected geomean missed its `<=0.970000` gate, and `all_stable=false`
+    because six cells exceeded the `IQR / median <=0.10` limit. Qualification
+    is conjunctive, so `qualifies=false`.
+11. **Limitations/non-claims:** this calibration does not establish a retained
+    crossover, speed claim, default change, or portability. Instability is a
+    binding failure, not grounds to discard rows or rerun. No selected-threshold,
+    validation contract, validation authorization, or validation result exists.
+12. **Current decision:** `close_dispatch_campaign`. Keep the effective
+    `auto` behavior fused, retain the already-authorized explicit overrides,
+    perform no validation phase, and return the next mechanism slot to the
+    quality-first shortlist. Q remains closed unless independently re-funded.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
@@ -1109,6 +1169,9 @@ change._
 - B-archive canonical-preprocessor serialization (effective median
   `4.152525×` missed the frozen `4.0×` archive limit, so no serializer was
   authorized);
+- automatic fused/unfused crossover dispatch (all 30 calibration cells were
+  exact, but stability failed and selected geomean `0.973846` missed the
+  frozen `0.97` limit; explicit overrides remain available);
   and
 - any CTR23 lockbox run without a newly powered candidate.
 
