@@ -15,8 +15,10 @@
 > stricter parent-capability gate plus wrapper, weighted-class, and
 > production-layout repairs. Corrected execution identity v4 changes no grid,
 > acceptance rule, or worker environment.
-> Calibration remains explicitly unauthorized and unrun, with no outcome
-> opened.
+> Owner authorization for execution identity `calibration_v4` was published
+> 2026-07-21 at `9ed122f`. Calibration remains unrun and outcome-unopened;
+> execution is paused until the benchmark machine is available without
+> material background CPU contention.
 > Wave 1 authorization covers the H1 audit and confirmed fixes, M1 plus the
 > Q0 profiling half, M3a, and construction of M5/M6 infrastructure. It does
 > not authorize a public prototype, default change, fresh confirmation
@@ -222,11 +224,15 @@ immutable and unexecuted. The outcome-blind
 has SHA-256
 `fab0784beee165b4643b817f12076b79ff832d95224469bc244cc15c839e9c7f`,
 source `05a7a0d996fcd797cbc925026f7eba48db4becd5`, the identical grid, gates,
-and v3 worker environments, plus unique v4 formal paths. It records
-`execution_authorized=false` and `outcomes_opened=false`; none of its
-authorization or result artifacts exists. The sole possible next Wave 4
-action is explicit owner authorization for execution identity
-`calibration_v4` and this exact contract hash.
+and v3 worker environments, plus unique v4 formal paths. The frozen contract
+continues to record `execution_authorized=false` and `outcomes_opened=false`;
+authorization is deliberately separate. The create-only
+[`v4 owner authorization`](benchmarks/fused_lane_dispatch_calibration_authorization_v4.json)
+has SHA-256
+`42fb0ab01f8a7b271cda2610c59a953d5815e93657ca0a5ab3a003e38dfea775`
+and was published at `9ed122f`. No raw, terminal, analysis, selected-threshold,
+or validation artifact exists. The sole possible next Wave 4 action is the
+one-shot `calibration_v4` execution on an otherwise idle benchmark machine.
 
 ## 2. Verified evidence and open questions
 
@@ -1128,10 +1134,11 @@ Initial backlog, unrated and unauthorized:
   which adds a parent-issued pipe capability, binds wrapper/member/booster
   dispatch provenance, restores positive-mass-only weighted-class semantics,
   and makes calibration routing match production while preserving the grid,
-  gates, and exact worker environments. Calibration has not run. A separate
-  owner authorization matching execution identity `calibration_v4` is
-  required to
-  create its one formal raw identity; a
+  gates, and exact worker environments. The separate create-only owner
+  authorization matching execution identity `calibration_v4` was published
+  at `9ed122f`; calibration has not run and remains outcome-unopened while
+  awaiting exclusive machine access. Its one formal raw identity may be
+  created only by that authorized execution; a
   qualifying threshold would then require a committed threshold, new product
   source pin, and separate validation freeze.
 - **Q re-entry microbenchmark** (internal): a DarkoFit-specific private
@@ -1239,7 +1246,7 @@ These are planning ranges, not delivery promises.
 | 1 | **Complete:** H1 audit; M1/Q0; M3a quality-first; M5 baseline; M6 infrastructure/backtest; G-M | Completed 2026-07-20 | Q and current ensembles closed; one private B0/B1/B2 mechanism prototype funded |
 | 2 | **Complete:** B0 contract, private sequential B1/B2 prototype and invariants, prospectively frozen M3b attribution | Completed 2026-07-20 | No arm cleared every final gate; close B1/B2 and preserve the existing opt-in |
 | 3 | **Complete:** M3b matched-single readout, B-archive component feasibility, v1 terminal lineage, and corrected frozen v2 campaign | Completed 2026-07-21 | Exact canonical factoring missed `4.0×`; close B-archive with no serializer and nominate fused-lane dispatch |
-| 4 | **In progress, paused at owner gate:** behavior-exact fused-lane dispatch design, staged implementation, invariants, outcome-blind harness, and gate-repaired calibration execution identity v4 are frozen. V1--v3 were superseded pre-outcome; no grid, acceptance rule, or frozen worker environment changed. `auto` remains fused; calibration is unauthorized/unrun and validation has no freeze. M2 waits for a survivor; Q1 remains sequenced after the post-dispatch baseline | Frozen v4 checkpoint 2026-07-21; only explicit owner authorization for `calibration_v4` can open calibration | Retain exact dispatch, defer, or close |
+| 4 | **In progress, authorized and paused for exclusive machine access:** behavior-exact fused-lane dispatch design, staged implementation, invariants, outcome-blind harness, and gate-repaired calibration execution identity v4 are frozen. V1--v3 were superseded pre-outcome; no grid, acceptance rule, or frozen worker environment changed. `auto` remains fused; owner authorization is published, calibration remains unrun/outcome-unopened, and validation has no freeze. M2 waits for a survivor; Q1 remains sequenced after the post-dispatch baseline | Run the one-shot `calibration_v4` identity only when the benchmark machine has no material background CPU contention | Retain exact dispatch, defer, or close |
 | 5 | Q3, S, or P-next Tier-D campaigns | Separately estimated and power-gated | One fresh campaign per qualified automatic policy |
 | Later | Track I backlog (C and X mechanisms included), M4 drift check, and Z cleanup | Independent backlog | No coupling to unfinished speculative tracks |
 

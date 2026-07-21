@@ -976,6 +976,93 @@ the v4 lineage below._
     artifact exists. The next mechanism slot remains quality-first regardless
     of Wave 4's result.
 
+_This pre-authorization decision was superseded by the create-only owner
+authorization checkpoint below; the frozen scientific contract did not
+change._
+
+### 27. Wave 4 calibration-v4 owner authorization and pre-execution pause
+
+1. **Execution boundary:** 2026-07-21; owner authorization was recorded in
+   commit `9ed122facc849ecb2816e240e15d2fc07e1def93` and published to
+   `origin/main`. No formal calibration worker started.
+2. **Comparator:** unchanged prospective forced-fused control and
+   forced-unfused candidate. No timing comparison occurred.
+3. **Evidence class:** create-only owner authorization for the already-frozen,
+   outcome-unopened Tier-E `calibration_v4` execution identity. This is
+   permission to execute, not performance evidence.
+4. **Data:** unchanged 30 synthetic calibration coordinates, generator seed,
+   and array fingerprints. No raw row exists under v4.
+5. **Arms:** unchanged lanes, two untimed warmups, seven paired
+   alternating-order repetitions, selector family, threshold candidates, tie
+   rule, and acceptance limits.
+6. **Resources:** unchanged M4 Pro runtime and exact per-thread worker
+   environments. The formal run remains subject to the exclusive-machine rule.
+7. **Execution:** the authorization artifact was created, validated against
+   the frozen contract, committed, and pushed. A prospective launch was not
+   allowed to open calibration while Chrome Remote Desktop caused material
+   background CPU contention.
+8. **Artifacts:** frozen execution contract SHA-256
+   `fab0784beee165b4643b817f12076b79ff832d95224469bc244cc15c839e9c7f`;
+   create-only authorization SHA-256
+   `42fb0ab01f8a7b271cda2610c59a953d5815e93657ca0a5ab3a003e38dfea775`;
+   source `05a7a0d996fcd797cbc925026f7eba48db4becd5`. No raw, terminal,
+   analysis, selected-threshold, or validation-contract artifact exists.
+9. **Primary result:** none. Every speed ratio, regret, crossover threshold,
+   and qualification outcome remains unopened.
+10. **Gates:** authorization identity, source pin, contract hash, owner
+    decision, and create-only path are valid. Performance and validation gates
+    remain untested.
+11. **Limitations/non-claims:** authorization does not imply qualification,
+    speed, portability, quality, sports, release, default, M2/M4, Q,
+    fresh-data, or lockbox evidence. The frozen contract correctly retains
+    `execution_authorized=false`; the separate artifact carries authorization.
+12. **Current decision:** `authorized_await_exclusive_machine`. Execute the
+    one-shot `calibration_v4` identity only after material background CPU
+    contention is absent; otherwise preserve the unused identity.
+
+### 28. Post-authorization Wave 4 fresh-eyes audit
+
+1. **Execution boundary:** 2026-07-21; repeated fresh-eyes review of the exact
+   nine-commit range `369d512..9ed122f` and its 22 changed files, followed by
+   a second pass over the resulting documentation correction.
+2. **Comparator:** current disk state against the frozen v3/v4 contracts,
+   create-only v4 authorization, source-bound implementation, campaign
+   protocols, and regression tests.
+3. **Evidence class:** correctness and evidence-contract audit. No benchmark
+   timing or campaign outcome was generated or opened.
+4. **Data:** synthetic unit fixtures only. The formal 30-coordinate calibration
+   grid remained unused.
+5. **Arms:** product dispatch, wrapper/booster persistence, private group
+   provenance, worker capability, analyzer, freezer, and documentation status
+   surfaces were inspected; no comparative model arm ran.
+6. **Resources:** `darko311`; ordinary test execution only. No formal timed
+   worker or exclusive-machine claim follows from these tests.
+7. **Execution:** scoped harness/freezer/regression-test Ruff checks and
+   repository `compileall` passed; the focused dispatch/private-ensemble
+   matrix passed 220 tests; the CI-equivalent library partition passed 1,217
+   tests with 2 skips and 4 expected deselections. The campaign partition
+   passed 1,693 tests with 27 skips and reproduced only the documented
+   historical Panel 3 sibling-HEAD guard.
+8. **Artifacts:** all 32 v4 bound-file size/hash records, contract SHA-256
+   `fab0784beee165b4643b817f12076b79ff832d95224469bc244cc15c839e9c7f`,
+   authorization SHA-256
+   `42fb0ab01f8a7b271cda2610c59a953d5815e93657ca0a5ab3a003e38dfea775`,
+   authorization identity/source, and unused formal output paths were
+   revalidated from disk.
+9. **Primary result:** one confirmed documentation defect was found and fixed:
+   the live plan still described v4 as unauthorized after the authorization
+   commit had been published. No implementation defect was confirmed.
+10. **Gates:** contract lineage, unchanged science, exact bound files,
+    separate authorization semantics, unused create-only outputs, dispatch
+    counters, persistence, group provenance, and worker capability checks pass.
+11. **Limitations/non-claims:** the preserved Panel 3 failure reflects the
+    neighboring ChimeraBoost checkout differing from its frozen historical
+    HEAD; the audit did not weaken that guard. Calibration and validation
+    remain unopened, and no speed, threshold, or shipping claim follows.
+12. **Current decision:** `fresh_eyes_clean_authorized_unrun`. Preserve the
+    authorized v4 identity until exclusive machine access is available, then
+    execute it once under the frozen contract.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
