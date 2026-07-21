@@ -247,7 +247,10 @@ def test_auto_threshold_injection_engages_unfused_without_runtime_racing(
     assert metadata["fused_level_count"] == 0
 
 
-def test_auto_fallback_records_actual_fused_level_engagement():
+def test_auto_fallback_records_actual_fused_level_engagement(monkeypatch):
+    monkeypatch.setattr(booster_module.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(booster_module.platform, "machine", lambda: "arm64")
+    monkeypatch.setattr(booster_module.os, "cpu_count", lambda: 14)
     X, y = _numeric_data(seed=42)
     model = GradientBoosting(**_core_params(), oblivious_kernel="auto").fit(
         X, y
