@@ -122,12 +122,16 @@ def _member_payloads(
     return arrays, headers
 
 
-def _preprocessor_header(header: Mapping[str, Any]) -> dict[str, Any]:
-    return {
+def _preprocessor_header(
+    header: Mapping[str, Any], *, random_state: int | None
+) -> dict[str, Any]:
+    payload = {
         name: header[name]
         for name in _PREPROCESSOR_HEADER_KEYS
         if name in header
     }
+    payload["random_state"] = random_state
+    return payload
 
 
 def _simulate_factored_archive(
@@ -136,8 +140,9 @@ def _simulate_factored_archive(
     member_headers: list[dict[str, Any]],
     shared_names: set[str],
     *,
-    factor_preprocessor_header: bool,
+    shared_preprocessor_header: Mapping[str, Any] | None,
 ) -> int:
+    factor_preprocessor_header = shared_preprocessor_header is not None
     simulated = {name: value.copy() for name, value in outer_arrays.items()}
     for index, (arrays, header) in enumerate(zip(member_arrays, member_headers)):
         reduced = {
@@ -161,7 +166,7 @@ def _simulate_factored_archive(
         simulated[f"shared__{name}"] = first[name].copy()
     if factor_preprocessor_header:
         simulated["shared__preprocessor_header"] = np.array(
-            _canonical_json(_preprocessor_header(member_headers[0]))
+            _canonical_json(shared_preprocessor_header)
         )
     simulated["shared__component_manifest"] = np.array(
         _canonical_json({
@@ -251,13 +256,24 @@ def analyze_archive(
         and preprocessor_schema_identical
         and preprocessor_names.issubset(exact_common)
     )
-    prep_headers = [_preprocessor_header(header) for header in member_headers]
+    metadata = outer_header.get("metadata", {})
+    preprocessor_random_state = (
+        metadata.get("fit_random_state_seed")
+        if isinstance(metadata, Mapping)
+        else None
+    )
+    prep_headers = [
+        _preprocessor_header(
+            header,
+            random_state=preprocessor_random_state,
+        )
+        for header in member_headers
+    ]
     preprocessor_headers_identical = (
         bool(prep_headers[0].get("prep"))
         and "n_input_features" in prep_headers[0]
         and len({_canonical_json(value) for value in prep_headers}) == 1
     )
-    metadata = outer_header.get("metadata", {})
     numeric_target_free = (
         isinstance(metadata, Mapping)
         and metadata.get("shared_preprocessing") == "numeric_target_free"
@@ -277,14 +293,16 @@ def analyze_archive(
             members,
             member_headers,
             preprocessor_names,
-            factor_preprocessor_header=True,
+            shared_preprocessor_header=prep_headers[0],
         )
     all_exact_bytes = _simulate_factored_archive(
         outer_arrays,
         members,
         member_headers,
         exact_common,
-        factor_preprocessor_header=canonical_eligible,
+        shared_preprocessor_header=(
+            prep_headers[0] if canonical_eligible else None
+        ),
     )
     all_exact_bytes = min(current_bytes, all_exact_bytes)
 
@@ -409,6 +427,7 @@ def analyze_archive(
             "headers_byte_identical": preprocessor_headers_identical,
             "eligible": canonical_eligible,
             "array_names": sorted(preprocessor_names),
+            "header_fields": sorted(prep_headers[0]),
             "simulated_archive_bytes": canonical_bytes,
         },
         "optimistic_all_exact_entries": {
