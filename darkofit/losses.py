@@ -24,6 +24,9 @@ import numpy as np
 from numba import njit, prange
 
 
+_DETERMINISTIC_REDUCTION_BLOCK_SIZE = 1024
+
+
 # --------------------------------------------------------------------------
 # Weighted statistical helpers
 # --------------------------------------------------------------------------
@@ -95,31 +98,46 @@ def _logloss_grad_hess_into(y, raw, sample_weight, grad_out, hess_out):
 
 @njit(cache=True, parallel=True)
 def _logloss_eval(y, raw, sample_weight):
-    # The reduction variables are updated exactly once per iteration,
-    # unconditionally: numba's parfor reduction analysis is fragile with
-    # reductions inside branches (the "unexpected cycle in lookup()"
-    # assertion), and 1.0 * ce == ce keeps the unweighted sums bitwise
-    # identical to the plain accumulation.
+    # Numba's implicit parallel reduction may merge worker-local sums in a
+    # scheduler-dependent order. Keep parallel evaluation, but assign fixed
+    # contiguous input blocks and combine those partials in index order so an
+    # identical fitted model has an identical diagnostic score and archive.
+    n = raw.shape[0]
+    block_size = _DETERMINISTIC_REDUCTION_BLOCK_SIZE
+    n_blocks = (n + block_size - 1) // block_size
+    block_totals = np.empty(n_blocks, dtype=np.float64)
+    block_weights = np.empty(n_blocks, dtype=np.float64)
+    for block in prange(n_blocks):
+        start = block * block_size
+        stop = min(start + block_size, n)
+        block_total = 0.0
+        block_weight = 0.0
+        for i in range(start, stop):
+            z = raw[i]
+            if z >= 0.0:
+                p = 1.0 / (1.0 + np.exp(-z))
+            else:
+                ez = np.exp(z)
+                p = ez / (1.0 + ez)
+            if p < 1e-9:
+                p = 1e-9
+            elif p > 1.0 - 1e-9:
+                p = 1.0 - 1e-9
+            ce = -(y[i] * np.log(p) + (1.0 - y[i]) * np.log(1.0 - p))
+            if sample_weight is None:
+                w = 1.0
+            else:
+                w = sample_weight[i]
+            block_total += w * ce
+            block_weight += w
+        block_totals[block] = block_total
+        block_weights[block] = block_weight
+
     total = 0.0
     weight_total = 0.0
-    for i in prange(raw.shape[0]):
-        z = raw[i]
-        if z >= 0.0:
-            p = 1.0 / (1.0 + np.exp(-z))
-        else:
-            ez = np.exp(z)
-            p = ez / (1.0 + ez)
-        if p < 1e-9:
-            p = 1e-9
-        elif p > 1.0 - 1e-9:
-            p = 1.0 - 1e-9
-        ce = -(y[i] * np.log(p) + (1.0 - y[i]) * np.log(1.0 - p))
-        if sample_weight is None:
-            w = 1.0
-        else:
-            w = sample_weight[i]
-        total += w * ce
-        weight_total += w
+    for block in range(n_blocks):
+        total += block_totals[block]
+        weight_total += block_weights[block]
     return total / weight_total
 
 
