@@ -1,9 +1,11 @@
+import io
 import json
 
 import numba
 import numpy as np
 import pytest
 
+import darkofit.sklearn_api as sklearn_api
 from darkofit import DarkoClassifier, DarkoRegressor
 from darkofit.sklearn_api import (
     _ensemble_bootstrap_plan,
@@ -42,6 +44,24 @@ def _fit_private(estimator, X, y, **kwargs):
     }
     params.update(kwargs)
     return _fit_private_ensemble_v3(estimator, X, y, **params)
+
+
+def _rewrite_nested_member_headers(arrays, mutate):
+    member_names = sorted(
+        name
+        for name in arrays
+        if name.startswith("member_") and name.count("_") == 1
+    )
+    for name in member_names:
+        source = io.BytesIO(np.asarray(arrays[name], dtype=np.uint8).tobytes())
+        with np.load(source, allow_pickle=False) as archive:
+            nested = {key: archive[key].copy() for key in archive.files}
+        header = json.loads(str(nested["header"]))
+        mutate(header)
+        nested["header"] = np.array(json.dumps(header))
+        output = io.BytesIO()
+        np.savez_compressed(output, **nested)
+        arrays[name] = np.frombuffer(output.getvalue(), dtype=np.uint8).copy()
 
 
 def test_private_row_plan_is_deterministic_unique_and_exact_complement():
@@ -205,6 +225,54 @@ def test_private_member_policy_changes_only_declared_fields_and_honors_explicit(
     }
 
 
+@pytest.mark.parametrize("explicit_user_params", [(), ("learning_rate",)])
+def test_private_constructor_schema_rejects_preset_before_sampling(
+    monkeypatch, explicit_user_params
+):
+    X, y = _regression_data(n=80)
+    sampled = False
+
+    def fail_if_sampled(*args, **kwargs):
+        nonlocal sampled
+        sampled = True
+        raise AssertionError("sampling must not start")
+
+    monkeypatch.setattr(
+        sklearn_api,
+        "_ensemble_without_replacement_plan",
+        fail_if_sampled,
+    )
+    estimator = DarkoRegressor(
+        **_params(learning_rate=None, preset="accuracy")
+    )
+    with pytest.raises(ValueError, match="preset is not supported"):
+        _fit_private(
+            estimator,
+            X,
+            y,
+            explicit_user_params=explicit_user_params,
+        )
+    assert sampled is False
+
+
+@pytest.mark.parametrize(
+    ("extra", "message"),
+    [
+        ({"tree_mode": "auto"}, "tree_mode='auto'"),
+        (
+            {"auto_learning_rate_probe": True},
+            "auto_learning_rate_probe=True",
+        ),
+    ],
+)
+def test_private_constructor_schema_rejects_unbound_dynamic_resolvers(
+    extra, message
+):
+    X, y = _regression_data(n=80)
+    with pytest.raises(ValueError, match=message):
+        _fit_private(DarkoRegressor(**_params(**extra)), X, y)
+
+
 def test_private_combined_regression_is_deterministic_mean_and_records_contract():
     X, y = _regression_data()
     left = _fit_private(DarkoRegressor(**_params()), X, y)
@@ -223,18 +291,23 @@ def test_private_combined_regression_is_deterministic_mean_and_records_contract(
     np.testing.assert_array_equal(left.shap_values(X[:8]), expected_shap)
     assert left.ensemble_metadata_ == right.ensemble_metadata_
     metadata = left.ensemble_metadata_
-    assert metadata["version"] == 2
+    assert metadata["version"] == 3
     assert metadata["sampling"] == "without_replacement"
     assert metadata["sample_fraction"] == 0.8
     assert metadata["member_policy"] == "donor_balanced_v1"
     assert metadata["sequential"] is True
     assert metadata["public_fit_surface"] is False
+    assert metadata["base_constructor_params"]["depth"] == 3
+    assert metadata["base_constructor_params"]["n_ensembles"] == 2
     for record, member in zip(metadata["members"], left.estimators_):
         assert record["sampled_rows"] == record["sampled_unique_rows"] == 128
         assert record["oob_rows"] == 32
         assert record["fitted_thread_count"] == member.model_.n_threads_
         assert record["constructor_learning_rate"] == 0.15
         assert record["constructor_colsample"] == 0.85
+        assert record["member_constructor_params"]["learning_rate"] == 0.15
+        assert record["booster_constructor_params"]["learning_rate"] == 0.15
+        assert record["resolved_learning_rate"] == member.learning_rate_
 
 
 def test_private_policy_only_uses_existing_bootstrap_sampling():
@@ -308,6 +381,11 @@ def test_private_explicit_none_and_normal_default_survive_safe_roundtrip(tmp_pat
     }
     assert all(member.learning_rate is None for member in model.estimators_)
     assert all(member.colsample == 1.0 for member in model.estimators_)
+    assert all(
+        record["booster_constructor_params"]["learning_rate"] is None
+        and record["resolved_learning_rate"] > 0.0
+        for record in model.ensemble_metadata_["members"]
+    )
 
     path = tmp_path / "private-explicit-defaults.npz"
     model.save_model(path)
@@ -463,6 +541,80 @@ def test_private_safe_load_rejects_forged_metadata(
 
     with pytest.raises(ValueError, match=message):
         DarkoRegressor.load_model(corrupt)
+
+
+def test_private_safe_load_rejects_impossible_group_count_provenance(tmp_path):
+    groups = np.repeat(np.arange(20), 5)
+    X, y = _regression_data(n=len(groups))
+    model = _fit_private_ensemble_v3(
+        DarkoRegressor(**_params(iterations=4)),
+        X,
+        y,
+        sampling="bootstrap",
+        sampling_unit="groups",
+        member_policy="none",
+        groups=groups,
+    )
+    source = tmp_path / "private-group-source.npz"
+    corrupt = tmp_path / "private-group-corrupt.npz"
+    model.save_model(source)
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {name: archive[name].copy() for name in archive.files}
+    header = json.loads(str(arrays["header"]))
+    record = header["metadata"]["members"][0]
+    record["sampled_unique_groups"] = record["sampled_unique_rows"] + 1
+    record["oob_groups"] = record["oob_rows"] + 1
+    record["sampled_group_draws"] = (
+        record["sampled_unique_groups"] + record["oob_groups"]
+    )
+    arrays["header"] = np.array(json.dumps(header))
+    np.savez_compressed(corrupt, **arrays)
+
+    with pytest.raises(ValueError, match="group-sampling metadata"):
+        DarkoRegressor.load_model(corrupt)
+
+
+def test_private_safe_load_binds_wrapper_params_to_booster_inputs(tmp_path):
+    X, y = _regression_data(n=100)
+    model = _fit_private(DarkoRegressor(**_params(iterations=4)), X, y)
+    source = tmp_path / "private-constructor-source.npz"
+    corrupt = tmp_path / "private-constructor-corrupt.npz"
+    model.save_model(source)
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {name: archive[name].copy() for name in archive.files}
+    header = json.loads(str(arrays["header"]))
+    header["params"]["depth"] = 7
+    header["metadata"]["base_constructor_params"]["depth"] = 7
+    for record in header["metadata"]["members"]:
+        record["member_constructor_params"]["depth"] = 7
+        record["booster_constructor_params"]["depth"] = 7
+
+    def forge_wrapper_depth(nested_header):
+        nested_header["wrapper"]["params"]["depth"] = 7
+
+    _rewrite_nested_member_headers(arrays, forge_wrapper_depth)
+    arrays["header"] = np.array(json.dumps(header))
+    np.savez_compressed(corrupt, **arrays)
+
+    with pytest.raises(ValueError, match="wrapper/booster constructor"):
+        DarkoRegressor.load_model(corrupt)
+
+
+def test_private_safe_load_rejects_obsolete_metadata_version(tmp_path):
+    X, y = _regression_data(n=100)
+    model = _fit_private(DarkoRegressor(**_params(iterations=4)), X, y)
+    source = tmp_path / "private-v3.npz"
+    obsolete = tmp_path / "private-v2.npz"
+    model.save_model(source)
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {name: archive[name].copy() for name in archive.files}
+    header = json.loads(str(arrays["header"]))
+    header["metadata"]["version"] = 2
+    arrays["header"] = np.array(json.dumps(header))
+    np.savez_compressed(obsolete, **arrays)
+
+    with pytest.raises(ValueError, match="private ensemble-v3 provenance"):
+        DarkoRegressor.load_model(obsolete)
 
 
 def test_private_safe_load_rejects_forged_index_payload(tmp_path):

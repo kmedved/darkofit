@@ -50,6 +50,31 @@ BASE_FORMAT_VERSION = 2
 ENSEMBLE_FORMAT_VERSION = 2
 MAX_ENSEMBLE_MEMBERS = 256
 
+_PRIVATE_ENSEMBLE_PROTOTYPE = "ensemble_v3_b1_b2"
+_BOOSTER_CONSTRUCTOR_PARAM_NAMES = (
+    "iterations", "learning_rate", "depth", "l2_leaf_reg",
+    "max_bins", "subsample", "colsample", "cat_smoothing",
+    "early_stopping_rounds", "early_stopping_min_delta", "eval_metric",
+    "min_child_weight", "min_child_samples", "min_gain_to_split",
+    "num_leaves", "thread_count", "random_state", "verbose",
+    "ordered_boosting", "verbose_timing", "tree_mode", "sampling",
+    "top_rate", "other_rate", "multiclass_tree_strategy",
+    "eval_train_loss", "bin_sample_count", "histogram_parallelism",
+    "use_best_model", "bootstrap_type", "bagging_temperature", "mvs_reg",
+    "random_strength", "diagnostic_warnings", "histogram_dtype",
+    "leaf_dtype", "ts_permutations", "target_ordered_cat_codes",
+    "rho_learning_rate_multiplier", "rho_l2_leaf_reg_multiplier",
+)
+_BOOSTER_LINEAR_CONSTRUCTOR_PARAM_NAMES = ("linear_leaves", "linear_lambda")
+_BOOSTER_CONSTRUCTOR_INPUT_ATTRS = {
+    "depth": "_depth_input",
+    "num_leaves": "_num_leaves_input",
+    "l2_leaf_reg": "_l2_leaf_reg_input",
+    "min_child_samples": "_min_child_samples_input",
+    "min_child_weight": "_min_child_weight_input",
+    "cat_smoothing": "_cat_smoothing_input",
+}
+
 _KIND_STR = 0
 _KIND_FLOAT = 1
 _KIND_INT = 2
@@ -83,6 +108,33 @@ def _jsonify(value):
     if isinstance(value, (list, tuple)):
         return [_jsonify(v) for v in value]
     return value
+
+
+def _is_private_ensemble_metadata(metadata):
+    return (
+        isinstance(metadata, dict)
+        and metadata.get("private_prototype") == _PRIVATE_ENSEMBLE_PROTOTYPE
+    )
+
+
+def _booster_constructor_params(booster, *, include_linear=True):
+    """Return the canonical original-input map used by safe persistence."""
+    names = _BOOSTER_CONSTRUCTOR_PARAM_NAMES
+    if include_linear:
+        names += _BOOSTER_LINEAR_CONSTRUCTOR_PARAM_NAMES
+    params = {}
+    for name in names:
+        if name == "random_state" and hasattr(booster, "_fit_random_state_seed_"):
+            value = booster._fit_random_state_seed_
+        else:
+            attr = _BOOSTER_CONSTRUCTOR_INPUT_ATTRS.get(name)
+            value = (
+                getattr(booster, attr)
+                if attr and hasattr(booster, attr)
+                else getattr(booster, name)
+            )
+        params[name] = _jsonify(value)
+    return params
 
 
 def _archive_format_version(prep, booster, wrapper_header=None):
@@ -150,7 +202,7 @@ def save_ensemble(estimators, path, *, wrapper_class, params, metadata):
             f"ensemble must contain 2 to {MAX_ENSEMBLE_MEMBERS} members"
         )
     arrays = {}
-    private_provenance = metadata.get("version") == 2
+    private_provenance = _is_private_ensemble_metadata(metadata)
     records = metadata.get("members") if private_provenance else None
     if private_provenance and (
         not isinstance(records, list) or len(records) != len(estimators)
@@ -250,7 +302,7 @@ def _load_ensemble_payload(path):
             _invalid_model("ensemble params must be an object")
         if not isinstance(header.get("metadata"), dict):
             _invalid_model("ensemble metadata must be an object")
-        private_provenance = header["metadata"].get("version") == 2
+        private_provenance = _is_private_ensemble_metadata(header["metadata"])
         if private_provenance and version < 2:
             _invalid_model(
                 "private ensemble index provenance payload is missing"
@@ -1518,43 +1570,10 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
     else:
         raise TypeError(f"unsupported booster type {type(booster).__name__}")
 
-    param_names = (
-        "iterations", "learning_rate", "depth", "l2_leaf_reg",
-        "max_bins", "subsample", "colsample", "cat_smoothing",
-        "early_stopping_rounds", "early_stopping_min_delta", "eval_metric",
-        "min_child_weight", "min_child_samples", "min_gain_to_split",
-        "num_leaves", "thread_count", "random_state", "ordered_boosting",
-        "tree_mode", "sampling", "top_rate", "other_rate",
-        "multiclass_tree_strategy", "eval_train_loss", "bin_sample_count",
-        "histogram_parallelism", "use_best_model", "bootstrap_type",
-        "bagging_temperature", "mvs_reg", "random_strength",
-        "diagnostic_warnings", "histogram_dtype", "leaf_dtype",
-        "ts_permutations", "target_ordered_cat_codes",
-        "rho_learning_rate_multiplier", "rho_l2_leaf_reg_multiplier",
+    header["params"] = _booster_constructor_params(
+        booster,
+        include_linear=header["format_version"] >= 4,
     )
-    if header["format_version"] >= 4:
-        param_names += ("linear_leaves", "linear_lambda")
-    constructor_inputs = {
-        "depth": "_depth_input",
-        "num_leaves": "_num_leaves_input",
-        "l2_leaf_reg": "_l2_leaf_reg_input",
-        "min_child_samples": "_min_child_samples_input",
-        "min_child_weight": "_min_child_weight_input",
-        "cat_smoothing": "_cat_smoothing_input",
-    }
-    params = {}
-    for name in param_names:
-        if name == "random_state" and hasattr(booster, "_fit_random_state_seed_"):
-            value = booster._fit_random_state_seed_
-        else:
-            attr = constructor_inputs.get(name)
-            value = (
-                getattr(booster, attr)
-                if attr and hasattr(booster, attr)
-                else getattr(booster, name)
-            )
-        params[name] = _jsonify(value)
-    header["params"] = params
 
     # ---- trees -------------------------------------------------------------
     kind = _tree_kind(booster.trees_)

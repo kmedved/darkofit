@@ -36,7 +36,11 @@ from .auto_params import (
 from .callbacks import WallClockStopper, _normalize_callbacks
 from .losses import VECTOR_LOSSES
 from .linear_residual import WeightedRidgeTrend, validate_linear_residual_loss
-from .serialization import MAX_ENSEMBLE_MEMBERS
+from .serialization import (
+    MAX_ENSEMBLE_MEMBERS,
+    _booster_constructor_params,
+    _jsonify,
+)
 from .target_encoding import _is_missing_value
 from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin, clone
 from sklearn.utils.multiclass import type_of_target
@@ -157,6 +161,48 @@ _PRIVATE_ENSEMBLE_V3_POLICY_VALUES = {
     "learning_rate": 0.15,
     "colsample": 0.85,
 }
+_PRIVATE_ENSEMBLE_V3_PROTOTYPE = "ensemble_v3_b1_b2"
+_PRIVATE_ENSEMBLE_V3_METADATA_VERSION = 3
+_PRIVATE_ENSEMBLE_V3_MEMBER_OVERRIDES = frozenset({
+    "n_ensembles",
+    "random_state",
+    "early_stopping",
+    "use_best_model",
+    "refit",
+    *_PRIVATE_ENSEMBLE_V3_POLICY_FIELDS,
+})
+
+
+def _is_private_ensemble_v3_metadata(metadata):
+    return (
+        isinstance(metadata, Mapping)
+        and metadata.get("private_prototype")
+        == _PRIVATE_ENSEMBLE_V3_PROTOTYPE
+    )
+
+
+def _private_ensemble_v3_json_token(value):
+    try:
+        return json.dumps(
+            _jsonify(value),
+            allow_nan=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError(
+            "private ensemble-v3 constructor parameters must be JSON-safe"
+        ) from exc
+
+
+def _private_ensemble_v3_values_equal(left, right):
+    try:
+        return (
+            _private_ensemble_v3_json_token(left)
+            == _private_ensemble_v3_json_token(right)
+        )
+    except ValueError:
+        return False
 
 
 def _normalize_private_ensemble_v3_sampling(sampling):
@@ -539,12 +585,18 @@ def _ensemble_without_replacement_plan(
 
 
 def _validate_loaded_private_ensemble_v3_metadata(
-    metadata, members, *, classification, index_provenance
+    metadata,
+    members,
+    *,
+    classification,
+    index_provenance,
+    base_constructor_params,
 ):
     """Fail closed on private B1/B2 fitted and persistence provenance."""
     if (
-        metadata.get("version") != 2
-        or metadata.get("private_prototype") != "ensemble_v3_b1_b2"
+        metadata.get("version") != _PRIVATE_ENSEMBLE_V3_METADATA_VERSION
+        or metadata.get("private_prototype")
+        != _PRIVATE_ENSEMBLE_V3_PROTOTYPE
         or metadata.get("claim_tier") != "E"
         or metadata.get("default_changed") is not False
         or metadata.get("public_fit_surface") is not False
@@ -562,6 +614,47 @@ def _validate_loaded_private_ensemble_v3_metadata(
     ):
         raise ValueError(
             "invalid DarkoFit model: private ensemble-v3 member count is invalid"
+        )
+    saved_base_params = metadata.get("base_constructor_params")
+    expected_param_names = set(members[0].get_params(deep=False))
+    if (
+        not isinstance(saved_base_params, Mapping)
+        or not isinstance(base_constructor_params, Mapping)
+        or set(saved_base_params) != expected_param_names
+        or set(base_constructor_params) != expected_param_names
+        or not _private_ensemble_v3_values_equal(
+            saved_base_params, base_constructor_params
+        )
+        or saved_base_params.get("n_ensembles") != member_count
+        or isinstance(saved_base_params.get("n_ensembles"), bool)
+        or saved_base_params.get("refit") is not False
+        or (
+            "preset" in saved_base_params
+            and saved_base_params.get("preset") is not None
+        )
+        or _is_auto_tree_mode(saved_base_params.get("tree_mode"))
+        or saved_base_params.get("auto_learning_rate_probe") is not False
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: private ensemble-v3 base constructor "
+            "parameters are invalid"
+        )
+    fit_seed = metadata.get("fit_random_state_seed")
+    if (
+        (
+            fit_seed is not None
+            and (
+                isinstance(fit_seed, bool)
+                or not isinstance(fit_seed, int)
+                or fit_seed < 0
+            )
+        )
+        or saved_base_params.get("random_state") != fit_seed
+        or type(saved_base_params.get("random_state")) is not type(fit_seed)
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: private ensemble-v3 base random state "
+            "is invalid"
         )
     sampling = metadata.get("sampling")
     sampling_unit = metadata.get("sampling_unit")
@@ -634,6 +727,9 @@ def _validate_loaded_private_ensemble_v3_metadata(
         )
         if (
             resolution["source"] != expected_source
+            or not _private_ensemble_v3_values_equal(
+                resolution["base"], saved_base_params[name]
+            )
             or type(resolution["resolved"]) is not type(expected_value)
             or resolution["resolved"] != expected_value
         ):
@@ -749,6 +845,54 @@ def _validate_loaded_private_ensemble_v3_metadata(
         ):
             raise ValueError(
                 "invalid DarkoFit model: private ensemble-v3 member identity is invalid"
+            )
+        saved_member_params = record.get("member_constructor_params")
+        saved_booster_params = record.get("booster_constructor_params")
+        try:
+            actual_member_params = (
+                _private_ensemble_v3_wrapper_constructor_params(member)
+            )
+            expected_member_params = (
+                _private_ensemble_v3_expected_member_params(
+                    saved_base_params,
+                    seed=seed,
+                    policy_resolutions=resolutions,
+                )
+            )
+            actual_booster_params = _booster_constructor_params(
+                model, include_linear=True
+            )
+            expected_booster_params = (
+                _private_ensemble_v3_expected_booster_params(
+                    member, actual_member_params
+                )
+            )
+        except (KeyError, TypeError, ValueError, OverflowError) as exc:
+            raise ValueError(
+                "invalid DarkoFit model: private ensemble-v3 constructor "
+                "metadata is invalid"
+            ) from exc
+        if (
+            not isinstance(saved_member_params, Mapping)
+            or not isinstance(saved_booster_params, Mapping)
+            or set(saved_member_params) != set(actual_member_params)
+            or set(saved_booster_params) != set(actual_booster_params)
+            or not _private_ensemble_v3_values_equal(
+                saved_member_params, actual_member_params
+            )
+            or not _private_ensemble_v3_values_equal(
+                actual_member_params, expected_member_params
+            )
+            or not _private_ensemble_v3_values_equal(
+                saved_booster_params, actual_booster_params
+            )
+            or not _private_ensemble_v3_values_equal(
+                actual_booster_params, expected_booster_params
+            )
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: private ensemble-v3 wrapper/booster "
+                "constructor metadata differs"
             )
         if not isinstance(provenance, Mapping) or set(provenance) != {
             "sampled",
@@ -904,6 +1048,10 @@ def _validate_loaded_private_ensemble_v3_metadata(
             if (
                 invalid_group_fields
                 or invalid_group_relation
+                or record["sampled_group_draws"] > record["sampled_rows"]
+                or record["sampled_unique_groups"]
+                > record["sampled_unique_rows"]
+                or record["oob_groups"] > record["oob_rows"]
                 or record.get("group_disjoint") is not True
             ):
                 raise ValueError(
@@ -931,8 +1079,9 @@ def _validate_loaded_private_ensemble_v3_metadata(
             or record["fitted_thread_count"] != int(model.n_threads_)
             or record["best_iteration"] != int(member.best_n_estimators_)
             or record["best_iteration"] != int(model.best_iteration_)
-            or record.get("learning_rate") != float(member.learning_rate_)
-            or record.get("learning_rate") != float(model.lr_)
+            or record.get("resolved_learning_rate")
+            != float(member.learning_rate_)
+            or record.get("resolved_learning_rate") != float(model.lr_)
             or record.get("stop_reason")
             != str(getattr(model, "stop_reason_", "unknown"))
         ):
@@ -959,15 +1108,17 @@ def _validate_loaded_ensemble_metadata(
     *,
     classification,
     index_provenance=None,
+    base_constructor_params=None,
 ):
     """Fail closed on contradictory fitted-ensemble provenance."""
     version = metadata.get("version")
-    if version == 2:
+    if _is_private_ensemble_v3_metadata(metadata):
         return _validate_loaded_private_ensemble_v3_metadata(
             metadata,
             members,
             classification=classification,
             index_provenance=index_provenance,
+            base_constructor_params=base_constructor_params,
         )
     if (
         isinstance(version, bool)
@@ -3710,6 +3861,16 @@ class _RefitParamsMixin:
         return self
 
     def _ensemble_params_header(self):
+        if _is_private_ensemble_v3_metadata(self.ensemble_metadata_):
+            base_params = self.ensemble_metadata_.get(
+                "base_constructor_params"
+            )
+            if not isinstance(base_params, Mapping):
+                raise ValueError(
+                    "cannot save private ensemble without canonical base "
+                    "constructor parameters"
+                )
+            return dict(base_params)
         params = self.get_params()
         first = self.estimators_[0]
         fitted_member_params = first._wrapper_params_header()
@@ -3741,10 +3902,6 @@ class _RefitParamsMixin:
         params["ensemble_shared_preprocessing"] = bool(
             self.ensemble_metadata_["shared_preprocessing_requested"]
         )
-        if self.ensemble_metadata_.get("version") == 2:
-            resolutions = self.ensemble_metadata_["policy_resolutions"]
-            for name in _PRIVATE_ENSEMBLE_V3_POLICY_FIELDS:
-                params[name] = resolutions[name]["base"]
         params["refit"] = False
         fit_seed = self.ensemble_metadata_["fit_random_state_seed"]
         params["random_state"] = (
@@ -3790,28 +3947,21 @@ class _RefitParamsMixin:
                     "invalid DarkoFit model: nested ensemble member detected"
                 )
         metadata = header["metadata"]
+        private_provenance = _is_private_ensemble_v3_metadata(metadata)
         classification = issubclass(cls, ClassifierMixin)
         _validate_loaded_ensemble_metadata(
             metadata,
             members,
             classification=classification,
             index_provenance=index_provenance,
+            base_constructor_params=params,
         )
-        if metadata.get("version") == 2:
-            for name in _PRIVATE_ENSEMBLE_V3_POLICY_FIELDS:
-                base_value = metadata["policy_resolutions"][name]["base"]
-                outer_value = getattr(est, name)
-                if (
-                    type(outer_value) is not type(base_value)
-                    or outer_value != base_value
-                ):
-                    raise ValueError(
-                        "invalid DarkoFit model: private ensemble-v3 base "
-                        "parameters do not match fitted provenance"
-                    )
         if (
-            _normalize_ensemble_bootstrap(est.ensemble_bootstrap)
-            != metadata["bootstrap"]
+            (
+                not private_provenance
+                and _normalize_ensemble_bootstrap(est.ensemble_bootstrap)
+                != metadata["bootstrap"]
+            )
             or not isinstance(
                 est.ensemble_shared_preprocessing, (bool, np.bool_)
             )
@@ -3933,34 +4083,38 @@ class _RefitParamsMixin:
                         "invalid DarkoFit model: ensemble linear residual "
                         "parameters do not match member payloads"
                     )
-        for name in (
-            "early_stopping",
-            "use_best_model",
-            "refit_strategy",
-            "preset",
-            "selection_rounds",
-            "tree_mode",
-            "interval_calibration",
-            "dist_calibration",
-            "sigma_calibration",
-        ):
-            if not hasattr(est, name):
-                continue
-            outer_value = getattr(est, name)
-            member_values = [
-                getattr(member, name) for member in members
-            ]
-            if (
-                any(type(value) is not type(member_values[0])
-                    for value in member_values[1:])
-                or type(outer_value) is not type(member_values[0])
-                or outer_value != member_values[0]
-                or any(value != member_values[0] for value in member_values[1:])
+        if not private_provenance:
+            for name in (
+                "early_stopping",
+                "use_best_model",
+                "refit_strategy",
+                "preset",
+                "selection_rounds",
+                "tree_mode",
+                "interval_calibration",
+                "dist_calibration",
+                "sigma_calibration",
             ):
-                raise ValueError(
-                    f"invalid DarkoFit model: ensemble {name} parameter does "
-                    "not match member payloads"
-                )
+                if not hasattr(est, name):
+                    continue
+                outer_value = getattr(est, name)
+                member_values = [
+                    getattr(member, name) for member in members
+                ]
+                if (
+                    any(type(value) is not type(member_values[0])
+                        for value in member_values[1:])
+                    or type(outer_value) is not type(member_values[0])
+                    or outer_value != member_values[0]
+                    or any(
+                        value != member_values[0]
+                        for value in member_values[1:]
+                    )
+                ):
+                    raise ValueError(
+                        f"invalid DarkoFit model: ensemble {name} parameter "
+                        "does not match member payloads"
+                    )
         if fit_seed is not None:
             expected_seeds = [
                 int(value)
@@ -6324,6 +6478,88 @@ def _private_ensemble_v3_scalar(value):
     return value.item() if isinstance(value, np.generic) else value
 
 
+def _private_ensemble_v3_wrapper_constructor_params(estimator):
+    params = _jsonify(estimator._wrapper_params_header())
+    if not isinstance(params, dict):
+        raise ValueError(
+            "private ensemble-v3 wrapper constructor parameters are invalid"
+        )
+    _private_ensemble_v3_json_token(params)
+    return params
+
+
+def _private_ensemble_v3_base_constructor_params(
+    estimator,
+    member_params,
+    *,
+    fit_seed,
+    n_members,
+    policy_resolutions,
+):
+    raw_base = _jsonify(estimator.get_params(deep=False))
+    if set(raw_base) != set(member_params):
+        raise RuntimeError(
+            "private ensemble-v3 wrapper parameter schema changed during fit"
+        )
+    base = dict(member_params)
+    for name in _PRIVATE_ENSEMBLE_V3_MEMBER_OVERRIDES:
+        base[name] = raw_base[name]
+    base["n_ensembles"] = int(n_members)
+    base["random_state"] = None if fit_seed is None else int(fit_seed)
+    base["refit"] = False
+    for name in _PRIVATE_ENSEMBLE_V3_POLICY_FIELDS:
+        base[name] = policy_resolutions[name]["base"]
+    _private_ensemble_v3_json_token(base)
+    return base
+
+
+def _private_ensemble_v3_expected_member_params(
+    base_params, *, seed, policy_resolutions
+):
+    expected = dict(base_params)
+    expected.update({
+        "n_ensembles": 1,
+        "random_state": int(seed),
+        "early_stopping": True,
+        "use_best_model": True,
+        "refit": False,
+    })
+    for name in _PRIVATE_ENSEMBLE_V3_POLICY_FIELDS:
+        expected[name] = policy_resolutions[name]["resolved"]
+    return expected
+
+
+def _private_ensemble_v3_expected_booster_params(member, wrapper_params):
+    core_params = {
+        name: value
+        for name, value in wrapper_params.items()
+        if name not in _SKLEARN_ONLY and name not in {"loss", "alpha"}
+    }
+    if (
+        wrapper_params.get("early_stopping") is True
+        and core_params.get("early_stopping_rounds") is None
+    ):
+        core_params["early_stopping_rounds"] = "auto"
+    if isinstance(member, ClassifierMixin):
+        if getattr(member, "_multiclass", None) is True:
+            expected = MulticlassBoosting(**core_params)
+        else:
+            expected = GradientBoosting(loss="Logloss", **core_params)
+    else:
+        loss = wrapper_params.get("loss")
+        loss_kwargs = (
+            {"alpha": wrapper_params.get("alpha")}
+            if loss == "Quantile"
+            else {}
+        )
+        expected = GradientBoosting(
+            loss=loss,
+            loss_kwargs=loss_kwargs,
+            **core_params,
+        )
+    return _booster_constructor_params(expected, include_linear=True)
+
+
 def _fit_private_ensemble_v3(
     estimator,
     X,
@@ -6355,6 +6591,24 @@ def _fit_private_ensemble_v3(
         if n_members < 2:
             raise ValueError(
                 "the private ensemble-v3 prototype requires n_ensembles > 1"
+            )
+        if (
+            hasattr(estimator, "preset")
+            and _normalize_regression_preset(estimator.preset) is not None
+        ):
+            raise ValueError(
+                "preset is not supported by the constructor-bound private "
+                "ensemble-v3 prototype"
+            )
+        if _is_auto_tree_mode(estimator.tree_mode):
+            raise ValueError(
+                "tree_mode='auto' is not supported by the constructor-bound "
+                "private ensemble-v3 prototype"
+            )
+        if estimator.auto_learning_rate_probe:
+            raise ValueError(
+                "auto_learning_rate_probe=True is not supported by the "
+                "constructor-bound private ensemble-v3 prototype"
             )
         sampling = _normalize_private_ensemble_v3_sampling(sampling)
         sampling_unit = _normalize_ensemble_bootstrap(sampling_unit)
@@ -6400,7 +6654,7 @@ def _fit_private_ensemble_v3(
                 "callbacks are not supported by the private sequential "
                 "ensemble-v3 prototype"
             )
-        if estimator.refit:
+        if estimator.refit is not False:
             raise ValueError(
                 "refit=True is not supported by the private ensemble-v3 "
                 "prototype"
@@ -6523,6 +6777,7 @@ def _fit_private_ensemble_v3(
         }
         estimators = []
         member_metadata = []
+        base_constructor_params = None
         for member_index, member_seed in enumerate(member_seeds):
             if sampling == "bootstrap":
                 plan = _ensemble_bootstrap_plan(
@@ -6606,6 +6861,54 @@ def _fit_private_ensemble_v3(
                 raise RuntimeError(
                     "private ensemble-v3 member did not bind training/OOB rows"
                 )
+            member_constructor_params = (
+                _private_ensemble_v3_wrapper_constructor_params(member)
+            )
+            if base_constructor_params is None:
+                base_constructor_params = (
+                    _private_ensemble_v3_base_constructor_params(
+                        estimator,
+                        member_constructor_params,
+                        fit_seed=fit_seed,
+                        n_members=n_members,
+                        policy_resolutions=serializable_policy_resolutions,
+                    )
+                )
+            expected_member_params = (
+                _private_ensemble_v3_expected_member_params(
+                    base_constructor_params,
+                    seed=member_seed,
+                    policy_resolutions=serializable_policy_resolutions,
+                )
+            )
+            if not _private_ensemble_v3_values_equal(
+                member_constructor_params, expected_member_params
+            ):
+                raise RuntimeError(
+                    "private ensemble-v3 member constructor changed outside "
+                    "the frozen override set"
+                )
+            booster_constructor_params = _booster_constructor_params(
+                member.model_, include_linear=True
+            )
+            try:
+                expected_booster_params = (
+                    _private_ensemble_v3_expected_booster_params(
+                        member, member_constructor_params
+                    )
+                )
+            except (TypeError, ValueError, OverflowError) as exc:
+                raise RuntimeError(
+                    "private ensemble-v3 member constructor could not be "
+                    "bound to its booster"
+                ) from exc
+            if not _private_ensemble_v3_values_equal(
+                booster_constructor_params, expected_booster_params
+            ):
+                raise RuntimeError(
+                    "private ensemble-v3 member booster constructor differs "
+                    "from its wrapper constructor"
+                )
             sampled_unique_rows = int(np.unique(sampled).size)
             member._ensemble_sampled_indices_ = np.ascontiguousarray(
                 sampled, dtype="<i8"
@@ -6648,6 +6951,12 @@ def _fit_private_ensemble_v3(
                     name: dict(record)
                     for name, record in serializable_policy_resolutions.items()
                 },
+                "member_constructor_params": dict(
+                    member_constructor_params
+                ),
+                "booster_constructor_params": dict(
+                    booster_constructor_params
+                ),
                 "constructor_learning_rate": (
                     _private_ensemble_v3_scalar(member.learning_rate)
                 ),
@@ -6656,7 +6965,7 @@ def _fit_private_ensemble_v3(
                 ),
                 "fitted_thread_count": int(member.model_.n_threads_),
                 "best_iteration": int(member.best_n_estimators_),
-                "learning_rate": float(member.learning_rate_),
+                "resolved_learning_rate": float(member.learning_rate_),
                 "stop_reason": str(
                     getattr(member.model_, "stop_reason_", "unknown")
                 ),
@@ -6665,8 +6974,8 @@ def _fit_private_ensemble_v3(
             estimators.append(member)
 
         metadata = {
-            "version": 2,
-            "private_prototype": "ensemble_v3_b1_b2",
+            "version": _PRIVATE_ENSEMBLE_V3_METADATA_VERSION,
+            "private_prototype": _PRIVATE_ENSEMBLE_V3_PROTOTYPE,
             "claim_tier": "E",
             "default_changed": False,
             "public_fit_surface": False,
@@ -6681,6 +6990,7 @@ def _fit_private_ensemble_v3(
             "member_policy": member_policy,
             "explicit_user_params": list(explicit_user_params),
             "policy_resolutions": serializable_policy_resolutions,
+            "base_constructor_params": dict(base_constructor_params),
             "aggregation": (
                 "soft_vote" if classification else "mean"
             ),
