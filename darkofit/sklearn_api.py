@@ -152,6 +152,94 @@ def _normalize_ensemble_bootstrap(bootstrap):
     return token
 
 
+_PRIVATE_ENSEMBLE_V3_POLICY_FIELDS = ("learning_rate", "colsample")
+_PRIVATE_ENSEMBLE_V3_POLICY_VALUES = {
+    "learning_rate": 0.15,
+    "colsample": 0.85,
+}
+
+
+def _normalize_private_ensemble_v3_sampling(sampling):
+    token = str(sampling).strip().lower().replace("-", "_")
+    if token not in {"bootstrap", "without_replacement"}:
+        raise ValueError(
+            "private ensemble-v3 sampling must be 'bootstrap' or "
+            "'without_replacement'"
+        )
+    return token
+
+
+def _normalize_private_ensemble_v3_policy(policy):
+    token = str(policy).strip().lower().replace("-", "_")
+    if token not in {"none", "donor_balanced_v1"}:
+        raise ValueError(
+            "private ensemble-v3 member_policy must be 'none' or "
+            "'donor_balanced_v1'"
+        )
+    return token
+
+
+def _normalize_private_explicit_user_params(explicit_user_params):
+    if explicit_user_params is None:
+        return ()
+    if isinstance(explicit_user_params, (str, bytes)):
+        values = [explicit_user_params]
+    else:
+        try:
+            values = list(explicit_user_params)
+        except TypeError as exc:
+            raise TypeError(
+                "explicit_user_params must be an iterable of parameter names"
+            ) from exc
+    if any(not isinstance(value, str) for value in values):
+        raise TypeError("explicit_user_params must contain only strings")
+    if len(values) != len(set(values)):
+        raise ValueError("explicit_user_params must not contain duplicates")
+    unknown = sorted(
+        set(values).difference(_PRIVATE_ENSEMBLE_V3_POLICY_FIELDS)
+    )
+    if unknown:
+        raise ValueError(
+            "explicit_user_params contains unsupported fields: "
+            + ", ".join(unknown)
+        )
+    return tuple(
+        name
+        for name in _PRIVATE_ENSEMBLE_V3_POLICY_FIELDS
+        if name in values
+    )
+
+
+def _resolve_private_ensemble_v3_policy(
+    estimator, policy, explicit_user_params
+):
+    policy = _normalize_private_ensemble_v3_policy(policy)
+    explicit = frozenset(
+        _normalize_private_explicit_user_params(explicit_user_params)
+    )
+    resolutions = {}
+    member_params = {}
+    for name in _PRIVATE_ENSEMBLE_V3_POLICY_FIELDS:
+        base_value = getattr(estimator, name)
+        if name in explicit:
+            resolved = base_value
+            source = "explicit_user"
+        elif policy == "donor_balanced_v1":
+            resolved = _PRIVATE_ENSEMBLE_V3_POLICY_VALUES[name]
+            source = "member_policy"
+        else:
+            resolved = base_value
+            source = "base"
+        resolutions[name] = {
+            "base": base_value,
+            "resolved": resolved,
+            "source": source,
+        }
+        member_params[name] = resolved
+    return policy, tuple(name for name in _PRIVATE_ENSEMBLE_V3_POLICY_FIELDS
+                         if name in explicit), resolutions, member_params
+
+
 class _NamedRowSubset:
     """Array-backed row subset that preserves frame-like feature names."""
 
@@ -294,9 +382,489 @@ def _ensemble_bootstrap_plan(
     )
 
 
+def _ensemble_without_replacement_plan(
+    n_rows,
+    seed,
+    *,
+    sampling_unit,
+    sample_fraction,
+    groups=None,
+    y=None,
+    required_class_count=None,
+    sample_weight=None,
+    max_attempts=128,
+):
+    """Return the deterministic private B1 sample/OOB plan."""
+    n_rows = int(n_rows)
+    if n_rows < 2:
+        raise ValueError("an ensemble requires at least two training rows")
+    sampling_unit = _normalize_ensemble_bootstrap(sampling_unit)
+    try:
+        fraction = float(sample_fraction)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise TypeError("sample_fraction must be the float 0.8") from exc
+    if (
+        isinstance(sample_fraction, (bool, np.bool_))
+        or not np.isfinite(fraction)
+        or fraction != 0.8
+    ):
+        raise ValueError("the funded private sample_fraction is exactly 0.8")
+
+    group_codes = None
+    unique_group_count = None
+    if sampling_unit == "groups":
+        group_values = np.asarray(groups)
+        if group_values.ndim != 1 or len(group_values) != n_rows:
+            raise ValueError(
+                "groups must be one-dimensional with one value per training row"
+            )
+        try:
+            _, group_codes = np.unique(group_values, return_inverse=True)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "groups must contain consistently comparable scalar values"
+            ) from exc
+        group_codes = np.asarray(group_codes, dtype=np.int64)
+        unique_group_count = int(group_codes.max()) + 1
+        if unique_group_count < 2:
+            raise ValueError(
+                "private group sampling requires at least two groups"
+            )
+
+    weights = (
+        None
+        if sample_weight is None
+        else np.asarray(sample_weight, dtype=np.float64)
+    )
+    labels = None if y is None else np.asarray(y)
+    unit_count = n_rows if sampling_unit == "rows" else unique_group_count
+    sample_count = min(
+        unit_count - 1,
+        max(1, int(math.floor(fraction * unit_count + 0.5))),
+    )
+    rng = np.random.default_rng(int(seed))
+    for attempt in range(1, int(max_attempts) + 1):
+        selected_units = np.asarray(
+            rng.choice(unit_count, size=sample_count, replace=False),
+            dtype=np.int64,
+        )
+        if sampling_unit == "rows":
+            sampled = selected_units
+        else:
+            sampled = np.concatenate(
+                [
+                    np.flatnonzero(group_codes == group)
+                    for group in selected_units
+                ]
+            ).astype(np.int64, copy=False)
+        oob_mask = np.ones(n_rows, dtype=np.bool_)
+        oob_mask[sampled] = False
+        oob = np.flatnonzero(oob_mask).astype(np.int64, copy=False)
+        if not len(sampled) or not len(oob):
+            continue
+        if weights is not None and (
+            float(np.sum(weights[sampled])) <= 0.0
+            or float(np.sum(weights[oob])) <= 0.0
+        ):
+            continue
+        if required_class_count is not None and (
+            np.unique(labels[sampled]).size != int(required_class_count)
+            or np.unique(labels[oob]).size != int(required_class_count)
+        ):
+            continue
+        return {
+            "sampled": sampled,
+            "oob": oob,
+            "attempts": attempt,
+            "sampled_group_draws": (
+                None if sampling_unit == "rows" else len(selected_units)
+            ),
+            "sampled_unique_groups": (
+                None if sampling_unit == "rows" else len(selected_units)
+            ),
+            "oob_groups": (
+                None
+                if sampling_unit == "rows"
+                else np.unique(group_codes[oob]).size
+            ),
+        }
+    raise RuntimeError(
+        "could not construct a without-replacement sample with a usable, "
+        "class-safe out-of-bag validation set"
+    )
+
+
+def _validate_loaded_private_ensemble_v3_metadata(
+    metadata, members, *, classification
+):
+    """Fail closed on private B1/B2 fitted and persistence provenance."""
+    if (
+        metadata.get("version") != 2
+        or metadata.get("private_prototype") != "ensemble_v3_b1_b2"
+        or metadata.get("claim_tier") != "E"
+        or metadata.get("default_changed") is not False
+        or metadata.get("public_fit_surface") is not False
+        or metadata.get("sequential") is not True
+        or metadata.get("oob_early_stopping") is not True
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: private ensemble-v3 provenance is invalid"
+        )
+    member_count = len(members)
+    if (
+        isinstance(metadata.get("member_count"), bool)
+        or not isinstance(metadata.get("member_count"), int)
+        or metadata["member_count"] != member_count
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: private ensemble-v3 member count is invalid"
+        )
+    sampling = metadata.get("sampling")
+    sampling_unit = metadata.get("sampling_unit")
+    fraction = metadata.get("sample_fraction")
+    if (
+        sampling not in {"bootstrap", "without_replacement"}
+        or sampling_unit not in {"rows", "groups"}
+        or metadata.get("bootstrap") != sampling_unit
+        or (
+            sampling == "bootstrap"
+            and fraction is not None
+        )
+        or (
+            sampling == "without_replacement"
+            and (
+                isinstance(fraction, bool)
+                or not isinstance(fraction, (int, float))
+                or float(fraction) != 0.8
+            )
+        )
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: private ensemble-v3 sampling is invalid"
+        )
+    policy = metadata.get("member_policy")
+    explicit = metadata.get("explicit_user_params")
+    resolutions = metadata.get("policy_resolutions")
+    explicit_is_valid = (
+        isinstance(explicit, list)
+        and all(isinstance(name, str) for name in explicit)
+    )
+    if explicit_is_valid:
+        explicit_is_valid = (
+            len(explicit) == len(set(explicit))
+            and all(
+                name in _PRIVATE_ENSEMBLE_V3_POLICY_FIELDS
+                for name in explicit
+            )
+        )
+    if (
+        policy not in {"none", "donor_balanced_v1"}
+        or not explicit_is_valid
+        or not isinstance(resolutions, Mapping)
+        or set(resolutions) != set(_PRIVATE_ENSEMBLE_V3_POLICY_FIELDS)
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: private ensemble-v3 policy is invalid"
+        )
+    for name in _PRIVATE_ENSEMBLE_V3_POLICY_FIELDS:
+        resolution = resolutions[name]
+        if (
+            not isinstance(resolution, Mapping)
+            or set(resolution) != {"base", "resolved", "source"}
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: private ensemble-v3 policy "
+                "resolution is invalid"
+            )
+        expected_source = (
+            "explicit_user"
+            if name in explicit
+            else "member_policy"
+            if policy == "donor_balanced_v1"
+            else "base"
+        )
+        expected_value = (
+            _PRIVATE_ENSEMBLE_V3_POLICY_VALUES[name]
+            if expected_source == "member_policy"
+            else resolution["base"]
+        )
+        if (
+            resolution["source"] != expected_source
+            or type(resolution["resolved"]) is not type(expected_value)
+            or resolution["resolved"] != expected_value
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: private ensemble-v3 policy "
+                "resolution is contradictory"
+            )
+    expected_aggregation = "soft_vote" if classification else "mean"
+    if metadata.get("aggregation") != expected_aggregation:
+        raise ValueError(
+            "invalid DarkoFit model: private ensemble-v3 aggregation is invalid"
+        )
+    input_rows = metadata.get("input_row_count")
+    input_features = metadata.get("input_feature_count")
+    if (
+        isinstance(input_rows, bool)
+        or not isinstance(input_rows, int)
+        or input_rows < 2
+        or isinstance(input_features, bool)
+        or not isinstance(input_features, int)
+        or input_features < 1
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: private ensemble-v3 input shape is invalid"
+        )
+    shared = metadata.get("shared_preprocessing")
+    shared_requested = metadata.get("shared_preprocessing_requested")
+    fallback_reason = metadata.get("shared_preprocessing_fallback_reason")
+    if (
+        shared not in {"numeric_target_free", "member_local"}
+        or not isinstance(shared_requested, bool)
+        or (
+            shared == "numeric_target_free"
+            and (
+                not shared_requested
+                or fallback_reason is not None
+            )
+        )
+        or (
+            shared == "member_local"
+            and (
+                (
+                    shared_requested
+                    and fallback_reason
+                    not in {
+                        "categorical_or_ordinal_features",
+                        "non_numeric_dtype",
+                    }
+                )
+                or (not shared_requested and fallback_reason is not None)
+            )
+        )
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: private ensemble-v3 preprocessing is invalid"
+        )
+    seeds = metadata.get("member_seeds")
+    records = metadata.get("members")
+    if (
+        not isinstance(seeds, list)
+        or not isinstance(records, list)
+        or len(seeds) != member_count
+        or len(records) != member_count
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: private ensemble-v3 member provenance is invalid"
+        )
+
+    for index, (seed, record, member) in enumerate(
+        zip(seeds, records, members)
+    ):
+        model = getattr(member, "model_", None)
+        if classification:
+            multiclass = getattr(member, "_multiclass", None)
+            valid_model = (
+                multiclass is True
+                and isinstance(model, MulticlassBoosting)
+            ) or (
+                multiclass is False
+                and isinstance(model, GradientBoosting)
+                and getattr(model, "loss_name", None) == "Logloss"
+            )
+        else:
+            valid_model = (
+                isinstance(model, GradientBoosting)
+                and getattr(model, "loss_name", None)
+                in {"RMSE", "MAE", "Quantile"}
+            )
+        if (
+            not valid_model
+            or getattr(member, "early_stopping", None) is not True
+            or getattr(member, "use_best_model", None) is not True
+            or getattr(member, "refit", None) is not False
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: private ensemble-v3 member model is invalid"
+            )
+        if (
+            isinstance(seed, bool)
+            or not isinstance(seed, int)
+            or seed < 0
+            or seed >= 2**31 - 1
+            or not isinstance(record, Mapping)
+            or record.get("member") != index
+            or record.get("seed") != seed
+            or isinstance(record.get("member"), bool)
+            or isinstance(record.get("seed"), bool)
+            or member.get_params().get("random_state") != seed
+            or getattr(model, "random_state", None) != seed
+            or record.get("validation_source") != "explicit_eval_set"
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: private ensemble-v3 member identity is invalid"
+            )
+        for name in ("sampled_indices_sha256", "oob_indices_sha256"):
+            digest = record.get(name)
+            if (
+                not isinstance(digest, str)
+                or len(digest) != 64
+                or any(char not in "0123456789abcdef" for char in digest)
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: private ensemble-v3 index digest is invalid"
+                )
+        for name in (
+            "sampling_attempts",
+            "sampled_rows",
+            "sampled_unique_rows",
+            "oob_rows",
+            "fitted_thread_count",
+            "best_iteration",
+        ):
+            value = record.get(name)
+            minimum = 0 if name == "best_iteration" else 1
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, int)
+                or value < minimum
+            ):
+                raise ValueError(
+                    f"invalid DarkoFit model: private ensemble-v3 {name} is invalid"
+                )
+        if (
+            record["sampling_attempts"] > 128
+            or record["sampled_unique_rows"] > record["sampled_rows"]
+            or record["sampled_unique_rows"] + record["oob_rows"]
+            != input_rows
+            or record.get("requested_sample_fraction") != fraction
+            or record.get("realized_row_fraction")
+            != record["sampled_unique_rows"] / float(input_rows)
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: private ensemble-v3 sample counts are invalid"
+            )
+        if sampling == "without_replacement" and (
+            record["sampled_rows"] != record["sampled_unique_rows"]
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: private ensemble-v3 sample is not unique"
+            )
+        if sampling == "bootstrap" and record["sampled_rows"] != input_rows:
+            raise ValueError(
+                "invalid DarkoFit model: private ensemble-v3 bootstrap size is invalid"
+            )
+        group_fields = (
+            "sampled_group_draws",
+            "sampled_unique_groups",
+            "oob_groups",
+        )
+        if sampling_unit == "rows":
+            if (
+                any(record.get(name) is not None for name in group_fields)
+                or record.get("group_disjoint") is not None
+                or (
+                    sampling == "without_replacement"
+                    and record["sampled_unique_rows"]
+                    != min(
+                        input_rows - 1,
+                        max(
+                            1,
+                            int(math.floor(0.8 * input_rows + 0.5)),
+                        ),
+                    )
+                )
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: private row-sampling metadata is invalid"
+                )
+        else:
+            invalid_group_fields = any(
+                isinstance(record.get(name), bool)
+                or not isinstance(record.get(name), int)
+                or record[name] < 1
+                for name in group_fields
+            )
+            if sampling == "without_replacement":
+                total_groups = (
+                    record["sampled_unique_groups"] + record["oob_groups"]
+                )
+                invalid_group_relation = (
+                    record["sampled_unique_groups"]
+                    != record["sampled_group_draws"]
+                    or record["sampled_unique_groups"]
+                    != min(
+                        total_groups - 1,
+                        max(
+                            1,
+                            int(math.floor(0.8 * total_groups + 0.5)),
+                        ),
+                    )
+                )
+            else:
+                invalid_group_relation = (
+                    record["sampled_unique_groups"] + record["oob_groups"]
+                    != record["sampled_group_draws"]
+                )
+            if (
+                invalid_group_fields
+                or invalid_group_relation
+                or record.get("group_disjoint") is not True
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: private group-sampling metadata is invalid"
+                )
+        if record.get("policy_resolutions") != resolutions:
+            raise ValueError(
+                "invalid DarkoFit model: private ensemble-v3 member policy differs"
+            )
+        expected_constructor_lr = resolutions["learning_rate"]["resolved"]
+        expected_constructor_colsample = resolutions["colsample"]["resolved"]
+        if (
+            type(record.get("constructor_learning_rate"))
+            is not type(expected_constructor_lr)
+            or record.get("constructor_learning_rate")
+            != expected_constructor_lr
+            or type(member.learning_rate) is not type(expected_constructor_lr)
+            or member.learning_rate != expected_constructor_lr
+            or type(record.get("constructor_colsample"))
+            is not type(expected_constructor_colsample)
+            or record.get("constructor_colsample")
+            != expected_constructor_colsample
+            or type(member.colsample) is not type(expected_constructor_colsample)
+            or member.colsample != expected_constructor_colsample
+            or record["fitted_thread_count"] != int(model.n_threads_)
+            or record["best_iteration"] != int(member.best_n_estimators_)
+            or record["best_iteration"] != int(model.best_iteration_)
+            or record.get("learning_rate") != float(member.learning_rate_)
+            or record.get("learning_rate") != float(model.lr_)
+            or record.get("stop_reason")
+            != str(getattr(model, "stop_reason_", "unknown"))
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: private ensemble-v3 fitted metadata differs"
+            )
+        validation = getattr(model, "auto_params_", {}).get(
+            "validation_split"
+        )
+        if (
+            not isinstance(validation, Mapping)
+            or validation.get("source") != "explicit_eval_set"
+            or validation.get("train_n_samples") != record["sampled_rows"]
+            or validation.get("eval_n_samples") != record["oob_rows"]
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: private ensemble-v3 OOB metadata differs"
+            )
+
+
 def _validate_loaded_ensemble_metadata(metadata, members, *, classification):
     """Fail closed on contradictory fitted-ensemble provenance."""
     version = metadata.get("version")
+    if version == 2:
+        return _validate_loaded_private_ensemble_v3_metadata(
+            metadata, members, classification=classification
+        )
     if (
         isinstance(version, bool)
         or not isinstance(version, int)
@@ -3069,6 +3637,10 @@ class _RefitParamsMixin:
         params["ensemble_shared_preprocessing"] = bool(
             self.ensemble_metadata_["shared_preprocessing_requested"]
         )
+        if self.ensemble_metadata_.get("version") == 2:
+            resolutions = self.ensemble_metadata_["policy_resolutions"]
+            for name in _PRIVATE_ENSEMBLE_V3_POLICY_FIELDS:
+                params[name] = resolutions[name]["base"]
         params["refit"] = False
         fit_seed = self.ensemble_metadata_["fit_random_state_seed"]
         params["random_state"] = (
@@ -3120,6 +3692,18 @@ class _RefitParamsMixin:
             members,
             classification=classification,
         )
+        if metadata.get("version") == 2:
+            for name in _PRIVATE_ENSEMBLE_V3_POLICY_FIELDS:
+                base_value = metadata["policy_resolutions"][name]["base"]
+                outer_value = getattr(est, name)
+                if (
+                    type(outer_value) is not type(base_value)
+                    or outer_value != base_value
+                ):
+                    raise ValueError(
+                        "invalid DarkoFit model: private ensemble-v3 base "
+                        "parameters do not match fitted provenance"
+                    )
         if (
             _normalize_ensemble_bootstrap(est.ensemble_bootstrap)
             != metadata["bootstrap"]
@@ -5623,6 +6207,391 @@ class _RefitParamsMixin:
         """Resolved learning rate used by the fitted booster."""
         check_is_fitted(self, "model_")
         return getattr(self, "_learning_rate_", self.model_.lr_)
+
+
+def _private_ensemble_v3_scalar(value):
+    return value.item() if isinstance(value, np.generic) else value
+
+
+def _fit_private_ensemble_v3(
+    estimator,
+    X,
+    y,
+    *,
+    sampling,
+    sampling_unit,
+    sample_fraction=None,
+    member_policy="none",
+    explicit_user_params=(),
+    cat_features=None,
+    eval_set=None,
+    groups=None,
+    sample_weight=None,
+    eval_sample_weight=None,
+    callbacks=None,
+    ordinal_features=None,
+):
+    """Fit the contract-frozen private sequential B1/B2 prototype.
+
+    This deliberately bypasses the public ``fit`` routing without adding a
+    constructor surface. It is prediction/serialization capable, but only the
+    benchmark and invariant tests should call it.
+    """
+    previous_state = dict(estimator.__dict__)
+    try:
+        estimator._clear_ensemble_state()
+        n_members = _normalize_n_ensembles(estimator.n_ensembles)
+        if n_members < 2:
+            raise ValueError(
+                "the private ensemble-v3 prototype requires n_ensembles > 1"
+            )
+        sampling = _normalize_private_ensemble_v3_sampling(sampling)
+        sampling_unit = _normalize_ensemble_bootstrap(sampling_unit)
+        if sampling == "bootstrap":
+            if sample_fraction is not None:
+                raise ValueError(
+                    "sample_fraction must be None for bootstrap controls"
+                )
+            normalized_fraction = None
+        else:
+            try:
+                normalized_fraction = float(sample_fraction)
+            except (TypeError, ValueError, OverflowError) as exc:
+                raise TypeError(
+                    "sample_fraction must be the float 0.8"
+                ) from exc
+            if (
+                isinstance(sample_fraction, (bool, np.bool_))
+                or not np.isfinite(normalized_fraction)
+                or normalized_fraction != 0.8
+            ):
+                raise ValueError(
+                    "the funded private sample_fraction is exactly 0.8"
+                )
+        (
+            member_policy,
+            explicit_user_params,
+            policy_resolutions,
+            policy_member_params,
+        ) = _resolve_private_ensemble_v3_policy(
+            estimator, member_policy, explicit_user_params
+        )
+
+        callbacks = _normalize_callbacks(callbacks)
+        if eval_set is not None or eval_sample_weight is not None:
+            raise ValueError(
+                "private ensemble-v3 fits use each member's out-of-bag rows "
+                "for validation; eval_set and eval_sample_weight are not "
+                "supported"
+            )
+        if callbacks:
+            raise ValueError(
+                "callbacks are not supported by the private sequential "
+                "ensemble-v3 prototype"
+            )
+        if estimator.refit:
+            raise ValueError(
+                "refit=True is not supported by the private ensemble-v3 "
+                "prototype"
+            )
+        if isinstance(ordinal_features, str) and (
+            ordinal_features.strip().lower() == "auto"
+        ):
+            raise ValueError(
+                "ordinal_features='auto' is not supported with ensembles; "
+                "declare complete ordinal category orders explicitly"
+            )
+        if not isinstance(
+            estimator.ensemble_shared_preprocessing, (bool, np.bool_)
+        ):
+            raise TypeError("ensemble_shared_preprocessing must be a bool")
+        classification = isinstance(estimator, ClassifierMixin)
+        if (
+            not classification
+            and _is_distributional_loss(estimator.loss)
+        ):
+            raise ValueError(
+                "the private ensemble-v3 prototype supports scalar regression "
+                "losses only"
+            )
+
+        (
+            X_for_validation,
+            nominal_cat_features,
+            _ordinal_mode,
+            ordinal_records,
+        ) = estimator._prepare_ordinal_fit_input(
+            X, cat_features, ordinal_features
+        )
+        X_checked, resolved_cat_features, n_features = _coerce_fit_X(
+            X_for_validation, nominal_cat_features
+        )
+        if ordinal_records:
+            frozen_ordinal_records = {
+                int(record["index"]): tuple(record["categories"])
+                for record in ordinal_records
+            }
+            member_ordinal_features = (
+                _FrozenAutoOrdinalFeatures(frozen_ordinal_records)
+                if isinstance(
+                    ordinal_features, _FrozenAutoOrdinalFeatures
+                )
+                else frozen_ordinal_records
+            )
+        else:
+            member_ordinal_features = ordinal_features
+        y_checked = validate_target_vector(
+            y,
+            X_checked.shape[0],
+            dtype=None if classification else np.float64,
+        )
+        if classification:
+            target_type = type_of_target(y_checked)
+            if target_type not in {"binary", "multiclass"}:
+                raise ValueError(f"Unknown label type: {target_type}")
+            required_class_count = int(np.unique(y_checked).size)
+            if required_class_count < 2:
+                raise ValueError(
+                    f"Need at least 2 classes; got {required_class_count} class."
+                )
+        else:
+            required_class_count = None
+        sample_weight_checked = _validate_wrapper_sample_weight(
+            sample_weight, X_checked.shape[0]
+        )
+        if sampling_unit == "rows" and groups is not None:
+            raise ValueError(
+                "groups cannot be used with private row sampling; choose "
+                "sampling_unit='groups' to keep entities intact"
+            )
+        group_values = None
+        if sampling_unit == "groups":
+            if groups is None:
+                raise ValueError(
+                    "private group sampling requires groups in fit"
+                )
+            group_values = np.asarray(groups)
+            if group_values.ndim != 1 or len(group_values) != len(X_checked):
+                raise ValueError(
+                    "groups must be one-dimensional with one value per "
+                    "training row"
+                )
+
+        fit_seed = normalize_random_state_seed(estimator.random_state)
+        member_seeds = tuple(
+            int(value)
+            for value in np.random.default_rng(fit_seed).integers(
+                0, 2**31 - 1, size=n_members
+            )
+        )
+        shared_requested = bool(estimator.ensemble_shared_preprocessing)
+        shared_eligible = (
+            shared_requested
+            and not resolved_cat_features
+            and not ordinal_records
+            and np.asarray(X_checked).dtype.kind in "biuf"
+        )
+        shared_prep = None
+        full_binned = None
+        if shared_eligible:
+            shared_prep, full_binned = (
+                estimator._make_shared_numeric_preprocessing(
+                    X_checked,
+                    y_checked,
+                    sample_weight_checked,
+                    fit_seed,
+                )
+            )
+
+        serializable_policy_resolutions = {
+            name: {
+                key: _private_ensemble_v3_scalar(value)
+                for key, value in record.items()
+            }
+            for name, record in policy_resolutions.items()
+        }
+        estimators = []
+        member_metadata = []
+        for member_index, member_seed in enumerate(member_seeds):
+            if sampling == "bootstrap":
+                plan = _ensemble_bootstrap_plan(
+                    len(X_checked),
+                    member_seed,
+                    bootstrap=sampling_unit,
+                    groups=group_values,
+                    y=y_checked,
+                    required_class_count=required_class_count,
+                    sample_weight=sample_weight_checked,
+                )
+            else:
+                plan = _ensemble_without_replacement_plan(
+                    len(X_checked),
+                    member_seed,
+                    sampling_unit=sampling_unit,
+                    sample_fraction=normalized_fraction,
+                    groups=group_values,
+                    y=y_checked,
+                    required_class_count=required_class_count,
+                    sample_weight=sample_weight_checked,
+                )
+            sampled = plan["sampled"]
+            oob = plan["oob"]
+            member = clone(estimator)
+            member.set_params(
+                n_ensembles=1,
+                random_state=member_seed,
+                early_stopping=True,
+                use_best_model=True,
+                refit=False,
+                **policy_member_params,
+            )
+            member._suppress_wrapper_deprecation_warning = True
+            if shared_eligible:
+                member._shared_numeric_preprocessing_ = {
+                    "prep": shared_prep,
+                    "X_binned": np.asarray(full_binned[sampled]),
+                }
+            member_sample_weight = (
+                None
+                if sample_weight_checked is None
+                else sample_weight_checked[sampled]
+            )
+            member_eval_weight = (
+                None
+                if sample_weight_checked is None
+                else sample_weight_checked[oob]
+            )
+            try:
+                member.fit(
+                    _take_rows(X, sampled),
+                    _take_rows(y, sampled),
+                    cat_features=cat_features,
+                    eval_set=(
+                        _take_rows(X, oob),
+                        _take_rows(y, oob),
+                    ),
+                    groups=(
+                        None
+                        if group_values is None
+                        else group_values[sampled]
+                    ),
+                    sample_weight=member_sample_weight,
+                    eval_sample_weight=member_eval_weight,
+                    ordinal_features=member_ordinal_features,
+                )
+            finally:
+                if hasattr(member, "_shared_numeric_preprocessing_"):
+                    del member._shared_numeric_preprocessing_
+                if hasattr(member, "_suppress_wrapper_deprecation_warning"):
+                    del member._suppress_wrapper_deprecation_warning
+            validation = dict(
+                member.model_.auto_params_.get("validation_split", {})
+            )
+            if (
+                validation.get("source") != "explicit_eval_set"
+                or int(validation.get("train_n_samples", -1)) != len(sampled)
+                or int(validation.get("eval_n_samples", -1)) != len(oob)
+            ):
+                raise RuntimeError(
+                    "private ensemble-v3 member did not bind training/OOB rows"
+                )
+            sampled_unique_rows = int(np.unique(sampled).size)
+            member_metadata.append({
+                "member": member_index,
+                "seed": member_seed,
+                "sampling_attempts": int(plan["attempts"]),
+                "sampled_rows": int(len(sampled)),
+                "sampled_unique_rows": sampled_unique_rows,
+                "sampled_indices_sha256": _index_sha256(sampled),
+                "oob_rows": int(len(oob)),
+                "oob_indices_sha256": _index_sha256(oob),
+                "sampled_group_draws": (
+                    None
+                    if plan["sampled_group_draws"] is None
+                    else int(plan["sampled_group_draws"])
+                ),
+                "sampled_unique_groups": (
+                    None
+                    if plan["sampled_unique_groups"] is None
+                    else int(plan["sampled_unique_groups"])
+                ),
+                "oob_groups": (
+                    None
+                    if plan["oob_groups"] is None
+                    else int(plan["oob_groups"])
+                ),
+                "group_disjoint": (
+                    None if sampling_unit == "rows" else True
+                ),
+                "requested_sample_fraction": normalized_fraction,
+                "realized_row_fraction": (
+                    sampled_unique_rows / float(len(X_checked))
+                ),
+                "policy_resolutions": {
+                    name: dict(record)
+                    for name, record in serializable_policy_resolutions.items()
+                },
+                "constructor_learning_rate": (
+                    _private_ensemble_v3_scalar(member.learning_rate)
+                ),
+                "constructor_colsample": (
+                    _private_ensemble_v3_scalar(member.colsample)
+                ),
+                "fitted_thread_count": int(member.model_.n_threads_),
+                "best_iteration": int(member.best_n_estimators_),
+                "learning_rate": float(member.learning_rate_),
+                "stop_reason": str(
+                    getattr(member.model_, "stop_reason_", "unknown")
+                ),
+                "validation_source": validation["source"],
+            })
+            estimators.append(member)
+
+        metadata = {
+            "version": 2,
+            "private_prototype": "ensemble_v3_b1_b2",
+            "claim_tier": "E",
+            "default_changed": False,
+            "public_fit_surface": False,
+            "sequential": True,
+            "member_count": n_members,
+            "member_seeds": list(member_seeds),
+            "fit_random_state_seed": fit_seed,
+            "sampling": sampling,
+            "sampling_unit": sampling_unit,
+            "sample_fraction": normalized_fraction,
+            "bootstrap": sampling_unit,
+            "member_policy": member_policy,
+            "explicit_user_params": list(explicit_user_params),
+            "policy_resolutions": serializable_policy_resolutions,
+            "aggregation": (
+                "soft_vote" if classification else "mean"
+            ),
+            "oob_early_stopping": True,
+            "shared_preprocessing_requested": shared_requested,
+            "shared_preprocessing": (
+                "numeric_target_free"
+                if shared_eligible
+                else "member_local"
+            ),
+            "shared_preprocessing_fallback_reason": (
+                None
+                if shared_eligible or not shared_requested
+                else (
+                    "categorical_or_ordinal_features"
+                    if resolved_cat_features or ordinal_records
+                    else "non_numeric_dtype"
+                )
+            ),
+            "input_row_count": int(len(X_checked)),
+            "input_feature_count": int(n_features),
+            "members": member_metadata,
+        }
+        return estimator._adopt_ensemble(estimators, metadata)
+    except BaseException:
+        estimator.__dict__.clear()
+        estimator.__dict__.update(previous_state)
+        raise
 
 
 class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
