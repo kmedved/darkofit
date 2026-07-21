@@ -2,7 +2,7 @@
 
 _Canonical navigation ledger. Updated 2026-07-21 after the GitHub-only
 `v0.10.1` release, frozen B-archive v2 close, and outcome-blind Wave 4
-fused-dispatch calibration freeze._
+fused-dispatch calibration-v2 freeze._
 
 This file records what DarkoFit has tested, why it was tested, what happened,
 and which artifact controls the conclusion. It is intentionally broader than
@@ -780,6 +780,63 @@ evidence.
     authorization, raw, terminal, analysis, threshold, and validation-contract
     artifacts do not exist. Without a matching owner record, the runner must
     refuse execution and Wave 4 remains paused at this frozen checkpoint.
+
+_The execution identity in this checkpoint was superseded pre-outcome by the
+corrected v2 identity below. Its frozen contract remains immutable._
+
+### 24. Wave 4 calibration-v2 pre-outcome CI supersession
+
+1. **Execution boundary:** 2026-07-21; GitHub Actions run `29851074232`
+   exposed the v1 issue before any formal calibration worker started. The
+   host-independent product test is commit `5292c7d`; corrected harness/source
+   is `cf6a667cff5eaa2d36b9c16c9304470e0feac083`; v2 contract commit is
+   `4ff11fe`.
+2. **Comparator:** unchanged prospective forced-fused control and
+   forced-unfused candidate. No timing comparison occurred.
+3. **Evidence class:** product-test portability correction and
+   prospectively frozen, outcome-unopened Tier-E execution identity. The v1
+   scientific campaign remains the same; only its formal execution identity
+   advances to `calibration_v2`.
+4. **Data:** unchanged 30 synthetic calibration coordinates, generators,
+   seed, array fingerprints, and six separately frozen validation cells. No
+   raw row exists under v1 or v2.
+5. **Arms:** unchanged forced fused/unfused calibration lanes, warmups, paired
+   order, repeat count, selector family, and absent automatic threshold.
+6. **Resources:** the v1 contract's M4 Pro runtime remains the exact v2 formal
+   runtime. The discovered failure was on a Linux Python 3.13 CI library lane:
+   the test expected `rows_outside_envelope` without pinning the platform, so
+   Linux correctly returned the earlier `unsupported_platform` reason.
+7. **Execution:** the corrected test pins Darwin, arm64, and 14 logical CPUs
+   before fitting. Only product/infrastructure tests and
+   `python benchmarks/freeze_fused_lane_dispatch_calibration_v2.py` ran. V2
+   adds a required authorization `execution_identity` field and unique
+   create-only v2 authorization/raw/terminal/analysis paths.
+8. **Artifacts:** immutable v1 contract SHA-256
+   `3d7f8a653a71d6a9712f57f51bb01421765b42fcd105902f1fb0c6a611f7712d`;
+   v2 protocol `c07e9565e8f337317c6c564b03cf9d8cd60af684be4ed7c487114d17c1e91e8c`;
+   v2 freezer `44e746f117151ff199ee9fd5428bec88fe5dae93e9f0d8f52a6610263adcbf30`;
+   corrected runner `0248d8182758d95d0c37ef96d3591530170cf12735b4728f4ad7e6f93d9c6a0f`;
+   product test `b08e55a77dff29d5317b61fb1ecd8896da989953b7004681af7e103c9cb8c3e5`;
+   campaign-contract tests
+   `9f478a02affb02bf64edf844634309a95b6b3d4d06b8ee44cf6070e8b751f169`;
+   and v2 execution contract
+   `b2075f9c45df3b3fb674c74fe0b47cd9ddd1ec3bae790f5379308e15a327061a`.
+9. **Primary result:** none; every performance outcome remains unopened. The
+   corrected focused matrix passes 110 tests. The committed v2 contract loads
+   with its exact hashes/runtime, while the superseded v1 contract is rejected
+   by current code because its bound product-test hash no longer matches.
+10. **Gates:** the platform-independent expected-reason test, distinct
+    execution identity, immutable v1 binding, unique paths, authorization
+    identity, contract load, and non-authorization checks pass. Every
+    calibration/validation outcome gate remains untested.
+11. **Limitations/non-claims:** this is not a failed calibration attempt and
+    does not justify a rerun allowance, speed claim, threshold, default
+    change, portability claim, release, M2/M4, Q, fresh data, or lockbox use.
+    No scientific threshold or coordinate changed in response to an outcome.
+12. **Current decision:** `await_explicit_calibration_v2_authorization`. V1 is
+    closed before execution. V2 records `execution_authorized=false` and
+    `outcomes_opened=false`; no authorization or result artifact exists. The
+    next mechanism slot remains quality-first regardless of Wave 4's result.
 
 ## Product behavior established by the testing
 
