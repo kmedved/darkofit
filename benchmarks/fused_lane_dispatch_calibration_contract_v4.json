@@ -1,0 +1,658 @@
+{
+  "authorization_contract": {
+    "required_fields": {
+      "campaign": "fused_lane_dispatch_calibration_v1_20260721",
+      "execution_authorized": true,
+      "execution_contract_sha256": "<this contract SHA-256>",
+      "execution_identity": "calibration_v4",
+      "owner_decision": "<nonempty explicit decision>",
+      "phase": "calibration",
+      "schema_version": 1,
+      "source": "05a7a0d996fcd797cbc925026f7eba48db4becd5"
+    },
+    "separate_create_only_record_required": true
+  },
+  "bound_files": {
+    "bin_width_erratum": {
+      "bytes": 1577,
+      "path": "benchmarks/fused_lane_dispatch_v2_bin_width_erratum_20260721.md",
+      "sha256": "18847b3118f6873d68bed57b9730ebd18fb07b8418260a37059dc1b3700217db"
+    },
+    "campaign": {
+      "bytes": 30272,
+      "path": "benchmarks/fused_lane_dispatch_campaign.py",
+      "sha256": "034893ef265f8c3c2a9d6ab62368d0b9c47076e23656005b31a21551ba81ac73"
+    },
+    "campaign_tests": {
+      "bytes": 31783,
+      "path": "tests/test_fused_lane_dispatch_campaign.py",
+      "sha256": "75e13bbce3244d6ad2733da8f801dd476b2640a0de2cd4906d81d2e3d323a81f"
+    },
+    "design_v1": {
+      "bytes": 10611,
+      "path": "benchmarks/fused_lane_dispatch_v1_contract.md",
+      "sha256": "68d0dd6ef42f29d164943ef16e766821c5bd53319840b22a59b1bd449191cf1a"
+    },
+    "design_v2": {
+      "bytes": 8869,
+      "path": "benchmarks/fused_lane_dispatch_v2_contract.md",
+      "sha256": "ed032758dfa5829766ae324bdde54b9a1724ed0063d3997f55f3d72f7907240e"
+    },
+    "dispatch_tests": {
+      "bytes": 21946,
+      "path": "tests/test_oblivious_kernel_dispatch.py",
+      "sha256": "68fd848fa7a1e794c98cc6c5aad994176ce334bdf630ce40400ddf5cfa0ba367"
+    },
+    "ensemble_tests": {
+      "bytes": 43888,
+      "path": "tests/test_ensemble_api.py",
+      "sha256": "02a0593d1f0df85f460ab951f320e7baa5e0fad9adaa3788cd6e623615f59622"
+    },
+    "execution_contract_v1": {
+      "bytes": 15615,
+      "path": "benchmarks/fused_lane_dispatch_calibration_contract.json",
+      "sha256": "3d7f8a653a71d6a9712f57f51bb01421765b42fcd105902f1fb0c6a611f7712d"
+    },
+    "execution_contract_v2": {
+      "bytes": 16842,
+      "path": "benchmarks/fused_lane_dispatch_calibration_contract_v2.json",
+      "sha256": "b2075f9c45df3b3fb674c74fe0b47cd9ddd1ec3bae790f5379308e15a327061a"
+    },
+    "execution_contract_v3": {
+      "bytes": 18510,
+      "path": "benchmarks/fused_lane_dispatch_calibration_contract_v3.json",
+      "sha256": "c55ee50fccda5b9ba24e004ae8a27285e4db92e52a9c17a668bc1b417b0fa648"
+    },
+    "execution_protocol_v1": {
+      "bytes": 5323,
+      "path": "benchmarks/fused_lane_dispatch_calibration_protocol.md",
+      "sha256": "4f85112d89845f13320fd1758e98dbaae59b9ca7cc870203177c0ceee0f93d76"
+    },
+    "execution_protocol_v2": {
+      "bytes": 2278,
+      "path": "benchmarks/fused_lane_dispatch_calibration_v2_protocol.md",
+      "sha256": "c07e9565e8f337317c6c564b03cf9d8cd60af684be4ed7c487114d17c1e91e8c"
+    },
+    "execution_protocol_v3": {
+      "bytes": 4012,
+      "path": "benchmarks/fused_lane_dispatch_calibration_v3_protocol.md",
+      "sha256": "ee60b26183cc7003234c90301b7148f4661955664843c76162cb224a11e973fe"
+    },
+    "execution_protocol_v4": {
+      "bytes": 4227,
+      "path": "benchmarks/fused_lane_dispatch_calibration_v4_protocol.md",
+      "sha256": "828d063b524fe7dd622905dcfb076269c71c75ebe0582b53b820dfd1bbb3eb33"
+    },
+    "freezer_v1": {
+      "bytes": 7438,
+      "path": "benchmarks/freeze_fused_lane_dispatch_calibration.py",
+      "sha256": "41ef4bcea83da7d772d9865f782be6401cd8953f983bec5b1404a0a63c3ffc2c"
+    },
+    "freezer_v2": {
+      "bytes": 3840,
+      "path": "benchmarks/freeze_fused_lane_dispatch_calibration_v2.py",
+      "sha256": "44e746f117151ff199ee9fd5428bec88fe5dae93e9f0d8f52a6610263adcbf30"
+    },
+    "freezer_v3": {
+      "bytes": 4700,
+      "path": "benchmarks/freeze_fused_lane_dispatch_calibration_v3.py",
+      "sha256": "4410a18d76a3a89ec4154017d313a6912df7fa9602c115eaf0ba0c2b6443ab36"
+    },
+    "freezer_v4": {
+      "bytes": 4762,
+      "path": "benchmarks/freeze_fused_lane_dispatch_calibration_v4.py",
+      "sha256": "db7e842cfd2689d04a9c36f9cbb2acbcb930dfc65f7583255fa7666860e6dae6"
+    },
+    "fused_expanded_tests": {
+      "bytes": 8521,
+      "path": "tests/test_fused_oblivious_expanded.py",
+      "sha256": "28f6e156a47dcc8a191134e83862ba21440aa28828f9b3bd8a44a277cd2c79a4"
+    },
+    "fused_kernel_tests": {
+      "bytes": 15094,
+      "path": "tests/test_fused_oblivious_kernel.py",
+      "sha256": "75d268c37ace76bfb35066b09e6b2904954863f7b2dc69c2ef37c88b68d19274"
+    },
+    "library_tests": {
+      "bytes": 360907,
+      "path": "tests/test_darkofit.py",
+      "sha256": "75edb9131fbaf78aa1560a7ff2cdf997d5ece35c216db2633d00a496fe71049a"
+    },
+    "loss_determinism": {
+      "bytes": 47622,
+      "path": "darkofit/losses.py",
+      "sha256": "1fe628fe8042f380d857c0b56917dc8215ac2f24a2e3cc48a7b08b049cfb68dc"
+    },
+    "loss_tests": {
+      "bytes": 856,
+      "path": "tests/test_loss_determinism.py",
+      "sha256": "495f74d230ff34f038b6bd8dae981682acddc521ddfb0b7970a4dc0196c331c2"
+    },
+    "persistence": {
+      "bytes": 99821,
+      "path": "darkofit/serialization.py",
+      "sha256": "5c1d79fdc750b4caae045158ea065c418d6f5c11ac13d0c34bd76e853b49e1b5"
+    },
+    "private_ensemble_tests": {
+      "bytes": 28946,
+      "path": "tests/test_private_ensemble_v3.py",
+      "sha256": "b3f9031c843e19e19d4556d7dc87c85735f34a683ebfaa45442b73bb64869351"
+    },
+    "public_api": {
+      "bytes": 377972,
+      "path": "darkofit/sklearn_api.py",
+      "sha256": "80a66c7abe5ec6971bb74850530817a2de08e3232783b77484a88217f519e1fa"
+    },
+    "runner": {
+      "bytes": 57838,
+      "path": "benchmarks/run_fused_lane_dispatch.py",
+      "sha256": "4133a24e749689de393878c1f1845714e6f5b8224fc0e80ff41719147d7ec97e"
+    },
+    "selector": {
+      "bytes": 197406,
+      "path": "darkofit/booster.py",
+      "sha256": "1bd9878914375ca34cd5c30ebb89469948b1930ced872aea19023581234aed2e"
+    },
+    "thread_tests": {
+      "bytes": 4014,
+      "path": "tests/test_thread_state_restoration.py",
+      "sha256": "72c16319264e51d2bf54b274d8ede01d871118efc7e426cec9987b191ba30008"
+    },
+    "tree_builder": {
+      "bytes": 273976,
+      "path": "darkofit/tree.py",
+      "sha256": "b9af7ad03ff0179875a1b31499ba7f4ee5eed93d13e73c83e2d44cbc1a87a33d"
+    },
+    "v3_freezer_tests": {
+      "bytes": 1621,
+      "path": "tests/test_fused_lane_dispatch_v3_freezer.py",
+      "sha256": "c86dcfd0096d2363d3ce5406212d7804cb69025ffeb6d34ae590c22a9cfad6de"
+    },
+    "v4_freezer_tests": {
+      "bytes": 2030,
+      "path": "tests/test_fused_lane_dispatch_v4_freezer.py",
+      "sha256": "48180231df895d16b3138a632481f63976109604587c79b74e7c4744704e0e0e"
+    }
+  },
+  "campaign": "fused_lane_dispatch_calibration_v1_20260721",
+  "contract_frozen": true,
+  "decision_rules": {
+    "all_cells_exact": true,
+    "both_lanes_must_be_selected": true,
+    "selected_fused_geomean_at_most": 0.97,
+    "stability_iqr_over_median_at_most": 0.1,
+    "threshold_tie_policy": "largest_never_switch_largest",
+    "threshold_tie_tolerance": 0.001,
+    "worst_selected_fused_at_most": 1.02
+  },
+  "downstream": {
+    "auto_threshold_change_authorized": false,
+    "calibration_execution_authorized": false,
+    "m2_m4_q_or_lockbox_authorized": false,
+    "next_mechanism_slot": "quality_first",
+    "release_authorized": false,
+    "speed_claim_authorized": false,
+    "validation_execution_authorized": false
+  },
+  "execution": {
+    "actual_builder_counters_required": true,
+    "authorization_alone_rejected_by_workers": true,
+    "both_lanes_per_worker": true,
+    "create_only": true,
+    "exact_frozen_worker_environment_required": true,
+    "fresh_worker_per_coordinate": true,
+    "hash_bound_threshold_analysis_required": true,
+    "orders": [
+      [
+        "fused",
+        "unfused"
+      ],
+      [
+        "unfused",
+        "fused"
+      ],
+      [
+        "fused",
+        "unfused"
+      ],
+      [
+        "unfused",
+        "fused"
+      ],
+      [
+        "fused",
+        "unfused"
+      ],
+      [
+        "unfused",
+        "fused"
+      ],
+      [
+        "fused",
+        "unfused"
+      ]
+    ],
+    "paired_repetitions": 7,
+    "parent_pipe_capability_required": true,
+    "partial_rows_published": false,
+    "positive_mass_class_semantics_required": true,
+    "production_routing_layout_required": true,
+    "scientific_change_from_v1": false,
+    "scientific_change_from_v2": false,
+    "scientific_change_from_v3": false,
+    "shared_input_and_buffer_allocation_timed": false,
+    "terminal_failure_nonrerunnable": true,
+    "timed_region": "build_oblivious_tree_only",
+    "v1_formal_worker_started": false,
+    "v2_formal_worker_started": false,
+    "v3_formal_worker_started": false,
+    "warmups_per_lane": 2,
+    "worker_self_authorization_required": true,
+    "wrapper_booster_kernel_binding_required": true
+  },
+  "execution_authorized": false,
+  "execution_identity": "calibration_v4",
+  "frozen_at": "2026-07-21T19:44:35.791450+00:00",
+  "generator": {
+    "seed": 20260721,
+    "specs": [
+      {
+        "bins": 128,
+        "coordinate_id": "r8192_f15_t4_unit",
+        "depth": 6,
+        "features": 15,
+        "hessian": "unit",
+        "rows": 8192,
+        "scan_work": 32768,
+        "threads": 4
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r8192_f15_t4_variable",
+        "depth": 6,
+        "features": 15,
+        "hessian": "variable",
+        "rows": 8192,
+        "scan_work": 32768,
+        "threads": 4
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r8192_f24_t9_unit",
+        "depth": 6,
+        "features": 24,
+        "hessian": "unit",
+        "rows": 8192,
+        "scan_work": 24576,
+        "threads": 9
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r8192_f24_t9_variable",
+        "depth": 6,
+        "features": 24,
+        "hessian": "variable",
+        "rows": 8192,
+        "scan_work": 24576,
+        "threads": 9
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r8192_f48_t14_unit",
+        "depth": 6,
+        "features": 48,
+        "hessian": "unit",
+        "rows": 8192,
+        "scan_work": 32768,
+        "threads": 14
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r8192_f48_t14_variable",
+        "depth": 6,
+        "features": 48,
+        "hessian": "variable",
+        "rows": 8192,
+        "scan_work": 32768,
+        "threads": 14
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r32768_f15_t4_unit",
+        "depth": 6,
+        "features": 15,
+        "hessian": "unit",
+        "rows": 32768,
+        "scan_work": 131072,
+        "threads": 4
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r32768_f15_t4_variable",
+        "depth": 6,
+        "features": 15,
+        "hessian": "variable",
+        "rows": 32768,
+        "scan_work": 131072,
+        "threads": 4
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r32768_f24_t9_unit",
+        "depth": 6,
+        "features": 24,
+        "hessian": "unit",
+        "rows": 32768,
+        "scan_work": 98304,
+        "threads": 9
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r32768_f24_t9_variable",
+        "depth": 6,
+        "features": 24,
+        "hessian": "variable",
+        "rows": 32768,
+        "scan_work": 98304,
+        "threads": 9
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r32768_f48_t14_unit",
+        "depth": 6,
+        "features": 48,
+        "hessian": "unit",
+        "rows": 32768,
+        "scan_work": 131072,
+        "threads": 14
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r32768_f48_t14_variable",
+        "depth": 6,
+        "features": 48,
+        "hessian": "variable",
+        "rows": 32768,
+        "scan_work": 131072,
+        "threads": 14
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r131072_f15_t4_unit",
+        "depth": 6,
+        "features": 15,
+        "hessian": "unit",
+        "rows": 131072,
+        "scan_work": 524288,
+        "threads": 4
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r131072_f15_t4_variable",
+        "depth": 6,
+        "features": 15,
+        "hessian": "variable",
+        "rows": 131072,
+        "scan_work": 524288,
+        "threads": 4
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r131072_f24_t9_unit",
+        "depth": 6,
+        "features": 24,
+        "hessian": "unit",
+        "rows": 131072,
+        "scan_work": 393216,
+        "threads": 9
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r131072_f24_t9_variable",
+        "depth": 6,
+        "features": 24,
+        "hessian": "variable",
+        "rows": 131072,
+        "scan_work": 393216,
+        "threads": 9
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r131072_f48_t14_unit",
+        "depth": 6,
+        "features": 48,
+        "hessian": "unit",
+        "rows": 131072,
+        "scan_work": 524288,
+        "threads": 14
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r131072_f48_t14_variable",
+        "depth": 6,
+        "features": 48,
+        "hessian": "variable",
+        "rows": 131072,
+        "scan_work": 524288,
+        "threads": 14
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r524288_f15_t4_unit",
+        "depth": 6,
+        "features": 15,
+        "hessian": "unit",
+        "rows": 524288,
+        "scan_work": 2097152,
+        "threads": 4
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r524288_f15_t4_variable",
+        "depth": 6,
+        "features": 15,
+        "hessian": "variable",
+        "rows": 524288,
+        "scan_work": 2097152,
+        "threads": 4
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r524288_f24_t9_unit",
+        "depth": 6,
+        "features": 24,
+        "hessian": "unit",
+        "rows": 524288,
+        "scan_work": 1572864,
+        "threads": 9
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r524288_f24_t9_variable",
+        "depth": 6,
+        "features": 24,
+        "hessian": "variable",
+        "rows": 524288,
+        "scan_work": 1572864,
+        "threads": 9
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r524288_f48_t14_unit",
+        "depth": 6,
+        "features": 48,
+        "hessian": "unit",
+        "rows": 524288,
+        "scan_work": 2097152,
+        "threads": 14
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r524288_f48_t14_variable",
+        "depth": 6,
+        "features": 48,
+        "hessian": "variable",
+        "rows": 524288,
+        "scan_work": 2097152,
+        "threads": 14
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r1048576_f15_t4_unit",
+        "depth": 6,
+        "features": 15,
+        "hessian": "unit",
+        "rows": 1048576,
+        "scan_work": 4194304,
+        "threads": 4
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r1048576_f15_t4_variable",
+        "depth": 6,
+        "features": 15,
+        "hessian": "variable",
+        "rows": 1048576,
+        "scan_work": 4194304,
+        "threads": 4
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r1048576_f24_t9_unit",
+        "depth": 6,
+        "features": 24,
+        "hessian": "unit",
+        "rows": 1048576,
+        "scan_work": 3145728,
+        "threads": 9
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r1048576_f24_t9_variable",
+        "depth": 6,
+        "features": 24,
+        "hessian": "variable",
+        "rows": 1048576,
+        "scan_work": 3145728,
+        "threads": 9
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r1048576_f48_t14_unit",
+        "depth": 6,
+        "features": 48,
+        "hessian": "unit",
+        "rows": 1048576,
+        "scan_work": 4194304,
+        "threads": 14
+      },
+      {
+        "bins": 128,
+        "coordinate_id": "r1048576_f48_t14_variable",
+        "depth": 6,
+        "features": 48,
+        "hessian": "variable",
+        "rows": 1048576,
+        "scan_work": 4194304,
+        "threads": 14
+      }
+    ]
+  },
+  "outcomes_opened": false,
+  "outputs": {
+    "analysis": "benchmarks/fused_lane_dispatch_calibration_analysis_v4.json",
+    "authorization": "benchmarks/fused_lane_dispatch_calibration_authorization_v4.json",
+    "raw": "benchmarks/fused_lane_dispatch_calibration_raw_v4.json",
+    "terminal": "benchmarks/fused_lane_dispatch_calibration_raw_v4_terminal.json"
+  },
+  "phase": "calibration",
+  "runtime": {
+    "fingerprint": {
+      "cpu_identifier": "Apple M4 Pro",
+      "hardware_model": "Mac16,7",
+      "llvmlite": "0.44.0",
+      "logical_cpu_count": 14,
+      "memory_bytes": 25769803776,
+      "numba": "0.61.2",
+      "numpy": "2.2.6",
+      "physical_cpu_count": 14,
+      "platform_machine": "arm64",
+      "platform_release": "25.5.0",
+      "platform_system": "Darwin",
+      "python_executable": "/opt/anaconda3/envs/darko311/bin/python3.11",
+      "python_implementation": "CPython",
+      "python_version": "3.11.8",
+      "sha256": "76753400de34df20f34d48b2324316993747b1949d242300946b94dd2a01decb"
+    },
+    "worker_environments": {
+      "14": {
+        "DARKOFIT_WARMUP": "0",
+        "MKL_DYNAMIC": "FALSE",
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_CACHE_DIR": "/Users/konstantinmedvedovsky/code/darkofit/.cache/fused_lane_dispatch_calibration_v1_20260721/calibration/threads-14",
+        "NUMBA_DISABLE_JIT": "0",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMBA_THREADING_LAYER": "default",
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "14",
+        "OMP_THREAD_LIMIT": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0",
+        "PYTHONPATH": null,
+        "VECLIB_MAXIMUM_THREADS": "14"
+      },
+      "4": {
+        "DARKOFIT_WARMUP": "0",
+        "MKL_DYNAMIC": "FALSE",
+        "MKL_NUM_THREADS": "4",
+        "NUMBA_CACHE_DIR": "/Users/konstantinmedvedovsky/code/darkofit/.cache/fused_lane_dispatch_calibration_v1_20260721/calibration/threads-4",
+        "NUMBA_DISABLE_JIT": "0",
+        "NUMBA_NUM_THREADS": "4",
+        "NUMBA_THREADING_LAYER": "default",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "4",
+        "OMP_THREAD_LIMIT": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "PYTHONHASHSEED": "0",
+        "PYTHONPATH": null,
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "9": {
+        "DARKOFIT_WARMUP": "0",
+        "MKL_DYNAMIC": "FALSE",
+        "MKL_NUM_THREADS": "9",
+        "NUMBA_CACHE_DIR": "/Users/konstantinmedvedovsky/code/darkofit/.cache/fused_lane_dispatch_calibration_v1_20260721/calibration/threads-9",
+        "NUMBA_DISABLE_JIT": "0",
+        "NUMBA_NUM_THREADS": "9",
+        "NUMBA_THREADING_LAYER": "default",
+        "NUMEXPR_NUM_THREADS": "9",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "9",
+        "OMP_THREAD_LIMIT": "9",
+        "OPENBLAS_NUM_THREADS": "9",
+        "PYTHONHASHSEED": "0",
+        "PYTHONPATH": null,
+        "VECLIB_MAXIMUM_THREADS": "9"
+      }
+    }
+  },
+  "schema_version": 1,
+  "source": "05a7a0d996fcd797cbc925026f7eba48db4becd5",
+  "source_worktree": {
+    "clean": true,
+    "detached_at_source": true,
+    "import_must_resolve_inside_worktree": true,
+    "required": true
+  },
+  "supersedes": {
+    "contract_path": "benchmarks/fused_lane_dispatch_calibration_contract_v3.json",
+    "contract_sha256": "c55ee50fccda5b9ba24e004ae8a27285e4db92e52a9c17a668bc1b417b0fa648",
+    "execution_identity": "calibration_v3",
+    "formal_worker_started": false,
+    "outcomes_opened": false,
+    "reason": "pre-authorization parent-capability, constructor-provenance, weighted-class, and production-layout repair",
+    "scientific_grid_or_gate_changed": false
+  }
+}
