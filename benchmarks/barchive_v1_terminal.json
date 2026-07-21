@@ -1,0 +1,22 @@
+{
+  "completed_rows_discarded": 0,
+  "contract_sha256": "1cddcbe679521053f8912c21730fc940e581944d35bb895f45694fc2c49676a5",
+  "error": "B-archive worker failed for sports_2014_minutes_per_game:\nstdout:\n\nstderr:\nTraceback (most recent call last):\n  File \"/Users/konstantinmedvedovsky/code/darkofit/benchmarks/run_barchive_v1.py\", line 738, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"/Users/konstantinmedvedovsky/code/darkofit/benchmarks/run_barchive_v1.py\", line 730, in main\n    + json.dumps(run_worker(args), sort_keys=True, allow_nan=False)\n                 ^^^^^^^^^^^^^^^^\n  File \"/Users/konstantinmedvedovsky/code/darkofit/benchmarks/run_barchive_v1.py\", line 499, in run_worker\n    raise RuntimeError(\"B-archive canonical header set drifted\")\nRuntimeError: B-archive canonical header set drifted\n",
+  "error_type": "RuntimeError",
+  "failed_at": "2026-07-21T13:38:18.270193+00:00",
+  "harness_state": {
+    "head": "239cf58fdff112ac8ba7eace2eaeaa689c254153",
+    "path": "/Users/konstantinmedvedovsky/code/darkofit",
+    "status": ""
+  },
+  "name": "wave3_barchive_v1_20260721",
+  "partial_rows_published": false,
+  "rerun_allowed": false,
+  "schema_version": 1,
+  "source_state": {
+    "head": "858ac14c30e280491d7bd5232da56f7050561782",
+    "path": "/private/tmp/darkofit-barchive-source-858ac14",
+    "status": ""
+  },
+  "status": "terminal_failure"
+}

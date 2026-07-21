@@ -1,0 +1,39 @@
+{
+  "failed_contract": {
+    "bytes": 24100,
+    "path": "benchmarks/barchive_v1_contract.json",
+    "sha256": "1cddcbe679521053f8912c21730fc940e581944d35bb895f45694fc2c49676a5"
+  },
+  "failure": {
+    "completed_rows_discarded": 0,
+    "failed_case": "sports_2014_minutes_per_game",
+    "failed_invariant": "canonical_header_set",
+    "failure_phase": "first_worker_post_fit_pre_row",
+    "partial_rows_published": false,
+    "raw_artifact_published": false,
+    "size_outcomes_published": false
+  },
+  "name": "wave3_barchive_v1_20260721_failure_record",
+  "recorded_at": "2026-07-21T13:39:45Z",
+  "schema_version": 1,
+  "scientific_disposition": {
+    "cases_changed": false,
+    "decision_threshold_changed": false,
+    "model_source_changed": false,
+    "v1_rerun_allowed": false
+  },
+  "terminal_artifact": {
+    "bytes": 1417,
+    "path": "benchmarks/barchive_v1_terminal.json",
+    "sha256": "11e06490d1c9e90a2bac5c46f01009b3348942e8ad0a83606db08551aa1697d0"
+  },
+  "verified_cause": {
+    "actual_numpy_input_header_fields": [
+      "n_input_features",
+      "prep",
+      "random_state"
+    ],
+    "cause": "The v1 harness required feature_names_in even though every frozen case supplies NumPy input and the safe archive correctly represents absent feature names by omitting that optional header field.",
+    "prospective_successor_correction": "Require the three reconstruction fields and preserve feature_names_in absence for the unchanged NumPy-input portfolio under a new identity."
+  }
+}
