@@ -3,7 +3,8 @@
 > **Status:** draft reviewed 2026-07-19; reframed 2026-07-20 to the
 > strongest-library goal; revised 2026-07-20 to mechanism-led sequencing;
 > Wave 1 authorized by the owner 2026-07-20 and completed 2026-07-20;
-> G-M published 2026-07-20; Wave 2 completed and closed 2026-07-20.
+> G-M published 2026-07-20; Wave 2 completed and closed 2026-07-20;
+> Wave 3 B-archive feasibility completed and closed 2026-07-21.
 > Wave 1 authorization covers the H1 audit and confirmed fixes, M1 plus the
 > Q0 profiling half, M3a, and construction of M5/M6 infrastructure. It does
 > not authorize a public prototype, default change, fresh confirmation
@@ -12,7 +13,10 @@
 > plus one private sequential B1/B2 mechanism-attribution prototype. M3b
 > closed that prototype after no arm cleared every frozen gate. B3
 > parallelism, public surfaces, default changes, M2, and fresh access remain
-> unauthorized.
+> unauthorized. B-archive v2 then showed that exact canonical-preprocessor
+> factoring reaches `4.152525×`, missing the unchanged `4.0×` archive gate;
+> no serializer prototype is authorized, and behavior-exact fused-lane
+> dispatch is the next nominated Track I mechanism.
 
 DarkoFit comparison pin: `v0.10.0` at
 `ec66a64654becaf948592588a047bfb8205decc8`.
@@ -140,6 +144,23 @@ preserves the existing opt-in, and authorizes no B3, public/default change,
 fresh confirmation, TabArena, or lockbox access. See
 [`benchmarks/m3b_ensemble_v3_r3_result.md`](benchmarks/m3b_ensemble_v3_r3_result.md).
 
+**Wave 3 outcome (2026-07-21):** the dated matched-single readout established
+that the M3b combined arm beat the matched single on all 13 spent cases while
+failing the archive gate. B-archive then tested only complete, byte-identical
+numeric target-free preprocessing sections across the same representative
+portfolio. Attempt 1 terminal-failed before publishing a row because its
+harness incorrectly required optional `feature_names_in` for NumPy inputs;
+attempt 2 preserved that terminal lineage under a new identity and changed no
+case, source, runtime, model arm, aggregation, or threshold. All 13 v2 rows
+passed the frozen round-trip and component invariants, but median effective
+archive/single was `4.152525` against `<= 4.0` (`6.032405` current). B-archive
+therefore closes with no serializer implementation or retention authorization.
+The binding machine-readable result is
+[`benchmarks/barchive_v2_result.json`](benchmarks/barchive_v2_result.json);
+the create-only Markdown note's inherited v1 heading is corrected without
+rewriting it by
+[`benchmarks/barchive_v2_result_heading_erratum_20260721.md`](benchmarks/barchive_v2_result_heading_erratum_20260721.md).
+
 ## 2. Verified evidence and open questions
 
 | Topic | Current evidence | Status |
@@ -149,6 +170,7 @@ fresh confirmation, TabArena, or lockbox access. See
 | ChimeraBoost ensemble | M3a ensemble8/single was `0.950230` on player-disjoint sports RMSE with 9/9 cell wins, `0.977935` on cold players, and `0.947797` on six selected general medium cells with 6/6 wins. | Current Tier-E donor signal at `f14be60`; three spent sports seasons and a small general slice, not a default claim. |
 | DarkoFit ensembles | M3a group8/single was `1.025482` on player-disjoint sports RMSE; row5, row8, and group5 were also worse. Row8/single was `1.019556` on the selected general slice. | Current Tier-E closure of the shipped bootstrap/member policy; no repeat timing. |
 | Private ensemble-v3 attribution | M3b combined/control was `0.979638` for aggregate loss and `0.557873` for fit time, but combined/single archive bytes were `5.534767` against the frozen `4.0` ceiling. B1 and B2 also failed their value and archive/single checks. | Current spent private evidence; B1/B2 closed with no retained arm and no shipping authorization. |
+| B-archive exact-factoring feasibility | Across the same 13-case portfolio, current combined/single archive bytes had median `6.032405`; exact canonical numeric-preprocessor factoring produced an effective median `4.152525` against the unchanged `4.0` limit. Eleven numeric cases were eligible; two member-local categorical cases remained unchanged. | Current spent Tier-E size evidence; B-archive closed, no serializer prototype authorized, fused-lane dispatch nominated next. |
 | Quantization on sports | ChimeraBoost's default quantization mildly worsened its player-disjoint sports quality. M3a float/quantized ratios were `1.001949` for singles and `1.002315` for ensembles. | Current only for this small, noisy workload. |
 | Large-n engine comparison | M1 DarkoFit/current-quantized-Chimera fit ratio was `0.844722`; Chimera quantized/float was `0.903595`, missing the frozen `0.90` donor bar. | Current Tier-E matched-capacity result; Q closed under its conjunctive rule. |
 | Broad 13-dataset comparison | The historical DarkoFit/ChimeraBoost RMSE ratio was 1.0125 and training-time ratio was 0.9093 against ChimeraBoost 0.14.1. | Historically valid for its pins; stale for 0.18. |
@@ -169,7 +191,7 @@ been refreshed.
 | H — hygiene | Complete for Wave 1 | Tier-E engineering | Clean documentation checkpoint | Published H1 audit and tested fixes | Reopen only for a newly confirmed gap |
 | M — measurements | Wave 1 complete | Tier-E descriptive | Exact pins, new dated protocols, exclusive machine access | M1, Q0, M3a, M5, M6, testing-log entries, and G-M published; M2 remains milestone cadence | Published once; no rerun to improve a result |
 | Q — quantization | Closed at G-M | Q0 engineering, Q1/Q2 Tier-E opt-in, Q3 Tier-D automatic | Re-entry requires a new material donor result or distinct DarkoFit-specific causal case | [`benchmarks/wave1_gm_decision.md`](benchmarks/wave1_gm_decision.md) | Do not relax M1's `0.90` near miss |
-| B — ensemble v3 | Closed at M3b | Spent private B0/B1/B2 attribution; Tier-E only after a survivor; Tier-D for any changed default | Re-entry requires a distinct mechanism and new contract identity | [`benchmarks/m3b_ensemble_v3_r3_result.md`](benchmarks/m3b_ensemble_v3_r3_result.md) | No arm cleared every frozen final gate; preserve existing opt-in and do not continue B3 |
+| B — ensemble v3 | Closed at B-archive v2 | Spent private B0/B1/B2 attribution plus Tier-E exact-factoring feasibility; Tier-D for any changed default | Re-entry requires a distinct mechanism and new contract identity | [`benchmarks/barchive_v2_result.json`](benchmarks/barchive_v2_result.json) | Exact canonical factoring still missed `4.0×`; preserve existing opt-in, implement no serializer, and do not continue B3 |
 | X — cross features | Rolling backlog via Track I | Tier-E explicit research opt-in; Tier-D for automatic engagement | Promotion from the backlog; X0 then defines separate force and guarded semantics plus full product obligations | Narrow opt-in result or deferral | No general safety claim from the three-task spent result |
 | S — sports speed | Conditional successor to a failed candidate | Tier-D if automatic | One justified, preregistered group-safe candidate | Spent screen, then fresh result only if powered | Close automatic route on a failed spent screen |
 | P — harm-bounded composite | New campaign only | Tier-D | New exact candidate and new protocol identity | Published power GO/NO-GO; fresh result only after GO and owner authorization | No fresh access below the preregistered 80% power bar |
@@ -970,47 +992,40 @@ Initial backlog, unrated and unauthorized:
   potential Track B interaction.
 - CatBoost's `l2_leaf_reg` and samples-per-feature depth heuristics:
   already Track C candidates via the T7b attribution.
-- **B-archive: shared-component ensemble serialization** (internal, from
-  Wave 2 M3b): the r3 combined B1/B2 arm improved on the single reference in
-  all 13 development cases (pooled primary geomean `0.9655` versus single,
-  recomputable from the immutable r3 quality artifact) and failed only the
-  prospectively frozen `median_archive_to_single_at_most: 4.0` gate, at
-  `5.53×`. Closing that gap by factoring seven duplicate member copies needs
-  an exactly shareable component worth at least `0.219252` matched-single
-  archives per copy (`(5.534767 - 4.0) / 7`) under first-order byte accounting.
-  The first action is therefore a standalone component census, not a serializer
-  change; kill B-archive immediately if even perfect exact factoring cannot
-  reach `4.0×`. A behavior-exact implementation may factor only complete
-  sections proven byte-identical across all members and must bind any canonical
-  shared-preprocessor section with one digest over its complete configuration
-  and payload. Generalized member/header deltas are out of scope. Categorical,
-  ordinal, and member-local preprocessing stays complete per member. Advancing
-  requires a new campaign identity (r3 stays immutable). The M3b sports view
-  was already cold-player held-team and player-disjoint; the seeded,
-  overlap-exposed 75/25 split applied only to the general weighted view.
+- **Closed — B-archive shared-component ensemble serialization** (internal,
+  from Wave 2 M3b): the dated matched-single readout confirmed that the r3
+  combined B1/B2 arm improved on the single reference in all 13 development
+  cases (pooled primary geomean `0.9655`) while missing the frozen archive
+  gate at `5.534767×`. A one-case exploratory census found only seven complete
+  exact `prep__*`/`bin__*` arrays and their preprocessing header, with enough
+  first-order savings to justify one representative feasibility campaign but
+  not an implementation.
 
-  The first explicitly exploratory size screen used the read-only analyzer,
-  last hardened at `27116f5`, on a deterministic numeric case with 10,000
-  rows, 24 features, eight combined members, and a separately fitted
-  same-base single. The only byte-identical member sections were the seven
-  complete `prep__*`/`bin__*` arrays plus their canonical preprocessing
-  header. Factoring them reduced the
-  non-loadable size model from 819,785 to 652,126 bytes. The probe itself did
-  not clear `4.0×` (`13.8519×` to `11.0190×`) because its single stopped at 60
-  rounds while members retained 94–120, so it cannot authorize implementation.
-  Its canonical saving was `0.404706` of that same-base single per duplicate,
-  above r3's `0.219252` first-order requirement; B-archive therefore is not
-  killed by the component-size lower bound alone. The probe is spent and
-  non-ranking. Any next measurement must prospectively freeze a new,
-  representative multi-case identity; no serializer change is authorized.
-- **Behavior-exact fused-lane dispatch** (internal, from Q0): the
+  B-archive v1 terminal-failed before publishing a row because its harness
+  required optional `feature_names_in` even though every frozen case supplies
+  NumPy input. V2 used a new identity, hash-bound that failure, and preserved
+  the source, runtime, 13 cases/fingerprints, arms, median aggregation, and
+  `<= 4.0` limit. All 13 rows passed current safe-NPZ prediction/probability,
+  feature-schema, metadata, deterministic-resave, thread, provenance, and
+  component invariants. Eleven numeric target-free cases factored only the
+  exact seven-array, three-header-field canonical section; the two categorical
+  member-local cases stayed at current bytes. The current median was
+  `6.032405×`; the effective median was `4.152525×`. Because it missed the
+  prospectively frozen limit, B-archive is closed. No canonical serializer,
+  generalized delta format, B3 work, public/default change, fresh evidence,
+  or lockbox access is authorized. The M3b sports view remains player-disjoint
+  cold-player evidence within held teams; the seeded 75/25 split applies only
+  to the general weighted view.
+- **Next nominated — behavior-exact fused-lane dispatch** (internal, from Q0): the
   forced-unfused reference was behavior-exact and faster than the fused
   production lane on the current 14-CPU machine (paired fit ratios `0.901`
   at 500k rows, `0.981` at 1M) against a hotspot worth 52–63% of fit time.
   A hardware/shape-aware dispatch is a cheap Tier-E engineering candidate
   in the sampled-fused-kernels tradition. It precedes and re-baselines any
   Q re-entry work: quantization must beat the post-dispatch engine, not the
-  current one.
+  current one. B-archive's frozen close promotes this to the next mechanism
+  slot, but implementation still requires a new prospective dispatch contract
+  with exact behavior and bounded speed/resource acceptance rules.
 - **Q re-entry microbenchmark** (internal): a DarkoFit-specific private
   histogram-bandwidth prototype at the Q0 hotspot (frozen conservative
   projection `0.867242`), pursued only as the distinct causal case the Q
@@ -1115,8 +1130,9 @@ These are planning ranges, not delivery promises.
 | 0 | Owner reviews this plan; H0 documentation checkpoint | Hours | Authorize or revise Gate M |
 | 1 | **Complete:** H1 audit; M1/Q0; M3a quality-first; M5 baseline; M6 infrastructure/backtest; G-M | Completed 2026-07-20 | Q and current ensembles closed; one private B0/B1/B2 mechanism prototype funded |
 | 2 | **Complete:** B0 contract, private sequential B1/B2 prototype and invariants, prospectively frozen M3b attribution | Completed 2026-07-20 | No arm cleared every final gate; close B1/B2 and preserve the existing opt-in |
-| 3 | A future promoted Track I mechanism; M2 only once a mechanism survives M5 invariants, eligible spent development evidence, and sports. Q1 only after an authorized Q re-entry | Separately estimated after promotion | Ship an explicit opt-in, defer, or close |
-| 4 | Q3, S, or P-next Tier-D campaigns | Separately estimated and power-gated | One fresh campaign per qualified automatic policy |
+| 3 | **Complete:** M3b matched-single readout, B-archive component feasibility, v1 terminal lineage, and corrected frozen v2 campaign | Completed 2026-07-21 | Exact canonical factoring missed `4.0×`; close B-archive with no serializer and nominate fused-lane dispatch |
+| 4 | Behavior-exact fused-lane dispatch under a new prospective contract; M2 only after a mechanism survives the cheaper evidence stages. Q1 remains sequenced after the post-dispatch baseline | Separately estimated after protocol freeze | Retain exact dispatch, defer, or close |
+| 5 | Q3, S, or P-next Tier-D campaigns | Separately estimated and power-gated | One fresh campaign per qualified automatic policy |
 | Later | Track I backlog (C and X mechanisms included), M4 drift check, and Z cleanup | Independent backlog | No coupling to unfinished speculative tracks |
 
 Benchmark waves use fresh workers and exclusive machine access. Parallelize

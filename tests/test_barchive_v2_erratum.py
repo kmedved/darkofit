@@ -23,3 +23,17 @@ def test_barchive_v2_heading_erratum_is_narrow_and_hash_bound():
     assert erratum["correction"]["scope"] == "markdown_heading_only"
     assert erratum["frozen_evidence_changed"] is False
     assert erratum["disposition_changed"] is False
+
+
+def test_barchive_v2_closeout_docs_preserve_the_frozen_decision():
+    plan = (ROOT / "COUNTERPUNCH_PLAN.md").read_text(encoding="utf-8")
+    log = (ROOT / "benchmarks" / "TESTING_LOG.md").read_text(encoding="utf-8")
+
+    for document in (plan, log):
+        assert "4.152525" in document
+        assert "4.0" in document
+        assert "no serializer" in document.lower()
+        assert "fused-lane dispatch" in document
+    assert "Wave 3 B-archive feasibility completed and closed" in plan
+    assert "close_barchive_nominate_fused_lane_dispatch" in log
+    assert "v1_size_outcomes_published" not in plan

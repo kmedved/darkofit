@@ -1,7 +1,7 @@
 # DarkoFit testing log
 
-_Canonical navigation ledger. Updated 2026-07-19 at DarkoFit `v0.10.0`,
-commit `ec66a64654becaf948592588a047bfb8205decc8`._
+_Canonical navigation ledger. Updated 2026-07-21 after the GitHub-only
+`v0.10.1` release and the frozen B-archive v2 close._
 
 This file records what DarkoFit has tested, why it was tested, what happened,
 and which artifact controls the conclusion. It is intentionally broader than
@@ -34,10 +34,10 @@ checkpoint is [`../BENCHMARK_NOTES.md`](../BENCHMARK_NOTES.md).
 
 | Boundary | Current state |
 | --- | --- |
-| DarkoFit release | GitHub-only `v0.10.0`, exact commit `ec66a64654becaf948592588a047bfb8205decc8`; not published to PyPI |
+| DarkoFit release | GitHub-only `v0.10.1`, exact tag commit `d3aba3d01eb1cbd99715793c852db0181fd47aaa`; not published to PyPI |
 | Release verification | 2,673 tests collected with zero failures in both recorded environments: `2,671 passed / 2 skipped` and `2,646 passed / 27 skipped` |
 | GitHub integration | PR #1 passed Python 3.9, 3.11, and 3.13 library lanes, 1,692 campaign verifiers with expected optional skips, and the documentation/generated-evidence/package lane |
-| Final release CI | GitHub Actions run `29686258603` passed for the tagged source |
+| v0.10.0 final release CI | GitHub Actions run `29686258603` passed for that tagged source |
 | Historical broad comparator | ChimeraBoost 0.14.1 on the frozen 13-dataset same-machine regression panel |
 | Historical sports comparator | ChimeraBoost 0.15.0 on the frozen player-disjoint sports panel |
 | Latest descriptive comparator | ChimeraBoost `v0.18.0-6-gf14be60`, exact commit `f14be606b641f1bf0dc92bb14b3951f1fe631c6b`, on spent basketball data |
@@ -626,6 +626,91 @@ evidence.
     surface, fresh confirmation, TabArena, or lockbox access. Any successor
     requires a distinct mechanism and a new prospective contract.
 
+### 22. Wave 3 B-archive exact-factoring feasibility
+
+1. **Execution boundary:** 2026-07-21; exact model source
+   `858ac14c30e280491d7bd5232da56f7050561782`; v1 harness
+   `7232c42984b838403b1941a2e73022fcc412a0ee` and clean execution head
+   `239cf58fdff112ac8ba7eace2eaeaa689c254153`; corrected v2 harness
+   `05086b6a2dfd90db2c88886ed30f9f1b8a5558c1` and clean execution head
+   `8fcc478fa1b7eebfec47f9bf0c6c852dfc7cf1f5`. The model source ran from a
+   detached, clean worktree.
+2. **Comparator:** a newly fitted matched single model for each case. The
+   candidate is not a serializer: it is the non-loadable byte-size model
+   obtained by factoring only the complete canonical numeric target-free
+   preprocessing section from the newly fitted eight-member combined B1+B2
+   archive. Member-local cases retain current archive bytes.
+3. **Evidence class:** prospectively frozen Tier-E spent size feasibility.
+   The M3b r3 result remains immutable; the dated matched-single readout is
+   post-hoc development context, not a frozen M3b promotion comparator. No
+   fresh, TabArena, or lockbox data were accessed.
+4. **Data:** exactly the 13 M3b cases and frozen data/split/weight/case
+   fingerprints: nine player-disjoint cold-player sports cells within held
+   teams and four medium general regression/binary/multiclass cells with the
+   original stress weights. Eleven cases carry `numeric_target_free`
+   provenance; the two categorical cases are member-local.
+5. **Arms:** one-member reference and eight-member combined B1+B2: 80%
+   without-replacement row/group sampling, `donor_balanced_v1`, group-safe
+   OOB where applicable, requested shared preprocessing, seed 4, 600 maximum
+   rounds, patience 30, sequential fitting. The effective simulation factors
+   exactly seven declared `prep__*`/`bin__*` arrays and the exact three-field
+   NumPy-input preprocessing header; it uses no categorical, encoder, tree,
+   SHAP, wrapper, target, or generalized delta state.
+6. **Resources:** arm64 macOS; frozen Python 3.11.8, NumPy 2.2.6,
+   scikit-learn 1.7.1, Numba 0.61.2, pandas 2.2.3, and SciPy 1.15.1; fixed
+   four-thread paired-evidence environment; one fresh worker per case. This
+   campaign measures deterministic archive bytes, not elapsed time or RSS.
+7. **Execution:** v1 ran source-attested `run_barchive_v1.py` and terminated
+   on its first post-fit header invariant before emitting a row. V2 bound that
+   terminal lineage under a new identity and ran
+   `conda run -n darko311 env PYTHONPATH=. python benchmarks/run_barchive_v2.py --source /private/tmp/darkofit-barchive-source-858ac14`;
+   after committing the raw artifact, `analyze_barchive_v2.py` validated and
+   decided it from a clean tree. Outputs were create-only.
+8. **Artifacts:** v1 protocol SHA-256
+   `85feb7e2e804d666eddea412a0d80e502d099cfbc19ec2559af4e4f7f75c0c22`,
+   runner `a9885c319a69c7dd1cd839d51de71974f1f4620bf0e49d8022eb72bb1962f729`,
+   analyzer `f1cb8da0b30bb695174a843057b0aad31984bad9830aa9e039def4e70b6d62f4`,
+   contract `1cddcbe679521053f8912c21730fc940e581944d35bb895f45694fc2c49676a5`,
+   terminal `11e06490d1c9e90a2bac5c46f01009b3348942e8ad0a83606db08551aa1697d0`,
+   and failure record
+   `457aa71e5d60580c9e1875b44ab61b7676e68dd02ad5da1dba2681a15e29a803`.
+   V2 protocol SHA-256
+   `dee7c4423b5908b16f839cb28f3f097882f1e1a7fa3e1da5723f2ac4101c289f`,
+   runner `e0b1abb6986ae601e86b6b99bba4213cfc2d7e760c0ba06c2b9794bc65e6befb`,
+   analyzer `a1a47c7589ffb0ad4b371d5927b2d1deb10f37ee66f69286ce22fedf5535363f`,
+   contract `1466342e58a0b480a94121023184674d4ec10654ef19bb80a2b03c5f6742e9f0`,
+   raw `3b8eebc0140dc399a995089dee1097627f0c8cc13ff7d8fd37d00e0524355509`,
+   result `8773d152b81bc5236e66f5cdfc1deb60d5059e7d01582a7a6721f3128ce9ff7b`,
+   and original Markdown note
+   `2a3a0e9529ac70ec97ff8624f06fef6fef03f3036e847c00f8292200431e7e6f`.
+   The note's inherited v1 heading is preserved and narrowly corrected by the
+   hash-bound erratum
+   `ed8d7cb62827379d55391e07f3e9cd03278cc0132a862c12784477ec96570234`.
+9. **Primary result:** all 13 current combined/single archive ratios had
+   median `6.032405`. Applying only the allowed complete canonical section to
+   the 11 eligible cases and leaving both member-local cases unchanged gave
+   median effective archive/single `4.152525`. Per-case effective ratios
+   ranged from `2.193001` to `9.748762`; the frozen decision uses only the
+   predeclared median, not that range.
+10. **Gates:** v2 passed source, clean-tree, runtime, case-manifest,
+    fingerprint, thread, safe-load prediction/probability, feature-schema,
+    constructor/fitted-metadata, deterministic-resave, canonical provenance,
+    exact seven-array/eight-member byte-identity, header, no-out-of-scope,
+    non-growth, member-local, completeness, and create-only publication
+    checks. It failed the sole size decision gate: `4.152525 > 4.0`.
+11. **Limitations/non-claims:** the simulation is intentionally non-loadable;
+    data are spent; the general slice has only four medium cases and sports
+    only three seasons; archive ratios depend on newly fitted stopping
+    horizons and matched-single sizes. V1's only observed campaign fact was
+    the header-contract mismatch; it published zero rows and was not rerun.
+    V2 does not validate or authorize a serializer, ensemble default, B3,
+    M2, TabArena, fresh confirmation, or lockbox access.
+12. **Terminal decision:**
+    `close_barchive_nominate_fused_lane_dispatch`. B-archive is closed; do not
+    implement canonical serialization or generalized member deltas. Promote
+    behavior-exact fused-lane dispatch to the next Track I mechanism slot,
+    where it still requires a new prospective contract before implementation.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
@@ -669,6 +754,9 @@ evidence.
 - T5 composite confirmation as originally registered;
 - both Panel 3 candidates;
 - the private B1/B2 ensemble-v3 attribution (no arm cleared every M3b gate);
+- B-archive canonical-preprocessor serialization (effective median
+  `4.152525×` missed the frozen `4.0×` archive limit, so no serializer was
+  authorized);
   and
 - any CTR23 lockbox run without a newly powered candidate.
 
@@ -682,6 +770,7 @@ evidence.
 | Independent environment reconciliation | `2,646 passed, 27 skipped`; same 2,673 collected tests and zero failures |
 | PR #1 | Five GitHub lanes passed, including 1,692 campaign verifiers and package/docs/generated-evidence checks |
 | GitHub-only v0.10 release | Tag and `main` agree at `ec66a64`; wheel, source archive, and checksums were attached to the GitHub release and public URL installation was verified |
+| GitHub-only v0.10.1 release | Annotated `v0.10.1` resolves to `d3aba3d`; the user-visible thread-mask and sklearn-tag fixes are recorded in the release CHANGELOG |
 
 Intermediate suite totals are useful progress markers but are not permanent
 repository invariants. The release claim always binds to the exact source
