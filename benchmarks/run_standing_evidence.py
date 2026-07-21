@@ -125,6 +125,7 @@ def source_state(repository: Path) -> dict[str, Any]:
         "path": str(repository),
         "head": _git(repository, "rev-parse", "HEAD"),
         "tree": _git(repository, "rev-parse", "HEAD^{tree}"),
+        "package_tree": _git(repository, "rev-parse", "HEAD:darkofit"),
         "branch": _git(repository, "branch", "--show-current"),
         "clean": not status,
         "status": status,
@@ -168,9 +169,10 @@ def validate_source_contract(
         return
     if not control["clean"] or not candidate["clean"]:
         raise RuntimeError("full M6 requires clean committed source checkouts")
-    if control["tree"] == candidate["tree"]:
+    if control["package_tree"] == candidate["package_tree"]:
         raise RuntimeError(
-            "full M6 requires a candidate tree distinct from the control; "
+            "full M6 requires a candidate package tree distinct from the "
+            "control; "
             "use --smoke for a null comparison"
         )
 
@@ -447,7 +449,7 @@ def _write_create_only(path: Path, data: bytes) -> None:
             handle.write(data)
             handle.flush()
             os.fsync(handle.fileno())
-    except Exception:
+    except BaseException:
         path.unlink(missing_ok=True)
         raise
 
@@ -678,7 +680,7 @@ def run(args: argparse.Namespace) -> tuple[Path, Path]:
             _write_create_only(output, csv_bytes)
             wrote_output = True
             _write_create_only(manifest_path, manifest_bytes)
-        except Exception:
+        except BaseException:
             if wrote_output:
                 output.unlink(missing_ok=True)
             raise
@@ -689,7 +691,7 @@ def run(args: argparse.Namespace) -> tuple[Path, Path]:
 
 
 def main(argv: Optional[list[str]] = None) -> None:
-    run(parse_args(argv or sys.argv[1:]))
+    run(parse_args(sys.argv[1:] if argv is None else argv))
 
 
 if __name__ == "__main__":

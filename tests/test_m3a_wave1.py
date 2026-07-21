@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import sys
@@ -178,6 +179,18 @@ def test_m3a_all_public_arm_plumbing_smoke(monkeypatch):
     chimera_source = runner.DEFAULT_CHIMERA_SOURCE
     if not darko_source.is_dir() or not chimera_source.is_dir():
         pytest.skip("exact M3a source trees are unavailable")
+    for package, source in (
+        ("darkofit", darko_source),
+        ("chimeraboost", chimera_source),
+    ):
+        module_file = getattr(sys.modules.get(package), "__file__", None)
+        if module_file is not None and not runner._path_is_under(
+            Path(module_file).resolve(), source
+        ):
+            pytest.skip(
+                f"{package} already imported outside the pinned M3a source "
+                "tree; this in-process smoke needs a fresh interpreter"
+            )
 
     original = runner._build_estimator
 
@@ -229,3 +242,61 @@ def test_m3a_frozen_contract_loads_when_present():
     raw = json.loads(path.read_text(encoding="utf-8"))
     assert contract == raw
     assert contract["outcomes_opened"] is False
+
+
+def test_published_m3a_archive_has_exact_unique_grids_and_no_repeat_branch():
+    contract_path = ROOT / "benchmarks" / "m3a_wave1_contract.json"
+    artifact_path = ROOT / "benchmarks" / "m3a_wave1.json"
+    contract = json.loads(contract_path.read_text())
+    artifact = json.loads(artifact_path.read_text())
+
+    assert hashlib.sha256(contract_path.read_bytes()).hexdigest() == (
+        artifact["contract"]["sha256"]
+    )
+    for name in ("runner", "analyzer", "freezer"):
+        record = contract["bound_files"][name]
+        assert hashlib.sha256((ROOT / record["path"]).read_bytes()).hexdigest() == (
+            record["sha256"]
+        )
+
+    expected_sports = {
+        (season, target)
+        for season in contract["sports_panel"]["seasons"]
+        for target in contract["sports_panel"]["targets"]
+    }
+    expected_general = {
+        (dataset, contract["general"]["size"], seed)
+        for dataset in contract["general"]["datasets"]
+        for seed in contract["general"]["seeds"]
+    }
+    for key, phase_name in (
+        ("primary_quality", "primary-quality"),
+        ("diagnostics", "diagnostics"),
+    ):
+        phase = artifact["raw_phases"][key]
+        expected_arms = tuple(
+            arm
+            for order in contract["execution"]["orders"][phase_name]
+            for arm in order
+        )
+        assert tuple(row["arm"] for row in phase["results"]) == expected_arms
+        for row in phase["results"]:
+            sports = [
+                (int(cell["season"]), str(cell["target"]))
+                for cell in row["sports_cells"]
+            ]
+            assert len(sports) == len(set(sports))
+            assert set(sports) == expected_sports
+            general = [
+                (cell["dataset"], cell["size"], int(cell["seed"]))
+                for cell in row["general_cells"]
+            ]
+            assert len(general) == len(set(general))
+            if row["arm"] in contract["general"]["arms"]:
+                assert set(general) == expected_general
+            else:
+                assert general == []
+
+    assert artifact["analysis"]["primary_decision"]["survives"] is False
+    assert artifact["raw_phases"]["primary_repeats"] is None
+    assert artifact["analysis"]["primary_timing"]["repeat_series_run"] is False

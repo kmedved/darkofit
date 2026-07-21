@@ -138,8 +138,10 @@ def test_tabarena_regression_warmup_matches_frozen_protocol_and_is_deterministic
 
 
 def test_tabarena_regression_warmup_preserves_one_thread_public_route():
+    threads_before = numba.get_num_threads()
     metadata = warmup_tabarena_regression(thread_count=1)
 
+    assert numba.get_num_threads() == threads_before
     assert metadata["config"]["thread_count"] == 1
     for stage in metadata["stages"]:
         assert stage["resolved_thread_count"] == 1

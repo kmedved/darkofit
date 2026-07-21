@@ -445,6 +445,8 @@ def validate_contract():
     anchor_ids = [anchor.id for anchor in M6_RELEASE_ANCHORS]
     if len(anchor_ids) != len(set(anchor_ids)):
         raise RuntimeError("M6 release anchor ids must be unique")
+    if set(anchor_ids) != set(M6_REQUIRED_RELEASE_ANCHORS):
+        raise RuntimeError("M6 release anchors must exactly match the required set")
     for anchor in M6_RELEASE_ANCHORS:
         if not anchor.version or not anchor.source_pin:
             raise RuntimeError(
@@ -552,6 +554,13 @@ def validate_contract():
         if M6_BACKTEST_COMPLETE:
             raise RuntimeError(
                 "M6 backtest cannot be both complete and terminal-failed"
+            )
+        if (
+            not M6_BACKTEST_FAILURE_EVIDENCE_PATH
+            or not M6_BACKTEST_FAILURE_EVIDENCE_SHA256
+        ):
+            raise RuntimeError(
+                "terminal M6 backtest requires hash-bound failure evidence"
             )
         _validate_evidence_binding(
             M6_BACKTEST_FAILURE_EVIDENCE_PATH,

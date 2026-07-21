@@ -160,6 +160,18 @@ def _prediction_route(*, flat_router_selected: bool, n_rows: int) -> str:
     return "flat_serial"
 
 
+def _flat_router_selected(flat: Any, n_rows: int, fitted_threads: int, tree_mode: str):
+    """Evaluate production dispatch under the fitted model's thread mask."""
+    if flat is None:
+        return False
+    previous_threads = numba.get_num_threads()
+    try:
+        numba.set_num_threads(int(fitted_threads))
+        return bool(flat_predict_preferred(flat, n_rows, tree_mode))
+    finally:
+        numba.set_num_threads(previous_threads)
+
+
 def _run_stage(
     name: str,
     X_train: np.ndarray,
@@ -190,8 +202,11 @@ def _run_stage(
     selected_routes = []
     for case_name, n_rows in _PREDICTION_CASES:
         prediction_input = _prediction_batch(X_validation, n_rows)
-        router_selected = flat is not None and flat_predict_preferred(
-            flat, n_rows, fitted.tree_mode_
+        router_selected = _flat_router_selected(
+            flat,
+            n_rows,
+            fitted.n_threads_,
+            fitted.tree_mode_,
         )
         predict_started_ns = time.monotonic_ns()
         prediction = model.predict(prediction_input)

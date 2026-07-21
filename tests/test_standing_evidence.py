@@ -14,10 +14,12 @@ if str(BENCH_DIR) not in sys.path:
 
 from benchmark_adapters import RevisionSpec, standing_slice_specs  # noqa: E402
 from bench_compare_revisions import (  # noqa: E402
+    _assert_revision_import,
     _ordered_variants,
     _standing_order_index,
 )
 from run_standing_evidence import (  # noqa: E402
+    _write_create_only,
     inspection_record,
     summarize_pairs,
     validate_rows,
@@ -30,10 +32,7 @@ from standing_evidence import (  # noqa: E402
     M5_SENTINEL_CASES,
     M6_BACKTEST_VERDICTS,
     M6_DATASETS,
-    M6_REQUIRED_FREEZE_SIZES,
-    M6_REQUIRED_RELEASE_ANCHORS,
     M6_SMOKE_DATASETS,
-    ReleaseAnchor,
     contract_payload,
     m5_expected_grid,
     m5_freeze_blockers,
@@ -135,6 +134,21 @@ def test_standing_slice_specs_are_named_public_default_arms():
     assert [spec.path for spec in specs] == ["/control", "/candidate"]
     assert all(spec.use_defaults for spec in specs)
     assert all(spec.tree_mode is None for spec in specs)
+
+
+def test_standing_slice_import_binding_rejects_shadowed_module(tmp_path):
+    source = tmp_path / "source"
+    module_path = source / "darkofit" / "__init__.py"
+    module_path.parent.mkdir(parents=True)
+    module_path.touch()
+
+    assert _assert_revision_import(
+        SimpleNamespace(__file__=str(module_path)), source
+    ) == str(module_path)
+    with pytest.raises(RuntimeError, match="not"):
+        _assert_revision_import(
+            SimpleNamespace(__file__=str(tmp_path / "shadow.py")), source
+        )
 
 
 def test_standing_order_rotates_only_for_m6_cells():
@@ -247,6 +261,20 @@ def test_m6_draft_cannot_freeze_without_hash_bound_release_anchor_evidence(
     validate_contract()
 
 
+def test_terminal_m6_backtest_requires_hash_bound_failure_evidence(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        evidence_contract, "M6_BACKTEST_FAILURE_EVIDENCE_PATH", ""
+    )
+    monkeypatch.setattr(
+        evidence_contract, "M6_BACKTEST_FAILURE_EVIDENCE_SHA256", ""
+    )
+
+    with pytest.raises(RuntimeError, match="hash-bound failure evidence"):
+        validate_contract()
+
+
 def test_m5_contract_has_one_frozen_case_per_required_domain():
     domains = {domain.id for domain in M5_SENTINEL_DOMAINS}
     cases = {case.domain_id for case in M5_SENTINEL_CASES}
@@ -339,6 +367,21 @@ def test_m6_null_smoke_is_not_counted_or_spent():
         )
 
 
+def test_m6_create_only_write_cleans_up_on_base_exception(
+    monkeypatch, tmp_path
+):
+    output = tmp_path / "partial.csv"
+
+    def interrupt_fsync(_descriptor):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr("run_standing_evidence.os.fsync", interrupt_fsync)
+    with pytest.raises(KeyboardInterrupt):
+        _write_create_only(output, b"partial")
+
+    assert not output.exists()
+
+
 def test_m6_grid_is_complete_and_unique():
     full = m6_expected_grid()
     smoke = m6_expected_grid(smoke=True)
@@ -354,6 +397,7 @@ def test_source_contract_requires_a_same_clean_checkout_for_null_smoke():
         "path": "/harness",
         "head": "h",
         "tree": "tree-h",
+        "package_tree": "package-h",
         "branch": "main",
         "clean": True,
         "status": [],
@@ -362,6 +406,7 @@ def test_source_contract_requires_a_same_clean_checkout_for_null_smoke():
         "path": "/repo",
         "head": "a",
         "tree": "b",
+        "package_tree": "package-a",
         "branch": "main",
         "clean": True,
         "status": [],
@@ -397,6 +442,7 @@ def test_source_contract_requires_clean_distinct_trees_for_full_m6():
         "path": "/harness",
         "head": "h",
         "tree": "tree-h",
+        "package_tree": "package-h",
         "branch": "main",
         "clean": True,
         "status": [],
@@ -405,6 +451,7 @@ def test_source_contract_requires_clean_distinct_trees_for_full_m6():
         "path": "/control",
         "head": "a",
         "tree": "tree-a",
+        "package_tree": "package-a",
         "branch": "main",
         "clean": True,
         "status": [],
@@ -414,6 +461,7 @@ def test_source_contract_requires_clean_distinct_trees_for_full_m6():
         "path": "/candidate",
         "head": "b",
         "tree": "tree-b",
+        "package_tree": "package-b",
     }
 
     validate_source_contract(harness, control, candidate, smoke=False)
@@ -429,7 +477,19 @@ def test_source_contract_requires_clean_distinct_trees_for_full_m6():
         validate_source_contract(
             harness,
             control,
-            {**candidate, "tree": control["tree"]},
+            {**candidate, "package_tree": control["package_tree"]},
+            smoke=False,
+        )
+
+    with pytest.raises(RuntimeError, match="distinct"):
+        validate_source_contract(
+            harness,
+            control,
+            {
+                **candidate,
+                "tree": "docs-only-change",
+                "package_tree": control["package_tree"],
+            },
             smoke=False,
         )
 

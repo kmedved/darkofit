@@ -85,3 +85,54 @@ def test_predict_during_fit_restores_outer_fitted_thread_mask(
     assert observed_thread_counts
     assert observed_thread_counts == [(2, 2)] * len(observed_thread_counts)
     assert numba.get_num_threads() == ambient_numba_thread_count
+
+
+def test_fit_restores_callers_numba_thread_mask_after_callback_error(
+    ambient_numba_thread_count,
+):
+    X, y = _small_regression_data()
+
+    def fail_during_fit(_progress):
+        assert numba.get_num_threads() == 2
+        raise RuntimeError("simulated callback failure")
+
+    with pytest.raises(RuntimeError, match="simulated callback failure"):
+        _small_lightgbm_regressor(iterations=2).fit(
+            X,
+            y,
+            callbacks=fail_during_fit,
+        )
+
+    assert numba.get_num_threads() == ambient_numba_thread_count
+
+
+def test_predict_restores_callers_numba_thread_mask_after_error(
+    ambient_numba_thread_count, monkeypatch
+):
+    X, y = _small_regression_data()
+    model = _small_lightgbm_regressor().fit(X, y).model_
+
+    def fail_during_predict(*_args, **_kwargs):
+        assert numba.get_num_threads() == 2
+        raise RuntimeError("simulated prediction failure")
+
+    monkeypatch.setattr(model, "_prepare_predict_X", fail_during_predict)
+    with pytest.raises(RuntimeError, match="simulated prediction failure"):
+        model.predict_raw(X[:8])
+
+    assert numba.get_num_threads() == ambient_numba_thread_count
+
+
+def test_staged_predict_restores_callers_numba_thread_mask_between_steps(
+    ambient_numba_thread_count,
+):
+    X, y = _small_regression_data()
+    model = _small_lightgbm_regressor().fit(X, y).model_
+    predictions = model.staged_predict_raw(X[:8])
+
+    first = next(predictions)
+    assert first.shape == (8,)
+    assert numba.get_num_threads() == ambient_numba_thread_count
+
+    predictions.close()
+    assert numba.get_num_threads() == ambient_numba_thread_count

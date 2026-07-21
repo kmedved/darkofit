@@ -174,13 +174,26 @@ def _peak_rss_bytes():
 def _prepare_revision_import(revision_path):
     repo_root = Path(__file__).resolve().parents[1]
     resolved = str(Path(revision_path).resolve())
-    sys.modules.pop("darkofit", None)
-    sys.modules.pop("darkofit.sklearn_api", None)
+    for name in list(sys.modules):
+        if name == "darkofit" or name.startswith("darkofit."):
+            del sys.modules[name]
     sys.path = [
         p for p in sys.path
         if p and str(Path(p).resolve()) not in {str(repo_root), resolved}
     ]
     sys.path.insert(0, resolved)
+
+
+def _assert_revision_import(module, revision_path):
+    module_path = Path(module.__file__).resolve()
+    source = Path(revision_path).resolve()
+    try:
+        module_path.relative_to(source)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"darkofit imported from {module_path}, not {source}"
+        ) from exc
+    return str(module_path)
 
 
 def _best_iteration(model):
@@ -232,7 +245,10 @@ def _fit_worker(payload):
     data = _load_case(payload["data_path"])
     _prepare_revision_import(variant.path)
 
+    import darkofit
     from darkofit import DarkoClassifier, DarkoRegressor
+
+    _assert_revision_import(darkofit, variant.path)
 
     task = payload["task"]
     estimator_cls = DarkoRegressor if task == "regression" else DarkoClassifier
@@ -469,7 +485,7 @@ def parse_args(argv):
 
 
 def main(argv=None):
-    args = parse_args(argv or sys.argv[1:])
+    args = parse_args(sys.argv[1:] if argv is None else argv)
     if args.policy_suite == "default-regret":
         if not args.candidate:
             raise SystemExit("--policy-suite default-regret requires --candidate")

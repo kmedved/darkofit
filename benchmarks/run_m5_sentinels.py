@@ -16,7 +16,7 @@ import sys
 import tempfile
 import time
 import traceback
-from collections import Counter, defaultdict
+from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
@@ -104,6 +104,13 @@ def _git(repository: Path, *arguments: str) -> str:
 
 def source_state(repository: Path) -> dict[str, Any]:
     repository = repository.expanduser().resolve()
+    if not (repository / "darkofit").is_dir():
+        raise RuntimeError(f"not a DarkoFit source checkout: {repository}")
+    top_level = Path(_git(repository, "rev-parse", "--show-toplevel")).resolve()
+    if top_level != repository:
+        raise RuntimeError(
+            f"source must name its Git root: {repository} (root is {top_level})"
+        )
     status = _git(
         repository,
         "status",
@@ -350,6 +357,18 @@ def _prepare_source(source: Path) -> None:
     sys.path.insert(0, str(source))
 
 
+def _assert_darkofit_source(module: Any, source: Path) -> str:
+    module_path = Path(module.__file__).resolve()
+    source = source.resolve()
+    try:
+        module_path.relative_to(source)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"darkofit imported from {module_path}, not {source}"
+        ) from exc
+    return str(module_path)
+
+
 def _model_params(profile: str, seed: int, *, warmup: bool) -> dict[str, Any]:
     iterations = {
         "standard": 300,
@@ -475,8 +494,12 @@ def run_worker(payload: dict[str, Any]) -> dict[str, Any]:
     seed = int(payload["seed"])
     case = _case(domain_id)
     data = build_case(domain_id, seed)
-    _prepare_source(Path(payload["source"]))
+    source = Path(payload["source"])
+    _prepare_source(source)
+    import darkofit
     from darkofit import DarkoClassifier, DarkoRegressor
+
+    implementation_path = _assert_darkofit_source(darkofit, source)
 
     estimator = (
         DarkoRegressor
@@ -586,6 +609,7 @@ def run_worker(payload: dict[str, Any]) -> dict[str, Any]:
         "status": "ok",
         "arm": payload["arm"],
         "source": str(Path(payload["source"]).resolve()),
+        "implementation_path": implementation_path,
         "domain_id": domain_id,
         "dataset_key": case.dataset_key,
         "task": data["task"],
@@ -688,6 +712,121 @@ def _ratio_summary(values: list[float]) -> dict[str, float]:
     }
 
 
+def _valid_sha256(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and not (set(value) - set("0123456789abcdef"))
+    )
+
+
+def _validate_row(row: dict[str, Any]) -> None:
+    identity = _identity(row)
+    case = _case(row["domain_id"])
+    domain = _domain(row["domain_id"])
+    if (
+        row.get("status") != "ok"
+        or row.get("dataset_key") != case.dataset_key
+        or row.get("task") != domain.task
+        or row.get("weighted") is not domain.weighted
+        or row.get("roundtrip_exact") is not True
+    ):
+        raise RuntimeError(f"M5 row invariant failed: {identity}")
+    for field in ("n_train", "n_test", "n_features", "serialized_model_bytes"):
+        value = row.get(field)
+        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+            raise RuntimeError(f"M5 {field} is invalid: {identity}")
+    for field in (
+        "fit_seconds",
+        "predict_seconds",
+        "worker_peak_rss_bytes",
+        "trivial_primary_loss",
+    ):
+        value = row.get(field)
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(value)
+            or value <= 0
+        ):
+            raise RuntimeError(f"M5 {field} is invalid: {identity}")
+    normalized_loss = row.get("normalized_loss")
+    if (
+        isinstance(normalized_loss, bool)
+        or not isinstance(normalized_loss, (int, float))
+        or not math.isfinite(normalized_loss)
+        or normalized_loss < 0.0
+        or normalized_loss > case.expected_normalized_loss_max
+    ):
+        raise RuntimeError(f"M5 normalized loss is invalid: {identity}")
+    for field in (
+        "dataset_sha256",
+        "split_sha256",
+        "prediction_sha256",
+        "behavior_fingerprint_sha256",
+    ):
+        if not _valid_sha256(row.get(field)):
+            raise RuntimeError(f"M5 {field} is invalid: {identity}")
+    probability_sha256 = row.get("probability_sha256")
+    if domain.task == "regression":
+        if probability_sha256 is not None:
+            raise RuntimeError(f"M5 regression has probabilities: {identity}")
+    elif not _valid_sha256(probability_sha256):
+        raise RuntimeError(f"M5 probability hash is invalid: {identity}")
+    metrics = row.get("metrics")
+    expected_primary = (
+        "weighted_rmse"
+        if domain.task == "regression" and domain.weighted
+        else (
+            "rmse"
+            if domain.task == "regression"
+            else (
+                "weighted_log_loss" if domain.weighted else "log_loss"
+            )
+        )
+    )
+    if not isinstance(metrics, dict):
+        raise RuntimeError(f"M5 metrics are missing: {identity}")
+    numeric_metrics = [
+        value for key, value in metrics.items() if key != "primary_metric"
+    ]
+    if (
+        not numeric_metrics
+        or not all(
+            not isinstance(value, bool)
+            and isinstance(value, (int, float))
+            and math.isfinite(value)
+            for value in numeric_metrics
+        )
+        or metrics.get("primary_metric") != expected_primary
+        or float(metrics.get("primary_value", math.nan))
+        != float(metrics.get(expected_primary, math.nan))
+    ):
+        raise RuntimeError(f"M5 primary metrics are invalid: {identity}")
+    metadata = row.get("model_metadata")
+    expected_members = 3 if case.model_profile == "group_ensemble" else 1
+    if (
+        not isinstance(metadata, dict)
+        or isinstance(metadata.get("member_count"), bool)
+        or metadata.get("member_count") != expected_members
+        or metadata.get("resolved_thread_counts") != [M5_THREADS]
+        or isinstance(metadata.get("tree_count"), bool)
+        or not isinstance(metadata.get("tree_count"), int)
+        or metadata["tree_count"] <= 0
+    ):
+        raise RuntimeError(f"M5 model metadata is invalid: {identity}")
+    excess_brier = row.get("excess_brier")
+    if case.known_floor:
+        if (
+            isinstance(excess_brier, bool)
+            or not isinstance(excess_brier, (int, float))
+            or not math.isfinite(excess_brier)
+        ):
+            raise RuntimeError(f"M5 known-floor value is invalid: {identity}")
+    elif excess_brier is not None:
+        raise RuntimeError(f"M5 unexpected known-floor value: {identity}")
+
+
 def analyze_rows(
     rows: list[dict[str, Any]],
     *,
@@ -700,6 +839,8 @@ def analyze_rows(
         raise RuntimeError("M5 row grid is incomplete or duplicated")
     if any(row.get("status") != "ok" for row in rows):
         raise RuntimeError("M5 contains a failed row")
+    for row in rows:
+        _validate_row(row)
     by_cell: dict[tuple[str, int], dict[str, dict[str, Any]]] = defaultdict(dict)
     for row in rows:
         by_cell[(row["domain_id"], int(row["seed"]))][row["arm"]] = row
@@ -809,10 +950,14 @@ def analyze_rows(
 def _write_create_only(path: Path, payload: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
-    with os.fdopen(descriptor, "wb") as handle:
-        handle.write(payload)
-        handle.flush()
-        os.fsync(handle.fileno())
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+    except BaseException:
+        path.unlink(missing_ok=True)
+        raise
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:

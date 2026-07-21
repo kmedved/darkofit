@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import csv
 import hashlib
 import importlib.metadata
 import json
@@ -96,8 +98,17 @@ def _git(repository: Path, *arguments: str) -> str:
     return result.stdout.strip()
 
 
-def source_state(repository: Path) -> dict[str, Any]:
+def source_state(repository: Path, *, package: str) -> dict[str, Any]:
     repository = repository.expanduser().resolve()
+    if not (repository / package).is_dir():
+        raise RuntimeError(
+            f"not a {package} source checkout: {repository}"
+        )
+    top_level = Path(_git(repository, "rev-parse", "--show-toplevel")).resolve()
+    if top_level != repository:
+        raise RuntimeError(
+            f"source must name its Git root: {repository} (root is {top_level})"
+        )
     status = _git(
         repository,
         "status",
@@ -123,13 +134,74 @@ def _catboost_record() -> Path:
     )
 
 
-def installed_catboost_state() -> dict[str, str]:
+def installed_catboost_state() -> dict[str, Any]:
+    distribution = importlib.metadata.distribution("catboost")
     record = _catboost_record()
+    verified_files = 0
+    with record.open(newline="", encoding="utf-8") as handle:
+        for relative_path, encoded_hash, encoded_size in csv.reader(handle):
+            if not encoded_hash:
+                continue
+            algorithm, expected_hash = encoded_hash.split("=", 1)
+            if algorithm != "sha256":
+                raise RuntimeError(
+                    f"unsupported CatBoost RECORD hash: {algorithm}"
+                )
+            installed_path = Path(
+                distribution.locate_file(relative_path)
+            ).resolve()
+            if not installed_path.is_file():
+                raise RuntimeError(
+                    f"CatBoost RECORD file is missing: {relative_path}"
+                )
+            payload = installed_path.read_bytes()
+            actual_hash = base64.urlsafe_b64encode(
+                hashlib.sha256(payload).digest()
+            ).rstrip(b"=").decode("ascii")
+            if actual_hash != expected_hash or (
+                encoded_size and len(payload) != int(encoded_size)
+            ):
+                raise RuntimeError(
+                    f"CatBoost installed file differs from RECORD: {relative_path}"
+                )
+            verified_files += 1
+    if verified_files == 0:
+        raise RuntimeError("CatBoost RECORD contains no verifiable files")
     return {
         "version": importlib.metadata.version("catboost"),
         "record_path": str(record),
         "record_sha256": file_sha256(record),
+        "verified_record_files": verified_files,
     }
+
+
+def _assert_module_under(module: Any, source: Path, package: str) -> str:
+    module_path = Path(module.__file__).resolve()
+    source = source.resolve()
+    try:
+        under_source = os.path.commonpath(
+            (str(module_path), str(source))
+        ) == str(source)
+    except ValueError:
+        under_source = False
+    if not under_source:
+        raise RuntimeError(
+            f"{package} imported from {module_path}, not {source}"
+        )
+    return str(module_path)
+
+
+def _assert_installed_catboost_module(module: Any) -> str:
+    distribution = importlib.metadata.distribution("catboost")
+    expected = Path(
+        distribution.locate_file("catboost/__init__.py")
+    ).resolve()
+    actual = Path(module.__file__).resolve()
+    if actual != expected:
+        raise RuntimeError(
+            f"catboost imported from {actual}, not pinned wheel file {expected}"
+        )
+    return str(actual)
 
 
 def expected_anchor_map() -> dict[str, dict[str, str]]:
@@ -145,7 +217,7 @@ def expected_anchor_map() -> dict[str, dict[str, str]]:
 def validate_sources(
     harness: dict[str, Any],
     chimera: dict[str, Any],
-    catboost: dict[str, str],
+    catboost: dict[str, Any],
 ) -> None:
     if not harness["clean"]:
         raise RuntimeError("M6 release anchors require a clean harness source")
@@ -376,8 +448,22 @@ def run_worker(payload: dict[str, Any]) -> dict[str, Any]:
     anchor_id = payload["anchor_id"]
     if anchor_id == "chimeraboost":
         source = str(Path(payload["chimeraboost_source"]).resolve())
+        for name in list(sys.modules):
+            if name == "chimeraboost" or name.startswith("chimeraboost."):
+                del sys.modules[name]
         sys.path = [entry for entry in sys.path if entry != source]
         sys.path.insert(0, source)
+        import chimeraboost
+
+        implementation_path = _assert_module_under(
+            chimeraboost, Path(source), "chimeraboost"
+        )
+    elif anchor_id == "catboost":
+        import catboost
+
+        implementation_path = _assert_installed_catboost_module(catboost)
+    else:  # pragma: no cover - parent grid validation owns membership
+        raise ValueError(f"unknown release anchor: {anchor_id}")
     spec, X, y, cat_features = build_dataset(
         payload["dataset"], payload["size"], int(payload["seed"])
     )
@@ -425,6 +511,7 @@ def run_worker(payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "status": "ok",
         "anchor_id": anchor_id,
+        "implementation_path": implementation_path,
         "dataset": payload["dataset"],
         "task": spec.task,
         "size": payload["size"],
@@ -468,6 +555,7 @@ def _worker_main(payload_path: Path) -> None:
 
 def _worker_environment(cache_dir: Path) -> dict[str, str]:
     environment = os.environ.copy()
+    environment.pop("PYTHONPATH", None)
     for key in THREAD_ENV_KEYS:
         environment[key] = str(M6_THREADS)
     environment.update(
@@ -543,28 +631,121 @@ def validate_rows(rows: list[dict[str, Any]], *, smoke: bool) -> None:
             f"release-anchor grid mismatch: missing={sorted(expected-set(observed))}, "
             f"unexpected={sorted(set(observed)-expected)}"
         )
+    paired: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
     for row in rows:
         if row.get("status") != "ok":
             raise RuntimeError(f"release-anchor row failed: {_coordinate(row)}")
+        identity = _coordinate(row)
+        expected_task = DATASETS[row["dataset"]].task
+        if row.get("task") != expected_task:
+            raise RuntimeError(f"release-anchor task drifted: {identity}")
         for field in (
             "fit_seconds",
             "predict_seconds",
             "worker_peak_rss_bytes",
         ):
-            value = float(row[field])
+            raw_value = row[field]
+            if isinstance(raw_value, bool) or not isinstance(
+                raw_value, (int, float)
+            ):
+                raise RuntimeError(
+                    f"release-anchor {field} is invalid: {identity}"
+                )
+            value = float(raw_value)
             if not math.isfinite(value) or value <= 0.0:
                 raise RuntimeError(
-                    f"release-anchor {field} is invalid: {_coordinate(row)}"
+                    f"release-anchor {field} is invalid: {identity}"
+                )
+        for field in ("n_train", "n_test", "n_features"):
+            value = row.get(field)
+            if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+                raise RuntimeError(
+                    f"release-anchor {field} is invalid: {identity}"
+                )
+        for field in ("dataset_sha256", "prediction_sha256"):
+            value = row.get(field)
+            if (
+                not isinstance(value, str)
+                or len(value) != 64
+                or set(value) - set("0123456789abcdef")
+            ):
+                raise RuntimeError(
+                    f"release-anchor {field} is invalid: {identity}"
+                )
+        probability_sha256 = row.get("probability_sha256")
+        if expected_task == "regression":
+            if probability_sha256 is not None:
+                raise RuntimeError(
+                    f"release-anchor regression has probabilities: {identity}"
+                )
+        elif (
+            not isinstance(probability_sha256, str)
+            or len(probability_sha256) != 64
+            or set(probability_sha256) - set("0123456789abcdef")
+        ):
+            raise RuntimeError(
+                f"release-anchor probability hash is invalid: {identity}"
+            )
+        metrics = row.get("metrics")
+        if not isinstance(metrics, dict):
+            raise RuntimeError(f"release-anchor metrics are missing: {identity}")
+        numeric_metrics = [
+            value for key, value in metrics.items() if key != "primary_metric"
+        ]
+        if any(
+            isinstance(value, bool) or not isinstance(value, (int, float))
+            for value in numeric_metrics
+        ):
+            raise RuntimeError(f"release-anchor metrics are invalid: {identity}")
+        values = _numeric_metric_values(metrics)
+        if values.size == 0 or not np.isfinite(values).all():
+            raise RuntimeError(f"release-anchor metrics are invalid: {identity}")
+        expected_primary = (
+            "weighted_rmse"
+            if expected_task == "regression" and row["weight_mode"] == "stress"
+            else (
+                "rmse"
+                if expected_task == "regression"
+                else (
+                    "weighted_log_loss"
+                    if row["weight_mode"] == "stress"
+                    else "log_loss"
+                )
+            )
+        )
+        if (
+            metrics.get("primary_metric") != expected_primary
+            or float(metrics.get("primary_value", math.nan))
+            != float(metrics.get(expected_primary, math.nan))
+        ):
+            raise RuntimeError(
+                f"release-anchor primary metric drifted: {identity}"
+            )
+        paired.setdefault(identity[1:], []).append(row)
+    for identity, pair in paired.items():
+        if len(pair) != 2 or {row["anchor_id"] for row in pair} != {
+            "chimeraboost",
+            "catboost",
+        }:
+            raise RuntimeError(f"release-anchor pair is incomplete: {identity}")
+        for field in ("dataset_sha256", "task", "n_train", "n_test", "n_features"):
+            if len({row[field] for row in pair}) != 1:
+                raise RuntimeError(
+                    f"release-anchor pair differs on {field}: {identity}"
                 )
 
 
 def _write_create_only(path: Path, payload: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
-    with os.fdopen(descriptor, "wb") as handle:
-        handle.write(payload)
-        handle.flush()
-        os.fsync(handle.fileno())
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+    except BaseException:
+        path.unlink(missing_ok=True)
+        raise
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -580,8 +761,8 @@ def run(args: argparse.Namespace) -> Path:
     if output.exists() or output.is_symlink():
         raise FileExistsError(f"refusing to overwrite {output}")
     chimera_root = args.chimeraboost_source.expanduser().resolve()
-    harness_before = source_state(REPO_ROOT)
-    chimera_before = source_state(chimera_root)
+    harness_before = source_state(REPO_ROOT, package="darkofit")
+    chimera_before = source_state(chimera_root, package="chimeraboost")
     catboost = installed_catboost_state()
     validate_sources(harness_before, chimera_before, catboost)
 
@@ -618,9 +799,14 @@ def run(args: argparse.Namespace) -> Path:
                     flush=True,
                 )
     validate_rows(rows, smoke=args.smoke)
-    harness_after = source_state(REPO_ROOT)
-    chimera_after = source_state(chimera_root)
-    if harness_after != harness_before or chimera_after != chimera_before:
+    harness_after = source_state(REPO_ROOT, package="darkofit")
+    chimera_after = source_state(chimera_root, package="chimeraboost")
+    catboost_after = installed_catboost_state()
+    if (
+        harness_after != harness_before
+        or chimera_after != chimera_before
+        or catboost_after != catboost
+    ):
         raise RuntimeError("release-anchor source changed during execution")
     contract = contract_payload()
     artifact = {
