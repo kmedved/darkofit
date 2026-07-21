@@ -1,0 +1,187 @@
+{
+  "analysis": "canonical_preprocessor_archive_size_feasibility",
+  "analyzed_at": "2026-07-21T13:47:20.048959+00:00",
+  "canonical_serializer_prototype_authorized": false,
+  "case_count": 13,
+  "case_readout": [
+    {
+      "case_id": "sports_2014_minutes_per_game",
+      "current_archive_to_single": 8.00051983365323,
+      "current_ensemble_archive_bytes": 400154,
+      "domain": "sports",
+      "effective_candidate_archive_bytes": 236918,
+      "effective_candidate_archive_to_single": 4.736844209852847,
+      "shared_preprocessing": "numeric_target_free",
+      "single_archive_bytes": 50016,
+      "task": "regression"
+    },
+    {
+      "case_id": "sports_2014_game_score",
+      "current_archive_to_single": 8.985736037943889,
+      "current_ensemble_archive_bytes": 513418,
+      "domain": "sports",
+      "effective_candidate_archive_bytes": 350129,
+      "effective_candidate_archive_to_single": 6.127885608274848,
+      "shared_preprocessing": "numeric_target_free",
+      "single_archive_bytes": 57137,
+      "task": "regression"
+    },
+    {
+      "case_id": "sports_2014_box_plus_minus",
+      "current_archive_to_single": 8.136546591398123,
+      "current_ensemble_archive_bytes": 642836,
+      "domain": "sports",
+      "effective_candidate_archive_bytes": 479591,
+      "effective_candidate_archive_to_single": 6.070311115611473,
+      "shared_preprocessing": "numeric_target_free",
+      "single_archive_bytes": 79006,
+      "task": "regression"
+    },
+    {
+      "case_id": "sports_2015_minutes_per_game",
+      "current_archive_to_single": 4.37258135838323,
+      "current_ensemble_archive_bytes": 365867,
+      "domain": "sports",
+      "effective_candidate_archive_bytes": 183495,
+      "effective_candidate_archive_to_single": 2.1930013265928077,
+      "shared_preprocessing": "numeric_target_free",
+      "single_archive_bytes": 83673,
+      "task": "regression"
+    },
+    {
+      "case_id": "sports_2015_game_score",
+      "current_archive_to_single": 5.32989113346958,
+      "current_ensemble_archive_bytes": 542455,
+      "domain": "sports",
+      "effective_candidate_archive_bytes": 360164,
+      "effective_candidate_archive_to_single": 3.538791070586386,
+      "shared_preprocessing": "numeric_target_free",
+      "single_archive_bytes": 101776,
+      "task": "regression"
+    },
+    {
+      "case_id": "sports_2015_box_plus_minus",
+      "current_archive_to_single": 3.729318510535719,
+      "current_ensemble_archive_bytes": 525998,
+      "domain": "sports",
+      "effective_candidate_archive_bytes": 343839,
+      "effective_candidate_archive_to_single": 2.4378137318850857,
+      "shared_preprocessing": "numeric_target_free",
+      "single_archive_bytes": 141044,
+      "task": "regression"
+    },
+    {
+      "case_id": "sports_2016_minutes_per_game",
+      "current_archive_to_single": 4.840385013991087,
+      "current_ensemble_archive_bytes": 373639,
+      "domain": "sports",
+      "effective_candidate_archive_bytes": 201515,
+      "effective_candidate_archive_to_single": 2.6105684526893977,
+      "shared_preprocessing": "numeric_target_free",
+      "single_archive_bytes": 77192,
+      "task": "regression"
+    },
+    {
+      "case_id": "sports_2016_game_score",
+      "current_archive_to_single": 4.726423051272998,
+      "current_ensemble_archive_bytes": 481925,
+      "domain": "sports",
+      "effective_candidate_archive_bytes": 309833,
+      "effective_candidate_archive_to_single": 3.038650896394806,
+      "shared_preprocessing": "numeric_target_free",
+      "single_archive_bytes": 101964,
+      "task": "regression"
+    },
+    {
+      "case_id": "sports_2016_box_plus_minus",
+      "current_archive_to_single": 3.6956995254697564,
+      "current_ensemble_archive_bytes": 522583,
+      "domain": "sports",
+      "effective_candidate_archive_bytes": 350414,
+      "effective_candidate_archive_to_single": 2.4781228121044108,
+      "shared_preprocessing": "numeric_target_free",
+      "single_archive_bytes": 141403,
+      "task": "regression"
+    },
+    {
+      "case_id": "general_friedman_numeric",
+      "current_archive_to_single": 9.855432801071844,
+      "current_ensemble_archive_bytes": 897416,
+      "domain": "general",
+      "effective_candidate_archive_bytes": 625943,
+      "effective_candidate_archive_to_single": 6.874113202574184,
+      "shared_preprocessing": "numeric_target_free",
+      "single_archive_bytes": 91058,
+      "task": "regression"
+    },
+    {
+      "case_id": "general_categorical_reg",
+      "current_archive_to_single": 9.748761836331443,
+      "current_ensemble_archive_bytes": 759799,
+      "domain": "general",
+      "effective_candidate_archive_bytes": 759799,
+      "effective_candidate_archive_to_single": 9.748761836331443,
+      "shared_preprocessing": "member_local",
+      "single_archive_bytes": 77938,
+      "task": "regression"
+    },
+    {
+      "case_id": "general_numeric_binary",
+      "current_archive_to_single": 6.032405070153385,
+      "current_ensemble_archive_bytes": 1780398,
+      "domain": "general",
+      "effective_candidate_archive_bytes": 1225572,
+      "effective_candidate_archive_to_single": 4.152524742578921,
+      "shared_preprocessing": "numeric_target_free",
+      "single_archive_bytes": 295139,
+      "task": "binary"
+    },
+    {
+      "case_id": "general_categorical_multiclass",
+      "current_archive_to_single": 7.526082753429611,
+      "current_ensemble_archive_bytes": 1019867,
+      "domain": "general",
+      "effective_candidate_archive_bytes": 1019867,
+      "effective_candidate_archive_to_single": 7.526082753429611,
+      "shared_preprocessing": "member_local",
+      "single_archive_bytes": 135511,
+      "task": "multiclass"
+    }
+  ],
+  "claims": {
+    "b3_authorized": false,
+    "fresh_confirmation_authorized": false,
+    "lockbox_access_authorized": false,
+    "m2_authorized": false,
+    "m3b_r3_amended": false,
+    "public_or_default_change_authorized": false,
+    "serializer_implementation_authorized_before_advance": false,
+    "spent_development_evidence": true,
+    "tabarena_or_m4_authorized": false,
+    "tier": "E"
+  },
+  "contract": {
+    "path": "benchmarks/barchive_v2_contract.json",
+    "sha256": "1466342e58a0b480a94121023184674d4ec10654ef19bb80a2b03c5f6742e9f0"
+  },
+  "disposition": "close_barchive_nominate_fused_lane_dispatch",
+  "fused_lane_dispatch_nominated_next": true,
+  "gate": {
+    "clears": false,
+    "median_current_archive_to_single": 6.032405070153385,
+    "median_effective_archive_to_single": 4.152524742578921,
+    "median_effective_archive_to_single_at_most": 4.0
+  },
+  "m3b_r3_amended": false,
+  "member_local_case_count": 2,
+  "name": "wave3_barchive_v2_20260721",
+  "numeric_target_free_case_count": 11,
+  "raw_artifact": {
+    "bytes": 657375,
+    "path": "benchmarks/barchive_v2_raw.json",
+    "sha256": "3b8eebc0140dc399a995089dee1097627f0c8cc13ff7d8fd37d00e0524355509"
+  },
+  "schema_version": 1,
+  "serializer_retention_authorized": false,
+  "spent_development_evidence": true
+}
