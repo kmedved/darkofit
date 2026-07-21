@@ -9,7 +9,6 @@ from pathlib import Path
 import pytest
 
 from benchmarks import analyze_m3b_ensemble_v3_r2 as analyzer
-from benchmarks import freeze_m3b_ensemble_v3_r2 as freezer
 from benchmarks import run_m3b_ensemble_v3 as attempt1_runner
 from benchmarks import run_m3b_ensemble_v3_r2 as runner
 
@@ -87,8 +86,8 @@ def test_m3b_r2_analyzer_requires_self_worker_rss_scope(monkeypatch):
         analyzer.validate_artifact(Path("a"), Path("b"))
 
 
-def test_m3b_r2_freezer_preserves_scientific_grid_and_source_pin():
-    contract = freezer.build_contract()
+def test_m3b_r2_frozen_contract_preserved_scientific_grid_and_source_pin():
+    contract = json.loads(runner.CONTRACT_PATH.read_text(encoding="utf-8"))
     attempt1 = json.loads(
         (ROOT / "benchmarks" / "m3b_ensemble_v3_contract.json").read_text(
             encoding="utf-8"
@@ -107,10 +106,10 @@ def test_m3b_r2_freezer_preserves_scientific_grid_and_source_pin():
     assert set(contract["bound_files"]) == set(runner.BOUND_PATHS)
 
 
-def test_m3b_r2_frozen_contract_loads_when_present():
-    if not runner.CONTRACT_PATH.exists():
-        pytest.skip("attempt-2 contract is created after the harness commit")
-    contract = runner.load_contract()
+def test_m3b_r2_contract_is_historical_after_successor_source_fix():
+    contract = json.loads(runner.CONTRACT_PATH.read_text(encoding="utf-8"))
     assert contract["name"] == runner.CONTRACT_NAME
     assert contract["rss_scope"] == runner.RSS_SCOPE
     assert contract["sources"]["darkofit"] == "210434ff09bf54f8356f1268e990af72dc7a5129"
+    with pytest.raises(RuntimeError, match="bound file changed"):
+        runner.load_contract()

@@ -209,6 +209,34 @@ def test_private_policy_only_uses_existing_bootstrap_sampling():
     )
 
 
+def test_private_group_bootstrap_with_uneven_groups_survives_safe_roundtrip(
+    tmp_path,
+):
+    group_sizes = np.arange(2, 12)
+    groups = np.repeat(np.arange(len(group_sizes)), group_sizes)
+    X, y = _regression_data(n=len(groups))
+    model = _fit_private_ensemble_v3(
+        DarkoRegressor(**_params(n_ensembles=4, iterations=4)),
+        X,
+        y,
+        sampling="bootstrap",
+        sampling_unit="groups",
+        member_policy="none",
+        groups=groups,
+    )
+    assert any(
+        record["sampled_rows"] != len(X)
+        for record in model.ensemble_metadata_["members"]
+    )
+
+    path = tmp_path / "private-group-bootstrap.npz"
+    model.save_model(path)
+    restored = DarkoRegressor.load_model(path)
+
+    np.testing.assert_array_equal(restored.predict(X), model.predict(X))
+    assert restored.ensemble_metadata_ == model.ensemble_metadata_
+
+
 def test_private_explicit_none_and_normal_default_survive_safe_roundtrip(tmp_path):
     X, y = _regression_data(n=100)
     model = _fit_private(

@@ -750,7 +750,11 @@ def _validate_loaded_private_ensemble_v3_metadata(
             raise ValueError(
                 "invalid DarkoFit model: private ensemble-v3 sample is not unique"
             )
-        if sampling == "bootstrap" and record["sampled_rows"] != input_rows:
+        if (
+            sampling == "bootstrap"
+            and sampling_unit == "rows"
+            and record["sampled_rows"] != input_rows
+        ):
             raise ValueError(
                 "invalid DarkoFit model: private ensemble-v3 bootstrap size is invalid"
             )

@@ -346,7 +346,10 @@ def _validate_row(
             )
         else:
             sampling_valid = (
-                member.get("sampled_rows") == case_manifest["fit_rows"]
+                (
+                    spec["sampling_unit"] == "groups"
+                    or member.get("sampled_rows") == case_manifest["fit_rows"]
+                )
                 and member.get("sampled_unique_rows", 0) + member["oob_rows"]
                 == case_manifest["fit_rows"]
                 and member.get("requested_sample_fraction") is None

@@ -99,7 +99,7 @@ def _ensemble_metadata(spec, arm: str, manifest):
     policy = _policy_metadata(arm)
     members = []
     for index in range(runner.MEMBERS):
-        sampled_rows = 80 if without_replacement else 100
+        sampled_rows = 80 if without_replacement else (120 if groups else 100)
         sampled_unique_rows = 80 if without_replacement else 60
         oob_rows = 20 if without_replacement else 40
         members.append(
