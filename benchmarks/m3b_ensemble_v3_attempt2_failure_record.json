@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "name": "wave2_m3b_ensemble_v3_r2_20260720_attempt2_failure_record",
+  "failed_contract": {
+    "path": "benchmarks/m3b_ensemble_v3_r2_contract.json",
+    "sha256": "ee8fc8a281e950ebd1626fb1ce0d9b826d6d40333fe095c3d36348fdc6d00de7"
+  },
+  "terminal_artifact": {
+    "bytes": 8299,
+    "sha256": "5c6d014582140abf5913e0a8fdbe1c44ba91f82f4763a3cafb0f6bcd8d88c427",
+    "created_at": "2026-07-21T04:04:44.635542+00:00",
+    "phase": "quality",
+    "status": "failed",
+    "completed_rows_discarded": 1,
+    "rows": null
+  },
+  "source": {
+    "darkofit": "210434ff09bf54f8356f1268e990af72dc7a5129",
+    "harness": "1acc94b394ab4992d701210d74bfaec416636ad9",
+    "clean_before_and_after": true
+  },
+  "failure": {
+    "stage": "safe-NPZ reload of the first group-bootstrap control",
+    "case_id": "sports_2014_minutes_per_game",
+    "arm": "control",
+    "type": "ValueError",
+    "message": "private ensemble-v3 loader incorrectly required group-bootstrap sampled row count to equal input row count",
+    "completed_results_published": false,
+    "completed_results_inspected": false
+  },
+  "disposition": {
+    "attempt_terminal": true,
+    "rerun_same_identity": false,
+    "implementation_fix_required": true,
+    "successor_requires_new_source_pin": true
+  }
+}
