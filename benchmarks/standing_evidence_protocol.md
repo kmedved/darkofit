@@ -10,9 +10,11 @@ slice:
 
 - M5 is a sentinel suite. It detects crashes, invalid outputs, invariant
   failures, and unexplained drift. It is not an acceptance score.
-- M6 compares one frozen pre-mechanism DarkoFit control with one candidate.
-  Its repeatedly inspected results may rank or kill development ideas, but
-  cannot authorize shipping or a default change.
+- M6 v3 compared one frozen pre-mechanism DarkoFit control with one candidate.
+  Its terminal backtest failure leaves it permanently non-ranking. Only a new,
+  independently frozen and backtest-qualified successor may rank or kill
+  development ideas; no spent comparison can authorize shipping or a default
+  change.
 
 The machine-readable contract is
 [`standing_evidence.py`](standing_evidence.py).
@@ -99,7 +101,7 @@ contract-development evidence. The checkout supplying this runner and the
 dataset builders is also required clean, recorded in the manifest, and
 checked for changes across execution.
 
-Release anchors are established once with one fresh worker per
+Release anchors were established once with one fresh worker per
 product/cell, a same-product three-tree warmup outside timing, and only the
 thread count and random seed fixed around product defaults:
 
@@ -118,10 +120,56 @@ failed and is hash-bound at
 `18b902e6099a4686b8eda71fac9ac327a0b5243872b80b5da79c5e01e5e2c201`;
 candidate ranking remains disabled.
 
-## Harness null check
+The v3 release-anchor command above is a historical record, not a rerun
+instruction. The published artifact and terminal replay remain frozen. Future
+comparative execution must use a new contract identity with a worker
+environment fixed before interpreter startup, actual fitted and runtime thread
+attestation, strict fitted-model metadata, exact paired split/weight hashes,
+implementation-path binding, and normalized classification probabilities.
 
-The three-dataset smoke is a harness test, not evidence and not a testing-log
-entry. Point both arms at the same clean checkout:
+## Successor execution foundation (draft)
+
+`paired-evidence-v1` is the non-ranking execution foundation for M3b or a
+future standing-contract successor. It is opt-in through
+`bench_compare_revisions.py --evidence-contract paired-evidence-v1` and does
+not alter M6 v3. The mode:
+
+- removes inherited `PYTHONPATH` and Numba execution overrides before worker
+  startup;
+- fixes `NUMBA_NUM_THREADS`, JIT state, hash seed, DarkoFit warmup, and the
+  declared BLAS/OpenMP thread variables;
+- refuses model access unless the new interpreter resolves the four-thread
+  Numba ceiling and current mask;
+- records the fitted DarkoFit mask, Numba ceiling/current mask and threading
+  layer, implementation path, fitted tree metadata, exact case/split/weight
+  hashes, and prediction/probability fingerprints; and
+- rejects missing/extra CSV fields, blank required provenance, source-path
+  drift, incomplete pairs, mismatched split or weight hashes, and
+  classification probabilities that are out of range, have the wrong width,
+  or are not normalized.
+
+Rows are written to a temporary file, validated as a complete paired grid,
+and only then published to the requested path with a create-only write. A
+worker or validation failure leaves no final-looking CSV at that path.
+
+The foundation remains draft and cannot produce ranking or shipping evidence
+until a mechanism-specific contract (M3b is the funded next use) binds its
+grid, source pins, quality-first gate, create-only artifact/manifest, and
+prospective decision rules.
+
+`paired-evidence-v1` currently admits only DarkoFit source arms because it can
+attest their fitted `n_threads_` directly. Any successor that restores
+ChimeraBoost or CatBoost anchors must add product-specific resolved-resource
+metadata and parent-side validation under a new identity; a constructor
+`thread_count` argument alone is not resource attestation.
+
+## Historical v3 harness null check
+
+The three-dataset smoke was a harness test, not evidence and not a testing-log
+entry. The command is retained only to document v3; do not use it in the
+current mechanism loop. A successor or M3b null smoke must instead run from a
+deliberately contaminated parent environment and prove that
+`paired-evidence-v1` establishes its exact worker contract before model access.
 
 ```bash
 python benchmarks/run_standing_evidence.py \
@@ -131,13 +179,16 @@ python benchmarks/run_standing_evidence.py \
   --csv /private/tmp/darkofit-m6-smoke.csv
 ```
 
-It must produce 24 successful rows, complete matched pairs, identical primary
-loss within each pair, and a provenance manifest. Timing ratios need not equal
-one.
+At the time it ran, the historical check was required to produce 24 successful
+rows, complete matched pairs, identical primary loss within each pair, and a
+provenance manifest. Timing ratios were not required to equal one. The
+terminal v3 runner now refuses this command.
 
-## Spent development run
+## Historical v3 spent development command
 
-Use separate clean worktrees for the exact pre-mechanism control and candidate:
+The command below records how v3 development runs were invoked. The terminal
+v3 runner now refuses it; any future mechanism must use its own new contract
+identity and command surface.
 
 ```bash
 python benchmarks/run_standing_evidence.py \

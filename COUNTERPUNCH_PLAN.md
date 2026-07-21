@@ -58,15 +58,17 @@ Four standing constraints follow:
    internal broad panel at its milestone cadence (M2); the rival's TabArena
    spend calibrates the yardstick at no cost to this repo. Routine breadth
    protection between M2 milestones comes from the M5 diversity sentinels
-   plus the M6 fast general development slice, not from TabArena or the
-   broad panel. TabArena-Lite itself runs at most once per minor release as
-   a descriptive drift check (M4) that validates this proxy rather than
-   replacing it; no benchmaxing, and the CTR23 lockbox discipline is
+   plus an eligible M6 successor or mechanism-specific spent development
+   evidence, not from TabArena or the broad panel. M6 v3 is terminal and
+   cannot fill that role. TabArena-Lite itself runs at most once per minor
+   release as a descriptive drift check (M4) that validates this proxy rather
+   than replacing it; no benchmaxing, and the CTR23 lockbox discipline is
    unchanged. The proxy only covers what the internal panels cover: today
    that is regression-weighted evidence, and classification — where
    ChimeraBoost earned much of its TabArena position — remains outside the
-   broad proxy until a comparative classification slice exists. M5/M6
-   reduce that risk between milestones but do not erase it.
+   broad proxy until a comparative classification slice exists. M5 plus an
+   eligible successor comparison reduce that risk between milestones but do
+   not erase it.
 3. **Absorption with bounded complexity.** Ideas adopted from other
    libraries enter through the normal Tier-E/Tier-D machinery. An absorbed
    surface should displace or consolidate existing code where possible; a
@@ -74,13 +76,15 @@ Four standing constraints follow:
    budget, maintenance owner, and review date (see Track I and Track Z).
 4. **One mechanism at a time.** The unit of development is a mechanism
    moving through a fixed pipeline: profile → smallest private prototype →
-   correctness invariants → M5 diversity sentinels → M6 fast general
-   development slice → sports panel → M2 broad checkpoint only if it
-   survives. Mechanism-specific synthetic tests and profilers establish
-   causal behavior; M5 detects drift; the spent M6 slice may rank or kill
-   development candidates; sports and M2 characterize progressively broader
-   product value. Tier-D rigor is unchanged for defaults; explicit Tier-E
-   capabilities may move faster once correct and honestly characterized.
+   correctness invariants → M5 diversity sentinels → an eligible M6
+   successor or mechanism-specific spent development evidence → sports panel
+   → M2 broad checkpoint only if it survives. Mechanism-specific synthetic
+   tests and profilers establish causal behavior; M5 detects drift; only a
+   backtest-qualified successor or a prospectively frozen mechanism contract
+   may rank or kill development candidates. Sports and M2 characterize
+   progressively broader product value. Tier-D rigor is unchanged for
+   defaults; explicit Tier-E capabilities may move faster once correct and
+   honestly characterized.
 
 ## 1. Executive decision
 
@@ -155,7 +159,7 @@ been refreshed.
 | S — sports speed | Conditional successor to a failed candidate | Tier-D if automatic | One justified, preregistered group-safe candidate | Spent screen, then fresh result only if powered | Close automatic route on a failed spent screen |
 | P — harm-bounded composite | New campaign only | Tier-D | New exact candidate and new protocol identity | Published power GO/NO-GO; fresh result only after GO and owner authorization | No fresh access below the preregistered 80% power bar |
 | C — CatBoost gap | Rolling mechanism backlog via Track I | Development screen, then Tier-D if automatic | A C mechanism reaches the top of the Track I backlog | Hypothesis result with bounded claim | Do not tune repeatedly on the same spent outcomes |
-| I — idea intake | Standing backlog | Scouting notes; normal tiers on adoption | An external idea with a stated primary Pareto axis and expected value on M6 and sports | Rated two-shortlist entry, then a normal track on adoption | Drop entries without either consolidation or a bounded-complexity case |
+| I — idea intake | Standing backlog | Scouting notes; normal tiers on adoption | An external idea with a stated primary Pareto axis and expected value on an eligible general-development slice and sports | Rated two-shortlist entry, then a normal track on adoption | Drop entries without either consolidation or a bounded-complexity case |
 | Z — 1.0 cleanup | Conditional | Engineering/API | Surviving surfaces stable and deprecation inventory approved | Compatibility report, removal diff, release notes | No deletion for a line-count target |
 
 ## 4. Non-goals
@@ -265,10 +269,11 @@ The result is terminal and will not be rerun to cross the threshold; see
 ### M2 — current-version broad characterization (periodic milestone)
 
 M2 is a periodic milestone, not an upfront prerequisite: run it after a
-mechanism survives the M5, M6, and sports stages of the pipeline, or before
-a meaningful release. It is the broad checkpoint of the mechanism pipeline
-and the operative test of the calibrated-yardstick proxy in §0. G-M does
-not wait for it.
+mechanism survives M5, an eligible M6 successor or prospectively frozen
+mechanism-specific development evidence, and the sports stage of the
+pipeline, or before a meaningful release. It is the broad checkpoint of the
+mechanism pipeline and the operative test of the calibrated-yardstick proxy
+in §0. G-M does not wait for it.
 
 Create a new dated protocol that reuses the exact 13 datasets and
 `r0f0/r1f1/r2f2` coordinates from the historical panel while preserving all
@@ -403,9 +408,10 @@ checks.
 
 ### M6 — fast general development slice
 
-M6 is the missing quality-development rung: a small, pinned, explicitly spent
-comparative slice that may rank or kill mechanisms but cannot support a
-shipping or default claim. Its initial dataset contract reuses the existing
+M6 was designed as the missing quality-development rung: a small, pinned,
+explicitly spent comparative slice that could rank or kill mechanisms after
+backtest qualification but could not support a shipping or default claim.
+Its initial dataset contract reuses the existing
 `benchmarks/benchmark_adapters.py` builders and weight modes rather than
 creating a second data layer: numeric and categorical regression, binary and
 multiclass classification, missing-value coverage where supported, and
@@ -416,11 +422,12 @@ control and the candidate source. Pinned ChimeraBoost and CatBoost anchors
 are established when M6 is frozen and refreshed at release cadence, not
 rerun during every inner development iteration. Report task-appropriate
 quality, fit/predict time, peak RSS where practical, failures, and resolved
-model metadata. M6 is the only standing cheap panel that may influence
-quality-oriented backlog ranking; tuning directly to its individual cells
-is prohibited, and repeated inspection makes all M6 outcomes spent. Every
-material full run receives a stable mechanism id and a monotonically
-increasing, one-based inspection index in both its manifest and testing-log
+model metadata. Only a backtest-qualified M6 successor may serve as the
+standing cheap panel that influences quality-oriented backlog ranking;
+tuning directly to its individual cells is prohibited, and repeated
+inspection makes all outcomes spent. Every material full run receives a
+stable mechanism id and a monotonically increasing, one-based inspection
+index in both its manifest and testing-log
 entry. Assign the index before launch; failed attempts consume it. Missing,
 reset, or selectively omitted indices invalidate the mechanism's M6 audit.
 
@@ -696,14 +703,23 @@ member policy remains closed as a quality route.
    under divided CPU budgets.
 4. **M3b — attribution:** compare sampling-only, member-policy-only, and
    combined arms on the spent player-disjoint panel and a small
-   broad-tabular development set. Include fit, predict, RSS, archive bytes,
-   and OOB telemetry. Freeze the M3b protocol before inspecting any
-   prototype outcome. The funded M3b excludes a parallelism arm; it joins
-   only if B3 is later unlocked by a separate decision.
+   broad-tabular development set. Freeze the M3b protocol before inspecting
+   any prototype outcome. Complete the paired weighted-holdout quality pass
+   for every arm before repeated timing; only quality-eligible arms proceed
+   to repeated fit, predict, RSS, archive-byte, and OOB measurement. The new
+   contract must fix the worker environment before interpreter startup,
+   record and validate fitted thread masks plus the Numba ceiling, bind exact
+   split/weight fingerprints and implementation paths, and strictly validate
+   fitted model and classification-probability metadata. The funded M3b
+   excludes a parallelism arm; it joins only if B3 is later unlocked by a
+   separate decision.
 
 M3a's v1 runner, analyzer, freezer, and contract remain byte-preserved
 historical evidence. M3b must use a new contract identity and must not reuse
-M3a's `--contract` option with modified contract contents.
+M3a's `--contract` option with modified contract contents. The draft
+`paired-evidence-v1` execution foundation is non-ranking and does not make
+M6 v3 eligible; M3b must bind it (or a stricter successor) into M3b's own
+prospectively frozen contract.
 
 M3b may nominate a documented opt-in recipe or explicit v3 preset. A general
 default change requires a separate Tier-D campaign across numeric,
@@ -836,7 +852,8 @@ backlog because they are the only current quality levers with attribution
 evidence, and CatBoost's sports-panel dominance — better quality at lower
 fit time — marks quality-plus-sports-speed as the weakest region of
 DarkoFit's Pareto frontier. Source at least part of the C candidate set
-from M6 and the broad panel's worst datasets, not only from sports, so
+from an eligible M6 successor or mechanism-specific general-development
+evidence and the broad panel's worst datasets, not only from sports, so
 candidate generation stays unbiased.
 
 ---
@@ -846,12 +863,12 @@ candidate generation stays unbiased.
 A standing, origin-agnostic scouting backlog. Any library or paper is a
 valid source; ChimeraBoost holds no privileged position beyond the existing
 NOTICE-based porting practice. Each entry records the mechanism, its
-source, its primary Pareto axis, expected value on M6 and the sports panel,
-estimated implementation surface, and the code it would displace or
-consolidate. A genuinely net-new capability instead records a bounded
-complexity budget, maintenance owner, and review date. Entries without
-either a consolidation story or a justified bounded-complexity case are
-dropped.
+source, its primary Pareto axis, expected value on an eligible general
+development slice and the sports panel, estimated implementation surface,
+and the code it would displace or consolidate. A genuinely net-new capability
+instead records a bounded complexity budget, maintenance owner, and review
+date. Entries without either a consolidation story or a justified
+bounded-complexity case are dropped.
 
 Track C's quality mechanisms and Track X's cross-feature surfaces compete
 through this backlog (owner decision 2026-07-20). Ranking must credit
@@ -869,18 +886,28 @@ Initial backlog, unrated and unauthorized:
 - **Monotonic and interaction constraints** (CatBoost/LightGBM/XGBoost):
   mainstream general-tabular capability, direct sports value as domain
   priors, absent from DarkoFit today. Treat as a high-value capability gap,
-  with rank still to be earned against M6 value and implementation cost.
+  with rank still to be earned against an eligible general-development slice
+  and implementation cost.
 - **Exclusive feature bundling** (LightGBM): sparse and high-cardinality
   fit speed, orthogonal to quantization.
 - **Langevin boosting / SGLB** (CatBoost): cheap ensemble diversity; a
   potential Track B interaction.
 - CatBoost's `l2_leaf_reg` and samples-per-feature depth heuristics:
   already Track C candidates via the T7b attribution.
+- **Behavior-exact fused-lane dispatch** (internal, from Q0): the
+  forced-unfused reference was behavior-exact and faster than the fused
+  production lane on the current 14-CPU machine (paired fit ratios `0.901`
+  at 500k rows, `0.981` at 1M) against a hotspot worth 52–63% of fit time.
+  A hardware/shape-aware dispatch is a cheap Tier-E engineering candidate
+  in the sampled-fused-kernels tradition. It precedes and re-baselines any
+  Q re-entry work: quantization must beat the post-dispatch engine, not the
+  current one.
 - **Q re-entry microbenchmark** (internal): a DarkoFit-specific private
   histogram-bandwidth prototype at the Q0 hotspot (frozen conservative
   projection `0.867242`), pursued only as the distinct causal case the Q
   re-entry contract requires — no donor dependence. Competes here; it does
-  not reopen Q by itself.
+  not reopen Q by itself, and it is measured against the post-dispatch
+  baseline if the dispatch mechanism lands first.
 
 Adoption is never authorized from this backlog directly. A promoted entry
 becomes a normal track with its own evidence class, gates, and stop rule.
