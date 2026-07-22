@@ -1986,6 +1986,93 @@ B-archive simulation remains non-loadable, optional size telemetry.
     Inspection 1 is spent; rerun is false. Do not merge candidate `4bf425fc`.
     Preserve the artifacts and leave the existing public L2 policy unchanged.
 
+### 48. T7b automatic scalar-RMSE depth invariants and M5 (2026-07-22)
+
+1. **Execution date/source:** 2026-07-22; clean published harness
+   `a1eb76071ca72a52494f6cca6022ea8ace8d5394`, clean pre-mechanism
+   invariant control `e23d2b164f10374b1c0e02521c33fc96d48980da`, frozen M5
+   control `726e5d8e6131c580bce948db833a5007d0692dca`, and clean published
+   private candidate `41e948f0c53b1d124e16071a7fa66eba47d084d3`.
+2. **Comparators:** public-default control versus the exact candidate that
+   chooses CatBoost scalar-RMSE depth 4/6/8 from effective rows per original
+   input feature; all excluded families and explicit depth values are no-ops.
+3. **Evidence class:** pre-quality correctness invariants and non-ranking M5
+   sentinels under `t7b-automatic-scalar-rmse-depth-v1-20260722`; spent
+   development infrastructure, no shipping/default evidence.
+4. **Data/splits:** seven deterministic 200-row no-op probes, three branch
+   probes at the frozen boundaries, and frozen M5 v1's 19 paired cells.
+5. **Arms/policies:** exact control and candidate revisions; no-op families
+   include explicit CatBoost RMSE, literal `auto`, classification, MAE,
+   depthwise, LightGBM, and hybrid. Automatic L2 is unchanged.
+6. **Environment/repeats:** `darko311`; invariant workers used two Numba
+   threads and restored the ambient mask; M5 used four threads in fresh
+   workers after a no-conflicting-benchmark preflight.
+7. **Runner/command:** `python benchmarks/check_t7b_automatic_depth_invariants.py
+   --control /private/tmp/darkofit-t7b-auto-depth-control-e23d2b1 --candidate
+   /private/tmp/darkofit-t7b-auto-depth-v1-20260722 --output
+   /private/tmp/t7b_automatic_depth_v1_invariants_20260722.json`; then the
+   contract wrapper's frozen M5 precondition.
+8. **Hashes:** invariant artifact
+   `02362e5d7080c155add0846a58b6960db997bd29a0374e936a16a5a5364e5aff`;
+   M5 artifact
+   `1d3eac70f81babeb628850cf19844d7b4c590c6df67ded723fcf7caba019bca1`;
+   contract `83ea767e5d0060f7ff1c129c6ee84e6d0be3b28236da4e1d0c94369ee6c6b000`.
+9. **Primary results:** all seven no-op families had exact predictions and
+   exact logical fitted state; depths 4/6/8 engaged at their declared
+   boundaries. All 19 M5 fingerprints matched and every floor passed.
+10. **Costs, passed and failed conditions:** every invariant and M5 condition
+    passed. M5 resource readings are non-ranking telemetry.
+11. **Limitations/non-claims:** these checks establish mechanism scope and
+    regression safety, not quality. They authorize no sports, fresh, TabArena,
+    lockbox, shipping, release, or default claim.
+12. **Terminal decision/next action:** pre-quality disposition `pass`; spend
+    exactly one frozen M6 v3 inspection. No favorable rerun is permitted after
+    launch-manifest creation.
+
+### 49. T7b automatic scalar-RMSE depth M6 v3 inspection 1 (2026-07-22)
+
+1. **Execution date/source:** 2026-07-22; clean published harness
+   `a1eb76071ca72a52494f6cca6022ea8ace8d5394`, clean pre-mechanism control
+   `e23d2b164f10374b1c0e02521c33fc96d48980da`, and clean published private
+   candidate `41e948f0c53b1d124e16071a7fa66eba47d084d3`.
+2. **Comparators:** public-default control versus public-default candidate;
+   the only intended behavior change was automatic scalar-RMSE CatBoost depth.
+3. **Evidence class:** one spent general-development inspection under M6
+   quality-successor-v3; ranking-eligible for this development decision,
+   never shipping/default evidence.
+4. **Data/splits:** exact frozen 60-cell medium grid: ten regression and
+   classification datasets, three seeds, unweighted and stress-weighted
+   policies, fixed adapter splits and fingerprints.
+5. **Arms/policies:** `control_default` and `candidate_default`; 1,000-round
+   public defaults, four threads, with six classification datasets retained
+   as exact quality no-ops. Automatic L2 was unchanged.
+6. **Environment/repeats:** `darko311`, macOS arm64, four threads, three
+   repeats in each fresh worker; exclusive-machine audit found no conflicting
+   benchmark process before the create-only launch manifest was written.
+7. **Runner/command:** `python benchmarks/run_t7b_automatic_depth_v1.py
+   --control /private/tmp/darkofit-t7b-auto-depth-control-e23d2b1 --candidate
+   /private/tmp/darkofit-t7b-auto-depth-v1-20260722 --output-prefix
+   /private/tmp/t7b_automatic_depth_v1_m6_inspection1_20260722`.
+8. **Hashes:** launch manifest
+   `7eb95710c761f0682c00cf4b5971233089c70e654c5e5adc316d5388d933dc46`;
+   raw CSV `e8e651459fafdea7ace0d298ccedd2c8d87145b945928111d475a007b955bafe`;
+   result `7af0c480221b5886c7bbf41f810147663d9da6e2c4171a70bc9db3a431eebb28`;
+   generic manifest `dbb47702f4e7992f34e653ea1155a8638e4e1945dbda0da1eb582345c73c32c7`;
+   terminal attestation
+   `b925aab09fdd71ca0f8887e1d3a4023c20412b2eefc337f2a2a7c1d5a267f598`.
+9. **Primary results:** equal-cell geometric-mean ratio `0.992921`; worst
+   dataset-group ratio `1.011124` on `diabetes_resampled`; worst LOO ratio
+   `1.001230` when omitting `wide_numeric_reg`; worst cell `1.037673`.
+10. **Costs, passed and failed conditions:** aggregate `<=1.000000`, worst
+    group `<=1.020000`, and worst LOO `<=1.003000` all passed. Non-gating
+    geomeans were `0.849501` fit, `0.933229` predict, and `0.993834` RSS.
+11. **Limitations/non-claims:** one dependent, fixed, spent medium panel; no
+    fresh, sports, public, release, TabArena, lockbox, or shipping claim.
+12. **Terminal decision/next action:** frozen disposition `advance`.
+    Inspection 1 is spent and rerun is false. Keep candidate `41e948f0`
+    private and unmerged; freeze a separate spent-sports contract before any
+    sports outcome is inspected.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

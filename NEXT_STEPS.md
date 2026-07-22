@@ -241,9 +241,14 @@ accounting, defined so the tiny-denominator problem cannot recur:
 `l2_leaf_reg` v1 mechanism is now terminal: invariants and M5 passed, but its
 only M6 v3 inspection returned aggregate `1.000818` against the frozen
 `<=1.000000` gate. Candidate `4bf425fc` is not merged and the public policy is
-unchanged. The samples-per-feature depth policy was excluded from that
-identity and remains the sole T7b nominee; treating it as a separate mechanism
-requires a new contract and source identity rather than a favorable L2 rerun.
+unchanged. The separate samples-per-feature depth candidate `41e948f0` passed
+its invariants and M5 and advanced through its only M6 v3 inspection:
+aggregate `0.992921`, worst dataset group `1.011124`, and worst leave-one-out
+`1.001230`, all within the frozen gates. The inspection is spent and cannot be
+rerun. The candidate remains private and unmerged; its only authorized next
+step is a separately frozen check on already-spent sports data, with
+season-clustered uncertainty and concentration/harm guards. This is not a
+public, fresh, shipping, release, or default claim.
 
 **4.5 — v0.11 milestone measurements.** M2 (first broad-panel reading
 against ChimeraBoost 0.18 — the calibrated-yardstick test) and the first

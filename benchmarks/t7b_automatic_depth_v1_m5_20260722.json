@@ -1,0 +1,2649 @@
+{
+  "analysis": {
+    "advancement_blocked_for_drift": false,
+    "baseline_drift": [],
+    "behavior_fingerprints_equal_between_arms": true,
+    "candidate_over_control_fit_seconds_ratio": {
+      "count": 19,
+      "maximum": 1.0375225746568637,
+      "median": 1.0036182730524172,
+      "minimum": 0.9186271962332814
+    },
+    "candidate_over_control_peak_rss_ratio": {
+      "count": 19,
+      "maximum": 1.047093023255814,
+      "median": 1.009185036740147,
+      "minimum": 0.9589070684162212
+    },
+    "candidate_over_control_predict_seconds_ratio": {
+      "count": 19,
+      "maximum": 1.104468966100199,
+      "median": 0.9919425339779256,
+      "minimum": 0.9228642811446841
+    },
+    "known_floor_checks": {
+      "candidate:binary_classification": {
+        "mean": 0.0031448316424689767,
+        "passed": true,
+        "values": [
+          0.002566578993004814,
+          0.0034331155405047087,
+          0.0034348003938974073
+        ],
+        "worst": 0.0034348003938974073
+      },
+      "candidate:multiclass_classification": {
+        "mean": 9.7716424233078e-05,
+        "passed": true,
+        "values": [
+          8.467524495828372e-05,
+          0.0001306896207864843,
+          7.778440695446597e-05
+        ],
+        "worst": 0.0001306896207864843
+      },
+      "control:binary_classification": {
+        "mean": 0.0031448316424689767,
+        "passed": true,
+        "values": [
+          0.002566578993004814,
+          0.0034331155405047087,
+          0.0034348003938974073
+        ],
+        "worst": 0.0034348003938974073
+      },
+      "control:multiclass_classification": {
+        "mean": 9.7716424233078e-05,
+        "passed": true,
+        "values": [
+          8.467524495828372e-05,
+          0.0001306896207864843,
+          7.778440695446597e-05
+        ],
+        "worst": 0.0001306896207864843
+      }
+    },
+    "paired_cells": 19,
+    "ranking_or_acceptance_score": false
+  },
+  "contract": {
+    "contract_version": "standing-evidence-v3",
+    "m5": {
+      "arms": [
+        "control",
+        "candidate"
+      ],
+      "baseline_evidence": {
+        "path": "benchmarks/m5_sentinel_baseline.json",
+        "sha256": "0971e06d4ed307d352d75e1e6400b849c0001b5e11f40243173d7080b6c5859d"
+      },
+      "contract_frozen": true,
+      "contract_version": "m5-sentinels-v1",
+      "control_source": "726e5d8e6131c580bce948db833a5007d0692dca",
+      "freeze_blockers": [],
+      "sentinel_cases": [
+        {
+          "dataset_key": "generic:grouped-entity-v1",
+          "dataset_sha256": "",
+          "domain_id": "grouped_entity_regression",
+          "expected_normalized_loss_max": 1.1,
+          "known_floor": "",
+          "model_profile": "group_ensemble",
+          "seeds": [
+            0,
+            1
+          ]
+        },
+        {
+          "dataset_key": "syn:df1/311",
+          "dataset_sha256": "a323d3f5ddaaf570ecc765b7810d7415344d81de7e3d01bd44d3cacda52822ae",
+          "domain_id": "smooth_numeric_regression",
+          "expected_normalized_loss_max": 1.1,
+          "known_floor": "",
+          "model_profile": "standard",
+          "seeds": [
+            0,
+            1
+          ]
+        },
+        {
+          "dataset_key": "syn:df1/241",
+          "dataset_sha256": "99d3068ded75bc7704c689a751d4582c33ff500b72da840f328bfbba733bcbb0",
+          "domain_id": "noisy_numeric_regression",
+          "expected_normalized_loss_max": 1.1,
+          "known_floor": "",
+          "model_profile": "standard",
+          "seeds": [
+            0,
+            1
+          ]
+        },
+        {
+          "dataset_key": "syn:df1/234",
+          "dataset_sha256": "cf660a560e6ec769fb10ec259863156d22dadec2fa64036dc3558403a86902dc",
+          "domain_id": "categorical_missing_regression",
+          "expected_normalized_loss_max": 1.1,
+          "known_floor": "",
+          "model_profile": "standard",
+          "seeds": [
+            0,
+            1
+          ]
+        },
+        {
+          "dataset_key": "adapter:friedman_numeric:large",
+          "dataset_sha256": "",
+          "domain_id": "high_row_numeric",
+          "expected_normalized_loss_max": 1.1,
+          "known_floor": "",
+          "model_profile": "high_row",
+          "seeds": [
+            0
+          ]
+        },
+        {
+          "dataset_key": "syn:df1/647",
+          "dataset_sha256": "35df5d94bdd4aaa96924ea7ed1d06cef964e780720065b969939e61dd3bd0fda",
+          "domain_id": "binary_classification",
+          "expected_normalized_loss_max": 1.1,
+          "known_floor": "excess_brier_mean<=0.005;worst<=0.01",
+          "model_profile": "canary",
+          "seeds": [
+            0,
+            1,
+            2
+          ]
+        },
+        {
+          "dataset_key": "syn:df1/077",
+          "dataset_sha256": "fe0a27a60186de31e22197b853966ceb9b857ea5bc91af9dff4f061c4f4fa658",
+          "domain_id": "multiclass_classification",
+          "expected_normalized_loss_max": 1.1,
+          "known_floor": "excess_brier_mean<=0.005;worst<=0.01",
+          "model_profile": "canary",
+          "seeds": [
+            0,
+            1,
+            2
+          ]
+        },
+        {
+          "dataset_key": "adapter:wide_numeric_reg:medium",
+          "dataset_sha256": "",
+          "domain_id": "weighted_regression",
+          "expected_normalized_loss_max": 1.1,
+          "known_floor": "",
+          "model_profile": "standard",
+          "seeds": [
+            0,
+            1
+          ]
+        },
+        {
+          "dataset_key": "adapter:numeric_binary:medium",
+          "dataset_sha256": "",
+          "domain_id": "weighted_classification",
+          "expected_normalized_loss_max": 1.1,
+          "known_floor": "",
+          "model_profile": "standard",
+          "seeds": [
+            0,
+            1
+          ]
+        }
+      ],
+      "sentinel_domains": [
+        {
+          "id": "grouped_entity_regression",
+          "source": "generic_group_generator",
+          "task": "regression",
+          "weighted": false
+        },
+        {
+          "id": "smooth_numeric_regression",
+          "source": "synthgen",
+          "task": "regression",
+          "weighted": false
+        },
+        {
+          "id": "noisy_numeric_regression",
+          "source": "synthgen",
+          "task": "regression",
+          "weighted": false
+        },
+        {
+          "id": "categorical_missing_regression",
+          "source": "synthgen",
+          "task": "regression",
+          "weighted": false
+        },
+        {
+          "id": "high_row_numeric",
+          "source": "benchmark_adapters",
+          "task": "regression",
+          "weighted": false
+        },
+        {
+          "id": "binary_classification",
+          "source": "benchmark_adapters",
+          "task": "binary",
+          "weighted": false
+        },
+        {
+          "id": "multiclass_classification",
+          "source": "benchmark_adapters",
+          "task": "multiclass",
+          "weighted": false
+        },
+        {
+          "id": "weighted_regression",
+          "source": "benchmark_adapters",
+          "task": "regression",
+          "weighted": true
+        },
+        {
+          "id": "weighted_classification",
+          "source": "benchmark_adapters",
+          "task": "binary",
+          "weighted": true
+        }
+      ],
+      "threads": 4
+    },
+    "m6": {
+      "backtest_complete": false,
+      "backtest_evidence": {
+        "path": "",
+        "sha256": ""
+      },
+      "backtest_failure_evidence": {
+        "path": "benchmarks/m6_historical_backtest_failure.json",
+        "sha256": "18b902e6099a4686b8eda71fac9ac327a0b5243872b80b5da79c5e01e5e2c201"
+      },
+      "backtest_terminal": true,
+      "backtest_verdicts": [
+        {
+          "advance_rule": "advance iff behavior is exact, candidate engagement is positive, reference engagement is zero, the fit-ratio geometric mean is <=0.90, and every paired fit series has IQR/median <=0.10",
+          "candidate_source": "1016e7e8d70c403a70feab7762de8837ea8fd09c",
+          "control_source": "7097e7ac6125cb260ae67ee353458a2cb12fe2e1",
+          "expected_disposition": "advance",
+          "historical_result": "benchmarks/fused_variable_hessian_result.md",
+          "historical_result_sha256": "d22337f4bab69bba7a13b9d3bca583a41aaa873a10a1974ca11d996244febac3",
+          "max_stability_iqr_fraction": 0.1,
+          "mechanism_id": "fused_variable_hessian",
+          "primary_axis": "fit_speed",
+          "replay_adapter": "exact_historical_internal_toggle_runner",
+          "replay_cases": [
+            "binary_logloss_50k",
+            "weighted_rmse_50k"
+          ]
+        },
+        {
+          "advance_rule": "advance iff predictions are exact, the candidate route engages, all timing series have IQR/median <=0.30, the 525- and 585-row candidate cores are >=2x faster than legacy, and the 8192- and 100000-row candidate/legacy core ratios are <=1.10",
+          "candidate_source": "e961bcc2ea64706169641722b5935f9f31402fa3",
+          "control_source": "e0899435e166f8c4856e5f8f77db1e0fa71c322f",
+          "expected_disposition": "kill",
+          "historical_result": "benchmarks/basketball_packed_prediction_result.md",
+          "historical_result_sha256": "9c8d636f467fab118a492ef64194ec48eb6c800f24d8f31bb73f42039296a7f4",
+          "max_stability_iqr_fraction": 0.3,
+          "mechanism_id": "forest_work_packed_router",
+          "primary_axis": "predict_speed",
+          "replay_adapter": "exact_historical_candidate_vs_legacy_runner",
+          "replay_cases": [
+            "repeated_127",
+            "repeated_525",
+            "repeated_585",
+            "repeated_2409",
+            "repeated_8192",
+            "repeated_100000"
+          ]
+        },
+        {
+          "advance_rule": "advance iff the selector/default geometric-mean RMSE ratio is <=0.98, it wins at least 4 of 6 cells, no cell ratio exceeds 1.02, and every selected arm is chosen by the frozen 3% internal validation-margin policy",
+          "candidate_source": "29bd30cdcf476139c30efe4e09773ca812ba443f",
+          "control_source": "29bd30cdcf476139c30efe4e09773ca812ba443f",
+          "expected_disposition": "kill",
+          "historical_result": "benchmarks/fresh_selector_confirmation_result.md",
+          "historical_result_sha256": "3a33ec834bcebb9d9c9e2db4d69a5119f35ccbcf7623bf3dedb839d15ef71170",
+          "max_stability_iqr_fraction": 0.0,
+          "mechanism_id": "linear_leaf_selector_3pct",
+          "primary_axis": "quality",
+          "replay_adapter": "source_pinned_m6_selector_3pct",
+          "replay_cases": [
+            "friedman_numeric_small",
+            "friedman_numeric_medium",
+            "wide_numeric_reg_small",
+            "wide_numeric_reg_medium",
+            "categorical_reg_small",
+            "categorical_reg_medium"
+          ]
+        }
+      ],
+      "contract_frozen": true,
+      "datasets": [
+        "diabetes_resampled",
+        "friedman_numeric",
+        "wide_numeric_reg",
+        "categorical_reg",
+        "breast_cancer_resampled",
+        "numeric_binary",
+        "wine_resampled",
+        "numeric_multiclass",
+        "categorical_binary",
+        "categorical_multiclass"
+      ],
+      "freeze_blockers": [],
+      "models": [
+        "control_default",
+        "candidate_default"
+      ],
+      "release_anchor_evidence": {
+        "path": "benchmarks/m6_release_anchors.json",
+        "sha256": "59747bc08d48a2ddad9b3cec05c965ecbd9edf21025c537f17dc58d816385409"
+      },
+      "release_anchors": [
+        {
+          "id": "chimeraboost",
+          "source_pin": "git:f14be606b641f1bf0dc92bb14b3951f1fe631c6b",
+          "version": "0.18.0.dev6"
+        },
+        {
+          "id": "catboost",
+          "source_pin": "record-sha256:9c20fb35750d9ff814309323b225e836b538c1496745f357c8fd50187e7824ed",
+          "version": "1.2.10"
+        }
+      ],
+      "repeat": 1,
+      "required_freeze_sizes": [
+        "small",
+        "medium"
+      ],
+      "required_release_anchors": [
+        "chimeraboost",
+        "catboost"
+      ],
+      "seed_count": 3,
+      "sizes": [
+        "small",
+        "medium"
+      ],
+      "smoke_datasets": [
+        "friedman_numeric",
+        "numeric_binary",
+        "categorical_binary"
+      ],
+      "threads": 4,
+      "weight_modes": [
+        "none",
+        "stress"
+      ]
+    }
+  },
+  "contract_sha256": "71b9ab84af20663ca86725bbaf3328541623e33afb2724e28d9f6ed85542a8f0",
+  "created_at_utc": "2026-07-22T23:30:59.129121+00:00",
+  "evidence_status": "sentinel_check",
+  "execution": {
+    "arm_order": "alternating by domain/seed cell",
+    "fresh_worker_per_arm_cell": true,
+    "row_count": 38,
+    "threads": 4,
+    "warmup": "same-source 3-tree fit and prediction outside timing"
+  },
+  "hardware": {
+    "logical_cpu_count": 14,
+    "machine": "arm64",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.11.8",
+    "python_executable": "/opt/anaconda3/envs/darko311/bin/python"
+  },
+  "non_ranking": true,
+  "rows": [
+    {
+      "arm": "candidate",
+      "behavior_fingerprint_sha256": "e4e3c53dad0d7caa679c619cbdfbf0ebd9f845a9cb09239c6e22e825f9577186",
+      "dataset_key": "syn:df1/647",
+      "dataset_sha256": "35df5d94bdd4aaa96924ea7ed1d06cef964e780720065b969939e61dd3bd0fda",
+      "domain_id": "binary_classification",
+      "excess_brier": 0.002566578993004814,
+      "fit_seconds": 0.221875875,
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/__init__.py",
+      "metrics": {
+        "accuracy": 0.9981060606060606,
+        "brier": 0.002566578993004814,
+        "f1_macro": 0.9981055101667367,
+        "log_loss": 0.008836584560825875,
+        "primary_metric": "log_loss",
+        "primary_value": 0.008836584560825875,
+        "weighted_accuracy": 0.9981060606060606,
+        "weighted_brier": 0.002566578993004814,
+        "weighted_f1_macro": 0.9981055101667367,
+        "weighted_log_loss": 0.008836584560825875
+      },
+      "model_metadata": {
+        "classes": [
+          0,
+          1
+        ],
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 547,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 21,
+      "n_test": 528,
+      "n_train": 1581,
+      "normalized_loss": 0.012751762011433658,
+      "predict_seconds": 0.001756625,
+      "prediction_sha256": "169129ce7d93759c7c6e8913f176e991b80033cfb30b39d9ea3eb739067b2e11",
+      "probability_sha256": "28a08fd4db537200f47f4ef1f08e2f2b51bf7009185d54070c0255ff5a57a2b2",
+      "roundtrip_exact": true,
+      "seed": 0,
+      "serialized_model_bytes": 84061,
+      "source": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "split_sha256": "231532db19de61a952e31367bd7aa798bfd29fdc57e86ad385a410c72ef0b2dc",
+      "status": "ok",
+      "stderr": "",
+      "task": "binary",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 0.6929696894360714,
+      "weighted": false,
+      "worker_peak_rss_bytes": 290947072
+    },
+    {
+      "arm": "control",
+      "behavior_fingerprint_sha256": "e4e3c53dad0d7caa679c619cbdfbf0ebd9f845a9cb09239c6e22e825f9577186",
+      "dataset_key": "syn:df1/647",
+      "dataset_sha256": "35df5d94bdd4aaa96924ea7ed1d06cef964e780720065b969939e61dd3bd0fda",
+      "domain_id": "binary_classification",
+      "excess_brier": 0.002566578993004814,
+      "fit_seconds": 0.219827875,
+      "implementation_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "metrics": {
+        "accuracy": 0.9981060606060606,
+        "brier": 0.002566578993004814,
+        "f1_macro": 0.9981055101667367,
+        "log_loss": 0.008836584560825875,
+        "primary_metric": "log_loss",
+        "primary_value": 0.008836584560825875,
+        "weighted_accuracy": 0.9981060606060606,
+        "weighted_brier": 0.002566578993004814,
+        "weighted_f1_macro": 0.9981055101667367,
+        "weighted_log_loss": 0.008836584560825875
+      },
+      "model_metadata": {
+        "classes": [
+          0,
+          1
+        ],
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 547,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 21,
+      "n_test": 528,
+      "n_train": 1581,
+      "normalized_loss": 0.012751762011433658,
+      "predict_seconds": 0.001663459,
+      "prediction_sha256": "169129ce7d93759c7c6e8913f176e991b80033cfb30b39d9ea3eb739067b2e11",
+      "probability_sha256": "28a08fd4db537200f47f4ef1f08e2f2b51bf7009185d54070c0255ff5a57a2b2",
+      "roundtrip_exact": true,
+      "seed": 0,
+      "serialized_model_bytes": 83715,
+      "source": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "split_sha256": "231532db19de61a952e31367bd7aa798bfd29fdc57e86ad385a410c72ef0b2dc",
+      "status": "ok",
+      "stderr": "",
+      "task": "binary",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 0.6929696894360714,
+      "weighted": false,
+      "worker_peak_rss_bytes": 303415296
+    },
+    {
+      "arm": "control",
+      "behavior_fingerprint_sha256": "38f1a8f32924b2fbb83c1395c5624b00ebc0817c704d1656271dc59a8727b4ec",
+      "dataset_key": "syn:df1/647",
+      "dataset_sha256": "35df5d94bdd4aaa96924ea7ed1d06cef964e780720065b969939e61dd3bd0fda",
+      "domain_id": "binary_classification",
+      "excess_brier": 0.0034331155405047087,
+      "fit_seconds": 0.075835458,
+      "implementation_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "metrics": {
+        "accuracy": 0.9981060606060606,
+        "brier": 0.0034331155405047087,
+        "f1_macro": 0.9981052382268187,
+        "log_loss": 0.00924077935332623,
+        "primary_metric": "log_loss",
+        "primary_value": 0.00924077935332623,
+        "weighted_accuracy": 0.9981060606060606,
+        "weighted_brier": 0.0034331155405047087,
+        "weighted_f1_macro": 0.9981052382268187,
+        "weighted_log_loss": 0.00924077935332623
+      },
+      "model_metadata": {
+        "classes": [
+          0,
+          1
+        ],
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 233,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 21,
+      "n_test": 528,
+      "n_train": 1581,
+      "normalized_loss": 0.01333504119183949,
+      "predict_seconds": 0.000804459,
+      "prediction_sha256": "f4039e1a384ff67f9a9620193bbeef8c66d419a853806f03ff5ec59148bc16c3",
+      "probability_sha256": "2aa06bb57b32e32b4fc08ded855475aef664b2f7a9a6bab602c463e8d2c9869b",
+      "roundtrip_exact": true,
+      "seed": 1,
+      "serialized_model_bytes": 51592,
+      "source": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "split_sha256": "fcdaf383216693f5366bd48d22f5cb77ed74e0a8421a279b37885210b4f29339",
+      "status": "ok",
+      "stderr": "",
+      "task": "binary",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 0.6929696894360714,
+      "weighted": false,
+      "worker_peak_rss_bytes": 260227072
+    },
+    {
+      "arm": "candidate",
+      "behavior_fingerprint_sha256": "38f1a8f32924b2fbb83c1395c5624b00ebc0817c704d1656271dc59a8727b4ec",
+      "dataset_key": "syn:df1/647",
+      "dataset_sha256": "35df5d94bdd4aaa96924ea7ed1d06cef964e780720065b969939e61dd3bd0fda",
+      "domain_id": "binary_classification",
+      "excess_brier": 0.0034331155405047087,
+      "fit_seconds": 0.076979917,
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/__init__.py",
+      "metrics": {
+        "accuracy": 0.9981060606060606,
+        "brier": 0.0034331155405047087,
+        "f1_macro": 0.9981052382268187,
+        "log_loss": 0.00924077935332623,
+        "primary_metric": "log_loss",
+        "primary_value": 0.00924077935332623,
+        "weighted_accuracy": 0.9981060606060606,
+        "weighted_brier": 0.0034331155405047087,
+        "weighted_f1_macro": 0.9981052382268187,
+        "weighted_log_loss": 0.00924077935332623
+      },
+      "model_metadata": {
+        "classes": [
+          0,
+          1
+        ],
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 233,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 21,
+      "n_test": 528,
+      "n_train": 1581,
+      "normalized_loss": 0.01333504119183949,
+      "predict_seconds": 0.0008885,
+      "prediction_sha256": "f4039e1a384ff67f9a9620193bbeef8c66d419a853806f03ff5ec59148bc16c3",
+      "probability_sha256": "2aa06bb57b32e32b4fc08ded855475aef664b2f7a9a6bab602c463e8d2c9869b",
+      "roundtrip_exact": true,
+      "seed": 1,
+      "serialized_model_bytes": 51903,
+      "source": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "split_sha256": "fcdaf383216693f5366bd48d22f5cb77ed74e0a8421a279b37885210b4f29339",
+      "status": "ok",
+      "stderr": "",
+      "task": "binary",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 0.6929696894360714,
+      "weighted": false,
+      "worker_peak_rss_bytes": 256966656
+    },
+    {
+      "arm": "candidate",
+      "behavior_fingerprint_sha256": "0d889b94217e41b3226eae50c0e92ed83b692a4d423a9b5ab2ea64bedce7a8ca",
+      "dataset_key": "syn:df1/647",
+      "dataset_sha256": "35df5d94bdd4aaa96924ea7ed1d06cef964e780720065b969939e61dd3bd0fda",
+      "domain_id": "binary_classification",
+      "excess_brier": 0.0034348003938974073,
+      "fit_seconds": 0.168534084,
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/__init__.py",
+      "metrics": {
+        "accuracy": 0.9981060606060606,
+        "brier": 0.0034348003938974073,
+        "f1_macro": 0.9981052382268187,
+        "log_loss": 0.009599106312471361,
+        "primary_metric": "log_loss",
+        "primary_value": 0.009599106312471361,
+        "weighted_accuracy": 0.9981060606060606,
+        "weighted_brier": 0.0034348003938974073,
+        "weighted_f1_macro": 0.9981052382268187,
+        "weighted_log_loss": 0.009599106312471361
+      },
+      "model_metadata": {
+        "classes": [
+          0,
+          1
+        ],
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 527,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 21,
+      "n_test": 528,
+      "n_train": 1581,
+      "normalized_loss": 0.013852130127485046,
+      "predict_seconds": 0.001572625,
+      "prediction_sha256": "6ad47d478645a34cc7989b030ec35e38634e7b5600901fc582a7c06eebf2840e",
+      "probability_sha256": "5a624f4e052fe4dcd6bfd0dce9f3bc6fb6915c65eb7a67c9ec4ac0d6b4424e1b",
+      "roundtrip_exact": true,
+      "seed": 2,
+      "serialized_model_bytes": 80288,
+      "source": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "split_sha256": "3c2374a409dfbcc9cb063ba35db5b001629d901b65297187b19f44333bf158c6",
+      "status": "ok",
+      "stderr": "",
+      "task": "binary",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 0.6929696894360714,
+      "weighted": false,
+      "worker_peak_rss_bytes": 262160384
+    },
+    {
+      "arm": "control",
+      "behavior_fingerprint_sha256": "0d889b94217e41b3226eae50c0e92ed83b692a4d423a9b5ab2ea64bedce7a8ca",
+      "dataset_key": "syn:df1/647",
+      "dataset_sha256": "35df5d94bdd4aaa96924ea7ed1d06cef964e780720065b969939e61dd3bd0fda",
+      "domain_id": "binary_classification",
+      "excess_brier": 0.0034348003938974073,
+      "fit_seconds": 0.168105583,
+      "implementation_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "metrics": {
+        "accuracy": 0.9981060606060606,
+        "brier": 0.0034348003938974073,
+        "f1_macro": 0.9981052382268187,
+        "log_loss": 0.009599106312471361,
+        "primary_metric": "log_loss",
+        "primary_value": 0.009599106312471361,
+        "weighted_accuracy": 0.9981060606060606,
+        "weighted_brier": 0.0034348003938974073,
+        "weighted_f1_macro": 0.9981052382268187,
+        "weighted_log_loss": 0.009599106312471361
+      },
+      "model_metadata": {
+        "classes": [
+          0,
+          1
+        ],
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 527,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 21,
+      "n_test": 528,
+      "n_train": 1581,
+      "normalized_loss": 0.013852130127485046,
+      "predict_seconds": 0.001602959,
+      "prediction_sha256": "6ad47d478645a34cc7989b030ec35e38634e7b5600901fc582a7c06eebf2840e",
+      "probability_sha256": "5a624f4e052fe4dcd6bfd0dce9f3bc6fb6915c65eb7a67c9ec4ac0d6b4424e1b",
+      "roundtrip_exact": true,
+      "seed": 2,
+      "serialized_model_bytes": 79931,
+      "source": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "split_sha256": "3c2374a409dfbcc9cb063ba35db5b001629d901b65297187b19f44333bf158c6",
+      "status": "ok",
+      "stderr": "",
+      "task": "binary",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 0.6929696894360714,
+      "weighted": false,
+      "worker_peak_rss_bytes": 258015232
+    },
+    {
+      "arm": "control",
+      "behavior_fingerprint_sha256": "94e3746b5bd88e532bdda9980ce7512090ea37d35afb70f994401bcda2aa82f3",
+      "dataset_key": "syn:df1/234",
+      "dataset_sha256": "cf660a560e6ec769fb10ec259863156d22dadec2fa64036dc3558403a86902dc",
+      "domain_id": "categorical_missing_regression",
+      "excess_brier": null,
+      "fit_seconds": 0.192263166,
+      "implementation_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "metrics": {
+        "mae": 0.9890938224370699,
+        "primary_metric": "rmse",
+        "primary_value": 1.3137033610801567,
+        "r2": 0.7506295613650863,
+        "rmse": 1.3137033610801567,
+        "weighted_mae": 0.9890938224370699,
+        "weighted_r2": 0.7506295613650863,
+        "weighted_rmse": 1.3137033610801567
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 300,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 26,
+      "n_test": 1282,
+      "n_train": 3843,
+      "normalized_loss": 0.49919780465580094,
+      "predict_seconds": 0.003454542,
+      "prediction_sha256": "1c66dfd6b19e7fdb0f3ff84829298d8edb0e9b8470e528855c5eb1dd5b768a23",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 0,
+      "serialized_model_bytes": 185280,
+      "source": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "split_sha256": "0405c16d131a8ad9e1f22f265e838716079b452789d9fe071622a080d21030e8",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 2.6316288830355754,
+      "weighted": false,
+      "worker_peak_rss_bytes": 297926656
+    },
+    {
+      "arm": "candidate",
+      "behavior_fingerprint_sha256": "94e3746b5bd88e532bdda9980ce7512090ea37d35afb70f994401bcda2aa82f3",
+      "dataset_key": "syn:df1/234",
+      "dataset_sha256": "cf660a560e6ec769fb10ec259863156d22dadec2fa64036dc3558403a86902dc",
+      "domain_id": "categorical_missing_regression",
+      "excess_brier": null,
+      "fit_seconds": 0.199477375,
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/__init__.py",
+      "metrics": {
+        "mae": 0.9890938224370699,
+        "primary_metric": "rmse",
+        "primary_value": 1.3137033610801567,
+        "r2": 0.7506295613650863,
+        "rmse": 1.3137033610801567,
+        "weighted_mae": 0.9890938224370699,
+        "weighted_r2": 0.7506295613650863,
+        "weighted_rmse": 1.3137033610801567
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 300,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 26,
+      "n_test": 1282,
+      "n_train": 3843,
+      "normalized_loss": 0.49919780465580094,
+      "predict_seconds": 0.0033925,
+      "prediction_sha256": "1c66dfd6b19e7fdb0f3ff84829298d8edb0e9b8470e528855c5eb1dd5b768a23",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 0,
+      "serialized_model_bytes": 185599,
+      "source": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "split_sha256": "0405c16d131a8ad9e1f22f265e838716079b452789d9fe071622a080d21030e8",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 2.6316288830355754,
+      "weighted": false,
+      "worker_peak_rss_bytes": 303579136
+    },
+    {
+      "arm": "candidate",
+      "behavior_fingerprint_sha256": "5436efd480f579069b66ded1ddb124747483a0d7c690f73ffed521798f5b1e73",
+      "dataset_key": "syn:df1/234",
+      "dataset_sha256": "cf660a560e6ec769fb10ec259863156d22dadec2fa64036dc3558403a86902dc",
+      "domain_id": "categorical_missing_regression",
+      "excess_brier": null,
+      "fit_seconds": 0.198743042,
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/__init__.py",
+      "metrics": {
+        "mae": 0.974947895067711,
+        "primary_metric": "rmse",
+        "primary_value": 1.2895471994834449,
+        "r2": 0.764018057255578,
+        "rmse": 1.2895471994834449,
+        "weighted_mae": 0.974947895067711,
+        "weighted_r2": 0.764018057255578,
+        "weighted_rmse": 1.2895471994834449
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 300,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 26,
+      "n_test": 1282,
+      "n_train": 3843,
+      "normalized_loss": 0.4857797089161881,
+      "predict_seconds": 0.00330225,
+      "prediction_sha256": "6c7aaf1a7eb9dd0b6dc1db1903ee04844a3259500b19198e39666fb624517b77",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 1,
+      "serialized_model_bytes": 184277,
+      "source": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "split_sha256": "09b5ea2241e1e0217bd8bc2ef5d9d603d23ab60dfcf7a68a816e34642846f99e",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 2.654592556697199,
+      "weighted": false,
+      "worker_peak_rss_bytes": 268107776
+    },
+    {
+      "arm": "control",
+      "behavior_fingerprint_sha256": "5436efd480f579069b66ded1ddb124747483a0d7c690f73ffed521798f5b1e73",
+      "dataset_key": "syn:df1/234",
+      "dataset_sha256": "cf660a560e6ec769fb10ec259863156d22dadec2fa64036dc3558403a86902dc",
+      "domain_id": "categorical_missing_regression",
+      "excess_brier": null,
+      "fit_seconds": 0.194625917,
+      "implementation_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "metrics": {
+        "mae": 0.974947895067711,
+        "primary_metric": "rmse",
+        "primary_value": 1.2895471994834449,
+        "r2": 0.764018057255578,
+        "rmse": 1.2895471994834449,
+        "weighted_mae": 0.974947895067711,
+        "weighted_r2": 0.764018057255578,
+        "weighted_rmse": 1.2895471994834449
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 300,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 26,
+      "n_test": 1282,
+      "n_train": 3843,
+      "normalized_loss": 0.4857797089161881,
+      "predict_seconds": 0.003223458,
+      "prediction_sha256": "6c7aaf1a7eb9dd0b6dc1db1903ee04844a3259500b19198e39666fb624517b77",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 1,
+      "serialized_model_bytes": 183938,
+      "source": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "split_sha256": "09b5ea2241e1e0217bd8bc2ef5d9d603d23ab60dfcf7a68a816e34642846f99e",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 2.654592556697199,
+      "weighted": false,
+      "worker_peak_rss_bytes": 275857408
+    },
+    {
+      "arm": "control",
+      "behavior_fingerprint_sha256": "ad7b5381359708a30f99741c4b3330f20fdf0aae5fd008b56966a04d164a0508",
+      "dataset_key": "generic:grouped-entity-v1",
+      "dataset_sha256": "c73e39289a205a7bff649b9911478a4a0390223a5d23809cd575b7c43481c24d",
+      "domain_id": "grouped_entity_regression",
+      "excess_brier": null,
+      "fit_seconds": 0.178211125,
+      "implementation_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "metrics": {
+        "mae": 2.0704799988781173,
+        "primary_metric": "rmse",
+        "primary_value": 2.655436250267878,
+        "r2": 0.4654828262873858,
+        "rmse": 2.655436250267878,
+        "weighted_mae": 2.0704799988781173,
+        "weighted_r2": 0.4654828262873858,
+        "weighted_rmse": 2.655436250267878
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 3,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 255,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 12,
+      "n_test": 1500,
+      "n_train": 4500,
+      "normalized_loss": 0.7297749894224236,
+      "predict_seconds": 0.001634542,
+      "prediction_sha256": "6c638c6cd1acadcb84fc6b85fee4aa2448635c8e02523f2af3aa338161d3db38",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 0,
+      "serialized_model_bytes": 159668,
+      "source": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "split_sha256": "2fd52f85eebdcfdb16b0ed5d0025d7c92bf76e58eb91a6d2bf56a39d75f34716",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 3.638705476011871,
+      "weighted": false,
+      "worker_peak_rss_bytes": 261029888
+    },
+    {
+      "arm": "candidate",
+      "behavior_fingerprint_sha256": "ad7b5381359708a30f99741c4b3330f20fdf0aae5fd008b56966a04d164a0508",
+      "dataset_key": "generic:grouped-entity-v1",
+      "dataset_sha256": "c73e39289a205a7bff649b9911478a4a0390223a5d23809cd575b7c43481c24d",
+      "domain_id": "grouped_entity_regression",
+      "excess_brier": null,
+      "fit_seconds": 0.176458958,
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/__init__.py",
+      "metrics": {
+        "mae": 2.0704799988781173,
+        "primary_metric": "rmse",
+        "primary_value": 2.655436250267878,
+        "r2": 0.4654828262873858,
+        "rmse": 2.655436250267878,
+        "weighted_mae": 2.0704799988781173,
+        "weighted_r2": 0.4654828262873858,
+        "weighted_rmse": 2.655436250267878
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 3,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 255,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 12,
+      "n_test": 1500,
+      "n_train": 4500,
+      "normalized_loss": 0.7297749894224236,
+      "predict_seconds": 0.001560041,
+      "prediction_sha256": "6c638c6cd1acadcb84fc6b85fee4aa2448635c8e02523f2af3aa338161d3db38",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 0,
+      "serialized_model_bytes": 160716,
+      "source": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "split_sha256": "2fd52f85eebdcfdb16b0ed5d0025d7c92bf76e58eb91a6d2bf56a39d75f34716",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 3.638705476011871,
+      "weighted": false,
+      "worker_peak_rss_bytes": 265502720
+    },
+    {
+      "arm": "candidate",
+      "behavior_fingerprint_sha256": "06c91b36b33ee4f17dc22ddcb9a9b82d56898d2dc13b4085c886082607caf84c",
+      "dataset_key": "generic:grouped-entity-v1",
+      "dataset_sha256": "8c2f8c0445926310c3e1b05e6ae65243706c23306e73e2da709a5705e786f218",
+      "domain_id": "grouped_entity_regression",
+      "excess_brier": null,
+      "fit_seconds": 0.175401291,
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/__init__.py",
+      "metrics": {
+        "mae": 2.212692879511841,
+        "primary_metric": "rmse",
+        "primary_value": 2.8429418870121728,
+        "r2": 0.4834371250617773,
+        "rmse": 2.8429418870121728,
+        "weighted_mae": 2.212692879511841,
+        "weighted_r2": 0.4834371250617773,
+        "weighted_rmse": 2.8429418870121728
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 3,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 249,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 12,
+      "n_test": 1500,
+      "n_train": 4500,
+      "normalized_loss": 0.7187225630784615,
+      "predict_seconds": 0.0016045,
+      "prediction_sha256": "1a8c206ed2414e3062d53977766502d2705f114f0f84000534bcda456ed658db",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 1,
+      "serialized_model_bytes": 160944,
+      "source": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "split_sha256": "a36d164003d9e280ea161713da3c0cab3b14471bd495d8d1ae74ee402d6aa2ac",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 3.9555484035942454,
+      "weighted": false,
+      "worker_peak_rss_bytes": 265240576
+    },
+    {
+      "arm": "control",
+      "behavior_fingerprint_sha256": "06c91b36b33ee4f17dc22ddcb9a9b82d56898d2dc13b4085c886082607caf84c",
+      "dataset_key": "generic:grouped-entity-v1",
+      "dataset_sha256": "8c2f8c0445926310c3e1b05e6ae65243706c23306e73e2da709a5705e786f218",
+      "domain_id": "grouped_entity_regression",
+      "excess_brier": null,
+      "fit_seconds": 0.174654916,
+      "implementation_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "metrics": {
+        "mae": 2.212692879511841,
+        "primary_metric": "rmse",
+        "primary_value": 2.8429418870121728,
+        "r2": 0.4834371250617773,
+        "rmse": 2.8429418870121728,
+        "weighted_mae": 2.212692879511841,
+        "weighted_r2": 0.4834371250617773,
+        "weighted_rmse": 2.8429418870121728
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 3,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 249,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 12,
+      "n_test": 1500,
+      "n_train": 4500,
+      "normalized_loss": 0.7187225630784615,
+      "predict_seconds": 0.001698584,
+      "prediction_sha256": "1a8c206ed2414e3062d53977766502d2705f114f0f84000534bcda456ed658db",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 1,
+      "serialized_model_bytes": 159905,
+      "source": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "split_sha256": "a36d164003d9e280ea161713da3c0cab3b14471bd495d8d1ae74ee402d6aa2ac",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 3.9555484035942454,
+      "weighted": false,
+      "worker_peak_rss_bytes": 259325952
+    },
+    {
+      "arm": "control",
+      "behavior_fingerprint_sha256": "6346228953f1502e6cda60902aeb3a1d49ceaeec6aaa100cd2d9bb18c9d59a0c",
+      "dataset_key": "adapter:friedman_numeric:large",
+      "dataset_sha256": "f490b522b80cf4fc60873fe9a820eb1eb2c8197dbab2a5ba5ea9886d60149273",
+      "domain_id": "high_row_numeric",
+      "excess_brier": null,
+      "fit_seconds": 0.325911792,
+      "implementation_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "metrics": {
+        "mae": 0.8254382789400876,
+        "primary_metric": "rmse",
+        "primary_value": 1.039042692525229,
+        "r2": 0.9559753702756332,
+        "rmse": 1.039042692525229,
+        "weighted_mae": 0.8254382789400876,
+        "weighted_r2": 0.9559753702756332,
+        "weighted_rmse": 1.039042692525229
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 120,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 20,
+      "n_test": 12500,
+      "n_train": 37500,
+      "normalized_loss": 0.209820433706686,
+      "predict_seconds": 0.13590975,
+      "prediction_sha256": "89054556ce5d3612191b013c0f3e1e8770bfa99678f727253261a26cef3d6e1b",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 0,
+      "serialized_model_bytes": 72262,
+      "source": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "split_sha256": "75664af24a2d88edd1e4852726a017748ea423a48edc574aca9436f2b5f6b85f",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 4.9520567380855605,
+      "weighted": false,
+      "worker_peak_rss_bytes": 299483136
+    },
+    {
+      "arm": "candidate",
+      "behavior_fingerprint_sha256": "6346228953f1502e6cda60902aeb3a1d49ceaeec6aaa100cd2d9bb18c9d59a0c",
+      "dataset_key": "adapter:friedman_numeric:large",
+      "dataset_sha256": "f490b522b80cf4fc60873fe9a820eb1eb2c8197dbab2a5ba5ea9886d60149273",
+      "domain_id": "high_row_numeric",
+      "excess_brier": null,
+      "fit_seconds": 0.3211745,
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/__init__.py",
+      "metrics": {
+        "mae": 0.8254382789400876,
+        "primary_metric": "rmse",
+        "primary_value": 1.039042692525229,
+        "r2": 0.9559753702756332,
+        "rmse": 1.039042692525229,
+        "weighted_mae": 0.8254382789400876,
+        "weighted_r2": 0.9559753702756332,
+        "weighted_rmse": 1.039042692525229
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 120,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 20,
+      "n_test": 12500,
+      "n_train": 37500,
+      "normalized_loss": 0.209820433706686,
+      "predict_seconds": 0.134008167,
+      "prediction_sha256": "89054556ce5d3612191b013c0f3e1e8770bfa99678f727253261a26cef3d6e1b",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 0,
+      "serialized_model_bytes": 72573,
+      "source": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "split_sha256": "75664af24a2d88edd1e4852726a017748ea423a48edc574aca9436f2b5f6b85f",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 4.9520567380855605,
+      "weighted": false,
+      "worker_peak_rss_bytes": 304087040
+    },
+    {
+      "arm": "candidate",
+      "behavior_fingerprint_sha256": "e2bc2edfda860c22b23ebc70547f5a4c11a49b791f510745f0295e788baf9109",
+      "dataset_key": "syn:df1/077",
+      "dataset_sha256": "fe0a27a60186de31e22197b853966ceb9b857ea5bc91af9dff4f061c4f4fa658",
+      "domain_id": "multiclass_classification",
+      "excess_brier": 8.467524495828372e-05,
+      "fit_seconds": 1.583387417,
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/__init__.py",
+      "metrics": {
+        "accuracy": 1.0,
+        "brier": 8.467524495828372e-05,
+        "f1_macro": 1.0,
+        "log_loss": 0.004542386969842568,
+        "primary_metric": "log_loss",
+        "primary_value": 0.004542386969842568,
+        "weighted_accuracy": 1.0,
+        "weighted_brier": 8.467524495828372e-05,
+        "weighted_f1_macro": 1.0,
+        "weighted_log_loss": 0.004542386969842568
+      },
+      "model_metadata": {
+        "classes": [
+          0,
+          1,
+          2
+        ],
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 492,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 46,
+      "n_test": 1176,
+      "n_train": 3528,
+      "normalized_loss": 0.00420122136984362,
+      "predict_seconds": 0.009917083,
+      "prediction_sha256": "b53aad829ecee923fe8973cea90c63cd0fae897afc9c247b5e30f77aab9431aa",
+      "probability_sha256": "97a160f0b0989c49164cdc1e2752ba898080c23d2456f6f7cd13455a6d05e918",
+      "roundtrip_exact": true,
+      "seed": 0,
+      "serialized_model_bytes": 273669,
+      "source": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "split_sha256": "84815b8a5f2795ce5ca1faa56fe3d91a8e67fd61d5827276728adb4664ecca57",
+      "status": "ok",
+      "stderr": "",
+      "task": "multiclass",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 1.081206289782261,
+      "weighted": false,
+      "worker_peak_rss_bytes": 325402624
+    },
+    {
+      "arm": "control",
+      "behavior_fingerprint_sha256": "e2bc2edfda860c22b23ebc70547f5a4c11a49b791f510745f0295e788baf9109",
+      "dataset_key": "syn:df1/077",
+      "dataset_sha256": "fe0a27a60186de31e22197b853966ceb9b857ea5bc91af9dff4f061c4f4fa658",
+      "domain_id": "multiclass_classification",
+      "excess_brier": 8.467524495828372e-05,
+      "fit_seconds": 1.568039667,
+      "implementation_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "metrics": {
+        "accuracy": 1.0,
+        "brier": 8.467524495828372e-05,
+        "f1_macro": 1.0,
+        "log_loss": 0.004542386969842568,
+        "primary_metric": "log_loss",
+        "primary_value": 0.004542386969842568,
+        "weighted_accuracy": 1.0,
+        "weighted_brier": 8.467524495828372e-05,
+        "weighted_f1_macro": 1.0,
+        "weighted_log_loss": 0.004542386969842568
+      },
+      "model_metadata": {
+        "classes": [
+          0,
+          1,
+          2
+        ],
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 492,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 46,
+      "n_test": 1176,
+      "n_train": 3528,
+      "normalized_loss": 0.00420122136984362,
+      "predict_seconds": 0.009744292,
+      "prediction_sha256": "b53aad829ecee923fe8973cea90c63cd0fae897afc9c247b5e30f77aab9431aa",
+      "probability_sha256": "97a160f0b0989c49164cdc1e2752ba898080c23d2456f6f7cd13455a6d05e918",
+      "roundtrip_exact": true,
+      "seed": 0,
+      "serialized_model_bytes": 273336,
+      "source": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "split_sha256": "84815b8a5f2795ce5ca1faa56fe3d91a8e67fd61d5827276728adb4664ecca57",
+      "status": "ok",
+      "stderr": "",
+      "task": "multiclass",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 1.081206289782261,
+      "weighted": false,
+      "worker_peak_rss_bytes": 334381056
+    },
+    {
+      "arm": "control",
+      "behavior_fingerprint_sha256": "03f898dc67244eff7a9ce5fcc2cdfef08eac229df0e86ea606116f99386b09cd",
+      "dataset_key": "syn:df1/077",
+      "dataset_sha256": "fe0a27a60186de31e22197b853966ceb9b857ea5bc91af9dff4f061c4f4fa658",
+      "domain_id": "multiclass_classification",
+      "excess_brier": 0.0001306896207864843,
+      "fit_seconds": 1.307632834,
+      "implementation_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "metrics": {
+        "accuracy": 1.0,
+        "brier": 0.0001306896207864843,
+        "f1_macro": 1.0,
+        "log_loss": 0.004886342520586498,
+        "primary_metric": "log_loss",
+        "primary_value": 0.004886342520586498,
+        "weighted_accuracy": 1.0,
+        "weighted_brier": 0.0001306896207864843,
+        "weighted_f1_macro": 1.0,
+        "weighted_log_loss": 0.004886342520586498
+      },
+      "model_metadata": {
+        "classes": [
+          0,
+          1,
+          2
+        ],
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 452,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 46,
+      "n_test": 1176,
+      "n_train": 3528,
+      "normalized_loss": 0.004518355957253648,
+      "predict_seconds": 0.009121584,
+      "prediction_sha256": "879a8e6944076dc916de88f67843a10c9697bcdc1aa59dde45d5401b355a4584",
+      "probability_sha256": "bf782fc8f029bb50b4a697f2da64ec03c8fd2cf0664a29a059d0235c49972835",
+      "roundtrip_exact": true,
+      "seed": 1,
+      "serialized_model_bytes": 235581,
+      "source": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "split_sha256": "383d7bc4a4fb4caff80fefe5572fba272c7ddc7d0d00031c7d12c5dfa3553c80",
+      "status": "ok",
+      "stderr": "",
+      "task": "multiclass",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 1.081442579295262,
+      "weighted": false,
+      "worker_peak_rss_bytes": 294322176
+    },
+    {
+      "arm": "candidate",
+      "behavior_fingerprint_sha256": "03f898dc67244eff7a9ce5fcc2cdfef08eac229df0e86ea606116f99386b09cd",
+      "dataset_key": "syn:df1/077",
+      "dataset_sha256": "fe0a27a60186de31e22197b853966ceb9b857ea5bc91af9dff4f061c4f4fa658",
+      "domain_id": "multiclass_classification",
+      "excess_brier": 0.0001306896207864843,
+      "fit_seconds": 1.201227084,
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/__init__.py",
+      "metrics": {
+        "accuracy": 1.0,
+        "brier": 0.0001306896207864843,
+        "f1_macro": 1.0,
+        "log_loss": 0.004886342520586498,
+        "primary_metric": "log_loss",
+        "primary_value": 0.004886342520586498,
+        "weighted_accuracy": 1.0,
+        "weighted_brier": 0.0001306896207864843,
+        "weighted_f1_macro": 1.0,
+        "weighted_log_loss": 0.004886342520586498
+      },
+      "model_metadata": {
+        "classes": [
+          0,
+          1,
+          2
+        ],
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 452,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 46,
+      "n_test": 1176,
+      "n_train": 3528,
+      "normalized_loss": 0.004518355957253648,
+      "predict_seconds": 0.009239125,
+      "prediction_sha256": "879a8e6944076dc916de88f67843a10c9697bcdc1aa59dde45d5401b355a4584",
+      "probability_sha256": "bf782fc8f029bb50b4a697f2da64ec03c8fd2cf0664a29a059d0235c49972835",
+      "roundtrip_exact": true,
+      "seed": 1,
+      "serialized_model_bytes": 235910,
+      "source": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "split_sha256": "383d7bc4a4fb4caff80fefe5572fba272c7ddc7d0d00031c7d12c5dfa3553c80",
+      "status": "ok",
+      "stderr": "",
+      "task": "multiclass",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 1.081442579295262,
+      "weighted": false,
+      "worker_peak_rss_bytes": 297025536
+    },
+    {
+      "arm": "candidate",
+      "behavior_fingerprint_sha256": "f2cccaa57f44023a9af9cde2d4242bfac5b8371ac7181d0047b183441eccb2c2",
+      "dataset_key": "syn:df1/077",
+      "dataset_sha256": "fe0a27a60186de31e22197b853966ceb9b857ea5bc91af9dff4f061c4f4fa658",
+      "domain_id": "multiclass_classification",
+      "excess_brier": 7.778440695446597e-05,
+      "fit_seconds": 1.034420792,
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/__init__.py",
+      "metrics": {
+        "accuracy": 1.0,
+        "brier": 7.778440695446597e-05,
+        "f1_macro": 1.0,
+        "log_loss": 0.004786942892335754,
+        "primary_metric": "log_loss",
+        "primary_value": 0.004786942892335754,
+        "weighted_accuracy": 1.0,
+        "weighted_brier": 7.778440695446597e-05,
+        "weighted_f1_macro": 1.0,
+        "weighted_log_loss": 0.004786942892335754
+      },
+      "model_metadata": {
+        "classes": [
+          0,
+          1,
+          2
+        ],
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 339,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 46,
+      "n_test": 1176,
+      "n_train": 3528,
+      "normalized_loss": 0.004427409401493376,
+      "predict_seconds": 0.009244833,
+      "prediction_sha256": "775b305656c42de73ab5ed3ec84445a62591161a072e199a85abcdc1638232d4",
+      "probability_sha256": "27f70479502cec821ec898f25f4c9972fa19e94789fde373607f79b3d99dd763",
+      "roundtrip_exact": true,
+      "seed": 2,
+      "serialized_model_bytes": 220443,
+      "source": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "split_sha256": "2eb5dba15188918f0bf9d8b9969dc1c08b53ed3577c8fe7c885dbf58a67d5a6a",
+      "status": "ok",
+      "stderr": "",
+      "task": "multiclass",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 1.081206289782261,
+      "weighted": false,
+      "worker_peak_rss_bytes": 292454400
+    },
+    {
+      "arm": "control",
+      "behavior_fingerprint_sha256": "f2cccaa57f44023a9af9cde2d4242bfac5b8371ac7181d0047b183441eccb2c2",
+      "dataset_key": "syn:df1/077",
+      "dataset_sha256": "fe0a27a60186de31e22197b853966ceb9b857ea5bc91af9dff4f061c4f4fa658",
+      "domain_id": "multiclass_classification",
+      "excess_brier": 7.778440695446597e-05,
+      "fit_seconds": 1.033714959,
+      "implementation_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "metrics": {
+        "accuracy": 1.0,
+        "brier": 7.778440695446597e-05,
+        "f1_macro": 1.0,
+        "log_loss": 0.004786942892335754,
+        "primary_metric": "log_loss",
+        "primary_value": 0.004786942892335754,
+        "weighted_accuracy": 1.0,
+        "weighted_brier": 7.778440695446597e-05,
+        "weighted_f1_macro": 1.0,
+        "weighted_log_loss": 0.004786942892335754
+      },
+      "model_metadata": {
+        "classes": [
+          0,
+          1,
+          2
+        ],
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 339,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 46,
+      "n_test": 1176,
+      "n_train": 3528,
+      "normalized_loss": 0.004427409401493376,
+      "predict_seconds": 0.009178125,
+      "prediction_sha256": "775b305656c42de73ab5ed3ec84445a62591161a072e199a85abcdc1638232d4",
+      "probability_sha256": "27f70479502cec821ec898f25f4c9972fa19e94789fde373607f79b3d99dd763",
+      "roundtrip_exact": true,
+      "seed": 2,
+      "serialized_model_bytes": 220115,
+      "source": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "split_sha256": "2eb5dba15188918f0bf9d8b9969dc1c08b53ed3577c8fe7c885dbf58a67d5a6a",
+      "status": "ok",
+      "stderr": "",
+      "task": "multiclass",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 1.081206289782261,
+      "weighted": false,
+      "worker_peak_rss_bytes": 287850496
+    },
+    {
+      "arm": "control",
+      "behavior_fingerprint_sha256": "fa0df614bf4a7eec0ab3da818ed36e581f8164ea946a0ad529d335830655282a",
+      "dataset_key": "syn:df1/241",
+      "dataset_sha256": "99d3068ded75bc7704c689a751d4582c33ff500b72da840f328bfbba733bcbb0",
+      "domain_id": "noisy_numeric_regression",
+      "excess_brier": null,
+      "fit_seconds": 0.58176925,
+      "implementation_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "metrics": {
+        "mae": 37.85955244828202,
+        "primary_metric": "rmse",
+        "primary_value": 53.36360001335048,
+        "r2": 0.7645616066001272,
+        "rmse": 53.36360001335048,
+        "weighted_mae": 37.85955244828202,
+        "weighted_r2": 0.7645616066001272,
+        "weighted_rmse": 53.36360001335048
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 300,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 100,
+      "n_test": 1650,
+      "n_train": 4948,
+      "normalized_loss": 0.4850462867071702,
+      "predict_seconds": 0.002226708,
+      "prediction_sha256": "7aab7465d5b7604684e25ca8ffb22f42fe85e8d937587fad995c81556cee20d1",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 0,
+      "serialized_model_bytes": 250182,
+      "source": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "split_sha256": "19546cf02659f3f64a27d02a10dfc32ac12b6a4876517f32e52c02e493173a4c",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 110.0175415744743,
+      "weighted": false,
+      "worker_peak_rss_bytes": 301514752
+    },
+    {
+      "arm": "candidate",
+      "behavior_fingerprint_sha256": "fa0df614bf4a7eec0ab3da818ed36e581f8164ea946a0ad529d335830655282a",
+      "dataset_key": "syn:df1/241",
+      "dataset_sha256": "99d3068ded75bc7704c689a751d4582c33ff500b72da840f328bfbba733bcbb0",
+      "domain_id": "noisy_numeric_regression",
+      "excess_brier": null,
+      "fit_seconds": 0.58387425,
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/__init__.py",
+      "metrics": {
+        "mae": 37.85955244828202,
+        "primary_metric": "rmse",
+        "primary_value": 53.36360001335048,
+        "r2": 0.7645616066001272,
+        "rmse": 53.36360001335048,
+        "weighted_mae": 37.85955244828202,
+        "weighted_r2": 0.7645616066001272,
+        "weighted_rmse": 53.36360001335048
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 300,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 100,
+      "n_test": 1650,
+      "n_train": 4948,
+      "normalized_loss": 0.4850462867071702,
+      "predict_seconds": 0.002240459,
+      "prediction_sha256": "7aab7465d5b7604684e25ca8ffb22f42fe85e8d937587fad995c81556cee20d1",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 0,
+      "serialized_model_bytes": 250513,
+      "source": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "split_sha256": "19546cf02659f3f64a27d02a10dfc32ac12b6a4876517f32e52c02e493173a4c",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 110.0175415744743,
+      "weighted": false,
+      "worker_peak_rss_bytes": 305020928
+    },
+    {
+      "arm": "candidate",
+      "behavior_fingerprint_sha256": "a18ffe86365be69b93206b5a9d541f25c83b95dc56819834039e16c7b873a0b1",
+      "dataset_key": "syn:df1/241",
+      "dataset_sha256": "99d3068ded75bc7704c689a751d4582c33ff500b72da840f328bfbba733bcbb0",
+      "domain_id": "noisy_numeric_regression",
+      "excess_brier": null,
+      "fit_seconds": 0.589069958,
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/__init__.py",
+      "metrics": {
+        "mae": 37.269014049892846,
+        "primary_metric": "rmse",
+        "primary_value": 52.61857941395452,
+        "r2": 0.7645725155122641,
+        "rmse": 52.61857941395452,
+        "weighted_mae": 37.269014049892846,
+        "weighted_r2": 0.7645725155122641,
+        "weighted_rmse": 52.61857941395452
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 300,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 100,
+      "n_test": 1650,
+      "n_train": 4948,
+      "normalized_loss": 0.485200868474761,
+      "predict_seconds": 0.002092,
+      "prediction_sha256": "d95676c36a5d6cc255f3f1c11b396f067a062fbeb89426bb6f16437cbe64c7e2",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 1,
+      "serialized_model_bytes": 251943,
+      "source": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "split_sha256": "13281f36128a62fe2a322bac2a35945b87c9438d64ce8c1c05552e452f5bee75",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 108.44700171160476,
+      "weighted": false,
+      "worker_peak_rss_bytes": 301498368
+    },
+    {
+      "arm": "control",
+      "behavior_fingerprint_sha256": "a18ffe86365be69b93206b5a9d541f25c83b95dc56819834039e16c7b873a0b1",
+      "dataset_key": "syn:df1/241",
+      "dataset_sha256": "99d3068ded75bc7704c689a751d4582c33ff500b72da840f328bfbba733bcbb0",
+      "domain_id": "noisy_numeric_regression",
+      "excess_brier": null,
+      "fit_seconds": 0.585399125,
+      "implementation_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "metrics": {
+        "mae": 37.269014049892846,
+        "primary_metric": "rmse",
+        "primary_value": 52.61857941395452,
+        "r2": 0.7645725155122641,
+        "rmse": 52.61857941395452,
+        "weighted_mae": 37.269014049892846,
+        "weighted_r2": 0.7645725155122641,
+        "weighted_rmse": 52.61857941395452
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 300,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 100,
+      "n_test": 1650,
+      "n_train": 4948,
+      "normalized_loss": 0.485200868474761,
+      "predict_seconds": 0.002112708,
+      "prediction_sha256": "d95676c36a5d6cc255f3f1c11b396f067a062fbeb89426bb6f16437cbe64c7e2",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 1,
+      "serialized_model_bytes": 251627,
+      "source": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "split_sha256": "13281f36128a62fe2a322bac2a35945b87c9438d64ce8c1c05552e452f5bee75",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 108.44700171160476,
+      "weighted": false,
+      "worker_peak_rss_bytes": 301449216
+    },
+    {
+      "arm": "control",
+      "behavior_fingerprint_sha256": "fa5d12a443eaab38e76aeb47ac0ee4f02aae26a9699c2ab39460b3a777bc5b45",
+      "dataset_key": "syn:df1/311",
+      "dataset_sha256": "a323d3f5ddaaf570ecc765b7810d7415344d81de7e3d01bd44d3cacda52822ae",
+      "domain_id": "smooth_numeric_regression",
+      "excess_brier": null,
+      "fit_seconds": 0.077266708,
+      "implementation_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "metrics": {
+        "mae": 12.041325966065203,
+        "primary_metric": "rmse",
+        "primary_value": 40.09887921474805,
+        "r2": 0.19707203964231845,
+        "rmse": 40.09887921474805,
+        "weighted_mae": 12.041325966065203,
+        "weighted_r2": 0.19707203964231845,
+        "weighted_rmse": 40.09887921474805
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 300,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 5,
+      "n_test": 343,
+      "n_train": 1029,
+      "normalized_loss": 0.8960509908215808,
+      "predict_seconds": 0.000676833,
+      "prediction_sha256": "9dfce3e955e687d4d61ecca619bce12bb3f2dbf44f86cecbba7a77d0b235bb09",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 0,
+      "serialized_model_bytes": 91822,
+      "source": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "split_sha256": "9856666a440803b2be561fd83460da1c909316ee05608ae0c991d2f7b0a2fa9f",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 44.75066667576782,
+      "weighted": false,
+      "worker_peak_rss_bytes": 255000576
+    },
+    {
+      "arm": "candidate",
+      "behavior_fingerprint_sha256": "fa5d12a443eaab38e76aeb47ac0ee4f02aae26a9699c2ab39460b3a777bc5b45",
+      "dataset_key": "syn:df1/311",
+      "dataset_sha256": "a323d3f5ddaaf570ecc765b7810d7415344d81de7e3d01bd44d3cacda52822ae",
+      "domain_id": "smooth_numeric_regression",
+      "excess_brier": null,
+      "fit_seconds": 0.076663209,
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/__init__.py",
+      "metrics": {
+        "mae": 12.041325966065203,
+        "primary_metric": "rmse",
+        "primary_value": 40.09887921474805,
+        "r2": 0.19707203964231845,
+        "rmse": 40.09887921474805,
+        "weighted_mae": 12.041325966065203,
+        "weighted_r2": 0.19707203964231845,
+        "weighted_rmse": 40.09887921474805
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 300,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 5,
+      "n_test": 343,
+      "n_train": 1029,
+      "normalized_loss": 0.8960509908215808,
+      "predict_seconds": 0.000624625,
+      "prediction_sha256": "9dfce3e955e687d4d61ecca619bce12bb3f2dbf44f86cecbba7a77d0b235bb09",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 0,
+      "serialized_model_bytes": 92165,
+      "source": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "split_sha256": "9856666a440803b2be561fd83460da1c909316ee05608ae0c991d2f7b0a2fa9f",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 44.75066667576782,
+      "weighted": false,
+      "worker_peak_rss_bytes": 253935616
+    },
+    {
+      "arm": "candidate",
+      "behavior_fingerprint_sha256": "23b08701835029ca76e5b8d8131b61aeb7f71cf1bb9534145f34931182a1b0c3",
+      "dataset_key": "syn:df1/311",
+      "dataset_sha256": "a323d3f5ddaaf570ecc765b7810d7415344d81de7e3d01bd44d3cacda52822ae",
+      "domain_id": "smooth_numeric_regression",
+      "excess_brier": null,
+      "fit_seconds": 0.07729775,
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/__init__.py",
+      "metrics": {
+        "mae": 15.101650134746103,
+        "primary_metric": "rmse",
+        "primary_value": 63.23696576585915,
+        "r2": 0.3728211024133946,
+        "rmse": 63.23696576585915,
+        "weighted_mae": 15.101650134746103,
+        "weighted_r2": 0.3728211024133946,
+        "weighted_rmse": 63.23696576585915
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 300,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 5,
+      "n_test": 343,
+      "n_train": 1029,
+      "normalized_loss": 0.7887808335806578,
+      "predict_seconds": 0.000638875,
+      "prediction_sha256": "a5a2c79460d1fb7596352fca743e383a2d024e925696152d2d427f25296570e5",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 1,
+      "serialized_model_bytes": 91598,
+      "source": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "split_sha256": "38fb4e8d024af736531d35cfc7d4d64976cba4e91c2121d93b8c911201a7c9d4",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 80.17051514651538,
+      "weighted": false,
+      "worker_peak_rss_bytes": 253460480
+    },
+    {
+      "arm": "control",
+      "behavior_fingerprint_sha256": "23b08701835029ca76e5b8d8131b61aeb7f71cf1bb9534145f34931182a1b0c3",
+      "dataset_key": "syn:df1/311",
+      "dataset_sha256": "a323d3f5ddaaf570ecc765b7810d7415344d81de7e3d01bd44d3cacda52822ae",
+      "domain_id": "smooth_numeric_regression",
+      "excess_brier": null,
+      "fit_seconds": 0.078414958,
+      "implementation_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "metrics": {
+        "mae": 15.101650134746103,
+        "primary_metric": "rmse",
+        "primary_value": 63.23696576585915,
+        "r2": 0.3728211024133946,
+        "rmse": 63.23696576585915,
+        "weighted_mae": 15.101650134746103,
+        "weighted_r2": 0.3728211024133946,
+        "weighted_rmse": 63.23696576585915
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 300,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 5,
+      "n_test": 343,
+      "n_train": 1029,
+      "normalized_loss": 0.7887808335806578,
+      "predict_seconds": 0.000633333,
+      "prediction_sha256": "a5a2c79460d1fb7596352fca743e383a2d024e925696152d2d427f25296570e5",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 1,
+      "serialized_model_bytes": 91266,
+      "source": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "split_sha256": "38fb4e8d024af736531d35cfc7d4d64976cba4e91c2121d93b8c911201a7c9d4",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 80.17051514651538,
+      "weighted": false,
+      "worker_peak_rss_bytes": 255541248
+    },
+    {
+      "arm": "control",
+      "behavior_fingerprint_sha256": "9c95bdb864d4670954d6accc69605f49212d35e02a6ebfefd0ac74aaec92a7f4",
+      "dataset_key": "adapter:numeric_binary:medium",
+      "dataset_sha256": "2743b36356a9c5fe266eac94e132c3ec46e54121708d00eeee6fc718dff1a4a5",
+      "domain_id": "weighted_classification",
+      "excess_brier": null,
+      "fit_seconds": 0.325411542,
+      "implementation_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "metrics": {
+        "accuracy": 0.9304,
+        "brier": 0.11605540822043156,
+        "f1_macro": 0.9303946097585798,
+        "log_loss": 0.21700124706540674,
+        "primary_metric": "weighted_log_loss",
+        "primary_value": 0.21699698268949383,
+        "weighted_accuracy": 0.9304038177292216,
+        "weighted_brier": 0.11605124183095905,
+        "weighted_f1_macro": 0.930397962209111,
+        "weighted_log_loss": 0.21699698268949383
+      },
+      "model_metadata": {
+        "classes": [
+          0,
+          1
+        ],
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 300,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 40,
+      "n_test": 2500,
+      "n_train": 7500,
+      "normalized_loss": 0.3130604427112765,
+      "predict_seconds": 0.0054815,
+      "prediction_sha256": "a3b690039e94d555eccf7dd50af7bbe79a0d03cdffac10544fd3943bff7d3db9",
+      "probability_sha256": "7305fc84e9ca2235d51d9046774c811b26770a6d9b4822ae3178a89174caf6d3",
+      "roundtrip_exact": true,
+      "seed": 0,
+      "serialized_model_bytes": 154507,
+      "source": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "split_sha256": "47e648701e57e692389f5627cb0780305be11e806ef8d89dc68d51dc98054d9a",
+      "status": "ok",
+      "stderr": "",
+      "task": "binary",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 0.6931472427821925,
+      "weighted": true,
+      "worker_peak_rss_bytes": 298074112
+    },
+    {
+      "arm": "candidate",
+      "behavior_fingerprint_sha256": "9c95bdb864d4670954d6accc69605f49212d35e02a6ebfefd0ac74aaec92a7f4",
+      "dataset_key": "adapter:numeric_binary:medium",
+      "dataset_sha256": "2743b36356a9c5fe266eac94e132c3ec46e54121708d00eeee6fc718dff1a4a5",
+      "domain_id": "weighted_classification",
+      "excess_brier": null,
+      "fit_seconds": 0.326301459,
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/__init__.py",
+      "metrics": {
+        "accuracy": 0.9304,
+        "brier": 0.11605540822043156,
+        "f1_macro": 0.9303946097585798,
+        "log_loss": 0.21700124706540674,
+        "primary_metric": "weighted_log_loss",
+        "primary_value": 0.21699698268949383,
+        "weighted_accuracy": 0.9304038177292216,
+        "weighted_brier": 0.11605124183095905,
+        "weighted_f1_macro": 0.930397962209111,
+        "weighted_log_loss": 0.21699698268949383
+      },
+      "model_metadata": {
+        "classes": [
+          0,
+          1
+        ],
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 300,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 40,
+      "n_test": 2500,
+      "n_train": 7500,
+      "normalized_loss": 0.3130604427112765,
+      "predict_seconds": 0.005437333,
+      "prediction_sha256": "a3b690039e94d555eccf7dd50af7bbe79a0d03cdffac10544fd3943bff7d3db9",
+      "probability_sha256": "7305fc84e9ca2235d51d9046774c811b26770a6d9b4822ae3178a89174caf6d3",
+      "roundtrip_exact": true,
+      "seed": 0,
+      "serialized_model_bytes": 154796,
+      "source": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "split_sha256": "47e648701e57e692389f5627cb0780305be11e806ef8d89dc68d51dc98054d9a",
+      "status": "ok",
+      "stderr": "",
+      "task": "binary",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 0.6931472427821925,
+      "weighted": true,
+      "worker_peak_rss_bytes": 287588352
+    },
+    {
+      "arm": "candidate",
+      "behavior_fingerprint_sha256": "fca125fad7ab054a8bc2eb6ea608d91e429c0b1a0ce4bdb9c7cad4a9350a103b",
+      "dataset_key": "adapter:numeric_binary:medium",
+      "dataset_sha256": "f32e490f6117c5e305c2d406ca02869f9c30ab2b9b06db4647e929c494d617a9",
+      "domain_id": "weighted_classification",
+      "excess_brier": null,
+      "fit_seconds": 0.322109916,
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/__init__.py",
+      "metrics": {
+        "accuracy": 0.8868,
+        "brier": 0.172962970699082,
+        "f1_macro": 0.8867904179409745,
+        "log_loss": 0.2963113006108465,
+        "primary_metric": "weighted_log_loss",
+        "primary_value": 0.2962969445552383,
+        "weighted_accuracy": 0.886816990251495,
+        "weighted_brier": 0.17294671445511986,
+        "weighted_f1_macro": 0.8868042261613536,
+        "weighted_log_loss": 0.2962969445552383
+      },
+      "model_metadata": {
+        "classes": [
+          0,
+          1
+        ],
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 300,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 40,
+      "n_test": 2500,
+      "n_train": 7500,
+      "normalized_loss": 0.4274661325403944,
+      "predict_seconds": 0.005508792,
+      "prediction_sha256": "deef1ee81ec83b06b4f18803075752925e46d7caca0e69a5efb440d594f06f48",
+      "probability_sha256": "0d1b7bfdcdbc5b97f921efb810b80322afd94945fc3bd200d35d16c49d38df24",
+      "roundtrip_exact": true,
+      "seed": 1,
+      "serialized_model_bytes": 157050,
+      "source": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "split_sha256": "fb53b609d95e0a16db32462813d45cec2140124b59ef240cea8dc033644f6392",
+      "status": "ok",
+      "stderr": "",
+      "task": "binary",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 0.6931471805599454,
+      "weighted": true,
+      "worker_peak_rss_bytes": 278315008
+    },
+    {
+      "arm": "control",
+      "behavior_fingerprint_sha256": "fca125fad7ab054a8bc2eb6ea608d91e429c0b1a0ce4bdb9c7cad4a9350a103b",
+      "dataset_key": "adapter:numeric_binary:medium",
+      "dataset_sha256": "f32e490f6117c5e305c2d406ca02869f9c30ab2b9b06db4647e929c494d617a9",
+      "domain_id": "weighted_classification",
+      "excess_brier": null,
+      "fit_seconds": 0.321511625,
+      "implementation_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "metrics": {
+        "accuracy": 0.8868,
+        "brier": 0.172962970699082,
+        "f1_macro": 0.8867904179409745,
+        "log_loss": 0.2963113006108465,
+        "primary_metric": "weighted_log_loss",
+        "primary_value": 0.2962969445552383,
+        "weighted_accuracy": 0.886816990251495,
+        "weighted_brier": 0.17294671445511986,
+        "weighted_f1_macro": 0.8868042261613536,
+        "weighted_log_loss": 0.2962969445552383
+      },
+      "model_metadata": {
+        "classes": [
+          0,
+          1
+        ],
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 300,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 40,
+      "n_test": 2500,
+      "n_train": 7500,
+      "normalized_loss": 0.4274661325403944,
+      "predict_seconds": 0.005558542,
+      "prediction_sha256": "deef1ee81ec83b06b4f18803075752925e46d7caca0e69a5efb440d594f06f48",
+      "probability_sha256": "0d1b7bfdcdbc5b97f921efb810b80322afd94945fc3bd200d35d16c49d38df24",
+      "roundtrip_exact": true,
+      "seed": 1,
+      "serialized_model_bytes": 156771,
+      "source": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "split_sha256": "fb53b609d95e0a16db32462813d45cec2140124b59ef240cea8dc033644f6392",
+      "status": "ok",
+      "stderr": "",
+      "task": "binary",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 0.6931471805599454,
+      "weighted": true,
+      "worker_peak_rss_bytes": 276234240
+    },
+    {
+      "arm": "control",
+      "behavior_fingerprint_sha256": "d6808fb7c2a66d259afb89a76044b4ae0105811a6cc03a333be471985124282c",
+      "dataset_key": "adapter:wide_numeric_reg:medium",
+      "dataset_sha256": "e72fab1feb3f3e0d391c90de6a4ec337f45a4399ba821100723a542f592bdcb7",
+      "domain_id": "weighted_regression",
+      "excess_brier": null,
+      "fit_seconds": 0.598307583,
+      "implementation_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "metrics": {
+        "mae": 30.48480874620114,
+        "primary_metric": "weighted_rmse",
+        "primary_value": 37.734924423096,
+        "r2": 0.975382706514805,
+        "rmse": 38.92781622489865,
+        "weighted_mae": 29.61714678817977,
+        "weighted_r2": 0.9723155255159251,
+        "weighted_rmse": 37.734924423096
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 300,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 80,
+      "n_test": 2500,
+      "n_train": 7500,
+      "normalized_loss": 0.1663433301937822,
+      "predict_seconds": 0.002881125,
+      "prediction_sha256": "336582de1d3b599c3d8c5e375bc9c23f0ca4986aa7240f964ac94b12db0f3d63",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 0,
+      "serialized_model_bytes": 225817,
+      "source": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "split_sha256": "f2e54efc33e637b2d9282f5e88772dffac9da9a00b22e46697263786a31e1ba0",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 226.8496391116889,
+      "weighted": true,
+      "worker_peak_rss_bytes": 291291136
+    },
+    {
+      "arm": "candidate",
+      "behavior_fingerprint_sha256": "d6808fb7c2a66d259afb89a76044b4ae0105811a6cc03a333be471985124282c",
+      "dataset_key": "adapter:wide_numeric_reg:medium",
+      "dataset_sha256": "e72fab1feb3f3e0d391c90de6a4ec337f45a4399ba821100723a542f592bdcb7",
+      "domain_id": "weighted_regression",
+      "excess_brier": null,
+      "fit_seconds": 0.610825667,
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/__init__.py",
+      "metrics": {
+        "mae": 30.48480874620114,
+        "primary_metric": "weighted_rmse",
+        "primary_value": 37.734924423096,
+        "r2": 0.975382706514805,
+        "rmse": 38.92781622489865,
+        "weighted_mae": 29.61714678817977,
+        "weighted_r2": 0.9723155255159251,
+        "weighted_rmse": 37.734924423096
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 300,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 80,
+      "n_test": 2500,
+      "n_train": 7500,
+      "normalized_loss": 0.1663433301937822,
+      "predict_seconds": 0.003019417,
+      "prediction_sha256": "336582de1d3b599c3d8c5e375bc9c23f0ca4986aa7240f964ac94b12db0f3d63",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 0,
+      "serialized_model_bytes": 226134,
+      "source": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "split_sha256": "f2e54efc33e637b2d9282f5e88772dffac9da9a00b22e46697263786a31e1ba0",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 226.8496391116889,
+      "weighted": true,
+      "worker_peak_rss_bytes": 295206912
+    },
+    {
+      "arm": "candidate",
+      "behavior_fingerprint_sha256": "0d772a00338d778020fdcedfc467edce7b689f5dcfc9c079a00b748bb891a258",
+      "dataset_key": "adapter:wide_numeric_reg:medium",
+      "dataset_sha256": "c9141e7085750fc272f7bdd6127699a12d19c6eb1241176b1639d552052a1395",
+      "domain_id": "weighted_regression",
+      "excess_brier": null,
+      "fit_seconds": 0.580391083,
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/__init__.py",
+      "metrics": {
+        "mae": 28.140639032803907,
+        "primary_metric": "weighted_rmse",
+        "primary_value": 36.50786955024773,
+        "r2": 0.9745552719231647,
+        "rmse": 36.256415248978726,
+        "weighted_mae": 28.088132948851467,
+        "weighted_r2": 0.969525644790322,
+        "weighted_rmse": 36.50786955024773
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 300,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 80,
+      "n_test": 2500,
+      "n_train": 7500,
+      "normalized_loss": 0.17456892494532117,
+      "predict_seconds": 0.002884208,
+      "prediction_sha256": "4aaeffdb0ff34e0f6ba45a2f0a68621ef4ac00a2ada693b8b1b1114debc8e16b",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 1,
+      "serialized_model_bytes": 225819,
+      "source": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "split_sha256": "bfe996ae235a1b2956bd4948073e5fe6d5056be78c116181d8b7ca30978ed86f",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 209.13154825054232,
+      "weighted": true,
+      "worker_peak_rss_bytes": 295075840
+    },
+    {
+      "arm": "control",
+      "behavior_fingerprint_sha256": "0d772a00338d778020fdcedfc467edce7b689f5dcfc9c079a00b748bb891a258",
+      "dataset_key": "adapter:wide_numeric_reg:medium",
+      "dataset_sha256": "c9141e7085750fc272f7bdd6127699a12d19c6eb1241176b1639d552052a1395",
+      "domain_id": "weighted_regression",
+      "excess_brier": null,
+      "fit_seconds": 0.575417708,
+      "implementation_path": "/private/tmp/darkofit-wave1-source-726e5d8/darkofit/__init__.py",
+      "metrics": {
+        "mae": 28.140639032803907,
+        "primary_metric": "weighted_rmse",
+        "primary_value": 36.50786955024773,
+        "r2": 0.9745552719231647,
+        "rmse": 36.256415248978726,
+        "weighted_mae": 28.088132948851467,
+        "weighted_r2": 0.969525644790322,
+        "weighted_rmse": 36.50786955024773
+      },
+      "model_metadata": {
+        "classes": null,
+        "member_count": 1,
+        "resolved_thread_counts": [
+          4
+        ],
+        "tree_count": 300,
+        "tree_modes": [
+          "catboost"
+        ]
+      },
+      "n_features": 80,
+      "n_test": 2500,
+      "n_train": 7500,
+      "normalized_loss": 0.17456892494532117,
+      "predict_seconds": 0.0029795,
+      "prediction_sha256": "4aaeffdb0ff34e0f6ba45a2f0a68621ef4ac00a2ada693b8b1b1114debc8e16b",
+      "probability_sha256": null,
+      "roundtrip_exact": true,
+      "seed": 1,
+      "serialized_model_bytes": 225505,
+      "source": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "split_sha256": "bfe996ae235a1b2956bd4948073e5fe6d5056be78c116181d8b7ca30978ed86f",
+      "status": "ok",
+      "stderr": "",
+      "task": "regression",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "4",
+        "NUMEXPR_NUM_THREADS": "4",
+        "OMP_NUM_THREADS": "4",
+        "OPENBLAS_NUM_THREADS": "4",
+        "VECLIB_MAXIMUM_THREADS": "4"
+      },
+      "trivial_primary_loss": 209.13154825054232,
+      "weighted": true,
+      "worker_peak_rss_bytes": 281804800
+    }
+  ],
+  "runner_sha256": "5975d8037e3d94c54b63611b9eb50b28e1098e23f7e9f064608b97141cec61ca",
+  "runner_version": "m5-sentinels-v1",
+  "schema_version": 1,
+  "shipping_or_default_claim_authorized": false,
+  "sources": {
+    "candidate": {
+      "branch": "codex/t7b-auto-depth-v1-20260722",
+      "clean": true,
+      "head": "41e948f0c53b1d124e16071a7fa66eba47d084d3",
+      "package_tree": "269cee6f135bcde0267a2cbdf83e72f79480c019",
+      "path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "status": [],
+      "tree": "219baa9b0e0c6cc642163e44b2fef56dd86f40b7"
+    },
+    "control": {
+      "branch": "",
+      "clean": true,
+      "head": "726e5d8e6131c580bce948db833a5007d0692dca",
+      "package_tree": "e1fe956f32df0440e321805511ae2d96e383735c",
+      "path": "/private/tmp/darkofit-wave1-source-726e5d8",
+      "status": [],
+      "tree": "4aa051e9dbc7f6f0569aee91da5a19d4ec834eb5"
+    },
+    "harness": {
+      "branch": "",
+      "clean": true,
+      "head": "a1eb76071ca72a52494f6cca6022ea8ace8d5394",
+      "package_tree": "fb0e221b70b465c8a1a800f17418eaec1fe70987",
+      "path": "/private/tmp/darkofit-t7b-auto-depth-contract-20260722",
+      "status": [],
+      "tree": "eac0502f396c6cac2aea0dcd35bc5862a2e32acc"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "contract_id": "t7b-automatic-scalar-rmse-depth-v1-20260722",
+  "created_at_utc": "2026-07-22T23:43:39.408075+00:00",
+  "disposition": "advance",
+  "inspection_index": 1,
+  "launch_manifest_sha256": "7eb95710c761f0682c00cf4b5971233089c70e654c5e5adc316d5388d933dc46",
+  "m6_manifest_sha256": "dbb47702f4e7992f34e653ea1155a8638e4e1945dbda0da1eb582345c73c32c7",
+  "mechanism_id": "t7b_automatic_scalar_rmse_depth_v1",
+  "raw_sha256": "e8e651459fafdea7ace0d298ccedd2c8d87145b945928111d475a007b955bafe",
+  "rerun_authorized": false,
+  "result_sha256": "7af0c480221b5886c7bbf41f810147663d9da6e2c4171a70bc9db3a431eebb28",
+  "schema_version": 1,
+  "shipping_or_default_claim_eligible": false
+}

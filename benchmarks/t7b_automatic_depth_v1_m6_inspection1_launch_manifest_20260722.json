@@ -1,0 +1,112 @@
+{
+  "bindings": {
+    "contract_sha256": "83ea767e5d0060f7ff1c129c6ee84e6d0be3b28236da4e1d0c94369ee6c6b000",
+    "invariant_runner_sha256": "a12c8f1720be5aadb2e9d09d04b6ed451c9882e8de16b70c88146fffda9adf20",
+    "m5_runner_sha256": "5975d8037e3d94c54b63611b9eb50b28e1098e23f7e9f064608b97141cec61ca",
+    "m6_contract_sha256": "1fedb2d2d2e043f56c8547fd67bf32ef028f98866f7455c05c2e8fa6c9d0e2b3",
+    "m6_rule_sha256": "2415c7a7bde2bed23283067fdfe200892c15cf1c70d869153cc9cade81f9694c",
+    "m6_runner_sha256": "950c3867f387112a65a5dd103f830cce71f7e74af42c5f5208499e787e609d39",
+    "wrapper_sha256": "0c08b7eee6a624b4a57db9f4bc12055835141daad5e197847a952a2b71a964fe"
+  },
+  "candidate_file_allowlist": [
+    "darkofit/booster.py",
+    "tests/test_darkofit.py",
+    "tests/test_t7b_automatic_depth_policy.py"
+  ],
+  "command": [
+    "/opt/anaconda3/envs/darko311/bin/python",
+    "/private/tmp/darkofit-t7b-auto-depth-contract-20260722/benchmarks/run_m6_quality_successor_v3.py",
+    "--control",
+    "/private/tmp/darkofit-t7b-auto-depth-control-e23d2b1",
+    "--candidate",
+    "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+    "--mechanism-id",
+    "t7b_automatic_scalar_rmse_depth_v1",
+    "--inspection-index",
+    "1",
+    "--raw-csv",
+    "/private/tmp/t7b_automatic_depth_v1_m6_inspection1_20260722_raw.csv",
+    "--output",
+    "/private/tmp/t7b_automatic_depth_v1_m6_inspection1_20260722_result.json"
+  ],
+  "contract_id": "t7b-automatic-scalar-rmse-depth-v1-20260722",
+  "created_at_utc": "2026-07-22T23:31:35.896625+00:00",
+  "exclusive_machine": {
+    "checked_at_utc": "2026-07-22T23:31:35.941431+00:00",
+    "conflicting_benchmark_processes": [],
+    "load_average": [
+      4.185546875,
+      4.60986328125,
+      5.02685546875
+    ]
+  },
+  "hardware": {
+    "machine": "arm64",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.11.8 (main, Feb 26 2024, 15:36:12) [Clang 14.0.6 ]"
+  },
+  "harness_file_allowlist": [
+    "benchmarks/check_t7b_automatic_depth_invariants.py",
+    "benchmarks/run_t7b_automatic_depth_v1.py",
+    "benchmarks/t7b_automatic_depth_development_contract.md",
+    "tests/test_t7b_automatic_depth_contract.py",
+    "tests/test_t7b_automatic_depth_invariants.py"
+  ],
+  "inspection_index": 1,
+  "inspection_spent_on_manifest_creation": true,
+  "mechanism_id": "t7b_automatic_scalar_rmse_depth_v1",
+  "outputs": {
+    "launch_manifest": "/private/tmp/t7b_automatic_depth_v1_m6_inspection1_20260722_launch_manifest.json",
+    "m6_manifest": "/private/tmp/t7b_automatic_depth_v1_m6_inspection1_20260722_result.json.manifest.json",
+    "raw": "/private/tmp/t7b_automatic_depth_v1_m6_inspection1_20260722_raw.csv",
+    "result": "/private/tmp/t7b_automatic_depth_v1_m6_inspection1_20260722_result.json",
+    "terminal_attestation": "/private/tmp/t7b_automatic_depth_v1_m6_inspection1_20260722_terminal_attestation.json"
+  },
+  "preconditions": {
+    "invariant": {
+      "path": "/private/tmp/t7b_automatic_depth_v1_invariants_20260722.json",
+      "sha256": "02362e5d7080c155add0846a58b6960db997bd29a0374e936a16a5a5364e5aff"
+    },
+    "m5": {
+      "path": "/private/tmp/t7b_automatic_depth_v1_m5_20260722.json",
+      "sha256": "1d3eac70f81babeb628850cf19844d7b4c590c6df67ded723fcf7caba019bca1"
+    }
+  },
+  "rerun_authorized": false,
+  "schema_version": 1,
+  "sources": {
+    "candidate": {
+      "clean": true,
+      "head": "41e948f0c53b1d124e16071a7fa66eba47d084d3",
+      "path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "status": [],
+      "tree": "219baa9b0e0c6cc642163e44b2fef56dd86f40b7"
+    },
+    "candidate_changed_files": [
+      "darkofit/booster.py",
+      "tests/test_darkofit.py",
+      "tests/test_t7b_automatic_depth_policy.py"
+    ],
+    "control": {
+      "clean": true,
+      "head": "e23d2b164f10374b1c0e02521c33fc96d48980da",
+      "path": "/private/tmp/darkofit-t7b-auto-depth-control-e23d2b1",
+      "status": [],
+      "tree": "227e80df4c2a3761927b3682cc8ee8ed1edcf471"
+    },
+    "harness": {
+      "clean": true,
+      "head": "a1eb76071ca72a52494f6cca6022ea8ace8d5394",
+      "path": "/private/tmp/darkofit-t7b-auto-depth-contract-20260722",
+      "status": [],
+      "tree": "eac0502f396c6cac2aea0dcd35bc5862a2e32acc"
+    },
+    "harness_changed_files": [
+      "benchmarks/check_t7b_automatic_depth_invariants.py",
+      "benchmarks/run_t7b_automatic_depth_v1.py",
+      "benchmarks/t7b_automatic_depth_development_contract.md",
+      "tests/test_t7b_automatic_depth_contract.py",
+      "tests/test_t7b_automatic_depth_invariants.py"
+    ]
+  }
+}

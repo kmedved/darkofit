@@ -6,3 +6,4 @@ benchmarks/tabarena_regression_accuracy_shootout_*.csv whitespace=cr-at-eol
 benchmarks/tabarena_ctr23_minimal_confirmation_*.csv whitespace=cr-at-eol
 benchmarks/v011_compute_ladder_v3_*.csv whitespace=cr-at-eol
 benchmarks/t7b_automatic_l2_v1_m6_inspection1_raw_*.csv -text whitespace=cr-at-eol
+benchmarks/t7b_automatic_depth_v1_m6_inspection1_raw_*.csv -text whitespace=cr-at-eol

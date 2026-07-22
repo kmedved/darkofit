@@ -1127,8 +1127,10 @@ single next prototype; profiler evidence alone cannot make a speed candidate
 win by default. After Wave 4, the next funded mechanism slot is reserved for
 the quality shortlist unless an owner decision records a specific exception;
 the current leading T7b nominee is the samples-per-feature depth-policy
-mechanism. The tested automatic scalar-RMSE L2 v1 identity is terminal and may
-not be treated as an available favorable rerun.
+mechanism. Its private candidate `41e948f0` passed invariants and M5 and
+advanced through its one spent M6 v3 inspection; only a separately frozen
+spent-sports check is authorized next. The tested automatic scalar-RMSE L2 v1
+identity is terminal and may not be treated as an available favorable rerun.
 
 Initial backlog, unrated and unauthorized:
 
@@ -1142,8 +1144,11 @@ Initial backlog, unrated and unauthorized:
 - **Langevin boosting / SGLB** (CatBoost): cheap ensemble diversity; a
   potential Track B interaction.
 - CatBoost's samples-per-feature depth heuristic: the remaining Track C
-  candidate via T7b attribution. Automatic scalar-RMSE L2 v1 is closed in M6
-  v3 and retained only as historical evidence.
+  candidate via T7b attribution. Its exact private candidate `41e948f0`
+  advanced through its one M6 v3 inspection (aggregate `0.992921`, worst
+  dataset group `1.011124`, worst leave-one-out `1.001230`) and is eligible
+  only for a new, frozen spent-sports check. Automatic scalar-RMSE L2 v1 is
+  closed in M6 v3 and retained only as historical evidence.
 - **Historically closed; optional and unscheduled — B-archive shared-component
   size simulation** (internal, from Wave 2 M3b): the dated matched-single
   readout confirmed that the r3
@@ -1332,7 +1337,7 @@ These are planning ranges, not delivery promises.
 | 3 | **Complete:** M3b matched-single readout, B-archive component feasibility, v1 terminal lineage, and corrected frozen v2 campaign | Completed 2026-07-21 | Exact canonical factoring missed `4.0×`; close B-archive with no serializer and nominate fused-lane dispatch |
 | 4 | **Complete and closed:** behavior-exact fused-lane dispatch design, staged implementation, invariants, outcome-blind harness, and gate-repaired calibration execution identity v4 were frozen. V1--v3 were superseded pre-outcome; v4 ran exactly once with 30/30 exact cells. Six cells missed stability and the selected geomean was `0.973846` against `<=0.97`. | Completed 2026-07-21; no rerun, validation, or speed claim. A post-close owner product override promotes threshold `1048576` without changing the failed verdict. | Activate bounded macOS-arm64 `auto` switching and return the next mechanism slot to the quality-first shortlist |
 | 5 | **Characterization complete:** ensemble-v3 public contract/private candidate complete; M6 v2 passed; Tier-E uncertainty/resource/prediction evidence published | Completed 2026-07-21; quality 13/13, with material `6.14x` fit and `6.21x` prediction costs vs single | Await separate public-ship decision; no public API/export, M2/M4, release, B3, Q, fresh data, or lockbox access |
-| 6 | **In progress:** T7b L2 v1 closed in M6 v3; separately decide the depth-policy hypothesis before B3 and Q slots | L2 completed 2026-07-22 | Preserve one-mechanism discipline; no L2 rerun or bundled depth change |
+| 6 | **In progress:** T7b L2 v1 closed in M6 v3; the separate automatic-depth candidate passed invariants/M5 and advanced through its only M6 v3 inspection | General slice completed 2026-07-22 | Freeze and run one spent-sports check on exact candidate `41e948f0`; no L2 or M6 rerun, merge, or public claim |
 | Later | M2/M4 release milestones, other Track I backlog, and Z cleanup | Independent backlog with explicit owner gates | No coupling to unfinished speculative tracks or lockbox access |
 
 Benchmark waves use fresh workers and exclusive machine access. Parallelize
