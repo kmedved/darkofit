@@ -1761,6 +1761,69 @@ B-archive simulation remains non-loadable, optional size telemetry.
     complete. Launch the frozen M6 quality-successor-v3 inspection 1 once;
     its result alone determines `advance` or terminal `kill` for this rung.
 
+### 44. Automatic selector M6 v3 inspection 1 (2026-07-22)
+
+1. **Execution date/source:** 2026-07-22; clean published M6 harness
+   `56a66700a354dfe90d4cfd72d4254a7d8e22b351`, clean control
+   `b11f013f7ba926e533c38db8261f1a569ebce6c6`, and clean published candidate
+   `a53d4bf543534678189d87d88dcad87dd2a8bd8f`.
+2. **Comparators:** control public defaults versus candidate public defaults,
+   under mechanism id `automatic_linear_selector_v2`, inspection index 1.
+3. **Evidence class:** spent general-quality development ranking under
+   `m6-quality-successor-v3`. It grants no shipping, default, fresh,
+   TabArena, or lockbox authority.
+4. **Data/splits:** 60 paired medium cells across ten frozen synthetic/real
+   regression and classification datasets, seeds 0--2, and weight modes
+   `none` and `stress`; exact case, dataset, split, and weight hashes are in
+   each raw row.
+5. **Arms/policies:** unchanged control defaults versus the candidate's
+   automatic-selector default. The pre-run engagement companion recorded no
+   selected-linear cell; no threshold, cell, or policy changed after that
+   observation.
+6. **Environment/repeats:** `darko311`, 14 physical/logical CPUs, four fixed
+   threads, fresh workers, alternating source order, same-source warmup, and
+   three repeats per exact cell under `paired-evidence-v1`.
+7. **Runner/command:** `python benchmarks/run_m6_quality_successor_v3.py
+   --control /private/tmp/darkofit-selector-control-b11f013 --candidate
+   /private/tmp/darkofit-smooth-selector-20260722 --mechanism-id
+   automatic_linear_selector_v2 --inspection-index 1 --raw-csv
+   benchmarks/automatic_linear_selector_v2_m6_v3_inspection1_raw_20260722.csv
+   --output
+   benchmarks/automatic_linear_selector_v2_m6_v3_inspection1_result_20260722.json`
+   (the two output paths resolved to the main checkout).
+8. **Hashes:** development contract
+   `fe2d476417e8e8087a3c7342eee0d5cb82a6b8a4ee3f360a1806ee4c0922163b`;
+   M6 contract
+   `1fedb2d2d2e043f56c8547fd67bf32ef028f98866f7455c05c2e8fa6c9d0e2b3`;
+   rule
+   `2415c7a7bde2bed23283067fdfe200892c15cf1c70d869153cc9cade81f9694c`;
+   runner
+   `950c3867f387112a65a5dd103f830cce71f7e74af42c5f5208499e787e609d39`;
+   backtest result
+   `35cc54acfeb7de7950966445ed8248654f945072e5e5900e3333fff4b15129b6`;
+   raw CSV
+   `e30d089e79d177eb866514e45a0a9ec921a25e46f15e293d72d95525a86cec66`;
+   result
+   `7445b70ca3bc727bb24f8990ceef590ca933eb1dd45ccefe9ee5788eff211948`;
+   manifest
+   `601f069896cdf664fcab470abe8c3643f0c0aacf5f79572a6663e304af3d7782`.
+9. **Primary results:** all 60 quality ratios were exactly `1.000000`.
+   Aggregate, worst dataset, worst coordinate, and worst leave-one-dataset-out
+   ratios were all `1.000000`.
+10. **Costs, passed and failed conditions:** aggregate `<=1.000`, worst
+    dataset `<=1.020`, and worst leave-one-dataset-out `<=1.003` all passed;
+    no gate failed. Geometric-mean candidate/control ratios were `1.196564`
+    fit, `0.998746` prediction, and `1.022557` peak RSS; maximum fit ratio was
+    `3.087023`. Costs were adjacent telemetry, not gates.
+11. **Limitations/non-claims:** this is one spent, dependent, fixed medium
+    panel whose cells did not engage linear leaves. Exact preservation here
+    does not demonstrate Protein benefit or generalize selector engagement.
+    Inspection 1 is spent and cannot be rerun favorably.
+12. **Terminal decision/next action:** M6 disposition `advance`. Run the
+    contract's three-coordinate spent Protein attribution with constant,
+    automatic, and explicit-linear arms. Any Protein harm above `1.02` or
+    failure to select/match explicit linear is terminal for this identity.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

@@ -1,0 +1,94 @@
+{
+  "backtest": {
+    "backtest_harness_head": "f3d19ebb4d9306e278a52534a7856650675d1166",
+    "harness": {
+      "clean": true,
+      "head": "56a66700a354dfe90d4cfd72d4254a7d8e22b351",
+      "path": "/private/tmp/darkofit-selector-m6-harness-56a6670",
+      "status": [],
+      "tree": "369ea1f02938c92ec5db8d2b3307bedc13e8c2bf"
+    },
+    "result_sha256": "35cc54acfeb7de7950966445ed8248654f945072e5e5900e3333fff4b15129b6"
+  },
+  "bindings": {
+    "audit_sha256": "3717a080030788ded9fa12101dfad7e1b87ac811f517f1b1e1e16fb0fa35769f",
+    "backtest_runner_sha256": "bcb733bdefd36fe4e6052f91f3453f42f7a21dd45011bd5705e7c91a098dd019",
+    "comparison_runner_sha256": "0fcd849a13c0348c4c6802556d9a3d3b9f1d5b02c8c47a4e82c3e744f358760f",
+    "contract_sha256": "1fedb2d2d2e043f56c8547fd67bf32ef028f98866f7455c05c2e8fa6c9d0e2b3",
+    "execution_runner_sha256": "950c3867f387112a65a5dd103f830cce71f7e74af42c5f5208499e787e609d39",
+    "paired_execution_sha256": "63c63d4f0b7c6f649b7155325ee064faf6e5981094ed3cb79ac91b6b8fefedf9",
+    "rule_sha256": "2415c7a7bde2bed23283067fdfe200892c15cf1c70d869153cc9cade81f9694c",
+    "supersession_sha256": "24a755b8696256f76b7e4aaac55df3827e0e47ddd4506fdde34ee2dde04a7ef9"
+  },
+  "command": [
+    "/opt/anaconda3/envs/darko311/bin/python",
+    "/private/tmp/darkofit-selector-m6-harness-56a6670/benchmarks/bench_compare_revisions.py",
+    "--policy-suite",
+    "standing-slice",
+    "--control",
+    "/private/tmp/darkofit-selector-control-b11f013",
+    "--candidate",
+    "/private/tmp/darkofit-smooth-selector-20260722",
+    "--datasets",
+    "diabetes_resampled",
+    "friedman_numeric",
+    "wide_numeric_reg",
+    "categorical_reg",
+    "breast_cancer_resampled",
+    "numeric_binary",
+    "wine_resampled",
+    "numeric_multiclass",
+    "categorical_binary",
+    "categorical_multiclass",
+    "--sizes",
+    "medium",
+    "--seeds",
+    "3",
+    "--repeat",
+    "3",
+    "--threads",
+    "4",
+    "--weight-modes",
+    "none",
+    "stress",
+    "--models",
+    "control_default",
+    "candidate_default",
+    "--evidence-contract",
+    "paired-evidence-v1",
+    "--csv",
+    "/Users/konstantinmedvedovsky/code/darkofit/benchmarks/automatic_linear_selector_v2_m6_v3_inspection1_raw_20260722.csv"
+  ],
+  "contract_id": "m6-quality-successor-v3",
+  "inspection_index": 1,
+  "inspection_spent": true,
+  "mechanism_id": "automatic_linear_selector_v2",
+  "raw_csv": {
+    "path": "/Users/konstantinmedvedovsky/code/darkofit/benchmarks/automatic_linear_selector_v2_m6_v3_inspection1_raw_20260722.csv",
+    "sha256": "e30d089e79d177eb866514e45a0a9ec921a25e46f15e293d72d95525a86cec66"
+  },
+  "repeat_count": 3,
+  "schema_version": 1,
+  "sources_before_and_after": {
+    "candidate_default": {
+      "clean": true,
+      "head": "a53d4bf543534678189d87d88dcad87dd2a8bd8f",
+      "path": "/private/tmp/darkofit-smooth-selector-20260722",
+      "status": [],
+      "tree": "983238140d1f3fd95a13b0a02aa01e30045ba4bc"
+    },
+    "control_default": {
+      "clean": true,
+      "head": "b11f013f7ba926e533c38db8261f1a569ebce6c6",
+      "path": "/private/tmp/darkofit-selector-control-b11f013",
+      "status": [],
+      "tree": "f402ad9dcba01662e10d618d7545ace9534c00c0"
+    }
+  },
+  "validation": {
+    "contract_version": "paired-evidence-v1",
+    "paired_cells": 60,
+    "resolved_threads": 4,
+    "row_count": 120
+  }
+}
