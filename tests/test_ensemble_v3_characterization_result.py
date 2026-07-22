@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
+import numbers
 import sys
 from pathlib import Path
 
@@ -25,6 +27,31 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _assert_recomputed_equal(stored, recomputed):
+    """Compare derived evidence portably while artifact hashes stay exact."""
+    if isinstance(stored, dict):
+        assert isinstance(recomputed, dict)
+        assert stored.keys() == recomputed.keys()
+        for key in stored:
+            _assert_recomputed_equal(stored[key], recomputed[key])
+        return
+    if isinstance(stored, (list, tuple)):
+        assert isinstance(recomputed, (list, tuple))
+        assert len(stored) == len(recomputed)
+        for left, right in zip(stored, recomputed):
+            _assert_recomputed_equal(left, right)
+        return
+    if (
+        isinstance(stored, numbers.Real)
+        and not isinstance(stored, bool)
+        and isinstance(recomputed, numbers.Real)
+        and not isinstance(recomputed, bool)
+    ):
+        assert math.isclose(float(stored), float(recomputed), rel_tol=1e-14, abs_tol=1e-15)
+        return
+    assert stored == recomputed
+
+
 def test_characterization_result_is_hash_bound_and_recomputable():
     assert _sha256(RAW) == "005c50a89a06e100aa95cb6a776dd7f67026786de6f261470e808a39f9310a9b"
     assert _sha256(RESULT) == "5cfd7b40382187aebed43798715017e1e2867744c5c40f66a00e935f6acefeed"
@@ -38,11 +65,14 @@ def test_characterization_result_is_hash_bound_and_recomputable():
     historical_result = json.loads(analysis.HISTORICAL_RESULT.read_text())
     historical_timing = json.loads(analysis.HISTORICAL_TIMING.read_text())
 
-    assert result["quality"] == analysis.analyze_quality(readout)
-    assert result["current_resources"] == analysis.analyze_resources(rows)
-    assert result["prediction"] == analysis.analyze_prediction(rows)
-    assert result["historical_resources"] == analysis.analyze_historical_resources(
-        historical_result, historical_timing
+    _assert_recomputed_equal(result["quality"], analysis.analyze_quality(readout))
+    _assert_recomputed_equal(
+        result["current_resources"], analysis.analyze_resources(rows)
+    )
+    _assert_recomputed_equal(result["prediction"], analysis.analyze_prediction(rows))
+    _assert_recomputed_equal(
+        result["historical_resources"],
+        analysis.analyze_historical_resources(historical_result, historical_timing),
     )
     assert result["decision"] == "report_only_await_separate_public_ship_authorization"
     assert not any(
