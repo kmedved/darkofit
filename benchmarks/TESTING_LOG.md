@@ -1378,6 +1378,79 @@ B-archive simulation remains non-loadable, optional size telemetry.
     expose v3. Phase 2 M2 remains the next authorized non-overlapping action;
     public exposure remains a separate Phase 3 owner decision.
 
+### 38. v0.11 M2 defaults-only broad panel v3 (2026-07-22)
+
+1. **Execution date/source:** 2026-07-22; the successful formal campaign ran
+   once from clean published DarkoFit commit
+   `a2983ce97c2be30199054f30915d7788420cf330`. V1 stopped before output on an
+   18-vs-14 host-CPU preflight mismatch; v2 stopped before warmup or fitting on
+   the warmup module's independent 18-thread constant. Neither identity was
+   rerun, and v3 changed no scientific protocol field from v2.
+2. **Comparators:** exact clean ChimeraBoost commit
+   `f14be606b641f1bf0dc92bb14b3951f1fe631c6b` (`0.18.0`) and CatBoost wheel
+   `1.2.10`; TabArena was exact commit
+   `4cd1d2526874962daae048a6f2dcf34aa272f3fa` and AutoGluon was
+   `1.5.1b20260712`.
+3. **Evidence class:** spent, descriptive M2 evidence. No fresh-confirmation,
+   lockbox, private ensemble, public API, default, M4, or release authority was
+   used.
+4. **Data/splits:** 13 fixed TabArena regression datasets, three registered
+   `(repeat, fold)` coordinates per dataset, equal-dataset aggregation, and
+   no claim that the fixed datasets are independent random draws.
+5. **Arms/policies:** official-default single-model DarkoFit `0.10.1`, pinned
+   ChimeraBoost, and CatBoost; eight sequential framework bag folds, one bag
+   set, model seed zero varied across folds, no calibration, no manual model
+   configuration, and no private ensemble.
+6. **Environment/repeats:** one Apple-silicon machine, common 14-CPU/thread
+   allocation, one fresh same-arm-warmed process per each of 117 outer jobs,
+   936 child fits, continuous balanced arm order, one-hour per-job limit, no
+   resume, and no favorable rerun.
+7. **Runner/commands:** source-attested
+   [`run_v011_m2_broad_panel_v3.py`](run_v011_m2_broad_panel_v3.py) followed
+   once after completion by
+   [`analyze_v011_m2_broad_panel_v3.py`](analyze_v011_m2_broad_panel_v3.py).
+   The same runner's dry run passed first and created no output directory.
+8. **Hashes:** contract
+   `719213fd993b8626d7ece192fa9b9581ffa4ea6220d0f7d94a598683e098f846`;
+   protocol `d4c8bc3fbe980149a3528d13a7f9fd6393f4690517a862cef31d8e622796e403`;
+   runner `6eac56b1b0e8fe60e6539f67d413e263c430c7147279bb21067cb1dc9e6fad68`;
+   analyzer `24ea34080486bc9d46180bef98bfdcfc132c8134d515d4f35f62af4ba6928f24`;
+   raw result set
+   `81ee5327e7e2e4997af421ad6ab5579bbd12e1099552898c76552483c217cda3`;
+   analysis payload
+   `327f24f90383865ea8502118ea622ecf3b983a34926826c4ba96998bccb11f8d`;
+   completion attestation
+   `1fbd09e4e71e537d58479b4343e3269a1cb7d1a8b56e6f8d23a59aa4b96c4b5c`;
+   committed summary
+   `e995b96760f0f48eff6ca0745a45055128c10c9a4b73bb0c7b25c55402157af0`;
+   LF-normalized paired/per-dataset tables
+   `0ca6c1d139c138ca48d116332c56bbb747d16aa6b14e973c3960d0d8befa8020`
+   and
+   `9b0dcab3baccad428dbef40be82cab219d1a6c2fb7751413f947470cb5301ab3`;
+   result note
+   `89abd0606b940a5ca7ef3ebeed54ed5ef2da1e066ee38adf3e63926ecadcc49b`.
+9. **Primary results:** DarkoFit/ChimeraBoost test-RMSE ratio `1.017433x`
+   (descriptive interval `[1.013494x, 1.021558x]`, dataset W-L-T `6-7-0`);
+   DarkoFit/CatBoost `1.053834x` (`[1.051130x, 1.056878x]`, `1-12-0`);
+   ChimeraBoost/CatBoost `1.035778x` (`[1.033043x, 1.038693x]`, `2-11-0`).
+10. **Cost results/integrity:** DarkoFit/ChimeraBoost was `0.812620x` fit,
+    `1.316591x` prediction, `0.842460x` incremental RSS, and `0.962665x`
+    peak RSS; DarkoFit/CatBoost was `0.091327x`, `1.270594x`, `0.368938x`,
+    and `0.707062x`, respectively.
+    All 117 jobs and 936 child fits completed with zero failures, imputations,
+    known deadlines, or known time-limit stops. All 117 worker attestations and
+    the exact resource/order/provenance bindings validated.
+11. **Limitations/non-claims:** one hardware/software stack, fixed spent data,
+    workload-specific framework timings, and partially unresolved competitor
+    stop-reason metadata (`443` child fits labeled `unknown`). The harness
+    verified that no such fit was a known time-limit/deadline stop. No general
+    superiority, certification, default, public exposure, M4, or release is
+    claimed.
+12. **Terminal decision/next action:** Phase 2 is complete and honestly shows
+    DarkoFit's speed/memory advantage alongside its quality/prediction deficit.
+    The authorized evidence phase stops here. Phase 3 public exposure, M4, and
+    v0.11 release remain separate owner decisions.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

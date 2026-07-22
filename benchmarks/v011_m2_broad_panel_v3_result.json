@@ -1,0 +1,343 @@
+{
+  "aggregation": {
+    "bootstrap_draws": 10000,
+    "bootstrap_seed": 20260722,
+    "coordinates_per_dataset": 3,
+    "datasets_fixed_and_equally_weighted": true,
+    "independent_dataset_claim": false
+  },
+  "campaign": "darkofit_v011_m2_broad_panel_v3_20260722",
+  "comparisons": [
+    {
+      "contrast": "D/M",
+      "datasets": 13,
+      "denominator_engine": "chimeraboost",
+      "head_to_head": {
+        "coordinate_quality": {
+          "losses": 25,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.358974358974359,
+          "win_share_with_half_ties": 0.358974358974359,
+          "wins": 14
+        },
+        "descriptive_only": true,
+        "equal_dataset_quality": {
+          "losses": 7,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.46153846153846156,
+          "win_share_with_half_ties": 0.46153846153846156,
+          "wins": 6
+        }
+      },
+      "metrics": {
+        "incremental_memory_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 0.8422678345404565,
+            "p025": 0.818425982110837,
+            "p975": 0.867091089081737
+          },
+          "pct": -15.753977014528775,
+          "ratio": 0.8424602298547123
+        },
+        "infer_time_s": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.3167218045308848,
+            "p025": 1.2675709528659986,
+            "p975": 1.3665552377262715
+          },
+          "pct": 31.659097609827924,
+          "ratio": 1.3165909760982792
+        },
+        "peak_memory_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 0.9623744380063071,
+            "p025": 0.9515327510059373,
+            "p975": 0.9750904401978813
+          },
+          "pct": -3.733549671524483,
+          "ratio": 0.9626645032847552
+        },
+        "test_rmse": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.017357453327942,
+            "p025": 1.0134941682407752,
+            "p975": 1.0215582512039991
+          },
+          "pct": 1.7433029950486123,
+          "ratio": 1.0174330299504861
+        },
+        "train_time_s": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 0.8121883129396011,
+            "p025": 0.7789065972035313,
+            "p975": 0.8483061737579233
+          },
+          "pct": -18.738015396224593,
+          "ratio": 0.8126198460377541
+        },
+        "val_rmse": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.0161624879940565,
+            "p025": 1.0125438482556253,
+            "p975": 1.020526780586029
+          },
+          "pct": 1.6281831335792196,
+          "ratio": 1.0162818313357922
+        }
+      },
+      "numerator_engine": "darkofit",
+      "paired_coordinates": 39
+    },
+    {
+      "contrast": "D/C",
+      "datasets": 13,
+      "denominator_engine": "catboost",
+      "head_to_head": {
+        "coordinate_quality": {
+          "losses": 36,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.07692307692307693,
+          "win_share_with_half_ties": 0.07692307692307693,
+          "wins": 3
+        },
+        "descriptive_only": true,
+        "equal_dataset_quality": {
+          "losses": 12,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.07692307692307693,
+          "win_share_with_half_ties": 0.07692307692307693,
+          "wins": 1
+        }
+      },
+      "metrics": {
+        "incremental_memory_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 0.3687618607699555,
+            "p025": 0.35160348259780616,
+            "p975": 0.3871324567694771
+          },
+          "pct": -63.10615533955909,
+          "ratio": 0.3689384466044091
+        },
+        "infer_time_s": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.271105917837575,
+            "p025": 1.216150112825609,
+            "p975": 1.324914374833404
+          },
+          "pct": 27.059429582639694,
+          "ratio": 1.270594295826397
+        },
+        "peak_memory_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 0.7068893689574767,
+            "p025": 0.6970665183219684,
+            "p975": 0.7183744306455613
+          },
+          "pct": -29.293815136590396,
+          "ratio": 0.707061848634096
+        },
+        "test_rmse": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.0537504210749769,
+            "p025": 1.0511303408946886,
+            "p975": 1.0568784068168926
+          },
+          "pct": 5.383430147809309,
+          "ratio": 1.053834301478093
+        },
+        "train_time_s": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 0.09135380510110531,
+            "p025": 0.08579622764516859,
+            "p975": 0.09682030975147264
+          },
+          "pct": -90.86732774616686,
+          "ratio": 0.09132672253833134
+        },
+        "val_rmse": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.0557301121688198,
+            "p025": 1.0527610350408363,
+            "p975": 1.0585853096959783
+          },
+          "pct": 5.573902566718347,
+          "ratio": 1.0557390256671835
+        }
+      },
+      "numerator_engine": "darkofit",
+      "paired_coordinates": 39
+    },
+    {
+      "contrast": "M/C",
+      "datasets": 13,
+      "denominator_engine": "catboost",
+      "head_to_head": {
+        "coordinate_quality": {
+          "losses": 30,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.23076923076923078,
+          "win_share_with_half_ties": 0.23076923076923078,
+          "wins": 9
+        },
+        "descriptive_only": true,
+        "equal_dataset_quality": {
+          "losses": 11,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.15384615384615385,
+          "win_share_with_half_ties": 0.15384615384615385,
+          "wins": 2
+        }
+      },
+      "metrics": {
+        "incremental_memory_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 0.43779779682842357,
+            "p025": 0.42359358840666295,
+            "p975": 0.45331327305772173
+          },
+          "pct": -56.207019212285545,
+          "ratio": 0.43792980787714453
+        },
+        "infer_time_s": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 0.9656899897795288,
+            "p025": 0.9285114721820306,
+            "p975": 1.0001197167590505
+          },
+          "pct": -3.4936195908157885,
+          "ratio": 0.9650638040918421
+        },
+        "peak_memory_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 0.7346410137001691,
+            "p025": 0.7289625479532154,
+            "p975": 0.7397980869620722
+          },
+          "pct": -26.55158196635532,
+          "ratio": 0.7344841803364468
+        },
+        "test_rmse": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.0357758839786604,
+            "p025": 1.0330427118556778,
+            "p975": 1.0386931540442963
+          },
+          "pct": 3.5777560248243745,
+          "ratio": 1.0357775602482437
+        },
+        "train_time_s": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 0.11238095527642698,
+            "p025": 0.10708167440410238,
+            "p975": 0.11769405274951462
+          },
+          "pct": -88.7614457136839,
+          "ratio": 0.11238554286316102
+        },
+        "val_rmse": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.0388575615995312,
+            "p025": 1.036089047964885,
+            "p975": 1.0415287982357522
+          },
+          "pct": 3.882505139300685,
+          "ratio": 1.0388250513930068
+        }
+      },
+      "numerator_engine": "chimeraboost",
+      "paired_coordinates": 39
+    }
+  ],
+  "counts": {
+    "child_fits": 936,
+    "coordinates": 39,
+    "outer_jobs": 117,
+    "paired_coordinate_rows": 117,
+    "per_dataset_rows": 39
+  },
+  "decision": "descriptive_only",
+  "framework_source": {
+    "autogluon_version": "1.5.1b20260712",
+    "tabarena_git_commit": "4cd1d2526874962daae048a6f2dcf34aa272f3fa",
+    "tabarena_git_tree": "a293df372a613c7358ba5fcd746f58d580cde7d6",
+    "tabarena_version": "0.0.1"
+  },
+  "official_default_disclosure": {
+    "catboost": {
+      "manual_config": {},
+      "version": "1.2.10"
+    },
+    "chimeraboost": {
+      "git_commit": "f14be606b641f1bf0dc92bb14b3951f1fe631c6b",
+      "git_describe": "v0.18.0-6-gf14be60",
+      "manual_config": {},
+      "version": "0.18.0"
+    },
+    "darkofit": {
+      "manual_config": {},
+      "promoted_dispatch_active_on_eligible_fits": true,
+      "version": "0.10.1"
+    }
+  },
+  "policy_advancement_allowed": false,
+  "provenance": {
+    "analysis_payload_sha256": "327f24f90383865ea8502118ea622ecf3b983a34926826c4ba96998bccb11f8d",
+    "analysis_runtime_verified": true,
+    "attestation_sha256": "1fbd09e4e71e537d58479b4343e3269a1cb7d1a8b56e6f8d23a59aa4b96c4b5c",
+    "autogluon_version": "1.5.1b20260712",
+    "catboost_version": "1.2.10",
+    "chimeraboost_git_head": "f14be606b641f1bf0dc92bb14b3951f1fe631c6b",
+    "completed_at_utc": "2026-07-22T14:22:48.405343+00:00",
+    "dependency_provenance_verified": true,
+    "executing_git_head": "a2983ce97c2be30199054f30915d7788420cf330",
+    "executing_git_tree": "f7baecbe28e587865a386f0fe37538713ad10c79",
+    "executing_repository": "/private/tmp/darkofit-v011-m2-v3-freeze-20260722-1f6c48c",
+    "executing_source_verified": true,
+    "git_head": "a2983ce97c2be30199054f30915d7788420cf330",
+    "hardware_identity_verified": true,
+    "job_order_sha256": "ed35ca18a759b74ab9f26373e2d253c5970d2dab3788e1139d23466429cf0385",
+    "manifest_sha256": "c96b020c82a873091d984dc992eef6a78a8bb6607271c0f7c9921531fd97867c",
+    "protocol_sha256": "d4c8bc3fbe980149a3528d13a7f9fd6393f4690517a862cef31d8e622796e403",
+    "raw_result_set_sha256": "81ee5327e7e2e4997af421ad6ab5579bbd12e1099552898c76552483c217cda3",
+    "tabarena_git_head": "4cd1d2526874962daae048a6f2dcf34aa272f3fa",
+    "warmup_history_sha256": "a0e5f1104c7091a5fd60bdfc780688153cb27c53c73134233d6850b67241a32e"
+  },
+  "schema_version": 1
+}
