@@ -72,7 +72,7 @@ def test_backtest_inputs_match_predeclared_hashes():
     assert successor.file_sha256(backtest.NEGATIVE_PATH) == backtest.NEGATIVE_SHA256
 
 
-def test_unbound_successor_refuses_candidate_ranking():
+def test_v1_successor_remains_nonranking_after_binding_audit():
     assert successor.BACKTEST_COMPLETE is False
     with pytest.raises(RuntimeError, match="not complete"):
         successor.validate_backtest_binding()

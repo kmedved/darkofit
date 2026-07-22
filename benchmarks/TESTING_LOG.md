@@ -1161,6 +1161,35 @@ v0.11, B3, Q work, fresh confirmation, CTR23, or lockbox access. B1 and B2
 alone remain unselected because the combined arm Pareto-dominates them; the
 B-archive simulation remains non-loadable, optional size telemetry.
 
+### 32. M6 quality-successor v1 binding failure (2026-07-21)
+
+1. **Source:** clean detached DarkoFit contract checkpoint `8abf0b8`; result
+   binding is a later state-only checkpoint.
+2. **Evidence class:** Tier-E infrastructure backtest over spent, immutable
+   artifacts; no new model fit, fresh data, TabArena, or lockbox access.
+3. **Declared subset:** combined B1+B2 ensemble-v3 (known advance) and the 3%
+   linear-leaf selector (known kill), pinned by SHA-256 in
+   [`m6_quality_successor_contract.md`](m6_quality_successor_contract.md).
+4. **Analyzer rule:** advance only with quality geomean `<=0.98`, wins in at
+   least 60% of cases, and no case above `1.02`; development ranking only.
+5. **Execution:** one clean outcome-bearing artifact-only launch through
+   [`run_m6_quality_successor_backtest.py`](run_m6_quality_successor_backtest.py).
+6. **Result:** both replays agreed. B1+B2 advanced at `0.965513×`, 13/13 wins,
+   worst `0.991888×`; the selector was killed at `0.989264×`, 2/14 wins,
+   worst `1.000000×`.
+7. **Artifact:**
+   [`m6_quality_successor_backtest_result.json`](m6_quality_successor_backtest_result.json),
+   SHA-256
+   `360a60130c99220a3466ff0fab40b54ead99a2d0a29a2bde3a33a12e38500baa`.
+8. **Binding audit:** before activation, review found that changing the
+   analyzer's embedded false completion flag would change the whole-file hash
+   bound by the result; the future CSV also did not attest three repeats, and
+   `--datasets all` was not an exact durable coordinate list.
+9. **Decision:** the calculation is immutable but grants no ranking authority.
+   V1 will not be rebound or rerun. V2 keeps the thresholds/subset unchanged,
+   separates immutable rule code from activation, and binds an exact
+   repeat-attested command; M6 stays non-ranking until v2 passes.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

@@ -1,7 +1,9 @@
 # Standing M5/M6 evidence protocol
 
-Status: M5 v1 baseline frozen; M6 contract frozen but historical backtest
-terminal-failed 2026-07-20, so candidate ranking remains disabled.
+Status: M5 v1 baseline frozen; M6 v3 remains terminal. The first quality-
+successor calculation agreed with its historical subset but failed its binding
+audit; structurally corrected v2 is frozen pending its own backtest, so M6
+ranking remains disabled.
 
 This protocol creates the cheap middle rung in
 [`COUNTERPUNCH_PLAN.md`](../COUNTERPUNCH_PLAN.md). It is deliberately split
@@ -15,6 +17,8 @@ slice:
   independently frozen and backtest-qualified successor may rank or kill
   development ideas; no spent comparison can authorize shipping or a default
   change.
+- A quality-only successor may earn that narrow authority. It cannot
+  rehabilitate v3 or authorize speed ranking, shipping, or defaults.
 
 The machine-readable contract is
 [`standing_evidence.py`](standing_evidence.py).
@@ -267,3 +271,36 @@ Numba threads. The selector was not opened. The failure record is
 [`m6_historical_backtest_result.md`](m6_historical_backtest_result.md).
 `backtest_complete` remains false, `backtest_terminal` is true, and the
 executor refuses another launch under v3.
+
+## M6 quality successor v1 binding failure and v2 correction
+
+The successor contract is
+[`m6_quality_successor_contract.md`](m6_quality_successor_contract.md), with
+machine-readable state and analyzer in
+[`m6_quality_successor.py`](m6_quality_successor.py). It freezes the ten
+generic regression/binary/multiclass builders at medium size only, seeds 0--2,
+unweighted and stress-weighted fits, four threads, and three repeats: 60 paired
+cells under the strict `paired-evidence-v1` execution foundation. Small cells
+and external release anchors are not ranking inputs.
+
+Its predeclared artifact-only calculation included the known-advance combined
+B1+B2 ensemble-v3 and the known-kill 3% linear-leaf selector. The single clean
+launch reproduced both dispositions and is create-only/hash-bound at
+[`m6_quality_successor_backtest_result.json`](m6_quality_successor_backtest_result.json),
+SHA-256
+`360a60130c99220a3466ff0fab40b54ead99a2d0a29a2bde3a33a12e38500baa`.
+The pre-activation audit then found a self-referential analyzer hash and
+missing repeat attestation, recorded in the create-only
+[`v1 invalidation`](m6_quality_successor_v1_invalidation_20260721.md). V1 has
+no ranking authority and will not be rebound or rerun.
+
+The new `m6-quality-successor-v2` identity keeps the grid, thresholds, subset,
+and input hashes unchanged, while separating immutable decision code from
+activation and owning an exact, repeat-attested comparison command. V2 is
+frozen and M6 stays non-ranking until its own one-shot backtest completes.
+
+Every eligible future use is paired, create-only, inspection-indexed, and spent for its
+mechanism. The successor reports equal-cell quality, breadth, worst-cell harm,
+per-dataset ratios, and leave-one-dataset-out sensitivity. It cannot support a
+shipping/default claim, and it does not reduce later sports, uncertainty,
+power, milestone, or owner-signoff requirements.
