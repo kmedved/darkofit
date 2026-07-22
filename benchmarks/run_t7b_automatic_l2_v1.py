@@ -29,6 +29,7 @@ M6_RULE_PATH = RUNNER_PATH.with_name("m6_quality_rule_v3.py")
 M6_CONTRACT_PATH = RUNNER_PATH.with_name("m6_quality_successor_v3_contract.md")
 CANDIDATE_FILES = {
     "darkofit/booster.py",
+    "tests/test_darkofit.py",
     "tests/test_t7b_automatic_l2_policy.py",
 }
 

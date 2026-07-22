@@ -16,6 +16,11 @@ def test_contract_pins_one_mechanism_and_control():
     assert runner.CONTROL_HEAD in text
     assert "samples-per-feature depth idea is a separate mechanism" in text
     assert "No new TabArena coordinate" in text
+    assert runner.CANDIDATE_FILES == {
+        "darkofit/booster.py",
+        "tests/test_darkofit.py",
+        "tests/test_t7b_automatic_l2_policy.py",
+    }
 
 
 def test_output_paths_are_external_and_create_only_names(tmp_path):
