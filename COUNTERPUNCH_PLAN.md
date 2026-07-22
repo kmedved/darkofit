@@ -301,7 +301,7 @@ been refreshed.
 | Track | State | Evidence class | Entry condition | Exit artifact | Stop rule |
 | --- | --- | --- | --- | --- | --- |
 | H — hygiene | Complete for Wave 1 | Tier-E engineering | Clean documentation checkpoint | Published H1 audit and tested fixes | Reopen only for a newly confirmed gap |
-| M — Wave 1 complete; M6 successor v2 backtest pending | Tier-E descriptive/infrastructure | Frozen `m6-quality-successor-v2` with unchanged advance/kill subset and exact repeat-attested runner | M1, Q0, M3a, M5, terminal M6 v3, invalid v1 binding, and v2 result if it completes | M6 remains non-ranking until v2 passes; successor never ships and is spent per mechanism |
+| M — Wave 1 complete; quality-only M6 v2 eligible | Tier-E descriptive/infrastructure | Passed `m6-quality-successor-v2`; new mechanisms require its exact clean runner and inspection index | M1, Q0, M3a, M5, terminal M6 v3, invalid v1 binding, and hash-bound v2 result | Successor never ships, never ranks speed, and is spent per mechanism |
 | Q — historically closed at G-M; future local screen separately gated | Q0 engineering, Q1/Q2 Tier-E opt-in, Q3 Tier-D automatic | Separate owner authorization for a measured local causal microprototype against the post-dispatch baseline | New local microprototype result if authorized | The `13.28%` assumed-prior projection sizes work only; it cannot fund Q1 and M1 is not relaxed |
 | B — reopened for Tier-E ship preparation | Spent private B0/B1/B2 attribution; Tier-D for any changed default | Binding public API/archive contract, then private non-exported release-candidate invariants | Public contract and private correctness checkpoint; later ship only by owner release sign-off | Preserve historical M3b/B-archive artifacts; no public surface, B3, or release from preparation alone |
 | X — cross features | Rolling backlog via Track I | Tier-E explicit research opt-in; Tier-D for automatic engagement | Promotion from the backlog; X0 then defines separate force and guarded semantics plus full product obligations | Narrow opt-in result or deferral | No general safety claim from the three-task spent result |
@@ -618,8 +618,10 @@ file that held its false completion flag and the future runner did not attest
 repeat count. V1 remains immutable/non-ranking. The new
 `m6-quality-successor-v2` identity keeps the thresholds, medium 60-cell grid,
 and subset unchanged while separating immutable decision code and binding an
-exact repeat-attested execution wrapper. M6 remains non-ranking pending the v2
-backtest.
+exact repeat-attested execution wrapper. Its one clean, outcome-known backtest
+reproduced both dispositions and is hash-bound. V2 may now rank or kill quality
+ideas only; it cannot rank speed, ship anything, change a default, or alter the
+terminal v3 and invalid v1 records.
 
 ### G-M — owner-facing decision
 
@@ -1311,7 +1313,7 @@ These are planning ranges, not delivery promises.
 | 2 | **Complete:** B0 contract, private sequential B1/B2 prototype and invariants, prospectively frozen M3b attribution | Completed 2026-07-20 | No arm cleared every final gate; close B1/B2 and preserve the existing opt-in |
 | 3 | **Complete:** M3b matched-single readout, B-archive component feasibility, v1 terminal lineage, and corrected frozen v2 campaign | Completed 2026-07-21 | Exact canonical factoring missed `4.0×`; close B-archive with no serializer and nominate fused-lane dispatch |
 | 4 | **Complete and closed:** behavior-exact fused-lane dispatch design, staged implementation, invariants, outcome-blind harness, and gate-repaired calibration execution identity v4 were frozen. V1--v3 were superseded pre-outcome; v4 ran exactly once with 30/30 exact cells. Six cells missed stability and the selected geomean was `0.973846` against `<=0.97`. | Completed 2026-07-21; no rerun, validation, or speed claim. A post-close owner product override promotes threshold `1048576` without changing the failed verdict. | Activate bounded macOS-arm64 `auto` switching and return the next mechanism slot to the quality-first shortlist |
-| 5 | **Authorized preparation:** ensemble-v3 public contract/private candidate complete; M6 successor v1 binding invalid and corrected v2 backtest pending | In progress from owner record `671f2e0` | No public API/export, characterization publication, ship, M2/M4, release, B3, Q, fresh data, or lockbox access without the later §6 owner gates |
+| 5 | **Preparation complete:** ensemble-v3 public contract and private candidate complete; invalid M6 v1 preserved; corrected quality-only M6 v2 backtest passed | Completed 2026-07-21 under owner record `671f2e0` | No public API/export, characterization publication, ship, M2/M4, release, B3, Q, fresh data, or lockbox access without the later §6 owner gates |
 | 6 | T7b quality mechanism, then separately gated B3 and Q slots one at a time | Separately authorized and estimated | Preserve the quality-first slot and one-mechanism discipline |
 | Later | M2/M4 release milestones, other Track I backlog, and Z cleanup | Independent backlog with explicit owner gates | No coupling to unfinished speculative tracks or lockbox access |
 

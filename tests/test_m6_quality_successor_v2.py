@@ -51,10 +51,20 @@ def test_v2_comparison_command_attests_exact_coordinates_and_repeats(tmp_path):
     assert "all" not in command[dataset_start:dataset_end]
 
 
-def test_v2_prebacktest_binding_refuses_ranking():
-    assert not execution.BACKTEST_RESULT_PATH.exists()
-    with pytest.raises(RuntimeError, match="not committed"):
-        execution.validate_backtest_binding()
+def test_v2_binding_matches_create_only_result(monkeypatch):
+    assert execution.BACKTEST_RESULT_PATH.exists()
+    monkeypatch.setattr(
+        execution,
+        "source_state",
+        lambda _path: {"clean": True, "head": "test", "tree": "test"},
+    )
+    monkeypatch.setattr(
+        execution,
+        "_tracked_head_bytes",
+        lambda path: path.read_bytes(),
+    )
+    binding = execution.validate_backtest_binding()
+    assert len(binding["result_sha256"]) == 64
 
 
 def test_v2_rule_rejects_duplicate_and_incomplete_rows():

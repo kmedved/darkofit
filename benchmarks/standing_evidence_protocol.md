@@ -1,9 +1,9 @@
 # Standing M5/M6 evidence protocol
 
-Status: M5 v1 baseline frozen; M6 v3 remains terminal. The first quality-
-successor calculation agreed with its historical subset but failed its binding
-audit; structurally corrected v2 is frozen pending its own backtest, so M6
-ranking remains disabled.
+Status: M5 v1 baseline frozen; M6 v3 remains terminal and quality-successor v1
+remains binding-invalid. Structurally corrected `m6-quality-successor-v2`
+passed its one-shot backtest on 2026-07-21, enabling quality-development
+ranking only.
 
 This protocol creates the cheap middle rung in
 [`COUNTERPUNCH_PLAN.md`](../COUNTERPUNCH_PLAN.md). It is deliberately split
@@ -296,8 +296,12 @@ no ranking authority and will not be rebound or rerun.
 
 The new `m6-quality-successor-v2` identity keeps the grid, thresholds, subset,
 and input hashes unchanged, while separating immutable decision code from
-activation and owning an exact, repeat-attested comparison command. V2 is
-frozen and M6 stays non-ranking until its own one-shot backtest completes.
+activation and owning an exact, repeat-attested comparison command. Its single
+clean backtest reproduced both dispositions. The create-only result is
+[`m6_quality_successor_v2_backtest_result.json`](m6_quality_successor_v2_backtest_result.json),
+SHA-256
+`6880c679cd5f16aa61d13c2e57282e3f162769be87e478a6ddf18d8958c9cf57`.
+Quality-development ranking is eligible only through the exact v2 wrapper.
 
 Every eligible future use is paired, create-only, inspection-indexed, and spent for its
 mechanism. The successor reports equal-cell quality, breadth, worst-cell harm,

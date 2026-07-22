@@ -285,12 +285,14 @@ machine limits (the failed round's packed replay hard-required 18 threads
 on a 14-thread host), and the same create-only artifact rules. Until it
 passes, M6 stays non-ranking; nothing else changes.
 
-**Progress note (2026-07-21):** `m6-quality-successor-v1` reproduced the
+**Completion note (2026-07-21):** `m6-quality-successor-v1` reproduced the
 predeclared known advance and known kill, but a pre-activation audit found a
 self-referential analyzer hash and missing repeat attestation. V1 remains
 non-ranking and will not be rebound or rerun. Structurally corrected v2 keeps
-the thresholds/subset unchanged and is frozen pending its own backtest. M6 v3
-also remains terminal/non-ranking.
+the thresholds/subset unchanged, binds an exact repeat-attested runner, and
+passed its own clean outcome-known backtest. Quality-development ranking is
+eligible only under v2; M6 v3 remains terminal and no successor grants
+shipping, default, speed-ranking, or evidence-access authority.
 
 **4.9 — Standing gate-design rules (add to the plan's evidence
 discipline):**

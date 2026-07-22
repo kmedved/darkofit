@@ -1190,6 +1190,27 @@ B-archive simulation remains non-loadable, optional size telemetry.
    separates immutable rule code from activation, and binds an exact
    repeat-attested command; M6 stays non-ranking until v2 passes.
 
+### 33. M6 quality-successor v2 backtest (2026-07-21)
+
+1. **Source:** clean detached contract checkpoint `e5ff51d`.
+2. **Evidence class:** structural Tier-E backtest over the same spent artifacts;
+   outcomes were already known from v1, and v2 makes no blindness claim.
+3. **Unchanged rule/subset:** `0.98` geomean, 60% wins, `1.02` worst cell;
+   combined B1+B2 known advance and 3% selector known kill with the same hashes.
+4. **Structural corrections:** immutable rule separated from activation; exact
+   ten-dataset command rather than `all`; three repeats owned and recorded by
+   the wrapper; rule/contract/wrapper/comparison/paired-execution hashes bound.
+5. **Execution:** one clean launch; both replays agreed with the same `0.965513`
+   advance and `0.989264` kill readouts.
+6. **Artifact:**
+   [`m6_quality_successor_v2_backtest_result.json`](m6_quality_successor_v2_backtest_result.json),
+   SHA-256
+   `6880c679cd5f16aa61d13c2e57282e3f162769be87e478a6ddf18d8958c9cf57`.
+7. **Decision:** v2 may rank or kill quality mechanisms on its medium generic
+   slice. Every result is inspection-indexed and spent. It cannot rank speed,
+   ship, change defaults, or reduce sports/Tier-D/milestone/owner gates. V3 and
+   v1 retain their terminal/invalid statuses.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

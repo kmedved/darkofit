@@ -1,0 +1,127 @@
+{
+  "backtest_complete": true,
+  "bindings": {
+    "backtest_runner": {
+      "path": "benchmarks/run_m6_quality_successor_v2_backtest.py",
+      "sha256": "f1b8a0d6e6d9ea091ee0ea50d3b28dc94f6a53e6a027cb5c8378f9ebffcd0aaa"
+    },
+    "comparison_runner": {
+      "path": "benchmarks/bench_compare_revisions.py",
+      "sha256": "0fcd849a13c0348c4c6802556d9a3d3b9f1d5b02c8c47a4e82c3e744f358760f"
+    },
+    "contract": {
+      "path": "benchmarks/m6_quality_successor_v2_contract.md",
+      "sha256": "9458997b392ec9b560aca70f1dc7e3be8897c67d1145795a3e9f907923e35884"
+    },
+    "execution_runner": {
+      "path": "benchmarks/run_m6_quality_successor_v2.py",
+      "sha256": "3acdc64c7b8563def0fe01a3d4b14b65985a0390ad5fae9a9e37a07ba00061c2"
+    },
+    "negative_artifact": {
+      "path": "benchmarks/fresh_selector_confirmation.json",
+      "sha256": "4dc158ec4fd11cf29a5822dc2a09aa76715ce9446773673fa9a2828da1b71a7d"
+    },
+    "paired_execution": {
+      "path": "benchmarks/paired_evidence_contract.py",
+      "sha256": "63c63d4f0b7c6f649b7155325ee064faf6e5981094ed3cb79ac91b6b8fefedf9"
+    },
+    "positive_artifact": {
+      "path": "benchmarks/m3b_ensemble_v3_r3_vs_single_readout_20260721.json",
+      "sha256": "99d693063c46a0708eb45a704af0b46611fa8ed89dbe4d6469b47c7cd4a27c64"
+    },
+    "rule": {
+      "path": "benchmarks/m6_quality_rule_v2.py",
+      "sha256": "b80520a77f3b99f14209a89535b32ca3437141d9251353618db7f1151484cb55"
+    }
+  },
+  "candidate_ranking_eligible": true,
+  "contract_id": "m6-quality-successor-v2",
+  "created_at_utc": "2026-07-22T02:13:35.852912+00:00",
+  "decision": "enable_quality_development_ranking",
+  "evidence_status": "complete",
+  "harness": {
+    "clean": true,
+    "head": "e5ff51d70a1db6e3ba7b50ba364fe1f3fa49d3e5",
+    "path": "/private/tmp/darkofit-m6-quality-v2-e5ff51d",
+    "status": [],
+    "tree": "e332d77c4cbee3a2a32ffe48ea3b2a40915ca512"
+  },
+  "outcome_blind": false,
+  "replays": [
+    {
+      "agreement": true,
+      "decision": {
+        "case_count": 13,
+        "disposition": "advance",
+        "gates": {
+          "geomean_at_most_0_98": true,
+          "no_cell_above_1_02": true,
+          "wins_at_least_60_percent": true
+        },
+        "geometric_mean_ratio": 0.9655130355873516,
+        "minimum_wins": 8,
+        "ratios": {
+          "general_categorical_multiclass": 0.991888335079713,
+          "general_categorical_reg": 0.9589867434730964,
+          "general_friedman_numeric": 0.976369349010174,
+          "general_numeric_binary": 0.975310482604166,
+          "sports_2014_box_plus_minus": 0.9909230310341064,
+          "sports_2014_game_score": 0.9437525943501416,
+          "sports_2014_minutes_per_game": 0.9505146785048093,
+          "sports_2015_box_plus_minus": 0.9875067711802458,
+          "sports_2015_game_score": 0.9532660518869941,
+          "sports_2015_minutes_per_game": 0.9482990867025995,
+          "sports_2016_box_plus_minus": 0.9774211908947587,
+          "sports_2016_game_score": 0.9323479994952607,
+          "sports_2016_minutes_per_game": 0.9674024468086841
+        },
+        "wins": 13,
+        "worst_case": "general_categorical_multiclass",
+        "worst_ratio": 0.991888335079713
+      },
+      "expected_disposition": "advance",
+      "mechanism_id": "combined_b1_b2_ensemble_v3",
+      "observed_disposition": "advance"
+    },
+    {
+      "agreement": true,
+      "decision": {
+        "case_count": 14,
+        "disposition": "kill",
+        "gates": {
+          "geomean_at_most_0_98": false,
+          "no_cell_above_1_02": true,
+          "wins_at_least_60_percent": false
+        },
+        "geometric_mean_ratio": 0.9892642728306965,
+        "minimum_wins": 9,
+        "ratios": {
+          "bkd1kmc1": 1.0,
+          "bng_mv_generator": 1.0,
+          "bng_stock_generator": 1.0,
+          "climate_agriculture_impact": 1.0,
+          "climate_insights": 1.0,
+          "coffee_distribution": 0.8766436989572796,
+          "debutanizer_process": 0.9807299371651926,
+          "infrared_thermography_temperature": 1.0,
+          "iot_agriculture": 1.0,
+          "mabbob_ela_algorithm_performance": 1.0,
+          "news_popularity": 1.0,
+          "qsar_bioconcentration": 1.0,
+          "rssi_3d_localization": 1.0,
+          "temperature_emissions_trends": 1.0
+        },
+        "wins": 2,
+        "worst_case": "bkd1kmc1",
+        "worst_ratio": 1.0
+      },
+      "expected_disposition": "kill",
+      "mechanism_id": "linear_leaf_selector_3pct",
+      "observed_disposition": "kill"
+    }
+  ],
+  "rerun_authorized": false,
+  "schema_version": 1,
+  "shipping_or_default_claim_eligible": false,
+  "v1_structural_invalidation": "benchmarks/m6_quality_successor_v1_invalidation_20260721.md"
+}
