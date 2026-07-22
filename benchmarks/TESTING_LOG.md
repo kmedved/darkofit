@@ -1654,6 +1654,62 @@ B-archive simulation remains non-loadable, optional size telemetry.
     causal claim. A default-on policy still needs separately authorized,
     prospectively frozen and powered Tier-D evidence.
 
+### 42. Automatic linear-selector v2 M5 check (2026-07-22)
+
+1. **Execution date/source:** 2026-07-22; clean, published candidate
+   `a53d4bf543534678189d87d88dcad87dd2a8bd8f` on
+   `codex/smooth-selector-20260722`, with the unchanged runner executed from
+   that same clean checkout.
+2. **Comparators:** exact frozen M5 control
+   `726e5d8e6131c580bce948db833a5007d0692dca`; hash-bound M5 baseline
+   `0971e06d4ed307d352d75e1e6400b849c0001b5e11f40243173d7080b6c5859d`.
+3. **Evidence class:** spent, non-ranking M5 correctness and diversity-drift
+   evidence. It grants no quality-ranking, shipping, default, fresh,
+   TabArena, or lockbox authority.
+4. **Data/splits:** the frozen 19-cell M5 grid across grouped, smooth, noisy,
+   categorical/missing, high-row, binary, multiclass, weighted-regression,
+   and weighted-classification domains. Dataset and split hashes are recorded
+   per row in the raw artifact.
+5. **Arms/policies:** frozen control defaults versus the candidate default
+   automatic linear selector. Explicit classification and ensemble behavior
+   remained outside selector eligibility as designed; no cell or threshold
+   was tuned after inspection.
+6. **Environment/repeats:** Python 3.11.8 in `darko311` on
+   `macOS-26.5.2-arm64-arm-64bit`, 14 logical CPUs, four fixed worker threads,
+   one fresh worker per arm/cell, alternating arm order, and same-source
+   three-tree warmup outside timing.
+7. **Runner/command:** `python benchmarks/run_m5_sentinels.py --control
+   /private/tmp/darkofit-wave1-source-726e5d8 --candidate
+   /private/tmp/darkofit-smooth-selector-20260722 --baseline
+   benchmarks/m5_sentinel_baseline.json --output
+   /Users/konstantinmedvedovsky/code/darkofit/benchmarks/automatic_linear_selector_v2_m5_check_20260722.json`,
+   with the output path in the main checkout so the clean candidate harness
+   remained immutable throughout execution.
+8. **Hashes:** selector development contract
+   `fe2d476417e8e8087a3c7342eee0d5cb82a6b8a4ee3f360a1806ee4c0922163b`;
+   M5 runner
+   `5975d8037e3d94c54b63611b9eb50b28e1098e23f7e9f064608b97141cec61ca`;
+   machine-readable M5 contract
+   `71b9ab84af20663ca86725bbaf3328541623e33afb2724e28d9f6ed85542a8f0`;
+   raw result
+   `1c765589ed303432d87009ca0330db8dcf35e3651fbd9b93d2f8bc576f9e494a`.
+9. **Primary results:** all 38 rows passed. Both earned classification floors
+   passed. Eighteen of 19 paired behavior fingerprints were identical; noisy
+   numeric regression seed 0 changed at a candidate/control primary-loss
+   ratio of `1.004434950`.
+10. **Costs, passed and failed conditions:** no baseline drift and no
+    advancement block were reported. Median candidate/control ratios were
+    `1.031226` fit, `1.007107` prediction, and `1.002855` peak RSS. Maximum
+    fit ratio was `7.734942`. These costs are telemetry, not M5 gates.
+11. **Limitations/non-claims:** M5 is a small fixed sentinel grid, not an
+    independent dataset panel or quality scoreboard. Its timing cells are too
+    short for portable performance claims, and its one changed noisy cell is
+    neither a kill nor an acceptance result.
+12. **Terminal decision/next action:** M5 invariants and drift checks pass.
+    Run exactly one M6 quality-successor-v3 inspection with mechanism id
+    `automatic_linear_selector_v2` and inspection index 1, reporting every
+    selector engagement reason. M6 failure is terminal for this identity.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
