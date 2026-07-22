@@ -1,8 +1,8 @@
 # DarkoFit testing log
 
-_Canonical navigation ledger. Updated 2026-07-21 after the GitHub-only
-`v0.10.1` release, frozen B-archive v2 close, and binding Wave 4
-fused-dispatch calibration-v4 close._
+_Canonical navigation ledger. Updated 2026-07-22 after the GitHub-only
+`v0.11.0` release, public ensemble-v3 exposure, and owner-promoted static
+fused/unfused dispatch._
 
 This file records what DarkoFit has tested, why it was tested, what happened,
 and which artifact controls the conclusion. It is intentionally broader than
@@ -35,9 +35,9 @@ checkpoint is [`../BENCHMARK_NOTES.md`](../BENCHMARK_NOTES.md).
 
 | Boundary | Current state |
 | --- | --- |
-| DarkoFit release | GitHub-only `v0.10.1`, exact tag commit `d3aba3d01eb1cbd99715793c852db0181fd47aaa`; not published to PyPI |
-| Release verification | 2,673 tests collected with zero failures in both recorded environments: `2,671 passed / 2 skipped` and `2,646 passed / 27 skipped` |
-| GitHub integration | PR #1 passed Python 3.9, 3.11, and 3.13 library lanes, 1,692 campaign verifiers with expected optional skips, and the documentation/generated-evidence/package lane |
+| DarkoFit release | GitHub-only `v0.11.0`, exact tag commit `0b820e332cec2c083b1dd89eef0fe306d69cfc0e`; not published to PyPI |
+| Release verification | GitHub Actions run `29942771031` passed at the exact tag commit: each Python 3.9/3.11/3.13 library lane reported `1,329 passed / 11 skipped / 4 deselected`; the campaign lane reported `1,692 passed / 29 skipped`, then 19 contract checks passed |
+| GitHub integration | Campaign, strict documentation, generated-evidence, package-build, and all supported-Python lanes passed before the annotated tag and GitHub release were published |
 | v0.10.0 final release CI | GitHub Actions run `29686258603` passed for that tagged source |
 | Historical broad comparator | ChimeraBoost 0.14.1 on the frozen 13-dataset same-machine regression panel |
 | Historical sports comparator | ChimeraBoost 0.15.0 on the frozen player-disjoint sports panel |
@@ -1514,6 +1514,7 @@ B-archive simulation remains non-loadable, optional size telemetry.
 | PR #1 | Five GitHub lanes passed, including 1,692 campaign verifiers and package/docs/generated-evidence checks |
 | GitHub-only v0.10 release | Tag and `main` agree at `ec66a64`; wheel, source archive, and checksums were attached to the GitHub release and public URL installation was verified |
 | GitHub-only v0.10.1 release | Annotated `v0.10.1` resolves to `d3aba3d`; the user-visible thread-mask and sklearn-tag fixes are recorded in the release CHANGELOG |
+| GitHub-only v0.11.0 release | Annotated `v0.11.0` resolves to `0b820e3`; GitHub Actions run `29942771031` passed all five lanes; a clean detached worktree produced the universal wheel and source archive; the wheel passed isolated regression/classification ensemble-v3 fit/predict and exact safe-NPZ round-trip smoke; downloaded release assets matched the attached `SHA256SUMS` |
 
 Intermediate suite totals are useful progress markers but are not permanent
 repository invariants. The release claim always binds to the exact source
