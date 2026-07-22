@@ -2411,9 +2411,19 @@ def test_tree_mode_default_depth_resolution():
     depthwise_reg = DarkoRegressor(
         iterations=2, tree_mode="depthwise", random_state=0
     ).fit(Xr, yr)
+    catboost_reg = DarkoRegressor(
+        iterations=2, tree_mode="catboost", random_state=0
+    ).fit(Xr, yr)
 
     assert catboost.model_.depth == 6
     assert depthwise.model_.depth == 6
+    assert catboost_reg.model_.depth == 4
+    catboost_reg_depth = catboost_reg.model_.auto_params_["auto_structure"]
+    assert catboost_reg_depth["resolved"]["depth"]["source"] == "auto"
+    assert (
+        catboost_reg_depth["candidates"]["depth"]["rule"]
+        == "scalar_rmse_catboost_n_eff_per_input_feature_4_6_8"
+    )
     assert depthwise_reg.model_.depth == 2
     depth_meta = depthwise_reg.model_.auto_params_["auto_structure"]
     assert depth_meta["resolved"]["depth"]["source"] == "default"

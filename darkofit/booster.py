@@ -85,6 +85,9 @@ _LEAF_CORRECTION_SORT_MIN_LEAVES = 16
 _LOW_EFFECTIVE_SAMPLE_FRACTION = 0.3
 _MAX_CONSECUTIVE_SAMPLED_DEPTH0_RETRIES = 10
 LINEAR_LEAVES_MIN_SAMPLES = 1000
+_SCALAR_RMSE_CATBOOST_DEPTH_RULE = (
+    "scalar_rmse_catboost_n_eff_per_input_feature_4_6_8"
+)
 _EMITTED_DIAGNOSTIC_WARNING_CODES = set()
 _OBLIVIOUS_KERNEL_MODES = frozenset({"auto", "fused", "unfused"})
 # Owner-promoted behavior-exact candidate; the campaign itself remains closed.
@@ -520,6 +523,101 @@ def _validate_oblivious_kernel_dispatch_fitted_state(booster):
     tree_metadata = auto_params.get("tree")
     if not isinstance(tree_metadata, dict):
         raise ValueError("oblivious dispatch requires fitted tree metadata")
+    auto_structure = auto_params.get("auto_structure", {})
+    resolved_structure = (
+        auto_structure.get("resolved", {})
+        if isinstance(auto_structure, dict)
+        else {}
+    )
+    resolved_depth = (
+        resolved_structure.get("depth")
+        if isinstance(resolved_structure, dict)
+        else None
+    )
+    candidates = (
+        auto_structure.get("candidates", {})
+        if isinstance(auto_structure, dict)
+        else {}
+    )
+    depth_policy = (
+        candidates.get("depth", {}) if isinstance(candidates, dict) else {}
+    )
+    automatic_default_depth = (
+        type(booster).__name__ == "GradientBoosting"
+        and getattr(booster, "loss_name", None) == "RMSE"
+        and booster.tree_mode_ == "catboost"
+        and booster._depth_input is None
+        and isinstance(resolved_depth, dict)
+        and resolved_depth.get("input") is None
+        and resolved_depth.get("source") == "auto"
+    )
+    if automatic_default_depth or depth_policy.get("rule") == (
+        _SCALAR_RMSE_CATBOOST_DEPTH_RULE
+    ):
+        if (
+            depth_policy.get("rule") != _SCALAR_RMSE_CATBOOST_DEPTH_RULE
+            or type(booster).__name__ != "GradientBoosting"
+            or getattr(booster, "loss_name", None) != "RMSE"
+            or booster.tree_mode_ != "catboost"
+            or booster._depth_input is not None
+            or not isinstance(resolved_depth, dict)
+            or resolved_depth.get("input") is not None
+            or resolved_depth.get("source") != "auto"
+            or resolved_depth.get("resolved") not in {4, 6, 8}
+        ):
+            raise ValueError(
+                "automatic scalar-RMSE depth metadata is inconsistent"
+            )
+        input_feature_count = depth_policy.get("input_feature_count")
+        n_eff = depth_policy.get("n_eff")
+        density = depth_policy.get("effective_rows_per_feature")
+        structure_n_eff = auto_structure.get("n_eff")
+        weight_metadata = auto_params.get("sample_weight", {})
+        weight_n_eff = (
+            weight_metadata.get("effective_sample_size")
+            if isinstance(weight_metadata, dict)
+            else None
+        )
+        if (
+            isinstance(input_feature_count, (bool, np.bool_))
+            or not isinstance(input_feature_count, (int, np.integer))
+            or int(input_feature_count) < 1
+            or int(input_feature_count) != int(prep.n_input_features_)
+            or isinstance(n_eff, (bool, np.bool_))
+            or not isinstance(n_eff, (int, float, np.integer, np.floating))
+            or not np.isfinite(n_eff)
+            or float(n_eff) <= 0.0
+            or structure_n_eff != n_eff
+            or weight_n_eff != n_eff
+            or isinstance(density, (bool, np.bool_))
+            or not isinstance(density, (int, float, np.integer, np.floating))
+            or not np.isfinite(density)
+            or not np.isclose(
+                float(density),
+                float(n_eff) / float(input_feature_count),
+                rtol=0.0,
+                atol=1e-12,
+            )
+            or depth_policy.get("low_threshold") != 100.0
+            or depth_policy.get("high_threshold") != 2_500.0
+        ):
+            raise ValueError("automatic scalar-RMSE depth inputs are invalid")
+        if float(density) < 100.0:
+            expected_policy = (4, "low_density")
+        elif float(density) >= 2_500.0:
+            expected_policy = (8, "high_density")
+        else:
+            expected_policy = (6, "middle_density")
+        if (
+            resolved_depth["resolved"],
+            depth_policy.get("branch"),
+        ) != expected_policy:
+            raise ValueError(
+                "automatic scalar-RMSE depth branch is inconsistent"
+            )
+        # Safe-NPZ reconstructs constructor inputs first. Restore the fitted
+        # resolution after validating the persisted automatic-policy record.
+        booster.depth = int(resolved_depth["resolved"])
     scalar_oblivious = type(booster).__name__ == "GradientBoosting"
     if scalar_oblivious and booster.tree_mode_ == "catboost":
         expected_depth = tree_metadata.get("max_tree_depth")
@@ -1229,6 +1327,37 @@ class _BaseBooster:
                 self.depth = _resolve_default_depth(depth_input, self.tree_mode_)
             if (
                 depth_input is None
+                and self.tree_mode_ == "catboost"
+                and loss_name == "RMSE"
+            ):
+                input_feature_count = int(X.shape[1])
+                effective_rows_per_feature = n_eff / float(
+                    input_feature_count
+                )
+                if effective_rows_per_feature < 100.0:
+                    depth = 4
+                    branch = "low_density"
+                elif effective_rows_per_feature >= 2_500.0:
+                    depth = 8
+                    branch = "high_density"
+                else:
+                    depth = 6
+                    branch = "middle_density"
+                self.depth = int(depth)
+                candidates["depth"] = {
+                    "rule": _SCALAR_RMSE_CATBOOST_DEPTH_RULE,
+                    "n_eff": float(n_eff),
+                    "input_feature_count": input_feature_count,
+                    "effective_rows_per_feature": float(
+                        effective_rows_per_feature
+                    ),
+                    "low_threshold": 100.0,
+                    "high_threshold": 2_500.0,
+                    "branch": branch,
+                }
+                depth_source = "auto"
+            elif (
+                depth_input is None
                 and self.tree_mode_ == "depthwise"
                 and loss_name == "RMSE"
             ):
@@ -1236,7 +1365,11 @@ class _BaseBooster:
                 candidates["depth"] = {
                     "rule": "depthwise_rmse_shallow_default"
                 }
-            depth_source = "default" if depth_input is None else "explicit"
+                depth_source = "default"
+            else:
+                depth_source = (
+                    "default" if depth_input is None else "explicit"
+                )
         resolved["depth"] = {
             "input": depth_input,
             "resolved": self.depth,
