@@ -1,0 +1,33 @@
+{
+  "contract_id": "v011-release-compute-ladder-20260722-v2",
+  "fit_count": 0,
+  "harness_freeze_git_head": "efc0f72a3a17ddf27d0dbd07aa98ebae69e588fc",
+  "kind": "v011_compute_ladder_terminal_record",
+  "model_outcome_count": 0,
+  "published_contract_commit": "17b8a6a9ed9732c9503463c64bd3a65922e0944b",
+  "rerun_allowed_under_this_identity": false,
+  "schema_version": 1,
+  "scientific_protocol_change": "none",
+  "status": "superseded_pre_execution",
+  "successor_execution_change": "Run sleep prevention as a standalone process whose command does not wrap or name the benchmark runner, then launch the unchanged runner normally.",
+  "terminal_artifact": {
+    "bytes": 458,
+    "sha256": "cb46c5c1ae9095df73758dc4958fd1d76ff20550d1a98beb7c033e80b8d57c66"
+  },
+  "terminal_payload": {
+    "completed_at_utc": "2026-07-22T18:42:00.996803+00:00",
+    "completed_worker_count": 0,
+    "contract_id": "v011-release-compute-ladder-20260722-v2",
+    "error": "another benchmark process is active: [{'pid': 18425, 'command': 'caffeinate -dimsu /private/tmp/darkofit-v011-m2-venv/bin/python -I benchmarks/run_v011_compute_ladder.py'}]",
+    "error_type": "RuntimeError",
+    "kind": "v011_compute_ladder_terminal",
+    "schema_version": 1,
+    "status": "failed"
+  },
+  "v2_contract": {
+    "bytes": 14306,
+    "path": "benchmarks/v011_compute_ladder_contract_v2_20260722.json",
+    "sha256": "ba31afb79fb7976cce3cd09ffc386fe900a80d06741e1acc72d4d4d98fb56f3d"
+  },
+  "worker_count": 0
+}

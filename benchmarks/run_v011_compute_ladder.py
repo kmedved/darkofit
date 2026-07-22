@@ -34,18 +34,21 @@ from benchmarks import run_tabarena_regression_same_machine as historical_m2
 ROOT = Path(__file__).resolve().parents[1]
 BENCH = ROOT / "benchmarks"
 PROTOCOL_PATH = BENCH / "v011_compute_ladder_protocol_20260722.md"
-CONTRACT_PATH = BENCH / "v011_compute_ladder_contract_v2_20260722.json"
+CONTRACT_PATH = BENCH / "v011_compute_ladder_contract_v3_20260722.json"
 V1_CONTRACT_PATH = BENCH / "v011_compute_ladder_contract_20260722.json"
 V1_TERMINAL_PATH = BENCH / "v011_compute_ladder_v1_terminal_20260722.json"
+V2_CONTRACT_PATH = BENCH / "v011_compute_ladder_contract_v2_20260722.json"
+V2_TERMINAL_PATH = BENCH / "v011_compute_ladder_v2_terminal_20260722.json"
 ANALYZER_PATH = BENCH / "analyze_v011_compute_ladder.py"
 FREEZER_PATH = BENCH / "freeze_v011_compute_ladder.py"
-DEFAULT_OUTPUT_DIR = Path(".cache/v011-compute-ladder-v2-20260722")
+DEFAULT_OUTPUT_DIR = Path(".cache/v011-compute-ladder-v3-20260722")
 DEFAULT_DARKOFIT_SOURCE = Path("/private/tmp/darkofit-v011-release-source")
 DEFAULT_CHIMERABOOST_SOURCE = Path("/private/tmp/chimeraboost-v020-release-source")
 DEFAULT_TABARENA_SOURCE = Path("/private/tmp/tabarena-m2-4cd1d25")
 
-CONTRACT_ID = "v011-release-compute-ladder-20260722-v2"
+CONTRACT_ID = "v011-release-compute-ladder-20260722-v3"
 V1_CONTRACT_ID = "v011-release-compute-ladder-20260722-v1"
+V2_CONTRACT_ID = "v011-release-compute-ladder-20260722-v2"
 DARKOFIT_VERSION = "0.11.0"
 DARKOFIT_COMMIT = "0b820e332cec2c083b1dd89eef0fe306d69cfc0e"
 DARKOFIT_TAG = "v0.11.0"
@@ -148,6 +151,8 @@ BOUND_PATHS = {
     ),
     "v1_contract": V1_CONTRACT_PATH.relative_to(ROOT),
     "v1_terminal": V1_TERMINAL_PATH.relative_to(ROOT),
+    "v2_contract": V2_CONTRACT_PATH.relative_to(ROOT),
+    "v2_terminal": V2_TERMINAL_PATH.relative_to(ROOT),
 }
 
 
@@ -232,12 +237,13 @@ def execution_spec() -> dict[str, Any]:
     return {
         "contract_id": CONTRACT_ID,
         "successor": {
-            "supersedes_contract_id": V1_CONTRACT_ID,
-            "v1_fit_count": 0,
-            "v1_worker_count": 0,
+            "supersedes_contract_id": V2_CONTRACT_ID,
+            "v2_fit_count": 0,
+            "v2_worker_count": 0,
             "scientific_protocol_change": "none",
-            "only_harness_change": (
-                "exclude_own_process_ancestor_chain_from_exclusivity_conflicts"
+            "harness_change": "none",
+            "only_execution_change": (
+                "standalone_sleep_inhibitor_not_benchmark_command_wrapper"
             ),
         },
         "darkofit": {

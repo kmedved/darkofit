@@ -68,12 +68,13 @@ def test_compute_ladder_public_points_and_claim_boundary_are_frozen():
     assert campaign.ARM_SPECS[campaign.CHIMERA_ENSEMBLE]["config"] == {"n_ensembles": 8}
     execution = campaign.execution_spec()
     assert execution["successor"] == {
-        "supersedes_contract_id": "v011-release-compute-ladder-20260722-v1",
-        "v1_fit_count": 0,
-        "v1_worker_count": 0,
+        "supersedes_contract_id": "v011-release-compute-ladder-20260722-v2",
+        "v2_fit_count": 0,
+        "v2_worker_count": 0,
         "scientific_protocol_change": "none",
-        "only_harness_change": (
-            "exclude_own_process_ancestor_chain_from_exclusivity_conflicts"
+        "harness_change": "none",
+        "only_execution_change": (
+            "standalone_sleep_inhibitor_not_benchmark_command_wrapper"
         ),
     }
     assert execution["product_direct"] is True
@@ -118,6 +119,8 @@ def test_protocol_names_direct_product_boundary_and_all_victory_axes():
     assert "Contract v2 supersedes v1" in text
     assert "stopped before any" in text
     assert "worker or model fit" in text
+    assert "Contract v3 supersedes v2" in text
+    assert "zero workers and zero model fits" in text
 
 
 def test_v1_terminal_is_hash_bound_and_records_zero_outcomes():
@@ -131,6 +134,33 @@ def test_v1_terminal_is_hash_bound_and_records_zero_outcomes():
         "bytes": campaign.V1_CONTRACT_PATH.stat().st_size,
         "path": str(campaign.V1_CONTRACT_PATH.relative_to(campaign.ROOT)),
         "sha256": campaign.sha256(campaign.V1_CONTRACT_PATH),
+    }
+
+
+def test_v2_terminal_is_hash_bound_and_records_zero_outcomes():
+    terminal = json.loads(campaign.V2_TERMINAL_PATH.read_text(encoding="utf-8"))
+    assert terminal["contract_id"] == campaign.V2_CONTRACT_ID
+    assert terminal["status"] == "superseded_pre_execution"
+    assert terminal["worker_count"] == terminal["fit_count"] == 0
+    assert terminal["model_outcome_count"] == 0
+    assert terminal["scientific_protocol_change"] == "none"
+    assert terminal["v2_contract"] == {
+        "bytes": campaign.V2_CONTRACT_PATH.stat().st_size,
+        "path": str(campaign.V2_CONTRACT_PATH.relative_to(campaign.ROOT)),
+        "sha256": campaign.sha256(campaign.V2_CONTRACT_PATH),
+    }
+    encoded = (
+        json.dumps(
+            terminal["terminal_payload"],
+            allow_nan=False,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n"
+    ).encode("utf-8")
+    assert terminal["terminal_artifact"] == {
+        "bytes": len(encoded),
+        "sha256": campaign._sha256_bytes(encoded),
     }
 
 

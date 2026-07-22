@@ -10,6 +10,14 @@ V2 changes only that scan to ignore the current process's ancestor chain while
 continuing to reject every unrelated matching benchmark process. Arms, data,
 order, resources, measurements, analysis, and claims are unchanged.
 
+Contract v3 supersedes v2 after the published v2 formal preflight also stopped
+at zero workers and zero model fits. Under the Codex process host, macOS
+`caffeinate command` remained a sibling supervisor rather than an ancestor, so
+the unchanged exclusivity rule correctly saw a second command naming the same
+runner. V3 makes no harness or scientific-protocol change. Sleep prevention is
+launched as a standalone process whose command does not name the runner, and
+the benchmark itself is then launched normally.
+
 This is the Phase E release-milestone characterization authorized by
 [`BEAT_CHIMERABOOST_PLAN.md`](../BEAT_CHIMERABOOST_PLAN.md). It asks whether
 the public DarkoFit v0.11 quality-versus-compute frontier dominates the current
