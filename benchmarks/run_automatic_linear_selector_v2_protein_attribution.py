@@ -82,7 +82,6 @@ WORKER_ENVIRONMENT = {
     "DARKOFIT_WARMUP": "0",
     "CHIMERABOOST_WARMUP": "0",
     "PYTHONHASHSEED": "0",
-    "PYTHONNOUSERSITE": "1",
 }
 
 EXPECTED_HASHES = {
@@ -437,6 +436,47 @@ def _load_split(
         "y_train": y_train,
         "X_test": X_test,
         "y_test": y_test,
+    }
+
+
+def _data_loader_preflight(
+    candidate: Path,
+    tabarena_source: Path,
+) -> dict[str, Any]:
+    """Prove the exact data loader works before an attempt can be spent."""
+    product_modules_before = {
+        "darkofit": "darkofit" in sys.modules,
+        "tabarena": "tabarena" in sys.modules,
+    }
+    _activate_sources(candidate.resolve(), tabarena_source.resolve())
+    records = []
+    for coordinate in COORDINATES:
+        data = _load_split(
+            coordinate["repeat"],
+            coordinate["fold"],
+            tabarena_source,
+        )
+        if int(data["task_id"]) != TASK_ID:
+            raise RuntimeError("Protein preflight task ID drifted")
+        fingerprints = _split_fingerprints(data)
+        records.append(
+            {
+                **coordinate,
+                "task_id": int(data["task_id"]),
+                "train_rows": int(len(data["y_train"])),
+                "test_rows": int(len(data["y_test"])),
+                "feature_count": int(data["X_train"].shape[1]),
+                "combined_split_sha256": fingerprints["combined_sha256"],
+            }
+        )
+        del data
+    if "darkofit" in sys.modules:
+        raise RuntimeError("data-loader preflight imported DarkoFit")
+    return {
+        "checked_at_utc": datetime.now(timezone.utc).isoformat(),
+        "product_modules_before": product_modules_before,
+        "darkofit_remained_unloaded": True,
+        "coordinates": records,
     }
 
 
@@ -1125,6 +1165,10 @@ def _run_parent(args: argparse.Namespace) -> int:
     bindings = validate_bound_evidence()
     hardware = _hardware()
     exclusivity = _exclusive_machine_audit()
+    data_loader_preflight = _data_loader_preflight(
+        args.candidate_source,
+        args.tabarena_source,
+    )
     started_at = datetime.now(timezone.utc).isoformat()
     manifest = {
         "schema_version": 1,
@@ -1152,6 +1196,7 @@ def _run_parent(args: argparse.Namespace) -> int:
         },
         "hardware": hardware,
         "exclusive_machine_audit": exclusivity,
+        "data_loader_preflight": data_loader_preflight,
         "planned_outputs": {key: str(path) for key, path in paths.items()},
         "command": [sys.executable, *sys.argv],
     }
@@ -1162,7 +1207,6 @@ def _run_parent(args: argparse.Namespace) -> int:
         for worker_index, cell in enumerate(expected_ordered_grid()):
             command = _worker_command(args, worker_index, cell["arm"])
             environment = os.environ.copy()
-            environment.pop("PYTHONPATH", None)
             environment.update(WORKER_ENVIRONMENT)
             completed = subprocess.run(
                 command,

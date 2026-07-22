@@ -1,6 +1,7 @@
 import json
 import subprocess
 import sys
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -144,6 +145,76 @@ def test_fresh_runner_import_does_not_preload_product_packages():
         "darkofit": False,
         "tabarena": False,
     }
+
+
+def test_data_loader_preflight_checks_every_coordinate_before_launch(monkeypatch):
+    import pandas as pd
+
+    calls = []
+    monkeypatch.delitem(sys.modules, "darkofit", raising=False)
+    monkeypatch.setattr(protein, "_activate_sources", lambda *args: None)
+
+    def load(repeat, fold, tabarena_source):
+        del tabarena_source
+        calls.append((repeat, fold))
+        return {
+            "task_id": protein.TASK_ID,
+            "X_train": pd.DataFrame({"x": [1.0, 2.0]}),
+            "y_train": pd.Series([1.0, 2.0]),
+            "X_test": pd.DataFrame({"x": [3.0]}),
+            "y_test": pd.Series([3.0]),
+        }
+
+    monkeypatch.setattr(protein, "_load_split", load)
+    monkeypatch.setattr(
+        protein,
+        "_split_fingerprints",
+        lambda data: {"combined_sha256": "a" * 64},
+    )
+    result = protein._data_loader_preflight(
+        protein.ROOT,
+        protein.ROOT,
+    )
+    assert calls == [(0, 0), (1, 1), (2, 2)]
+    assert len(result["coordinates"]) == 3
+    assert result["darkofit_remained_unloaded"] is True
+
+
+def test_data_loader_failure_cannot_spend_an_attempt(monkeypatch, tmp_path):
+    monkeypatch.setattr(protein, "_validate_harness", lambda: {"clean": True})
+    monkeypatch.setattr(
+        protein,
+        "_validate_candidate",
+        lambda path: {"path": str(path), "clean": True},
+    )
+    monkeypatch.setattr(
+        protein,
+        "validate_tabarena_source",
+        lambda path: {"path": str(path), "status": ""},
+    )
+    monkeypatch.setattr(protein, "validate_bound_evidence", lambda: {})
+    monkeypatch.setattr(protein, "_hardware", lambda: {"logical_cpus": 14})
+    monkeypatch.setattr(
+        protein,
+        "_exclusive_machine_audit",
+        lambda: {"conflicting_benchmark_processes": []},
+    )
+
+    def fail_loader(*args):
+        raise ModuleNotFoundError("missing data-loader dependency")
+
+    monkeypatch.setattr(protein, "_data_loader_preflight", fail_loader)
+    prefix = tmp_path / "attempt"
+    args = SimpleNamespace(
+        candidate_source=tmp_path / "candidate",
+        tabarena_source=tmp_path / "tabarena",
+        output_prefix=prefix,
+    )
+    with pytest.raises(ModuleNotFoundError, match="data-loader"):
+        protein._run_parent(args)
+    assert all(
+        not path.exists() for path in protein._output_paths(prefix).values()
+    )
 
 
 def test_protocol_freezes_scope_harm_rule_and_nonshipping_disposition():
@@ -361,4 +432,4 @@ def test_worker_environment_and_policy_are_frozen():
         "explicit_linear": True,
     }
     assert protein.WORKER_ENVIRONMENT["NUMBA_NUM_THREADS"] == "14"
-    assert protein.WORKER_ENVIRONMENT["PYTHONNOUSERSITE"] == "1"
+    assert "PYTHONNOUSERSITE" not in protein.WORKER_ENVIRONMENT
