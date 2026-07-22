@@ -1,0 +1,34 @@
+{
+  "contract_id": "v011-release-compute-ladder-20260722-v3",
+  "decision": "spent_descriptive_release_scoreboard",
+  "input": {
+    "contract_sha256": "61e788f06b88eefcc2e3c08a38402bf93246e7334980a77061b46763650b581a",
+    "manifest_sha256": "01fbb053d1390c43758adc4f47da38e39b6beb53be26ed13548a5eb399d485d4",
+    "raw_sha256": "96f594da1a0ea885aa55d45636049d97b9b6e1a7f56d85679dfe879420636f79"
+  },
+  "kind": "v011_compute_ladder_analysis_attestation",
+  "outputs": {
+    "coordinate_ratios.csv": {
+      "bytes": 163431,
+      "path": "coordinate_ratios.csv",
+      "sha256": "8887ba02c2ae2189907e4afc3064d3c262030432a776ccd9597985088f2d35df"
+    },
+    "per_dataset.csv": {
+      "bytes": 27008,
+      "path": "per_dataset.csv",
+      "sha256": "546592592a3a70720fa214245451374982f2e17f783341c07fbe03b97682dd10"
+    },
+    "report.md": {
+      "bytes": 2406,
+      "path": "report.md",
+      "sha256": "e23fc2d6b32a3cf22373227ce0a7bcd3604a4b9fb21383c40ac659af0362db11"
+    },
+    "summary.json": {
+      "bytes": 35722,
+      "path": "summary.json",
+      "sha256": "28c904e4585d343d96366bf998edd39034795ab18f092a8765b0efe7049543d6"
+    }
+  },
+  "schema_version": 1,
+  "strict_pareto_victory": false
+}

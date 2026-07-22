@@ -1,0 +1,1484 @@
+{
+  "chimeraboost_source": {
+    "commit": "7d48e053e5bd3c7aded1126871aeb0f1f6b84c46",
+    "package_init_sha256": "e980c500f5f453577f186533796eab169aeaf76c77419ae464042e474c091daf",
+    "path": "/private/tmp/chimeraboost-v020-release-source",
+    "status": "",
+    "tag": "v0.20.0",
+    "tree": "5023ee331ab78cc3917c7d378842ab30f5aa5c14"
+  },
+  "contract": {
+    "path": "/private/tmp/darkofit-v011-compute-ladder-contract-v3-20260722/benchmarks/v011_compute_ladder_contract_v3_20260722.json",
+    "protocol_sha256": "099be4b70c34b1234718e56a498fd1245600859eff26788cb1dcd4c3b790559c",
+    "sha256": "61e788f06b88eefcc2e3c08a38402bf93246e7334980a77061b46763650b581a"
+  },
+  "contract_id": "v011-release-compute-ladder-20260722-v3",
+  "created_at_utc": "2026-07-22T18:45:38.587638+00:00",
+  "darkofit_source": {
+    "commit": "0b820e332cec2c083b1dd89eef0fe306d69cfc0e",
+    "package_init_sha256": "d43d95eb23e994b0b165d23473262a3f49581e8a72267a48dfe271163413b9ba",
+    "path": "/private/tmp/darkofit-v011-release-source",
+    "status": "",
+    "tag": "v0.11.0",
+    "tree": "cd941ca25017d1707fd6652b4d949211526c30b2"
+  },
+  "exclusive_machine": {
+    "checked_at_utc": "2026-07-22T18:45:38.909964+00:00",
+    "conflicting_benchmark_processes": [],
+    "ignored_launch_ancestor_pids": [
+      1,
+      3185,
+      3241
+    ],
+    "load_average": [
+      4.8828125,
+      4.986328125,
+      5.095703125
+    ]
+  },
+  "expected_worker_count": 234,
+  "hardware": {
+    "logical_cpus": 14,
+    "machine": "arm64",
+    "memory_bytes": 25769803776,
+    "physical_cpus": 14,
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "processor": "arm",
+    "python": "3.12.7 | packaged by Anaconda, Inc. | (main, Oct  4 2024, 08:22:19) [Clang 14.0.6 ]"
+  },
+  "harness_head": "bda98dc91e98023cef6efc1d3f47fdc06ff22f33",
+  "kind": "v011_compute_ladder_manifest",
+  "latest_chimeraboost_release": {
+    "html_url": "https://github.com/bbstats/chimeraboost/releases/tag/v0.20.0",
+    "published_at": "2026-07-21T02:44:50Z",
+    "tag_name": "v0.20.0",
+    "verified_at_utc": "2026-07-22T18:45:38.855329+00:00"
+  },
+  "ordered_grid": [
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "airfoil_self_noise",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "airfoil_self_noise",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "airfoil_self_noise",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "airfoil_self_noise",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "airfoil_self_noise",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "airfoil_self_noise",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "airfoil_self_noise",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "airfoil_self_noise",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "airfoil_self_noise",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "airfoil_self_noise",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "airfoil_self_noise",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "airfoil_self_noise",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "airfoil_self_noise",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "airfoil_self_noise",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "airfoil_self_noise",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "airfoil_self_noise",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "airfoil_self_noise",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "airfoil_self_noise",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "Another-Dataset-on-used-Fiat-500",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "concrete_compressive_strength",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "concrete_compressive_strength",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "concrete_compressive_strength",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "concrete_compressive_strength",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "concrete_compressive_strength",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "concrete_compressive_strength",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "concrete_compressive_strength",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "concrete_compressive_strength",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "concrete_compressive_strength",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "concrete_compressive_strength",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "concrete_compressive_strength",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "concrete_compressive_strength",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "concrete_compressive_strength",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "concrete_compressive_strength",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "concrete_compressive_strength",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "concrete_compressive_strength",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "concrete_compressive_strength",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "concrete_compressive_strength",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "diamonds",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "diamonds",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "diamonds",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "diamonds",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "diamonds",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "diamonds",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "diamonds",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "diamonds",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "diamonds",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "diamonds",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "diamonds",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "diamonds",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "diamonds",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "diamonds",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "diamonds",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "diamonds",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "diamonds",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "diamonds",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "Food_Delivery_Time",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "Food_Delivery_Time",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "Food_Delivery_Time",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "Food_Delivery_Time",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "Food_Delivery_Time",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "Food_Delivery_Time",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "Food_Delivery_Time",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "Food_Delivery_Time",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "Food_Delivery_Time",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "Food_Delivery_Time",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "Food_Delivery_Time",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "Food_Delivery_Time",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "Food_Delivery_Time",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "Food_Delivery_Time",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "Food_Delivery_Time",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "Food_Delivery_Time",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "Food_Delivery_Time",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "Food_Delivery_Time",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "healthcare_insurance_expenses",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "healthcare_insurance_expenses",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "healthcare_insurance_expenses",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "healthcare_insurance_expenses",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "healthcare_insurance_expenses",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "healthcare_insurance_expenses",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "healthcare_insurance_expenses",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "healthcare_insurance_expenses",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "healthcare_insurance_expenses",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "healthcare_insurance_expenses",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "healthcare_insurance_expenses",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "healthcare_insurance_expenses",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "healthcare_insurance_expenses",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "healthcare_insurance_expenses",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "healthcare_insurance_expenses",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "healthcare_insurance_expenses",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "healthcare_insurance_expenses",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "healthcare_insurance_expenses",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "houses",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "houses",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "houses",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "houses",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "houses",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "houses",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "houses",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "houses",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "houses",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "houses",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "houses",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "houses",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "houses",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "houses",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "houses",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "houses",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "houses",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "houses",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "miami_housing",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "miami_housing",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "miami_housing",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "miami_housing",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "miami_housing",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "miami_housing",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "miami_housing",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "miami_housing",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "miami_housing",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "miami_housing",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "miami_housing",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "miami_housing",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "miami_housing",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "miami_housing",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "miami_housing",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "miami_housing",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "miami_housing",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "miami_housing",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "physiochemical_protein",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "physiochemical_protein",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "physiochemical_protein",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "physiochemical_protein",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "physiochemical_protein",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "physiochemical_protein",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "physiochemical_protein",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "physiochemical_protein",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "physiochemical_protein",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "physiochemical_protein",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "physiochemical_protein",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "physiochemical_protein",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "physiochemical_protein",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "physiochemical_protein",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "physiochemical_protein",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "physiochemical_protein",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "physiochemical_protein",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "physiochemical_protein",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "QSAR-TID-11",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "QSAR-TID-11",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "QSAR-TID-11",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "QSAR-TID-11",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "QSAR-TID-11",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "QSAR-TID-11",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "QSAR-TID-11",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "QSAR-TID-11",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "QSAR-TID-11",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "QSAR-TID-11",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "QSAR-TID-11",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "QSAR-TID-11",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "QSAR-TID-11",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "QSAR-TID-11",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "QSAR-TID-11",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "QSAR-TID-11",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "QSAR-TID-11",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "QSAR-TID-11",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "QSAR_fish_toxicity",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "QSAR_fish_toxicity",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "QSAR_fish_toxicity",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "QSAR_fish_toxicity",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "QSAR_fish_toxicity",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "QSAR_fish_toxicity",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "QSAR_fish_toxicity",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "QSAR_fish_toxicity",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "QSAR_fish_toxicity",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "QSAR_fish_toxicity",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "QSAR_fish_toxicity",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "QSAR_fish_toxicity",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "QSAR_fish_toxicity",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "QSAR_fish_toxicity",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "QSAR_fish_toxicity",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "QSAR_fish_toxicity",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "QSAR_fish_toxicity",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "QSAR_fish_toxicity",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "superconductivity",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "superconductivity",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "superconductivity",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "superconductivity",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "superconductivity",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "superconductivity",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "superconductivity",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "superconductivity",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "superconductivity",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "superconductivity",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "superconductivity",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "superconductivity",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "superconductivity",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "superconductivity",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "superconductivity",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "superconductivity",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "superconductivity",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "superconductivity",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "wine_quality",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "wine_quality",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "wine_quality",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "wine_quality",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "wine_quality",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "wine_quality",
+      "fold": 0,
+      "repeat": 0
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "wine_quality",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "wine_quality",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "wine_quality",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "wine_quality",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "wine_quality",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "wine_quality",
+      "fold": 1,
+      "repeat": 1
+    },
+    {
+      "arm": "darkofit_v011_ensemble8",
+      "dataset": "wine_quality",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_default",
+      "dataset": "wine_quality",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_depth10",
+      "dataset": "wine_quality",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "chimeraboost_v020_ensemble8",
+      "dataset": "wine_quality",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_default",
+      "dataset": "wine_quality",
+      "fold": 2,
+      "repeat": 2
+    },
+    {
+      "arm": "darkofit_v011_accuracy",
+      "dataset": "wine_quality",
+      "fold": 2,
+      "repeat": 2
+    }
+  ],
+  "ordered_grid_sha256": "5fbd9dc0d3e70c6c16f2daa2bc52f6c84d343211b145070c5afb73d66cd9e2be",
+  "schema_version": 1,
+  "tabarena_source": {
+    "commit": "4cd1d2526874962daae048a6f2dcf34aa272f3fa",
+    "module_sha256": "5384bfdb2df380b6557cc7a71d16891415bccaa87699406e236f752c6415389f",
+    "path": "/private/tmp/tabarena-m2-4cd1d25",
+    "status": "",
+    "tree": "a293df372a613c7358ba5fcd746f58d580cde7d6"
+  },
+  "worker_environment": {
+    "CHIMERABOOST_WARMUP": "0",
+    "DARKOFIT_WARMUP": "0",
+    "MKL_DYNAMIC": "FALSE",
+    "MKL_NUM_THREADS": "14",
+    "NUMBA_NUM_THREADS": "14",
+    "NUMEXPR_NUM_THREADS": "14",
+    "OMP_DYNAMIC": "FALSE",
+    "OMP_NUM_THREADS": "14",
+    "OPENBLAS_NUM_THREADS": "14",
+    "PYTHONHASHSEED": "0"
+  }
+}

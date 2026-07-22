@@ -1,0 +1,13 @@
+{
+  "completed_at_utc": "2026-07-22T19:17:48.898157+00:00",
+  "completed_worker_count": 234,
+  "contract_id": "v011-release-compute-ladder-20260722-v3",
+  "kind": "v011_compute_ladder_terminal",
+  "raw": {
+    "bytes": 1216355,
+    "path": "raw.json",
+    "sha256": "96f594da1a0ea885aa55d45636049d97b9b6e1a7f56d85679dfe879420636f79"
+  },
+  "schema_version": 1,
+  "status": "complete"
+}
