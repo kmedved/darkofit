@@ -201,6 +201,15 @@ public ship separately gated).**
    evaluated recipe.
 4. Docs page + CHANGELOG entry.
 
+**Characterization checkpoint (2026-07-21):** the separately authorized
+report-only phase is prospectively frozen as
+`ensemble-v3-characterization-v1` against published DarkoFit `c5e66ef` and
+the exact ChimeraBoost 0.18 pin `f14be60`. It reuses immutable M3b quality,
+adds the predeclared clustered/general uncertainty analysis, and measures a
+four-task by four-batch prediction grid plus current fit/process-tree-RSS/
+safe-NPZ telemetry. Execution is pending. This checkpoint does not authorize
+items 4.2.4 or any §6 ship, milestone, or release row.
+
 **4.3 — B3: a fresh authorization, operationalized.** B3 was deferred for
 quality-first sequencing and aggregate memory, not only bytes; the quality
 prerequisite is now met, so it gets its own small frozen campaign — new

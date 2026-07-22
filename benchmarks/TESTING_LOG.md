@@ -1211,6 +1211,36 @@ B-archive simulation remains non-loadable, optional size telemetry.
    ship, change defaults, or reduce sports/Tier-D/milestone/owner gates. V3 and
    v1 retain their terminal/invalid statuses.
 
+### 34. Ensemble-v3 characterization freeze (2026-07-21)
+
+1. **Model sources:** published DarkoFit
+   `c5e66ef7e6bdcf5665b55b81c6b870f42d76237b`; ChimeraBoost 0.18 pin
+   `f14be606b641f1bf0dc92bb14b3951f1fe631c6b`.
+2. **Evidence class:** Tier-E characterization on spent/frozen inputs; no M2,
+   M4, fresh-confirmation, lockbox, public API, default, or release authority.
+3. **Quality plan:** reuse immutable M3b r3 point estimates; 100,000-draw
+   three-season cluster bootstrap plus leave-one-season-out; separate
+   four-general-case bootstrap and leave-one-case-out sensitivity.
+4. **Current performance grid:** four frozen medium general tasks, four batch
+   sizes (`8,192` through `2,000,000`), DarkoFit single/private v3 and pinned
+   ChimeraBoost single, 14 threads, three balanced fresh-worker blocks.
+5. **Resources:** fit wall time, worker-plus-recursive-child process-tree RSS,
+   safe-NPZ bytes, raw absolute memory deltas, fitted tree/member/thread
+   telemetry, and exact safe-load predictions.
+6. **Prediction timing:** complete public `predict`; untimed warm call selects
+   a bounded integrated loop targeting one second; every formal interval
+   declares a `0.75` second minimum and retains paired series plus dispersion.
+7. **Correctness bridge:** a named test proves array-exact predictions between
+   the historical combined mechanics and the release-candidate wrapper on a
+   fixed synthetic case. The complete focused suite passed 66 tests.
+8. **Contract:**
+   [`ensemble_v3_characterization_contract.json`](ensemble_v3_characterization_contract.json),
+   SHA-256
+   `f8f7b780c6dc915926a33262e24545696754221ef310d76c01da6f9df3b00103`.
+9. **State:** prospectively frozen before any formal current-source
+   measurement. One raw artifact or one terminal record is allowed; no
+   outcome-driven rerun or threshold is available.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
