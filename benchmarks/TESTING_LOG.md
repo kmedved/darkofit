@@ -1710,6 +1710,57 @@ B-archive simulation remains non-loadable, optional size telemetry.
     `automatic_linear_selector_v2` and inspection index 1, reporting every
     selector engagement reason. M6 failure is terminal for this identity.
 
+### 43. Automatic selector M6 engagement companion (2026-07-22)
+
+1. **Execution date/source:** 2026-07-22; clean published companion harness
+   `56a66700a354dfe90d4cfd72d4254a7d8e22b351` and clean published selector
+   candidate `a53d4bf543534678189d87d88dcad87dd2a8bd8f`.
+2. **Comparators:** no quality comparator was executed. The companion binds to
+   the immutable `m6-quality-successor-v3` grid and is paired prospectively
+   with mechanism `automatic_linear_selector_v2`, inspection index 1.
+3. **Evidence class:** spent mechanism-engagement provenance only. The output
+   expressly contains no quality metric or ranking/default/shipping authority.
+4. **Data/splits:** all 60 exact M6 v3 medium cells: ten datasets, seeds 0--2,
+   weight modes `none` and `stress`. Case, dataset, split, and weight hashes
+   are recorded for every cell.
+5. **Arms/policies:** candidate public default only. Regression exposes the
+   complete fitted selector record; classification must expose no selector
+   state and is labeled `classification_not_applicable`.
+6. **Environment/repeats:** `darko311`, four fixed threads, strict
+   `paired-evidence-v1` worker environment, one deterministic fit in one fresh
+   worker per cell. Benchmark timing and RSS are discarded.
+7. **Runner/command:** `python
+   benchmarks/run_automatic_linear_selector_v2_m6_engagement.py --candidate
+   /private/tmp/darkofit-smooth-selector-20260722 --output
+   /Users/konstantinmedvedovsky/code/darkofit/benchmarks/automatic_linear_selector_v2_m6_engagement_20260722.json`.
+8. **Hashes:** companion protocol
+   `f9dbb9bb93c4e71d7670f2e6c0ac8100c7a49a7b6541f8858466d1571167314b`;
+   runner
+   `50d69b1c372b4e6849796c85f42395651d19ebabbe184f993e5addfa5e864969`;
+   selector contract
+   `fe2d476417e8e8087a3c7342eee0d5cb82a6b8a4ee3f360a1806ee4c0922163b`;
+   M6 rule
+   `2415c7a7bde2bed23283067fdfe200892c15cf1c70d869153cc9cade81f9694c`;
+   comparison runner
+   `0fcd849a13c0348c4c6802556d9a3d3b9f1d5b02c8c47a4e82c3e744f358760f`;
+   paired foundation
+   `63c63d4f0b7c6f649b7155325ee064faf6e5981094ed3cb79ac91b6b8fefedf9`;
+   output
+   `6120efe99421403de1d64e7bff594bcf51d3aba18d8851de2e9f728860952405`.
+9. **Primary results:** 36 classification cells were non-applicable, six
+   diabetes cells used exact `below_min_samples` fallback, and all 18 eligible
+   regression cells returned `margin_below_threshold`. No cell selected linear
+   leaves; eligible margins ranged from `-0.056974` to `0.028148`.
+10. **Passed and failed conditions:** all workers, source stability, fixed
+    environment, implementation path, thread state, prediction/probability
+    validation, and selector schemas passed. No condition failed.
+11. **Limitations/non-claims:** the companion intentionally omits quality and
+    cannot substitute for M6 inspection 1. Its 60 cells are dependent fixed
+    development coordinates, not independent datasets or fresh confirmation.
+12. **Terminal decision/next action:** selector engagement provenance is
+    complete. Launch the frozen M6 quality-successor-v3 inspection 1 once;
+    its result alone determines `advance` or terminal `kill` for this rung.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

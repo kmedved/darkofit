@@ -1,0 +1,1886 @@
+{
+  "bindings": {
+    "comparison_runner_sha256": "0fcd849a13c0348c4c6802556d9a3d3b9f1d5b02c8c47a4e82c3e744f358760f",
+    "m6_rule_sha256": "2415c7a7bde2bed23283067fdfe200892c15cf1c70d869153cc9cade81f9694c",
+    "paired_evidence_sha256": "63c63d4f0b7c6f649b7155325ee064faf6e5981094ed3cb79ac91b6b8fefedf9",
+    "protocol_sha256": "f9dbb9bb93c4e71d7670f2e6c0ac8100c7a49a7b6541f8858466d1571167314b",
+    "runner_sha256": "50d69b1c372b4e6849796c85f42395651d19ebabbe184f993e5addfa5e864969",
+    "selector_contract_sha256": "fe2d476417e8e8087a3c7342eee0d5cb82a6b8a4ee3f360a1806ee4c0922163b"
+  },
+  "companion_only": true,
+  "created_at_utc": "2026-07-22T21:12:12.646694+00:00",
+  "execution": {
+    "cell_count": 60,
+    "fresh_worker_per_cell": true,
+    "public_defaults": true,
+    "repeat_count": 1,
+    "threads": 4
+  },
+  "identity": "automatic-linear-selector-v2-m6-engagement-20260722",
+  "inspection_index": 1,
+  "mechanism_id": "automatic_linear_selector_v2",
+  "quality_metrics_recorded": false,
+  "ranking_or_acceptance_authorized": false,
+  "records": [
+    {
+      "case_sha256": "cd6c7d8d8236f7289323c58a7855c08ce4840c568acedac34dbe5a5761147e06",
+      "dataset": "diabetes_resampled",
+      "dataset_sha256": "90c3dc3b7c1d1d8e717cd2c0ac45ce39fab34f30c443bffc87b3c5e715732078",
+      "seed": 0,
+      "selector": {
+        "constant_validation_rmse": null,
+        "eligible": false,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 0,
+        "linear_validation_rmse": null,
+        "minimum_relative_improvement": 0.03,
+        "reason": "below_min_samples",
+        "relative_validation_improvement": null,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [],
+        "selection_total_seconds": 0.0,
+        "split": {
+          "group_disjoint": null,
+          "policy": "none",
+          "rows_disjoint": null,
+          "sample_weight_provided": false,
+          "source": "none",
+          "train_positions_sha256": null,
+          "train_rows": null,
+          "train_weight_sum": null,
+          "validation_positions_sha256": null,
+          "validation_rows": null,
+          "validation_weight_sum": null
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "5bfd54362be2245a51944fccf6d142735bf006234763cc6c28c17b7218bc4825",
+      "task": "regression",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "3d2e0e104591388e3b039c12860927f0b0e11dafbb42c4cf9a9a4b7b48dc93fb",
+      "dataset": "diabetes_resampled",
+      "dataset_sha256": "90c3dc3b7c1d1d8e717cd2c0ac45ce39fab34f30c443bffc87b3c5e715732078",
+      "seed": 0,
+      "selector": {
+        "constant_validation_rmse": null,
+        "eligible": false,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 0,
+        "linear_validation_rmse": null,
+        "minimum_relative_improvement": 0.03,
+        "reason": "below_min_samples",
+        "relative_validation_improvement": null,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [],
+        "selection_total_seconds": 0.0,
+        "split": {
+          "group_disjoint": null,
+          "policy": "none",
+          "rows_disjoint": null,
+          "sample_weight_provided": false,
+          "source": "none",
+          "train_positions_sha256": null,
+          "train_rows": null,
+          "train_weight_sum": null,
+          "validation_positions_sha256": null,
+          "validation_rows": null,
+          "validation_weight_sum": null
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "fb08798b97d368e3f7f4665f68d0c0d0c510db670211e0f743a87eea12c2836a",
+      "task": "regression",
+      "weight_mode": "stress",
+      "weight_sha256": "8aef70e9e45f76733298190c38c33d0b16a0239e77aafc01ada1510cd3fd349f"
+    },
+    {
+      "case_sha256": "e891fa8ba1e4dd6075ce87e54ae39ab355205749951e16eb38094a49d7895cc8",
+      "dataset": "diabetes_resampled",
+      "dataset_sha256": "4031134ec586a8d279646d79a295fe0354b44a5562c9582e0a270c47b4a56e2c",
+      "seed": 1,
+      "selector": {
+        "constant_validation_rmse": null,
+        "eligible": false,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 1,
+        "linear_validation_rmse": null,
+        "minimum_relative_improvement": 0.03,
+        "reason": "below_min_samples",
+        "relative_validation_improvement": null,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [],
+        "selection_total_seconds": 0.0,
+        "split": {
+          "group_disjoint": null,
+          "policy": "none",
+          "rows_disjoint": null,
+          "sample_weight_provided": false,
+          "source": "none",
+          "train_positions_sha256": null,
+          "train_rows": null,
+          "train_weight_sum": null,
+          "validation_positions_sha256": null,
+          "validation_rows": null,
+          "validation_weight_sum": null
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "1112e09f0ed03aeca4b3f1816fcb94ccbda2591811d2a4d05da790723000bd2b",
+      "task": "regression",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "ff092f43f82def5ccfa0172f6e996f04093341ea74c4777c820d79ff53122c9e",
+      "dataset": "diabetes_resampled",
+      "dataset_sha256": "4031134ec586a8d279646d79a295fe0354b44a5562c9582e0a270c47b4a56e2c",
+      "seed": 1,
+      "selector": {
+        "constant_validation_rmse": null,
+        "eligible": false,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 1,
+        "linear_validation_rmse": null,
+        "minimum_relative_improvement": 0.03,
+        "reason": "below_min_samples",
+        "relative_validation_improvement": null,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [],
+        "selection_total_seconds": 0.0,
+        "split": {
+          "group_disjoint": null,
+          "policy": "none",
+          "rows_disjoint": null,
+          "sample_weight_provided": false,
+          "source": "none",
+          "train_positions_sha256": null,
+          "train_rows": null,
+          "train_weight_sum": null,
+          "validation_positions_sha256": null,
+          "validation_rows": null,
+          "validation_weight_sum": null
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "b40da5fd46f7d0992e809b31833c50db54e4cbe9842302d00ab1266556a1eee3",
+      "task": "regression",
+      "weight_mode": "stress",
+      "weight_sha256": "f784d4a7a029b4b5c75b1f233de4ca660822a0094fe1d806a115455f407bc8b5"
+    },
+    {
+      "case_sha256": "0e345803c7d9b282929ecb6103a398c85f82246698f353549a27ef5b2be8cf79",
+      "dataset": "diabetes_resampled",
+      "dataset_sha256": "bd07ea377c020e5fbe9db9a4a564083b62b5a08e215905b274e599be2dfc9c59",
+      "seed": 2,
+      "selector": {
+        "constant_validation_rmse": null,
+        "eligible": false,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 2,
+        "linear_validation_rmse": null,
+        "minimum_relative_improvement": 0.03,
+        "reason": "below_min_samples",
+        "relative_validation_improvement": null,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [],
+        "selection_total_seconds": 0.0,
+        "split": {
+          "group_disjoint": null,
+          "policy": "none",
+          "rows_disjoint": null,
+          "sample_weight_provided": false,
+          "source": "none",
+          "train_positions_sha256": null,
+          "train_rows": null,
+          "train_weight_sum": null,
+          "validation_positions_sha256": null,
+          "validation_rows": null,
+          "validation_weight_sum": null
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "7b6d361dc5323ba2801f02f391b94ece49dfa87b9616886fd569a1902d3807dd",
+      "task": "regression",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "fbbdf3283a39f6c04d9fec1047552bf54db544a980f7ef59be10e6f4d8063603",
+      "dataset": "diabetes_resampled",
+      "dataset_sha256": "bd07ea377c020e5fbe9db9a4a564083b62b5a08e215905b274e599be2dfc9c59",
+      "seed": 2,
+      "selector": {
+        "constant_validation_rmse": null,
+        "eligible": false,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 2,
+        "linear_validation_rmse": null,
+        "minimum_relative_improvement": 0.03,
+        "reason": "below_min_samples",
+        "relative_validation_improvement": null,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [],
+        "selection_total_seconds": 0.0,
+        "split": {
+          "group_disjoint": null,
+          "policy": "none",
+          "rows_disjoint": null,
+          "sample_weight_provided": false,
+          "source": "none",
+          "train_positions_sha256": null,
+          "train_rows": null,
+          "train_weight_sum": null,
+          "validation_positions_sha256": null,
+          "validation_rows": null,
+          "validation_weight_sum": null
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "bb36f75396caa107bf8f9e72d18c85e26a83a5e051c8a50f2eab83d69cc68eef",
+      "task": "regression",
+      "weight_mode": "stress",
+      "weight_sha256": "657e60f6d2ea0f549762b90157790dadd37ed6b6617d6f34cb77a87718451f4b"
+    },
+    {
+      "case_sha256": "19ddc4f52223a962b99e1196add4fdd58d3d0c864e5b86560c851003d61b4665",
+      "dataset": "friedman_numeric",
+      "dataset_sha256": "46160a8e5d5a28d67b5865da22fe619dd19f0afa6fd6da8010fc8eee8daa3b3f",
+      "seed": 0,
+      "selector": {
+        "constant_validation_rmse": 1.0370902924989571,
+        "eligible": true,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 0,
+        "linear_validation_rmse": 1.0385048025436612,
+        "minimum_relative_improvement": 0.03,
+        "reason": "margin_below_threshold",
+        "relative_validation_improvement": -0.0013639217866900206,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [
+          {
+            "best_n_estimators": 326,
+            "fit_seconds": 0.46333425,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 1.0370902924989571
+          },
+          {
+            "best_n_estimators": 151,
+            "fit_seconds": 1.571341791,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 1.0385048025436612
+          }
+        ],
+        "selection_total_seconds": 2.03552525,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": false,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "5251996b1a6c59fc942eba454ef31d9a7252b6bb0effda6e390d02267569c897",
+          "train_rows": 6000,
+          "train_weight_sum": null,
+          "validation_positions_sha256": "70ef8602a0dd6934990620e8f652e8e7543ea75888efe2b0f8b86531a8f22099",
+          "validation_rows": 1500,
+          "validation_weight_sum": null
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "77bb587ab0f32a0948d875b3c960e2a6dcc7d39627e4584bc9e4ed557a92c8a2",
+      "task": "regression",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "c5cc27f3cb3fc2ad7483172b3332257d0e68bc1a0e7c0bd8c54cece348d40389",
+      "dataset": "friedman_numeric",
+      "dataset_sha256": "46160a8e5d5a28d67b5865da22fe619dd19f0afa6fd6da8010fc8eee8daa3b3f",
+      "seed": 0,
+      "selector": {
+        "constant_validation_rmse": 1.0660659660470766,
+        "eligible": true,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 0,
+        "linear_validation_rmse": 1.0718859807458647,
+        "minimum_relative_improvement": 0.03,
+        "reason": "margin_below_threshold",
+        "relative_validation_improvement": -0.005459338243737832,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [
+          {
+            "best_n_estimators": 229,
+            "fit_seconds": 0.303361417,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 1.0660659660470766
+          },
+          {
+            "best_n_estimators": 123,
+            "fit_seconds": 0.199319458,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 1.0718859807458647
+          }
+        ],
+        "selection_total_seconds": 0.503468166,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": true,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "cd017b502125fadd1a9314cd738baa3769dca3d6417c253da00936d2985adaf5",
+          "train_rows": 6000,
+          "train_weight_sum": 5992.676567656766,
+          "validation_positions_sha256": "fbd60eebbdb2f0a18a076e7e446eaf3a2cd7aaa2e77436eba300ab57fc95bd2b",
+          "validation_rows": 1500,
+          "validation_weight_sum": 1500.1951695169516
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "09823845499f12ad5249331263b273649418dcbd1ad2dcad5513cba6601c11e1",
+      "task": "regression",
+      "weight_mode": "stress",
+      "weight_sha256": "82d4e31433c7e526268f300c4f1b4189163c962a662896e41a78710b924b25c9"
+    },
+    {
+      "case_sha256": "55cb4103b2332d7527d217e8c6ac2c5bfecb2e3e7718ce6c2ba12bddc83fe747",
+      "dataset": "friedman_numeric",
+      "dataset_sha256": "42cf25e3257cdf7c8b79ce37e4e089f0b89e967f43534d68a48e9bbe3b903761",
+      "seed": 1,
+      "selector": {
+        "constant_validation_rmse": 1.0814150379745606,
+        "eligible": true,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 1,
+        "linear_validation_rmse": 1.0837556426434491,
+        "minimum_relative_improvement": 0.03,
+        "reason": "margin_below_threshold",
+        "relative_validation_improvement": -0.0021643907165119197,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [
+          {
+            "best_n_estimators": 215,
+            "fit_seconds": 0.313408917,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 1.0814150379745606
+          },
+          {
+            "best_n_estimators": 198,
+            "fit_seconds": 0.301158583,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 1.0837556426434491
+          }
+        ],
+        "selection_total_seconds": 0.615450708,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": false,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "b039b33d35d39c3049d930c7f0b98ff1fa6dc501cb4ea32e3895fa5f00633fa7",
+          "train_rows": 6000,
+          "train_weight_sum": null,
+          "validation_positions_sha256": "ab9b66e9847aec051145526d16f0fea4994cb10b81a05867814fb39fa555f121",
+          "validation_rows": 1500,
+          "validation_weight_sum": null
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "f9560bf3dd259ae05aec6d7b3a1b6c7946b8756aaa4785d3b5de0ed8ce08fef6",
+      "task": "regression",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "9647c3fb85fe95e0c7d2210525fe989111aff06a0ab9bedba5b2b189c1ec230a",
+      "dataset": "friedman_numeric",
+      "dataset_sha256": "42cf25e3257cdf7c8b79ce37e4e089f0b89e967f43534d68a48e9bbe3b903761",
+      "seed": 1,
+      "selector": {
+        "constant_validation_rmse": 1.091521930600155,
+        "eligible": true,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 1,
+        "linear_validation_rmse": 1.107648660458904,
+        "minimum_relative_improvement": 0.03,
+        "reason": "margin_below_threshold",
+        "relative_validation_improvement": -0.014774535817051397,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [
+          {
+            "best_n_estimators": 208,
+            "fit_seconds": 0.294415875,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 1.091521930600155
+          },
+          {
+            "best_n_estimators": 99,
+            "fit_seconds": 0.180293417,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 1.107648660458904
+          }
+        ],
+        "selection_total_seconds": 0.475446416,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": true,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "eb7e6b92446b20abffa9c5d203641a64997d3fe76c9ab8d04a0f083817d477d1",
+          "train_rows": 6000,
+          "train_weight_sum": 5996.095109510951,
+          "validation_positions_sha256": "0c5a6282791aaf187f40b85a089b621cd3cdd03011744cb09d7f0123ec7c8699",
+          "validation_rows": 1500,
+          "validation_weight_sum": 1502.036903690369
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "53388f8b143da930515f90346cffeefdb52b5535641cbf0256097700975388ba",
+      "task": "regression",
+      "weight_mode": "stress",
+      "weight_sha256": "487e39c18a72e0604ed64578395d97ae03030c76a368fc39baffea8437b30158"
+    },
+    {
+      "case_sha256": "e8e545445e4890a553fdfa4190c3e620cc5f395cef7276ad44f30bdf88d906b1",
+      "dataset": "friedman_numeric",
+      "dataset_sha256": "245c689f4a705ccbc02a5f4b274ea7f696fd91d5e7cc43359ca758541f9ab8c9",
+      "seed": 2,
+      "selector": {
+        "constant_validation_rmse": 1.0421076437267813,
+        "eligible": true,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 2,
+        "linear_validation_rmse": 1.0464929996959573,
+        "minimum_relative_improvement": 0.03,
+        "reason": "margin_below_threshold",
+        "relative_validation_improvement": -0.0042081602563561514,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [
+          {
+            "best_n_estimators": 267,
+            "fit_seconds": 0.366628792,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 1.0421076437267813
+          },
+          {
+            "best_n_estimators": 135,
+            "fit_seconds": 0.243645791,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 1.0464929996959573
+          }
+        ],
+        "selection_total_seconds": 0.6110955,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": false,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "cd21c592d501f8a73f51f8c69c9c9d9c3e425a86cdab62038d8f7f7b73f09143",
+          "train_rows": 6000,
+          "train_weight_sum": null,
+          "validation_positions_sha256": "4d3af1d7e347bf5553198edfb0adcc3968791915154e2dfa8d901333d139cf6f",
+          "validation_rows": 1500,
+          "validation_weight_sum": null
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "8ec83bfab3b9a3063ab32158ac5e0de8e9839cb55f5a6be37fd4b7902645b670",
+      "task": "regression",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "bc05a638eed9f60c96fd2b2ed2aa3e3b91856827c48a285ebb61863a45a62b5c",
+      "dataset": "friedman_numeric",
+      "dataset_sha256": "245c689f4a705ccbc02a5f4b274ea7f696fd91d5e7cc43359ca758541f9ab8c9",
+      "seed": 2,
+      "selector": {
+        "constant_validation_rmse": 1.085276439112208,
+        "eligible": true,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 2,
+        "linear_validation_rmse": 1.0810193318713108,
+        "minimum_relative_improvement": 0.03,
+        "reason": "margin_below_threshold",
+        "relative_validation_improvement": 0.003922601733047557,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [
+          {
+            "best_n_estimators": 193,
+            "fit_seconds": 0.289382417,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 1.085276439112208
+          },
+          {
+            "best_n_estimators": 86,
+            "fit_seconds": 0.16726575,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 1.0810193318713108
+          }
+        ],
+        "selection_total_seconds": 0.457390542,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": true,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "06ec362323f07aecfe148dc73278f4e9e2b66228a1b358d0c8542eff8011424e",
+          "train_rows": 6000,
+          "train_weight_sum": 6008.407740774077,
+          "validation_positions_sha256": "da9610903e00020700c324a67e79cc878c47972546c9e50983ed5d3089807675",
+          "validation_rows": 1500,
+          "validation_weight_sum": 1499.1390639063907
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "41c0b1ac49393bffc93f436c67fdf7fce9dbfc6499feae6c3bd50d8d108207f1",
+      "task": "regression",
+      "weight_mode": "stress",
+      "weight_sha256": "a3b94eb4e59668d47dc05358715b61851b119e8170e60a60d3d7d02116fa4bf7"
+    },
+    {
+      "case_sha256": "00cb64ce3983e12d96590e9e0658dbb315f3bb8b36f4e3bae15779882b3a248a",
+      "dataset": "wide_numeric_reg",
+      "dataset_sha256": "731fbcf48c5504584379173b9500dfa681bc586d3dc16f6f1d6dafffcf7a0f85",
+      "seed": 0,
+      "selector": {
+        "constant_validation_rmse": 37.86999136294017,
+        "eligible": true,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 0,
+        "linear_validation_rmse": 39.47409845457244,
+        "minimum_relative_improvement": 0.03,
+        "reason": "margin_below_threshold",
+        "relative_validation_improvement": -0.0423582639948015,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [
+          {
+            "best_n_estimators": 1000,
+            "fit_seconds": 2.843777792,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 37.86999136294017
+          },
+          {
+            "best_n_estimators": 481,
+            "fit_seconds": 1.83635825,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 39.47409845457244
+          }
+        ],
+        "selection_total_seconds": 4.681846834,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": false,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "fee74f3decf5aef07ad40b7251a7871645732a439b4b4d07191bb57d794abf0d",
+          "train_rows": 6000,
+          "train_weight_sum": null,
+          "validation_positions_sha256": "ae8756afab0d58f9334a1c8346c02a766b68a25dfd5c28fcc2fedc2c1c7ad075",
+          "validation_rows": 1500,
+          "validation_weight_sum": null
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "e3d3135cf4952752bb66fd4d526a197f79ece591d4f5d8005f13b2a45c5aef50",
+      "task": "regression",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "d849043a1f28a3941462f4813faf979b9dd72a5cbcf1c5758384a725a7b9db7a",
+      "dataset": "wide_numeric_reg",
+      "dataset_sha256": "731fbcf48c5504584379173b9500dfa681bc586d3dc16f6f1d6dafffcf7a0f85",
+      "seed": 0,
+      "selector": {
+        "constant_validation_rmse": 39.921583405540524,
+        "eligible": true,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 0,
+        "linear_validation_rmse": 40.69130801963191,
+        "minimum_relative_improvement": 0.03,
+        "reason": "margin_below_threshold",
+        "relative_validation_improvement": -0.01928091394252066,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [
+          {
+            "best_n_estimators": 735,
+            "fit_seconds": 2.251943083,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 39.921583405540524
+          },
+          {
+            "best_n_estimators": 612,
+            "fit_seconds": 2.195172875,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 40.69130801963191
+          }
+        ],
+        "selection_total_seconds": 4.44859125,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": true,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "ee82e7c0be748bd81f45cac8a705323ff3f363189cd8c575e5a96ae5e02cb258",
+          "train_rows": 6000,
+          "train_weight_sum": 6027.986948694869,
+          "validation_positions_sha256": "b66959ba6c5390c8ddf533d141ffc09b8cd93aa7fb11c3b3e719aac33d0b7ec9",
+          "validation_rows": 1500,
+          "validation_weight_sum": 1504.010201020102
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "e15e0c8efb46aab5537f87ec6808878385f024fd64736fae90c6993ebab55c9c",
+      "task": "regression",
+      "weight_mode": "stress",
+      "weight_sha256": "c85f16b06398796b8482e1d06d2aa032d9b4c0de4f601346fd7de786cedcf9c1"
+    },
+    {
+      "case_sha256": "b67952d2cfbce580e4e6b1c643b1fbb5d916446acc11f5426b75c4023f1313d9",
+      "dataset": "wide_numeric_reg",
+      "dataset_sha256": "3a749e74eba99feb995f0365a540bab2d190898c3356d6e22ff9a8c58d34742a",
+      "seed": 1,
+      "selector": {
+        "constant_validation_rmse": 35.034390792812935,
+        "eligible": true,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 1,
+        "linear_validation_rmse": 34.0482365791526,
+        "minimum_relative_improvement": 0.03,
+        "reason": "margin_below_threshold",
+        "relative_validation_improvement": 0.028148176444462037,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [
+          {
+            "best_n_estimators": 1000,
+            "fit_seconds": 2.501067834,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 35.034390792812935
+          },
+          {
+            "best_n_estimators": 462,
+            "fit_seconds": 1.554851041,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 34.0482365791526
+          }
+        ],
+        "selection_total_seconds": 4.057427375,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": false,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "c566c0f983e786cffef07fadbd40c73359f0d27dff1e103e8fb207bb0538bf05",
+          "train_rows": 6000,
+          "train_weight_sum": null,
+          "validation_positions_sha256": "45a54849cf0dd7af94d31fc509b846ea06077ee2986358c63d591a01e10d2bda",
+          "validation_rows": 1500,
+          "validation_weight_sum": null
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "7f1c71c7f1ecba53bf6e413ebc7d101787d4ad9a6c8e77815026053be9f6ea66",
+      "task": "regression",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "2f11f1f248f5a151f3fb67fcb04f3acaa919c6f1d35a7c745c638949b30d79de",
+      "dataset": "wide_numeric_reg",
+      "dataset_sha256": "3a749e74eba99feb995f0365a540bab2d190898c3356d6e22ff9a8c58d34742a",
+      "seed": 1,
+      "selector": {
+        "constant_validation_rmse": 35.94094714145588,
+        "eligible": true,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 1,
+        "linear_validation_rmse": 36.77117871952811,
+        "minimum_relative_improvement": 0.03,
+        "reason": "margin_below_threshold",
+        "relative_validation_improvement": -0.023099880334388954,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [
+          {
+            "best_n_estimators": 406,
+            "fit_seconds": 1.337116666,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 35.94094714145588
+          },
+          {
+            "best_n_estimators": 388,
+            "fit_seconds": 1.315124958,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 36.77117871952811
+          }
+        ],
+        "selection_total_seconds": 2.653395125,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": true,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "615b657ee6032dda547ac2b3c4ac24e95747936c776174293278cf21633ab01d",
+          "train_rows": 6000,
+          "train_weight_sum": 6009.422292229223,
+          "validation_positions_sha256": "c969bd6bd9e0bb9dfc22cc54b2d8c1194753d0e3001be6721176c93b8cdc2d59",
+          "validation_rows": 1500,
+          "validation_weight_sum": 1504.6113111311133
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "54c52c8e983e33110b1de040337c61e196e5a243ae02a4f90d0200ee01b335a0",
+      "task": "regression",
+      "weight_mode": "stress",
+      "weight_sha256": "577cbf0f86e51715ed0de958d3f31cd5aaf6e00bc9ebe1137175017d1232d463"
+    },
+    {
+      "case_sha256": "9b821a78287a7bed4c674efab14e03dfcf35c45e26aa7a1d1b43548cc4cbf191",
+      "dataset": "wide_numeric_reg",
+      "dataset_sha256": "422873703ef041a9f7950b6272ee4c7ccf1484b17fa6e72396eb4b3e57714dfa",
+      "seed": 2,
+      "selector": {
+        "constant_validation_rmse": 44.21465776774943,
+        "eligible": true,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 2,
+        "linear_validation_rmse": 44.937645640836934,
+        "minimum_relative_improvement": 0.03,
+        "reason": "margin_below_threshold",
+        "relative_validation_improvement": -0.016351769064576097,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [
+          {
+            "best_n_estimators": 999,
+            "fit_seconds": 2.609868666,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 44.21465776774943
+          },
+          {
+            "best_n_estimators": 905,
+            "fit_seconds": 2.752166292,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 44.937645640836934
+          }
+        ],
+        "selection_total_seconds": 5.363699875,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": false,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "ad984e69a66f3c6f9fa6ae414094137413df186c29d3f1444d12725b7dde0ead",
+          "train_rows": 6000,
+          "train_weight_sum": null,
+          "validation_positions_sha256": "74d308c4c7cb14e4104db96532956f3452df30cf56d2a1836ab1229cc372e6d7",
+          "validation_rows": 1500,
+          "validation_weight_sum": null
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "eab18618b0157cf1810084561b5f01ab4ca6817f12f9a35c09d3b0250b07e1df",
+      "task": "regression",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "b09bfb1db8f527f4ebe76c6101ec840b5a9e75e4e137c4c90b68c6306a71aa7b",
+      "dataset": "wide_numeric_reg",
+      "dataset_sha256": "422873703ef041a9f7950b6272ee4c7ccf1484b17fa6e72396eb4b3e57714dfa",
+      "seed": 2,
+      "selector": {
+        "constant_validation_rmse": 44.202655118482994,
+        "eligible": true,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 2,
+        "linear_validation_rmse": 46.721038744219584,
+        "minimum_relative_improvement": 0.03,
+        "reason": "margin_below_threshold",
+        "relative_validation_improvement": -0.05697358267249307,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [
+          {
+            "best_n_estimators": 869,
+            "fit_seconds": 2.297889667,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 44.202655118482994
+          },
+          {
+            "best_n_estimators": 701,
+            "fit_seconds": 2.366044458,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 46.721038744219584
+          }
+        ],
+        "selection_total_seconds": 4.665348959,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": true,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "d38fe4fbebac63e2130f33557f450fd154081240b1d6ab812c74cce5e5cd775e",
+          "train_rows": 6000,
+          "train_weight_sum": 5982.902640264027,
+          "validation_positions_sha256": "302c601138543524125bd461f15a0e4cc6d44a7132e9a3f3640024adf45355eb",
+          "validation_rows": 1500,
+          "validation_weight_sum": 1494.8246324632462
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "34ba50ba64ac39affcf7c41c0923038752c301c13dd7aa0c76bf2b00526de2b5",
+      "task": "regression",
+      "weight_mode": "stress",
+      "weight_sha256": "d48fd582d7ff0b6b882f132ad1e02cbb5fc9f449a66e693c21aeec716d2aad47"
+    },
+    {
+      "case_sha256": "94475823964314a51cb313e64f2da3f40ad4e5e44764ac5ca589fcff1cbac40f",
+      "dataset": "categorical_reg",
+      "dataset_sha256": "b51c90d8c9203b8c01af1748966d86f77d6723685fe3b62d4be2e3da9a9c011d",
+      "seed": 0,
+      "selector": {
+        "constant_validation_rmse": 2.520571811420532,
+        "eligible": true,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 0,
+        "linear_validation_rmse": 2.5029593896794817,
+        "minimum_relative_improvement": 0.03,
+        "reason": "margin_below_threshold",
+        "relative_validation_improvement": 0.006987470724400564,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [
+          {
+            "best_n_estimators": 245,
+            "fit_seconds": 0.509804292,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 2.520571811420532
+          },
+          {
+            "best_n_estimators": 147,
+            "fit_seconds": 0.173905916,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 2.5029593896794817
+          }
+        ],
+        "selection_total_seconds": 0.684512375,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": false,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "bfd14b4c98d9c1887eff5442cb2b4916fdc4179bf5c45fde94c0afc546fc5b3e",
+          "train_rows": 6000,
+          "train_weight_sum": null,
+          "validation_positions_sha256": "373fde7ddd92318c4a0189660a0255d361522cd36c49dad21af6a99dfe1f36eb",
+          "validation_rows": 1500,
+          "validation_weight_sum": null
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "b70fdb4213e1c64588e7b5b728cacb98d0536291a4fc84ab71af78fed3ce6fec",
+      "task": "regression",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "05e7909f298520742297dbc0a1bd82cabfa6b72866f5a2a36a563210104f013c",
+      "dataset": "categorical_reg",
+      "dataset_sha256": "b51c90d8c9203b8c01af1748966d86f77d6723685fe3b62d4be2e3da9a9c011d",
+      "seed": 0,
+      "selector": {
+        "constant_validation_rmse": 2.586292258618389,
+        "eligible": true,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 0,
+        "linear_validation_rmse": 2.5988210184976928,
+        "minimum_relative_improvement": 0.03,
+        "reason": "margin_below_threshold",
+        "relative_validation_improvement": -0.00484429392600684,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [
+          {
+            "best_n_estimators": 173,
+            "fit_seconds": 0.333770625,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 2.586292258618389
+          },
+          {
+            "best_n_estimators": 144,
+            "fit_seconds": 0.161668708,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 2.5988210184976928
+          }
+        ],
+        "selection_total_seconds": 0.496257708,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": true,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "b539e61a9ab51a70509b140e19248045ab33f53468cdae427a8445c6bf9b5393",
+          "train_rows": 6000,
+          "train_weight_sum": 6012.479897989799,
+          "validation_positions_sha256": "a9b03baf1dcb45b160fba8de04f9a07f1bd70424a9314bff0c27c835150fdefd",
+          "validation_rows": 1500,
+          "validation_weight_sum": 1499.1183618361838
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "15e1a3128c846470789a4dbdaf80972957267ce3f25d172f84ddede9375cdd38",
+      "task": "regression",
+      "weight_mode": "stress",
+      "weight_sha256": "a8e4890d3008c39e30aba7efe55c0ac8d8acec74d5a0f649c2b98b61d618f344"
+    },
+    {
+      "case_sha256": "971631bb026e10b29a3cbb72af3bbcfee0fd0639c7e2cf5157153389175428f8",
+      "dataset": "categorical_reg",
+      "dataset_sha256": "70c42f4a1f32d7b52dcd874853999b4d543ed33279a1c30e56522b88258cdf4f",
+      "seed": 1,
+      "selector": {
+        "constant_validation_rmse": 2.619628528306818,
+        "eligible": true,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 1,
+        "linear_validation_rmse": 2.633882496467901,
+        "minimum_relative_improvement": 0.03,
+        "reason": "margin_below_threshold",
+        "relative_validation_improvement": -0.005441217335610519,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [
+          {
+            "best_n_estimators": 350,
+            "fit_seconds": 0.29105025,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 2.619628528306818
+          },
+          {
+            "best_n_estimators": 153,
+            "fit_seconds": 0.176589292,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 2.633882496467901
+          }
+        ],
+        "selection_total_seconds": 0.46851275,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": false,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "02935d491103b5f372d11451ce94c214ec3a862fa65432979da1794c9d5ae0b6",
+          "train_rows": 6000,
+          "train_weight_sum": null,
+          "validation_positions_sha256": "b76acbbb4a55c2d6078942ca6484fd8e02b8bc9390b6a582d683780895c2e281",
+          "validation_rows": 1500,
+          "validation_weight_sum": null
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "1f8145f14f8b33e24b8cc3a20f43e68fbc01abbf06fac903463b46cebc894f8b",
+      "task": "regression",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "a44e23302f6c938067e40eb2da948a27a718ffe41e681e1e2ea6b1765aae4ab2",
+      "dataset": "categorical_reg",
+      "dataset_sha256": "70c42f4a1f32d7b52dcd874853999b4d543ed33279a1c30e56522b88258cdf4f",
+      "seed": 1,
+      "selector": {
+        "constant_validation_rmse": 2.6836919571860216,
+        "eligible": true,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 1,
+        "linear_validation_rmse": 2.678229104839427,
+        "minimum_relative_improvement": 0.03,
+        "reason": "margin_below_threshold",
+        "relative_validation_improvement": 0.0020355735433670173,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [
+          {
+            "best_n_estimators": 222,
+            "fit_seconds": 0.22312125,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 2.6836919571860216
+          },
+          {
+            "best_n_estimators": 127,
+            "fit_seconds": 0.144896459,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 2.678229104839427
+          }
+        ],
+        "selection_total_seconds": 0.368831958,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": true,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "7648bef2d5733c5db4ef7790691cf7234b49ee601accec68a5eeb16182aac729",
+          "train_rows": 6000,
+          "train_weight_sum": 5973.550255025502,
+          "validation_positions_sha256": "34d773c208c8b6f91e81a61cbb74413917e81b754913eccb65ca6cf98a908d22",
+          "validation_rows": 1500,
+          "validation_weight_sum": 1489.8352835283526
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "0c6515306b60720d9cd0ff73ebe4ec6d08809f76b29c35c27a9c508fc6cc5d8a",
+      "task": "regression",
+      "weight_mode": "stress",
+      "weight_sha256": "3ad3773e1ccd1f5bb2f88dcddd31c077eb9a7ed30e2b55745499c920a22f65c2"
+    },
+    {
+      "case_sha256": "49e3151a4851962dadc6143003581fcff00454b556220862cbfd3bfc32829b73",
+      "dataset": "categorical_reg",
+      "dataset_sha256": "6088c7c277fbd5dad397e787058cd51d2e2a79b1e2e8e35e5a5dd7ad0d2c840f",
+      "seed": 2,
+      "selector": {
+        "constant_validation_rmse": 2.712975406745686,
+        "eligible": true,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 2,
+        "linear_validation_rmse": 2.6830996606688937,
+        "minimum_relative_improvement": 0.03,
+        "reason": "margin_below_threshold",
+        "relative_validation_improvement": 0.011012169886430891,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [
+          {
+            "best_n_estimators": 239,
+            "fit_seconds": 0.233715417,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 2.712975406745686
+          },
+          {
+            "best_n_estimators": 176,
+            "fit_seconds": 0.194156416,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 2.6830996606688937
+          }
+        ],
+        "selection_total_seconds": 0.428690791,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": false,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "7cb4372b2568cf6001a764878f65fda0d24b0c17abe6ad3b23c26e9aa1519ae4",
+          "train_rows": 6000,
+          "train_weight_sum": null,
+          "validation_positions_sha256": "db3e8ac75a79465008f930b94e23883e52d85cd6c4d5e1faca26ff816669ed91",
+          "validation_rows": 1500,
+          "validation_weight_sum": null
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "3a7e4f9d5c87dbcc4a921097d0e0d677dc113f39412f7cc79c1e519998dc8516",
+      "task": "regression",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "73d0c9e4ef916d4bd20b720073f78e0c6a62fb16c80afacb1fc0b0e19251ec8c",
+      "dataset": "categorical_reg",
+      "dataset_sha256": "6088c7c277fbd5dad397e787058cd51d2e2a79b1e2e8e35e5a5dd7ad0d2c840f",
+      "seed": 2,
+      "selector": {
+        "constant_validation_rmse": 2.731543194798812,
+        "eligible": true,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 2,
+        "linear_validation_rmse": 2.7687799914933873,
+        "minimum_relative_improvement": 0.03,
+        "reason": "margin_below_threshold",
+        "relative_validation_improvement": -0.013632146387243154,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [
+          {
+            "best_n_estimators": 160,
+            "fit_seconds": 0.185429291,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 2.731543194798812
+          },
+          {
+            "best_n_estimators": 87,
+            "fit_seconds": 0.115493334,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 2.7687799914933873
+          }
+        ],
+        "selection_total_seconds": 0.301627125,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": true,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "9c93742400bb820bf6ecf814fd6734ed418da926362e3e5e102b28defa96ce0c",
+          "train_rows": 6000,
+          "train_weight_sum": 6038.888688868887,
+          "validation_positions_sha256": "615707cc5e0ac6919f1f2c17b47f80e67feea33e4fbde5863a1bb458b70f39ab",
+          "validation_rows": 1500,
+          "validation_weight_sum": 1505.449594959496
+        },
+        "version": 1
+      },
+      "size": "medium",
+      "split_sha256": "66bbf529874a82f60435824e6e123bc43a07be18c9e30a78b2b8bd3f39c385b9",
+      "task": "regression",
+      "weight_mode": "stress",
+      "weight_sha256": "560ae31bb0aea18256434b38452261b10ce995ca3b9ebf3f148f8bed55cd733f"
+    },
+    {
+      "case_sha256": "cfbc1be523f3ee39e2db72475fcf87a58ea122e9dd07266bb420dcd994f6b7d4",
+      "dataset": "breast_cancer_resampled",
+      "dataset_sha256": "036fd8a4c7f3286938ac59aa46246d57c857a56a4db42778568b39d3921d8d36",
+      "seed": 0,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "adbe831fd0481226b823e19830bce2967ff6097cd597f1d570bfcf9a0307c21d",
+      "task": "binary",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "26381f7db6204215943d5de6a154e36599317e1ed11c9c5c4a354631ca701a9f",
+      "dataset": "breast_cancer_resampled",
+      "dataset_sha256": "036fd8a4c7f3286938ac59aa46246d57c857a56a4db42778568b39d3921d8d36",
+      "seed": 0,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "aa4943c5b6d91ba86eb7156fdbfd06fd45683ed8c83a70eb310c2b0335f1b2de",
+      "task": "binary",
+      "weight_mode": "stress",
+      "weight_sha256": "1805106e7e19a947f24a3648d83c63caa256188b742a0a545a358d36c699fd15"
+    },
+    {
+      "case_sha256": "d2f01c4dad0a1a69ce44c1c4179a2ae7b3fa48d1968b0c04de458b7edc19cdc9",
+      "dataset": "breast_cancer_resampled",
+      "dataset_sha256": "351f6ef72a764c5ffb2e3800c740d831408a7f1c31f8f6bddf510f2f7bb1e871",
+      "seed": 1,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "333eb3d76a5461ca214f6c78947ed079061e51d7b72b0645c567fd90aec0b565",
+      "task": "binary",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "12f95ae2c898764631c9a3335eb96c36d1182b48d1e7d5e5b13fb44f3f412905",
+      "dataset": "breast_cancer_resampled",
+      "dataset_sha256": "351f6ef72a764c5ffb2e3800c740d831408a7f1c31f8f6bddf510f2f7bb1e871",
+      "seed": 1,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "9a06b06871cc50a462a6d248ac5913fb2e281b07d63f77ab445fd49b465bc6ef",
+      "task": "binary",
+      "weight_mode": "stress",
+      "weight_sha256": "cd538536f8e79d97a9ed06233f892bd5353b112648d166c39d0b11b51c78e890"
+    },
+    {
+      "case_sha256": "aa30e1ec4d8c24e0b73c397cba52ed2d964256f35766460de0bd25339b5ca41d",
+      "dataset": "breast_cancer_resampled",
+      "dataset_sha256": "4823afdf89999ab2c73b38a34ea3cc23c7568deab5737dad3e0528b17d55f236",
+      "seed": 2,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "ac091beb532520ff57b61b9f2226282105d0c588809f1717d9f088443cca582a",
+      "task": "binary",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "e959c89f1ae4501d5c8ab1ec0cd5ccdb3418685242c26f6563801cd6a563e309",
+      "dataset": "breast_cancer_resampled",
+      "dataset_sha256": "4823afdf89999ab2c73b38a34ea3cc23c7568deab5737dad3e0528b17d55f236",
+      "seed": 2,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "4822a1bec4ebb8c1e38a96da58a3f4993b0d04dbf940b18828100f10bcdfd34a",
+      "task": "binary",
+      "weight_mode": "stress",
+      "weight_sha256": "e1dbd9c879d8d0b7a1595f5469a3f33aac66d6bfb80cdb901164fc832f44c02b"
+    },
+    {
+      "case_sha256": "aa86ad0ade440acc25e65cd541936f2ea16a9d7ccc2828c830a765c68cdbe2fd",
+      "dataset": "numeric_binary",
+      "dataset_sha256": "c2599a0cca88c300eb514c32917c8bbb143121f2d241980cd5e92fe7db88c494",
+      "seed": 0,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "5ee3007bc08f618acf0850f660a94dfae86fa2e2068daebc0efd735c33b9929c",
+      "task": "binary",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "f543c12cb8dca9703be8b68bf18d30943caa2c105ef7314054eed4fb1e13a235",
+      "dataset": "numeric_binary",
+      "dataset_sha256": "c2599a0cca88c300eb514c32917c8bbb143121f2d241980cd5e92fe7db88c494",
+      "seed": 0,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "b390c489e67a8e2c75c5f5ae6ab49740c53ceee55e9d3f9da8ddb17f92c7dea3",
+      "task": "binary",
+      "weight_mode": "stress",
+      "weight_sha256": "b2a7e7830e50091448bccd8be1e5bda103b787e41757044f3fcac74397e78dc4"
+    },
+    {
+      "case_sha256": "0dae7d600ccae7f1d94967010cb7e46709a4bc30e998776de79713743e541053",
+      "dataset": "numeric_binary",
+      "dataset_sha256": "6bdfe4af14bccffd286f4687212c485a8bfb6e031da5070552d268435002fe8b",
+      "seed": 1,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "ff36513358b00b8aa881a37f57ce9d5ffda0ea5fd76e1ac885d17af3ebe10f7a",
+      "task": "binary",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "b8d1163a1b7edab68646b60a2ed37156de91edce9e3c50d2f25b8368dbd0bbb2",
+      "dataset": "numeric_binary",
+      "dataset_sha256": "6bdfe4af14bccffd286f4687212c485a8bfb6e031da5070552d268435002fe8b",
+      "seed": 1,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "4193f532c20b98c3fa94505a2f6f17327cc3c6796b3c7cf415993c7f9125cd6d",
+      "task": "binary",
+      "weight_mode": "stress",
+      "weight_sha256": "1029368d05670f28626f1205757dcf34de913e411b2221300c9585903d671164"
+    },
+    {
+      "case_sha256": "e8bb1d6c7ce887ee0b25f7bef82565be4b0162df81d73f62f3232c5b0b32591b",
+      "dataset": "numeric_binary",
+      "dataset_sha256": "f4e35c8adb11a4a9f6140a6c559eee25722a8a1fd0f8757347b1cb4fcfafa45c",
+      "seed": 2,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "5a0f345d0f81fe8d3e63edd8dd9c2ef65d3b563f3800cd9d35710b03b992fcf5",
+      "task": "binary",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "bcdc320af68c421c757498025e32feb5cf37adda5c88a4c8d3a781445ddc710f",
+      "dataset": "numeric_binary",
+      "dataset_sha256": "f4e35c8adb11a4a9f6140a6c559eee25722a8a1fd0f8757347b1cb4fcfafa45c",
+      "seed": 2,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "b7b90b2c90a3971673cdde91a1c550e70ece4f78519d4da97fc2939a1b17ddde",
+      "task": "binary",
+      "weight_mode": "stress",
+      "weight_sha256": "f38a7531788cee5454a2fce9d3dc2948a8d06a72ef5101487c20a2549b31436e"
+    },
+    {
+      "case_sha256": "f2ebf501c1010090e70003622c5e046517000c35ddf30ee37141b48c9fb74795",
+      "dataset": "wine_resampled",
+      "dataset_sha256": "558799bc9bd3270dcbe1d7063b64cd29e926fae1242078987d0d157cc09e6516",
+      "seed": 0,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "fac79a8170523011f6ecc21a03a673a6069499b1aba849e3785995ea359ef387",
+      "task": "multiclass",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "6ba68defdb0d6d4205bf5a549a702783c736f03d2a0b3db0c22715407a19346a",
+      "dataset": "wine_resampled",
+      "dataset_sha256": "558799bc9bd3270dcbe1d7063b64cd29e926fae1242078987d0d157cc09e6516",
+      "seed": 0,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "e3294f22bf21712566c38bc89e09d024765a6aeb890feb055c581554666f20ea",
+      "task": "multiclass",
+      "weight_mode": "stress",
+      "weight_sha256": "11bf4060685f63caf3f566eab43ec2a967014b8d0b2fd66e14a51aea525a8d31"
+    },
+    {
+      "case_sha256": "40ebeb3e0f42f2050f2b7cf737985cfc4d2a063470a49dde9c68dc56d5e582e0",
+      "dataset": "wine_resampled",
+      "dataset_sha256": "00a45a3f22f8de8f6355489dffd0c26eb982f1f71494dd7385cf6444d101be23",
+      "seed": 1,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "d0324e256d1bae427707bdd11f31d7a06f9553ce3b61dcdde7aa5c8266972035",
+      "task": "multiclass",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "23df379c93cfc8ebfc369ebf2b0344c7b4ff21fbc016050b3796c014c7bbfdc6",
+      "dataset": "wine_resampled",
+      "dataset_sha256": "00a45a3f22f8de8f6355489dffd0c26eb982f1f71494dd7385cf6444d101be23",
+      "seed": 1,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "5e76f1bd117bd9ff45401062d53aff15d181e1375793645038af0123ceb75289",
+      "task": "multiclass",
+      "weight_mode": "stress",
+      "weight_sha256": "557ef6437fe171c683fe74977f1e2fbf95467d4dab75373a1f35f8acaced6440"
+    },
+    {
+      "case_sha256": "60721e2b6a42ef0cfa5378cd90c3c1b4b84339575c5f9c2640f8b82b35961b62",
+      "dataset": "wine_resampled",
+      "dataset_sha256": "a73f00b553de8fcda8b9626ab79f145b452d11ad925995dbfbe5686207c3ebbf",
+      "seed": 2,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "bc221c5e8a642117edb4fd93e7b698dd5ce0788dc32e2e2f3cf81ed6479cd045",
+      "task": "multiclass",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "7f2a94f59e085d3accdc2956ce729012f2f87f9b8814d5e08a09605933f10268",
+      "dataset": "wine_resampled",
+      "dataset_sha256": "a73f00b553de8fcda8b9626ab79f145b452d11ad925995dbfbe5686207c3ebbf",
+      "seed": 2,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "b2ecc41015f87fa42aa2bf67f6f512023b0e4bd61a1416bb5b6a21f5bdd19221",
+      "task": "multiclass",
+      "weight_mode": "stress",
+      "weight_sha256": "9f0ae9d5175064d932e97f240661f3d1122b430318a91f5e0ce12602f477a5ac"
+    },
+    {
+      "case_sha256": "72518a9a1b63da235be89d10aa78fdcd24e57d1536eebbef090064137533810e",
+      "dataset": "numeric_multiclass",
+      "dataset_sha256": "83bcc39b0695c12d5e8072b2c1cc06be3040c1fc5adedeb142755c27d7906f7a",
+      "seed": 0,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "d6868da74e9b86d5167377027f5070849a3be5ea9edc7b5c457a1833f74b0382",
+      "task": "multiclass",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "c1be3e2f6f8ec0dc0c65428f410f7eff7c70f0b1f4d4f641253df0f1fd7fa8b3",
+      "dataset": "numeric_multiclass",
+      "dataset_sha256": "83bcc39b0695c12d5e8072b2c1cc06be3040c1fc5adedeb142755c27d7906f7a",
+      "seed": 0,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "c9a12b70db6ed435e775b4ce61691dc86d031b370baff62fb0a572d3bd9fc21f",
+      "task": "multiclass",
+      "weight_mode": "stress",
+      "weight_sha256": "372dde7eb6c74aa75bcd5e6dd6ee8044f2473e22bbb87168753241ffad88a69e"
+    },
+    {
+      "case_sha256": "a703fed04849c99cf8853ac120c9a063d5cda9c548664645edb4b85566d6254e",
+      "dataset": "numeric_multiclass",
+      "dataset_sha256": "916665637b108400d7fef5147e0203c2516a7abbf6869877e69a4db30def4cb9",
+      "seed": 1,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "ca865dcf5f533336127aeddef12aadea43a9c7bd75e778c133e5a21b26daa7e2",
+      "task": "multiclass",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "176b7a2b03f7057810b644400af3f47651abd0b857b8ebe2f138ae5715971306",
+      "dataset": "numeric_multiclass",
+      "dataset_sha256": "916665637b108400d7fef5147e0203c2516a7abbf6869877e69a4db30def4cb9",
+      "seed": 1,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "ed03686c9c0855cf1d987a0c1f88be3112ad747ff1c4235af570825c880c162a",
+      "task": "multiclass",
+      "weight_mode": "stress",
+      "weight_sha256": "071260fca777e7f188540bd8ea914c5f5583aa64b88feb7ed13336c6ea35785c"
+    },
+    {
+      "case_sha256": "a43cc95b8f872b7baa10ae5e37dfc2f3c50b95a08f094d904038599c9a11367b",
+      "dataset": "numeric_multiclass",
+      "dataset_sha256": "16fd99a0d45434d2a6e89c305470467a2fd05bf22bcbd37ab0c3e5b4ba5022c8",
+      "seed": 2,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "e7aad804c8d67061a937d94c161d9ea9d46a868d556b3797e98d828423f82ad5",
+      "task": "multiclass",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "0940c5c932e1b3799e51d916ff35a7a429c151c1da43b0c992c324a612853689",
+      "dataset": "numeric_multiclass",
+      "dataset_sha256": "16fd99a0d45434d2a6e89c305470467a2fd05bf22bcbd37ab0c3e5b4ba5022c8",
+      "seed": 2,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "0b391153bec89819d6b4cb101441bf89abd55af57e257703b7d1a07e0af78615",
+      "task": "multiclass",
+      "weight_mode": "stress",
+      "weight_sha256": "681b6031d8782ab214e4a2a8896bb8e4da3b2e3593dbf5c34eaad9edc86cf07c"
+    },
+    {
+      "case_sha256": "13bba178adf7f46f6c30ecaaac5931020d129a30a5d2cc52463bb5c875ea1133",
+      "dataset": "categorical_binary",
+      "dataset_sha256": "aeb4260388b2683d37789c16ee4f949a1ce0bde537c1c45d46cfa380bec0e344",
+      "seed": 0,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "0c4e892952f84241752e326f605cd9ddf772eac10a574d6868cc2dd96638c7c5",
+      "task": "binary",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "0ff5e252e5f2c426f84ce57297840ad8954a77414820583674323794e3e3ec2f",
+      "dataset": "categorical_binary",
+      "dataset_sha256": "aeb4260388b2683d37789c16ee4f949a1ce0bde537c1c45d46cfa380bec0e344",
+      "seed": 0,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "212ee8ddd86a48596e3a7657d173b3ad8ead903ce3990ff070e0220c78db7d1a",
+      "task": "binary",
+      "weight_mode": "stress",
+      "weight_sha256": "4a796462c695aea5a7d18e9968462235ba9c19394e3cc54e6f8c5a5e1c243c56"
+    },
+    {
+      "case_sha256": "136e63af41f836ca61cd2dbf1b8a59e679456e887f3b93d19e2e3a074d430e3d",
+      "dataset": "categorical_binary",
+      "dataset_sha256": "aa43343932acefca234e35bee2c8842180b0941235861b91fcf49e4d1f4e7a87",
+      "seed": 1,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "45b0bb857709621d8c2757da40e4964ead4517eb7e24bac51544aafceff7da62",
+      "task": "binary",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "1eccebe2037e565c16cb6dcbd7f76717f1d80bf5b0fd6e220876b07e65b223c7",
+      "dataset": "categorical_binary",
+      "dataset_sha256": "aa43343932acefca234e35bee2c8842180b0941235861b91fcf49e4d1f4e7a87",
+      "seed": 1,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "eec4b868e03f9d3322a32f732920a248742495a59c7ef2611cde257a604fe407",
+      "task": "binary",
+      "weight_mode": "stress",
+      "weight_sha256": "fe9030fdd764991680326e22656e6145d790a55b1972a96fe8e81dad41204921"
+    },
+    {
+      "case_sha256": "546f51d17cebe3dc78e24fd47149be2aee21588198f953281f900d485d0d56b3",
+      "dataset": "categorical_binary",
+      "dataset_sha256": "b3a12850eb5c4dcc453ec11973c08fc232a1d85fc0b81e2333485a967d9cb86e",
+      "seed": 2,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "b3b70d2c04e84f39f5ad2fff3e60defd9f061ec094ccac8c79c5baf5d843ee3b",
+      "task": "binary",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "29fa5f6be518b7c4b6f161af696cdba0a60af5ed31ef9cf90e80ba5d099d35dc",
+      "dataset": "categorical_binary",
+      "dataset_sha256": "b3a12850eb5c4dcc453ec11973c08fc232a1d85fc0b81e2333485a967d9cb86e",
+      "seed": 2,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "9e84cdfb99b44156665ef228cb7740b21bd4cffc7b20bbc18ee048d3ad52d684",
+      "task": "binary",
+      "weight_mode": "stress",
+      "weight_sha256": "ab1e6fae0b9c2299e12fb02c530fe75430074bc89d01554002580964deb032e9"
+    },
+    {
+      "case_sha256": "55eb6128701213c1aa359a59172bf86a7047659915da764e3894df6e234fe345",
+      "dataset": "categorical_multiclass",
+      "dataset_sha256": "99659b6041aeac2d7e2a31d3c32b8982e5406c7c9d6dbc65cc3d64e55907490f",
+      "seed": 0,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "5c44ad1bffae1264e490760bf1622c9bb6aff9c78d0de307c33d93aeec4943ad",
+      "task": "multiclass",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "394d8a5f382ff7a64e31aa932f9b0f964e1b05e79e91da57ba06826606509c91",
+      "dataset": "categorical_multiclass",
+      "dataset_sha256": "99659b6041aeac2d7e2a31d3c32b8982e5406c7c9d6dbc65cc3d64e55907490f",
+      "seed": 0,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "ec334be5e31e4eebd87a515e08cb0f1c42cfbb1d7fda25f2820f66b6980430d9",
+      "task": "multiclass",
+      "weight_mode": "stress",
+      "weight_sha256": "a431c3ab6e1dbf582a10867f5ec7916f6504dc0cd82cbbb66b13e98d5d346ba4"
+    },
+    {
+      "case_sha256": "f6532533a06cbafae18e61ff28b157eda2ab36819b69f16dc23640545efdfa72",
+      "dataset": "categorical_multiclass",
+      "dataset_sha256": "cee7a3165fb4df9f6478c8502d326c9806094b903f6ac355e1636749c8ff742b",
+      "seed": 1,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "6188776411def3e3af548fb34b6520ea76d8cbfba4060a0109946c9f88b26a28",
+      "task": "multiclass",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "26e3c8317eefccddf5d190a64931823d948fed3839a73bdcba43c3bca785ef1c",
+      "dataset": "categorical_multiclass",
+      "dataset_sha256": "cee7a3165fb4df9f6478c8502d326c9806094b903f6ac355e1636749c8ff742b",
+      "seed": 1,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "35beceb20cc3ce2de9be145d39626ada1596705cd23d92407805175f6ca9e4f5",
+      "task": "multiclass",
+      "weight_mode": "stress",
+      "weight_sha256": "00deeb1dfcfc65b886342ced7fc42e0c15af85d984610d4678a8e289c087965a"
+    },
+    {
+      "case_sha256": "add70875619571e55a2e7bb4505fd5de3d863bdbe49d09fa97df8ad7dcef34ea",
+      "dataset": "categorical_multiclass",
+      "dataset_sha256": "30cfa1f63f33a671c39f1d3a5d367916f4f9b5cd894979e08e963bd5e70fc433",
+      "seed": 2,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "5135993739688b9c0ef0848f1d8b149854f63f8882825a5e3a352b8f1dba36c3",
+      "task": "multiclass",
+      "weight_mode": "none",
+      "weight_sha256": "4fcefb537ac81fae13c061f089508fa543c88c553ed69305ced8084b9ccbe14e"
+    },
+    {
+      "case_sha256": "91926cb90b4925e811af9fbb1111864d4ac8e2568413e1e8ce1a76397915a30a",
+      "dataset": "categorical_multiclass",
+      "dataset_sha256": "30cfa1f63f33a671c39f1d3a5d367916f4f9b5cd894979e08e963bd5e70fc433",
+      "seed": 2,
+      "selector": {
+        "eligible": false,
+        "reason": "classification_not_applicable",
+        "resolved_linear_leaves": false
+      },
+      "size": "medium",
+      "split_sha256": "794aa68757fe449cd8484ae0409473731b13c09a398f2d7ee5236846a5224d55",
+      "task": "multiclass",
+      "weight_mode": "stress",
+      "weight_sha256": "4f7e013efe708a9d7aa25a9716b7686cecd0908df7a4c94ef7890761f6ccc105"
+    }
+  ],
+  "schema_version": 1,
+  "shipping_or_default_claim_authorized": false,
+  "sources": {
+    "candidate": {
+      "clean": true,
+      "head": "a53d4bf543534678189d87d88dcad87dd2a8bd8f",
+      "path": "/private/tmp/darkofit-smooth-selector-20260722",
+      "status": [],
+      "tree": "983238140d1f3fd95a13b0a02aa01e30045ba4bc"
+    },
+    "harness": {
+      "clean": true,
+      "head": "56a66700a354dfe90d4cfd72d4254a7d8e22b351",
+      "path": "/private/tmp/darkofit-selector-m6-harness-56a6670",
+      "status": [],
+      "tree": "369ea1f02938c92ec5db8d2b3307bedc13e8c2bf"
+    }
+  }
+}
