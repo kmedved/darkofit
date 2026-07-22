@@ -1353,6 +1353,16 @@ def test_spent_evidence_rejects_lockbox_snapshot_drift():
 
 
 def test_captured_chimera_exposure_matches_frozen_head():
+    current_head = registry._git(
+        registry.CHIMERA_ROOT,
+        "rev-parse",
+        "HEAD",
+    )
+    if current_head != common.CHIMERABOOST_HEAD:
+        pytest.skip(
+            "requires frozen ChimeraBoost exposure checkout "
+            f"{common.CHIMERABOOST_HEAD}; current checkout is {current_head}"
+        )
     snapshots, source_sha256 = common.secure_snapshot_files(
         list(registry.CHIMERA_EXPOSURE_PATHS),
         allowed_root=registry.CHIMERA_ROOT,
