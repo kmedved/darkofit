@@ -1532,6 +1532,70 @@ B-archive simulation remains non-loadable, optional size telemetry.
     kill-rule audit is the next authorized action, followed by the automatic
     smooth-data selector campaign.
 
+### 40. Phase F kill-rule audit and M6 quality-successor v3 (2026-07-22)
+
+1. **Execution date/source:** 2026-07-22; the 41-disposition Phase F audit and
+   v3 harness were frozen and published at clean commit
+   `f3d19ebb4d9306e278a52534a7856650675d1166`. The v3 historical backtest ran
+   once from that exact clean commit.
+2. **Comparators:** no live model comparator. The outcome-known replays bind
+   the combined B1+B2 readout, native ordinal C2 development result, and old
+   3% selector result at their exact recorded hashes.
+3. **Evidence class:** governance and development-ranking infrastructure over
+   spent historical evidence. It is not new quality evidence and grants no
+   shipping, default, speed-ranking, fresh-confirmation, TabArena-placement,
+   or lockbox authority.
+4. **Data/splits:** the positive replay has 13 fixed cases, the valid negative
+   has four fixed C2 tasks, and the retired-verdict tripwire has 14 fixed
+   smooth/process lineages. Cases are not claimed as independent draws. A
+   future live v3 inspection retains the exact ten-dataset, medium, 60-cell
+   paired grid with dataset-level concentration.
+5. **Arms/policies:** v3 removes v2's 60% win-count and 0.98 minimum-effect
+   gates. Development advance requires aggregate ratio at most 1.000, worst
+   dataset/group at most 1.020, and worst leave-one-group-out ratio at most
+   1.003. These are non-harm/concentration triage only.
+6. **Environment/repeats:** one outcome-known, artifact-only execution in the
+   `darko311` environment; no model fit, timing, worker, fresh data, or rerun.
+   The harness source state was clean and already published before execution.
+7. **Runner/commands:**
+   `python benchmarks/run_m6_quality_successor_v3_backtest.py --output benchmarks/m6_quality_successor_v3_backtest_result.json`.
+   After the runner returned and created its fsynced result, the surrounding
+   zsh wrapper failed while assigning to reserved variable `status`; the
+   Python runner was not rerun, and the post-run shell mistake is disclosed in
+   the result note.
+8. **Hashes:** Phase F audit
+   `3717a080030788ded9fa12101dfad7e1b87ac811f517f1b1e1e16fb0fa35769f`;
+   contract
+   `1fedb2d2d2e043f56c8547fd67bf32ef028f98866f7455c05c2e8fa6c9d0e2b3`;
+   rule
+   `2415c7a7bde2bed23283067fdfe200892c15cf1c70d869153cc9cade81f9694c`;
+   execution runner
+   `950c3867f387112a65a5dd103f830cce71f7e74af42c5f5208499e787e609d39`;
+   backtest runner
+   `bcb733bdefd36fe4e6052f91f3453f42f7a21dd45011bd5705e7c91a098dd019`;
+   result
+   `35cc54acfeb7de7950966445ed8248654f945072e5e5900e3333fff4b15129b6`.
+9. **Primary results:** combined B1+B2 reproduced `advance` at aggregate
+   `0.965513`, worst group `0.991888`, worst LOO `0.968329`; native ordinal C2
+   reproduced `kill` at `0.992755`, `1.317510`, and `1.090069`; the retired
+   selector verdict correctly changed from v2's kill to v3 `advance` at
+   `0.989264`, `1.000000`, and `0.998504`.
+10. **Passed and failed conditions:** all three expected dispositions agreed,
+    every artifact/code/audit binding matched, and
+    `candidate_ranking_eligible=true`. No scientific or integrity gate failed.
+    The disclosed shell-wrapper error occurred strictly after result creation
+    and did not enter the runner.
+11. **Limitations/non-claims:** the backtest is outcome-known and uses spent,
+    heterogeneous historical summaries. It validates triage behavior, not
+    statistical calibration, selector shipping, or default safety. V1/v2
+    artifacts and outcomes remain immutable; only forward ranking authority
+    is superseded.
+12. **Terminal decision/next action:** Phase F is complete. V3 is the sole M6
+    quality-development ranking path. Begin the separately authorized short
+    causal engagement check for the automatic smooth-data selector, then
+    freeze its new-identity invariants-first Tier-D campaign if the mechanism
+    is confirmed.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

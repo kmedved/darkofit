@@ -1,0 +1,252 @@
+{
+  "backtest_complete": true,
+  "bindings": {
+    "audit": {
+      "path": "benchmarks/premature_kill_audit_20260722.json",
+      "sha256": "3717a080030788ded9fa12101dfad7e1b87ac811f517f1b1e1e16fb0fa35769f"
+    },
+    "backtest_runner": {
+      "path": "benchmarks/run_m6_quality_successor_v3_backtest.py",
+      "sha256": "bcb733bdefd36fe4e6052f91f3453f42f7a21dd45011bd5705e7c91a098dd019"
+    },
+    "comparison_runner": {
+      "path": "benchmarks/bench_compare_revisions.py",
+      "sha256": "0fcd849a13c0348c4c6802556d9a3d3b9f1d5b02c8c47a4e82c3e744f358760f"
+    },
+    "contract": {
+      "path": "benchmarks/m6_quality_successor_v3_contract.md",
+      "sha256": "1fedb2d2d2e043f56c8547fd67bf32ef028f98866f7455c05c2e8fa6c9d0e2b3"
+    },
+    "execution_runner": {
+      "path": "benchmarks/run_m6_quality_successor_v3.py",
+      "sha256": "950c3867f387112a65a5dd103f830cce71f7e74af42c5f5208499e787e609d39"
+    },
+    "negative_artifact": {
+      "path": "benchmarks/native_ordinal_c2_development_result.json",
+      "sha256": "7aeb83131bb7604a3eaabc2789f048d40dabb58791b6ab6aad0ac26f0f0f566f"
+    },
+    "paired_execution": {
+      "path": "benchmarks/paired_evidence_contract.py",
+      "sha256": "63c63d4f0b7c6f649b7155325ee064faf6e5981094ed3cb79ac91b6b8fefedf9"
+    },
+    "positive_artifact": {
+      "path": "benchmarks/m3b_ensemble_v3_r3_vs_single_readout_20260721.json",
+      "sha256": "99d693063c46a0708eb45a704af0b46611fa8ed89dbe4d6469b47c7cd4a27c64"
+    },
+    "retired_selector_artifact": {
+      "path": "benchmarks/fresh_selector_confirmation.json",
+      "sha256": "4dc158ec4fd11cf29a5822dc2a09aa76715ce9446773673fa9a2828da1b71a7d"
+    },
+    "rule": {
+      "path": "benchmarks/m6_quality_rule_v3.py",
+      "sha256": "2415c7a7bde2bed23283067fdfe200892c15cf1c70d869153cc9cade81f9694c"
+    },
+    "supersession": {
+      "path": "benchmarks/m6_quality_successor_v2_phase_f_supersession_20260722.md",
+      "sha256": "24a755b8696256f76b7e4aaac55df3827e0e47ddd4506fdde34ee2dde04a7ef9"
+    }
+  },
+  "candidate_ranking_eligible": true,
+  "contract_id": "m6-quality-successor-v3",
+  "created_at_utc": "2026-07-22T19:55:00.640579+00:00",
+  "decision": "enable_phase_f_corrected_quality_development_ranking",
+  "evidence_status": "complete",
+  "frozen_v1_v2_artifacts_edited": false,
+  "harness": {
+    "clean": true,
+    "head": "f3d19ebb4d9306e278a52534a7856650675d1166",
+    "path": "/private/tmp/darkofit-phase-f-audit-20260722",
+    "status": [],
+    "tree": "553cd86d06409979f459b157a39a257f5bed01bd"
+  },
+  "outcome_blind": false,
+  "replays": [
+    {
+      "agreement": true,
+      "audit_role": "surviving_known_advance",
+      "decision": {
+        "case_count": 13,
+        "disposition": "advance",
+        "gates": {
+          "aggregate_not_worse": true,
+          "loo_concentration_at_most_1_003": true,
+          "worst_group_at_most_1_02": true
+        },
+        "geometric_mean_ratio": 0.9655130355873516,
+        "group_count": 13,
+        "group_geometric_mean_ratio": {
+          "general_categorical_multiclass": 0.991888335079713,
+          "general_categorical_reg": 0.9589867434730964,
+          "general_friedman_numeric": 0.976369349010174,
+          "general_numeric_binary": 0.975310482604166,
+          "sports_2014_box_plus_minus": 0.9909230310341064,
+          "sports_2014_game_score": 0.9437525943501416,
+          "sports_2014_minutes_per_game": 0.9505146785048093,
+          "sports_2015_box_plus_minus": 0.9875067711802458,
+          "sports_2015_game_score": 0.9532660518869941,
+          "sports_2015_minutes_per_game": 0.9482990867025995,
+          "sports_2016_box_plus_minus": 0.9774211908947587,
+          "sports_2016_game_score": 0.9323479994952607,
+          "sports_2016_minutes_per_game": 0.9674024468086841
+        },
+        "leave_one_group_out_geometric_mean_ratio": {
+          "general_categorical_multiclass": 0.9633470124706005,
+          "general_categorical_reg": 0.9660588939092756,
+          "general_friedman_numeric": 0.9646138102212739,
+          "general_numeric_binary": 0.9647010379368246,
+          "sports_2014_box_plus_minus": 0.9634251809897637,
+          "sports_2014_game_score": 0.9673488957770264,
+          "sports_2014_minutes_per_game": 0.966773530218054,
+          "sports_2015_box_plus_minus": 0.9637024874079382,
+          "sports_2015_game_score": 0.9665406920869176,
+          "sports_2015_minutes_per_game": 0.9669615585553468,
+          "sports_2016_box_plus_minus": 0.9645272625790167,
+          "sports_2016_game_score": 0.968329471199155,
+          "sports_2016_minutes_per_game": 0.9653557513216914
+        },
+        "ratios": {
+          "general_categorical_multiclass": 0.991888335079713,
+          "general_categorical_reg": 0.9589867434730964,
+          "general_friedman_numeric": 0.976369349010174,
+          "general_numeric_binary": 0.975310482604166,
+          "sports_2014_box_plus_minus": 0.9909230310341064,
+          "sports_2014_game_score": 0.9437525943501416,
+          "sports_2014_minutes_per_game": 0.9505146785048093,
+          "sports_2015_box_plus_minus": 0.9875067711802458,
+          "sports_2015_game_score": 0.9532660518869941,
+          "sports_2015_minutes_per_game": 0.9482990867025995,
+          "sports_2016_box_plus_minus": 0.9774211908947587,
+          "sports_2016_game_score": 0.9323479994952607,
+          "sports_2016_minutes_per_game": 0.9674024468086841
+        },
+        "worst_case": "general_categorical_multiclass",
+        "worst_case_ratio": 0.991888335079713,
+        "worst_group": "general_categorical_multiclass",
+        "worst_group_ratio": 0.991888335079713,
+        "worst_loo_omission": "sports_2016_game_score",
+        "worst_loo_ratio": 0.968329471199155
+      },
+      "expected_disposition": "advance",
+      "mechanism_id": "combined_b1_b2_ensemble_v3",
+      "observed_disposition": "advance"
+    },
+    {
+      "agreement": true,
+      "audit_role": "surviving_known_kill",
+      "decision": {
+        "case_count": 4,
+        "disposition": "kill",
+        "gates": {
+          "aggregate_not_worse": true,
+          "loo_concentration_at_most_1_003": false,
+          "worst_group_at_most_1_02": false
+        },
+        "geometric_mean_ratio": 0.9927548385779557,
+        "group_count": 4,
+        "group_geometric_mean_ratio": {
+          "361268": 1.3175103100839682,
+          "363375": 0.9908219059882927,
+          "363471": 0.9922301245038013,
+          "363631": 0.7499046028828165
+        },
+        "leave_one_group_out_geometric_mean_ratio": {
+          "361268": 0.9033818117647443,
+          "363375": 0.9933999870420862,
+          "363471": 0.992929804924507,
+          "363631": 1.0900690528514219
+        },
+        "ratios": {
+          "361268": 1.3175103100839682,
+          "363375": 0.9908219059882927,
+          "363471": 0.9922301245038013,
+          "363631": 0.7499046028828165
+        },
+        "worst_case": "361268",
+        "worst_case_ratio": 1.3175103100839682,
+        "worst_group": "361268",
+        "worst_group_ratio": 1.3175103100839682,
+        "worst_loo_omission": "363631",
+        "worst_loo_ratio": 1.0900690528514219
+      },
+      "expected_disposition": "kill",
+      "mechanism_id": "native_ordinal_c2",
+      "observed_disposition": "kill"
+    },
+    {
+      "agreement": true,
+      "audit_role": "abolished_verdict_tripwire_not_new_evidence",
+      "decision": {
+        "case_count": 14,
+        "disposition": "advance",
+        "gates": {
+          "aggregate_not_worse": true,
+          "loo_concentration_at_most_1_003": true,
+          "worst_group_at_most_1_02": true
+        },
+        "geometric_mean_ratio": 0.9892642728306965,
+        "group_count": 14,
+        "group_geometric_mean_ratio": {
+          "bkd1kmc1": 1.0,
+          "bng_mv_generator": 1.0,
+          "bng_stock_generator": 1.0,
+          "climate_agriculture_impact": 1.0,
+          "climate_insights": 1.0,
+          "coffee_distribution": 0.8766436989572796,
+          "debutanizer_process": 0.9807299371651926,
+          "infrared_thermography_temperature": 1.0,
+          "iot_agriculture": 1.0,
+          "mabbob_ela_algorithm_performance": 1.0,
+          "news_popularity": 1.0,
+          "qsar_bioconcentration": 1.0,
+          "rssi_3d_localization": 1.0,
+          "temperature_emissions_trends": 1.0
+        },
+        "leave_one_group_out_geometric_mean_ratio": {
+          "bkd1kmc1": 0.9884432374258403,
+          "bng_mv_generator": 0.9884432374258403,
+          "bng_stock_generator": 0.9884432374258403,
+          "climate_agriculture_impact": 0.9884432374258403,
+          "climate_insights": 0.9884432374258403,
+          "coffee_distribution": 0.9985043387926229,
+          "debutanizer_process": 0.9899238280937784,
+          "infrared_thermography_temperature": 0.9884432374258403,
+          "iot_agriculture": 0.9884432374258403,
+          "mabbob_ela_algorithm_performance": 0.9884432374258403,
+          "news_popularity": 0.9884432374258403,
+          "qsar_bioconcentration": 0.9884432374258403,
+          "rssi_3d_localization": 0.9884432374258403,
+          "temperature_emissions_trends": 0.9884432374258403
+        },
+        "ratios": {
+          "bkd1kmc1": 1.0,
+          "bng_mv_generator": 1.0,
+          "bng_stock_generator": 1.0,
+          "climate_agriculture_impact": 1.0,
+          "climate_insights": 1.0,
+          "coffee_distribution": 0.8766436989572796,
+          "debutanizer_process": 0.9807299371651926,
+          "infrared_thermography_temperature": 1.0,
+          "iot_agriculture": 1.0,
+          "mabbob_ela_algorithm_performance": 1.0,
+          "news_popularity": 1.0,
+          "qsar_bioconcentration": 1.0,
+          "rssi_3d_localization": 1.0,
+          "temperature_emissions_trends": 1.0
+        },
+        "worst_case": "bkd1kmc1",
+        "worst_case_ratio": 1.0,
+        "worst_group": "bkd1kmc1",
+        "worst_group_ratio": 1.0,
+        "worst_loo_omission": "coffee_distribution",
+        "worst_loo_ratio": 0.9985043387926229
+      },
+      "expected_disposition": "advance",
+      "mechanism_id": "linear_leaf_selector_3pct",
+      "observed_disposition": "advance"
+    }
+  ],
+  "rerun_authorized": false,
+  "schema_version": 1,
+  "shipping_or_default_claim_eligible": false,
+  "supersedes_forward_ranking_authority_of": "m6-quality-successor-v2"
+}

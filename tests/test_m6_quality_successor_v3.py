@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -14,6 +15,11 @@ if str(BENCH_DIR) not in sys.path:
 import m6_quality_rule_v3 as rule  # noqa: E402
 import run_m6_quality_successor_v3 as execution  # noqa: E402
 import run_m6_quality_successor_v3_backtest as backtest  # noqa: E402
+
+
+EXPECTED_RESULT_SHA256 = (
+    "35cc54acfeb7de7950966445ed8248654f945072e5e5900e3333fff4b15129b6"
+)
 
 
 def test_v3_freezes_exact_medium_grid_without_win_gate():
@@ -173,3 +179,18 @@ def test_v3_binding_matches_create_only_result_when_present(monkeypatch):
     monkeypatch.setattr(execution, "_is_ancestor", lambda _a, _b: True)
     binding = execution.validate_backtest_binding()
     assert len(binding["result_sha256"]) == 64
+
+
+def test_v3_create_only_result_has_expected_terminal_identity():
+    assert execution.BACKTEST_RESULT_PATH.is_file()
+    assert hashlib.sha256(execution.BACKTEST_RESULT_PATH.read_bytes()).hexdigest() == (
+        EXPECTED_RESULT_SHA256
+    )
+    payload = json.loads(execution.BACKTEST_RESULT_PATH.read_text())
+    assert payload["backtest_complete"] is True
+    assert payload["candidate_ranking_eligible"] is True
+    assert payload["rerun_authorized"] is False
+    assert payload["harness"]["head"] == (
+        "f3d19ebb4d9306e278a52534a7856650675d1166"
+    )
+    assert all(replay["agreement"] is True for replay in payload["replays"])
