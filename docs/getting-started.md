@@ -8,7 +8,7 @@ DarkoFit is installed from version tags in its GitHub repository rather than
 PyPI:
 
 ```bash
-python -m pip install "darkofit @ git+https://github.com/kmedved/darkofit.git@v0.10.1"
+python -m pip install "darkofit @ git+https://github.com/kmedved/darkofit.git@v0.11.0"
 ```
 
 For a source checkout:

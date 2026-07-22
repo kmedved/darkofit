@@ -1,6 +1,20 @@
 # Changelog
 
-## Unreleased
+## 0.11.0 - 2026-07-22
+
+### Features
+
+- Add the explicit `ensemble_mode="v3"` recipe for both sklearn estimators.
+  It fits exactly eight sequential members from deterministic 80%
+  without-replacement row or group samples, uses each exact OOB complement
+  for early stopping, and averages regression/SHAP outputs or classification
+  probabilities. The measured member policy uses `learning_rate=0.15` and
+  `colsample=0.85`; the dedicated `ensemble_member_learning_rate` and
+  `ensemble_member_colsample` constructor parameters provide unambiguous
+  opt-in overrides while preserving the base-model values.
+- Add safe-NPZ ensemble format 4 for public v3 models, including exact outer
+  constructor state and sampled/OOB provenance. Legacy public-bootstrap format
+  1 and historical private-prototype format 3 remain readable.
 
 ### Performance
 
@@ -19,8 +33,8 @@
   incomplete OOB class set.
 - Bind private ensemble sampling fingerprints to compact index payloads in the
   pickle-free archive, so safe-load rejects forged digest metadata while
-  preserving exact prediction and re-save round trips. Public ensemble
-  archives remain on the backward-compatible format 1.
+  preserving exact prediction and re-save round trips. Legacy public bootstrap
+  archives remain on format 1; the new public v3 recipe uses format 4.
 
 ## 0.10.1 - 2026-07-20
 
