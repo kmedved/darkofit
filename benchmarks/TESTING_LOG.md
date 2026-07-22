@@ -1316,6 +1316,68 @@ B-archive simulation remains non-loadable, optional size telemetry.
    SHA-256
    `2726b699193eb669e2840bba527743c07d77505dfb8ed782a0fd8076cd94287c`.
 
+### 37. v0.11 private ensemble evidence v2 (2026-07-22)
+
+1. **Execution date/source:** 2026-07-22; DarkoFit model source was the clean
+   published commit `543604dd9860a28c30912f914b2cfccfcb99d783`. The formal
+   harness was clean published commit `eab7e78`; 177/177 fresh workers
+   completed and no terminal artifact or retry occurred.
+2. **Comparators:** ChimeraBoost was the exact clean 0.18 pin
+   `f14be606b641f1bf0dc92bb14b3951f1fe631c6b`; CatBoost was the exact
+   `1.2.10` wheel. Moving checkout heads were not used.
+3. **Evidence class:** Tier-E spent private-release-candidate characterization.
+   No fresh-confirmation, lockbox, M2, M4, public API, default, or release
+   authority was used.
+4. **Data/splits:** the exact 13-case M3b r3 grid: nine player-disjoint
+   cold-player sports cells within held teams, clustered by three seasons, and
+   four fixed seeded 75/25 medium general cells. The contract stores every
+   case, dataset, split, and weight fingerprint.
+5. **Arms/policies:** quality/cost ran DarkoFit single, existing bootstrap8,
+   and private v3 (eight sequential members, 0.8 without replacement,
+   `donor_balanced_v1`). Prediction added ChimeraBoost single/ensemble8 and
+   CatBoost single. Eight remains the only evaluated member count.
+6. **Environment/repeats:** one Apple-silicon machine, 14-thread ceiling,
+   three complete fresh-worker blocks, same-case/same-arm two-iteration warmup
+   outside measurement. Prediction used four fixed batches, five post-warm
+   pilots, a 2.0-second target, at least three public calls, and a fail-closed
+   1.0-second interval floor. All 240 intervals cleared; minimum was
+   `1.605673208 s`.
+7. **Runner:** source-attested
+   [`run_v011_ensemble_evidence_v2.py`](run_v011_ensemble_evidence_v2.py).
+   V1 was retired before formal execution because a synthetic smoke exposed
+   warmup-only warning stderr; v2's sole amendment captures unmeasured warmup
+   warnings while preserving formal-fit warning disclosure.
+8. **Hashes:** protocol `319ae5e7ef0cecd86d6ccbf752fdba93dfde290d75e65eed4dc4a13589e06a91`;
+   runner `09065c51cfc86e31b1914e6349f5f6701eec28563387fb218b3cc5c6d2b51573`;
+   analyzer `50cd9948006e8661a3dc1ace5cb771106d6d2fdb7d3c1252bc72f621553edf16`;
+   contract `96d85870b9fdb02e0e62e0d9a1386ba22d1f1027a481d652852607cb443ef35f`;
+   raw `d6c0b794db4ce4bdd1e393f2b23546f1351a051f1f66fa7438175f826454171e`;
+   result `edb35694a6b6d19aa9b320545b759603a7e5a99c34165dd9f1a0ebe66937dabc`;
+   note `8c0fc244cf3eb5b9e63b2803d2d8d20b7e66e9b375c15c78cc7dee064c7baee4`.
+9. **Primary results:** reproduction passed at absolute ratio tolerance
+   `1e-10` (maximum difference `7.78e-16`). V3/single primary loss was
+   `0.965513x` pooled; sports `0.961077x` with season-cluster interval
+   `[0.958861x, 0.962867x]`; general `0.975569x` with case-bootstrap interval
+   `[0.963303x, 0.987718x]` and leave-one-case-out range
+   `[0.970189x, 0.981160x]`.
+10. **Cost/prediction:** v3/single was `5.030x` fit, `1.090x` absolute peak
+    RSS, `3.539x` peak-minus-start RSS, and `6.181x` safe-NPZ bytes. Versus
+    existing bootstrap8 it was `0.578x`, `0.999x`, `0.935x`, and `0.706x`.
+    Prediction seconds ratios were Darko single/Chimera single `0.478x`
+    (16/16 faster), Darko single/CatBoost `0.871x` (9/16 faster), v3/Darko
+    single `6.251x`, and v3/Chimera ensemble8 `0.126x` (16/16 faster). Every
+    declared integrity/reproduction gate passed; performance and cost had no
+    gate by owner authorization.
+11. **Limitations/non-claims:** three sports seasons and four fixed general
+    cases are not 13 independent datasets; ratios are hardware/grid scoped;
+    costs are disclosures; archive size has no reinstated gate; no general
+    superiority, certification, public exposure, default, M4, or v0.11 release
+    is claimed.
+12. **Terminal decision/next action:** no correctness or unresolved
+    reproduction stop condition is present. This evidence does not itself
+    expose v3. Phase 2 M2 remains the next authorized non-overlapping action;
+    public exposure remains a separate Phase 3 owner decision.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
