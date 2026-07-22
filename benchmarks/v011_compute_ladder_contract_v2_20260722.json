@@ -1,0 +1,582 @@
+{
+  "analysis": {
+    "bootstrap": {
+      "datasets_random_population": false,
+      "draws": 10000,
+      "percentiles": [
+        2.5,
+        50.0,
+        97.5
+      ],
+      "seed": 20260722,
+      "unit": "coordinates_within_each_fixed_dataset"
+    },
+    "coordinate_pairing": true,
+    "counterpart_contrasts": [
+      [
+        "darkofit_v011_default",
+        "chimeraboost_v020_default"
+      ],
+      [
+        "darkofit_v011_accuracy",
+        "chimeraboost_v020_depth10"
+      ],
+      [
+        "darkofit_v011_ensemble8",
+        "chimeraboost_v020_ensemble8"
+      ]
+    ],
+    "equal_dataset_geometric_mean": true,
+    "frontiers": {
+      "axes": [
+        "fit_seconds",
+        "prediction_seconds_per_call"
+      ],
+      "dominance_requires_all_comparable_budgets": true,
+      "interpolation": false,
+      "reference": "chimeraboost_v020_default",
+      "union_observed_budgets": true,
+      "within_engine_dominated_points_removed_per_axis": true,
+      "y": "test_rmse_ratio_to_chimeraboost_default"
+    },
+    "head_to_head": [
+      "coordinate_wlt",
+      "dataset_wlt"
+    ],
+    "metrics": [
+      "test_rmse",
+      "fit_seconds",
+      "prediction_seconds_per_call",
+      "fit_rss_peak_bytes",
+      "fit_rss_peak_delta_bytes"
+    ],
+    "reference_arm": "chimeraboost_v020_default",
+    "strict_program_verdict": {
+      "basis": "predeclared_equal_dataset_point_estimates",
+      "counterpart_peak_rss_no_worse": true,
+      "fit_frontier_dominance": true,
+      "prediction_frontier_dominance": true,
+      "uncertainty_adjacent_not_certificate": true
+    }
+  },
+  "authorization": "BEAT_CHIMERABOOST_PLAN.md Phase E release milestone",
+  "bindings": {
+    "agent_rules": {
+      "bytes": 4717,
+      "path": "AGENTS.md",
+      "sha256": "69f42f1851b7a6d68a2bbe77b87e5f8085b869b3a192a39b3a0bad524bc82c6d"
+    },
+    "analyzer": {
+      "bytes": 51623,
+      "path": "benchmarks/analyze_v011_compute_ladder.py",
+      "sha256": "d65c84b16c1f43499687771ddb07e9f6dc23a5a1af09ba177f520733f05abf9b"
+    },
+    "freezer": {
+      "bytes": 2837,
+      "path": "benchmarks/freeze_v011_compute_ladder.py",
+      "sha256": "0f70044de74cc2cb5f1e1909e68535c48e7cb29a79485bd49b97aea4b53d4931"
+    },
+    "governing_plan": {
+      "bytes": 14786,
+      "path": "BEAT_CHIMERABOOST_PLAN.md",
+      "sha256": "f42f97c01b7c110e662edd2999471c929f3d41d40dbe5a19d0fd806e8502e1f0"
+    },
+    "historical_task_registry": {
+      "bytes": 105617,
+      "path": "benchmarks/run_tabarena_regression_same_machine.py",
+      "sha256": "32dba12b54ebb2fe3f895e374b11c994f619d15dd0b985a248fd960156d6c261"
+    },
+    "protocol": {
+      "bytes": 6658,
+      "path": "benchmarks/v011_compute_ladder_protocol_20260722.md",
+      "sha256": "55bef1b0160a30af052667667a7a0845145edc3c118d80904a576c54bfb411e9"
+    },
+    "runner": {
+      "bytes": 53617,
+      "path": "benchmarks/run_v011_compute_ladder.py",
+      "sha256": "70a37377f63343e4f39451efa8df7aa4e27dad8ef414b92c506fbfb666d60744"
+    },
+    "tests": {
+      "bytes": 23920,
+      "path": "tests/test_v011_compute_ladder.py",
+      "sha256": "d05706496ad3f1787261e302e8f1fb02d84168240bb4d1dec3cbc55915671a44"
+    },
+    "v1_contract": {
+      "bytes": 13605,
+      "path": "benchmarks/v011_compute_ladder_contract_20260722.json",
+      "sha256": "c5a76279ceb79f8474ec1cf0e18991d088dbdaf959f4dfb9795591f99d698a62"
+    },
+    "v1_terminal": {
+      "bytes": 1186,
+      "path": "benchmarks/v011_compute_ladder_v1_terminal_20260722.json",
+      "sha256": "1ae0fcb00c0094fbb41329bcaf885b2fcf4889b8e1d9860b89b72beb49ee660d"
+    }
+  },
+  "claims": {
+    "catboost_comparison": false,
+    "default_or_policy_advancement": false,
+    "fresh_confirmation": false,
+    "lockbox": false,
+    "no_rerun_to_improve": true,
+    "spent_descriptive_release_scoreboard": true,
+    "tabarena_placement": false,
+    "tier": "E"
+  },
+  "contract_frozen": true,
+  "contract_id": "v011-release-compute-ladder-20260722-v2",
+  "created_at_utc": "2026-07-22T18:41:14.325467+00:00",
+  "execution": {
+    "arms": {
+      "chimeraboost_v020_default": {
+        "code": "M0",
+        "config": {},
+        "engine": "chimeraboost",
+        "profile": "default"
+      },
+      "chimeraboost_v020_depth10": {
+        "code": "MA",
+        "config": {
+          "depth": 10
+        },
+        "engine": "chimeraboost",
+        "profile": "accuracy"
+      },
+      "chimeraboost_v020_ensemble8": {
+        "code": "M8",
+        "config": {
+          "n_ensembles": 8
+        },
+        "engine": "chimeraboost",
+        "profile": "ensemble"
+      },
+      "darkofit_v011_accuracy": {
+        "code": "DA",
+        "config": {
+          "preset": "accuracy"
+        },
+        "engine": "darkofit",
+        "profile": "accuracy"
+      },
+      "darkofit_v011_default": {
+        "code": "D0",
+        "config": {},
+        "engine": "darkofit",
+        "profile": "default"
+      },
+      "darkofit_v011_ensemble8": {
+        "code": "D8",
+        "config": {
+          "ensemble_mode": "v3",
+          "n_ensembles": 8
+        },
+        "engine": "darkofit",
+        "profile": "ensemble"
+      }
+    },
+    "autogluon_outer_bag": false,
+    "chimeraboost": {
+      "commit": "7d48e053e5bd3c7aded1126871aeb0f1f6b84c46",
+      "must_remain_latest_before_worker_zero": true,
+      "published_at": "2026-07-21T02:44:50Z",
+      "release_repository": "bbstats/chimeraboost",
+      "tag": "v0.20.0",
+      "version": "0.20.0"
+    },
+    "contract_id": "v011-release-compute-ladder-20260722-v2",
+    "coordinates": [
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "houses",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "houses",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "houses",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "miami_housing",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "miami_housing",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "miami_housing",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "superconductivity",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "superconductivity",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "superconductivity",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "wine_quality",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "wine_quality",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "wine_quality",
+        "fold": 2,
+        "repeat": 2
+      }
+    ],
+    "darkofit": {
+      "commit": "0b820e332cec2c083b1dd89eef0fe306d69cfc0e",
+      "tag": "v0.11.0",
+      "version": "0.11.0"
+    },
+    "order": {
+      "base": [
+        "darkofit_v011_default",
+        "darkofit_v011_accuracy",
+        "darkofit_v011_ensemble8",
+        "chimeraboost_v020_default",
+        "chimeraboost_v020_depth10",
+        "chimeraboost_v020_ensemble8"
+      ],
+      "method": "cyclic_latin_rotation",
+      "ordered_grid_sha256": "5fbd9dc0d3e70c6c16f2daa2bc52f6c84d343211b145070c5afb73d66cd9e2be",
+      "position_counts": {
+        "chimeraboost_v020_default": [
+          6,
+          7,
+          7,
+          7,
+          6,
+          6
+        ],
+        "chimeraboost_v020_depth10": [
+          6,
+          6,
+          7,
+          7,
+          7,
+          6
+        ],
+        "chimeraboost_v020_ensemble8": [
+          6,
+          6,
+          6,
+          7,
+          7,
+          7
+        ],
+        "darkofit_v011_accuracy": [
+          7,
+          7,
+          6,
+          6,
+          6,
+          7
+        ],
+        "darkofit_v011_default": [
+          7,
+          6,
+          6,
+          6,
+          7,
+          7
+        ],
+        "darkofit_v011_ensemble8": [
+          7,
+          7,
+          7,
+          6,
+          6,
+          6
+        ]
+      }
+    },
+    "output_create_only": true,
+    "prediction_timing": {
+      "actual_registered_test_batch": true,
+      "maximum_calls": 65536,
+      "minimum_calls": 3,
+      "minimum_seconds": 0.5,
+      "pilots": 3,
+      "target_seconds": 1.0
+    },
+    "product_direct": true,
+    "resources": {
+      "chimera_ensemble_parallelism": "public_default_equal_total_budget",
+      "darkofit_ensemble_parallelism": "public_v3_sequential",
+      "gpus": 0,
+      "threads": 14
+    },
+    "rss": {
+      "absolute_peak": true,
+      "interval_seconds": 0.005,
+      "peak_minus_start": true,
+      "scope": "worker_plus_recursive_children"
+    },
+    "silent_worker_retry": false,
+    "successor": {
+      "only_harness_change": "exclude_own_process_ancestor_chain_from_exclusivity_conflicts",
+      "scientific_protocol_change": "none",
+      "supersedes_contract_id": "v011-release-compute-ladder-20260722-v1",
+      "v1_fit_count": 0,
+      "v1_worker_count": 0
+    },
+    "tabarena": {
+      "commit": "4cd1d2526874962daae048a6f2dcf34aa272f3fa",
+      "role": "task_and_registered_split_source_only",
+      "tree": "a293df372a613c7358ba5fcd746f58d580cde7d6",
+      "version": "0.0.1"
+    },
+    "tasks": [
+      {
+        "dataset": "airfoil_self_noise",
+        "registered_split_count": 30,
+        "task_id": 363612
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "registered_split_count": 30,
+        "task_id": 363615
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "registered_split_count": 30,
+        "task_id": 363625
+      },
+      {
+        "dataset": "diamonds",
+        "registered_split_count": 9,
+        "task_id": 363631
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "registered_split_count": 9,
+        "task_id": 363672
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "registered_split_count": 30,
+        "task_id": 363675
+      },
+      {
+        "dataset": "houses",
+        "registered_split_count": 9,
+        "task_id": 363678
+      },
+      {
+        "dataset": "miami_housing",
+        "registered_split_count": 9,
+        "task_id": 363686
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "registered_split_count": 9,
+        "task_id": 363693
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "registered_split_count": 9,
+        "task_id": 363697
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "registered_split_count": 30,
+        "task_id": 363698
+      },
+      {
+        "dataset": "superconductivity",
+        "registered_split_count": 9,
+        "task_id": 363705
+      },
+      {
+        "dataset": "wine_quality",
+        "registered_split_count": 9,
+        "task_id": 363708
+      }
+    ],
+    "warmup": {
+      "outside_measurement": true,
+      "reduced_iteration_budget": true,
+      "same_arm_routes": true
+    },
+    "workers": {
+      "count": 234,
+      "environment": {
+        "CHIMERABOOST_WARMUP": "0",
+        "DARKOFIT_WARMUP": "0",
+        "MKL_DYNAMIC": "FALSE",
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0"
+      },
+      "fresh_process_per_row": true,
+      "resume": false,
+      "sequential": true,
+      "timeout_seconds": 7200.0
+    }
+  },
+  "harness_freeze_git_head": "efc0f72a3a17ddf27d0dbd07aa98ebae69e588fc",
+  "outcome_blind": true,
+  "protocol_sha256": "e5c62be8f11ef7bc6bab4517b5a3e23fdc5c918f97aeab8dfd3a744b452f99cc",
+  "schema_version": 1
+}
