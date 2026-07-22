@@ -1,0 +1,5429 @@
+{
+  "contract": {
+    "bindings": {
+      "analyzer": {
+        "bytes": 25768,
+        "path": "benchmarks/analyze_ensemble_v3_characterization.py",
+        "sha256": "be52c45a6ae3d235107e24ac17d7321b0d7aea5672e105eb803e91d97f6ba724"
+      },
+      "freezer": {
+        "bytes": 2410,
+        "path": "benchmarks/freeze_ensemble_v3_characterization.py",
+        "sha256": "c8ad4e7de1ea8aae7c869b2d376f106af85c0523bacc548f794ed998edfbe03e"
+      },
+      "historical_quality": {
+        "bytes": 870409,
+        "path": "benchmarks/m3b_ensemble_v3_r3_quality.json",
+        "sha256": "5fec218cbc0ec97ef4b3fec10f65a89131a377cf026dbb80da809d6396ead6c3"
+      },
+      "historical_readout": {
+        "bytes": 5261,
+        "path": "benchmarks/m3b_ensemble_v3_r3_vs_single_readout_20260721.json",
+        "sha256": "99d693063c46a0708eb45a704af0b46611fa8ed89dbe4d6469b47c7cd4a27c64"
+      },
+      "historical_result": {
+        "bytes": 6735,
+        "path": "benchmarks/m3b_ensemble_v3_r3_result.json",
+        "sha256": "3e6d0750e772c156b6c4daed948eb6baa640564ce87fe1ffee7414b3fe03c8bc"
+      },
+      "historical_timing": {
+        "bytes": 1734249,
+        "path": "benchmarks/m3b_ensemble_v3_r3_timing.json",
+        "sha256": "7048041c7a5edb2ec83c34920a657d6f0286946d216837bc2d482c36117e032e"
+      },
+      "implementation": {
+        "bytes": 388356,
+        "path": "darkofit/sklearn_api.py",
+        "sha256": "90c90c39348193541684b67dcb1135b0131db38c1b2dfeac5d5313c128365558"
+      },
+      "implementation_tests": {
+        "bytes": 10946,
+        "path": "tests/test_ensemble_v3_release_candidate.py",
+        "sha256": "578d6c2bcc8a12da77ca055480244196a28538d3e57bcc100e25328ec3b90d52"
+      },
+      "m3b_runner": {
+        "bytes": 39590,
+        "path": "benchmarks/run_m3b_ensemble_v3.py",
+        "sha256": "c161288619ff78e24e46a134925c42320c2980b2246d63e3743abc32f6777258"
+      },
+      "m6_adapter": {
+        "bytes": 14095,
+        "path": "benchmarks/benchmark_adapters.py",
+        "sha256": "21b42e904b421405fc5a63d9e3f5711b7283abfcfd1fef4b60eb4aa1015675a8"
+      },
+      "paired_execution": {
+        "bytes": 30813,
+        "path": "benchmarks/paired_evidence_contract.py",
+        "sha256": "63c63d4f0b7c6f649b7155325ee064faf6e5981094ed3cb79ac91b6b8fefedf9"
+      },
+      "protocol": {
+        "bytes": 7410,
+        "path": "benchmarks/ensemble_v3_characterization_protocol.md",
+        "sha256": "fd66725d5ebd5e724cb12bbe1fc7ade305da965c25cee1c7c5c3b5b1731f64d4"
+      },
+      "public_contract": {
+        "bytes": 9360,
+        "path": "benchmarks/ensemble_v3_public_contract.md",
+        "sha256": "8a6258606d832af307f99c46340cf25b592c100dc7631b0f24f1168d5926b43a"
+      },
+      "runner": {
+        "bytes": 28708,
+        "path": "benchmarks/run_ensemble_v3_characterization.py",
+        "sha256": "2d191d2c4e293fee91118de3478a4ee7365c030e63410f654600a6f1fd1b5eee"
+      },
+      "tests": {
+        "bytes": 6577,
+        "path": "tests/test_ensemble_v3_characterization.py",
+        "sha256": "849df6273ced60767e264116e82f708f15ff8f746c2b070a00bbed90975996c6"
+      }
+    },
+    "path": "/private/tmp/darkofit-v3-characterization-harness-6a61fb6/benchmarks/ensemble_v3_characterization_contract.json",
+    "sha256": "f8f7b780c6dc915926a33262e24545696754221ef310d76c01da6f9df3b00103"
+  },
+  "contract_id": "ensemble-v3-characterization-v1",
+  "created_at_utc": "2026-07-22T03:25:37.740098+00:00",
+  "evidence_scope": "tier_e_spent_general_characterization",
+  "execution": {
+    "arms": [
+      "darkofit_single",
+      "darkofit_ensemble_v3",
+      "chimeraboost_0_18_single"
+    ],
+    "batch_sizes": [
+      8192,
+      65536,
+      524288,
+      2000000
+    ],
+    "blocks": 3,
+    "cases": [
+      "general_friedman_numeric",
+      "general_categorical_reg",
+      "general_numeric_binary",
+      "general_categorical_multiclass"
+    ],
+    "chimeraboost_head": "f14be606b641f1bf0dc92bb14b3951f1fe631c6b",
+    "contract_id": "ensemble-v3-characterization-v1",
+    "darkofit_head": "c5e66ef7e6bdcf5665b55b81c6b870f42d76237b",
+    "fresh_worker_per_case_arm_block": true,
+    "iterations": 600,
+    "maximum_calls": 8192,
+    "minimum_calls": 2,
+    "minimum_interval_seconds": 0.75,
+    "no_reruns": true,
+    "orders": [
+      [
+        "darkofit_single",
+        "darkofit_ensemble_v3",
+        "chimeraboost_0_18_single"
+      ],
+      [
+        "darkofit_ensemble_v3",
+        "chimeraboost_0_18_single",
+        "darkofit_single"
+      ],
+      [
+        "chimeraboost_0_18_single",
+        "darkofit_single",
+        "darkofit_ensemble_v3"
+      ],
+      [
+        "darkofit_ensemble_v3",
+        "chimeraboost_0_18_single",
+        "darkofit_single"
+      ],
+      [
+        "chimeraboost_0_18_single",
+        "darkofit_single",
+        "darkofit_ensemble_v3"
+      ],
+      [
+        "darkofit_single",
+        "darkofit_ensemble_v3",
+        "chimeraboost_0_18_single"
+      ],
+      [
+        "chimeraboost_0_18_single",
+        "darkofit_single",
+        "darkofit_ensemble_v3"
+      ],
+      [
+        "darkofit_single",
+        "darkofit_ensemble_v3",
+        "chimeraboost_0_18_single"
+      ],
+      [
+        "darkofit_ensemble_v3",
+        "chimeraboost_0_18_single",
+        "darkofit_single"
+      ],
+      [
+        "darkofit_single",
+        "darkofit_ensemble_v3",
+        "chimeraboost_0_18_single"
+      ],
+      [
+        "darkofit_ensemble_v3",
+        "chimeraboost_0_18_single",
+        "darkofit_single"
+      ],
+      [
+        "chimeraboost_0_18_single",
+        "darkofit_single",
+        "darkofit_ensemble_v3"
+      ]
+    ],
+    "output_create_only": true,
+    "patience": 30,
+    "random_state": 4,
+    "target_interval_seconds": 1.0,
+    "threads": 14,
+    "validation_fraction": 0.15
+  },
+  "fresh_or_lockbox_data_used": false,
+  "m2_or_m4": false,
+  "machine": {
+    "cpu_count": 14,
+    "executable": "/opt/anaconda3/envs/darko311/bin/python",
+    "machine": "arm64",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "processor": "arm",
+    "python": "3.11.8 (main, Feb 26 2024, 15:36:12) [Clang 14.0.6 ]"
+  },
+  "rows": [
+    {
+      "archive": {
+        "bytes": 91338,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_single",
+      "block": 0,
+      "case_id": "general_friedman_numeric",
+      "fit_rss": {
+        "end_bytes": 330366976,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 330366976,
+        "peak_delta_bytes": 7241728,
+        "samples": 13,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 323125248
+      },
+      "fit_seconds": 0.228131625,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.139735,
+            "thread_count": 14,
+            "tree_count": 105
+          }
+        ],
+        "total_tree_count": 105
+      },
+      "position": 0,
+      "predictions": {
+        "2000000": {
+          "calls": 10,
+          "input_sha256": "edff12b7ed4bc7d32373f3f9b781c13dbe94ba0564435bf07f5fad513ce4a2f2",
+          "interval_seconds": 1.115273666,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "b25ac66581ddde31cca1dad770893b0890f645273a3c9d4fa378e08bc4c21e6e",
+          "rows": 2000000,
+          "rows_per_second": 17932818.29358643,
+          "seconds_per_call": 0.1115273666,
+          "warm_seconds": 0.108520375
+        },
+        "524288": {
+          "calls": 34,
+          "input_sha256": "df0fc8ac56a3a8b1db09d0e8b1af183cc70fd365b252123530a18a8a831cd634",
+          "interval_seconds": 1.089732042,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "a54755c9957bab3df4b02119ef7f48daa90eaf197107c31ad0369aa43e47c7b5",
+          "rows": 524288,
+          "rows_per_second": 16357958.941249521,
+          "seconds_per_call": 0.032050942411764705,
+          "warm_seconds": 0.02970275
+        },
+        "65536": {
+          "calls": 208,
+          "input_sha256": "104b218345ae7a1d669379cd9dd9cd024a62b2372c1fb0666c2e17bb2e10db14",
+          "interval_seconds": 0.916307917,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "d5b87816f295bf86a19253305f3b81d1df06f94c5307f47ad4e87381119602a1",
+          "rows": 65536,
+          "rows_per_second": 14876536.311755996,
+          "seconds_per_call": 0.004405326524038461,
+          "warm_seconds": 0.004825083
+        },
+        "8192": {
+          "calls": 8,
+          "input_sha256": "da9094757aec9d9d1d9a094f6906b0d5f4d8a929e73d8281075b271273c79043",
+          "interval_seconds": 0.006492584,
+          "method": "predict",
+          "minimum_interval_met": false,
+          "prediction_sha256": "c9d1e9f333ec8d19101153a6a8a931ff0050aded46f3eb0d3ac815c4151176ca",
+          "rows": 8192,
+          "rows_per_second": 10093977.990889298,
+          "seconds_per_call": 0.000811573,
+          "warm_seconds": 0.135360458
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "regression",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 899628,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_ensemble_v3",
+      "block": 0,
+      "case_id": "general_friedman_numeric",
+      "fit_rss": {
+        "end_bytes": 361168896,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 361201664,
+        "peak_delta_bytes": 19267584,
+        "samples": 99,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 341934080
+      },
+      "fit_seconds": 1.943692792,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 8,
+        "members": [
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 117
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 113
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 107
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 148
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 74
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 114
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 129
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 150
+          }
+        ],
+        "total_tree_count": 952
+      },
+      "position": 1,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "edff12b7ed4bc7d32373f3f9b781c13dbe94ba0564435bf07f5fad513ce4a2f2",
+          "interval_seconds": 1.834475875,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "11f0eb07a82603888720e1ba6ce0e8044d007db0f641e6786fb616693200c320",
+          "rows": 2000000,
+          "rows_per_second": 2180459.30966522,
+          "seconds_per_call": 0.9172379375,
+          "warm_seconds": 0.930203459
+        },
+        "524288": {
+          "calls": 4,
+          "input_sha256": "df0fc8ac56a3a8b1db09d0e8b1af183cc70fd365b252123530a18a8a831cd634",
+          "interval_seconds": 1.049149625,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "7162213456e98de930262f964777abdc85a37df8342cc57e7e9da07f62b42a71",
+          "rows": 524288,
+          "rows_per_second": 1998906.4953437883,
+          "seconds_per_call": 0.26228740625,
+          "warm_seconds": 0.2570025
+        },
+        "65536": {
+          "calls": 28,
+          "input_sha256": "104b218345ae7a1d669379cd9dd9cd024a62b2372c1fb0666c2e17bb2e10db14",
+          "interval_seconds": 1.044398417,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "59557a7d600af162f935aaf4f53184ed5e6c05956a8800f4a8d4f5b55b73f345",
+          "rows": 65536,
+          "rows_per_second": 1756999.9821246378,
+          "seconds_per_call": 0.037299943464285716,
+          "warm_seconds": 0.0366875
+        },
+        "8192": {
+          "calls": 123,
+          "input_sha256": "da9094757aec9d9d1d9a094f6906b0d5f4d8a929e73d8281075b271273c79043",
+          "interval_seconds": 0.797378834,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "80685c7e24d0f02e3d1ef56d5e951eee819c60eccd28600621c646ff948c633a",
+          "rows": 8192,
+          "rows_per_second": 1263660.329363596,
+          "seconds_per_call": 0.00648275474796748,
+          "warm_seconds": 0.008161209
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "regression",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 527650,
+        "format": "python_pickle_telemetry",
+        "roundtrip_exact": null
+      },
+      "arm": "chimeraboost_0_18_single",
+      "block": 0,
+      "case_id": "general_friedman_numeric",
+      "fit_rss": {
+        "end_bytes": 327499776,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 327532544,
+        "peak_delta_bytes": 34947072,
+        "samples": 158,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 292585472
+      },
+      "fit_seconds": 3.465954834,
+      "implementation": {
+        "class": "ChimeraBoostRegressor",
+        "module_path": "/private/tmp/chimeraboost-v018-source-f14be60/chimeraboost/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.1,
+            "thread_count": 14,
+            "tree_count": 109
+          }
+        ],
+        "total_tree_count": 109
+      },
+      "position": 2,
+      "predictions": {
+        "2000000": {
+          "calls": 5,
+          "input_sha256": "edff12b7ed4bc7d32373f3f9b781c13dbe94ba0564435bf07f5fad513ce4a2f2",
+          "interval_seconds": 1.190646792,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "d8819dee3a8456292a401a0567800b5985ad26bb5bb89b63b12181e2b21b96be",
+          "rows": 2000000,
+          "rows_per_second": 8398796.40812907,
+          "seconds_per_call": 0.2381293584,
+          "warm_seconds": 0.241392541
+        },
+        "524288": {
+          "calls": 17,
+          "input_sha256": "df0fc8ac56a3a8b1db09d0e8b1af183cc70fd365b252123530a18a8a831cd634",
+          "interval_seconds": 1.139273166,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "8949fd896120233b3ce9a3dbee4f7cedeac79ed8933c2f91479aed6063041aaa",
+          "rows": 524288,
+          "rows_per_second": 7823317.766092281,
+          "seconds_per_call": 0.06701606858823529,
+          "warm_seconds": 0.062302042
+        },
+        "65536": {
+          "calls": 109,
+          "input_sha256": "104b218345ae7a1d669379cd9dd9cd024a62b2372c1fb0666c2e17bb2e10db14",
+          "interval_seconds": 1.047116791,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "b15f7b466f6eec9d0f0029c42b67f5e8582618bcf3c78ec9a644af59ec20abac",
+          "rows": 65536,
+          "rows_per_second": 6821993.555444761,
+          "seconds_per_call": 0.009606576064220185,
+          "warm_seconds": 0.009195209
+        },
+        "8192": {
+          "calls": 701,
+          "input_sha256": "da9094757aec9d9d1d9a094f6906b0d5f4d8a929e73d8281075b271273c79043",
+          "interval_seconds": 1.00839,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "c2a64ec093967d86f56ab5dd9ad98007b72e4c219a832b48e36effeafac10e93",
+          "rows": 8192,
+          "rows_per_second": 5694812.5229325965,
+          "seconds_per_call": 0.0014385021398002852,
+          "warm_seconds": 0.001427375
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "regression",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 762043,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_ensemble_v3",
+      "block": 0,
+      "case_id": "general_categorical_reg",
+      "fit_rss": {
+        "end_bytes": 324878336,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 324911104,
+        "peak_delta_bytes": 16596992,
+        "samples": 105,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 308314112
+      },
+      "fit_seconds": 2.070419834,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 8,
+        "members": [
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 136
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 125
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 164
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 110
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 124
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 101
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 138
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 120
+          }
+        ],
+        "total_tree_count": 1018
+      },
+      "position": 0,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "cfe652fa39fdceddf0ae96066b5db3e3e6ece3e709f876ec7eade2239eb5356a",
+          "interval_seconds": 7.041629334,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "d7706ee94bea6949ac7989c7abefc5508e0e9fea679dc53d1fd6da6c070c4fc5",
+          "rows": 2000000,
+          "rows_per_second": 568050.3488995492,
+          "seconds_per_call": 3.520814667,
+          "warm_seconds": 3.503982458
+        },
+        "524288": {
+          "calls": 2,
+          "input_sha256": "4b4a6c04baab1978771b9fcb0ccc1fab3ecc1088e73611d32349fb2841797044",
+          "interval_seconds": 1.886715708,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "9724690f67bff345f1871556dee805fd178fbb33f675581910d20f7bdcee6da8",
+          "rows": 524288,
+          "rows_per_second": 555767.8857253676,
+          "seconds_per_call": 0.943357854,
+          "warm_seconds": 0.948564916
+        },
+        "65536": {
+          "calls": 8,
+          "input_sha256": "db50a558d53d5986974646af628c5c2afc8b3cbeaec7102e4752b0c0106d97c4",
+          "interval_seconds": 0.999142583,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "c2d2e4d4a036ded997b77e947d3e14750f16b6c0e9a3917d8457500686f93063",
+          "rows": 65536,
+          "rows_per_second": 524737.9192124774,
+          "seconds_per_call": 0.124892822875,
+          "warm_seconds": 0.127198834
+        },
+        "8192": {
+          "calls": 46,
+          "input_sha256": "d300270f8c283e8b7b4da09bce1038382fe396d00317a2c14b4a3382248c3759",
+          "interval_seconds": 0.872773208,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "ccd355949f430ab1985a8be0f226b29cb91e262fdaede6844f1ae9b4e514ceca",
+          "rows": 8192,
+          "rows_per_second": 431763.94113142847,
+          "seconds_per_call": 0.018973330608695653,
+          "warm_seconds": 0.021928084
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "regression",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 491114,
+        "format": "python_pickle_telemetry",
+        "roundtrip_exact": null
+      },
+      "arm": "chimeraboost_0_18_single",
+      "block": 0,
+      "case_id": "general_categorical_reg",
+      "fit_rss": {
+        "end_bytes": 284295168,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 284295168,
+        "peak_delta_bytes": 12320768,
+        "samples": 93,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 271974400
+      },
+      "fit_seconds": 1.812516917,
+      "implementation": {
+        "class": "ChimeraBoostRegressor",
+        "module_path": "/private/tmp/chimeraboost-v018-source-f14be60/chimeraboost/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.1,
+            "thread_count": 14,
+            "tree_count": 139
+          }
+        ],
+        "total_tree_count": 139
+      },
+      "position": 1,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "cfe652fa39fdceddf0ae96066b5db3e3e6ece3e709f876ec7eade2239eb5356a",
+          "interval_seconds": 1.585718375,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "bee0b7cc55abca56c623a88fcb55b48417b24bf57951b23c0378ee443c2977e9",
+          "rows": 2000000,
+          "rows_per_second": 2522516.017385496,
+          "seconds_per_call": 0.7928591875,
+          "warm_seconds": 0.821403125
+        },
+        "524288": {
+          "calls": 5,
+          "input_sha256": "4b4a6c04baab1978771b9fcb0ccc1fab3ecc1088e73611d32349fb2841797044",
+          "interval_seconds": 1.09217875,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "4d47dd01c33ceabce88e54a1560f6cb017f366fbe68c9490d1648849e72a68f1",
+          "rows": 524288,
+          "rows_per_second": 2400193.1918195626,
+          "seconds_per_call": 0.21843574999999998,
+          "warm_seconds": 0.213509792
+        },
+        "65536": {
+          "calls": 35,
+          "input_sha256": "db50a558d53d5986974646af628c5c2afc8b3cbeaec7102e4752b0c0106d97c4",
+          "interval_seconds": 1.01375925,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "24c05d6fdbb381c0ecb4673734b7ddb89f948b8daf0c81b21eff8b013b691fb0",
+          "rows": 65536,
+          "rows_per_second": 2262627.936563834,
+          "seconds_per_call": 0.028964549999999995,
+          "warm_seconds": 0.029185166
+        },
+        "8192": {
+          "calls": 212,
+          "input_sha256": "d300270f8c283e8b7b4da09bce1038382fe396d00317a2c14b4a3382248c3759",
+          "interval_seconds": 0.9274525,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "a658915aea6fc6a83da1b084c2db9a71d10d3b2eca0c8559075e44cfcc497bbc",
+          "rows": 8192,
+          "rows_per_second": 1872553.0417999844,
+          "seconds_per_call": 0.004374775943396227,
+          "warm_seconds": 0.004739167
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "regression",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 78223,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_single",
+      "block": 0,
+      "case_id": "general_categorical_reg",
+      "fit_rss": {
+        "end_bytes": 300679168,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 300695552,
+        "peak_delta_bytes": 7143424,
+        "samples": 14,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 293552128
+      },
+      "fit_seconds": 0.241200667,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.139643,
+            "thread_count": 14,
+            "tree_count": 122
+          }
+        ],
+        "total_tree_count": 122
+      },
+      "position": 2,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "cfe652fa39fdceddf0ae96066b5db3e3e6ece3e709f876ec7eade2239eb5356a",
+          "interval_seconds": 1.197925459,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "9b6ca684d19cc239f60c92c75d0f7d601d5740d7cff3465228427ebc61e3d85a",
+          "rows": 2000000,
+          "rows_per_second": 3339105.9267903916,
+          "seconds_per_call": 0.5989627295,
+          "warm_seconds": 0.605174458
+        },
+        "524288": {
+          "calls": 7,
+          "input_sha256": "4b4a6c04baab1978771b9fcb0ccc1fab3ecc1088e73611d32349fb2841797044",
+          "interval_seconds": 1.119518958,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "1d5baadb5a091497d3beab139459de1f293e9267d551fc2624b081d5f21c26fc",
+          "rows": 524288,
+          "rows_per_second": 3278207.996188306,
+          "seconds_per_call": 0.15993127971428572,
+          "warm_seconds": 0.163445791
+        },
+        "65536": {
+          "calls": 47,
+          "input_sha256": "db50a558d53d5986974646af628c5c2afc8b3cbeaec7102e4752b0c0106d97c4",
+          "interval_seconds": 0.985174125,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "b0dcb66c9bbbc910d1081098497ffb63b9a2c419278c2e2912a877eca55794ba",
+          "rows": 65536,
+          "rows_per_second": 3126545.776869647,
+          "seconds_per_call": 0.02096115159574468,
+          "warm_seconds": 0.021336792
+        },
+        "8192": {
+          "calls": 184,
+          "input_sha256": "d300270f8c283e8b7b4da09bce1038382fe396d00317a2c14b4a3382248c3759",
+          "interval_seconds": 0.555366041,
+          "method": "predict",
+          "minimum_interval_met": false,
+          "prediction_sha256": "14a59162fd39a1436b10116c4ff159b7d9f4a39c746ffc3720b008a968604b9f",
+          "rows": 8192,
+          "rows_per_second": 2714116.2561648237,
+          "seconds_per_call": 0.0030182937010869563,
+          "warm_seconds": 0.005463542
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "regression",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 1576527,
+        "format": "python_pickle_telemetry",
+        "roundtrip_exact": null
+      },
+      "arm": "chimeraboost_0_18_single",
+      "block": 0,
+      "case_id": "general_numeric_binary",
+      "fit_rss": {
+        "end_bytes": 301170688,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 301170688,
+        "peak_delta_bytes": 14073856,
+        "samples": 109,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 287096832
+      },
+      "fit_seconds": 2.138290083,
+      "implementation": {
+        "class": "ChimeraBoostClassifier",
+        "module_path": "/private/tmp/chimeraboost-v018-source-f14be60/chimeraboost/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.1,
+            "thread_count": 14,
+            "tree_count": 279
+          }
+        ],
+        "total_tree_count": 279
+      },
+      "position": 0,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "a8a8d74857d57846e64e215ad6d22722884e813f732ba3ab4fc1b1f539e6cf23",
+          "interval_seconds": 3.132536042,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "ece75baa3942752e0e92548266290dff807471bcacb6e259343db0620f8bf486",
+          "rows": 2000000,
+          "rows_per_second": 1276920.6631206577,
+          "seconds_per_call": 1.566268021,
+          "warm_seconds": 1.685661292
+        },
+        "524288": {
+          "calls": 3,
+          "input_sha256": "0a1f5d2fdb5f1a7f7f6968d2a30d409d5d9843fcc95ec37a67e2abeb65bffe07",
+          "interval_seconds": 1.249213959,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "28e72663632df998a465650da0fe105b03c1873f9286f4ea3d1bd02871d2d975",
+          "rows": 524288,
+          "rows_per_second": 1259082.9526585527,
+          "seconds_per_call": 0.416404653,
+          "warm_seconds": 0.4119385
+        },
+        "65536": {
+          "calls": 28,
+          "input_sha256": "4ee349e53258816345f94a14f527cec602fb3104849271d3c10bb2f1a13524e9",
+          "interval_seconds": 1.1075945,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "5a0efbb89fe7a2cc29a19f294ee0127836f7939d99528d2b2b450ff60a8db90c",
+          "rows": 65536,
+          "rows_per_second": 1656750.7332331461,
+          "seconds_per_call": 0.03955694642857143,
+          "warm_seconds": 0.036790166
+        },
+        "8192": {
+          "calls": 203,
+          "input_sha256": "49134c6e85920f762f0bc45aedd66f3adc4d9450024166b07f72a583de1ea9bc",
+          "interval_seconds": 1.103538833,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "2fe88af28d100b50c184109eafdca7d3d90834201d2257d1c578f2e3740cfed5",
+          "rows": 8192,
+          "rows_per_second": 1506948.3286593142,
+          "seconds_per_call": 0.005436151886699507,
+          "warm_seconds": 0.004934792
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "binary",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 295436,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_single",
+      "block": 0,
+      "case_id": "general_numeric_binary",
+      "fit_rss": {
+        "end_bytes": 329203712,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 329236480,
+        "peak_delta_bytes": 10993664,
+        "samples": 82,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 318242816
+      },
+      "fit_seconds": 1.650242875,
+      "implementation": {
+        "class": "DarkoClassifier",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.064466,
+            "thread_count": 14,
+            "tree_count": 599
+          }
+        ],
+        "total_tree_count": 599
+      },
+      "position": 1,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "a8a8d74857d57846e64e215ad6d22722884e813f732ba3ab4fc1b1f539e6cf23",
+          "interval_seconds": 1.175026833,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "b6a65993a692a6750b72575aa79807c61487e872fef37a0d34ed26df6002d4d7",
+          "rows": 2000000,
+          "rows_per_second": 3404177.579321714,
+          "seconds_per_call": 0.5875134165,
+          "warm_seconds": 0.581019042
+        },
+        "524288": {
+          "calls": 7,
+          "input_sha256": "0a1f5d2fdb5f1a7f7f6968d2a30d409d5d9843fcc95ec37a67e2abeb65bffe07",
+          "interval_seconds": 1.084421833,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "cba9b90ea256ef2c63662a1d0046f8bc94bc6bf1342213588a21883ee7f297e0",
+          "rows": 524288,
+          "rows_per_second": 3384306.630794292,
+          "seconds_per_call": 0.1549174047142857,
+          "warm_seconds": 0.153537375
+        },
+        "65536": {
+          "calls": 47,
+          "input_sha256": "4ee349e53258816345f94a14f527cec602fb3104849271d3c10bb2f1a13524e9",
+          "interval_seconds": 1.045462459,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "a8d255d40455c831fb1739314878aded471f5c19d3f86632fedd67b5af2c2762",
+          "rows": 65536,
+          "rows_per_second": 2946248.3071331405,
+          "seconds_per_call": 0.022243882106382975,
+          "warm_seconds": 0.021463333
+        },
+        "8192": {
+          "calls": 191,
+          "input_sha256": "49134c6e85920f762f0bc45aedd66f3adc4d9450024166b07f72a583de1ea9bc",
+          "interval_seconds": 0.591490167,
+          "method": "predict",
+          "minimum_interval_met": false,
+          "prediction_sha256": "ead42d76e16c24c60c8678139b34364aa1bdd7663395686de1edc23805ab787e",
+          "rows": 8192,
+          "rows_per_second": 2645305.1754620294,
+          "seconds_per_call": 0.003096807157068063,
+          "warm_seconds": 0.005254459
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "binary",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 1782801,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_ensemble_v3",
+      "block": 0,
+      "case_id": "general_numeric_binary",
+      "fit_rss": {
+        "end_bytes": 399622144,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 399654912,
+        "peak_delta_bytes": 51118080,
+        "samples": 391,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 348536832
+      },
+      "fit_seconds": 8.108276625,
+      "implementation": {
+        "class": "DarkoClassifier",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 8,
+        "members": [
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 532
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 318
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 354
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 329
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 273
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 314
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 327
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 314
+          }
+        ],
+        "total_tree_count": 2761
+      },
+      "position": 2,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "a8a8d74857d57846e64e215ad6d22722884e813f732ba3ab4fc1b1f539e6cf23",
+          "interval_seconds": 5.521914542,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "da6789b6c7baa034a2d7550aaaf6fc5239774b5b8d44a6205b19a7b2ae4798fd",
+          "rows": 2000000,
+          "rows_per_second": 724386.436909838,
+          "seconds_per_call": 2.760957271,
+          "warm_seconds": 2.707177291
+        },
+        "524288": {
+          "calls": 2,
+          "input_sha256": "0a1f5d2fdb5f1a7f7f6968d2a30d409d5d9843fcc95ec37a67e2abeb65bffe07",
+          "interval_seconds": 1.491578917,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "5fb48ba931faa6ebc630dc87d586b59c8ae964bc370dcdb77c0bc19d8fc0bbe5",
+          "rows": 524288,
+          "rows_per_second": 702997.3325910184,
+          "seconds_per_call": 0.7457894585,
+          "warm_seconds": 0.749072083
+        },
+        "65536": {
+          "calls": 10,
+          "input_sha256": "4ee349e53258816345f94a14f527cec602fb3104849271d3c10bb2f1a13524e9",
+          "interval_seconds": 1.078338375,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "20b6c8057af90754f53c92083573f0ff8daebf6f18546e580da1183889cd21ad",
+          "rows": 65536,
+          "rows_per_second": 607749.8633024166,
+          "seconds_per_call": 0.1078338375,
+          "warm_seconds": 0.1070325
+        },
+        "8192": {
+          "calls": 57,
+          "input_sha256": "49134c6e85920f762f0bc45aedd66f3adc4d9450024166b07f72a583de1ea9bc",
+          "interval_seconds": 0.917919125,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "020f65b565b63c676e0bcafa1434168f974f8f24e4737a9f5b80c1e0ed94a49f",
+          "rows": 8192,
+          "rows_per_second": 508698.4106579107,
+          "seconds_per_call": 0.016103844298245615,
+          "warm_seconds": 0.017621375
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "binary",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 135778,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_single",
+      "block": 0,
+      "case_id": "general_categorical_multiclass",
+      "fit_rss": {
+        "end_bytes": 329236480,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 329252864,
+        "peak_delta_bytes": 6930432,
+        "samples": 59,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 322322432
+      },
+      "fit_seconds": 1.199984167,
+      "implementation": {
+        "class": "DarkoClassifier",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.136169,
+            "thread_count": 14,
+            "tree_count": 105
+          }
+        ],
+        "total_tree_count": 105
+      },
+      "position": 0,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "e549c6fd2beef64693a9ac61ec1d84bb28d2d211493289ddf8f97a8d46de026b",
+          "interval_seconds": 1.608110334,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "02cadb149b3e5cbe4c80b7e51b3557bbb06098b60f56af14644c403b372e356d",
+          "rows": 2000000,
+          "rows_per_second": 2487391.5150152873,
+          "seconds_per_call": 0.804055167,
+          "warm_seconds": 0.8275235
+        },
+        "524288": {
+          "calls": 5,
+          "input_sha256": "8275948be1bf87ae1bc056811534b7356909fb7efec0ccb879948fec6c17bbf0",
+          "interval_seconds": 1.077568042,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "7a15a4912e557b621afd36dd0a5a731cb4914ffa9208a7939ba3964d14d0565f",
+          "rows": 524288,
+          "rows_per_second": 2432737.328711536,
+          "seconds_per_call": 0.2155136084,
+          "warm_seconds": 0.211719208
+        },
+        "65536": {
+          "calls": 34,
+          "input_sha256": "ec7a8a768d38a8f677488393c231092e82bfde9432f0cb029ca31d10dfee98ae",
+          "interval_seconds": 0.961607792,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "07069cf23f606ff0656a75d0dc18bcf4938c7e9e028c31d0d53f5acf23974c20",
+          "rows": 65536,
+          "rows_per_second": 2317185.882370637,
+          "seconds_per_call": 0.02828258211764706,
+          "warm_seconds": 0.029671417
+        },
+        "8192": {
+          "calls": 223,
+          "input_sha256": "29e91d2a4f05179b52f0eaedfac7e919320acc493b830fba09c50483270a7894",
+          "interval_seconds": 0.933003958,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "96080489eae459499d3c5f127ea51b91a9a3be9348ce016c251051cc9734c3e2",
+          "rows": 8192,
+          "rows_per_second": 1957993.837363764,
+          "seconds_per_call": 0.004183874251121076,
+          "warm_seconds": 0.004485209
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "multiclass",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 1022064,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_ensemble_v3",
+      "block": 0,
+      "case_id": "general_categorical_multiclass",
+      "fit_rss": {
+        "end_bytes": 327958528,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 327974912,
+        "peak_delta_bytes": 22151168,
+        "samples": 237,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 305823744
+      },
+      "fit_seconds": 4.861400792,
+      "implementation": {
+        "class": "DarkoClassifier",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 8,
+        "members": [
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 96
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 53
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 87
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 75
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 83
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 83
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 96
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 64
+          }
+        ],
+        "total_tree_count": 637
+      },
+      "position": 1,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "e549c6fd2beef64693a9ac61ec1d84bb28d2d211493289ddf8f97a8d46de026b",
+          "interval_seconds": 9.572209458,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "068b0731174b09d1b8866686b12a66e660d4b1b36b7b564cd70538bc3c05e621",
+          "rows": 2000000,
+          "rows_per_second": 417876.3552501444,
+          "seconds_per_call": 4.786104729,
+          "warm_seconds": 5.10050525
+        },
+        "524288": {
+          "calls": 2,
+          "input_sha256": "8275948be1bf87ae1bc056811534b7356909fb7efec0ccb879948fec6c17bbf0",
+          "interval_seconds": 2.619374083,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "573f1463bc43abc35b50a9d06a32ecdafed9da4fafe6a500b5abeb031192976e",
+          "rows": 524288,
+          "rows_per_second": 400315.4825442319,
+          "seconds_per_call": 1.3096870415,
+          "warm_seconds": 1.30919175
+        },
+        "65536": {
+          "calls": 6,
+          "input_sha256": "ec7a8a768d38a8f677488393c231092e82bfde9432f0cb029ca31d10dfee98ae",
+          "interval_seconds": 1.019442417,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "5f1df5f4f204ee59b4259b06308ee7768e72de70670c4b0904280054fc30cf45",
+          "rows": 65536,
+          "rows_per_second": 385716.7344058041,
+          "seconds_per_call": 0.1699070695,
+          "warm_seconds": 0.169636041
+        },
+        "8192": {
+          "calls": 36,
+          "input_sha256": "29e91d2a4f05179b52f0eaedfac7e919320acc493b830fba09c50483270a7894",
+          "interval_seconds": 0.952356375,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "8c2ee3a7dfe424365c2a5018493ff9d94bf50202f0864407b557920d20884fb6",
+          "rows": 8192,
+          "rows_per_second": 309665.5913076657,
+          "seconds_per_call": 0.02645434375,
+          "warm_seconds": 0.027835333
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "multiclass",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 267303,
+        "format": "python_pickle_telemetry",
+        "roundtrip_exact": null
+      },
+      "arm": "chimeraboost_0_18_single",
+      "block": 0,
+      "case_id": "general_categorical_multiclass",
+      "fit_rss": {
+        "end_bytes": 286851072,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 286883840,
+        "peak_delta_bytes": 19021824,
+        "samples": 89,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 267862016
+      },
+      "fit_seconds": 1.769969125,
+      "implementation": {
+        "class": "ChimeraBoostClassifier",
+        "module_path": "/private/tmp/chimeraboost-v018-source-f14be60/chimeraboost/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.1,
+            "thread_count": 14,
+            "tree_count": 48
+          }
+        ],
+        "total_tree_count": 48
+      },
+      "position": 2,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "e549c6fd2beef64693a9ac61ec1d84bb28d2d211493289ddf8f97a8d46de026b",
+          "interval_seconds": 5.196485208,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "37e2a96bd0c7516532a5210c1cbb900d7b7e30f14273687d9b89ed18909742db",
+          "rows": 2000000,
+          "rows_per_second": 769751.0605518498,
+          "seconds_per_call": 2.598242604,
+          "warm_seconds": 2.67464125
+        },
+        "524288": {
+          "calls": 2,
+          "input_sha256": "8275948be1bf87ae1bc056811534b7356909fb7efec0ccb879948fec6c17bbf0",
+          "interval_seconds": 1.369063875,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "a50ffb0b395cfde82090028c16b3f93b7b8352bcc4d241743d2663c3a242e80e",
+          "rows": 524288,
+          "rows_per_second": 765907.2882921551,
+          "seconds_per_call": 0.6845319375,
+          "warm_seconds": 0.691026125
+        },
+        "65536": {
+          "calls": 13,
+          "input_sha256": "ec7a8a768d38a8f677488393c231092e82bfde9432f0cb029ca31d10dfee98ae",
+          "interval_seconds": 1.013992583,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "5f155b55ac75a26ba4665e6346b65d557d9fa3959f6e1adb77c7c8948b82f6be",
+          "rows": 65536,
+          "rows_per_second": 840211.2740108671,
+          "seconds_per_call": 0.07799942946153847,
+          "warm_seconds": 0.077123625
+        },
+        "8192": {
+          "calls": 96,
+          "input_sha256": "29e91d2a4f05179b52f0eaedfac7e919320acc493b830fba09c50483270a7894",
+          "interval_seconds": 1.049337542,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "7789d3467d1c94887adf29543ace16c9315de5c867bf7889ce3e355a636d65e1",
+          "rows": 8192,
+          "rows_per_second": 749455.6980217143,
+          "seconds_per_call": 0.010930599395833332,
+          "warm_seconds": 0.010524084
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "multiclass",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 899628,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_ensemble_v3",
+      "block": 1,
+      "case_id": "general_friedman_numeric",
+      "fit_rss": {
+        "end_bytes": 341737472,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 341770240,
+        "peak_delta_bytes": 34406400,
+        "samples": 99,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 307363840
+      },
+      "fit_seconds": 1.972261791,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 8,
+        "members": [
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 117
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 113
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 107
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 148
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 74
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 114
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 129
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 150
+          }
+        ],
+        "total_tree_count": 952
+      },
+      "position": 0,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "edff12b7ed4bc7d32373f3f9b781c13dbe94ba0564435bf07f5fad513ce4a2f2",
+          "interval_seconds": 1.9064415,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "11f0eb07a82603888720e1ba6ce0e8044d007db0f641e6786fb616693200c320",
+          "rows": 2000000,
+          "rows_per_second": 2098149.8776647486,
+          "seconds_per_call": 0.95322075,
+          "warm_seconds": 0.918759667
+        },
+        "524288": {
+          "calls": 4,
+          "input_sha256": "df0fc8ac56a3a8b1db09d0e8b1af183cc70fd365b252123530a18a8a831cd634",
+          "interval_seconds": 1.049884,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "7162213456e98de930262f964777abdc85a37df8342cc57e7e9da07f62b42a71",
+          "rows": 524288,
+          "rows_per_second": 1997508.2961546227,
+          "seconds_per_call": 0.262471,
+          "warm_seconds": 0.259090292
+        },
+        "65536": {
+          "calls": 27,
+          "input_sha256": "104b218345ae7a1d669379cd9dd9cd024a62b2372c1fb0666c2e17bb2e10db14",
+          "interval_seconds": 1.005638333,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "59557a7d600af162f935aaf4f53184ed5e6c05956a8800f4a8d4f5b55b73f345",
+          "rows": 65536,
+          "rows_per_second": 1759551.0651641,
+          "seconds_per_call": 0.03724586418518519,
+          "warm_seconds": 0.0374395
+        },
+        "8192": {
+          "calls": 121,
+          "input_sha256": "da9094757aec9d9d1d9a094f6906b0d5f4d8a929e73d8281075b271273c79043",
+          "interval_seconds": 0.785456917,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "80685c7e24d0f02e3d1ef56d5e951eee819c60eccd28600621c646ff948c633a",
+          "rows": 8192,
+          "rows_per_second": 1261981.3748485965,
+          "seconds_per_call": 0.006491379479338843,
+          "warm_seconds": 0.008305333
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "regression",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 528366,
+        "format": "python_pickle_telemetry",
+        "roundtrip_exact": null
+      },
+      "arm": "chimeraboost_0_18_single",
+      "block": 1,
+      "case_id": "general_friedman_numeric",
+      "fit_rss": {
+        "end_bytes": 271745024,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 271777792,
+        "peak_delta_bytes": 16187392,
+        "samples": 91,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 255590400
+      },
+      "fit_seconds": 1.816050417,
+      "implementation": {
+        "class": "ChimeraBoostRegressor",
+        "module_path": "/private/tmp/chimeraboost-v018-source-f14be60/chimeraboost/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.1,
+            "thread_count": 14,
+            "tree_count": 109
+          }
+        ],
+        "total_tree_count": 109
+      },
+      "position": 1,
+      "predictions": {
+        "2000000": {
+          "calls": 5,
+          "input_sha256": "edff12b7ed4bc7d32373f3f9b781c13dbe94ba0564435bf07f5fad513ce4a2f2",
+          "interval_seconds": 1.192645542,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "d8819dee3a8456292a401a0567800b5985ad26bb5bb89b63b12181e2b21b96be",
+          "rows": 2000000,
+          "rows_per_second": 8384720.898072162,
+          "seconds_per_call": 0.2385291084,
+          "warm_seconds": 0.242926333
+        },
+        "524288": {
+          "calls": 16,
+          "input_sha256": "df0fc8ac56a3a8b1db09d0e8b1af183cc70fd365b252123530a18a8a831cd634",
+          "interval_seconds": 1.09725375,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "8949fd896120233b3ce9a3dbee4f7cedeac79ed8933c2f91479aed6063041aaa",
+          "rows": 524288,
+          "rows_per_second": 7645093.944768929,
+          "seconds_per_call": 0.068578359375,
+          "warm_seconds": 0.063475709
+        },
+        "65536": {
+          "calls": 105,
+          "input_sha256": "104b218345ae7a1d669379cd9dd9cd024a62b2372c1fb0666c2e17bb2e10db14",
+          "interval_seconds": 1.01159725,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "b15f7b466f6eec9d0f0029c42b67f5e8582618bcf3c78ec9a644af59ec20abac",
+          "rows": 65536,
+          "rows_per_second": 6802390.971307999,
+          "seconds_per_call": 0.009634259523809523,
+          "warm_seconds": 0.009592042
+        },
+        "8192": {
+          "calls": 660,
+          "input_sha256": "da9094757aec9d9d1d9a094f6906b0d5f4d8a929e73d8281075b271273c79043",
+          "interval_seconds": 0.948365125,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "c2a64ec093967d86f56ab5dd9ad98007b72e4c219a832b48e36effeafac10e93",
+          "rows": 8192,
+          "rows_per_second": 5701095.345529498,
+          "seconds_per_call": 0.0014369168560606062,
+          "warm_seconds": 0.001516792
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "regression",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 91338,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_single",
+      "block": 1,
+      "case_id": "general_friedman_numeric",
+      "fit_rss": {
+        "end_bytes": 304758784,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 304791552,
+        "peak_delta_bytes": 8241152,
+        "samples": 13,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 296550400
+      },
+      "fit_seconds": 0.237983584,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.139735,
+            "thread_count": 14,
+            "tree_count": 105
+          }
+        ],
+        "total_tree_count": 105
+      },
+      "position": 2,
+      "predictions": {
+        "2000000": {
+          "calls": 9,
+          "input_sha256": "edff12b7ed4bc7d32373f3f9b781c13dbe94ba0564435bf07f5fad513ce4a2f2",
+          "interval_seconds": 1.037519708,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "b25ac66581ddde31cca1dad770893b0890f645273a3c9d4fa378e08bc4c21e6e",
+          "rows": 2000000,
+          "rows_per_second": 17349068.033317782,
+          "seconds_per_call": 0.11527996755555556,
+          "warm_seconds": 0.12125825
+        },
+        "524288": {
+          "calls": 33,
+          "input_sha256": "df0fc8ac56a3a8b1db09d0e8b1af183cc70fd365b252123530a18a8a831cd634",
+          "interval_seconds": 1.105218375,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "a54755c9957bab3df4b02119ef7f48daa90eaf197107c31ad0369aa43e47c7b5",
+          "rows": 524288,
+          "rows_per_second": 15654375.996055983,
+          "seconds_per_call": 0.03349146590909091,
+          "warm_seconds": 0.031193916
+        },
+        "65536": {
+          "calls": 215,
+          "input_sha256": "104b218345ae7a1d669379cd9dd9cd024a62b2372c1fb0666c2e17bb2e10db14",
+          "interval_seconds": 0.957115084,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "d5b87816f295bf86a19253305f3b81d1df06f94c5307f47ad4e87381119602a1",
+          "rows": 65536,
+          "rows_per_second": 14721573.440378461,
+          "seconds_per_call": 0.004451698065116279,
+          "warm_seconds": 0.00465825
+        },
+        "8192": {
+          "calls": 463,
+          "input_sha256": "da9094757aec9d9d1d9a094f6906b0d5f4d8a929e73d8281075b271273c79043",
+          "interval_seconds": 0.366543292,
+          "method": "predict",
+          "minimum_interval_met": false,
+          "prediction_sha256": "c9d1e9f333ec8d19101153a6a8a931ff0050aded46f3eb0d3ac815c4151176ca",
+          "rows": 8192,
+          "rows_per_second": 10347743.589316592,
+          "seconds_per_call": 0.0007916701771058316,
+          "warm_seconds": 0.002160833
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "regression",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 491151,
+        "format": "python_pickle_telemetry",
+        "roundtrip_exact": null
+      },
+      "arm": "chimeraboost_0_18_single",
+      "block": 1,
+      "case_id": "general_categorical_reg",
+      "fit_rss": {
+        "end_bytes": 277053440,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 277086208,
+        "peak_delta_bytes": 14761984,
+        "samples": 91,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 262324224
+      },
+      "fit_seconds": 1.824052084,
+      "implementation": {
+        "class": "ChimeraBoostRegressor",
+        "module_path": "/private/tmp/chimeraboost-v018-source-f14be60/chimeraboost/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.1,
+            "thread_count": 14,
+            "tree_count": 139
+          }
+        ],
+        "total_tree_count": 139
+      },
+      "position": 0,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "cfe652fa39fdceddf0ae96066b5db3e3e6ece3e709f876ec7eade2239eb5356a",
+          "interval_seconds": 1.592706167,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "bee0b7cc55abca56c623a88fcb55b48417b24bf57951b23c0378ee443c2977e9",
+          "rows": 2000000,
+          "rows_per_second": 2511448.805107816,
+          "seconds_per_call": 0.7963530835,
+          "warm_seconds": 0.797322167
+        },
+        "524288": {
+          "calls": 5,
+          "input_sha256": "4b4a6c04baab1978771b9fcb0ccc1fab3ecc1088e73611d32349fb2841797044",
+          "interval_seconds": 1.079853709,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "4d47dd01c33ceabce88e54a1560f6cb017f366fbe68c9490d1648849e72a68f1",
+          "rows": 524288,
+          "rows_per_second": 2427588.0873045186,
+          "seconds_per_call": 0.2159707418,
+          "warm_seconds": 0.21278525
+        },
+        "65536": {
+          "calls": 35,
+          "input_sha256": "db50a558d53d5986974646af628c5c2afc8b3cbeaec7102e4752b0c0106d97c4",
+          "interval_seconds": 1.007980708,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "24c05d6fdbb381c0ecb4673734b7ddb89f948b8daf0c81b21eff8b013b691fb0",
+          "rows": 65536,
+          "rows_per_second": 2275599.107994039,
+          "seconds_per_call": 0.028799448800000002,
+          "warm_seconds": 0.029259958
+        },
+        "8192": {
+          "calls": 211,
+          "input_sha256": "d300270f8c283e8b7b4da09bce1038382fe396d00317a2c14b4a3382248c3759",
+          "interval_seconds": 0.911065125,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "a658915aea6fc6a83da1b084c2db9a71d10d3b2eca0c8559075e44cfcc497bbc",
+          "rows": 8192,
+          "rows_per_second": 1897243.075789999,
+          "seconds_per_call": 0.004317844194312796,
+          "warm_seconds": 0.004747584
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "regression",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 78223,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_single",
+      "block": 1,
+      "case_id": "general_categorical_reg",
+      "fit_rss": {
+        "end_bytes": 289701888,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 289718272,
+        "peak_delta_bytes": 4521984,
+        "samples": 14,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 285196288
+      },
+      "fit_seconds": 0.245697292,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.139643,
+            "thread_count": 14,
+            "tree_count": 122
+          }
+        ],
+        "total_tree_count": 122
+      },
+      "position": 1,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "cfe652fa39fdceddf0ae96066b5db3e3e6ece3e709f876ec7eade2239eb5356a",
+          "interval_seconds": 1.182329,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "9b6ca684d19cc239f60c92c75d0f7d601d5740d7cff3465228427ebc61e3d85a",
+          "rows": 2000000,
+          "rows_per_second": 3383153.0817564316,
+          "seconds_per_call": 0.5911645,
+          "warm_seconds": 0.59476525
+        },
+        "524288": {
+          "calls": 7,
+          "input_sha256": "4b4a6c04baab1978771b9fcb0ccc1fab3ecc1088e73611d32349fb2841797044",
+          "interval_seconds": 1.114385875,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "1d5baadb5a091497d3beab139459de1f293e9267d551fc2624b081d5f21c26fc",
+          "rows": 524288,
+          "rows_per_second": 3293308.0742790285,
+          "seconds_per_call": 0.15919798214285713,
+          "warm_seconds": 0.160542458
+        },
+        "65536": {
+          "calls": 48,
+          "input_sha256": "db50a558d53d5986974646af628c5c2afc8b3cbeaec7102e4752b0c0106d97c4",
+          "interval_seconds": 1.009568708,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "b0dcb66c9bbbc910d1081098497ffb63b9a2c419278c2e2912a877eca55794ba",
+          "rows": 65536,
+          "rows_per_second": 3115912.7408295227,
+          "seconds_per_call": 0.021032681416666667,
+          "warm_seconds": 0.020996167
+        },
+        "8192": {
+          "calls": 209,
+          "input_sha256": "d300270f8c283e8b7b4da09bce1038382fe396d00317a2c14b4a3382248c3759",
+          "interval_seconds": 0.630347792,
+          "method": "predict",
+          "minimum_interval_met": false,
+          "prediction_sha256": "14a59162fd39a1436b10116c4ff159b7d9f4a39c746ffc3720b008a968604b9f",
+          "rows": 8192,
+          "rows_per_second": 2716164.0315541867,
+          "seconds_per_call": 0.00301601814354067,
+          "warm_seconds": 0.004786084
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "regression",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 762043,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_ensemble_v3",
+      "block": 1,
+      "case_id": "general_categorical_reg",
+      "fit_rss": {
+        "end_bytes": 317964288,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 317980672,
+        "peak_delta_bytes": 12779520,
+        "samples": 105,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 305201152
+      },
+      "fit_seconds": 2.08694325,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 8,
+        "members": [
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 136
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 125
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 164
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 110
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 124
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 101
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 138
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 120
+          }
+        ],
+        "total_tree_count": 1018
+      },
+      "position": 2,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "cfe652fa39fdceddf0ae96066b5db3e3e6ece3e709f876ec7eade2239eb5356a",
+          "interval_seconds": 7.086228333,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "d7706ee94bea6949ac7989c7abefc5508e0e9fea679dc53d1fd6da6c070c4fc5",
+          "rows": 2000000,
+          "rows_per_second": 564475.1780537919,
+          "seconds_per_call": 3.5431141665,
+          "warm_seconds": 3.471462542
+        },
+        "524288": {
+          "calls": 2,
+          "input_sha256": "4b4a6c04baab1978771b9fcb0ccc1fab3ecc1088e73611d32349fb2841797044",
+          "interval_seconds": 1.908835166,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "9724690f67bff345f1871556dee805fd178fbb33f675581910d20f7bdcee6da8",
+          "rows": 524288,
+          "rows_per_second": 549327.6835408008,
+          "seconds_per_call": 0.954417583,
+          "warm_seconds": 0.937473125
+        },
+        "65536": {
+          "calls": 9,
+          "input_sha256": "db50a558d53d5986974646af628c5c2afc8b3cbeaec7102e4752b0c0106d97c4",
+          "interval_seconds": 1.208800792,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "c2d2e4d4a036ded997b77e947d3e14750f16b6c0e9a3917d8457500686f93063",
+          "rows": 65536,
+          "rows_per_second": 487941.4407266537,
+          "seconds_per_call": 0.1343111991111111,
+          "warm_seconds": 0.12280875
+        },
+        "8192": {
+          "calls": 50,
+          "input_sha256": "d300270f8c283e8b7b4da09bce1038382fe396d00317a2c14b4a3382248c3759",
+          "interval_seconds": 0.941261125,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "ccd355949f430ab1985a8be0f226b29cb91e262fdaede6844f1ae9b4e514ceca",
+          "rows": 8192,
+          "rows_per_second": 435160.85932052066,
+          "seconds_per_call": 0.018825222500000002,
+          "warm_seconds": 0.020393375
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "regression",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 295436,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_single",
+      "block": 1,
+      "case_id": "general_numeric_binary",
+      "fit_rss": {
+        "end_bytes": 314589184,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 314621952,
+        "peak_delta_bytes": 14385152,
+        "samples": 70,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 300236800
+      },
+      "fit_seconds": 1.535210542,
+      "implementation": {
+        "class": "DarkoClassifier",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.064466,
+            "thread_count": 14,
+            "tree_count": 599
+          }
+        ],
+        "total_tree_count": 599
+      },
+      "position": 0,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "a8a8d74857d57846e64e215ad6d22722884e813f732ba3ab4fc1b1f539e6cf23",
+          "interval_seconds": 1.229370625,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "b6a65993a692a6750b72575aa79807c61487e872fef37a0d34ed26df6002d4d7",
+          "rows": 2000000,
+          "rows_per_second": 3253697.394957684,
+          "seconds_per_call": 0.6146853125,
+          "warm_seconds": 0.626629041
+        },
+        "524288": {
+          "calls": 6,
+          "input_sha256": "0a1f5d2fdb5f1a7f7f6968d2a30d409d5d9843fcc95ec37a67e2abeb65bffe07",
+          "interval_seconds": 1.006119916,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "cba9b90ea256ef2c63662a1d0046f8bc94bc6bf1342213588a21883ee7f297e0",
+          "rows": 524288,
+          "rows_per_second": 3126593.5103505095,
+          "seconds_per_call": 0.16768665266666669,
+          "warm_seconds": 0.167188291
+        },
+        "65536": {
+          "calls": 38,
+          "input_sha256": "4ee349e53258816345f94a14f527cec602fb3104849271d3c10bb2f1a13524e9",
+          "interval_seconds": 0.980768291,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "a8d255d40455c831fb1739314878aded471f5c19d3f86632fedd67b5af2c2762",
+          "rows": 65536,
+          "rows_per_second": 2539201.1781506506,
+          "seconds_per_call": 0.025809691868421053,
+          "warm_seconds": 0.026518584
+        },
+        "8192": {
+          "calls": 203,
+          "input_sha256": "49134c6e85920f762f0bc45aedd66f3adc4d9450024166b07f72a583de1ea9bc",
+          "interval_seconds": 0.699299125,
+          "method": "predict",
+          "minimum_interval_met": false,
+          "prediction_sha256": "ead42d76e16c24c60c8678139b34364aa1bdd7663395686de1edc23805ab787e",
+          "rows": 8192,
+          "rows_per_second": 2378061.033609902,
+          "seconds_per_call": 0.003444823275862069,
+          "warm_seconds": 0.004949208
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "binary",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 1782801,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_ensemble_v3",
+      "block": 1,
+      "case_id": "general_numeric_binary",
+      "fit_rss": {
+        "end_bytes": 424476672,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 424509440,
+        "peak_delta_bytes": 67600384,
+        "samples": 337,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 356909056
+      },
+      "fit_seconds": 7.548383792,
+      "implementation": {
+        "class": "DarkoClassifier",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 8,
+        "members": [
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 532
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 318
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 354
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 329
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 273
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 314
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 327
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 314
+          }
+        ],
+        "total_tree_count": 2761
+      },
+      "position": 1,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "a8a8d74857d57846e64e215ad6d22722884e813f732ba3ab4fc1b1f539e6cf23",
+          "interval_seconds": 5.680882167,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "da6789b6c7baa034a2d7550aaaf6fc5239774b5b8d44a6205b19a7b2ae4798fd",
+          "rows": 2000000,
+          "rows_per_second": 704115.9950889015,
+          "seconds_per_call": 2.8404410835,
+          "warm_seconds": 2.88868825
+        },
+        "524288": {
+          "calls": 2,
+          "input_sha256": "0a1f5d2fdb5f1a7f7f6968d2a30d409d5d9843fcc95ec37a67e2abeb65bffe07",
+          "interval_seconds": 1.556823959,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "5fb48ba931faa6ebc630dc87d586b59c8ae964bc370dcdb77c0bc19d8fc0bbe5",
+          "rows": 524288,
+          "rows_per_second": 673535.3691971283,
+          "seconds_per_call": 0.7784119795,
+          "warm_seconds": 0.780201625
+        },
+        "65536": {
+          "calls": 10,
+          "input_sha256": "4ee349e53258816345f94a14f527cec602fb3104849271d3c10bb2f1a13524e9",
+          "interval_seconds": 1.116082708,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "20b6c8057af90754f53c92083573f0ff8daebf6f18546e580da1183889cd21ad",
+          "rows": 65536,
+          "rows_per_second": 587196.6255748136,
+          "seconds_per_call": 0.11160827079999999,
+          "warm_seconds": 0.110538
+        },
+        "8192": {
+          "calls": 53,
+          "input_sha256": "49134c6e85920f762f0bc45aedd66f3adc4d9450024166b07f72a583de1ea9bc",
+          "interval_seconds": 0.871723375,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "020f65b565b63c676e0bcafa1434168f974f8f24e4737a9f5b80c1e0ed94a49f",
+          "rows": 8192,
+          "rows_per_second": 498066.25869129645,
+          "seconds_per_call": 0.016447610849056604,
+          "warm_seconds": 0.018924292
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "binary",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 1576527,
+        "format": "python_pickle_telemetry",
+        "roundtrip_exact": null
+      },
+      "arm": "chimeraboost_0_18_single",
+      "block": 1,
+      "case_id": "general_numeric_binary",
+      "fit_rss": {
+        "end_bytes": 290996224,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 290996224,
+        "peak_delta_bytes": 22052864,
+        "samples": 92,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 268943360
+      },
+      "fit_seconds": 2.097517417,
+      "implementation": {
+        "class": "ChimeraBoostClassifier",
+        "module_path": "/private/tmp/chimeraboost-v018-source-f14be60/chimeraboost/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.1,
+            "thread_count": 14,
+            "tree_count": 279
+          }
+        ],
+        "total_tree_count": 279
+      },
+      "position": 2,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "a8a8d74857d57846e64e215ad6d22722884e813f732ba3ab4fc1b1f539e6cf23",
+          "interval_seconds": 3.272668416,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "ece75baa3942752e0e92548266290dff807471bcacb6e259343db0620f8bf486",
+          "rows": 2000000,
+          "rows_per_second": 1222244.20306197,
+          "seconds_per_call": 1.636334208,
+          "warm_seconds": 1.94352925
+        },
+        "524288": {
+          "calls": 3,
+          "input_sha256": "0a1f5d2fdb5f1a7f7f6968d2a30d409d5d9843fcc95ec37a67e2abeb65bffe07",
+          "interval_seconds": 1.273017083,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "28e72663632df998a465650da0fe105b03c1873f9286f4ea3d1bd02871d2d975",
+          "rows": 524288,
+          "rows_per_second": 1235540.3717704862,
+          "seconds_per_call": 0.4243390276666667,
+          "warm_seconds": 0.430881666
+        },
+        "65536": {
+          "calls": 27,
+          "input_sha256": "4ee349e53258816345f94a14f527cec602fb3104849271d3c10bb2f1a13524e9",
+          "interval_seconds": 1.077485875,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "5a0efbb89fe7a2cc29a19f294ee0127836f7939d99528d2b2b450ff60a8db90c",
+          "rows": 65536,
+          "rows_per_second": 1642222.920091644,
+          "seconds_per_call": 0.039906884259259263,
+          "warm_seconds": 0.038126292
+        },
+        "8192": {
+          "calls": 178,
+          "input_sha256": "49134c6e85920f762f0bc45aedd66f3adc4d9450024166b07f72a583de1ea9bc",
+          "interval_seconds": 0.992903792,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "2fe88af28d100b50c184109eafdca7d3d90834201d2257d1c578f2e3740cfed5",
+          "rows": 8192,
+          "rows_per_second": 1468597.4731376593,
+          "seconds_per_call": 0.005578111191011236,
+          "warm_seconds": 0.005627833
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "binary",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 1022064,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_ensemble_v3",
+      "block": 1,
+      "case_id": "general_categorical_multiclass",
+      "fit_rss": {
+        "end_bytes": 321978368,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 322027520,
+        "peak_delta_bytes": 14303232,
+        "samples": 206,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 307724288
+      },
+      "fit_seconds": 4.539813584,
+      "implementation": {
+        "class": "DarkoClassifier",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 8,
+        "members": [
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 96
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 53
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 87
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 75
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 83
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 83
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 96
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 64
+          }
+        ],
+        "total_tree_count": 637
+      },
+      "position": 0,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "e549c6fd2beef64693a9ac61ec1d84bb28d2d211493289ddf8f97a8d46de026b",
+          "interval_seconds": 9.999887042,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "068b0731174b09d1b8866686b12a66e660d4b1b36b7b564cd70538bc3c05e621",
+          "rows": 2000000,
+          "rows_per_second": 400004.51837103866,
+          "seconds_per_call": 4.999943521,
+          "warm_seconds": 4.828791958
+        },
+        "524288": {
+          "calls": 2,
+          "input_sha256": "8275948be1bf87ae1bc056811534b7356909fb7efec0ccb879948fec6c17bbf0",
+          "interval_seconds": 2.616521875,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "573f1463bc43abc35b50a9d06a32ecdafed9da4fafe6a500b5abeb031192976e",
+          "rows": 524288,
+          "rows_per_second": 400751.85689017025,
+          "seconds_per_call": 1.3082609375,
+          "warm_seconds": 1.311167042
+        },
+        "65536": {
+          "calls": 6,
+          "input_sha256": "ec7a8a768d38a8f677488393c231092e82bfde9432f0cb029ca31d10dfee98ae",
+          "interval_seconds": 1.016860541,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "5f1df5f4f204ee59b4259b06308ee7768e72de70670c4b0904280054fc30cf45",
+          "rows": 65536,
+          "rows_per_second": 386696.09464175283,
+          "seconds_per_call": 0.16947675683333333,
+          "warm_seconds": 0.16871425
+        },
+        "8192": {
+          "calls": 36,
+          "input_sha256": "29e91d2a4f05179b52f0eaedfac7e919320acc493b830fba09c50483270a7894",
+          "interval_seconds": 0.944635041,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "8c2ee3a7dfe424365c2a5018493ff9d94bf50202f0864407b557920d20884fb6",
+          "rows": 8192,
+          "rows_per_second": 312196.76086523663,
+          "seconds_per_call": 0.02623986225,
+          "warm_seconds": 0.028011209
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "multiclass",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 267334,
+        "format": "python_pickle_telemetry",
+        "roundtrip_exact": null
+      },
+      "arm": "chimeraboost_0_18_single",
+      "block": 1,
+      "case_id": "general_categorical_multiclass",
+      "fit_rss": {
+        "end_bytes": 279134208,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 279166976,
+        "peak_delta_bytes": 16072704,
+        "samples": 77,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 263094272
+      },
+      "fit_seconds": 1.680692833,
+      "implementation": {
+        "class": "ChimeraBoostClassifier",
+        "module_path": "/private/tmp/chimeraboost-v018-source-f14be60/chimeraboost/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.1,
+            "thread_count": 14,
+            "tree_count": 48
+          }
+        ],
+        "total_tree_count": 48
+      },
+      "position": 1,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "e549c6fd2beef64693a9ac61ec1d84bb28d2d211493289ddf8f97a8d46de026b",
+          "interval_seconds": 5.244940917,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "37e2a96bd0c7516532a5210c1cbb900d7b7e30f14273687d9b89ed18909742db",
+          "rows": 2000000,
+          "rows_per_second": 762639.6680723563,
+          "seconds_per_call": 2.6224704585,
+          "warm_seconds": 2.7785295
+        },
+        "524288": {
+          "calls": 2,
+          "input_sha256": "8275948be1bf87ae1bc056811534b7356909fb7efec0ccb879948fec6c17bbf0",
+          "interval_seconds": 1.368510875,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "a50ffb0b395cfde82090028c16b3f93b7b8352bcc4d241743d2663c3a242e80e",
+          "rows": 524288,
+          "rows_per_second": 766216.7828954959,
+          "seconds_per_call": 0.6842554375,
+          "warm_seconds": 0.681223667
+        },
+        "65536": {
+          "calls": 14,
+          "input_sha256": "ec7a8a768d38a8f677488393c231092e82bfde9432f0cb029ca31d10dfee98ae",
+          "interval_seconds": 1.092915166,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "5f155b55ac75a26ba4665e6346b65d557d9fa3959f6e1adb77c7c8948b82f6be",
+          "rows": 65536,
+          "rows_per_second": 839501.5720735273,
+          "seconds_per_call": 0.07806536900000001,
+          "warm_seconds": 0.075824458
+        },
+        "8192": {
+          "calls": 92,
+          "input_sha256": "29e91d2a4f05179b52f0eaedfac7e919320acc493b830fba09c50483270a7894",
+          "interval_seconds": 1.008457375,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "7789d3467d1c94887adf29543ace16c9315de5c867bf7889ce3e355a636d65e1",
+          "rows": 8192,
+          "rows_per_second": 747343.4363053767,
+          "seconds_per_call": 0.01096149320652174,
+          "warm_seconds": 0.010943958
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "multiclass",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 135778,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_single",
+      "block": 1,
+      "case_id": "general_categorical_multiclass",
+      "fit_rss": {
+        "end_bytes": 303251456,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 303267840,
+        "peak_delta_bytes": 7602176,
+        "samples": 53,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 295665664
+      },
+      "fit_seconds": 1.142754542,
+      "implementation": {
+        "class": "DarkoClassifier",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.136169,
+            "thread_count": 14,
+            "tree_count": 105
+          }
+        ],
+        "total_tree_count": 105
+      },
+      "position": 2,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "e549c6fd2beef64693a9ac61ec1d84bb28d2d211493289ddf8f97a8d46de026b",
+          "interval_seconds": 1.646076708,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "02cadb149b3e5cbe4c80b7e51b3557bbb06098b60f56af14644c403b372e356d",
+          "rows": 2000000,
+          "rows_per_second": 2430020.4119041576,
+          "seconds_per_call": 0.823038354,
+          "warm_seconds": 0.804779417
+        },
+        "524288": {
+          "calls": 5,
+          "input_sha256": "8275948be1bf87ae1bc056811534b7356909fb7efec0ccb879948fec6c17bbf0",
+          "interval_seconds": 1.086752,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "7a15a4912e557b621afd36dd0a5a731cb4914ffa9208a7939ba3964d14d0565f",
+          "rows": 524288,
+          "rows_per_second": 2412178.6755395895,
+          "seconds_per_call": 0.2173504,
+          "warm_seconds": 0.207372625
+        },
+        "65536": {
+          "calls": 35,
+          "input_sha256": "ec7a8a768d38a8f677488393c231092e82bfde9432f0cb029ca31d10dfee98ae",
+          "interval_seconds": 0.998341917,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "07069cf23f606ff0656a75d0dc18bcf4938c7e9e028c31d0d53f5acf23974c20",
+          "rows": 65536,
+          "rows_per_second": 2297569.561030462,
+          "seconds_per_call": 0.02852405477142857,
+          "warm_seconds": 0.029186208
+        },
+        "8192": {
+          "calls": 227,
+          "input_sha256": "29e91d2a4f05179b52f0eaedfac7e919320acc493b830fba09c50483270a7894",
+          "interval_seconds": 0.952670834,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "96080489eae459499d3c5f127ea51b91a9a3be9348ce016c251051cc9734c3e2",
+          "rows": 8192,
+          "rows_per_second": 1951969.0680485344,
+          "seconds_per_call": 0.0041967878149779736,
+          "warm_seconds": 0.004424417
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "multiclass",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 528366,
+        "format": "python_pickle_telemetry",
+        "roundtrip_exact": null
+      },
+      "arm": "chimeraboost_0_18_single",
+      "block": 2,
+      "case_id": "general_friedman_numeric",
+      "fit_rss": {
+        "end_bytes": 274333696,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 274366464,
+        "peak_delta_bytes": 16433152,
+        "samples": 76,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 257933312
+      },
+      "fit_seconds": 1.658448958,
+      "implementation": {
+        "class": "ChimeraBoostRegressor",
+        "module_path": "/private/tmp/chimeraboost-v018-source-f14be60/chimeraboost/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.1,
+            "thread_count": 14,
+            "tree_count": 109
+          }
+        ],
+        "total_tree_count": 109
+      },
+      "position": 0,
+      "predictions": {
+        "2000000": {
+          "calls": 5,
+          "input_sha256": "edff12b7ed4bc7d32373f3f9b781c13dbe94ba0564435bf07f5fad513ce4a2f2",
+          "interval_seconds": 1.234673084,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "d8819dee3a8456292a401a0567800b5985ad26bb5bb89b63b12181e2b21b96be",
+          "rows": 2000000,
+          "rows_per_second": 8099309.95466651,
+          "seconds_per_call": 0.2469346168,
+          "warm_seconds": 0.241799541
+        },
+        "524288": {
+          "calls": 16,
+          "input_sha256": "df0fc8ac56a3a8b1db09d0e8b1af183cc70fd365b252123530a18a8a831cd634",
+          "interval_seconds": 1.080928667,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "8949fd896120233b3ce9a3dbee4f7cedeac79ed8933c2f91479aed6063041aaa",
+          "rows": 524288,
+          "rows_per_second": 7760556.506732003,
+          "seconds_per_call": 0.0675580416875,
+          "warm_seconds": 0.065215583
+        },
+        "65536": {
+          "calls": 108,
+          "input_sha256": "104b218345ae7a1d669379cd9dd9cd024a62b2372c1fb0666c2e17bb2e10db14",
+          "interval_seconds": 1.043378667,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "b15f7b466f6eec9d0f0029c42b67f5e8582618bcf3c78ec9a644af59ec20abac",
+          "rows": 65536,
+          "rows_per_second": 6783623.457005183,
+          "seconds_per_call": 0.009660913583333333,
+          "warm_seconds": 0.0093035
+        },
+        "8192": {
+          "calls": 696,
+          "input_sha256": "da9094757aec9d9d1d9a094f6906b0d5f4d8a929e73d8281075b271273c79043",
+          "interval_seconds": 1.015922,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "c2a64ec093967d86f56ab5dd9ad98007b72e4c219a832b48e36effeafac10e93",
+          "rows": 8192,
+          "rows_per_second": 5612273.383192805,
+          "seconds_per_call": 0.0014596580459770114,
+          "warm_seconds": 0.00143875
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "regression",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 91338,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_single",
+      "block": 2,
+      "case_id": "general_friedman_numeric",
+      "fit_rss": {
+        "end_bytes": 302825472,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 302858240,
+        "peak_delta_bytes": 8404992,
+        "samples": 12,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 294453248
+      },
+      "fit_seconds": 0.227321042,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.139735,
+            "thread_count": 14,
+            "tree_count": 105
+          }
+        ],
+        "total_tree_count": 105
+      },
+      "position": 1,
+      "predictions": {
+        "2000000": {
+          "calls": 10,
+          "input_sha256": "edff12b7ed4bc7d32373f3f9b781c13dbe94ba0564435bf07f5fad513ce4a2f2",
+          "interval_seconds": 1.130573208,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "b25ac66581ddde31cca1dad770893b0890f645273a3c9d4fa378e08bc4c21e6e",
+          "rows": 2000000,
+          "rows_per_second": 17690141.47733103,
+          "seconds_per_call": 0.1130573208,
+          "warm_seconds": 0.108304291
+        },
+        "524288": {
+          "calls": 32,
+          "input_sha256": "df0fc8ac56a3a8b1db09d0e8b1af183cc70fd365b252123530a18a8a831cd634",
+          "interval_seconds": 1.017552875,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "a54755c9957bab3df4b02119ef7f48daa90eaf197107c31ad0369aa43e47c7b5",
+          "rows": 524288,
+          "rows_per_second": 16487807.574618666,
+          "seconds_per_call": 0.03179852734375,
+          "warm_seconds": 0.031686708
+        },
+        "65536": {
+          "calls": 227,
+          "input_sha256": "104b218345ae7a1d669379cd9dd9cd024a62b2372c1fb0666c2e17bb2e10db14",
+          "interval_seconds": 1.015351667,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "d5b87816f295bf86a19253305f3b81d1df06f94c5307f47ad4e87381119602a1",
+          "rows": 65536,
+          "rows_per_second": 14651743.315648686,
+          "seconds_per_call": 0.004472914832599119,
+          "warm_seconds": 0.004416458
+        },
+        "8192": {
+          "calls": 352,
+          "input_sha256": "da9094757aec9d9d1d9a094f6906b0d5f4d8a929e73d8281075b271273c79043",
+          "interval_seconds": 0.276078583,
+          "method": "predict",
+          "minimum_interval_met": false,
+          "prediction_sha256": "c9d1e9f333ec8d19101153a6a8a931ff0050aded46f3eb0d3ac815c4151176ca",
+          "rows": 8192,
+          "rows_per_second": 10444794.26352315,
+          "seconds_per_call": 0.00078431415625,
+          "warm_seconds": 0.002841042
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "regression",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 899628,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_ensemble_v3",
+      "block": 2,
+      "case_id": "general_friedman_numeric",
+      "fit_rss": {
+        "end_bytes": 348061696,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 348094464,
+        "peak_delta_bytes": 25247744,
+        "samples": 87,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 322846720
+      },
+      "fit_seconds": 1.893421959,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 8,
+        "members": [
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 117
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 113
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 107
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 148
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 74
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 114
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 129
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 150
+          }
+        ],
+        "total_tree_count": 952
+      },
+      "position": 2,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "edff12b7ed4bc7d32373f3f9b781c13dbe94ba0564435bf07f5fad513ce4a2f2",
+          "interval_seconds": 1.8848925,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "11f0eb07a82603888720e1ba6ce0e8044d007db0f641e6786fb616693200c320",
+          "rows": 2000000,
+          "rows_per_second": 2122136.9388439925,
+          "seconds_per_call": 0.94244625,
+          "warm_seconds": 0.959028709
+        },
+        "524288": {
+          "calls": 4,
+          "input_sha256": "df0fc8ac56a3a8b1db09d0e8b1af183cc70fd365b252123530a18a8a831cd634",
+          "interval_seconds": 1.07678925,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "7162213456e98de930262f964777abdc85a37df8342cc57e7e9da07f62b42a71",
+          "rows": 524288,
+          "rows_per_second": 1947597.4523334068,
+          "seconds_per_call": 0.2691973125,
+          "warm_seconds": 0.268513416
+        },
+        "65536": {
+          "calls": 27,
+          "input_sha256": "104b218345ae7a1d669379cd9dd9cd024a62b2372c1fb0666c2e17bb2e10db14",
+          "interval_seconds": 1.004127625,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "59557a7d600af162f935aaf4f53184ed5e6c05956a8800f4a8d4f5b55b73f345",
+          "rows": 65536,
+          "rows_per_second": 1762198.306216304,
+          "seconds_per_call": 0.03718991203703704,
+          "warm_seconds": 0.037567125
+        },
+        "8192": {
+          "calls": 124,
+          "input_sha256": "da9094757aec9d9d1d9a094f6906b0d5f4d8a929e73d8281075b271273c79043",
+          "interval_seconds": 0.814124125,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "80685c7e24d0f02e3d1ef56d5e951eee819c60eccd28600621c646ff948c633a",
+          "rows": 8192,
+          "rows_per_second": 1247731.112255149,
+          "seconds_per_call": 0.006565517137096774,
+          "warm_seconds": 0.008066041
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "regression",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 78223,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_single",
+      "block": 2,
+      "case_id": "general_categorical_reg",
+      "fit_rss": {
+        "end_bytes": 290750464,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 290750464,
+        "peak_delta_bytes": 5292032,
+        "samples": 12,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 285458432
+      },
+      "fit_seconds": 0.228177959,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.139643,
+            "thread_count": 14,
+            "tree_count": 122
+          }
+        ],
+        "total_tree_count": 122
+      },
+      "position": 0,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "cfe652fa39fdceddf0ae96066b5db3e3e6ece3e709f876ec7eade2239eb5356a",
+          "interval_seconds": 1.182700083,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "9b6ca684d19cc239f60c92c75d0f7d601d5740d7cff3465228427ebc61e3d85a",
+          "rows": 2000000,
+          "rows_per_second": 3382091.5864432217,
+          "seconds_per_call": 0.5913500415,
+          "warm_seconds": 0.616327167
+        },
+        "524288": {
+          "calls": 7,
+          "input_sha256": "4b4a6c04baab1978771b9fcb0ccc1fab3ecc1088e73611d32349fb2841797044",
+          "interval_seconds": 1.120955291,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "1d5baadb5a091497d3beab139459de1f293e9267d551fc2624b081d5f21c26fc",
+          "rows": 524288,
+          "rows_per_second": 3274007.4733274975,
+          "seconds_per_call": 0.16013647014285715,
+          "warm_seconds": 0.166542625
+        },
+        "65536": {
+          "calls": 47,
+          "input_sha256": "db50a558d53d5986974646af628c5c2afc8b3cbeaec7102e4752b0c0106d97c4",
+          "interval_seconds": 0.981722375,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "b0dcb66c9bbbc910d1081098497ffb63b9a2c419278c2e2912a877eca55794ba",
+          "rows": 65536,
+          "rows_per_second": 3137538.756820124,
+          "seconds_per_call": 0.02088771010638298,
+          "warm_seconds": 0.021724542
+        },
+        "8192": {
+          "calls": 212,
+          "input_sha256": "d300270f8c283e8b7b4da09bce1038382fe396d00317a2c14b4a3382248c3759",
+          "interval_seconds": 0.642198292,
+          "method": "predict",
+          "minimum_interval_met": false,
+          "prediction_sha256": "14a59162fd39a1436b10116c4ff159b7d9f4a39c746ffc3720b008a968604b9f",
+          "rows": 8192,
+          "rows_per_second": 2704311.1475606356,
+          "seconds_per_call": 0.0030292372264150943,
+          "warm_seconds": 0.00473725
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "regression",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 762043,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_ensemble_v3",
+      "block": 2,
+      "case_id": "general_categorical_reg",
+      "fit_rss": {
+        "end_bytes": 323354624,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 323371008,
+        "peak_delta_bytes": 14336000,
+        "samples": 93,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 309035008
+      },
+      "fit_seconds": 2.01830675,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 8,
+        "members": [
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 136
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 125
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 164
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 110
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 124
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 101
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 138
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 120
+          }
+        ],
+        "total_tree_count": 1018
+      },
+      "position": 1,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "cfe652fa39fdceddf0ae96066b5db3e3e6ece3e709f876ec7eade2239eb5356a",
+          "interval_seconds": 6.944143667,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "d7706ee94bea6949ac7989c7abefc5508e0e9fea679dc53d1fd6da6c070c4fc5",
+          "rows": 2000000,
+          "rows_per_second": 576024.9487649318,
+          "seconds_per_call": 3.4720718335,
+          "warm_seconds": 3.475229917
+        },
+        "524288": {
+          "calls": 2,
+          "input_sha256": "4b4a6c04baab1978771b9fcb0ccc1fab3ecc1088e73611d32349fb2841797044",
+          "interval_seconds": 1.927930291,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "9724690f67bff345f1871556dee805fd178fbb33f675581910d20f7bdcee6da8",
+          "rows": 524288,
+          "rows_per_second": 543886.8847566646,
+          "seconds_per_call": 0.9639651455,
+          "warm_seconds": 0.93636325
+        },
+        "65536": {
+          "calls": 9,
+          "input_sha256": "db50a558d53d5986974646af628c5c2afc8b3cbeaec7102e4752b0c0106d97c4",
+          "interval_seconds": 1.114858542,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "c2d2e4d4a036ded997b77e947d3e14750f16b6c0e9a3917d8457500686f93063",
+          "rows": 65536,
+          "rows_per_second": 529057.2550503901,
+          "seconds_per_call": 0.12387317133333332,
+          "warm_seconds": 0.122564167
+        },
+        "8192": {
+          "calls": 48,
+          "input_sha256": "d300270f8c283e8b7b4da09bce1038382fe396d00317a2c14b4a3382248c3759",
+          "interval_seconds": 0.886821167,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "ccd355949f430ab1985a8be0f226b29cb91e262fdaede6844f1ae9b4e514ceca",
+          "rows": 8192,
+          "rows_per_second": 443399.43004540395,
+          "seconds_per_call": 0.018475440979166667,
+          "warm_seconds": 0.0211815
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "regression",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 491151,
+        "format": "python_pickle_telemetry",
+        "roundtrip_exact": null
+      },
+      "arm": "chimeraboost_0_18_single",
+      "block": 2,
+      "case_id": "general_categorical_reg",
+      "fit_rss": {
+        "end_bytes": 276103168,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 276135936,
+        "peak_delta_bytes": 16252928,
+        "samples": 80,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 259883008
+      },
+      "fit_seconds": 1.736886208,
+      "implementation": {
+        "class": "ChimeraBoostRegressor",
+        "module_path": "/private/tmp/chimeraboost-v018-source-f14be60/chimeraboost/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.1,
+            "thread_count": 14,
+            "tree_count": 139
+          }
+        ],
+        "total_tree_count": 139
+      },
+      "position": 2,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "cfe652fa39fdceddf0ae96066b5db3e3e6ece3e709f876ec7eade2239eb5356a",
+          "interval_seconds": 1.604433958,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "bee0b7cc55abca56c623a88fcb55b48417b24bf57951b23c0378ee443c2977e9",
+          "rows": 2000000,
+          "rows_per_second": 2493091.0867694314,
+          "seconds_per_call": 0.802216979,
+          "warm_seconds": 0.8237815
+        },
+        "524288": {
+          "calls": 5,
+          "input_sha256": "4b4a6c04baab1978771b9fcb0ccc1fab3ecc1088e73611d32349fb2841797044",
+          "interval_seconds": 1.069095,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "4d47dd01c33ceabce88e54a1560f6cb017f366fbe68c9490d1648849e72a68f1",
+          "rows": 524288,
+          "rows_per_second": 2452017.828163073,
+          "seconds_per_call": 0.21381899999999998,
+          "warm_seconds": 0.218380583
+        },
+        "65536": {
+          "calls": 35,
+          "input_sha256": "db50a558d53d5986974646af628c5c2afc8b3cbeaec7102e4752b0c0106d97c4",
+          "interval_seconds": 1.011576875,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "24c05d6fdbb381c0ecb4673734b7ddb89f948b8daf0c81b21eff8b013b691fb0",
+          "rows": 65536,
+          "rows_per_second": 2267509.3279490005,
+          "seconds_per_call": 0.02890219642857143,
+          "warm_seconds": 0.029244791
+        },
+        "8192": {
+          "calls": 195,
+          "input_sha256": "d300270f8c283e8b7b4da09bce1038382fe396d00317a2c14b4a3382248c3759",
+          "interval_seconds": 0.870810292,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "a658915aea6fc6a83da1b084c2db9a71d10d3b2eca0c8559075e44cfcc497bbc",
+          "rows": 8192,
+          "rows_per_second": 1834429.3983149203,
+          "seconds_per_call": 0.004465693805128205,
+          "warm_seconds": 0.005129291
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "regression",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 1782801,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_ensemble_v3",
+      "block": 2,
+      "case_id": "general_numeric_binary",
+      "fit_rss": {
+        "end_bytes": 401817600,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 401850368,
+        "peak_delta_bytes": 68370432,
+        "samples": 332,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 333479936
+      },
+      "fit_seconds": 7.36495525,
+      "implementation": {
+        "class": "DarkoClassifier",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 8,
+        "members": [
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 532
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 318
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 354
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 329
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 273
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 314
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 327
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 314
+          }
+        ],
+        "total_tree_count": 2761
+      },
+      "position": 0,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "a8a8d74857d57846e64e215ad6d22722884e813f732ba3ab4fc1b1f539e6cf23",
+          "interval_seconds": 5.577644041,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "da6789b6c7baa034a2d7550aaaf6fc5239774b5b8d44a6205b19a7b2ae4798fd",
+          "rows": 2000000,
+          "rows_per_second": 717148.6689715056,
+          "seconds_per_call": 2.7888220205,
+          "warm_seconds": 2.801487291
+        },
+        "524288": {
+          "calls": 2,
+          "input_sha256": "0a1f5d2fdb5f1a7f7f6968d2a30d409d5d9843fcc95ec37a67e2abeb65bffe07",
+          "interval_seconds": 1.538508459,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "5fb48ba931faa6ebc630dc87d586b59c8ae964bc370dcdb77c0bc19d8fc0bbe5",
+          "rows": 524288,
+          "rows_per_second": 681553.6137393444,
+          "seconds_per_call": 0.7692542295,
+          "warm_seconds": 0.755616
+        },
+        "65536": {
+          "calls": 10,
+          "input_sha256": "4ee349e53258816345f94a14f527cec602fb3104849271d3c10bb2f1a13524e9",
+          "interval_seconds": 1.114727542,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "20b6c8057af90754f53c92083573f0ff8daebf6f18546e580da1183889cd21ad",
+          "rows": 65536,
+          "rows_per_second": 587910.4761547194,
+          "seconds_per_call": 0.1114727542,
+          "warm_seconds": 0.108529292
+        },
+        "8192": {
+          "calls": 54,
+          "input_sha256": "49134c6e85920f762f0bc45aedd66f3adc4d9450024166b07f72a583de1ea9bc",
+          "interval_seconds": 0.880831084,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "020f65b565b63c676e0bcafa1434168f974f8f24e4737a9f5b80c1e0ed94a49f",
+          "rows": 8192,
+          "rows_per_second": 502216.6088770773,
+          "seconds_per_call": 0.016311686740740742,
+          "warm_seconds": 0.018640917
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "binary",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 1576527,
+        "format": "python_pickle_telemetry",
+        "roundtrip_exact": null
+      },
+      "arm": "chimeraboost_0_18_single",
+      "block": 2,
+      "case_id": "general_numeric_binary",
+      "fit_rss": {
+        "end_bytes": 290111488,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 290111488,
+        "peak_delta_bytes": 19972096,
+        "samples": 95,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 270139392
+      },
+      "fit_seconds": 2.050471125,
+      "implementation": {
+        "class": "ChimeraBoostClassifier",
+        "module_path": "/private/tmp/chimeraboost-v018-source-f14be60/chimeraboost/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.1,
+            "thread_count": 14,
+            "tree_count": 279
+          }
+        ],
+        "total_tree_count": 279
+      },
+      "position": 1,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "a8a8d74857d57846e64e215ad6d22722884e813f732ba3ab4fc1b1f539e6cf23",
+          "interval_seconds": 3.213618375,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "ece75baa3942752e0e92548266290dff807471bcacb6e259343db0620f8bf486",
+          "rows": 2000000,
+          "rows_per_second": 1244702.865504371,
+          "seconds_per_call": 1.6068091875,
+          "warm_seconds": 1.680664875
+        },
+        "524288": {
+          "calls": 3,
+          "input_sha256": "0a1f5d2fdb5f1a7f7f6968d2a30d409d5d9843fcc95ec37a67e2abeb65bffe07",
+          "interval_seconds": 1.245380292,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "28e72663632df998a465650da0fe105b03c1873f9286f4ea3d1bd02871d2d975",
+          "rows": 524288,
+          "rows_per_second": 1262958.8007002121,
+          "seconds_per_call": 0.41512676400000004,
+          "warm_seconds": 0.444450583
+        },
+        "65536": {
+          "calls": 27,
+          "input_sha256": "4ee349e53258816345f94a14f527cec602fb3104849271d3c10bb2f1a13524e9",
+          "interval_seconds": 1.1130775,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "5a0efbb89fe7a2cc29a19f294ee0127836f7939d99528d2b2b450ff60a8db90c",
+          "rows": 65536,
+          "rows_per_second": 1589711.4082352757,
+          "seconds_per_call": 0.04122509259259259,
+          "warm_seconds": 0.037785916
+        },
+        "8192": {
+          "calls": 202,
+          "input_sha256": "49134c6e85920f762f0bc45aedd66f3adc4d9450024166b07f72a583de1ea9bc",
+          "interval_seconds": 1.144538458,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "2fe88af28d100b50c184109eafdca7d3d90834201d2257d1c578f2e3740cfed5",
+          "rows": 8192,
+          "rows_per_second": 1445808.9970096925,
+          "seconds_per_call": 0.0056660319702970295,
+          "warm_seconds": 0.004960791
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "binary",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 295436,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_single",
+      "block": 2,
+      "case_id": "general_numeric_binary",
+      "fit_rss": {
+        "end_bytes": 315768832,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 315801600,
+        "peak_delta_bytes": 15925248,
+        "samples": 71,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 299876352
+      },
+      "fit_seconds": 1.549665041,
+      "implementation": {
+        "class": "DarkoClassifier",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.064466,
+            "thread_count": 14,
+            "tree_count": 599
+          }
+        ],
+        "total_tree_count": 599
+      },
+      "position": 2,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "a8a8d74857d57846e64e215ad6d22722884e813f732ba3ab4fc1b1f539e6cf23",
+          "interval_seconds": 1.163340166,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "b6a65993a692a6750b72575aa79807c61487e872fef37a0d34ed26df6002d4d7",
+          "rows": 2000000,
+          "rows_per_second": 3438375.2206833027,
+          "seconds_per_call": 0.581670083,
+          "warm_seconds": 0.591619667
+        },
+        "524288": {
+          "calls": 7,
+          "input_sha256": "0a1f5d2fdb5f1a7f7f6968d2a30d409d5d9843fcc95ec37a67e2abeb65bffe07",
+          "interval_seconds": 1.075388125,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "cba9b90ea256ef2c63662a1d0046f8bc94bc6bf1342213588a21883ee7f297e0",
+          "rows": 524288,
+          "rows_per_second": 3412736.2155872793,
+          "seconds_per_call": 0.153626875,
+          "warm_seconds": 0.152327792
+        },
+        "65536": {
+          "calls": 44,
+          "input_sha256": "4ee349e53258816345f94a14f527cec602fb3104849271d3c10bb2f1a13524e9",
+          "interval_seconds": 0.952604417,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "a8d255d40455c831fb1739314878aded471f5c19d3f86632fedd67b5af2c2762",
+          "rows": 65536,
+          "rows_per_second": 3027052.9388066023,
+          "seconds_per_call": 0.021650100386363638,
+          "warm_seconds": 0.022899959
+        },
+        "8192": {
+          "calls": 208,
+          "input_sha256": "49134c6e85920f762f0bc45aedd66f3adc4d9450024166b07f72a583de1ea9bc",
+          "interval_seconds": 0.649302708,
+          "method": "predict",
+          "minimum_interval_met": false,
+          "prediction_sha256": "ead42d76e16c24c60c8678139b34364aa1bdd7663395686de1edc23805ab787e",
+          "rows": 8192,
+          "rows_per_second": 2624255.1879207627,
+          "seconds_per_call": 0.0031216476346153845,
+          "warm_seconds": 0.004816
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "binary",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 267334,
+        "format": "python_pickle_telemetry",
+        "roundtrip_exact": null
+      },
+      "arm": "chimeraboost_0_18_single",
+      "block": 2,
+      "case_id": "general_categorical_multiclass",
+      "fit_rss": {
+        "end_bytes": 278085632,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 278118400,
+        "peak_delta_bytes": 19808256,
+        "samples": 76,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 258310144
+      },
+      "fit_seconds": 1.643929125,
+      "implementation": {
+        "class": "ChimeraBoostClassifier",
+        "module_path": "/private/tmp/chimeraboost-v018-source-f14be60/chimeraboost/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.1,
+            "thread_count": 14,
+            "tree_count": 48
+          }
+        ],
+        "total_tree_count": 48
+      },
+      "position": 0,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "e549c6fd2beef64693a9ac61ec1d84bb28d2d211493289ddf8f97a8d46de026b",
+          "interval_seconds": 5.144512667,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "37e2a96bd0c7516532a5210c1cbb900d7b7e30f14273687d9b89ed18909742db",
+          "rows": 2000000,
+          "rows_per_second": 777527.485870218,
+          "seconds_per_call": 2.5722563335,
+          "warm_seconds": 2.701462958
+        },
+        "524288": {
+          "calls": 2,
+          "input_sha256": "8275948be1bf87ae1bc056811534b7356909fb7efec0ccb879948fec6c17bbf0",
+          "interval_seconds": 1.363889167,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "a50ffb0b395cfde82090028c16b3f93b7b8352bcc4d241743d2663c3a242e80e",
+          "rows": 524288,
+          "rows_per_second": 768813.2037198006,
+          "seconds_per_call": 0.6819445835,
+          "warm_seconds": 0.712219583
+        },
+        "65536": {
+          "calls": 13,
+          "input_sha256": "ec7a8a768d38a8f677488393c231092e82bfde9432f0cb029ca31d10dfee98ae",
+          "interval_seconds": 1.017403792,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "5f155b55ac75a26ba4665e6346b65d557d9fa3959f6e1adb77c7c8948b82f6be",
+          "rows": 65536,
+          "rows_per_second": 837394.1661109908,
+          "seconds_per_call": 0.07826183015384616,
+          "warm_seconds": 0.077209125
+        },
+        "8192": {
+          "calls": 95,
+          "input_sha256": "29e91d2a4f05179b52f0eaedfac7e919320acc493b830fba09c50483270a7894",
+          "interval_seconds": 1.047201917,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "7789d3467d1c94887adf29543ace16c9315de5c867bf7889ce3e355a636d65e1",
+          "rows": 8192,
+          "rows_per_second": 743161.3592051895,
+          "seconds_per_call": 0.01102317807368421,
+          "warm_seconds": 0.010534125
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "multiclass",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 135778,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_single",
+      "block": 2,
+      "case_id": "general_categorical_multiclass",
+      "fit_rss": {
+        "end_bytes": 301285376,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 301301760,
+        "peak_delta_bytes": 7340032,
+        "samples": 52,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 293961728
+      },
+      "fit_seconds": 1.1195625,
+      "implementation": {
+        "class": "DarkoClassifier",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 1,
+        "members": [
+          {
+            "learning_rate": 0.136169,
+            "thread_count": 14,
+            "tree_count": 105
+          }
+        ],
+        "total_tree_count": 105
+      },
+      "position": 1,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "e549c6fd2beef64693a9ac61ec1d84bb28d2d211493289ddf8f97a8d46de026b",
+          "interval_seconds": 1.574991209,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "02cadb149b3e5cbe4c80b7e51b3557bbb06098b60f56af14644c403b372e356d",
+          "rows": 2000000,
+          "rows_per_second": 2539696.7152214753,
+          "seconds_per_call": 0.7874956045,
+          "warm_seconds": 0.792662625
+        },
+        "524288": {
+          "calls": 5,
+          "input_sha256": "8275948be1bf87ae1bc056811534b7356909fb7efec0ccb879948fec6c17bbf0",
+          "interval_seconds": 1.061227709,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "7a15a4912e557b621afd36dd0a5a731cb4914ffa9208a7939ba3964d14d0565f",
+          "rows": 524288,
+          "rows_per_second": 2470195.583632278,
+          "seconds_per_call": 0.2122455418,
+          "warm_seconds": 0.211131583
+        },
+        "65536": {
+          "calls": 35,
+          "input_sha256": "ec7a8a768d38a8f677488393c231092e82bfde9432f0cb029ca31d10dfee98ae",
+          "interval_seconds": 0.986398625,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "07069cf23f606ff0656a75d0dc18bcf4938c7e9e028c31d0d53f5acf23974c20",
+          "rows": 65536,
+          "rows_per_second": 2325388.480747325,
+          "seconds_per_call": 0.028182817857142856,
+          "warm_seconds": 0.028773
+        },
+        "8192": {
+          "calls": 236,
+          "input_sha256": "29e91d2a4f05179b52f0eaedfac7e919320acc493b830fba09c50483270a7894",
+          "interval_seconds": 0.976601292,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "96080489eae459499d3c5f127ea51b91a9a3be9348ce016c251051cc9734c3e2",
+          "rows": 8192,
+          "rows_per_second": 1979632.8510284214,
+          "seconds_per_call": 0.00413814106779661,
+          "warm_seconds": 0.004239125
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "multiclass",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "archive": {
+        "bytes": 1022064,
+        "format": "darkofit_safe_npz",
+        "roundtrip_exact": true
+      },
+      "arm": "darkofit_ensemble_v3",
+      "block": 2,
+      "case_id": "general_categorical_multiclass",
+      "fit_rss": {
+        "end_bytes": 331857920,
+        "errors": [],
+        "interval_seconds": 0.01,
+        "peak_bytes": 331890688,
+        "peak_delta_bytes": 21987328,
+        "samples": 210,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 309903360
+      },
+      "fit_seconds": 4.55664875,
+      "implementation": {
+        "class": "DarkoClassifier",
+        "module_path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef/darkofit/sklearn_api.py"
+      },
+      "model": {
+        "member_count": 8,
+        "members": [
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 96
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 53
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 87
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 75
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 83
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 83
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 96
+          },
+          {
+            "learning_rate": 0.15,
+            "thread_count": 14,
+            "tree_count": 64
+          }
+        ],
+        "total_tree_count": 637
+      },
+      "position": 2,
+      "predictions": {
+        "2000000": {
+          "calls": 2,
+          "input_sha256": "e549c6fd2beef64693a9ac61ec1d84bb28d2d211493289ddf8f97a8d46de026b",
+          "interval_seconds": 9.574086667,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "068b0731174b09d1b8866686b12a66e660d4b1b36b7b564cd70538bc3c05e621",
+          "rows": 2000000,
+          "rows_per_second": 417794.42145507375,
+          "seconds_per_call": 4.7870433335,
+          "warm_seconds": 4.862833791
+        },
+        "524288": {
+          "calls": 2,
+          "input_sha256": "8275948be1bf87ae1bc056811534b7356909fb7efec0ccb879948fec6c17bbf0",
+          "interval_seconds": 2.603549709,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "573f1463bc43abc35b50a9d06a32ecdafed9da4fafe6a500b5abeb031192976e",
+          "rows": 524288,
+          "rows_per_second": 402748.59987318947,
+          "seconds_per_call": 1.3017748545,
+          "warm_seconds": 1.295892208
+        },
+        "65536": {
+          "calls": 6,
+          "input_sha256": "ec7a8a768d38a8f677488393c231092e82bfde9432f0cb029ca31d10dfee98ae",
+          "interval_seconds": 1.056329458,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "5f1df5f4f204ee59b4259b06308ee7768e72de70670c4b0904280054fc30cf45",
+          "rows": 65536,
+          "rows_per_second": 372247.50007871125,
+          "seconds_per_call": 0.17605490966666668,
+          "warm_seconds": 0.188108458
+        },
+        "8192": {
+          "calls": 38,
+          "input_sha256": "29e91d2a4f05179b52f0eaedfac7e919320acc493b830fba09c50483270a7894",
+          "interval_seconds": 1.023217625,
+          "method": "predict",
+          "minimum_interval_met": true,
+          "prediction_sha256": "8c2ee3a7dfe424365c2a5018493ff9d94bf50202f0864407b557920d20884fb6",
+          "rows": 8192,
+          "rows_per_second": 304232.4451750917,
+          "seconds_per_call": 0.026926779605263157,
+          "warm_seconds": 0.026656
+        }
+      },
+      "runtime_after": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "environment": {
+          "CHIMERABOOST_WARMUP": "0",
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "PYTHONHASHSEED": "0",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        },
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue"
+      },
+      "task": "multiclass",
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    }
+  ],
+  "schema_version": 1,
+  "shipping_or_default_claim_authorized": false,
+  "sources": {
+    "chimeraboost": {
+      "clean": true,
+      "head": "f14be606b641f1bf0dc92bb14b3951f1fe631c6b",
+      "path": "/private/tmp/chimeraboost-v018-source-f14be60",
+      "status": [],
+      "tree": "41b440097e8bbe1e0b85ae7307ccbe30087c2d29"
+    },
+    "darkofit": {
+      "clean": true,
+      "head": "c5e66ef7e6bdcf5665b55b81c6b870f42d76237b",
+      "path": "/private/tmp/darkofit-v3-characterization-source-c5e66ef",
+      "status": [],
+      "tree": "ed9403494fcd04b3786aefa7498c6b42d30a6c42"
+    },
+    "harness": {
+      "clean": true,
+      "head": "6a61fb6bbab4449af918141cc6b39fbf67ad074e",
+      "path": "/private/tmp/darkofit-v3-characterization-harness-6a61fb6",
+      "status": [],
+      "tree": "97ba67b2f2c76b1976c4169e81a21e43902690bf"
+    }
+  },
+  "status": "complete"
+}

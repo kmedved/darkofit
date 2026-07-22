@@ -1241,6 +1241,49 @@ B-archive simulation remains non-loadable, optional size telemetry.
    measurement. One raw artifact or one terminal record is allowed; no
    outcome-driven rerun or threshold is available.
 
+### 35. Ensemble-v3 characterization result (2026-07-21)
+
+1. **Execution:** one complete run from clean harness `6a61fb6`, clean
+   DarkoFit model source `c5e66ef`, and clean ChimeraBoost 0.18 source
+   `f14be60`; no terminal artifact or rerun.
+2. **Evidence:** spent M3b quality plus four frozen medium general performance
+   tasks. No M2, M4, fresh-confirmation, lockbox, public API, default, or
+   release action occurred.
+3. **Quality:** exact M3b reproduction in analysis, 13/13 wins and `0.965513x`
+   overall; sports `0.961077x` with season-cluster interval
+   `[0.958861x, 0.962867x]`; general `0.975569x` with descriptive interval
+   `[0.963303x, 0.987718x]` and leave-one-case-out range
+   `[0.970189x, 0.981160x]`.
+4. **Current fit:** private v3/single equal-case geomean `6.142053x`; case
+   medians ranged `4.051x` to `8.584x`.
+5. **Current memory:** aggregate process-tree peak-RSS ratio `1.135581x`;
+   median v3 peak-minus-start deltas ranged `14.3 MB` to `67.6 MB`. The older
+   `1.074015x` M3b value remains labeled self-worker RSS.
+6. **Archives:** safe-NPZ ratio `8.125239x`; v3 archives ranged `0.762 MB` to
+   `1.783 MB`. Size is telemetry, not a validity gate.
+7. **Prediction:** DarkoFit single/pinned ChimeraBoost `0.485145x` (16/16 no
+   slower); v3/ChimeraBoost `3.013607x`; v3/DarkoFit single `6.207940x`.
+   V3 was slower in all 16 coordinates against both single arms.
+8. **Dispersion/limitations:** 47/48 paired series had IQR/median `<=0.10`.
+   Nine of 144 intervals missed `0.75 s`, all DarkoFit-single 8,192-row
+   intervals; every 65,536-row-and-larger interval cleared it. No subset or
+   favorable rerun replaces the frozen aggregate.
+9. **Artifacts:** raw
+   [`ensemble_v3_characterization_raw.json`](ensemble_v3_characterization_raw.json)
+   SHA-256
+   `005c50a89a06e100aa95cb6a776dd7f67026786de6f261470e808a39f9310a9b`;
+   result
+   [`ensemble_v3_characterization_result.json`](ensemble_v3_characterization_result.json)
+   SHA-256
+   `5cfd7b40382187aebed43798715017e1e2867744c5c40f66a00e935f6acefeed`;
+   generated note
+   [`ensemble_v3_characterization_result.md`](ensemble_v3_characterization_result.md)
+   SHA-256
+   `bef08bf9f972eba7ebfd9b2f51ce1d42828b9444c6e4697063166351ed21b0e4`.
+10. **Interpretation:** quality survived; cost is material. The evidence
+    supports only an honestly described explicit opt-in and awaits the
+    separately gated public-ship decision.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
