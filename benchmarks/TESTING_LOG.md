@@ -1596,6 +1596,64 @@ B-archive simulation remains non-loadable, optional size telemetry.
     freeze its new-identity invariants-first Tier-D campaign if the mechanism
     is confirmed.
 
+### 41. Phase B-1 smooth-selector engagement check (2026-07-22)
+
+1. **Execution date/source:** 2026-07-22; read-only extraction from a worktree
+   based on published DarkoFit commit
+   `5f98d7b0087746bd7349927c96dc368ea872b870`. No library source changed and
+   no model was fit.
+2. **Comparators:** the completed M2 cache pins ChimeraBoost
+   `f14be606b641f1bf0dc92bb14b3951f1fe631c6b` (`v0.18.0-6-gf14be60`);
+   the release compute ladder pins public ChimeraBoost v0.20.0 commit
+   `7d48e053e5bd3c7aded1126871aeb0f1f6b84c46`.
+3. **Evidence class:** spent descriptive fitted-metadata inspection. It is a
+   causal funding check, not new quality, shipping, or default evidence.
+4. **Data/splits:** M2 task ids 363612 (`airfoil_self_noise`) and 363693
+   (`physiochemical_protein`), three registered outer coordinates and eight
+   child fits per coordinate; plus the three direct default coordinates per
+   dataset from the v0.11 release compute ladder. Child fits are not treated
+   as independent datasets.
+5. **Arms/policies:** ChimeraBoost's default fitted metadata only. Inspected
+   selected lane, whether linear selection ran, resolved linear/cross/category
+   policies, and current v0.20 member selector summaries. No candidate was
+   tuned or executed.
+6. **Environment/repeats:** `darko311`; one deterministic extraction of six
+   hash-attested gzip pickles and three committed v0.20 artifacts. No warmup,
+   thread, timing, fresh-worker, or favorable-rerun issue applies.
+7. **Runner/command:**
+   `python benchmarks/extract_smooth_selector_engagement.py --m2-cache <v011-m2-v3-cache> --output benchmarks/smooth_selector_engagement_check_20260722.json`.
+   One pre-output development attempt failed closed on a CSV schema assumption;
+   it did not create the canonical output. The corrected extractor wrote the
+   create-only record once.
+8. **Hashes:** extractor
+   `368764dcf102d79a37b0cb16156a1fd56192de899f5d1ec7e001d688389876cf`;
+   result
+   `878ffdc0bfb615714b5acd0ea0c1d09f63604d4d423d57ab0898f9bd377ab3d1`;
+   M2 completion attestation
+   `1fbd09e4e71e537d58479b4343e3269a1cb7d1a8b56e6f8d23a59aa4b96c4b5c`;
+   current raw ladder
+   `96f594da1a0ea885aa55d45636049d97b9b6e1a7f56d85679dfe879420636f79`.
+9. **Primary results:** M2 Airfoil selected constant in 24/24 child fits and
+   never performed linear selection; M2 Protein selected linear and performed
+   selection in 24/24. Crosses were null and category combinations false in
+   all 48 M2 children. Current v0.20 again reports linear selection on all
+   three Protein defaults (crosses on one) and none on Airfoil. Current D0/M0
+   RMSE ratios are 0.953347 on Airfoil and 1.067903 on Protein.
+10. **Passed and failed conditions:** the Protein selector signature passed
+    across both rival pins. The original two-dataset hypothesis failed because
+    Airfoil had no selector engagement. This is a narrowing, not a favorable
+    relabeling: Airfoil is removed from the selector causal claim.
+11. **Limitations/non-claims:** v0.20's compact member summary does not expose
+    categorical-combination selection; the M2 full resolved metadata does.
+    The evidence is spent, workload-specific, and cannot establish default
+    safety or independent statistical breadth. No fresh/lockbox evidence was
+    accessed.
+12. **Terminal decision/next action:** fund a new-identity automatic-selector
+    development campaign only for Protein and the generic smooth/process
+    signature, using spent development data. Airfoil remains outside that
+    causal claim. A default-on policy still needs separately authorized,
+    prospectively frozen and powered Tier-D evidence.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

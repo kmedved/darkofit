@@ -1,0 +1,267 @@
+{
+  "created_at_utc": "2026-07-22T20:10:42.080019+00:00",
+  "current_v020_direct_default": {
+    "airfoil_self_noise": {
+      "coordinates": [
+        {
+          "fold": 0,
+          "repeat": 0
+        },
+        {
+          "fold": 1,
+          "repeat": 1
+        },
+        {
+          "fold": 2,
+          "repeat": 2
+        }
+      ],
+      "cross_features_selected": {
+        "false": 0,
+        "null": 3,
+        "true": 0
+      },
+      "cross_pair_count": [
+        0,
+        0,
+        0
+      ],
+      "dataset": "airfoil_self_noise",
+      "linear_leaves_selected": {
+        "false": 0,
+        "null": 3,
+        "true": 0
+      },
+      "member_count": 3,
+      "quality_and_cost_vs_chimeraboost": {
+        "fit_seconds_ratio": 0.9196602680117492,
+        "prediction_seconds_per_call_ratio": 2.9627250840409163,
+        "test_rmse_ratio": 0.9533474242274157
+      },
+      "row_count": 3
+    },
+    "physiochemical_protein": {
+      "coordinates": [
+        {
+          "fold": 0,
+          "repeat": 0
+        },
+        {
+          "fold": 1,
+          "repeat": 1
+        },
+        {
+          "fold": 2,
+          "repeat": 2
+        }
+      ],
+      "cross_features_selected": {
+        "false": 2,
+        "null": 0,
+        "true": 1
+      },
+      "cross_pair_count": [
+        30,
+        0,
+        0
+      ],
+      "dataset": "physiochemical_protein",
+      "linear_leaves_selected": {
+        "false": 0,
+        "null": 0,
+        "true": 3
+      },
+      "member_count": 3,
+      "quality_and_cost_vs_chimeraboost": {
+        "fit_seconds_ratio": 0.23315393097367512,
+        "prediction_seconds_per_call_ratio": 0.2642774121162453,
+        "test_rmse_ratio": 1.0679029961960846
+      },
+      "row_count": 3
+    }
+  },
+  "decision": {
+    "airfoil_disposition": "remove_from_selector_causal_claim_and_leave_configuration_representation_history_spent",
+    "airfoil_is_current_default_deficit": false,
+    "airfoil_selector_signature_confirmed": false,
+    "next_action": "fund_new_identity_automatic_selector_development_on_spent_data_only",
+    "protein_selector_signature_confirmed": true,
+    "selector_campaign_scope": "protein_and_generic_smooth_process_class",
+    "two_dataset_selector_hypothesis_confirmed": false
+  },
+  "evidence_class": "spent_descriptive_causal_check_not_shipping_evidence",
+  "fresh_or_lockbox_accessed": false,
+  "inputs": {
+    "current_chimeraboost_source": {
+      "commit": "7d48e053e5bd3c7aded1126871aeb0f1f6b84c46",
+      "package_init_sha256": "e980c500f5f453577f186533796eab169aeaf76c77419ae464042e474c091daf",
+      "path": "/private/tmp/chimeraboost-v020-release-source",
+      "status": "",
+      "tag": "v0.20.0",
+      "tree": "5023ee331ab78cc3917c7d378842ab30f5aa5c14"
+    },
+    "current_manifest": {
+      "sha256": "01fbb053d1390c43758adc4f47da38e39b6beb53be26ed13548a5eb399d485d4"
+    },
+    "current_per_dataset": {
+      "sha256": "546592592a3a70720fa214245451374982f2e17f783341c07fbe03b97682dd10"
+    },
+    "current_raw": {
+      "sha256": "96f594da1a0ea885aa55d45636049d97b9b6e1a7f56d85679dfe879420636f79"
+    },
+    "m2_chimeraboost_source": {
+      "commit": "f14be606b641f1bf0dc92bb14b3951f1fe631c6b",
+      "describe": "v0.18.0-6-gf14be60",
+      "tree": "41b440097e8bbe1e0b85ae7307ccbe30087c2d29"
+    },
+    "m2_completion_attestation": {
+      "result_count": 117,
+      "sha256": "1fbd09e4e71e537d58479b4343e3269a1cb7d1a8b56e6f8d23a59aa4b96c4b5c"
+    },
+    "m2_run_manifest": {
+      "sha256": "c96b020c82a873091d984dc992eef6a78a8bb6607271c0f7c9921531fd97867c"
+    }
+  },
+  "kind": "spent_selector_engagement_verification",
+  "limitations": [
+    "This is metadata inspection of already-spent M2 and release-ladder artifacts; it creates no new quality evidence.",
+    "The M2 outer bagged coordinates contain eight child fits each and are not 24 independent datasets.",
+    "The current v0.20 member summary does not expose categorical-combination selection; the M2 resolved parameters report it false in all 48 inspected child fits.",
+    "Default-on shipping still requires separately authorized, prospectively frozen Tier-D fresh evidence."
+  ],
+  "m2_v018_outer_bagged": {
+    "airfoil_self_noise": {
+      "artifacts": [
+        {
+          "path": "experiments/data/ChimeraBoost_c1_same_machine_primary_M_BAG_L1/363612/0_0/results.pkl",
+          "sha256": "5bfe1e9b0bdb6f2920e61b2d5459ee95f7acc25ae073f51850b173d2bb7a07bf",
+          "size_bytes": 33716
+        },
+        {
+          "path": "experiments/data/ChimeraBoost_c1_same_machine_primary_M_BAG_L1/363612/1_1/results.pkl",
+          "sha256": "43a5159c45c910f5c2a60e473b1ce47ca54034c68b26caca0896b10dcae90517",
+          "size_bytes": 33717
+        },
+        {
+          "path": "experiments/data/ChimeraBoost_c1_same_machine_primary_M_BAG_L1/363612/2_2/results.pkl",
+          "sha256": "b14b78a609cac519f69a20e92cf8a7d87cbb0f62277382e4e7c7902b365c6462",
+          "size_bytes": 33720
+        }
+      ],
+      "best_iteration_max": 1321,
+      "best_iteration_min": 187,
+      "child_fit_count": 24,
+      "coordinates": [
+        {
+          "child_fit_count": 8,
+          "fold": 0,
+          "repeat": 0
+        },
+        {
+          "child_fit_count": 8,
+          "fold": 1,
+          "repeat": 1
+        },
+        {
+          "child_fit_count": 8,
+          "fold": 2,
+          "repeat": 2
+        }
+      ],
+      "dataset": "airfoil_self_noise",
+      "linear_leaves_selected": {
+        "false": 24,
+        "null": 0,
+        "true": 0
+      },
+      "linear_selection_performed": {
+        "false": 24,
+        "null": 0,
+        "true": 0
+      },
+      "resolved_cat_combinations": {
+        "false": 24,
+        "null": 0,
+        "true": 0
+      },
+      "resolved_cross_features_nonnull_count": 0,
+      "resolved_linear_leaves": {
+        "false": 24,
+        "null": 0,
+        "true": 0
+      },
+      "result_count": 3,
+      "selected_lane_counts": {
+        "constant": 24
+      },
+      "task_id": "363612"
+    },
+    "physiochemical_protein": {
+      "artifacts": [
+        {
+          "path": "experiments/data/ChimeraBoost_c1_same_machine_primary_M_BAG_L1/363693/0_0/results.pkl",
+          "sha256": "7116145ed31abea407d2b417f3c95475d06f4fbc31be7f32e6b18fae477b94f8",
+          "size_bytes": 927470
+        },
+        {
+          "path": "experiments/data/ChimeraBoost_c1_same_machine_primary_M_BAG_L1/363693/1_1/results.pkl",
+          "sha256": "fd841624245b9ec44d69b4cda8db02d86d12b78c0718e376a7ab25990a9bb375",
+          "size_bytes": 927032
+        },
+        {
+          "path": "experiments/data/ChimeraBoost_c1_same_machine_primary_M_BAG_L1/363693/2_2/results.pkl",
+          "sha256": "22178d129b4cc6a61b61c06a5b75560c26864949009407a3f617c7e065c78163",
+          "size_bytes": 927391
+        }
+      ],
+      "best_iteration_max": 1942,
+      "best_iteration_min": 904,
+      "child_fit_count": 24,
+      "coordinates": [
+        {
+          "child_fit_count": 8,
+          "fold": 0,
+          "repeat": 0
+        },
+        {
+          "child_fit_count": 8,
+          "fold": 1,
+          "repeat": 1
+        },
+        {
+          "child_fit_count": 8,
+          "fold": 2,
+          "repeat": 2
+        }
+      ],
+      "dataset": "physiochemical_protein",
+      "linear_leaves_selected": {
+        "false": 0,
+        "null": 0,
+        "true": 24
+      },
+      "linear_selection_performed": {
+        "false": 0,
+        "null": 0,
+        "true": 24
+      },
+      "resolved_cat_combinations": {
+        "false": 24,
+        "null": 0,
+        "true": 0
+      },
+      "resolved_cross_features_nonnull_count": 0,
+      "resolved_linear_leaves": {
+        "false": 0,
+        "null": 0,
+        "true": 24
+      },
+      "result_count": 3,
+      "selected_lane_counts": {
+        "linear": 24
+      },
+      "task_id": "363693"
+    }
+  },
+  "schema_version": 1
+}
