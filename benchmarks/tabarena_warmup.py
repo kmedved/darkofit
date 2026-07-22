@@ -184,6 +184,10 @@ def _run_stage(
 ) -> dict[str, Any]:
     params = dict(_MODEL_CONFIG)
     params["thread_count"] = thread_count
+    # The reported configuration is frozen to the historical benchmark
+    # contract.  Pin the former wrapper default only for execution so a new
+    # automatic-leaf default cannot silently change which kernels are warmed.
+    params["linear_leaves"] = False
 
     fit_started_ns = time.monotonic_ns()
     model = DarkoRegressor(**params)

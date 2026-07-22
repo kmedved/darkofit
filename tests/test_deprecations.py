@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from darkofit import DarkoClassifier, DarkoRegressor
-from darkofit.booster import GradientBoosting
+from darkofit.booster import GradientBoosting, reset_diagnostic_warning_registry
 
 
 X = np.arange(48, dtype=np.float64).reshape(24, 2)
@@ -90,7 +90,9 @@ def test_wrapper_core_warning_points_to_caller():
     )
     with pytest.warns(FutureWarning) as recorded:
         model.fit(X, Y)
+    assert len(recorded) == 1
     assert recorded[0].filename == __file__
+    assert not hasattr(model, "_suppress_wrapper_deprecation_warning")
 
 
 def test_linear_residual_warning_points_to_caller():
@@ -101,4 +103,51 @@ def test_linear_residual_warning_points_to_caller():
     )
     with pytest.warns(FutureWarning) as recorded:
         model.fit(X, Y)
+    assert len(recorded) == 1
     assert recorded[0].filename == __file__
+    assert not hasattr(model, "_suppress_wrapper_deprecation_warning")
+
+
+def test_automatic_selector_emits_core_deprecation_warning_once_at_caller():
+    rng = np.random.default_rng(22)
+    X_large = rng.normal(size=(1300, 3))
+    y_large = 1.5 * X_large[:, 0] + rng.normal(size=1300)
+    model = DarkoRegressor(
+        iterations=1,
+        depth=2,
+        learning_rate=0.1,
+        histogram_dtype="float32",
+        random_state=3,
+    )
+
+    with pytest.warns(FutureWarning, match="histogram_dtype") as recorded:
+        model.fit(X_large, y_large)
+
+    assert len(recorded) == 1
+    assert recorded[0].filename == __file__
+    assert not hasattr(model, "_suppress_core_deprecation_warning")
+
+
+def test_automatic_selector_leaves_runtime_diagnostic_to_final_fit():
+    rng = np.random.default_rng(23)
+    X_large = rng.normal(size=(1300, 3))
+    y_large = X_large[:, 0] + rng.normal(size=1300)
+    model = DarkoRegressor(
+        iterations=1,
+        depth=2,
+        learning_rate=None,
+        random_state=4,
+        diagnostic_warnings="once",
+    )
+
+    reset_diagnostic_warning_registry()
+    try:
+        with pytest.warns(RuntimeWarning, match="learning rate clipped") as recorded:
+            model.fit(X_large, y_large)
+        emitted = model.model_.auto_params_["diagnostics"][
+            "runtime_warnings_emitted"
+        ]
+        assert emitted == ["learning_rate_clipped_max"]
+        assert len(recorded) == 1
+    finally:
+        reset_diagnostic_warning_registry()

@@ -379,7 +379,9 @@ def test_archive_version_tracks_new_params_without_mislabeling_old_format(
     tmp_path,
 ):
     X, y = _smooth_regression(n_samples=320)
-    default = DarkoRegressor(**_linear_model_params(iterations=3)).fit(X, y)
+    default = DarkoRegressor(
+        **_linear_model_params(iterations=3, linear_leaves=False)
+    ).fit(X, y)
     default_path = tmp_path / "default.npz"
     default.save_model(default_path)
     with np.load(default_path, allow_pickle=False) as archive:
@@ -390,6 +392,7 @@ def test_archive_version_tracks_new_params_without_mislabeling_old_format(
     assert "linear_leaves" not in header["wrapper"]["params"]
     assert "linear_lambda" not in header["wrapper"]["params"]
     loaded_default = DarkoRegressor.load_model(default_path)
+    assert loaded_default.linear_leaves is False
     np.testing.assert_array_equal(loaded_default.predict(X), default.predict(X))
 
     fallback = DarkoRegressor(

@@ -7366,6 +7366,7 @@ def test_target_ordered_cat_codes_round_trip_v3_with_unseen(tmp_path):
         tree_mode="lightgbm",
         target_ordered_cat_codes="leaky_full",
         max_bins=16,
+        linear_leaves=False,
     ).fit(X, y, cat_features=[1])
 
     path = tmp_path / "target-ordered-codes.npz"
@@ -7986,7 +7987,9 @@ def test_load_legacy_v1_missing_category_archive(tmp_path):
     from darkofit.target_encoding import _MISSING_CATEGORY
 
     X, y = _cat_dataset(n=180, seed=8)
-    model = DarkoRegressor(iterations=5, random_state=0).fit(
+    model = DarkoRegressor(
+        iterations=5, random_state=0, linear_leaves=False
+    ).fit(
         X, y, cat_features=[1]
     )
     path = tmp_path / "current-missing.npz"

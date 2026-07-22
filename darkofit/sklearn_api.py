@@ -25,6 +25,7 @@ from ._validation import (
 from .booster import (
     DistributionalBoosting,
     GradientBoosting,
+    LINEAR_LEAVES_MIN_SAMPLES,
     MulticlassBoosting,
     _EMITTED_DIAGNOSTIC_WARNING_CODES,
     _normalize_diagnostic_warnings,
@@ -103,6 +104,24 @@ _GROUP_CENTERED_CROSSES_TOP_CATEGORICAL = 3
 _GROUP_CENTERED_CROSSES_DATA_FALLBACK_REASONS = frozenset({
     "no_categorical_features",
     "no_numeric_features",
+    "below_min_samples",
+})
+_AUTOMATIC_LINEAR_SELECTOR_VERSION = 1
+_AUTOMATIC_LINEAR_SELECTOR_VALIDATION_FRACTION = 0.2
+_AUTOMATIC_LINEAR_SELECTOR_MIN_RELATIVE_IMPROVEMENT = 0.03
+_AUTOMATIC_LINEAR_SELECTOR_FALLBACK_REASONS = frozenset({
+    "ensemble",
+    "preset",
+    "non_rmse_loss",
+    "automatic_tree_mode",
+    "non_catboost_tree_mode",
+    "automatic_learning_rate_probe",
+    "linear_residual",
+    "categorical_crosses",
+    "distributional_calibration",
+    "interval_calibration",
+    "callbacks",
+    "ordered_boosting",
     "below_min_samples",
 })
 
@@ -205,6 +224,14 @@ def _normalize_selection_rounds(selection_rounds):
     if selection_rounds < 1:
         raise ValueError("selection_rounds must be at least 1")
     return selection_rounds
+
+
+def _normalize_linear_leaves(linear_leaves):
+    if isinstance(linear_leaves, (bool, np.bool_)):
+        return bool(linear_leaves)
+    if isinstance(linear_leaves, str) and linear_leaves.strip().lower() == "auto":
+        return "auto"
+    raise TypeError("linear_leaves must be a bool or 'auto'")
 
 
 def _normalize_n_ensembles(n_ensembles):
@@ -2147,6 +2174,312 @@ def _validate_loaded_wrapper_fitted_params(params, booster):
                 "invalid DarkoFit model: wrapper random state does not match "
                 "the loaded booster"
             )
+
+
+def _validate_automatic_linear_selector_metadata(metadata, booster=None):
+    """Validate the fitted automatic-selector record and optional booster."""
+    required = {
+        "version",
+        "requested",
+        "fit_random_state_seed",
+        "eligible",
+        "resolved_linear_leaves",
+        "final_booster_linear_leaves",
+        "final_linear_leaves_active",
+        "reason",
+        "minimum_relative_improvement",
+        "split",
+        "constant_validation_rmse",
+        "linear_validation_rmse",
+        "relative_validation_improvement",
+        "selection_fits",
+        "selection_total_seconds",
+    }
+    if not isinstance(metadata, Mapping) or set(metadata) != required:
+        raise ValueError(
+            "invalid DarkoFit model: automatic linear selector state is invalid"
+        )
+    eligible = metadata.get("eligible")
+    resolved = metadata.get("resolved_linear_leaves")
+    final_requested = metadata.get("final_booster_linear_leaves")
+    final_active = metadata.get("final_linear_leaves_active")
+    reason = metadata.get("reason")
+    threshold = metadata.get("minimum_relative_improvement")
+    total_seconds = metadata.get("selection_total_seconds")
+    fit_seed = metadata.get("fit_random_state_seed")
+    if (
+        metadata.get("version") != _AUTOMATIC_LINEAR_SELECTOR_VERSION
+        or metadata.get("requested") != "auto"
+        or (
+            fit_seed is not None
+            and (
+                isinstance(fit_seed, bool)
+                or not isinstance(fit_seed, int)
+                or fit_seed < 0
+            )
+        )
+        or not isinstance(eligible, bool)
+        or not isinstance(resolved, bool)
+        or not isinstance(final_requested, bool)
+        or not isinstance(final_active, bool)
+        or (final_active and not final_requested)
+        or not isinstance(reason, str)
+        or not reason
+        or isinstance(threshold, bool)
+        or not isinstance(threshold, (int, float))
+        or float(threshold)
+        != _AUTOMATIC_LINEAR_SELECTOR_MIN_RELATIVE_IMPROVEMENT
+        or isinstance(total_seconds, bool)
+        or not isinstance(total_seconds, (int, float))
+        or not np.isfinite(float(total_seconds))
+        or float(total_seconds) < 0.0
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: automatic linear selector state is invalid"
+        )
+    split = metadata.get("split")
+    split_fields = {
+        "source",
+        "policy",
+        "train_rows",
+        "validation_rows",
+        "train_positions_sha256",
+        "validation_positions_sha256",
+        "rows_disjoint",
+        "group_disjoint",
+        "sample_weight_provided",
+        "train_weight_sum",
+        "validation_weight_sum",
+    }
+    if not isinstance(split, Mapping) or set(split) != split_fields:
+        raise ValueError(
+            "invalid DarkoFit model: automatic linear selector split is invalid"
+        )
+    for name in ("train_rows", "validation_rows"):
+        value = split.get(name)
+        if (
+            value is not None
+            and (
+                isinstance(value, bool)
+                or not isinstance(value, int)
+                or value < 1
+            )
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: automatic linear selector split is invalid"
+            )
+    for name in ("train_positions_sha256", "validation_positions_sha256"):
+        digest = split.get(name)
+        if digest is not None and (
+            not isinstance(digest, str)
+            or len(digest) != 64
+            or any(char not in "0123456789abcdef" for char in digest)
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: automatic linear selector split is invalid"
+            )
+    if not isinstance(split.get("sample_weight_provided"), bool):
+        raise ValueError(
+            "invalid DarkoFit model: automatic linear selector split is invalid"
+        )
+    for name in ("rows_disjoint", "group_disjoint"):
+        if split.get(name) not in {None, True}:
+            raise ValueError(
+                "invalid DarkoFit model: automatic linear selector split is invalid"
+            )
+    for name in ("train_weight_sum", "validation_weight_sum"):
+        value = split.get(name)
+        if value is not None and (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not np.isfinite(float(value))
+            or float(value) <= 0.0
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: automatic linear selector split is invalid"
+            )
+    if (
+        not split["sample_weight_provided"]
+        and (
+            split["train_weight_sum"] is not None
+            or split["validation_weight_sum"] is not None
+        )
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: automatic linear selector split is invalid"
+        )
+    fits = metadata.get("selection_fits")
+    scores = (
+        metadata.get("constant_validation_rmse"),
+        metadata.get("linear_validation_rmse"),
+    )
+    margin = metadata.get("relative_validation_improvement")
+    if eligible:
+        if (
+            fit_seed is None
+            or split.get("source")
+            not in {"automatic_holdout", "explicit_eval_set"}
+            or split.get("train_rows") is None
+            or split.get("validation_rows") is None
+            or not isinstance(fits, list)
+            or len(fits) != 2
+            or (final_requested and not resolved)
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: automatic linear selector state is invalid"
+            )
+        for score in scores:
+            if (
+                isinstance(score, bool)
+                or not isinstance(score, (int, float))
+                or not np.isfinite(float(score))
+                or float(score) < 0.0
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: automatic linear selector score is invalid"
+                )
+        if (
+            isinstance(margin, bool)
+            or not isinstance(margin, (int, float))
+            or not np.isfinite(float(margin))
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: automatic linear selector margin is invalid"
+            )
+        expected_fit_fields = {
+            "name",
+            "linear_leaves",
+            "validation_rmse",
+            "best_n_estimators",
+            "fit_seconds",
+            "linear_leaves_active",
+        }
+        for index, fit in enumerate(fits):
+            if (
+                not isinstance(fit, Mapping)
+                or set(fit) != expected_fit_fields
+                or fit.get("name") != ("constant" if index == 0 else "linear")
+                or fit.get("linear_leaves") is not bool(index)
+                or not isinstance(fit.get("linear_leaves_active"), bool)
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: automatic linear selector fit is invalid"
+                )
+            best_n = fit.get("best_n_estimators")
+            seconds = fit.get("fit_seconds")
+            score = fit.get("validation_rmse")
+            if (
+                isinstance(best_n, bool)
+                or not isinstance(best_n, int)
+                or best_n < 0
+                or isinstance(seconds, bool)
+                or not isinstance(seconds, (int, float))
+                or not np.isfinite(float(seconds))
+                or float(seconds) < 0.0
+                or score != scores[index]
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: automatic linear selector fit is invalid"
+                )
+        if resolved and (
+            reason != "selected_linear"
+            or float(margin) < float(threshold)
+            or fits[1]["linear_leaves_active"] is not True
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: automatic linear selector decision is invalid"
+            )
+        if not resolved and (
+            (
+                reason == "margin_below_threshold"
+                and (
+                    fits[1]["linear_leaves_active"] is not True
+                    or float(margin) >= float(threshold)
+                )
+            )
+            or (
+                reason == "linear_candidate_inactive"
+                and fits[1]["linear_leaves_active"] is not False
+            )
+            or reason
+            not in {"margin_below_threshold", "linear_candidate_inactive"}
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: automatic linear selector decision is invalid"
+            )
+        if fits[0]["linear_leaves_active"] is not False:
+            raise ValueError(
+                "invalid DarkoFit model: constant selector audition is invalid"
+            )
+        if float(total_seconds) + 1e-12 < sum(
+            float(fit["fit_seconds"]) for fit in fits
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: automatic linear selector timing is invalid"
+            )
+        if split["source"] == "automatic_holdout":
+            if (
+                split["policy"]
+                not in {
+                    "group_shuffle",
+                    "weighted_target_stratified",
+                    "random_fallback",
+                }
+                or split["train_positions_sha256"] is None
+                or split["validation_positions_sha256"] is None
+                or split["rows_disjoint"] is not True
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: automatic linear selector split is invalid"
+                )
+        elif (
+            split["policy"] != "explicit_eval_set"
+            or split["train_positions_sha256"] is None
+            or split["validation_positions_sha256"] is not None
+            or split["rows_disjoint"] is not None
+            or split["group_disjoint"] is not None
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: automatic linear selector split is invalid"
+            )
+    elif (
+        resolved
+        or final_requested
+        or final_active
+        or reason not in _AUTOMATIC_LINEAR_SELECTOR_FALLBACK_REASONS
+        or scores != (None, None)
+        or margin is not None
+        or fits != []
+        or float(total_seconds) != 0.0
+        or split.get("source") != "none"
+        or split != {
+            "source": "none",
+            "policy": "none",
+            "train_rows": None,
+            "validation_rows": None,
+            "train_positions_sha256": None,
+            "validation_positions_sha256": None,
+            "rows_disjoint": None,
+            "group_disjoint": None,
+            "sample_weight_provided": False,
+            "train_weight_sum": None,
+            "validation_weight_sum": None,
+        }
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: automatic linear selector fallback is invalid"
+        )
+    if booster is not None:
+        if (
+            bool(getattr(booster, "linear_leaves", False))
+            is not final_requested
+            or bool(getattr(booster, "linear_leaves_active_", False))
+            is not final_active
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: automatic linear selector and booster disagree"
+            )
+    return dict(metadata)
 
 
 def _validate_loaded_wrapper_fitted_state(state, booster):
@@ -4496,6 +4829,8 @@ class _RefitParamsMixin:
         payload = getattr(self, "_shared_numeric_preprocessing_", None)
         if payload is not None:
             model._shared_preprocessing_payload = payload
+        if getattr(self, "_suppress_core_deprecation_warning", False):
+            model._suppress_deprecation_warning = True
         return model
 
     def _make_shared_numeric_preprocessing(
@@ -4997,6 +5332,33 @@ class _RefitParamsMixin:
                 ].copy()
                 member._ensemble_oob_indices_ = provenance["oob"].copy()
         result = est._adopt_ensemble(members, metadata)
+        selector = metadata.get("automatic_linear_selector")
+        if selector is not None:
+            validated_selector = (
+                _validate_automatic_linear_selector_metadata(selector)
+            )
+            if (
+                validated_selector["eligible"] is not False
+                or validated_selector["resolved_linear_leaves"] is not False
+                or validated_selector["reason"] != "ensemble"
+                or any(
+                    _normalize_linear_leaves(member.linear_leaves) is not False
+                    or bool(getattr(member.model_, "linear_leaves", False))
+                    for member in members
+                )
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: automatic selector ensemble "
+                    "fallback is inconsistent"
+                )
+            result.linear_leaves = "auto"
+            result.linear_leaves_selected_ = False
+            result.automatic_linear_selector_ = validated_selector
+        elif params.get("linear_leaves") == "auto":
+            raise ValueError(
+                "invalid DarkoFit model: automatic selector ensemble state "
+                "is missing"
+            )
         if group_codes is not None:
             result._ensemble_group_codes_ = group_codes.copy()
         return result
@@ -6302,6 +6664,9 @@ class _RefitParamsMixin:
             )
             if selection_summary is not None:
                 state["selection_linear_residual_summary"] = selection_summary
+        selector = getattr(self, "automatic_linear_selector_", None)
+        if selector is not None:
+            state["automatic_linear_selector"] = dict(selector)
         return state
 
     def _wrapper_params_header(self):
@@ -6668,6 +7033,49 @@ class _RefitParamsMixin:
             self.sigma_scale_ = 1.0
             self.dist_scale_source_ = "none"
             self.sigma_scale_source_ = "none"
+        selector = state.get("automatic_linear_selector")
+        auto_params = getattr(self.model_, "auto_params_", {})
+        fitted_selector = auto_params.get("automatic_linear_selector")
+        diagnostics = auto_params.get("diagnostics", {})
+        diagnostic_selector = (
+            diagnostics.get("automatic_linear_selector")
+            if isinstance(diagnostics, Mapping)
+            else None
+        )
+        requested = (
+            None
+            if wrapper_params is None
+            else wrapper_params.get("linear_leaves")
+        )
+        if selector is not None:
+            validated = _validate_automatic_linear_selector_metadata(
+                selector, self.model_
+            )
+            if (
+                requested != "auto"
+                or not isinstance(fitted_selector, Mapping)
+                or dict(fitted_selector) != validated
+                or not isinstance(diagnostic_selector, Mapping)
+                or dict(diagnostic_selector) != validated
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: automatic linear selector "
+                    "wrapper and booster provenance disagree"
+                )
+            self.linear_leaves = "auto"
+            self.linear_leaves_selected_ = bool(
+                validated["resolved_linear_leaves"]
+            )
+            self.automatic_linear_selector_ = validated
+        elif (
+            requested == "auto"
+            or fitted_selector is not None
+            or diagnostic_selector is not None
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: automatic linear selector fitted "
+                "state is incomplete"
+            )
 
     def _restore_interval_calibration_state(self, state, wrapper_arrays):
         state = state or {}
@@ -7280,6 +7688,15 @@ class _RefitParamsMixin:
             params["cat_smoothing"] = auto["binning"].get(
                 "cat_smoothing_resolved", params.get("cat_smoothing")
             )
+        if params.get("linear_leaves") == "auto":
+            selector = getattr(self, "automatic_linear_selector_", None)
+            if not isinstance(selector, Mapping):
+                raise ValueError(
+                    "fitted automatic linear selector metadata is missing"
+                )
+            params["linear_leaves"] = bool(
+                selector["resolved_linear_leaves"]
+            )
         if bool(params.get("linear_leaves", False)):
             linear_metadata = auto.get("linear_leaves", {})
             if not (
@@ -7648,6 +8065,12 @@ def _fit_private_ensemble_v3(
     """
     previous_state = dict(estimator.__dict__)
     try:
+        automatic_linear_fallback = (
+            hasattr(estimator, "linear_leaves")
+            and _normalize_linear_leaves(estimator.linear_leaves) == "auto"
+        )
+        if automatic_linear_fallback:
+            estimator.linear_leaves = False
         estimator._clear_ensemble_state()
         n_members = _normalize_n_ensembles(estimator.n_ensembles)
         if n_members < 2:
@@ -8205,6 +8628,13 @@ def _fit_private_ensemble_v3(
                 },
             })
         result = estimator._adopt_ensemble(estimators, metadata)
+        if automatic_linear_fallback:
+            estimator.linear_leaves = "auto"
+            estimator._attach_automatic_linear_selector_metadata(
+                estimator._automatic_linear_selector_fallback_metadata(
+                    "ensemble"
+                )
+            )
         if group_codes is not None:
             result._ensemble_group_codes_ = group_codes.copy()
         return result
@@ -8504,10 +8934,13 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         Fraction of training data to hold out as a validation set when
         *early_stopping* is active and no explicit *eval_set* is passed.
         Ignored when an explicit *eval_set* is given to ``fit``.
-    linear_leaves : bool, default False
+    linear_leaves : {False, True, "auto"}, default "auto"
         Experimental local-linear leaves for scalar RMSE CatBoost-mode fits.
-        The option is never selected automatically; small and all-categorical
-        fits retain exact constant leaves and record the fallback reason.
+        ``"auto"`` auditions constant and linear leaves on a deterministic
+        validation split, selects linear leaves only for at least a 3% RMSE
+        improvement, and otherwise retains exact constant-leaf behavior.
+        Unsupported and small fits fall back to constant leaves with recorded
+        provenance. Explicit booleans bypass the selector.
     linear_lambda : float, default 1.0
         Nonnegative ridge penalty applied to local-linear slopes. The regular
         leaf ``l2_leaf_reg`` remains the intercept penalty.
@@ -8583,7 +9016,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                  target_ordered_cat_codes="off",
                  rho_learning_rate_multiplier=1.0,
                  rho_l2_leaf_reg_multiplier=1.0,
-                 linear_leaves=False, linear_lambda=1.0,
+                 linear_leaves="auto", linear_lambda=1.0,
                  preset=None, selection_rounds=None, n_ensembles=1,
                  ensemble_bootstrap="rows",
                  ensemble_shared_preprocessing=True,
@@ -8665,6 +9098,478 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self.auto_learning_rate_probe = auto_learning_rate_probe
         self.auto_learning_rate_probe_values = auto_learning_rate_probe_values
         self.auto_learning_rate_probe_iterations = auto_learning_rate_probe_iterations
+
+    def _clear_automatic_linear_selector_state(self):
+        for name in (
+            "linear_leaves_selected_",
+            "automatic_linear_selector_",
+        ):
+            if hasattr(self, name):
+                delattr(self, name)
+
+    @staticmethod
+    def _automatic_linear_selector_empty_split():
+        return {
+            "source": "none",
+            "policy": "none",
+            "train_rows": None,
+            "validation_rows": None,
+            "train_positions_sha256": None,
+            "validation_positions_sha256": None,
+            "rows_disjoint": None,
+            "group_disjoint": None,
+            "sample_weight_provided": False,
+            "train_weight_sum": None,
+            "validation_weight_sum": None,
+        }
+
+    def _automatic_linear_selector_fallback_metadata(self, reason):
+        if hasattr(self, "ensemble_metadata_"):
+            fit_seed = self.ensemble_metadata_.get("fit_random_state_seed")
+            final_requested = False
+            final_active = False
+        else:
+            model = getattr(self, "model_", None)
+            fit_seed = getattr(model, "_fit_random_state_seed_", None)
+            final_requested = bool(getattr(model, "linear_leaves", False))
+            final_active = bool(
+                getattr(model, "linear_leaves_active_", False)
+            )
+        return {
+            "version": _AUTOMATIC_LINEAR_SELECTOR_VERSION,
+            "requested": "auto",
+            "fit_random_state_seed": (
+                None if fit_seed is None else int(fit_seed)
+            ),
+            "eligible": False,
+            "resolved_linear_leaves": False,
+            "final_booster_linear_leaves": final_requested,
+            "final_linear_leaves_active": final_active,
+            "reason": str(reason),
+            "minimum_relative_improvement": (
+                _AUTOMATIC_LINEAR_SELECTOR_MIN_RELATIVE_IMPROVEMENT
+            ),
+            "split": self._automatic_linear_selector_empty_split(),
+            "constant_validation_rmse": None,
+            "linear_validation_rmse": None,
+            "relative_validation_improvement": None,
+            "selection_fits": [],
+            "selection_total_seconds": 0.0,
+        }
+
+    def _attach_automatic_linear_selector_metadata(self, metadata):
+        metadata = _validate_automatic_linear_selector_metadata(
+            metadata,
+            None if hasattr(self, "estimators_") else self.model_,
+        )
+        self.linear_leaves_selected_ = bool(
+            metadata["resolved_linear_leaves"]
+        )
+        self.automatic_linear_selector_ = metadata
+        if hasattr(self, "estimators_"):
+            self.ensemble_metadata_["automatic_linear_selector"] = metadata
+            return
+        self.model_.auto_params_["automatic_linear_selector"] = metadata
+        self.model_.auto_params_.setdefault("diagnostics", {})[
+            "automatic_linear_selector"
+        ] = metadata
+
+    def _automatic_linear_selector_ineligible_reason(
+        self, X, *, eval_set, callbacks
+    ):
+        if _normalize_n_ensembles(self.n_ensembles) != 1 or (
+            str(self.ensemble_mode).strip().lower().replace("-", "_")
+            != "bootstrap"
+        ):
+            return "ensemble"
+        if _normalize_regression_preset(self.preset) is not None:
+            return "preset"
+        if self.loss != "RMSE":
+            return "non_rmse_loss"
+        if _is_auto_tree_mode(self.tree_mode):
+            return "automatic_tree_mode"
+        if _normalize_tree_mode(self.tree_mode) != "catboost":
+            return "non_catboost_tree_mode"
+        if self.auto_learning_rate_probe:
+            return "automatic_learning_rate_probe"
+        if _should_use_linear_residual(self.linear_residual):
+            return "linear_residual"
+        if _normalize_categorical_crosses(self.categorical_crosses):
+            return "categorical_crosses"
+        if _normalize_dist_calibration(
+            self.dist_calibration, self.sigma_calibration
+        ) is not None:
+            return "distributional_calibration"
+        if _normalize_interval_calibration(self.interval_calibration) is not None:
+            return "interval_calibration"
+        if callbacks:
+            return "callbacks"
+        if self.ordered_boosting is True or (
+            isinstance(self.ordered_boosting, np.bool_)
+            and bool(self.ordered_boosting)
+        ):
+            return "ordered_boosting"
+        minimum_rows = (
+            LINEAR_LEAVES_MIN_SAMPLES
+            if eval_set is not None
+            else math.ceil(
+                LINEAR_LEAVES_MIN_SAMPLES
+                / (1.0 - _AUTOMATIC_LINEAR_SELECTOR_VALIDATION_FRACTION)
+            )
+        )
+        if n_samples_from_array_like(X) < minimum_rows:
+            return "below_min_samples"
+        return None
+
+    def _fit_with_automatic_linear_fallback(
+        self,
+        reason,
+        X,
+        y,
+        *,
+        cat_features,
+        eval_set,
+        groups,
+        sample_weight,
+        eval_sample_weight,
+        callbacks,
+        ordinal_features,
+    ):
+        had_suppression = hasattr(
+            self, "_suppress_wrapper_deprecation_warning"
+        )
+        previous_suppression = getattr(
+            self, "_suppress_wrapper_deprecation_warning", None
+        )
+        try:
+            self.linear_leaves = False
+            self._suppress_wrapper_deprecation_warning = True
+            fitted = self.fit(
+                X,
+                y,
+                cat_features=cat_features,
+                eval_set=eval_set,
+                groups=groups,
+                sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight,
+                callbacks=callbacks,
+                ordinal_features=ordinal_features,
+            )
+        finally:
+            self.linear_leaves = "auto"
+            if had_suppression:
+                self._suppress_wrapper_deprecation_warning = (
+                    previous_suppression
+                )
+            elif hasattr(self, "_suppress_wrapper_deprecation_warning"):
+                del self._suppress_wrapper_deprecation_warning
+        self._attach_automatic_linear_selector_metadata(
+            self._automatic_linear_selector_fallback_metadata(reason)
+        )
+        return fitted
+
+    @staticmethod
+    def _automatic_linear_selector_fit_record(name, model, seconds):
+        score = float(model.best_score_)
+        if not np.isfinite(score) or score < 0.0:
+            raise RuntimeError(
+                "automatic linear selector produced an invalid validation RMSE"
+            )
+        validation = model.model_.auto_params_.get("validation_split", {})
+        if validation.get("source") != "explicit_eval_set":
+            raise RuntimeError(
+                "automatic linear selector did not use its declared eval set"
+            )
+        return {
+            "name": name,
+            "linear_leaves": name == "linear",
+            "validation_rmse": score,
+            "best_n_estimators": int(model.best_n_estimators_),
+            "fit_seconds": float(seconds),
+            "linear_leaves_active": bool(
+                getattr(model.model_, "linear_leaves_active_", False)
+            ),
+        }
+
+    def _fit_automatic_linear_selector(
+        self,
+        X,
+        y,
+        *,
+        cat_features,
+        eval_set,
+        groups,
+        sample_weight,
+        eval_sample_weight,
+        callbacks,
+        ordinal_features,
+    ):
+        self._clear_automatic_linear_selector_state()
+        reason = self._automatic_linear_selector_ineligible_reason(
+            X, eval_set=eval_set, callbacks=callbacks
+        )
+        if reason is not None:
+            return self._fit_with_automatic_linear_fallback(
+                reason,
+                X,
+                y,
+                cat_features=cat_features,
+                eval_set=eval_set,
+                groups=groups,
+                sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight,
+                callbacks=callbacks,
+                ordinal_features=ordinal_features,
+            )
+
+        _ensure_dense(X)
+        n_rows = n_samples_from_array_like(X)
+        y_checked = validate_target_vector(y, n_rows, dtype=np.float64)
+        weights = _validate_wrapper_sample_weight(sample_weight, n_rows)
+        requested_random_state = self.random_state
+        fit_seed = normalize_random_state_seed(requested_random_state)
+        if fit_seed is None:
+            # The two auditions must share one reproducible random stream.
+            fit_seed = 0
+        if eval_set is None:
+            if eval_sample_weight is not None:
+                raise ValueError(
+                    "eval_sample_weight requires an explicit eval_set"
+                )
+            group_values = None
+            if groups is not None:
+                group_values = np.asarray(groups)
+                if group_values.ndim != 1 or len(group_values) != n_rows:
+                    raise ValueError(
+                        "groups must be one-dimensional with one value per "
+                        "training row"
+                    )
+            train_idx, validation_idx, policy = _make_eval_split(
+                X,
+                y_checked,
+                _AUTOMATIC_LINEAR_SELECTOR_VALIDATION_FRACTION,
+                fit_seed,
+                groups=group_values,
+                sample_weight=weights,
+                validation_strategy="weighted_stratified",
+            )
+            selection_X = _take_rows(X, train_idx)
+            selection_y = y_checked[train_idx]
+            selection_eval_set = (
+                _take_rows(X, validation_idx),
+                y_checked[validation_idx],
+            )
+            selection_groups = (
+                None if group_values is None else group_values[train_idx]
+            )
+            selection_weight = (
+                None if weights is None else weights[train_idx]
+            )
+            selection_eval_weight = (
+                None if weights is None else weights[validation_idx]
+            )
+            if np.intersect1d(train_idx, validation_idx).size:
+                raise RuntimeError(
+                    "automatic linear selector split rows are not disjoint"
+                )
+            group_disjoint = None
+            if group_values is not None:
+                group_disjoint = not bool(
+                    np.intersect1d(
+                        np.unique(group_values[train_idx]),
+                        np.unique(group_values[validation_idx]),
+                    ).size
+                )
+                if not group_disjoint:
+                    raise RuntimeError(
+                        "automatic linear selector split groups are not "
+                        "disjoint"
+                    )
+            split = {
+                "source": "automatic_holdout",
+                "policy": policy,
+                "train_rows": int(len(train_idx)),
+                "validation_rows": int(len(validation_idx)),
+                "train_positions_sha256": _index_sha256(train_idx),
+                "validation_positions_sha256": _index_sha256(validation_idx),
+                "rows_disjoint": True,
+                "group_disjoint": group_disjoint,
+                "sample_weight_provided": weights is not None,
+                "train_weight_sum": (
+                    None
+                    if selection_weight is None
+                    else float(np.sum(selection_weight))
+                ),
+                "validation_weight_sum": (
+                    None
+                    if selection_eval_weight is None
+                    else float(np.sum(selection_eval_weight))
+                ),
+            }
+        else:
+            _reject_eval_sample_weight_without_eval_set(
+                eval_sample_weight, eval_set
+            )
+            normalized_eval_set = _ensure_dense_eval_set(eval_set)
+            selection_X = X
+            selection_y = y_checked
+            selection_eval_set = normalized_eval_set
+            selection_groups = groups
+            selection_weight = weights
+            eval_rows = n_samples_from_array_like(normalized_eval_set[0])
+            validate_target_vector(
+                normalized_eval_set[1], eval_rows, dtype=np.float64
+            )
+            selection_eval_weight = _validate_wrapper_sample_weight(
+                eval_sample_weight,
+                eval_rows,
+                name="eval_sample_weight",
+            )
+            split = {
+                "source": "explicit_eval_set",
+                "policy": "explicit_eval_set",
+                "train_rows": int(n_rows),
+                "validation_rows": int(eval_rows),
+                "train_positions_sha256": _index_sha256(np.arange(n_rows)),
+                "validation_positions_sha256": None,
+                "rows_disjoint": None,
+                "group_disjoint": None,
+                "sample_weight_provided": (
+                    weights is not None or selection_eval_weight is not None
+                ),
+                "train_weight_sum": (
+                    None if weights is None else float(np.sum(weights))
+                ),
+                "validation_weight_sum": (
+                    None
+                    if selection_eval_weight is None
+                    else float(np.sum(selection_eval_weight))
+                ),
+            }
+
+        selection_started = time.perf_counter_ns()
+        selection_fits = []
+        for name, linear_leaves in (("constant", False), ("linear", True)):
+            candidate = clone(self).set_params(
+                linear_leaves=linear_leaves,
+                random_state=fit_seed,
+                early_stopping=True,
+                early_stopping_rounds=None,
+                use_best_model=True,
+                refit=False,
+                diagnostic_warnings="never",
+            )
+            candidate._suppress_wrapper_deprecation_warning = True
+            candidate._suppress_core_deprecation_warning = True
+            started = time.perf_counter_ns()
+            try:
+                candidate.fit(
+                    selection_X,
+                    selection_y,
+                    cat_features=cat_features,
+                    eval_set=selection_eval_set,
+                    groups=selection_groups,
+                    sample_weight=selection_weight,
+                    eval_sample_weight=selection_eval_weight,
+                    ordinal_features=ordinal_features,
+                )
+            finally:
+                if hasattr(candidate, "_suppress_wrapper_deprecation_warning"):
+                    del candidate._suppress_wrapper_deprecation_warning
+                if hasattr(candidate, "_suppress_core_deprecation_warning"):
+                    del candidate._suppress_core_deprecation_warning
+            seconds = (time.perf_counter_ns() - started) / 1e9
+            selection_fits.append(
+                self._automatic_linear_selector_fit_record(
+                    name, candidate, seconds
+                )
+            )
+            del candidate
+        selection_seconds = (time.perf_counter_ns() - selection_started) / 1e9
+        constant_score = selection_fits[0]["validation_rmse"]
+        linear_score = selection_fits[1]["validation_rmse"]
+        if constant_score == 0.0:
+            margin = 0.0 if linear_score == 0.0 else -1.0
+        else:
+            margin = (constant_score - linear_score) / constant_score
+        linear_active = selection_fits[1]["linear_leaves_active"]
+        selected = bool(
+            linear_active
+            and margin
+            >= _AUTOMATIC_LINEAR_SELECTOR_MIN_RELATIVE_IMPROVEMENT
+        )
+        decision_reason = (
+            "selected_linear"
+            if selected
+            else "linear_candidate_inactive"
+            if not linear_active
+            else "margin_below_threshold"
+        )
+        metadata = {
+            "version": _AUTOMATIC_LINEAR_SELECTOR_VERSION,
+            "requested": "auto",
+            "fit_random_state_seed": fit_seed,
+            "eligible": True,
+            "resolved_linear_leaves": selected,
+            "final_booster_linear_leaves": False,
+            "final_linear_leaves_active": False,
+            "reason": decision_reason,
+            "minimum_relative_improvement": (
+                _AUTOMATIC_LINEAR_SELECTOR_MIN_RELATIVE_IMPROVEMENT
+            ),
+            "split": split,
+            "constant_validation_rmse": float(constant_score),
+            "linear_validation_rmse": float(linear_score),
+            "relative_validation_improvement": float(margin),
+            "selection_fits": selection_fits,
+            "selection_total_seconds": float(selection_seconds),
+        }
+        del (
+            selection_X,
+            selection_y,
+            selection_eval_set,
+            selection_groups,
+            selection_weight,
+            selection_eval_weight,
+        )
+        had_suppression = hasattr(
+            self, "_suppress_wrapper_deprecation_warning"
+        )
+        previous_suppression = getattr(
+            self, "_suppress_wrapper_deprecation_warning", None
+        )
+        try:
+            self.linear_leaves = selected
+            self.random_state = fit_seed
+            self._suppress_wrapper_deprecation_warning = True
+            fitted = self.fit(
+                X,
+                y,
+                cat_features=cat_features,
+                eval_set=eval_set,
+                groups=groups,
+                sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight,
+                callbacks=callbacks,
+                ordinal_features=ordinal_features,
+            )
+        finally:
+            self.linear_leaves = "auto"
+            self.random_state = requested_random_state
+            if had_suppression:
+                self._suppress_wrapper_deprecation_warning = (
+                    previous_suppression
+                )
+            elif hasattr(self, "_suppress_wrapper_deprecation_warning"):
+                del self._suppress_wrapper_deprecation_warning
+        metadata["final_booster_linear_leaves"] = bool(
+            getattr(self.model_, "linear_leaves", False)
+        )
+        metadata["final_linear_leaves_active"] = bool(
+            getattr(self.model_, "linear_leaves_active_", False)
+        )
+        self._attach_automatic_linear_selector_metadata(metadata)
+        return fitted
 
     def _clear_group_centered_cross_state(self):
         if hasattr(self, "group_centered_categorical_crosses_"):
@@ -9059,7 +9964,26 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
             sample_weight=None, eval_sample_weight=None, callbacks=None,
             ordinal_features=None):
-        """Fit the model, resolving any opt-in product preset."""
+        """Fit the model, resolving automatic leaves and product presets."""
+        linear_leaves = _normalize_linear_leaves(self.linear_leaves)
+        if linear_leaves == "auto":
+            if not getattr(
+                self, "_suppress_wrapper_deprecation_warning", False
+            ):
+                self._warn_wrapper_deprecated_options(stacklevel=4)
+            return self._fit_automatic_linear_selector(
+                X,
+                y,
+                cat_features=cat_features,
+                eval_set=eval_set,
+                groups=groups,
+                sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight,
+                callbacks=_normalize_callbacks(callbacks),
+                ordinal_features=ordinal_features,
+            )
+        self.linear_leaves = linear_leaves
+        self._clear_automatic_linear_selector_state()
         private_cross_mode = getattr(
             self, "_group_centered_crosses_private_mode", None
         )
@@ -10354,6 +11278,14 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             est.random_state = getattr(booster, "random_state", None)
         if "oblivious_kernel" not in params:
             est.oblivious_kernel = getattr(booster, "oblivious_kernel", "auto")
+        if "linear_leaves" not in params:
+            # Historical archives omitted the then-default False value. The
+            # wrapper default is now "auto", so recover the fitted/requested
+            # legacy value from the booster rather than silently changing the
+            # policy on load or on a later refit.
+            est.linear_leaves = bool(
+                getattr(booster, "linear_leaves", False)
+            )
         state = wrapper_header.get("state", {})
         if not isinstance(state, Mapping):
             raise ValueError(
