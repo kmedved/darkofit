@@ -1,0 +1,496 @@
+{
+  "audit_date": "2026-07-22",
+  "audit_scope": {
+    "excluded": [
+      "passing mechanisms with no historical close unless a later policy change altered their disposition",
+      "exploratory diagnostics that never acquired a candidate or terminal mechanism verdict",
+      "pre-outcome harness failures except M6, whose failure and embedded verdict directly affect the standing development pipeline"
+    ],
+    "included": "Every terminal mechanism, policy, certification, funding, packaging, and development-ranking disposition surfaced by the program ledgers, TESTING_LOG.md, the Best-of-both completion audit, PRODUCT_OFFENSE_PLAN.md, COUNTERPUNCH_PLAN.md, and NEXT_STEPS.md through source pin f0b1dd8.",
+    "source_pin": "f0b1dd834ebe1605f971ab6fa551dbfc186c7df2"
+  },
+  "entries": [
+    {
+      "backlog_action": "None. The 10,000-round accuracy surface later shipped explicitly; a default still needs new Tier-D evidence.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "mixed",
+      "evidence": "benchmarks/tabarena_regression_cap_horizon_result.md",
+      "historical_rule": "Default promotion required at least 0.5% aggregate quality gain, at least 10 of 13 dataset wins, at least 20% of children beyond 1,000 rounds, and inference ratio at most 1.10.",
+      "id": "tabarena_cap_horizon_10k",
+      "new_campaign_required": true,
+      "observed": "Quality ratio 0.995471 with upper 0.999747 and 8W-0L-5T; inference 1.1065. It narrowly missed the aggregate and inference gates and the now-abolished win-count and cap-fraction proxies.",
+      "project": "Global 10,000-round default"
+    },
+    {
+      "backlog_action": "None. The accuracy preset now exposes the measured tradeoff without making it automatic.",
+      "current_disposition": "healed_or_superseded",
+      "current_rule_status": "mixed",
+      "evidence": "benchmarks/tabarena_regression_followon_screen_result.md",
+      "historical_rule": "Automatic tree-mode selection had to keep inference time at or below 1.25 times control.",
+      "id": "automatic_tree_mode_screen",
+      "new_campaign_required": false,
+      "observed": "Quality improved 3.099%, but inference was 2.574 times control and every dataset exceeded the ceiling.",
+      "project": "Automatic tree-mode selection"
+    },
+    {
+      "backlog_action": "None for the tested broad policy.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "mixed",
+      "evidence": "benchmarks/tabarena_regression_followon_screen_result.md",
+      "historical_rule": "The four-permutation target-stat policy required at least 0.5% aggregate gain, majority breadth, and the dataset-harm bound.",
+      "id": "target_statistics_four_permutations",
+      "new_campaign_required": true,
+      "observed": "Aggregate ratio 0.997888, only two of five datasets improved, and Diamonds regressed 0.856%.",
+      "project": "Four target-statistic permutations"
+    },
+    {
+      "backlog_action": "None. Source-declared ordinal features later shipped as an explicit Tier-E capability.",
+      "current_disposition": "healed_or_superseded",
+      "current_rule_status": "reformed",
+      "evidence": "benchmarks/tabarena_regression_ordinal_confirmation_result.md",
+      "historical_rule": "The causal source-declared ordinal policy had to keep inference ratio at or below the round 1.25 ceiling.",
+      "id": "safe_ordinal_column_transform",
+      "new_campaign_required": false,
+      "observed": "Behavior was target-free; all 33 coordinates improved and causal quality ratio was 0.827085, but causal inference ratio was 1.265169. Deployment inference was 1.0222.",
+      "project": "Column-adding safe ordinal representation"
+    },
+    {
+      "backlog_action": "None for this generic transform. Any future candidate needs a new concentration-aware mechanism.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "reformed",
+      "evidence": "benchmarks/tabarena_regression_followon_screen_result.md",
+      "historical_rule": "The safe one-hot transform required a strict majority of dataset wins.",
+      "id": "safe_one_hot_transform",
+      "new_campaign_required": true,
+      "observed": "Aggregate ratio 0.960005 was almost entirely Diamonds; excluding Diamonds the other five datasets were 0.99983 and included a regression. The win-count gate is gone, but current leave-one-out concentration still fails.",
+      "project": "Safe one-hot preprocessing"
+    },
+    {
+      "backlog_action": "None. Later smooth-data evidence favored local linear leaves over this global residual route.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "valid",
+      "evidence": "benchmarks/tabarena_regression_followon_screen_result.md",
+      "historical_rule": "The global residual policy had to keep every dataset within a 0.5% harm ceiling.",
+      "id": "global_linear_residual",
+      "new_campaign_required": true,
+      "observed": "Aggregate ratio 0.989259, but QSAR-TID-11 regressed 1.783% and most gain came from Diamonds.",
+      "project": "Global linear residual boosting"
+    },
+    {
+      "backlog_action": "None. A10 later shipped as the explicit accuracy preset, not as a default.",
+      "current_disposition": "healed_or_superseded",
+      "current_rule_status": "valid",
+      "evidence": "benchmarks/tabarena_ctr23_minimal_confirmation_result.md",
+      "historical_rule": "Default confirmation required the one-sided A10-to-rival upper bound below 1.0 and the simultaneous A10-to-product guardrail within its registered bound.",
+      "id": "a10_minimal_confirmation",
+      "new_campaign_required": false,
+      "observed": "Point ratio to the rival was 0.942029, but upper bound was 1.012091; the simultaneous product max-regret upper was 1.046121 and protocol deviations were disclosed.",
+      "project": "A10 automatic default confirmation"
+    },
+    {
+      "backlog_action": "None for this combined sports policy.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "valid",
+      "evidence": "benchmarks/basketball_auto_lr_refit_result.md",
+      "historical_rule": "The policy had to improve primary sports quality without held-team harm and deliver at least 20% speed improvement.",
+      "id": "auto_lr_early_stop_exact_refit",
+      "new_campaign_required": true,
+      "observed": "Mean creator-fold R2 fell 0.001635, all leave-one-fold-out estimates were negative, held-team R2 fell 0.008933, and speed improved only 11.7%.",
+      "project": "Automatic learning rate plus early stopping and exact refit"
+    },
+    {
+      "backlog_action": "None. Ensemble APIs later shipped explicitly; the automatic sports route was separately tested by T10.",
+      "current_disposition": "healed_or_superseded",
+      "current_rule_status": "reformed",
+      "evidence": "benchmarks/basketball_oob_ensemble_confirmation_result.md",
+      "historical_rule": "Every quality and cost gate had to pass, including absolute control prediction IQR divided by median at most 0.20.",
+      "id": "oob5_stable_confirmation",
+      "new_campaign_required": false,
+      "observed": "Quality and candidate costs passed; the only failure was control prediction IQR/median 0.235 on millisecond-scale calls while candidate and paired ratios were stable.",
+      "project": "Five-member OOB ensemble confirmation"
+    },
+    {
+      "backlog_action": "None for automatic quantile offset calibration.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "valid",
+      "evidence": "benchmarks/basketball_quantile_calibration_result.md",
+      "historical_rule": "Calibration gains had to keep prediction-interval width ratio at or below 1.25.",
+      "id": "quantile_conformal_offset",
+      "new_campaign_required": true,
+      "observed": "Pinball loss and coverage improved, but interval-width ratios were 1.357 to 1.437, a visible sharpness cost.",
+      "project": "Quantile conformal offset"
+    },
+    {
+      "backlog_action": "None.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "valid",
+      "evidence": "benchmarks/basketball_temperature_scaling_result.md",
+      "historical_rule": "Binary calibration had to improve log loss, Brier score, and calibration without local quality harm.",
+      "id": "binary_temperature_scaling",
+      "new_campaign_required": true,
+      "observed": "Log loss, Brier score, and ECE worsened on creator folds, held teams, and cold players; the worst fold exceeded its harm bound.",
+      "project": "Binary temperature scaling"
+    },
+    {
+      "backlog_action": "None for an automatic default. The explicit scalar calibration surface remains available.",
+      "current_disposition": "healed_or_superseded",
+      "current_rule_status": "valid",
+      "evidence": "benchmarks/basketball_gaussian_scalar_calibration_result.md",
+      "historical_rule": "Gaussian calibration improvements had to keep interval-width ratio at or below 1.25.",
+      "id": "gaussian_scalar_calibration",
+      "new_campaign_required": false,
+      "observed": "NLL, CRPS, and coverage improved, but intervals widened 2.105 to 2.148 times.",
+      "project": "Gaussian scalar calibration"
+    },
+    {
+      "backlog_action": "Superseded by the active automatic smooth-data selector campaign under a new identity.",
+      "current_disposition": "healed_or_superseded",
+      "current_rule_status": "valid",
+      "evidence": "benchmarks/basketball_linear_leaves_result.md",
+      "historical_rule": "Automatic local linear leaves had to improve the sports quality views without broad harm.",
+      "id": "initial_random_split_linear_leaves",
+      "new_campaign_required": true,
+      "observed": "The initial selector engaged everywhere and reduced mean creator-fold R2 by 0.000607, held-team R2 by 0.0127, and cold-player R2 by 0.0120. Explicit linear leaves shipped separately.",
+      "project": "Initial automatic linear leaves"
+    },
+    {
+      "backlog_action": "None for this sports donor implementation.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "valid",
+      "evidence": "benchmarks/basketball_cross_features_donor_screen_result.md",
+      "historical_rule": "The donor screen had to improve the primary creator-fold and cold-player quality views before a port.",
+      "id": "numeric_cross_feature_donor",
+      "new_campaign_required": true,
+      "observed": "Mean creator-fold R2 fell 0.001042 and cold-player R2 fell 0.013881.",
+      "project": "Numeric cross-feature donor"
+    },
+    {
+      "backlog_action": "None for the tested pairwise mechanism.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "valid",
+      "evidence": "benchmarks/basketball_categorical_combinations_result.md",
+      "historical_rule": "All primary sports quality views and resource bounds had to pass.",
+      "id": "categorical_combinations",
+      "new_campaign_required": true,
+      "observed": "Every quality view worsened, including cold-player R2 by about 0.0914; prediction ratios were also 2.843 and 1.653 on decision views.",
+      "project": "Pairwise categorical combinations"
+    },
+    {
+      "backlog_action": "None. A bounded scalar leafwise prediction route shipped instead.",
+      "current_disposition": "healed_or_superseded",
+      "current_rule_status": "valid",
+      "evidence": "benchmarks/basketball_packed_prediction_result.md",
+      "historical_rule": "The exact packed router had to keep the 8,000-row prediction ratio at or below 1.10 and cold timing dispersion at or below 0.30.",
+      "id": "packed_prediction_router",
+      "new_campaign_required": false,
+      "observed": "Small batches improved, but the 8,000-row ratio was 1.134 and cold timing dispersion was 0.309.",
+      "project": "Unconditional packed prediction router"
+    },
+    {
+      "backlog_action": "None for these heads as automatic sports defaults.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "valid",
+      "evidence": "benchmarks/basketball_robust_heads_result.md",
+      "historical_rule": "S1 required the robust loss to improve primary, leave-one-fold-out, and held-team sports quality.",
+      "id": "s1_robust_heads",
+      "new_campaign_required": true,
+      "observed": "Student-t location reduced mean creator-fold R2 by 0.007982; MAE reduced it by 0.008461, and both failed leave-one-fold-out and held-team views.",
+      "project": "S1 robust heads"
+    },
+    {
+      "backlog_action": "None for this entity ensemble.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "valid",
+      "evidence": "benchmarks/basketball_entity_ensemble_result.md",
+      "historical_rule": "S2 required aggregate, breadth, and leave-one-fold-out quality to pass.",
+      "id": "s2_entity_ensemble",
+      "new_campaign_required": true,
+      "observed": "Mean creator-fold R2 fell 0.004182, eight of ten folds lost, and every leave-one-fold-out estimate failed despite a cold-player gain.",
+      "project": "S2 entity ensemble"
+    },
+    {
+      "backlog_action": "None for random_strength=1.0.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "valid",
+      "evidence": "benchmarks/basketball_random_strength_result.md",
+      "historical_rule": "The candidate had to clear aggregate and leave-one-fold-out quality gates.",
+      "id": "random_strength_1",
+      "new_campaign_required": true,
+      "observed": "Mean R2 gain was only 0.000624 and minimum leave-one-fold-out effect was -0.000378.",
+      "project": "random_strength=1.0"
+    },
+    {
+      "backlog_action": "None for random_strength=0.5 as an automatic policy.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "reformed",
+      "evidence": "benchmarks/basketball_sports_panel_result.md",
+      "historical_rule": "S4 required aggregate quality, leave-one-season-out concentration, broad wins, and acceptable fit cost.",
+      "id": "random_strength_0_5_s4",
+      "new_campaign_required": true,
+      "observed": "Equal-cell R2 gain was 0.000036, minimum leave-one-out effect was -0.000702, six of nine lineages lost, and fit time was 1.835 times control. Removing win counts does not rescue the quality or cost profile.",
+      "project": "random_strength=0.5 on S4"
+    },
+    {
+      "backlog_action": "None. Exact selected-subset fusion later shipped under Tier-E measurement rules.",
+      "current_disposition": "healed_or_superseded",
+      "current_rule_status": "abolished",
+      "evidence": "benchmarks/fused_subset_oblivious_result.md",
+      "historical_rule": "E1 required fit and tree timing IQR divided by median at most 0.15 before shipping exact engineering work.",
+      "id": "e1_subset_fusion",
+      "new_campaign_required": false,
+      "observed": "Behavior was exact and fit/tree ratios were about 0.535/0.527, but timing dispersion was 0.208/0.206. Binary engineering certification bars were later abolished.",
+      "project": "E1 selected-subset fusion"
+    },
+    {
+      "backlog_action": "None. The contiguous-layout optimization is retained and the old certificate is not claimed.",
+      "current_disposition": "healed_or_superseded",
+      "current_rule_status": "abolished",
+      "evidence": "benchmarks/predict_throughput_integrated_result.md",
+      "historical_rule": "P2 certification required every median ratio at or below 1.0, stability bounds, and a minimum timing duration.",
+      "id": "p2_prediction_certification",
+      "new_campaign_required": false,
+      "observed": "All eight medians improved at 0.805 to 0.987, but two stability checks and one minimum-duration check failed. Tier-E now publishes the measurement rather than a pass/fail certificate.",
+      "project": "P2 prediction-throughput certification"
+    },
+    {
+      "backlog_action": "None. M1 is the newer large-n characterization.",
+      "current_disposition": "healed_or_superseded",
+      "current_rule_status": "abolished",
+      "evidence": "benchmarks/large_n_engine_result.md",
+      "historical_rule": "E2 required a production-thread speedup of at least 1.30 times.",
+      "id": "e2_large_n_certification",
+      "new_campaign_required": false,
+      "observed": "Measured speedup was 1.2793 times and all other checks passed. The arbitrary certification bar was abolished; the measurement remains valid.",
+      "project": "E2 large-n engine certification"
+    },
+    {
+      "backlog_action": "None for an automatic float32 lane; the explicit experimental surface remains bounded.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "mixed",
+      "evidence": "benchmarks/FINDINGS.md",
+      "historical_rule": "E3 needed a meaningful speed or memory benefit plus complete weighted and high-dynamic-range quality coverage.",
+      "id": "e3_float32_histograms",
+      "new_campaign_required": true,
+      "observed": "Speed ratios were only 1.001 and 1.011, RSS was higher, and weighted/high-dynamic-range regret coverage was incomplete.",
+      "project": "E3 float32 histogram streams"
+    },
+    {
+      "backlog_action": "Active casualty 1: run the owner-authorized automatic smooth-data selector campaign under a new identity and full Tier-D safeguards.",
+      "current_disposition": "readjudication_active",
+      "current_rule_status": "abolished",
+      "evidence": "benchmarks/fresh_selector_confirmation.json",
+      "historical_rule": "The selector required aggregate ratio at most 0.98 and wins on at least 9 of 14 lineages.",
+      "id": "smooth_linear_leaf_selector_3pct",
+      "new_campaign_required": true,
+      "observed": "Selector ratio was 0.989264 with 2W-0L-12T, worst lineage and split ratios exactly 1.0. It was killed by minimum-effect and win-count rules that no longer govern selective automatic policies.",
+      "project": "Three-percent smooth-data linear-leaf selector"
+    },
+    {
+      "backlog_action": "None for C2. A materially different guarded ordinal mechanism would need a new identity.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "valid",
+      "evidence": "benchmarks/native_ordinal_c2_development_result.json",
+      "historical_rule": "C2 required aggregate quality, worst-task at most 1.02, worst-split at most 1.05, and validation-task at most 1.02.",
+      "id": "c2_native_ordinal",
+      "new_campaign_required": true,
+      "observed": "Aggregate ratio 0.992755 hid worst-task 1.317510, worst-split 2.435933, and worst validation-task 1.268106. These are current harm failures.",
+      "project": "C2 native ordinal"
+    },
+    {
+      "backlog_action": "None for the frozen T5 identity. Any retry needs a new clean panel and identity.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "valid",
+      "evidence": "benchmarks/t5_composite_confirmation_failure.json",
+      "historical_rule": "The no-rerun protocol failed closed on non-finite targets rather than dropping or imputing cases after registration.",
+      "id": "t5_composite_confirmation",
+      "new_campaign_required": true,
+      "observed": "Two tasks exposed non-finite targets during the control wave; no candidate ran. This is an integrity and panel failure, not negative model evidence.",
+      "project": "T5 composite confirmation"
+    },
+    {
+      "backlog_action": "None for the exact T5 candidate; a new harm guard is a new candidate.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "valid",
+      "evidence": "benchmarks/panel3_power_design_decision.json",
+      "historical_rule": "Panel 3 required at least 80% simulated pass probability under the exact Tier-D point, uncertainty, concentration, and harm gates.",
+      "id": "panel3_t5_power",
+      "new_campaign_required": true,
+      "observed": "Simulated pass probability was 50.00% with Wilson lower 48.61%; failures were driven by the worst-harm route despite point and leave-one-out strength.",
+      "project": "Panel 3 T5 composite power"
+    },
+    {
+      "backlog_action": "None for the exact guarded-cross candidate; a different guard requires a new identity.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "valid",
+      "evidence": "benchmarks/panel3_power_design_decision.json",
+      "historical_rule": "Panel 3 required at least 80% simulated pass probability under exact Tier-D harm and uncertainty gates.",
+      "id": "panel3_guarded_cross_power",
+      "new_campaign_required": true,
+      "observed": "Simulated pass probability was 10.64% with Wilson lower 9.82%, dominated by worst-harm failures.",
+      "project": "Panel 3 guarded cross features"
+    },
+    {
+      "backlog_action": "None for automatic OOB-5.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "valid",
+      "evidence": "benchmarks/basketball_sports_panel_v2_result.md",
+      "historical_rule": "T10 required aggregate, uncertainty, player-disjoint harm, and cold-player quality to pass.",
+      "id": "t10_oob5_automatic",
+      "new_campaign_required": true,
+      "observed": "Aggregate RMSE ratio was 1.023115 with upper 1.0401, eight of nine lineages lost, worst lineage was 1.0645, and cold-player ratio was 1.028733; costs passed.",
+      "project": "T10 five-member row-OOB automatic policy"
+    },
+    {
+      "backlog_action": "None for one-hot 255 as a broad policy. Other T7b levers retain separate nominee status.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "valid",
+      "evidence": "benchmarks/t7b_catboost_gap_attribution_result.md",
+      "historical_rule": "A promising T7b configuration had to pass multiplicity-adjusted uncertainty and worst-task harm checks.",
+      "id": "t7b_onehot255",
+      "new_campaign_required": true,
+      "observed": "The mean improvement was large, but the Bonferroni upper and worst-task gates failed.",
+      "project": "T7b one-hot threshold 255"
+    },
+    {
+      "backlog_action": "None for the old member policies. Ensemble-v3 is the successor product.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "valid",
+      "evidence": "benchmarks/m3a_wave1_result.md",
+      "historical_rule": "Existing row/group bootstrap ensembles had to improve the single model on player-disjoint sports and the general slice.",
+      "id": "m3a_existing_ensemble_policies",
+      "new_campaign_required": false,
+      "observed": "Group8/single sports ratio was 1.025482 and row8/single general ratio was 1.019556.",
+      "project": "M3a existing ensemble policies"
+    },
+    {
+      "backlog_action": "Re-adjudication backlog 3: after the selector, T7b, and separately authorized B3 slots, fund only a measured local causal microprototype against the post-dispatch baseline under a new Q identity.",
+      "current_disposition": "readjudication_backlog",
+      "current_rule_status": "abolished",
+      "evidence": "benchmarks/q0_wave1_profile_result.md",
+      "historical_rule": "Q funding was conjunctive: DarkoFit's internal projection had to clear 10%, and the rival quantized-to-float timing ratio had to be at most 0.90.",
+      "id": "q_quantization_funding",
+      "new_campaign_required": true,
+      "observed": "DarkoFit's Q0 screening projection was 13.28%, but the rival donor prong was 0.903595 and missed by 0.003595. Rival-conditioned funding prongs are now prohibited; the projection is sizing-only, not measured causal evidence.",
+      "project": "Q quantization prototype funding"
+    },
+    {
+      "backlog_action": "None alone; the combined B1+B2 policy Pareto-dominates it.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "mixed",
+      "evidence": "benchmarks/m3b_ensemble_v3_r3_result.json",
+      "historical_rule": "B1 alone had to clear the frozen value and archive gates and remain competitive with other arms.",
+      "id": "b1_sampling_alone",
+      "new_campaign_required": true,
+      "observed": "Old value/archive bars are no longer binding, but B1 is quality-Pareto-dominated by the combined arm.",
+      "project": "B1 sampling alone"
+    },
+    {
+      "backlog_action": "None alone; the combined B1+B2 policy Pareto-dominates it.",
+      "current_disposition": "valid_closure",
+      "current_rule_status": "mixed",
+      "evidence": "benchmarks/m3b_ensemble_v3_r3_result.json",
+      "historical_rule": "B2 alone had to clear the frozen value and archive gates and remain competitive with other arms.",
+      "id": "b2_member_policy_alone",
+      "new_campaign_required": true,
+      "observed": "Old value/archive bars are no longer binding, but B2 is quality-Pareto-dominated by the combined arm.",
+      "project": "B2 member policy alone"
+    },
+    {
+      "backlog_action": "None. Ensemble-v3 shipped publicly in v0.11.0 with honest cost characterization.",
+      "current_disposition": "healed_or_superseded",
+      "current_rule_status": "abolished",
+      "evidence": "benchmarks/m3b_ensemble_v3_r3_vs_single_readout_20260721.json",
+      "historical_rule": "The combined arm had to keep median archive bytes at or below four times a single model.",
+      "id": "b1_b2_combined_archive_gate",
+      "new_campaign_required": false,
+      "observed": "The arm beat the single model on all 13 cases at aggregate ratio 0.965513 and passed all other gates, but archive ratio was 5.534767. Archive size ratios were later abolished as gates.",
+      "project": "Combined B1+B2 ensemble-v3"
+    },
+    {
+      "backlog_action": "Optional real serializer project only; the non-loadable simulation is not a product artifact.",
+      "current_disposition": "healed_or_superseded",
+      "current_rule_status": "abolished",
+      "evidence": "benchmarks/barchive_v2_result.json",
+      "historical_rule": "Complete canonical preprocessor factoring had to reduce effective archive ratio to at most 4.0.",
+      "id": "barchive_exact_factoring",
+      "new_campaign_required": true,
+      "observed": "The exact non-loadable size simulation reached 4.152525 from 6.032405 and missed by 3.8%. Size ratios are now telemetry, never gates.",
+      "project": "B-archive exact factoring"
+    },
+    {
+      "backlog_action": "Re-adjudication backlog 2: eligible only under a fresh fixed-total-CPU, process-tree-RSS campaign after the selector and T7b quality slots and before Q; not authorized by this audit.",
+      "current_disposition": "readjudication_backlog",
+      "current_rule_status": "mixed",
+      "evidence": "benchmarks/m3a_wave1_result.md",
+      "historical_rule": "B3 was deferred until a quality winner existed and because ensemble byte/RSS multipliers made unconstrained parallel members unattractive.",
+      "id": "b3_parallel_members",
+      "new_campaign_required": true,
+      "observed": "The quality prerequisite now exists and archive-size ratios are abolished, but aggregate process-tree RSS and fixed-CPU accounting remain valid concerns.",
+      "project": "B3 parallel ensemble members"
+    },
+    {
+      "backlog_action": "None. The owner separately promoted threshold 1,048,576 within the encoded macOS-arm64 envelope, preserving the failed calibration verdict and rollback.",
+      "current_disposition": "healed_or_superseded",
+      "current_rule_status": "mixed",
+      "evidence": "benchmarks/fused_lane_dispatch_calibration_analysis_v4.json",
+      "historical_rule": "The selected dispatch rule required exactness, geomean ratio at most 0.97, and every cell within the frozen stability bound.",
+      "id": "fused_lane_dispatch_calibration",
+      "new_campaign_required": false,
+      "observed": "All 30 cells were behavior-exact; selected geomean was 0.973846 and six cells were unstable. The arbitrary materiality bar was reformed, but stable direction remains a current requirement.",
+      "project": "Fused/unfused lane dispatch calibration"
+    },
+    {
+      "backlog_action": "Supersede forward authority with v3; keep every v1/v2 artifact immutable.",
+      "current_disposition": "infrastructure_only",
+      "current_rule_status": "not_model_verdict",
+      "evidence": "benchmarks/m6_quality_successor_v1_invalidation_20260721.md",
+      "historical_rule": "M6 v1/v2 infrastructure had to bind non-self-referential code hashes, exact repeats, executable replays, and a clean one-shot result.",
+      "id": "m6_successor_infrastructure_failures",
+      "new_campaign_required": true,
+      "observed": "Earlier failures were self-reference, repeat-attestation, or machine-feasibility faults; they are not mechanism outcomes. V2 corrected the structure and passed its then-declared replay.",
+      "project": "M6 successor infrastructure"
+    },
+    {
+      "backlog_action": "M6 v3 must replace the negative replay with native ordinal C2 and explicitly show that the selector is no longer killed.",
+      "current_disposition": "readjudication_active",
+      "current_rule_status": "abolished",
+      "evidence": "benchmarks/m6_quality_successor_v2_backtest_result.json",
+      "historical_rule": "M6 v2 required aggregate ratio at most 0.98, wins in at least 60% of cells, and no cell above 1.02; its known-negative replay was the 3% selector.",
+      "id": "m6_v2_selector_tripwire",
+      "new_campaign_required": true,
+      "observed": "V2 correctly implemented its frozen rule but embeds the abolished win-count verdict. It therefore has no forward ranking authority after this audit.",
+      "project": "M6 v2 embedded selector verdict"
+    }
+  ],
+  "m6_v3_backtest_selection": {
+    "known_advance": "b1_b2_combined_archive_gate",
+    "known_kill": "c2_native_ordinal",
+    "retired_verdict_tripwire": "smooth_linear_leaf_selector_3pct"
+  },
+  "name": "darkofit_phase_f_premature_kill_audit",
+  "re_adjudication_backlog": [
+    {
+      "id": "smooth_linear_leaf_selector_3pct",
+      "order": 1,
+      "status": "active_phase_b"
+    },
+    {
+      "id": "b3_parallel_members",
+      "order": 2,
+      "status": "eligible_for_separate_authorization_after_t7b"
+    },
+    {
+      "id": "q_quantization_funding",
+      "order": 3,
+      "status": "deferred_until_post_b3_local_microprototype_slot"
+    }
+  ],
+  "schema_version": 1,
+  "standing_rule": "Whenever a gate class is retracted or materially reformed, the retraction record must enumerate every historical disposition that depended on it, classify each victim under current policy, and assign a new-identity re-adjudication or an explicit healed, superseded, or still-valid disposition. A retracted rule with unexamined victims is an unfinished retraction.",
+  "summary": {
+    "abolished_or_reformed_victims_pending": 3,
+    "entry_count": 41,
+    "frozen_records_edited": 0,
+    "m6_v2_forward_authority": false
+  }
+}
