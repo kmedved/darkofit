@@ -1404,6 +1404,8 @@ class _BaseBooster:
 
     def _warn_deprecated_options(self):
         """Warn only when a retiring non-default option is actually selected."""
+        if getattr(self, "_suppress_deprecation_warning", False):
+            return
         messages = []
         if self.tree_mode_ == "depthwise":
             messages.append(
