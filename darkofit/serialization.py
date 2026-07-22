@@ -50,7 +50,10 @@ BASE_FORMAT_VERSION = 2
 ENSEMBLE_FORMAT_VERSION = 3
 MAX_ENSEMBLE_MEMBERS = 256
 
-_PRIVATE_ENSEMBLE_PROTOTYPE = "ensemble_v3_b1_b2"
+_PRIVATE_ENSEMBLE_PROTOTYPES = frozenset({
+    "ensemble_v3_b1_b2",
+    "ensemble_v3_release_candidate",
+})
 _BOOSTER_CONSTRUCTOR_PARAM_NAMES = (
     "iterations", "learning_rate", "depth", "l2_leaf_reg",
     "max_bins", "subsample", "colsample", "cat_smoothing",
@@ -114,7 +117,7 @@ def _jsonify(value):
 def _is_private_ensemble_metadata(metadata):
     return (
         isinstance(metadata, dict)
-        and metadata.get("private_prototype") == _PRIVATE_ENSEMBLE_PROTOTYPE
+        and metadata.get("private_prototype") in _PRIVATE_ENSEMBLE_PROTOTYPES
     )
 
 

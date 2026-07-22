@@ -164,6 +164,15 @@ _PRIVATE_ENSEMBLE_V3_POLICY_VALUES = {
 }
 _PRIVATE_ENSEMBLE_V3_PROTOTYPE = "ensemble_v3_b1_b2"
 _PRIVATE_ENSEMBLE_V3_METADATA_VERSION = 4
+_ENSEMBLE_V3_PUBLIC_CONTRACT = "ensemble-v3-public-contract-v1"
+_ENSEMBLE_V3_POLICY_SENTINEL = "policy"
+_ENSEMBLE_V3_RELEASE_CANDIDATE = "ensemble_v3_release_candidate"
+_ENSEMBLE_V3_RELEASE_CANDIDATE_METADATA_VERSION = 5
+_ENSEMBLE_V3_RELEASE_CANDIDATE_MEMBERS = 8
+_PRIVATE_ENSEMBLE_V3_PROTOTYPES = frozenset({
+    _PRIVATE_ENSEMBLE_V3_PROTOTYPE,
+    _ENSEMBLE_V3_RELEASE_CANDIDATE,
+})
 _PRIVATE_ENSEMBLE_V3_MEMBER_OVERRIDES = frozenset({
     "n_ensembles",
     "random_state",
@@ -178,7 +187,15 @@ def _is_private_ensemble_v3_metadata(metadata):
     return (
         isinstance(metadata, Mapping)
         and metadata.get("private_prototype")
-        == _PRIVATE_ENSEMBLE_V3_PROTOTYPE
+        in _PRIVATE_ENSEMBLE_V3_PROTOTYPES
+    )
+
+
+def _is_ensemble_v3_release_candidate_metadata(metadata):
+    return (
+        isinstance(metadata, Mapping)
+        and metadata.get("private_prototype")
+        == _ENSEMBLE_V3_RELEASE_CANDIDATE
     )
 
 
@@ -258,18 +275,28 @@ def _normalize_private_explicit_user_params(explicit_user_params):
 
 
 def _resolve_private_ensemble_v3_policy(
-    estimator, policy, explicit_user_params
+    estimator, policy, explicit_user_params, explicit_user_values=None
 ):
     policy = _normalize_private_ensemble_v3_policy(policy)
     explicit = frozenset(
         _normalize_private_explicit_user_params(explicit_user_params)
     )
+    if explicit_user_values is None:
+        explicit_values = {name: getattr(estimator, name) for name in explicit}
+    elif not isinstance(explicit_user_values, Mapping):
+        raise TypeError("explicit_user_values must be a mapping or None")
+    else:
+        explicit_values = dict(explicit_user_values)
+    if set(explicit_values) != set(explicit):
+        raise ValueError(
+            "explicit_user_values must contain exactly explicit_user_params"
+        )
     resolutions = {}
     member_params = {}
     for name in _PRIVATE_ENSEMBLE_V3_POLICY_FIELDS:
         base_value = getattr(estimator, name)
         if name in explicit:
-            resolved = base_value
+            resolved = explicit_values.get(name, base_value)
             source = "explicit_user"
         elif policy == "donor_balanced_v1":
             resolved = _PRIVATE_ENSEMBLE_V3_POLICY_VALUES[name]
@@ -285,6 +312,37 @@ def _resolve_private_ensemble_v3_policy(
         member_params[name] = resolved
     return policy, tuple(name for name in _PRIVATE_ENSEMBLE_V3_POLICY_FIELDS
                          if name in explicit), resolutions, member_params
+
+
+def _normalize_ensemble_v3_release_candidate_overrides(
+    member_learning_rate=_ENSEMBLE_V3_POLICY_SENTINEL,
+    member_colsample=_ENSEMBLE_V3_POLICY_SENTINEL,
+):
+    """Resolve the future clone-safe sentinel surface without exposing it."""
+    values = {
+        "learning_rate": member_learning_rate,
+        "colsample": member_colsample,
+    }
+    explicit = {}
+    for name, value in values.items():
+        if isinstance(value, str) and value == _ENSEMBLE_V3_POLICY_SENTINEL:
+            continue
+        if isinstance(value, (bool, np.bool_)):
+            raise TypeError(f"ensemble_member_{name} must not be a bool")
+        if name == "learning_rate" and value is None:
+            explicit[name] = None
+            continue
+        if not isinstance(value, (int, float, np.integer, np.floating)):
+            raise TypeError(
+                f"ensemble_member_{name} must be 'policy' or numeric"
+            )
+        numeric = float(value)
+        if not np.isfinite(numeric) or numeric <= 0.0:
+            raise ValueError(f"ensemble_member_{name} must be positive and finite")
+        if name == "colsample" and numeric > 1.0:
+            raise ValueError("ensemble_member_colsample must be at most 1")
+        explicit[name] = value.item() if isinstance(value, np.generic) else value
+    return values, explicit
 
 
 class _NamedRowSubset:
@@ -595,10 +653,20 @@ def _validate_loaded_private_ensemble_v3_metadata(
     base_constructor_params,
 ):
     """Fail closed on private B1/B2 fitted and persistence provenance."""
+    release_candidate = _is_ensemble_v3_release_candidate_metadata(metadata)
+    expected_version = (
+        _ENSEMBLE_V3_RELEASE_CANDIDATE_METADATA_VERSION
+        if release_candidate
+        else _PRIVATE_ENSEMBLE_V3_METADATA_VERSION
+    )
+    expected_prototype = (
+        _ENSEMBLE_V3_RELEASE_CANDIDATE
+        if release_candidate
+        else _PRIVATE_ENSEMBLE_V3_PROTOTYPE
+    )
     if (
-        metadata.get("version") != _PRIVATE_ENSEMBLE_V3_METADATA_VERSION
-        or metadata.get("private_prototype")
-        != _PRIVATE_ENSEMBLE_V3_PROTOTYPE
+        metadata.get("version") != expected_version
+        or metadata.get("private_prototype") != expected_prototype
         or metadata.get("claim_tier") != "E"
         or metadata.get("default_changed") is not False
         or metadata.get("public_fit_surface") is not False
@@ -684,6 +752,51 @@ def _validate_loaded_private_ensemble_v3_metadata(
     policy = metadata.get("member_policy")
     explicit = metadata.get("explicit_user_params")
     resolutions = metadata.get("policy_resolutions")
+    explicit_values = None
+    if release_candidate:
+        future_params = metadata.get("future_constructor_params")
+        if (
+            metadata.get("recipe_contract") != _ENSEMBLE_V3_PUBLIC_CONTRACT
+            or metadata.get("recipe_version") != 1
+            or not isinstance(future_params, Mapping)
+            or set(future_params)
+            != {
+                "ensemble_mode",
+                "ensemble_member_learning_rate",
+                "ensemble_member_colsample",
+            }
+            or future_params.get("ensemble_mode") != "v3"
+            or member_count != _ENSEMBLE_V3_RELEASE_CANDIDATE_MEMBERS
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: ensemble-v3 release-candidate "
+                "contract is invalid"
+            )
+        try:
+            future_values, explicit_values = (
+                _normalize_ensemble_v3_release_candidate_overrides(
+                    future_params["ensemble_member_learning_rate"],
+                    future_params["ensemble_member_colsample"],
+                )
+            )
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "invalid DarkoFit model: ensemble-v3 release-candidate "
+                "overrides are invalid"
+            ) from exc
+        if not _private_ensemble_v3_values_equal(
+            future_values,
+            {
+                "learning_rate": future_params[
+                    "ensemble_member_learning_rate"
+                ],
+                "colsample": future_params["ensemble_member_colsample"],
+            },
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: ensemble-v3 release-candidate "
+                "overrides are contradictory"
+            )
     explicit_is_valid = (
         isinstance(explicit, list)
         and all(isinstance(name, str) for name in explicit)
@@ -705,6 +818,16 @@ def _validate_loaded_private_ensemble_v3_metadata(
         raise ValueError(
             "invalid DarkoFit model: private ensemble-v3 policy is invalid"
         )
+    if release_candidate and (
+        policy != "donor_balanced_v1"
+        or sampling != "without_replacement"
+        or sampling_unit != saved_base_params.get("ensemble_bootstrap")
+        or set(explicit) != set(explicit_values)
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: ensemble-v3 release-candidate recipe "
+            "is contradictory"
+        )
     for name in _PRIVATE_ENSEMBLE_V3_POLICY_FIELDS:
         resolution = resolutions[name]
         if (
@@ -723,7 +846,9 @@ def _validate_loaded_private_ensemble_v3_metadata(
             else "base"
         )
         expected_value = (
-            _PRIVATE_ENSEMBLE_V3_POLICY_VALUES[name]
+            explicit_values[name]
+            if expected_source == "explicit_user" and release_candidate
+            else _PRIVATE_ENSEMBLE_V3_POLICY_VALUES[name]
             if expected_source == "member_policy"
             else resolution["base"]
         )
@@ -6681,6 +6806,8 @@ def _fit_private_ensemble_v3(
     sample_fraction=None,
     member_policy="none",
     explicit_user_params=(),
+    explicit_user_values=None,
+    release_candidate_params=None,
     cat_features=None,
     eval_set=None,
     groups=None,
@@ -6750,8 +6877,71 @@ def _fit_private_ensemble_v3(
             policy_resolutions,
             policy_member_params,
         ) = _resolve_private_ensemble_v3_policy(
-            estimator, member_policy, explicit_user_params
+            estimator,
+            member_policy,
+            explicit_user_params,
+            explicit_user_values,
         )
+        if release_candidate_params is not None:
+            if (
+                not isinstance(release_candidate_params, Mapping)
+                or set(release_candidate_params)
+                != {
+                    "ensemble_mode",
+                    "ensemble_member_learning_rate",
+                    "ensemble_member_colsample",
+                }
+                or release_candidate_params.get("ensemble_mode") != "v3"
+            ):
+                raise ValueError(
+                    "release_candidate_params do not match the frozen public "
+                    "contract"
+                )
+            candidate_values, candidate_explicit = (
+                _normalize_ensemble_v3_release_candidate_overrides(
+                    release_candidate_params[
+                        "ensemble_member_learning_rate"
+                    ],
+                    release_candidate_params["ensemble_member_colsample"],
+                )
+            )
+            candidate_explicit = {
+                name: _private_ensemble_v3_scalar(value)
+                for name, value in candidate_explicit.items()
+            }
+            resolved_explicit = {
+                name: _private_ensemble_v3_scalar(
+                    policy_resolutions[name]["resolved"]
+                )
+                for name in explicit_user_params
+            }
+            if (
+                n_members != _ENSEMBLE_V3_RELEASE_CANDIDATE_MEMBERS
+                or sampling != "without_replacement"
+                or normalized_fraction != 0.8
+                or sampling_unit
+                != _normalize_ensemble_bootstrap(estimator.ensemble_bootstrap)
+                or member_policy != "donor_balanced_v1"
+                or set(candidate_explicit) != set(explicit_user_params)
+                or not _private_ensemble_v3_values_equal(
+                    candidate_explicit, resolved_explicit
+                )
+                or not _private_ensemble_v3_values_equal(
+                    candidate_values,
+                    {
+                        "learning_rate": release_candidate_params[
+                            "ensemble_member_learning_rate"
+                        ],
+                        "colsample": release_candidate_params[
+                            "ensemble_member_colsample"
+                        ],
+                    },
+                )
+            ):
+                raise ValueError(
+                    "release candidate controls contradict the frozen public "
+                    "contract"
+                )
 
         callbacks = _normalize_callbacks(callbacks)
         if eval_set is not None or eval_sample_weight is not None:
@@ -7084,9 +7274,18 @@ def _fit_private_ensemble_v3(
             })
             estimators.append(member)
 
+        release_candidate = release_candidate_params is not None
         metadata = {
-            "version": _PRIVATE_ENSEMBLE_V3_METADATA_VERSION,
-            "private_prototype": _PRIVATE_ENSEMBLE_V3_PROTOTYPE,
+            "version": (
+                _ENSEMBLE_V3_RELEASE_CANDIDATE_METADATA_VERSION
+                if release_candidate
+                else _PRIVATE_ENSEMBLE_V3_METADATA_VERSION
+            ),
+            "private_prototype": (
+                _ENSEMBLE_V3_RELEASE_CANDIDATE
+                if release_candidate
+                else _PRIVATE_ENSEMBLE_V3_PROTOTYPE
+            ),
             "claim_tier": "E",
             "default_changed": False,
             "public_fit_surface": False,
@@ -7129,6 +7328,15 @@ def _fit_private_ensemble_v3(
             ),
             "members": member_metadata,
         }
+        if release_candidate:
+            metadata.update({
+                "recipe_contract": _ENSEMBLE_V3_PUBLIC_CONTRACT,
+                "recipe_version": 1,
+                "future_constructor_params": {
+                    name: _private_ensemble_v3_scalar(value)
+                    for name, value in release_candidate_params.items()
+                },
+            })
         result = estimator._adopt_ensemble(estimators, metadata)
         if group_codes is not None:
             result._ensemble_group_codes_ = group_codes.copy()
@@ -7137,6 +7345,60 @@ def _fit_private_ensemble_v3(
         estimator.__dict__.clear()
         estimator.__dict__.update(previous_state)
         raise
+
+
+def _fit_ensemble_v3_release_candidate(
+    estimator,
+    X,
+    y,
+    *,
+    member_learning_rate=_ENSEMBLE_V3_POLICY_SENTINEL,
+    member_colsample=_ENSEMBLE_V3_POLICY_SENTINEL,
+    cat_features=None,
+    eval_set=None,
+    groups=None,
+    sample_weight=None,
+    eval_sample_weight=None,
+    callbacks=None,
+    ordinal_features=None,
+):
+    """Fit the non-exported candidate for the frozen future v3 contract."""
+    n_members = _normalize_n_ensembles(estimator.n_ensembles)
+    if n_members != _ENSEMBLE_V3_RELEASE_CANDIDATE_MEMBERS:
+        raise ValueError(
+            "the ensemble-v3 release candidate requires n_ensembles=8; "
+            "eight is the only evaluated recipe"
+        )
+    future_values, explicit_values = (
+        _normalize_ensemble_v3_release_candidate_overrides(
+            member_learning_rate,
+            member_colsample,
+        )
+    )
+    release_candidate_params = {
+        "ensemble_mode": "v3",
+        "ensemble_member_learning_rate": future_values["learning_rate"],
+        "ensemble_member_colsample": future_values["colsample"],
+    }
+    return _fit_private_ensemble_v3(
+        estimator,
+        X,
+        y,
+        sampling="without_replacement",
+        sampling_unit=estimator.ensemble_bootstrap,
+        sample_fraction=0.8,
+        member_policy="donor_balanced_v1",
+        explicit_user_params=tuple(explicit_values),
+        explicit_user_values=explicit_values,
+        release_candidate_params=release_candidate_params,
+        cat_features=cat_features,
+        eval_set=eval_set,
+        groups=groups,
+        sample_weight=sample_weight,
+        eval_sample_weight=eval_sample_weight,
+        callbacks=callbacks,
+        ordinal_features=ordinal_features,
+    )
 
 
 class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
