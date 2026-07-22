@@ -1,0 +1,23 @@
+{
+  "analysis": {
+    "completed_worker_count": 0,
+    "disposition": "terminal_execution_failure",
+    "error": "worker 0 failed with 1: Traceback (most recent call last):\n  File \"/private/tmp/darkofit-selector-protein-harness-19bdef2/benchmarks/run_automatic_linear_selector_v2_protein_attribution.py\", line 1304, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"/private/tmp/darkofit-selector-protein-harness-19bdef2/benchmarks/run_automatic_linear_selector_v2_protein_attribution.py\", line 1297, in main\n    result = _worker_result(args)\n             ^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/darkofit-selector-protein-harness-19bdef2/benchmarks/run_automatic_linear_selector_v2_protein_attribution.py\", line 747, in _worker_result\n    data = _load_split(\n           ^^^^^^^^^^^^\n  File \"/private/tmp/darkofit-selector-protein-harness-19bdef2/benchmarks/run_automatic_linear_selector_v2_protein_attribution.py\", line 408, in _load_split\n    from tabarena.benchmark.task.spec import task_spec_from_task_id_str\n  File \"/private/tmp/tabarena-m2-4cd1d25/packages/tabarena/src/tabarena/benchmark/task/__init__.py\", line 3, in <module>\n    from tabarena.benchmark.task.in_memory import InMemoryTaskWrapper\n  File \"/private/tmp/tabarena-m2-4cd1d25/packages/tabarena/src/tabarena/benchmark/task/in_memory.py\", line 15, in <module>\n    from tabarena.benchmark.task.wrapper import TaskWrapper\n  File \"/private/tmp/tabarena-m2-4cd1d25/packages/tabarena/src/tabarena/benchmark/task/wrapper.py\", line 18, in <module>\n    from autogluon.common.savers import save_pd\nModuleNotFoundError: No module named 'autogluon'",
+    "error_type": "RuntimeError"
+  },
+  "artifacts": {
+    "manifest": {
+      "path": "/Users/konstantinmedvedovsky/code/darkofit/benchmarks/automatic_linear_selector_v2_protein_attribution_attempt1_20260722_manifest.json",
+      "sha256": "4b4471cdba3beab6cc9dc2cce8d1c8835bfa01cebc986321b9541f89e191def4"
+    }
+  },
+  "attempt_index": 1,
+  "attempt_spent": true,
+  "completed_at_utc": "2026-07-22T21:51:11.714896+00:00",
+  "contract_id": "automatic-linear-selector-v2-protein-attribution-20260722",
+  "evidence_scope": "spent_protein_development_attribution",
+  "fresh_or_lockbox_accessed": false,
+  "mechanism_id": "automatic_linear_selector_v2",
+  "schema_version": 1,
+  "shipping_or_default_claim_eligible": false
+}

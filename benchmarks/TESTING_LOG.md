@@ -1824,6 +1824,61 @@ B-archive simulation remains non-loadable, optional size telemetry.
     automatic, and explicit-linear arms. Any Protein harm above `1.02` or
     failure to select/match explicit linear is terminal for this identity.
 
+### 45. Automatic selector Protein attribution attempt 1 (2026-07-22)
+
+1. **Execution date/source:** 2026-07-22; clean published harness
+   `19bdef2f27496ff4312c1a156d2f6198d358184e`, clean published candidate
+   `a53d4bf543534678189d87d88dcad87dd2a8bd8f`, and clean TabArena source
+   `4cd1d2526874962daae048a6f2dcf34aa272f3fa`.
+2. **Comparators:** planned candidate-source `constant`, `automatic`, and
+   `explicit_linear` arms. No arm completed and no comparator outcome exists.
+3. **Evidence class:** spent Protein development attribution attempt under
+   `automatic-linear-selector-v2-protein-attribution-20260722`; execution
+   failure only, with no quality or product evidence.
+4. **Data/splits:** planned OpenML task 363693 (`physiochemical_protein`) at
+   exact release coordinates r0f0, r1f1, and r2f2. The task loader failed
+   before loading worker zero's split, so no split fingerprint was produced.
+5. **Arms/policies:** planned public-default DarkoRegressor policy with only
+   `linear_leaves=False`, `"auto"`, or `True` differing. No model was built or
+   fit.
+6. **Environment/repeats:** `darko311`, 14 physical/logical CPUs, exact frozen
+   14-thread worker variables, no competing benchmark process, planned one
+   fresh worker per arm/coordinate. Zero workers completed and zero repeats
+   were observed.
+7. **Runner/command:** `python
+   benchmarks/run_automatic_linear_selector_v2_protein_attribution.py
+   --candidate-source /private/tmp/darkofit-smooth-selector-20260722
+   --tabarena-source /private/tmp/tabarena-m2-4cd1d25 --output-prefix
+   benchmarks/automatic_linear_selector_v2_protein_attribution_attempt1_20260722`
+   (the output prefix resolved to the main checkout).
+8. **Hashes:** protocol
+   `e231ab25297cb61280ed72716a423d2ec86c71403a5521d40c3ea5d346580d8f`;
+   runner
+   `c6b6f65dcc1a0f5916a04ebb7daaf7e60ea99631221d82b2d201eaad8d9955c1`;
+   tests
+   `cf8cbd249f4ec6791b303eebf666809de6d7e0d48b00d5641996b9d0b24e94fa`;
+   launch manifest
+   `4b4471cdba3beab6cc9dc2cce8d1c8835bfa01cebc986321b9541f89e191def4`;
+   terminal result
+   `e4bb44356c90d18e88c252bc2a9c8d197303e4a4cb750daacee6eda3c104ab0f`.
+9. **Primary results:** none. Worker zero raised
+   `ModuleNotFoundError: No module named 'autogluon'` while importing the
+   pinned TabArena task loader. `completed_worker_count=0`; no raw artifact
+   exists.
+10. **Passed and failed conditions:** clean published source pins, evidence
+    bindings, 14/14 hardware, exclusivity, and create-only output checks
+    passed. The worker dependency/data-loader precondition failed before any
+    fit. No scientific gate was evaluated.
+11. **Limitations/non-claims:** this record says nothing about Protein
+    quality, selector engagement, cost, or safety. The missing outcome cannot
+    be imputed from M6 or historical rival metadata. Attempt 1 is spent and
+    cannot be favorably rerun.
+12. **Terminal decision/next action:** contract disposition
+    `terminal_execution_failure`; close `automatic_linear_selector_v2` without
+    a scientific Protein verdict. Fix the harness forward with a pre-launch
+    exact data-loader probe, but do not reopen this candidate. Proceed to the
+    next one-mechanism quality slot only after that repair is verified.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
