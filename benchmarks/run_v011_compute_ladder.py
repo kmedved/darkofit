@@ -34,15 +34,18 @@ from benchmarks import run_tabarena_regression_same_machine as historical_m2
 ROOT = Path(__file__).resolve().parents[1]
 BENCH = ROOT / "benchmarks"
 PROTOCOL_PATH = BENCH / "v011_compute_ladder_protocol_20260722.md"
-CONTRACT_PATH = BENCH / "v011_compute_ladder_contract_20260722.json"
+CONTRACT_PATH = BENCH / "v011_compute_ladder_contract_v2_20260722.json"
+V1_CONTRACT_PATH = BENCH / "v011_compute_ladder_contract_20260722.json"
+V1_TERMINAL_PATH = BENCH / "v011_compute_ladder_v1_terminal_20260722.json"
 ANALYZER_PATH = BENCH / "analyze_v011_compute_ladder.py"
 FREEZER_PATH = BENCH / "freeze_v011_compute_ladder.py"
-DEFAULT_OUTPUT_DIR = Path(".cache/v011-compute-ladder-20260722")
+DEFAULT_OUTPUT_DIR = Path(".cache/v011-compute-ladder-v2-20260722")
 DEFAULT_DARKOFIT_SOURCE = Path("/private/tmp/darkofit-v011-release-source")
 DEFAULT_CHIMERABOOST_SOURCE = Path("/private/tmp/chimeraboost-v020-release-source")
 DEFAULT_TABARENA_SOURCE = Path("/private/tmp/tabarena-m2-4cd1d25")
 
-CONTRACT_ID = "v011-release-compute-ladder-20260722-v1"
+CONTRACT_ID = "v011-release-compute-ladder-20260722-v2"
+V1_CONTRACT_ID = "v011-release-compute-ladder-20260722-v1"
 DARKOFIT_VERSION = "0.11.0"
 DARKOFIT_COMMIT = "0b820e332cec2c083b1dd89eef0fe306d69cfc0e"
 DARKOFIT_TAG = "v0.11.0"
@@ -143,6 +146,8 @@ BOUND_PATHS = {
     "historical_task_registry": Path(
         "benchmarks/run_tabarena_regression_same_machine.py"
     ),
+    "v1_contract": V1_CONTRACT_PATH.relative_to(ROOT),
+    "v1_terminal": V1_TERMINAL_PATH.relative_to(ROOT),
 }
 
 
@@ -226,6 +231,15 @@ def ordered_grid_sha256() -> str:
 def execution_spec() -> dict[str, Any]:
     return {
         "contract_id": CONTRACT_ID,
+        "successor": {
+            "supersedes_contract_id": V1_CONTRACT_ID,
+            "v1_fit_count": 0,
+            "v1_worker_count": 0,
+            "scientific_protocol_change": "none",
+            "only_harness_change": (
+                "exclude_own_process_ancestor_chain_from_exclusivity_conflicts"
+            ),
+        },
         "darkofit": {
             "version": DARKOFIT_VERSION,
             "tag": DARKOFIT_TAG,
@@ -588,6 +602,14 @@ def _exclusive_machine_audit() -> dict[str, Any]:
 
     conflicts = []
     self_pid = os.getpid()
+    own_process_chain = {self_pid}
+    ancestor = psutil.Process(self_pid).parent()
+    while ancestor is not None:
+        own_process_chain.add(ancestor.pid)
+        try:
+            ancestor = ancestor.parent()
+        except (psutil.AccessDenied, psutil.NoSuchProcess):
+            break
     markers = (
         "run_v011_compute_ladder",
         "run_v011_m2_broad_panel",
@@ -601,13 +623,18 @@ def _exclusive_machine_audit() -> dict[str, Any]:
             command = " ".join(process.info.get("cmdline") or [])
         except (psutil.AccessDenied, psutil.NoSuchProcess, ValueError):
             continue
-        if pid != self_pid and any(marker in command for marker in markers):
+        if pid not in own_process_chain and any(
+            marker in command for marker in markers
+        ):
             conflicts.append({"pid": pid, "command": command})
     if conflicts:
         raise RuntimeError(f"another benchmark process is active: {conflicts}")
     return {
         "checked_at_utc": datetime.now(timezone.utc).isoformat(),
         "conflicting_benchmark_processes": [],
+        "ignored_launch_ancestor_pids": sorted(
+            pid for pid in own_process_chain - {self_pid} if pid > 0
+        ),
         "load_average": [float(value) for value in os.getloadavg()],
     }
 

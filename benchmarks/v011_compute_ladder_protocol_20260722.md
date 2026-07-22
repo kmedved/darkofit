@@ -3,6 +3,13 @@
 Status: **prospective source protocol; no model outcome may be inspected until
 the machine-readable contract is committed and published.**
 
+Contract v2 supersedes v1 after the published v1 dry-run stopped before any
+worker or model fit: its exclusivity scan mistook the runner's own launch-shell
+ancestor for a competing benchmark. The v1 terminal record is create-only.
+V2 changes only that scan to ignore the current process's ancestor chain while
+continuing to reject every unrelated matching benchmark process. Arms, data,
+order, resources, measurements, analysis, and claims are unchanged.
+
 This is the Phase E release-milestone characterization authorized by
 [`BEAT_CHIMERABOOST_PLAN.md`](../BEAT_CHIMERABOOST_PLAN.md). It asks whether
 the public DarkoFit v0.11 quality-versus-compute frontier dominates the current

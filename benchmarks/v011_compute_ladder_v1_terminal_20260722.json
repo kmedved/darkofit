@@ -1,0 +1,23 @@
+{
+  "contract_id": "v011-release-compute-ladder-20260722-v1",
+  "failure_observed_before_utc": "2026-07-22T18:37:27Z",
+  "failure_stage": "pre_execution_dry_run_exclusive_machine_preflight",
+  "fit_count": 0,
+  "harness_freeze_git_head": "4a1674ba876bdcb2f7752d7b5ebbf0ed4903eb3f",
+  "kind": "v011_compute_ladder_terminal_record",
+  "model_outcome_count": 0,
+  "published_contract_commit": "df862132bb9acfb197f040bcd5c0f5254971d41c",
+  "reason": "The exclusivity scan treated the runner's own launch-shell ancestor as a competing benchmark because that ancestor's command contained run_v011_compute_ladder.py.",
+  "recorded_at_utc": "2026-07-22T18:37:27Z",
+  "rerun_allowed_under_this_identity": false,
+  "schema_version": 1,
+  "scientific_protocol_change": "none",
+  "status": "superseded_pre_execution",
+  "successor_harness_change": "Exclude the current process ancestor chain from the competing-benchmark scan; continue rejecting every unrelated matching process.",
+  "v1_contract": {
+    "bytes": 13605,
+    "path": "benchmarks/v011_compute_ladder_contract_20260722.json",
+    "sha256": "c5a76279ceb79f8474ec1cf0e18991d088dbdaf959f4dfb9795591f99d698a62"
+  },
+  "worker_count": 0
+}

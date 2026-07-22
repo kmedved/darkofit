@@ -257,9 +257,19 @@ def _verify_source_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
     exclusive = _as_mapping(manifest.get("exclusive_machine"), "exclusive machine")
     if (
         set(exclusive)
-        != {"checked_at_utc", "conflicting_benchmark_processes", "load_average"}
+        != {
+            "checked_at_utc",
+            "conflicting_benchmark_processes",
+            "ignored_launch_ancestor_pids",
+            "load_average",
+        }
         or exclusive.get("conflicting_benchmark_processes") != []
         or not isinstance(exclusive.get("checked_at_utc"), str)
+        or not isinstance(exclusive.get("ignored_launch_ancestor_pids"), list)
+        or any(
+            type(value) is not int or value <= 0
+            for value in exclusive["ignored_launch_ancestor_pids"]
+        )
         or not isinstance(exclusive.get("load_average"), list)
         or len(exclusive["load_average"]) != 3
         or any(not math.isfinite(float(value)) for value in exclusive["load_average"])

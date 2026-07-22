@@ -67,6 +67,15 @@ def test_compute_ladder_public_points_and_claim_boundary_are_frozen():
     assert campaign.ARM_SPECS[campaign.CHIMERA_ACCURACY]["config"] == {"depth": 10}
     assert campaign.ARM_SPECS[campaign.CHIMERA_ENSEMBLE]["config"] == {"n_ensembles": 8}
     execution = campaign.execution_spec()
+    assert execution["successor"] == {
+        "supersedes_contract_id": "v011-release-compute-ladder-20260722-v1",
+        "v1_fit_count": 0,
+        "v1_worker_count": 0,
+        "scientific_protocol_change": "none",
+        "only_harness_change": (
+            "exclude_own_process_ancestor_chain_from_exclusivity_conflicts"
+        ),
+    }
     assert execution["product_direct"] is True
     assert execution["autogluon_outer_bag"] is False
     assert execution["resources"]["threads"] == 14
@@ -106,6 +115,23 @@ def test_protocol_names_direct_product_boundary_and_all_victory_axes():
     assert "wrap product estimators" in text
     assert "AutoGluon's eight-fold bag" in text
     assert "CatBoost and TabArena placement are intentionally outside" in text
+    assert "Contract v2 supersedes v1" in text
+    assert "stopped before any" in text
+    assert "worker or model fit" in text
+
+
+def test_v1_terminal_is_hash_bound_and_records_zero_outcomes():
+    terminal = json.loads(campaign.V1_TERMINAL_PATH.read_text(encoding="utf-8"))
+    assert terminal["contract_id"] == campaign.V1_CONTRACT_ID
+    assert terminal["status"] == "superseded_pre_execution"
+    assert terminal["worker_count"] == terminal["fit_count"] == 0
+    assert terminal["model_outcome_count"] == 0
+    assert terminal["scientific_protocol_change"] == "none"
+    assert terminal["v1_contract"] == {
+        "bytes": campaign.V1_CONTRACT_PATH.stat().st_size,
+        "path": str(campaign.V1_CONTRACT_PATH.relative_to(campaign.ROOT)),
+        "sha256": campaign.sha256(campaign.V1_CONTRACT_PATH),
+    }
 
 
 def test_internal_worker_arguments_are_all_or_none():
@@ -166,6 +192,38 @@ def test_latest_release_preflight_closes_on_a_new_rival_release(monkeypatch):
     expected["tag_name"] = "v0.21.0"
     with pytest.raises(RuntimeError, match="latest release changed"):
         campaign.validate_latest_chimeraboost_release()
+
+
+def test_exclusive_machine_scan_ignores_only_its_launch_ancestors(monkeypatch):
+    class FakeError(Exception):
+        pass
+
+    class FakeProcess:
+        def __init__(self, pid, command, parent=None):
+            self.pid = pid
+            self.info = {"pid": pid, "cmdline": command.split()}
+            self._parent = parent
+
+        def parent(self):
+            return self._parent
+
+    launch = FakeProcess(101, "zsh run_v011_compute_ladder.py --dry-run")
+    current = FakeProcess(os.getpid(), "python runner", parent=launch)
+    harmless = FakeProcess(202, "python unrelated.py")
+    processes = [current, launch, harmless]
+    fake_psutil = SimpleNamespace(
+        Process=lambda pid=None: current,
+        process_iter=lambda fields: list(processes),
+        AccessDenied=FakeError,
+        NoSuchProcess=FakeError,
+    )
+    monkeypatch.setitem(sys.modules, "psutil", fake_psutil)
+    audit = campaign._exclusive_machine_audit()
+    assert audit["ignored_launch_ancestor_pids"] == [101]
+    assert audit["conflicting_benchmark_processes"] == []
+    processes.append(FakeProcess(303, "python run_v011_compute_ladder.py"))
+    with pytest.raises(RuntimeError, match="another benchmark"):
+        campaign._exclusive_machine_audit()
 
 
 def test_prediction_timer_excludes_post_call_validation_overhead(monkeypatch):
