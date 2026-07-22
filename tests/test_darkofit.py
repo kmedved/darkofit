@@ -6318,7 +6318,12 @@ def test_auto_params_records_resolved_regression_context(tmp_path):
     assert meta["tree"]["depth"] == 3
     assert meta["tree"]["max_leaves"] == 8
     assert np.isclose(meta["tree"]["l2_leaf_reg"], model.model_.l2_leaf_reg)
-    assert meta["tree"]["l2_leaf_reg"] > 3.0
+    expected_l2 = np.sqrt(len(ytr) / n_eff)
+    assert np.isclose(meta["tree"]["l2_leaf_reg"], expected_l2)
+    assert meta["auto_structure"]["candidates"]["l2_leaf_reg"] == {
+        "rule": "scalar_rmse_catboost_base_1_times_weight_concentration",
+        "base": 1.0,
+    }
     assert meta["tree"]["min_child_samples"] == 20
     assert meta["tree"]["min_child_weight"] == 1.0
     assert meta["binning"]["max_bins"] == 16

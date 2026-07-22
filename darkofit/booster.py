@@ -1266,10 +1266,15 @@ class _BaseBooster:
 
         l2_input = self._l2_leaf_reg_input
         if _is_auto_param(l2_input):
+            scalar_rmse_catboost = (
+                self.tree_mode_ == "catboost" and loss_name == "RMSE"
+            )
             if self.tree_mode_ == "lightgbm":
                 base = 1.0
             elif self.tree_mode_ == "hybrid":
                 base = 2.0
+            elif scalar_rmse_catboost:
+                base = 1.0
             else:
                 base = 3.0
             concentration = (
@@ -1279,7 +1284,11 @@ class _BaseBooster:
             self.l2_leaf_reg = float(np.clip(base * concentration, base, 20.0))
             source = "auto"
             candidates["l2_leaf_reg"] = {
-                "rule": "base_by_tree_mode_times_weight_concentration",
+                "rule": (
+                    "scalar_rmse_catboost_base_1_times_weight_concentration"
+                    if scalar_rmse_catboost
+                    else "base_by_tree_mode_times_weight_concentration"
+                ),
                 "base": base,
             }
         else:
