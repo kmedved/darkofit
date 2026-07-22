@@ -58,6 +58,8 @@ _SKLEARN_ONLY = frozenset({
     "linear_residual_features", "linear_residual_fit_intercept",
     "linear_residual_standardize", "preset", "selection_rounds",
     "n_ensembles", "ensemble_bootstrap", "ensemble_shared_preprocessing",
+    "ensemble_mode", "ensemble_member_learning_rate",
+    "ensemble_member_colsample",
 })
 
 _REFIT_STRATEGY_EXPONENT = {
@@ -157,6 +159,13 @@ def _normalize_ensemble_bootstrap(bootstrap):
     return token
 
 
+def _normalize_ensemble_mode(mode):
+    token = str(mode).strip().lower().replace("-", "_")
+    if token not in {"bootstrap", "v3"}:
+        raise ValueError("ensemble_mode must be 'bootstrap' or 'v3'")
+    return token
+
+
 _PRIVATE_ENSEMBLE_V3_POLICY_FIELDS = ("learning_rate", "colsample")
 _PRIVATE_ENSEMBLE_V3_POLICY_VALUES = {
     "learning_rate": 0.15,
@@ -169,6 +178,12 @@ _ENSEMBLE_V3_POLICY_SENTINEL = "policy"
 _ENSEMBLE_V3_RELEASE_CANDIDATE = "ensemble_v3_release_candidate"
 _ENSEMBLE_V3_RELEASE_CANDIDATE_METADATA_VERSION = 5
 _ENSEMBLE_V3_RELEASE_CANDIDATE_MEMBERS = 8
+_ENSEMBLE_V3_PUBLIC_METADATA_VERSION = 1
+_ENSEMBLE_V3_PUBLIC_PARAM_DEFAULTS = {
+    "ensemble_mode": "bootstrap",
+    "ensemble_member_learning_rate": _ENSEMBLE_V3_POLICY_SENTINEL,
+    "ensemble_member_colsample": _ENSEMBLE_V3_POLICY_SENTINEL,
+}
 _PRIVATE_ENSEMBLE_V3_PROTOTYPES = frozenset({
     _PRIVATE_ENSEMBLE_V3_PROTOTYPE,
     _ENSEMBLE_V3_RELEASE_CANDIDATE,
@@ -179,6 +194,9 @@ _PRIVATE_ENSEMBLE_V3_MEMBER_OVERRIDES = frozenset({
     "early_stopping",
     "use_best_model",
     "refit",
+    "ensemble_mode",
+    "ensemble_member_learning_rate",
+    "ensemble_member_colsample",
     *_PRIVATE_ENSEMBLE_V3_POLICY_FIELDS,
 })
 
@@ -196,6 +214,16 @@ def _is_ensemble_v3_release_candidate_metadata(metadata):
         isinstance(metadata, Mapping)
         and metadata.get("private_prototype")
         == _ENSEMBLE_V3_RELEASE_CANDIDATE
+    )
+
+
+def _is_public_ensemble_v3_metadata(metadata):
+    return (
+        isinstance(metadata, Mapping)
+        and metadata.get("ensemble_mode") == "v3"
+        and metadata.get("recipe_contract") == _ENSEMBLE_V3_PUBLIC_CONTRACT
+        and metadata.get("public_fit_surface") is True
+        and "private_prototype" not in metadata
     )
 
 
@@ -221,6 +249,17 @@ def _private_ensemble_v3_values_equal(left, right):
         )
     except ValueError:
         return False
+
+
+def _canonicalize_legacy_ensemble_v3_params(params, *, allowed):
+    """Add post-v0.10 public defaults to historical private-v3 schemas."""
+    if not isinstance(params, Mapping):
+        return params
+    values = dict(params)
+    missing = set(_ENSEMBLE_V3_PUBLIC_PARAM_DEFAULTS).difference(values)
+    if allowed and missing == set(_ENSEMBLE_V3_PUBLIC_PARAM_DEFAULTS):
+        values.update(_ENSEMBLE_V3_PUBLIC_PARAM_DEFAULTS)
+    return values
 
 
 def _normalize_private_ensemble_v3_sampling(sampling):
@@ -343,6 +382,37 @@ def _normalize_ensemble_v3_release_candidate_overrides(
             raise ValueError("ensemble_member_colsample must be at most 1")
         explicit[name] = value.item() if isinstance(value, np.generic) else value
     return values, explicit
+
+
+def _resolve_public_ensemble_surface(estimator):
+    """Validate the additive public ensemble controls before fitting."""
+    mode = _normalize_ensemble_mode(estimator.ensemble_mode)
+    member_learning_rate = estimator.ensemble_member_learning_rate
+    member_colsample = estimator.ensemble_member_colsample
+    if mode == "bootstrap":
+        if (
+            not (
+                isinstance(member_learning_rate, str)
+                and member_learning_rate == _ENSEMBLE_V3_POLICY_SENTINEL
+            )
+            or not (
+                isinstance(member_colsample, str)
+                and member_colsample == _ENSEMBLE_V3_POLICY_SENTINEL
+            )
+        ):
+            raise ValueError(
+                "ensemble_member_learning_rate and "
+                "ensemble_member_colsample must remain 'policy' when "
+                "ensemble_mode='bootstrap'"
+            )
+        return mode, None, None
+    future_values, explicit_values = (
+        _normalize_ensemble_v3_release_candidate_overrides(
+            member_learning_rate,
+            member_colsample,
+        )
+    )
+    return mode, future_values, explicit_values
 
 
 class _NamedRowSubset:
@@ -651,6 +721,7 @@ def _validate_loaded_private_ensemble_v3_metadata(
     index_provenance,
     group_codes,
     base_constructor_params,
+    allow_legacy_param_schema=True,
 ):
     """Fail closed on private B1/B2 fitted and persistence provenance."""
     release_candidate = _is_ensemble_v3_release_candidate_metadata(metadata)
@@ -685,7 +756,14 @@ def _validate_loaded_private_ensemble_v3_metadata(
         raise ValueError(
             "invalid DarkoFit model: private ensemble-v3 member count is invalid"
         )
-    saved_base_params = metadata.get("base_constructor_params")
+    saved_base_params = _canonicalize_legacy_ensemble_v3_params(
+        metadata.get("base_constructor_params"),
+        allowed=allow_legacy_param_schema,
+    )
+    base_constructor_params = _canonicalize_legacy_ensemble_v3_params(
+        base_constructor_params,
+        allowed=allow_legacy_param_schema,
+    )
     expected_param_names = set(members[0].get_params(deep=False))
     if (
         not isinstance(saved_base_params, Mapping)
@@ -1005,7 +1083,10 @@ def _validate_loaded_private_ensemble_v3_metadata(
             raise ValueError(
                 "invalid DarkoFit model: private ensemble-v3 member identity is invalid"
             )
-        saved_member_params = record.get("member_constructor_params")
+        saved_member_params = _canonicalize_legacy_ensemble_v3_params(
+            record.get("member_constructor_params"),
+            allowed=allow_legacy_param_schema,
+        )
         saved_booster_params = record.get("booster_constructor_params")
         try:
             actual_member_params = (
@@ -1291,6 +1372,65 @@ def _validate_loaded_private_ensemble_v3_metadata(
             )
 
 
+def _validate_loaded_public_ensemble_v3_metadata(
+    metadata,
+    members,
+    *,
+    classification,
+    index_provenance,
+    group_codes,
+    base_constructor_params,
+):
+    """Validate the public v4 mapping through the frozen v3 recipe."""
+    saved_base_params = metadata.get("base_constructor_params")
+    if (
+        metadata.get("version") != _ENSEMBLE_V3_PUBLIC_METADATA_VERSION
+        or metadata.get("ensemble_mode") != "v3"
+        or metadata.get("recipe_contract") != _ENSEMBLE_V3_PUBLIC_CONTRACT
+        or metadata.get("recipe_version") != 1
+        or metadata.get("public_fit_surface") is not True
+        or "private_prototype" in metadata
+        or "future_constructor_params" in metadata
+        or not isinstance(saved_base_params, Mapping)
+        or len(members) != _ENSEMBLE_V3_RELEASE_CANDIDATE_MEMBERS
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: public ensemble-v3 contract is invalid"
+        )
+    try:
+        if _normalize_ensemble_mode(saved_base_params["ensemble_mode"]) != "v3":
+            raise ValueError
+        future_values, _ = _normalize_ensemble_v3_release_candidate_overrides(
+            saved_base_params["ensemble_member_learning_rate"],
+            saved_base_params["ensemble_member_colsample"],
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError(
+            "invalid DarkoFit model: public ensemble-v3 constructor "
+            "parameters are invalid"
+        ) from exc
+    proxy = dict(metadata)
+    proxy.update({
+        "version": _ENSEMBLE_V3_RELEASE_CANDIDATE_METADATA_VERSION,
+        "private_prototype": _ENSEMBLE_V3_RELEASE_CANDIDATE,
+        "public_fit_surface": False,
+        "future_constructor_params": {
+            "ensemble_mode": "v3",
+            "ensemble_member_learning_rate": future_values["learning_rate"],
+            "ensemble_member_colsample": future_values["colsample"],
+        },
+    })
+    _validate_loaded_private_ensemble_v3_metadata(
+        proxy,
+        members,
+        classification=classification,
+        index_provenance=index_provenance,
+        group_codes=group_codes,
+        base_constructor_params=base_constructor_params,
+        allow_legacy_param_schema=False,
+    )
+
+
 def _validate_loaded_ensemble_metadata(
     metadata,
     members,
@@ -1304,6 +1444,15 @@ def _validate_loaded_ensemble_metadata(
     version = metadata.get("version")
     if _is_private_ensemble_v3_metadata(metadata):
         return _validate_loaded_private_ensemble_v3_metadata(
+            metadata,
+            members,
+            classification=classification,
+            index_provenance=index_provenance,
+            group_codes=group_codes,
+            base_constructor_params=base_constructor_params,
+        )
+    if _is_public_ensemble_v3_metadata(metadata):
+        return _validate_loaded_public_ensemble_v3_metadata(
             metadata,
             members,
             classification=classification,
@@ -4071,13 +4220,16 @@ class _RefitParamsMixin:
         return self
 
     def _ensemble_params_header(self):
-        if _is_private_ensemble_v3_metadata(self.ensemble_metadata_):
+        if (
+            _is_private_ensemble_v3_metadata(self.ensemble_metadata_)
+            or _is_public_ensemble_v3_metadata(self.ensemble_metadata_)
+        ):
             base_params = self.ensemble_metadata_.get(
                 "base_constructor_params"
             )
             if not isinstance(base_params, Mapping):
                 raise ValueError(
-                    "cannot save private ensemble without canonical base "
+                    "cannot save ensemble-v3 without canonical base "
                     "constructor parameters"
                 )
             return dict(base_params)
@@ -4175,6 +4327,8 @@ class _RefitParamsMixin:
                 )
         metadata = header["metadata"]
         private_provenance = _is_private_ensemble_v3_metadata(metadata)
+        public_v3 = _is_public_ensemble_v3_metadata(metadata)
+        v3_provenance = private_provenance or public_v3
         classification = issubclass(cls, ClassifierMixin)
         _validate_loaded_ensemble_metadata(
             metadata,
@@ -4201,6 +4355,33 @@ class _RefitParamsMixin:
                 "invalid DarkoFit model: ensemble params do not match fitted "
                 "provenance"
             )
+        if public_v3:
+            try:
+                mode, future_values, explicit_values = (
+                    _resolve_public_ensemble_surface(est)
+                )
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    "invalid DarkoFit model: public ensemble-v3 parameters "
+                    "are invalid"
+                ) from exc
+            if (
+                mode != "v3"
+                or len(members) != _ENSEMBLE_V3_RELEASE_CANDIDATE_MEMBERS
+                or set(explicit_values)
+                != set(metadata.get("explicit_user_params", ()))
+                or not _private_ensemble_v3_values_equal(
+                    future_values,
+                    {
+                        "learning_rate": est.ensemble_member_learning_rate,
+                        "colsample": est.ensemble_member_colsample,
+                    },
+                )
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: public ensemble-v3 parameters "
+                    "do not match fitted provenance"
+                )
         fit_seed = metadata.get("fit_random_state_seed")
         outer_random_state = est.random_state
         if (
@@ -4311,7 +4492,7 @@ class _RefitParamsMixin:
                         "invalid DarkoFit model: ensemble linear residual "
                         "parameters do not match member payloads"
                     )
-        if not private_provenance:
+        if not v3_provenance:
             for name in (
                 "early_stopping",
                 "use_best_model",
@@ -6759,6 +6940,9 @@ def _private_ensemble_v3_expected_member_params(
         "early_stopping": True,
         "use_best_model": True,
         "refit": False,
+        "ensemble_mode": "bootstrap",
+        "ensemble_member_learning_rate": _ENSEMBLE_V3_POLICY_SENTINEL,
+        "ensemble_member_colsample": _ENSEMBLE_V3_POLICY_SENTINEL,
     })
     for name in _PRIVATE_ENSEMBLE_V3_POLICY_FIELDS:
         expected[name] = policy_resolutions[name]["resolved"]
@@ -6808,6 +6992,7 @@ def _fit_private_ensemble_v3(
     explicit_user_params=(),
     explicit_user_values=None,
     release_candidate_params=None,
+    public_fit_surface=False,
     cat_features=None,
     eval_set=None,
     groups=None,
@@ -6882,6 +7067,11 @@ def _fit_private_ensemble_v3(
             explicit_user_params,
             explicit_user_values,
         )
+        if public_fit_surface and release_candidate_params is None:
+            raise ValueError(
+                "public ensemble-v3 fits require constructor-bound recipe "
+                "parameters"
+            )
         if release_candidate_params is not None:
             if (
                 not isinstance(release_candidate_params, Mapping)
@@ -7110,6 +7300,9 @@ def _fit_private_ensemble_v3(
                 early_stopping=True,
                 use_best_model=True,
                 refit=False,
+                ensemble_mode="bootstrap",
+                ensemble_member_learning_rate=_ENSEMBLE_V3_POLICY_SENTINEL,
+                ensemble_member_colsample=_ENSEMBLE_V3_POLICY_SENTINEL,
                 **policy_member_params,
             )
             member._suppress_wrapper_deprecation_warning = True
@@ -7274,21 +7467,21 @@ def _fit_private_ensemble_v3(
             })
             estimators.append(member)
 
-        release_candidate = release_candidate_params is not None
+        release_candidate = (
+            release_candidate_params is not None and not public_fit_surface
+        )
+        public_v3 = bool(public_fit_surface)
         metadata = {
             "version": (
-                _ENSEMBLE_V3_RELEASE_CANDIDATE_METADATA_VERSION
+                _ENSEMBLE_V3_PUBLIC_METADATA_VERSION
+                if public_v3
+                else _ENSEMBLE_V3_RELEASE_CANDIDATE_METADATA_VERSION
                 if release_candidate
                 else _PRIVATE_ENSEMBLE_V3_METADATA_VERSION
             ),
-            "private_prototype": (
-                _ENSEMBLE_V3_RELEASE_CANDIDATE
-                if release_candidate
-                else _PRIVATE_ENSEMBLE_V3_PROTOTYPE
-            ),
             "claim_tier": "E",
             "default_changed": False,
-            "public_fit_surface": False,
+            "public_fit_surface": public_v3,
             "sequential": True,
             "member_count": n_members,
             "member_seeds": list(member_seeds),
@@ -7328,6 +7521,18 @@ def _fit_private_ensemble_v3(
             ),
             "members": member_metadata,
         }
+        if public_v3:
+            metadata.update({
+                "ensemble_mode": "v3",
+                "recipe_contract": _ENSEMBLE_V3_PUBLIC_CONTRACT,
+                "recipe_version": 1,
+            })
+        else:
+            metadata["private_prototype"] = (
+                _ENSEMBLE_V3_RELEASE_CANDIDATE
+                if release_candidate
+                else _PRIVATE_ENSEMBLE_V3_PROTOTYPE
+            )
         if release_candidate:
             metadata.update({
                 "recipe_contract": _ENSEMBLE_V3_PUBLIC_CONTRACT,
@@ -7401,6 +7606,55 @@ def _fit_ensemble_v3_release_candidate(
     )
 
 
+def _fit_public_ensemble_v3(
+    estimator,
+    X,
+    y,
+    *,
+    future_values,
+    explicit_values,
+    cat_features=None,
+    eval_set=None,
+    groups=None,
+    sample_weight=None,
+    eval_sample_weight=None,
+    callbacks=None,
+    ordinal_features=None,
+):
+    """Fit the public, contract-bound ensemble-v3 recipe."""
+    n_members = _normalize_n_ensembles(estimator.n_ensembles)
+    if n_members != _ENSEMBLE_V3_RELEASE_CANDIDATE_MEMBERS:
+        raise ValueError(
+            "ensemble_mode='v3' requires n_ensembles=8; eight is the only "
+            "evaluated recipe"
+        )
+    release_candidate_params = {
+        "ensemble_mode": "v3",
+        "ensemble_member_learning_rate": future_values["learning_rate"],
+        "ensemble_member_colsample": future_values["colsample"],
+    }
+    return _fit_private_ensemble_v3(
+        estimator,
+        X,
+        y,
+        sampling="without_replacement",
+        sampling_unit=estimator.ensemble_bootstrap,
+        sample_fraction=0.8,
+        member_policy="donor_balanced_v1",
+        explicit_user_params=tuple(explicit_values),
+        explicit_user_values=explicit_values,
+        release_candidate_params=release_candidate_params,
+        public_fit_surface=True,
+        cat_features=cat_features,
+        eval_set=eval_set,
+        groups=groups,
+        sample_weight=sample_weight,
+        eval_sample_weight=eval_sample_weight,
+        callbacks=callbacks,
+        ordinal_features=ordinal_features,
+    )
+
+
 class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
     """Gradient boosted oblivious trees for regression.
 
@@ -7446,6 +7700,10 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         above one opt into mean aggregation. ``ensemble_bootstrap="groups"``
         requires ``groups`` in :meth:`fit`; numeric-only members may safely
         share target-free preprocessing.
+    ensemble_mode : {"bootstrap", "v3"}, default "bootstrap"
+        Keep legacy bootstrap sampling or select the fixed public v3 recipe.
+        V3 requires eight members and uses deterministic 80%
+        without-replacement samples with donor-balanced member settings.
     """
 
     def __init__(self, iterations=1000, learning_rate=None, depth=None,
@@ -7489,6 +7747,9 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                  preset=None, selection_rounds=None, n_ensembles=1,
                  ensemble_bootstrap="rows",
                  ensemble_shared_preprocessing=True,
+                 ensemble_mode="bootstrap",
+                 ensemble_member_learning_rate="policy",
+                 ensemble_member_colsample="policy",
                  oblivious_kernel="auto"):
         self.iterations = iterations
         self.learning_rate = learning_rate
@@ -7553,6 +7814,9 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self.n_ensembles = n_ensembles
         self.ensemble_bootstrap = ensemble_bootstrap
         self.ensemble_shared_preprocessing = ensemble_shared_preprocessing
+        self.ensemble_mode = ensemble_mode
+        self.ensemble_member_learning_rate = ensemble_member_learning_rate
+        self.ensemble_member_colsample = ensemble_member_colsample
         self.oblivious_kernel = oblivious_kernel
         self.auto_learning_rate_probe = auto_learning_rate_probe
         self.auto_learning_rate_probe_values = auto_learning_rate_probe_values
@@ -7570,9 +7834,27 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 "tree_mode='catboost'; tree_mode='auto' auditions "
                 "non-oblivious modes"
             )
+        ensemble_mode, future_values, explicit_values = (
+            _resolve_public_ensemble_surface(self)
+        )
         self._clear_ensemble_state()
         if not getattr(self, "_suppress_wrapper_deprecation_warning", False):
             self._warn_wrapper_deprecated_options(stacklevel=4)
+        if ensemble_mode == "v3":
+            return _fit_public_ensemble_v3(
+                self,
+                X,
+                y,
+                future_values=future_values,
+                explicit_values=explicit_values,
+                cat_features=cat_features,
+                eval_set=eval_set,
+                groups=groups,
+                sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight,
+                callbacks=callbacks,
+                ordinal_features=ordinal_features,
+            )
         preset = _normalize_regression_preset(self.preset)
         self._clear_preset_state()
         if preset is None:
@@ -8836,6 +9118,10 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         Number of OOB-selected bootstrap members, from 1 through 256. Values
         above one opt into soft-vote aggregation.
         ``ensemble_bootstrap="groups"`` requires ``groups`` in :meth:`fit`.
+    ensemble_mode : {"bootstrap", "v3"}, default "bootstrap"
+        Keep legacy bootstrap sampling or select the fixed public v3 recipe.
+        V3 requires eight members and uses deterministic 80%
+        without-replacement samples with donor-balanced member settings.
     oblivious_kernel : {"auto", "fused", "unfused"}, default "auto"
         Static fused-kernel dispatch for eligible binary CatBoost-mode fits.
         On macOS arm64 within the measured shape envelope, ``"auto"`` uses a
@@ -8871,6 +9157,9 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                  selection_rounds=None, n_ensembles=1,
                  ensemble_bootstrap="rows",
                  ensemble_shared_preprocessing=True,
+                 ensemble_mode="bootstrap",
+                 ensemble_member_learning_rate="policy",
+                 ensemble_member_colsample="policy",
                  oblivious_kernel="auto"):
         self.iterations = iterations
         self.learning_rate = learning_rate
@@ -8918,6 +9207,9 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         self.n_ensembles = n_ensembles
         self.ensemble_bootstrap = ensemble_bootstrap
         self.ensemble_shared_preprocessing = ensemble_shared_preprocessing
+        self.ensemble_mode = ensemble_mode
+        self.ensemble_member_learning_rate = ensemble_member_learning_rate
+        self.ensemble_member_colsample = ensemble_member_colsample
         self.oblivious_kernel = oblivious_kernel
         self.auto_learning_rate_probe = auto_learning_rate_probe
         self.auto_learning_rate_probe_values = auto_learning_rate_probe_values
@@ -8970,9 +9262,27 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                 "tree_mode='catboost'; tree_mode='auto' auditions "
                 "non-oblivious modes"
             )
+        ensemble_mode, future_values, explicit_values = (
+            _resolve_public_ensemble_surface(self)
+        )
         self._clear_ensemble_state()
         if not getattr(self, "_suppress_wrapper_deprecation_warning", False):
             self._warn_wrapper_deprecated_options(stacklevel=4)
+        if ensemble_mode == "v3":
+            return _fit_public_ensemble_v3(
+                self,
+                X,
+                y,
+                future_values=future_values,
+                explicit_values=explicit_values,
+                cat_features=cat_features,
+                eval_set=eval_set,
+                groups=groups,
+                sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight,
+                callbacks=callbacks,
+                ordinal_features=ordinal_features,
+            )
         ensemble = self._fit_ensemble(
             X,
             y,

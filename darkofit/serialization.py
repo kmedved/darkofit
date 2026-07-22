@@ -47,13 +47,14 @@ from .tree import (
 
 FORMAT_VERSION = 4
 BASE_FORMAT_VERSION = 2
-ENSEMBLE_FORMAT_VERSION = 3
+ENSEMBLE_FORMAT_VERSION = 4
 MAX_ENSEMBLE_MEMBERS = 256
 
 _PRIVATE_ENSEMBLE_PROTOTYPES = frozenset({
     "ensemble_v3_b1_b2",
     "ensemble_v3_release_candidate",
 })
+_ENSEMBLE_V3_PUBLIC_CONTRACT = "ensemble-v3-public-contract-v1"
 _BOOSTER_CONSTRUCTOR_PARAM_NAMES = (
     "iterations", "learning_rate", "depth", "l2_leaf_reg",
     "max_bins", "subsample", "colsample", "cat_smoothing",
@@ -118,6 +119,16 @@ def _is_private_ensemble_metadata(metadata):
     return (
         isinstance(metadata, dict)
         and metadata.get("private_prototype") in _PRIVATE_ENSEMBLE_PROTOTYPES
+    )
+
+
+def _is_public_ensemble_v3_metadata(metadata):
+    return (
+        isinstance(metadata, dict)
+        and metadata.get("ensemble_mode") == "v3"
+        and metadata.get("recipe_contract") == _ENSEMBLE_V3_PUBLIC_CONTRACT
+        and metadata.get("public_fit_surface") is True
+        and "private_prototype" not in metadata
     )
 
 
@@ -215,14 +226,25 @@ def save_ensemble(
         )
     arrays = {}
     private_provenance = _is_private_ensemble_metadata(metadata)
-    records = metadata.get("members") if private_provenance else None
-    if private_provenance and (
+    public_v3 = _is_public_ensemble_v3_metadata(metadata)
+    if (
+        isinstance(metadata, dict)
+        and (
+            metadata.get("ensemble_mode") == "v3"
+            or metadata.get("public_fit_surface") is True
+        )
+        and not public_v3
+    ):
+        raise ValueError("cannot save invalid public ensemble-v3 metadata")
+    provenance_payload = private_provenance or public_v3
+    records = metadata.get("members") if provenance_payload else None
+    if provenance_payload and (
         not isinstance(records, list) or len(records) != len(estimators)
     ):
         raise ValueError(
-            "cannot save private ensemble without complete member provenance"
+            "cannot save ensemble-v3 without complete member provenance"
         )
-    if private_provenance:
+    if provenance_payload:
         sampling_unit = metadata.get("sampling_unit")
         input_rows = metadata.get("input_row_count")
         input_group_count = metadata.get("input_group_count")
@@ -267,7 +289,9 @@ def save_ensemble(
                     "cannot save private group ensemble with contradictory "
                     "group provenance"
                 )
-            arrays["private_group_codes"] = values
+            arrays[
+                "private_group_codes" if private_provenance else "group_codes"
+            ] = values
         else:
             raise ValueError(
                 "cannot save private ensemble with invalid sampling unit"
@@ -285,7 +309,7 @@ def save_ensemble(
         arrays[f"member_{index:04d}"] = np.frombuffer(
             payload, dtype=np.uint8
         ).copy()
-        if private_provenance:
+        if provenance_payload:
             for partition in ("sampled", "oob"):
                 values = getattr(
                     estimator,
@@ -316,7 +340,9 @@ def save_ensemble(
                 ] = values
     header = {
         "archive_kind": "darkofit_ensemble",
-        "ensemble_format_version": 3 if private_provenance else 1,
+        "ensemble_format_version": (
+            3 if private_provenance else 4 if public_v3 else 1
+        ),
         "wrapper_class": str(wrapper_class),
         "member_count": len(estimators),
         "params": _jsonify(params),
@@ -369,17 +395,21 @@ def _load_ensemble_payload(path):
         if not isinstance(header.get("metadata"), dict):
             _invalid_model("ensemble metadata must be an object")
         private_provenance = _is_private_ensemble_metadata(header["metadata"])
+        public_v3 = _is_public_ensemble_v3_metadata(header["metadata"])
+        provenance_payload = private_provenance or public_v3
         if private_provenance and version != 3:
             _invalid_model(
                 "private ensemble provenance payload is missing"
             )
-        if not private_provenance and version != 1:
+        if public_v3 and version != 4:
+            _invalid_model("public ensemble-v3 provenance payload is missing")
+        if not provenance_payload and version != 1:
             _invalid_model("public ensemble format version is invalid")
         expected = {
             "header",
             *(f"member_{index:04d}" for index in range(member_count)),
         }
-        if private_provenance:
+        if provenance_payload:
             expected.update(
                 f"member_{index:04d}_{partition}_indices"
                 for index in range(member_count)
@@ -387,16 +417,21 @@ def _load_ensemble_payload(path):
             )
             sampling_unit = header["metadata"].get("sampling_unit")
             if sampling_unit == "groups":
-                expected.add("private_group_codes")
+                expected.add(
+                    "private_group_codes" if private_provenance else "group_codes"
+                )
             elif sampling_unit != "rows":
-                _invalid_model("private ensemble sampling unit is invalid")
+                _invalid_model("ensemble-v3 sampling unit is invalid")
         if set(data.files) != expected:
             _invalid_model("ensemble member payloads do not match the header")
         payloads = []
-        index_provenance = [] if private_provenance else None
+        index_provenance = [] if provenance_payload else None
         group_codes = None
-        if private_provenance and sampling_unit == "groups":
-            group_codes = np.asarray(data["private_group_codes"])
+        if provenance_payload and sampling_unit == "groups":
+            group_key = (
+                "private_group_codes" if private_provenance else "group_codes"
+            )
+            group_codes = np.asarray(data[group_key])
             if (
                 group_codes.ndim != 1
                 or group_codes.size == 0
@@ -411,7 +446,7 @@ def _load_ensemble_payload(path):
             if values.ndim != 1 or values.dtype != np.uint8 or values.size == 0:
                 _invalid_model("ensemble member payload is invalid")
             payloads.append(values.tobytes())
-            if private_provenance:
+            if provenance_payload:
                 record = {}
                 for partition in ("sampled", "oob"):
                     values = np.asarray(

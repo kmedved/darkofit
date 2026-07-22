@@ -29,11 +29,12 @@ def test_ensemble_v3_public_contract_is_frozen_and_complete():
     assert not missing, f"public contract is missing: {missing}"
 
 
-def test_contract_checkpoint_has_no_public_v3_constructor_surface():
-    forbidden = {
-        "ensemble_mode",
-        "ensemble_member_learning_rate",
-        "ensemble_member_colsample",
+def test_authorized_public_ship_exposes_exact_v3_constructor_defaults():
+    expected = {
+        "ensemble_mode": "bootstrap",
+        "ensemble_member_learning_rate": "policy",
+        "ensemble_member_colsample": "policy",
     }
     for estimator in (DarkoRegressor(), DarkoClassifier()):
-        assert forbidden.isdisjoint(estimator.get_params(deep=False))
+        params = estimator.get_params(deep=False)
+        assert {name: params[name] for name in expected} == expected

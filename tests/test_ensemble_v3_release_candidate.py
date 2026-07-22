@@ -297,14 +297,18 @@ def test_release_candidate_safe_load_rejects_contract_forgery(tmp_path):
         DarkoRegressor.load_model(corrupt)
 
 
-def test_release_candidate_remains_private_and_non_exported():
+def test_release_candidate_helper_remains_private_after_public_ship():
     import darkofit
 
     assert not hasattr(darkofit, "fit_ensemble_v3")
     assert not hasattr(darkofit, "_fit_ensemble_v3_release_candidate")
-    assert "ensemble_mode" not in DarkoRegressor().get_params(deep=False)
-    assert sklearn_api._SKLEARN_ONLY.isdisjoint({
+    assert {
         "ensemble_mode",
         "ensemble_member_learning_rate",
         "ensemble_member_colsample",
-    })
+    }.issubset(DarkoRegressor().get_params(deep=False))
+    assert {
+        "ensemble_mode",
+        "ensemble_member_learning_rate",
+        "ensemble_member_colsample",
+    }.issubset(sklearn_api._SKLEARN_ONLY)

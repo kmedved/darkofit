@@ -431,13 +431,55 @@ def test_private_explicit_none_and_normal_default_survive_safe_roundtrip(tmp_pat
         and record["resolved_learning_rate"] > 0.0
         for record in model.ensemble_metadata_["members"]
     )
-
     path = tmp_path / "private-explicit-defaults.npz"
     model.save_model(path)
     restored = DarkoRegressor.load_model(path)
     np.testing.assert_array_equal(restored.predict(X), model.predict(X))
     assert restored.ensemble_metadata_ == model.ensemble_metadata_
     assert all(member.learning_rate is None for member in restored.estimators_)
+
+
+def test_private_v3_archive_without_later_public_params_remains_readable(
+    tmp_path,
+):
+    X, y = _regression_data(n=100)
+    model = _fit_private(DarkoRegressor(**_params(iterations=4)), X, y)
+    expected = model.predict(X)
+    source = tmp_path / "private-current.npz"
+    historical = tmp_path / "private-pre-public-surface.npz"
+    model.save_model(source)
+    with np.load(source, allow_pickle=False) as archive:
+        arrays = {name: archive[name].copy() for name in archive.files}
+
+    public_params = {
+        "ensemble_mode",
+        "ensemble_member_learning_rate",
+        "ensemble_member_colsample",
+    }
+
+    def strip_public_params(params):
+        for name in public_params:
+            params.pop(name, None)
+
+    header = json.loads(str(arrays["header"]))
+    strip_public_params(header["params"])
+    strip_public_params(header["metadata"]["base_constructor_params"])
+    for record in header["metadata"]["members"]:
+        strip_public_params(record["member_constructor_params"])
+    arrays["header"] = np.array(json.dumps(header))
+    _rewrite_nested_member_headers(
+        arrays,
+        lambda nested_header: strip_public_params(
+            nested_header["wrapper"]["params"]
+        ),
+    )
+    np.savez_compressed(historical, **arrays)
+
+    restored = DarkoRegressor.load_model(historical)
+    np.testing.assert_array_equal(restored.predict(X), expected)
+    assert restored.ensemble_mode == "bootstrap"
+    assert restored.ensemble_member_learning_rate == "policy"
+    assert restored.ensemble_member_colsample == "policy"
 
 
 def test_private_group_sampling_aligns_frame_weights_and_groups():

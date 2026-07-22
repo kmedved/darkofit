@@ -58,9 +58,12 @@ historical selection path.
 
 | Parameter | Default | Purpose |
 |---|---:|---|
-| `n_ensembles` | `1` | Number of independently bootstrapped members, from 1 through 256. Values above one opt into ensemble mode. |
-| `ensemble_bootstrap` | `"rows"` | Bootstrap rows, or complete entities with `"groups"` and `groups=` in `fit`. |
+| `n_ensembles` | `1` | Member count: 1–256 in legacy bootstrap mode; exactly 8 for v3. |
+| `ensemble_bootstrap` | `"rows"` | Sample rows, or complete entities with `"groups"` and `groups=` in `fit`. |
 | `ensemble_shared_preprocessing` | `True` | Reuse one target-free numeric preprocessor when safe. Categorical and ordinal fits fall back to member-local preprocessing. |
+| `ensemble_mode` | `"bootstrap"` | Keep legacy bootstrap behavior, or select the fixed public `"v3"` recipe. |
+| `ensemble_member_learning_rate` | `"policy"` | In v3, use recipe value `0.15`; pass `None` or a positive finite number to override members only. |
+| `ensemble_member_colsample` | `"policy"` | In v3, use recipe value `0.85`; pass a finite number in `(0, 1]` to override members only. |
 
 Each member uses its out-of-bag rows as an explicit early-stopping set.
 Regression predictions are member means; classification probabilities are
@@ -78,6 +81,16 @@ ordinal orders explicitly; categorical target-statistic preprocessing is
 always fitted separately inside each member to avoid target leakage. Staged
 prediction yields the common prefix shared by every member.
 
+`ensemble_mode="v3"` is a separate explicit recipe. It requires
+`n_ensembles=8`, samples 80% of rows or groups without replacement, and uses
+the exact complement as each member's OOB validation set. Eight is the only
+evaluated count, not a claim that it is universally optimal. Top-level
+`learning_rate` and `colsample` remain base-model parameters; only the two
+dedicated member parameters override the v3 policy. They must remain
+`"policy"` in legacy bootstrap mode. V3 archives use safe-NPZ format 4 with
+the resolved policy and sample/OOB provenance; legacy bootstrap archives stay
+on format 1.
+
 ## Structure
 
 `tree_mode="catboost"` is the symmetric-tree default. `"lightgbm"` selects
@@ -93,9 +106,11 @@ non-missing values fail closed.
 eligible scalar CatBoost lane. `"fused"` and `"unfused"` force the two
 behavior-equivalent histogram/split implementations; unsupported explicit
 configurations fail loudly. The default `"auto"` records its deterministic
-resolution in `oblivious_kernel_dispatch_` and fitted `auto_params_`. Until a
-prospective calibration retains a crossover threshold, automatic dispatch
-keeps the established fused path.
+resolution in `oblivious_kernel_dispatch_` and fitted `auto_params_`. Within the
+measured macOS-arm64 envelope, automatic dispatch uses the promoted static
+`scan_work` threshold `1048576`. This is a deterministic product policy with
+an explicit override and rollback surface, not a cross-hardware speed claim;
+other hardware and unsupported shapes keep the established fused path.
 
 See [Feature recipes](recipes.md) for measured benefits and failure boundaries.
 

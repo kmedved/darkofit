@@ -5,6 +5,34 @@ states both the use case and the strongest observed counterevidence. Validate
 on a split that matches deployment—especially entity- or time-disjoint splits
 for sports data.
 
+## Ensemble v3
+
+```python
+from darkofit import DarkoRegressor
+
+model = DarkoRegressor(
+    ensemble_mode="v3",
+    n_ensembles=8,
+    random_state=4,
+)
+model.fit(X_train, y_train)
+```
+
+V3 is the fixed eight-member, 80%-without-replacement OOB recipe. Use
+`ensemble_bootstrap="groups"` and pass `groups=` when complete entities must
+stay together. The default member policy uses learning rate `0.15` and column
+sampling `0.85`; dedicated `ensemble_member_*` parameters can override either
+member value without changing the base estimator's settings.
+
+On the frozen 13-case development panel, v3 beat the corresponding single
+model in all 13 cases and reduced pooled error to `0.9655×`. This is an
+explicit quality/cost trade: median fit time was `5.03×` the single, prediction
+time was `6.25×`, and serialized size was `6.18×`; peak process RSS was
+`1.09×` in the measured harness. Those figures characterize the tested panel
+and machine rather than promising the same ratios elsewhere. Keep the default
+single model when latency or storage matters more than the measured quality
+gain.
+
 ## Noisy or heavy-tailed targets
 
 ```python
