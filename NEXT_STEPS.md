@@ -1,18 +1,23 @@
 # NEXT_STEPS — gate retraction, ensemble-v3 revisit, and gate reform
 
-> **Status:** owner working draft, 2026-07-21, rebased onto the completed
+> **Status:** binding owner decision record, adopted 2026-07-21 at
+> `671f2e0`, rebased onto the completed
 > dispatch outcome (calibration v4 closed `qualifies=false`; the owner then
 > promoted the selected threshold by separate product decision — see
 > [`benchmarks/fused_lane_dispatch_owner_promotion_20260721.md`](benchmarks/fused_lane_dispatch_owner_promotion_20260721.md)).
 > This draft was authored across that boundary and was untracked while the
 > calibration ran, so nothing in it claims prospective, outcome-blind
 > authority; §4.7 is a forward governance proposal only.
-> **Binding scope:** committing this document enacts the §1–§2 gate
+> **Binding scope:** the adoption commit enacts the §1–§2 gate
 > retraction and disposition supersessions and the §4.9 design rules.
 > Everything executable is authorized only per the §6 matrix — nothing
 > else is authorized by prose elsewhere in this document. Frozen records
 > named below stay immutable; this document changes forward decisions
-> only.
+> only. The create-only
+> [`owner adoption note`](benchmarks/gate_reform_owner_adoption_20260721.md)
+> clarifies that the adoption commit's “planning-only” wording described
+> its code-free diff; it did not revoke the future work explicitly authorized
+> by §6.
 
 ## 1. Owner decision: the archive-size gate class is retracted
 
@@ -162,7 +167,8 @@ edits: plan status line, B ledger row (Closed → reopened for shipping
 under Tier-E), Track I annotations, and the §4.9 gate-design rules into
 the plan's evidence-discipline section.
 
-**4.2 — Ship ensemble-v3 as an explicit opt-in (target v0.11).**
+**4.2 — Prepare ensemble-v3 as an explicit opt-in candidate (target v0.11;
+public ship separately gated).**
 1. **Freeze the public B0 contract first — the private contract is not
    ship-ready.** It cannot distinguish omitted constructor parameters from
    explicitly supplied defaults, and it excludes presets, automatic tree
@@ -172,11 +178,13 @@ the plan's evidence-discipline section.
    is decidable), a full support matrix (each excluded surface either
    supported or documented-unsupported with a loud error), sklearn
    clone/`get_params` behavior, and a public serialization schema.
-2. Promote the prototype to public implementation with the correctness
-   suite already proven privately: deterministic sampling, group/OOB
-   disjointness, weights, serialization round-trips (including the
-   uneven-group fix from M3b attempt 2), failure propagation,
-   existing-bootstrap non-regression.
+2. Build the release-candidate implementation behind a private, non-exported
+   integration surface with the correctness suite already proven privately:
+   deterministic sampling, group/OOB disjointness, weights, serialization
+   round-trips (including the uneven-group fix from M3b attempt 2), failure
+   propagation, and existing-bootstrap non-regression. Do not add public
+   constructor parameters, exports, or public documentation until the public-
+   ship row in §6 receives its separate owner sign-off.
 3. Publish the honest characterization **with uncertainty, per Tier-E
    policy** — point estimates and win counts alone are insufficient.
    Quality from the immutable r3 readout (13/13 vs single; sports view
@@ -322,7 +330,7 @@ table.
 | §1–§2 gate retraction and disposition supersessions | **This document, on commit** | The supersession list in §1 is exhaustive. |
 | §4.9 standing gate-design rules | **This document, on commit** | To be copied into the plan's evidence-discipline section per §4.1. |
 | Ensemble-v3 **public contract freeze** (§4.2.1) | **This document, on commit** | Contract work only; no public code ships from it. |
-| Ensemble-v3 **implementation + correctness suite** (§4.2.2) | **This document, on commit** | Private until the release row. |
+| Ensemble-v3 **implementation + correctness suite** (§4.2.2) | **This document, on commit** | Private and non-exported until the public-ship row; no constructor/API surface is authorized here. |
 | Ensemble-v3 **public ship** (§4.2.3–4) | Owner sign-off at the v0.11 release checkpoint | Requires the §4.2.3 characterization with uncertainty, published. |
 | M6 successor **build + backtest** (§4.8) | **This document, on commit** | Ranking eligibility only via a passed backtest, never by fiat. |
 | M2 broad panel | Owner sign-off at the v0.11 milestone | Frozen protocol per the plan; not started earlier. |

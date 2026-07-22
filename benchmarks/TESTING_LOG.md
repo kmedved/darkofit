@@ -1144,6 +1144,23 @@ The owner accepts the marginal and timing-stability risk on the strength of
 bounded explicit-fused rollback. The next mechanism slot remains
 quality-first.
 
+### 31. Gate-reform and ensemble-v3 preparation authority (2026-07-21)
+
+The owner adopted [`NEXT_STEPS.md`](../NEXT_STEPS.md) at `671f2e0` and the
+create-only
+[`owner adoption note`](gate_reform_owner_adoption_20260721.md) resolves the
+adoption commit's wording: the commit itself changed documentation only, while
+the §6 matrix authorizes the named future preparation work.
+
+The forward decision retracts archive-size ratios as product gates for this
+work without changing any frozen M3b or B-archive result. It authorizes the
+ensemble-v3 public-contract freeze, a private/non-exported release-candidate
+implementation plus correctness suite, and a new M6 successor build/backtest.
+It does not authorize public ensemble parameters/exports, M2, M4/TabArena-Lite,
+v0.11, B3, Q work, fresh confirmation, CTR23, or lockbox access. B1 and B2
+alone remain unselected because the combined arm Pareto-dominates them; the
+B-archive simulation remains non-loadable, optional size telemetry.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
@@ -1188,10 +1205,12 @@ quality-first.
 - the tested standalone calibration candidates;
 - T5 composite confirmation as originally registered;
 - both Panel 3 candidates;
-- the private B1/B2 ensemble-v3 attribution (no arm cleared every M3b gate);
-- B-archive canonical-preprocessor serialization (effective median
-  `4.152525×` missed the frozen `4.0×` archive limit, so no serializer was
-  authorized);
+- the historical private B1/B2 ensemble-v3 campaign disposition (no arm
+  cleared every frozen M3b gate; section 31 supersedes only the archive gate's
+  forward product effect); and
+- B-archive canonical-preprocessor serialization (the non-loadable effective
+  median `4.152525×` simulation missed the frozen `4.0×` archive limit; section
+  31 makes it optional telemetry but still authorizes no serializer format);
 - any CTR23 lockbox run without a newly powered candidate.
 
 ## Verification and release log
