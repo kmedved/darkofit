@@ -1,0 +1,456 @@
+{
+  "authorization": "Phase 2 of v011_evidence_phase_instruction_20260721.md",
+  "bindings": {
+    "analyzer": {
+      "bytes": 42991,
+      "path": "benchmarks/analyze_v011_m2_broad_panel.py",
+      "sha256": "0f349bc04619db4cb51efeaacec400675446b4c1760c5ba597f7846a0e7e9184"
+    },
+    "authorization": {
+      "bytes": 8514,
+      "path": "benchmarks/v011_evidence_phase_instruction_20260721.md",
+      "sha256": "6a27d0e40e0767ce7065c04f288096746485023b7e8fec900b5ab203e7c21ed2"
+    },
+    "freezer": {
+      "bytes": 2641,
+      "path": "benchmarks/freeze_v011_m2_broad_panel.py",
+      "sha256": "faa431e1b8ef61dd476f788455280875e1e4d13db4236735f067521f186e78d3"
+    },
+    "protocol": {
+      "bytes": 4395,
+      "path": "benchmarks/v011_m2_broad_panel_protocol_20260722.md",
+      "sha256": "b28cb77b6ba05f16d49ad173da489a4796ae539f3b1a06dda2d188b806207035"
+    },
+    "runner": {
+      "bytes": 46305,
+      "path": "benchmarks/run_v011_m2_broad_panel.py",
+      "sha256": "e4cdcbc4534281c901f6d75348e2f20e9d86803f17be5c4cc8e5a597bcfe1ba7"
+    },
+    "tests": {
+      "bytes": 12608,
+      "path": "tests/test_v011_m2_broad_panel.py",
+      "sha256": "600d96be3eaaf69b88519a7a239400b84cf6e8e07d74d7291918fdce74dc2dbb"
+    }
+  },
+  "contract_frozen": true,
+  "contract_id": "v011-m2-broad-panel-20260722-v1",
+  "created_at_utc": "2026-07-22T12:04:02.791044+00:00",
+  "harness_freeze_git_head": "b9b6e8c14c059cffd6fb1d1cb5f65ade5f885175",
+  "outcome_blind": true,
+  "protocol": {
+    "analysis": {
+      "bootstrap_draws": 10000,
+      "bootstrap_resampling": "coordinates_within_each_fixed_dataset",
+      "bootstrap_seed": 20260722,
+      "dataset_weighting": "equal_1_over_13",
+      "estimator": "paired_log_ratio",
+      "head_to_head_supplement": {
+        "coordinate_wins": true,
+        "descriptive_only": true,
+        "equal_dataset_geomean_wins": true,
+        "ties_reported": true
+      }
+    },
+    "arms": {
+      "catboost_1_2_10_default": {
+        "code": "C",
+        "engine": "catboost",
+        "lane": "primary",
+        "manual_config": {},
+        "model_cls": "ComparatorCatBoostModel",
+        "official_defaults": true,
+        "representation": "native",
+        "single_product_arm": true
+      },
+      "chimeraboost_f14be60_default": {
+        "code": "M",
+        "engine": "chimeraboost",
+        "lane": "primary",
+        "manual_config": {},
+        "model_cls": "ComparatorChimeraBoostModel",
+        "official_defaults": true,
+        "representation": "native",
+        "single_product_arm": true
+      },
+      "darkofit_0_10_1_default": {
+        "code": "D",
+        "engine": "darkofit",
+        "lane": "primary",
+        "manual_config": {},
+        "model_cls": "ComparatorDarkoFitModel",
+        "official_defaults": true,
+        "representation": "native",
+        "single_product_arm": true
+      }
+    },
+    "campaign_date": "2026-07-22",
+    "claim": "descriptive_current_version_calibrated_yardstick",
+    "coordinates": [
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "airfoil_self_noise",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "Another-Dataset-on-used-Fiat-500",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "concrete_compressive_strength",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "diamonds",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "Food_Delivery_Time",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "healthcare_insurance_expenses",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "houses",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "houses",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "houses",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "miami_housing",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "miami_housing",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "miami_housing",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "physiochemical_protein",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "QSAR-TID-11",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "QSAR_fish_toxicity",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "superconductivity",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "superconductivity",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "superconductivity",
+        "fold": 2,
+        "repeat": 2
+      },
+      {
+        "dataset": "wine_quality",
+        "fold": 0,
+        "repeat": 0
+      },
+      {
+        "dataset": "wine_quality",
+        "fold": 1,
+        "repeat": 1
+      },
+      {
+        "dataset": "wine_quality",
+        "fold": 2,
+        "repeat": 2
+      }
+    ],
+    "darkofit_execution_source_pin": {
+      "only_path_added_after_harness_freeze": "benchmarks/v011_m2_broad_panel_contract_20260722.json",
+      "policy": "published_contract_commit_only",
+      "required_parent": "harness_freeze_git_head",
+      "required_remote_ref": "origin/main"
+    },
+    "ensemble_candidate_included": false,
+    "execution_dispatch": {
+      "child_fits": 936,
+      "fresh_worker_boundary": "one_new_python_process_per_outer_job",
+      "lane": "primary",
+      "outer_jobs": 117,
+      "outer_jobs_sequential": true,
+      "resume_allowed": false,
+      "same_arm_worker_warmup": [
+        "numeric_regression",
+        "categorical_regression"
+      ],
+      "task_groups_are_input_contiguous": true,
+      "worker_count": 117,
+      "worker_environment": {
+        "CHIMERABOOST_WARMUP": "0",
+        "DARKOFIT_WARMUP": "0",
+        "MKL_DYNAMIC": "FALSE",
+        "MKL_NUM_THREADS": "18",
+        "NUMBA_NUM_THREADS": "18",
+        "NUMEXPR_NUM_THREADS": "18",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "18",
+        "OPENBLAS_NUM_THREADS": "18",
+        "PYTHONHASHSEED": "0"
+      }
+    },
+    "framework_evaluation": {
+      "bag_folds": 8,
+      "bag_sets": 1,
+      "calibrate": false,
+      "fold_fitting_strategy": "sequential_local",
+      "model_random_seed": 0,
+      "vary_seed_across_folds": true
+    },
+    "framework_source": {
+      "autogluon_version": "1.5.1b20260712",
+      "tabarena_git_commit": "4cd1d2526874962daae048a6f2dcf34aa272f3fa",
+      "tabarena_git_tree": "a293df372a613c7358ba5fcd746f58d580cde7d6",
+      "tabarena_version": "0.0.1"
+    },
+    "fresh_confirmation_or_lockbox_used": false,
+    "measurements": [
+      "test_rmse",
+      "validation_rmse",
+      "fit_wall_time",
+      "predict_wall_time",
+      "incremental_peak_rss",
+      "absolute_peak_rss"
+    ],
+    "num_cpus": 18,
+    "num_gpus": 0,
+    "official_default_disclosure": {
+      "catboost": {
+        "manual_config": {},
+        "version": "1.2.10"
+      },
+      "chimeraboost": {
+        "git_commit": "f14be606b641f1bf0dc92bb14b3951f1fe631c6b",
+        "git_describe": "v0.18.0-6-gf14be60",
+        "manual_config": {},
+        "version": "0.18.0"
+      },
+      "darkofit": {
+        "manual_config": {},
+        "promoted_dispatch_active_on_eligible_fits": true,
+        "version": "0.10.1"
+      }
+    },
+    "order_cycle_codes": [
+      [
+        "D",
+        "M",
+        "C"
+      ],
+      [
+        "M",
+        "C",
+        "D"
+      ],
+      [
+        "C",
+        "D",
+        "M"
+      ],
+      [
+        "C",
+        "M",
+        "D"
+      ],
+      [
+        "D",
+        "C",
+        "M"
+      ],
+      [
+        "M",
+        "D",
+        "C"
+      ]
+    ],
+    "order_cycle_scope": "continuous_across_all_39_coordinate_groups",
+    "ordered_job_sha256": "ed35ca18a759b74ab9f26373e2d253c5970d2dab3788e1139d23466429cf0385",
+    "policy_advancement_allowed": false,
+    "prior_artifacts_untouched": true,
+    "raise_on_model_failure": true,
+    "task_split_counts": {
+      "Another-Dataset-on-used-Fiat-500": {
+        "registered_split_count": 30,
+        "task_id": 363615
+      },
+      "Food_Delivery_Time": {
+        "registered_split_count": 9,
+        "task_id": 363672
+      },
+      "QSAR-TID-11": {
+        "registered_split_count": 9,
+        "task_id": 363697
+      },
+      "QSAR_fish_toxicity": {
+        "registered_split_count": 30,
+        "task_id": 363698
+      },
+      "airfoil_self_noise": {
+        "registered_split_count": 30,
+        "task_id": 363612
+      },
+      "concrete_compressive_strength": {
+        "registered_split_count": 30,
+        "task_id": 363625
+      },
+      "diamonds": {
+        "registered_split_count": 9,
+        "task_id": 363631
+      },
+      "healthcare_insurance_expenses": {
+        "registered_split_count": 30,
+        "task_id": 363675
+      },
+      "houses": {
+        "registered_split_count": 9,
+        "task_id": 363678
+      },
+      "miami_housing": {
+        "registered_split_count": 9,
+        "task_id": 363686
+      },
+      "physiochemical_protein": {
+        "registered_split_count": 9,
+        "task_id": 363693
+      },
+      "superconductivity": {
+        "registered_split_count": 9,
+        "task_id": 363705
+      },
+      "wine_quality": {
+        "registered_split_count": 9,
+        "task_id": 363708
+      }
+    },
+    "time_limit_seconds": 3600.0,
+    "warmup_outside_measured_jobs": true
+  },
+  "protocol_sha256": "7c5f4cb4e948b41f786048fd7c5faabe3b5bb4c2095187e72eeb16a3c1efcc22",
+  "schema_version": 1
+}
