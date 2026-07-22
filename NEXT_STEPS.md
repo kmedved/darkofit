@@ -237,10 +237,13 @@ accounting, defined so the tiny-denominator problem cannot recur:
 - Include ensemble predict-path characterization; batched member
   prediction is a candidate follow-on for inference speed.
 
-**4.4 — Wave 5 quality slot: T7b levers.** Unchanged: `l2_leaf_reg` and
-the samples-per-feature depth policy remain the nominated quality
-mechanisms, per the anti-drift guard and the promotion record's own
-"next slot remains quality-first" note.
+**4.4 — Wave 5 quality slot: T7b levers.** The scalar-RMSE CatBoost
+`l2_leaf_reg` v1 mechanism is now terminal: invariants and M5 passed, but its
+only M6 v3 inspection returned aggregate `1.000818` against the frozen
+`<=1.000000` gate. Candidate `4bf425fc` is not merged and the public policy is
+unchanged. The samples-per-feature depth policy was excluded from that
+identity and remains the sole T7b nominee; treating it as a separate mechanism
+requires a new contract and source identity rather than a favorable L2 rerun.
 
 **4.5 — v0.11 milestone measurements.** M2 (first broad-panel reading
 against ChimeraBoost 0.18 — the calibrated-yardstick test) and the first

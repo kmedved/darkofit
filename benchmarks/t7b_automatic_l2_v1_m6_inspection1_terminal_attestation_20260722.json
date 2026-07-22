@@ -1,0 +1,14 @@
+{
+  "contract_id": "t7b-automatic-scalar-rmse-l2-v1-20260722",
+  "created_at_utc": "2026-07-22T22:40:18.085637+00:00",
+  "disposition": "kill",
+  "inspection_index": 1,
+  "launch_manifest_sha256": "593d44e331b9be14f1683947315e60eaefbe947b4460e7d99354074564fc4e1f",
+  "m6_manifest_sha256": "034bfbc47a2ef1fe872efa57cc52f3eb97d5986e269cc219e0bde802eab558d8",
+  "mechanism_id": "t7b_automatic_scalar_rmse_l2_v1",
+  "raw_sha256": "dfa5560d752f1c17fa8dea0b497d90ebfaf1cb63275f2d69e7ca0afd57677a3a",
+  "rerun_authorized": false,
+  "result_sha256": "6fc5ececda62da257fd3e00fce7df1b8dba2978501e689d0d2a2ca678f296f26",
+  "schema_version": 1,
+  "shipping_or_default_claim_eligible": false
+}

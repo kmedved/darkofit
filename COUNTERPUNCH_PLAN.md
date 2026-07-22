@@ -1071,11 +1071,17 @@ allowlist do not automatically transfer to P-next.
 
 ## 12. Track C — CatBoost-gap research
 
-The T7b observations are hypotheses for DarkoFit, not demonstrated DarkoFit
-wins:
+The T7b observations began as hypotheses for DarkoFit, not demonstrated
+DarkoFit wins:
 
 - `l2_leaf_reg=1` was promising in the attribution work; and
 - a samples-per-feature depth policy improved CatBoost itself.
+
+The first hypothesis is now resolved for its exact candidate identity. On
+2026-07-22 automatic scalar-RMSE CatBoost L2 v1 passed invariants and M5 but
+closed in its sole M6 v3 inspection at aggregate `1.000818` versus the frozen
+`<=1.000000` gate. Its candidate is not merged. This does not adjudicate the
+separate samples-per-feature depth hypothesis, which was excluded by contract.
 
 C1 and C2 are development screens on declared spent evidence. If the same
 outcomes shape a policy, do not call a later view of those tasks
@@ -1120,8 +1126,9 @@ the best evidence-adjusted candidate from each shortlist before funding the
 single next prototype; profiler evidence alone cannot make a speed candidate
 win by default. After Wave 4, the next funded mechanism slot is reserved for
 the quality shortlist unless an owner decision records a specific exception;
-the current leading nominees are the T7b-derived `l2_leaf_reg` and
-samples-per-feature depth-policy mechanisms.
+the current leading T7b nominee is the samples-per-feature depth-policy
+mechanism. The tested automatic scalar-RMSE L2 v1 identity is terminal and may
+not be treated as an available favorable rerun.
 
 Initial backlog, unrated and unauthorized:
 
@@ -1134,8 +1141,9 @@ Initial backlog, unrated and unauthorized:
   fit speed, orthogonal to quantization.
 - **Langevin boosting / SGLB** (CatBoost): cheap ensemble diversity; a
   potential Track B interaction.
-- CatBoost's `l2_leaf_reg` and samples-per-feature depth heuristics:
-  already Track C candidates via the T7b attribution.
+- CatBoost's samples-per-feature depth heuristic: the remaining Track C
+  candidate via T7b attribution. Automatic scalar-RMSE L2 v1 is closed in M6
+  v3 and retained only as historical evidence.
 - **Historically closed; optional and unscheduled — B-archive shared-component
   size simulation** (internal, from Wave 2 M3b): the dated matched-single
   readout confirmed that the r3
@@ -1324,7 +1332,7 @@ These are planning ranges, not delivery promises.
 | 3 | **Complete:** M3b matched-single readout, B-archive component feasibility, v1 terminal lineage, and corrected frozen v2 campaign | Completed 2026-07-21 | Exact canonical factoring missed `4.0×`; close B-archive with no serializer and nominate fused-lane dispatch |
 | 4 | **Complete and closed:** behavior-exact fused-lane dispatch design, staged implementation, invariants, outcome-blind harness, and gate-repaired calibration execution identity v4 were frozen. V1--v3 were superseded pre-outcome; v4 ran exactly once with 30/30 exact cells. Six cells missed stability and the selected geomean was `0.973846` against `<=0.97`. | Completed 2026-07-21; no rerun, validation, or speed claim. A post-close owner product override promotes threshold `1048576` without changing the failed verdict. | Activate bounded macOS-arm64 `auto` switching and return the next mechanism slot to the quality-first shortlist |
 | 5 | **Characterization complete:** ensemble-v3 public contract/private candidate complete; M6 v2 passed; Tier-E uncertainty/resource/prediction evidence published | Completed 2026-07-21; quality 13/13, with material `6.14x` fit and `6.21x` prediction costs vs single | Await separate public-ship decision; no public API/export, M2/M4, release, B3, Q, fresh data, or lockbox access |
-| 6 | T7b quality mechanism, then separately gated B3 and Q slots one at a time | Separately authorized and estimated | Preserve the quality-first slot and one-mechanism discipline |
+| 6 | **In progress:** T7b L2 v1 closed in M6 v3; separately decide the depth-policy hypothesis before B3 and Q slots | L2 completed 2026-07-22 | Preserve one-mechanism discipline; no L2 rerun or bundled depth change |
 | Later | M2/M4 release milestones, other Track I backlog, and Z cleanup | Independent backlog with explicit owner gates | No coupling to unfinished speculative tracks or lockbox access |
 
 Benchmark waves use fresh workers and exclusive machine access. Parallelize

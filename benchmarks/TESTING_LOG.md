@@ -1879,6 +1879,113 @@ B-archive simulation remains non-loadable, optional size telemetry.
     exact data-loader probe, but do not reopen this candidate. Proceed to the
     next one-mechanism quality slot only after that repair is verified.
 
+### 46. T7b automatic scalar-RMSE L2 invariants and M5 (2026-07-22)
+
+1. **Execution date/source:** 2026-07-22; clean published harness
+   `454fee09794a5090c68614b46a2f2be455a53b38`, clean pre-mechanism
+   invariant control `370b8924c034de0332a4b990817972cf0e876f3e`, frozen M5
+   control `726e5d8e6131c580bce948db833a5007d0692dca`, and clean published
+   private candidate `4bf425fcf3ef095679176b8326ea6621830b64cc`.
+2. **Comparators:** control automatic/explicit L2 behavior versus the exact
+   candidate that changes only automatic scalar-RMSE CatBoost's unweighted
+   L2 base from `3.0` to `1.0`; M5 uses explicit L2 `3.0` in both arms.
+3. **Evidence class:** pre-quality correctness invariants and non-ranking M5
+   sentinels under `t7b-automatic-scalar-rmse-l2-v1-20260722`; spent
+   development infrastructure, no shipping/default evidence.
+4. **Data/splits:** five deterministic 200-row invariant probes; frozen M5
+   v1's 19 paired generic/SynthGen/adapter cells, exact registered seeds and
+   baseline fingerprints.
+5. **Arms/policies:** exact control and candidate revisions; invariant no-op
+   families were explicit CatBoost RMSE, CatBoost classification, CatBoost
+   MAE, LightGBM RMSE, and hybrid RMSE. No depth-policy change was present.
+6. **Environment/repeats:** `darko311`; invariant workers used two Numba
+   threads and restored the ambient mask; M5 used four threads in fresh
+   workers under its frozen repeat/seed policy after a manual
+   no-conflicting-benchmark preflight.
+7. **Runner/command:**
+   `python benchmarks/check_t7b_automatic_l2_invariants.py --control
+   /private/tmp/darkofit-t7b-auto-l2-control-370b892 --candidate
+   /private/tmp/darkofit-t7b-auto-l2-v1-20260722 --output
+   /private/tmp/t7b_automatic_l2_v1_invariants_20260722.json`; then
+   `python benchmarks/run_m5_sentinels.py --control
+   /private/tmp/darkofit-wave1-source-726e5d8 --candidate
+   /private/tmp/darkofit-t7b-auto-l2-v1-20260722 --baseline
+   benchmarks/m5_sentinel_baseline.json --output
+   /private/tmp/t7b_automatic_l2_v1_m5_20260722.json`.
+8. **Hashes:** invariant artifact
+   `c3dee2ecb521648e2f9521e280267d41301361cf9aeccfd84ef77b817f4443f9`;
+   M5 artifact
+   `3bc489a9304ccd0021ed936b8eeec3bcfb1ab6b37476b8ecc87ffb3943a3c747`;
+   candidate contract
+   `96bb3123b093213ad5657dfd714557e9e011cbb73a17b723fb11cc4ef2f77913`;
+   invariant runner
+   `231624f22403550ed08408a9656efec3b81834d48cb45a64a87b8789a8a3bfa0`.
+9. **Primary results:** all five no-op families had exact predictions and
+   exact logical fitted state. All 19 M5 behavior fingerprints matched;
+   baseline drift was empty and every earned classification floor passed.
+10. **Costs, passed and failed conditions:** all invariant and M5 conditions
+    passed. M5 candidate/control medians were `0.998607` fit, `1.015070`
+    prediction, and `1.000056` peak RSS; these are non-ranking telemetry.
+11. **Limitations/non-claims:** M5 deliberately fixes L2 at `3.0`, so it is a
+    no-op regression check rather than evidence that the candidate improves
+    quality. Neither artifact authorizes sports, fresh, TabArena, lockbox,
+    shipping, or default claims.
+12. **Terminal decision/next action:** pre-quality disposition `pass`; spend
+    exactly one frozen M6 v3 inspection through the mechanism-specific
+    wrapper. No favorable rerun is permitted after launch-manifest creation.
+
+### 47. T7b automatic scalar-RMSE L2 M6 v3 inspection 1 (2026-07-22)
+
+1. **Execution date/source:** 2026-07-22; clean published harness
+   `454fee09794a5090c68614b46a2f2be455a53b38`, clean pre-mechanism control
+   `370b8924c034de0332a4b990817972cf0e876f3e`, and clean published private
+   candidate `4bf425fcf3ef095679176b8326ea6621830b64cc`.
+2. **Comparators:** public-default control versus public-default candidate;
+   the only intended behavior change was automatic scalar-RMSE CatBoost L2.
+3. **Evidence class:** one spent general-development inspection under M6
+   quality-successor-v3 and candidate contract
+   `t7b-automatic-scalar-rmse-l2-v1-20260722`; ranking-eligible for this
+   terminal development decision, never shipping/default evidence.
+4. **Data/splits:** exact frozen 60-cell medium grid: ten regression and
+   classification datasets, three seeds, unweighted and stress-weighted
+   policies, fixed adapter splits and fingerprints.
+5. **Arms/policies:** `control_default` and `candidate_default`; 1,000-round
+   public defaults, four threads, with six classification datasets retained
+   as exact quality no-ops. The samples-per-feature depth idea was excluded.
+6. **Environment/repeats:** `darko311`, macOS arm64, four threads, three
+   repeats in each fresh worker; exclusive-machine audit found no conflicting
+   benchmark process before the create-only launch manifest was written.
+7. **Runner/command:** `python benchmarks/run_t7b_automatic_l2_v1.py
+   --control /private/tmp/darkofit-t7b-auto-l2-control-370b892 --candidate
+   /private/tmp/darkofit-t7b-auto-l2-v1-20260722 --output-prefix
+   /private/tmp/t7b_automatic_l2_v1_m6_inspection1_20260722`.
+8. **Hashes:** launch manifest
+   `593d44e331b9be14f1683947315e60eaefbe947b4460e7d99354074564fc4e1f`;
+   raw CSV
+   `dfa5560d752f1c17fa8dea0b497d90ebfaf1cb63275f2d69e7ca0afd57677a3a`;
+   result
+   `6fc5ececda62da257fd3e00fce7df1b8dba2978501e689d0d2a2ca678f296f26`;
+   generic manifest
+   `034bfbc47a2ef1fe872efa57cc52f3eb97d5986e269cc219e0bde802eab558d8`;
+   terminal attestation
+   `6bc045080cb6db0a38f912d5d7b31d10d5483e392520dcf682d057db43d05419`.
+9. **Primary results:** equal-cell geometric-mean primary-loss ratio
+   `1.000818`; worst dataset-group ratio `1.010896` on
+   `diabetes_resampled`; worst leave-one-dataset-out ratio `1.001370` when
+   omitting `wide_numeric_reg`; worst individual cell `1.032550` on
+   `diabetes_resampled/medium/1/stress`.
+10. **Costs, passed and failed conditions:** aggregate `<=1.000000` failed;
+    worst dataset group `<=1.020000` and worst LOO `<=1.003000` passed.
+    Non-gating geometric-mean ratios were `1.001920` fit, `1.003624`
+    prediction, and `1.001976` worker peak RSS.
+11. **Limitations/non-claims:** this is one dependent, fixed, spent medium
+    panel. It is not sports or fresh confirmation, and it supports no public
+    automatic-L2, release, TabArena, lockbox, or shipping claim. The separate
+    depth-policy hypothesis cannot inherit either this failure or its data.
+12. **Terminal decision/next action:** frozen disposition `closed_in_m6`.
+    Inspection 1 is spent; rerun is false. Do not merge candidate `4bf425fc`.
+    Preserve the artifacts and leave the existing public L2 policy unchanged.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

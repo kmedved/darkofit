@@ -1,0 +1,86 @@
+{
+  "bindings": {
+    "contract_sha256": "96bb3123b093213ad5657dfd714557e9e011cbb73a17b723fb11cc4ef2f77913",
+    "m6_contract_sha256": "1fedb2d2d2e043f56c8547fd67bf32ef028f98866f7455c05c2e8fa6c9d0e2b3",
+    "m6_rule_sha256": "2415c7a7bde2bed23283067fdfe200892c15cf1c70d869153cc9cade81f9694c",
+    "m6_runner_sha256": "950c3867f387112a65a5dd103f830cce71f7e74af42c5f5208499e787e609d39",
+    "wrapper_sha256": "ecf9510ec4ae47bb4ca7086500f7155ee5a62a1ce9e2b661754588e64d2f9741"
+  },
+  "candidate_file_allowlist": [
+    "darkofit/booster.py",
+    "tests/test_darkofit.py",
+    "tests/test_t7b_automatic_l2_policy.py"
+  ],
+  "command": [
+    "/opt/anaconda3/envs/darko311/bin/python",
+    "/private/tmp/darkofit-t7b-auto-l2-contract-20260722/benchmarks/run_m6_quality_successor_v3.py",
+    "--control",
+    "/private/tmp/darkofit-t7b-auto-l2-control-370b892",
+    "--candidate",
+    "/private/tmp/darkofit-t7b-auto-l2-v1-20260722",
+    "--mechanism-id",
+    "t7b_automatic_scalar_rmse_l2_v1",
+    "--inspection-index",
+    "1",
+    "--raw-csv",
+    "/private/tmp/t7b_automatic_l2_v1_m6_inspection1_20260722_raw.csv",
+    "--output",
+    "/private/tmp/t7b_automatic_l2_v1_m6_inspection1_20260722_result.json"
+  ],
+  "contract_id": "t7b-automatic-scalar-rmse-l2-v1-20260722",
+  "created_at_utc": "2026-07-22T22:27:44.401827+00:00",
+  "exclusive_machine": {
+    "checked_at_utc": "2026-07-22T22:27:44.435839+00:00",
+    "conflicting_benchmark_processes": [],
+    "load_average": [
+      5.90576171875,
+      4.87744140625,
+      4.76708984375
+    ]
+  },
+  "hardware": {
+    "machine": "arm64",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.11.8 (main, Feb 26 2024, 15:36:12) [Clang 14.0.6 ]"
+  },
+  "inspection_index": 1,
+  "inspection_spent_on_manifest_creation": true,
+  "mechanism_id": "t7b_automatic_scalar_rmse_l2_v1",
+  "outputs": {
+    "launch_manifest": "/private/tmp/t7b_automatic_l2_v1_m6_inspection1_20260722_launch_manifest.json",
+    "m6_manifest": "/private/tmp/t7b_automatic_l2_v1_m6_inspection1_20260722_result.json.manifest.json",
+    "raw": "/private/tmp/t7b_automatic_l2_v1_m6_inspection1_20260722_raw.csv",
+    "result": "/private/tmp/t7b_automatic_l2_v1_m6_inspection1_20260722_result.json",
+    "terminal_attestation": "/private/tmp/t7b_automatic_l2_v1_m6_inspection1_20260722_terminal_attestation.json"
+  },
+  "rerun_authorized": false,
+  "schema_version": 1,
+  "sources": {
+    "candidate": {
+      "clean": true,
+      "head": "4bf425fcf3ef095679176b8326ea6621830b64cc",
+      "path": "/private/tmp/darkofit-t7b-auto-l2-v1-20260722",
+      "status": [],
+      "tree": "292b942250b674482087f135154239f293f1ffae"
+    },
+    "candidate_changed_files": [
+      "darkofit/booster.py",
+      "tests/test_darkofit.py",
+      "tests/test_t7b_automatic_l2_policy.py"
+    ],
+    "control": {
+      "clean": true,
+      "head": "370b8924c034de0332a4b990817972cf0e876f3e",
+      "path": "/private/tmp/darkofit-t7b-auto-l2-control-370b892",
+      "status": [],
+      "tree": "5390f2e983d9f2057924e4cd5ec1aec40c6e5ee6"
+    },
+    "harness": {
+      "clean": true,
+      "head": "454fee09794a5090c68614b46a2f2be455a53b38",
+      "path": "/private/tmp/darkofit-t7b-auto-l2-contract-20260722",
+      "status": [],
+      "tree": "24b560075d34b325a13ffd9f8a85604e6a0930ac"
+    }
+  }
+}

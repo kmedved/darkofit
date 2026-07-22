@@ -1,0 +1,578 @@
+{
+  "analysis": {
+    "all_noop_cases_exact": true,
+    "comparisons": {
+      "catboost_classifier_auto": {
+        "fitted_state_exact": true,
+        "prediction_exact": true,
+        "resolved_l2_leaf_reg": 3.0
+      },
+      "catboost_mae_auto": {
+        "fitted_state_exact": true,
+        "prediction_exact": true,
+        "resolved_l2_leaf_reg": 3.0
+      },
+      "explicit_catboost_rmse": {
+        "fitted_state_exact": true,
+        "prediction_exact": true,
+        "resolved_l2_leaf_reg": 3.0
+      },
+      "hybrid_rmse_auto": {
+        "fitted_state_exact": true,
+        "prediction_exact": true,
+        "resolved_l2_leaf_reg": 2.0
+      },
+      "lightgbm_rmse_auto": {
+        "fitted_state_exact": true,
+        "prediction_exact": true,
+        "resolved_l2_leaf_reg": 1.0
+      }
+    }
+  },
+  "bindings": {
+    "campaign_runner_sha256": "ecf9510ec4ae47bb4ca7086500f7155ee5a62a1ce9e2b661754588e64d2f9741",
+    "contract_sha256": "96bb3123b093213ad5657dfd714557e9e011cbb73a17b723fb11cc4ef2f77913",
+    "invariant_runner_sha256": "231624f22403550ed08408a9656efec3b81834d48cb45a64a87b8789a8a3bfa0"
+  },
+  "candidate": {
+    "ambient_numba_threads_after": 2,
+    "ambient_numba_threads_before": 2,
+    "cases": {
+      "catboost_classifier_auto": {
+        "auto_structure": {
+          "candidates": {
+            "l2_leaf_reg": {
+              "base": 3.0,
+              "rule": "base_by_tree_mode_times_weight_concentration"
+            }
+          },
+          "n_eff": 200.0,
+          "n_eff_fraction": 1.0,
+          "resolved": {
+            "cat_smoothing": {
+              "cat_cardinalities": [],
+              "input": 1.0,
+              "resolved": 1.0,
+              "source": "default"
+            },
+            "depth": {
+              "input": 4,
+              "resolved": 4,
+              "source": "explicit"
+            },
+            "l2_leaf_reg": {
+              "input": "auto",
+              "resolved": 3.0,
+              "source": "auto"
+            },
+            "min_child_samples": {
+              "input": 20,
+              "resolved": 20,
+              "source": "default"
+            },
+            "min_child_weight": {
+              "input": 1.0,
+              "resolved": 1.0,
+              "source": "default"
+            },
+            "num_leaves": {
+              "input": null,
+              "resolved": null,
+              "source": "default"
+            }
+          }
+        },
+        "logical_booster_sha256": "cb3764faf1a1d0cba3213a1fd87f561a93a939d1f5a0f6e7c2a5ceab7240fe20",
+        "prediction_sha256": "22c3e2cd2cda560b508531d2e154d64ca56cb1f198e7887a35722f2553476d07",
+        "resolved_l2_leaf_reg": 3.0,
+        "tree_count": 12
+      },
+      "catboost_mae_auto": {
+        "auto_structure": {
+          "candidates": {
+            "l2_leaf_reg": {
+              "base": 3.0,
+              "rule": "base_by_tree_mode_times_weight_concentration"
+            }
+          },
+          "n_eff": 200.0,
+          "n_eff_fraction": 1.0,
+          "resolved": {
+            "cat_smoothing": {
+              "cat_cardinalities": [],
+              "input": 1.0,
+              "resolved": 1.0,
+              "source": "default"
+            },
+            "depth": {
+              "input": 4,
+              "resolved": 4,
+              "source": "explicit"
+            },
+            "l2_leaf_reg": {
+              "input": "auto",
+              "resolved": 3.0,
+              "source": "auto"
+            },
+            "min_child_samples": {
+              "input": 20,
+              "resolved": 20,
+              "source": "default"
+            },
+            "min_child_weight": {
+              "input": 1.0,
+              "resolved": 1.0,
+              "source": "default"
+            },
+            "num_leaves": {
+              "input": null,
+              "resolved": null,
+              "source": "default"
+            }
+          }
+        },
+        "logical_booster_sha256": "1837e8720a7f72b974a15b8b8507a3813b6af68cf7e362607a4972e6710f85d6",
+        "prediction_sha256": "da6b2ad386e1220f9a9f24244c665379ddce0583e9518f2384386432b918588c",
+        "resolved_l2_leaf_reg": 3.0,
+        "tree_count": 12
+      },
+      "explicit_catboost_rmse": {
+        "auto_structure": {
+          "candidates": {},
+          "n_eff": 200.0,
+          "n_eff_fraction": 1.0,
+          "resolved": {
+            "cat_smoothing": {
+              "cat_cardinalities": [],
+              "input": 1.0,
+              "resolved": 1.0,
+              "source": "default"
+            },
+            "depth": {
+              "input": 4,
+              "resolved": 4,
+              "source": "explicit"
+            },
+            "l2_leaf_reg": {
+              "input": 3.0,
+              "resolved": 3.0,
+              "source": "default"
+            },
+            "min_child_samples": {
+              "input": 20,
+              "resolved": 20,
+              "source": "default"
+            },
+            "min_child_weight": {
+              "input": 1.0,
+              "resolved": 1.0,
+              "source": "default"
+            },
+            "num_leaves": {
+              "input": null,
+              "resolved": null,
+              "source": "default"
+            }
+          }
+        },
+        "logical_booster_sha256": "e2a0958be6a0ce95190f9fa1fe597cde2dac969124dab5d9a19ed6b3c6616323",
+        "prediction_sha256": "6970604f99bf62d81ce8bf3bd879960ff3249a40d6a2040d30cda6145b22aedd",
+        "resolved_l2_leaf_reg": 3.0,
+        "tree_count": 12
+      },
+      "hybrid_rmse_auto": {
+        "auto_structure": {
+          "candidates": {
+            "l2_leaf_reg": {
+              "base": 2.0,
+              "rule": "base_by_tree_mode_times_weight_concentration"
+            }
+          },
+          "n_eff": 200.0,
+          "n_eff_fraction": 1.0,
+          "resolved": {
+            "cat_smoothing": {
+              "cat_cardinalities": [],
+              "input": 1.0,
+              "resolved": 1.0,
+              "source": "default"
+            },
+            "depth": {
+              "input": 4,
+              "resolved": 4,
+              "source": "explicit"
+            },
+            "l2_leaf_reg": {
+              "input": "auto",
+              "resolved": 2.0,
+              "source": "auto"
+            },
+            "min_child_samples": {
+              "input": 20,
+              "resolved": 20,
+              "source": "default"
+            },
+            "min_child_weight": {
+              "input": 1.0,
+              "resolved": 1.0,
+              "source": "default"
+            },
+            "num_leaves": {
+              "input": 15,
+              "resolved": 15,
+              "source": "explicit"
+            }
+          }
+        },
+        "logical_booster_sha256": "0a123524114c783b6183965271d9e42ca9cc971c5a3f1d4068d5a75712db61e8",
+        "prediction_sha256": "4bc23e3ea9a8b4d17c7fb80f80b5ed15f46a24af33edd137979242a487cee0ac",
+        "resolved_l2_leaf_reg": 2.0,
+        "tree_count": 12
+      },
+      "lightgbm_rmse_auto": {
+        "auto_structure": {
+          "candidates": {
+            "l2_leaf_reg": {
+              "base": 1.0,
+              "rule": "base_by_tree_mode_times_weight_concentration"
+            }
+          },
+          "n_eff": 200.0,
+          "n_eff_fraction": 1.0,
+          "resolved": {
+            "cat_smoothing": {
+              "cat_cardinalities": [],
+              "input": 1.0,
+              "resolved": 1.0,
+              "source": "default"
+            },
+            "depth": {
+              "input": 4,
+              "resolved": 4,
+              "source": "explicit"
+            },
+            "l2_leaf_reg": {
+              "input": "auto",
+              "resolved": 1.0,
+              "source": "auto"
+            },
+            "min_child_samples": {
+              "input": 20,
+              "resolved": 20,
+              "source": "default"
+            },
+            "min_child_weight": {
+              "input": 1.0,
+              "resolved": 1.0,
+              "source": "default"
+            },
+            "num_leaves": {
+              "input": 15,
+              "resolved": 15,
+              "source": "explicit"
+            }
+          }
+        },
+        "logical_booster_sha256": "86d017ec4b4fa7611bd77ff59cf8fe2b4e96ffe5662a585923117b293b97aaf4",
+        "prediction_sha256": "189412c87bf1c7f221c7cc7dd7ce9e3b45636d948747dcc95184860af2ce034b",
+        "resolved_l2_leaf_reg": 1.0,
+        "tree_count": 12
+      }
+    },
+    "implementation_path": "/private/tmp/darkofit-t7b-auto-l2-v1-20260722/darkofit/__init__.py",
+    "source": {
+      "clean": true,
+      "head": "4bf425fcf3ef095679176b8326ea6621830b64cc",
+      "path": "/private/tmp/darkofit-t7b-auto-l2-v1-20260722",
+      "status": [],
+      "tree": "292b942250b674482087f135154239f293f1ffae"
+    }
+  },
+  "contract_id": "t7b-automatic-scalar-rmse-l2-v1-20260722",
+  "control": {
+    "ambient_numba_threads_after": 2,
+    "ambient_numba_threads_before": 2,
+    "cases": {
+      "catboost_classifier_auto": {
+        "auto_structure": {
+          "candidates": {
+            "l2_leaf_reg": {
+              "base": 3.0,
+              "rule": "base_by_tree_mode_times_weight_concentration"
+            }
+          },
+          "n_eff": 200.0,
+          "n_eff_fraction": 1.0,
+          "resolved": {
+            "cat_smoothing": {
+              "cat_cardinalities": [],
+              "input": 1.0,
+              "resolved": 1.0,
+              "source": "default"
+            },
+            "depth": {
+              "input": 4,
+              "resolved": 4,
+              "source": "explicit"
+            },
+            "l2_leaf_reg": {
+              "input": "auto",
+              "resolved": 3.0,
+              "source": "auto"
+            },
+            "min_child_samples": {
+              "input": 20,
+              "resolved": 20,
+              "source": "default"
+            },
+            "min_child_weight": {
+              "input": 1.0,
+              "resolved": 1.0,
+              "source": "default"
+            },
+            "num_leaves": {
+              "input": null,
+              "resolved": null,
+              "source": "default"
+            }
+          }
+        },
+        "logical_booster_sha256": "cb3764faf1a1d0cba3213a1fd87f561a93a939d1f5a0f6e7c2a5ceab7240fe20",
+        "prediction_sha256": "22c3e2cd2cda560b508531d2e154d64ca56cb1f198e7887a35722f2553476d07",
+        "resolved_l2_leaf_reg": 3.0,
+        "tree_count": 12
+      },
+      "catboost_mae_auto": {
+        "auto_structure": {
+          "candidates": {
+            "l2_leaf_reg": {
+              "base": 3.0,
+              "rule": "base_by_tree_mode_times_weight_concentration"
+            }
+          },
+          "n_eff": 200.0,
+          "n_eff_fraction": 1.0,
+          "resolved": {
+            "cat_smoothing": {
+              "cat_cardinalities": [],
+              "input": 1.0,
+              "resolved": 1.0,
+              "source": "default"
+            },
+            "depth": {
+              "input": 4,
+              "resolved": 4,
+              "source": "explicit"
+            },
+            "l2_leaf_reg": {
+              "input": "auto",
+              "resolved": 3.0,
+              "source": "auto"
+            },
+            "min_child_samples": {
+              "input": 20,
+              "resolved": 20,
+              "source": "default"
+            },
+            "min_child_weight": {
+              "input": 1.0,
+              "resolved": 1.0,
+              "source": "default"
+            },
+            "num_leaves": {
+              "input": null,
+              "resolved": null,
+              "source": "default"
+            }
+          }
+        },
+        "logical_booster_sha256": "1837e8720a7f72b974a15b8b8507a3813b6af68cf7e362607a4972e6710f85d6",
+        "prediction_sha256": "da6b2ad386e1220f9a9f24244c665379ddce0583e9518f2384386432b918588c",
+        "resolved_l2_leaf_reg": 3.0,
+        "tree_count": 12
+      },
+      "explicit_catboost_rmse": {
+        "auto_structure": {
+          "candidates": {},
+          "n_eff": 200.0,
+          "n_eff_fraction": 1.0,
+          "resolved": {
+            "cat_smoothing": {
+              "cat_cardinalities": [],
+              "input": 1.0,
+              "resolved": 1.0,
+              "source": "default"
+            },
+            "depth": {
+              "input": 4,
+              "resolved": 4,
+              "source": "explicit"
+            },
+            "l2_leaf_reg": {
+              "input": 3.0,
+              "resolved": 3.0,
+              "source": "default"
+            },
+            "min_child_samples": {
+              "input": 20,
+              "resolved": 20,
+              "source": "default"
+            },
+            "min_child_weight": {
+              "input": 1.0,
+              "resolved": 1.0,
+              "source": "default"
+            },
+            "num_leaves": {
+              "input": null,
+              "resolved": null,
+              "source": "default"
+            }
+          }
+        },
+        "logical_booster_sha256": "e2a0958be6a0ce95190f9fa1fe597cde2dac969124dab5d9a19ed6b3c6616323",
+        "prediction_sha256": "6970604f99bf62d81ce8bf3bd879960ff3249a40d6a2040d30cda6145b22aedd",
+        "resolved_l2_leaf_reg": 3.0,
+        "tree_count": 12
+      },
+      "hybrid_rmse_auto": {
+        "auto_structure": {
+          "candidates": {
+            "l2_leaf_reg": {
+              "base": 2.0,
+              "rule": "base_by_tree_mode_times_weight_concentration"
+            }
+          },
+          "n_eff": 200.0,
+          "n_eff_fraction": 1.0,
+          "resolved": {
+            "cat_smoothing": {
+              "cat_cardinalities": [],
+              "input": 1.0,
+              "resolved": 1.0,
+              "source": "default"
+            },
+            "depth": {
+              "input": 4,
+              "resolved": 4,
+              "source": "explicit"
+            },
+            "l2_leaf_reg": {
+              "input": "auto",
+              "resolved": 2.0,
+              "source": "auto"
+            },
+            "min_child_samples": {
+              "input": 20,
+              "resolved": 20,
+              "source": "default"
+            },
+            "min_child_weight": {
+              "input": 1.0,
+              "resolved": 1.0,
+              "source": "default"
+            },
+            "num_leaves": {
+              "input": 15,
+              "resolved": 15,
+              "source": "explicit"
+            }
+          }
+        },
+        "logical_booster_sha256": "0a123524114c783b6183965271d9e42ca9cc971c5a3f1d4068d5a75712db61e8",
+        "prediction_sha256": "4bc23e3ea9a8b4d17c7fb80f80b5ed15f46a24af33edd137979242a487cee0ac",
+        "resolved_l2_leaf_reg": 2.0,
+        "tree_count": 12
+      },
+      "lightgbm_rmse_auto": {
+        "auto_structure": {
+          "candidates": {
+            "l2_leaf_reg": {
+              "base": 1.0,
+              "rule": "base_by_tree_mode_times_weight_concentration"
+            }
+          },
+          "n_eff": 200.0,
+          "n_eff_fraction": 1.0,
+          "resolved": {
+            "cat_smoothing": {
+              "cat_cardinalities": [],
+              "input": 1.0,
+              "resolved": 1.0,
+              "source": "default"
+            },
+            "depth": {
+              "input": 4,
+              "resolved": 4,
+              "source": "explicit"
+            },
+            "l2_leaf_reg": {
+              "input": "auto",
+              "resolved": 1.0,
+              "source": "auto"
+            },
+            "min_child_samples": {
+              "input": 20,
+              "resolved": 20,
+              "source": "default"
+            },
+            "min_child_weight": {
+              "input": 1.0,
+              "resolved": 1.0,
+              "source": "default"
+            },
+            "num_leaves": {
+              "input": 15,
+              "resolved": 15,
+              "source": "explicit"
+            }
+          }
+        },
+        "logical_booster_sha256": "86d017ec4b4fa7611bd77ff59cf8fe2b4e96ffe5662a585923117b293b97aaf4",
+        "prediction_sha256": "189412c87bf1c7f221c7cc7dd7ce9e3b45636d948747dcc95184860af2ce034b",
+        "resolved_l2_leaf_reg": 1.0,
+        "tree_count": 12
+      }
+    },
+    "implementation_path": "/private/tmp/darkofit-t7b-auto-l2-control-370b892/darkofit/__init__.py",
+    "source": {
+      "clean": true,
+      "head": "370b8924c034de0332a4b990817972cf0e876f3e",
+      "path": "/private/tmp/darkofit-t7b-auto-l2-control-370b892",
+      "status": [],
+      "tree": "5390f2e983d9f2057924e4cd5ec1aec40c6e5ee6"
+    }
+  },
+  "created_at_utc": "2026-07-22T22:21:40.234201+00:00",
+  "identity": "t7b-automatic-scalar-rmse-l2-v1-invariants-20260722",
+  "quality_outcomes_inspected": false,
+  "schema_version": 1,
+  "sources": {
+    "candidate": {
+      "clean": true,
+      "head": "4bf425fcf3ef095679176b8326ea6621830b64cc",
+      "path": "/private/tmp/darkofit-t7b-auto-l2-v1-20260722",
+      "status": [],
+      "tree": "292b942250b674482087f135154239f293f1ffae"
+    },
+    "candidate_changed_files": [
+      "darkofit/booster.py",
+      "tests/test_darkofit.py",
+      "tests/test_t7b_automatic_l2_policy.py"
+    ],
+    "control": {
+      "clean": true,
+      "head": "370b8924c034de0332a4b990817972cf0e876f3e",
+      "path": "/private/tmp/darkofit-t7b-auto-l2-control-370b892",
+      "status": [],
+      "tree": "5390f2e983d9f2057924e4cd5ec1aec40c6e5ee6"
+    },
+    "harness": {
+      "clean": true,
+      "head": "454fee09794a5090c68614b46a2f2be455a53b38",
+      "path": "/private/tmp/darkofit-t7b-auto-l2-contract-20260722",
+      "status": [],
+      "tree": "24b560075d34b325a13ffd9f8a85604e6a0930ac"
+    }
+  }
+}

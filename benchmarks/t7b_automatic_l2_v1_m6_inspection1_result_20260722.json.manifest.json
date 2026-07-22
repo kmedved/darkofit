@@ -1,0 +1,94 @@
+{
+  "backtest": {
+    "backtest_harness_head": "f3d19ebb4d9306e278a52534a7856650675d1166",
+    "harness": {
+      "clean": true,
+      "head": "454fee09794a5090c68614b46a2f2be455a53b38",
+      "path": "/private/tmp/darkofit-t7b-auto-l2-contract-20260722",
+      "status": [],
+      "tree": "24b560075d34b325a13ffd9f8a85604e6a0930ac"
+    },
+    "result_sha256": "35cc54acfeb7de7950966445ed8248654f945072e5e5900e3333fff4b15129b6"
+  },
+  "bindings": {
+    "audit_sha256": "3717a080030788ded9fa12101dfad7e1b87ac811f517f1b1e1e16fb0fa35769f",
+    "backtest_runner_sha256": "bcb733bdefd36fe4e6052f91f3453f42f7a21dd45011bd5705e7c91a098dd019",
+    "comparison_runner_sha256": "0fcd849a13c0348c4c6802556d9a3d3b9f1d5b02c8c47a4e82c3e744f358760f",
+    "contract_sha256": "1fedb2d2d2e043f56c8547fd67bf32ef028f98866f7455c05c2e8fa6c9d0e2b3",
+    "execution_runner_sha256": "950c3867f387112a65a5dd103f830cce71f7e74af42c5f5208499e787e609d39",
+    "paired_execution_sha256": "63c63d4f0b7c6f649b7155325ee064faf6e5981094ed3cb79ac91b6b8fefedf9",
+    "rule_sha256": "2415c7a7bde2bed23283067fdfe200892c15cf1c70d869153cc9cade81f9694c",
+    "supersession_sha256": "24a755b8696256f76b7e4aaac55df3827e0e47ddd4506fdde34ee2dde04a7ef9"
+  },
+  "command": [
+    "/opt/anaconda3/envs/darko311/bin/python",
+    "/private/tmp/darkofit-t7b-auto-l2-contract-20260722/benchmarks/bench_compare_revisions.py",
+    "--policy-suite",
+    "standing-slice",
+    "--control",
+    "/private/tmp/darkofit-t7b-auto-l2-control-370b892",
+    "--candidate",
+    "/private/tmp/darkofit-t7b-auto-l2-v1-20260722",
+    "--datasets",
+    "diabetes_resampled",
+    "friedman_numeric",
+    "wide_numeric_reg",
+    "categorical_reg",
+    "breast_cancer_resampled",
+    "numeric_binary",
+    "wine_resampled",
+    "numeric_multiclass",
+    "categorical_binary",
+    "categorical_multiclass",
+    "--sizes",
+    "medium",
+    "--seeds",
+    "3",
+    "--repeat",
+    "3",
+    "--threads",
+    "4",
+    "--weight-modes",
+    "none",
+    "stress",
+    "--models",
+    "control_default",
+    "candidate_default",
+    "--evidence-contract",
+    "paired-evidence-v1",
+    "--csv",
+    "/private/tmp/t7b_automatic_l2_v1_m6_inspection1_20260722_raw.csv"
+  ],
+  "contract_id": "m6-quality-successor-v3",
+  "inspection_index": 1,
+  "inspection_spent": true,
+  "mechanism_id": "t7b_automatic_scalar_rmse_l2_v1",
+  "raw_csv": {
+    "path": "/private/tmp/t7b_automatic_l2_v1_m6_inspection1_20260722_raw.csv",
+    "sha256": "dfa5560d752f1c17fa8dea0b497d90ebfaf1cb63275f2d69e7ca0afd57677a3a"
+  },
+  "repeat_count": 3,
+  "schema_version": 1,
+  "sources_before_and_after": {
+    "candidate_default": {
+      "clean": true,
+      "head": "4bf425fcf3ef095679176b8326ea6621830b64cc",
+      "path": "/private/tmp/darkofit-t7b-auto-l2-v1-20260722",
+      "status": [],
+      "tree": "292b942250b674482087f135154239f293f1ffae"
+    },
+    "control_default": {
+      "clean": true,
+      "head": "370b8924c034de0332a4b990817972cf0e876f3e",
+      "path": "/private/tmp/darkofit-t7b-auto-l2-control-370b892",
+      "status": [],
+      "tree": "5390f2e983d9f2057924e4cd5ec1aec40c6e5ee6"
+    }
+  },
+  "validation": {
+    "contract_version": "paired-evidence-v1",
+    "paired_cells": 60,
+    "resolved_threads": 4,
+    "row_count": 120
+  }
+}
