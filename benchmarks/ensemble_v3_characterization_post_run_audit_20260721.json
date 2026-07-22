@@ -1,0 +1,82 @@
+{
+  "artifacts": {
+    "contract": {
+      "path": "benchmarks/ensemble_v3_characterization_contract.json",
+      "sha256": "f8f7b780c6dc915926a33262e24545696754221ef310d76c01da6f9df3b00103"
+    },
+    "interpretation": {
+      "path": "benchmarks/ensemble_v3_characterization_interpretation_20260721.md",
+      "sha256": "36a2dda50ffc551b9e36f565c1c93767c953ac572c9fcb176ae9156026bfbaf1"
+    },
+    "raw": {
+      "path": "benchmarks/ensemble_v3_characterization_raw.json",
+      "sha256": "005c50a89a06e100aa95cb6a776dd7f67026786de6f261470e808a39f9310a9b"
+    },
+    "result": {
+      "path": "benchmarks/ensemble_v3_characterization_result.json",
+      "sha256": "5cfd7b40382187aebed43798715017e1e2867744c5c40f66a00e935f6acefeed"
+    },
+    "result_note": {
+      "path": "benchmarks/ensemble_v3_characterization_result.md",
+      "sha256": "bef08bf9f972eba7ebfd9b2f51ce1d42828b9444c6e4697063166351ed21b0e4"
+    }
+  },
+  "audit_id": "ensemble-v3-characterization-v1-post-run-audit-20260721",
+  "claims": {
+    "fresh_or_lockbox_data_used": false,
+    "m2_or_m4": false,
+    "prediction_certified": false,
+    "public_api_or_default_change_authorized": false,
+    "release_authorized": false,
+    "tier": "E"
+  },
+  "created_at_utc": "2026-07-22T03:50:32Z",
+  "decision": {
+    "artifacts_mutated": false,
+    "favorable_subset_recomputed": false,
+    "rerun_authorized": false,
+    "runner_reusable": false,
+    "status": "preserve_v1_evidence_retire_v1_harness"
+  },
+  "findings": {
+    "contract_loader_validation_gap": {
+      "formal_contract_matches_declared_values": true,
+      "impact": "The completed evidence remains hash-bound and recomputable, but the v1 pre-run loader was weaker than the protocol claimed.",
+      "not_asserted_by_v1_loader": [
+        "schema_version",
+        "outcome_blind",
+        "quality_uncertainty",
+        "claims"
+      ]
+    },
+    "peak_delta_aggregate_omission": {
+      "equal_case_geometric_mean_of_case_median_paired_ratios": 3.2628668003598684,
+      "impact": "The result retained every paired value and absolute delta, so the omission is repairable without a rerun; it sharpens the memory-cost interpretation.",
+      "per_case_median_paired_ratios": {
+        "general_categorical_multiclass": 2.9955357142857144,
+        "general_categorical_reg": 2.708978328173375,
+        "general_friedman_numeric": 3.003898635477583,
+        "general_numeric_binary": 4.649776453055142
+      },
+      "protocol_delivery_complete": false
+    },
+    "prediction_duration_floor": {
+      "affected_arm": "darkofit_single",
+      "affected_batch_size": 8192,
+      "all_intervals_at_or_above_65536_met_floor": true,
+      "formal_interval_count": 144,
+      "full_grid_timing_decision_eligible": false,
+      "minimum_observed_interval_seconds": 0.006492584,
+      "minimum_required_interval_seconds": 0.75,
+      "short_interval_count": 9,
+      "single_warm_call_can_underprovision_formal_calls": true
+    },
+    "runner_failure_paths": {
+      "create_only_partial_write_cleanup": false,
+      "exercised_in_completed_run": false,
+      "rss_teardown_guarantees_primary_exception_preservation": false
+    }
+  },
+  "schema_version": 1,
+  "status": "post_run_audit_complete"
+}

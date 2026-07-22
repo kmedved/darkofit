@@ -36,6 +36,13 @@
 > ensemble parameters or exports, M2, M4/TabArena-Lite, v0.11, B3, Q work,
 > fresh confirmation, or lockbox access; those remain separately gated.
 > The next mechanism slot remains quality-first.
+> The authorized preparation cycle is now complete: the public contract,
+> private candidate, M6 v2 backtest, and Tier-E ensemble-v3 characterization
+> are published. A create-only post-run audit records a `3.262867x`
+> peak-minus-start RSS ratio omitted by the generated result, narrows the
+> prediction claim after nine duration-floor misses, and retires the v1
+> characterization harness. Public ship and every other named gate remain
+> separate owner decisions.
 
 DarkoFit comparison pin: `v0.10.0` at
 `ec66a64654becaf948592588a047bfb8205decc8`.
@@ -280,13 +287,13 @@ No validation is authorized or created by the owner product override.
 | Basketball speed | On that panel ChimeraBoost fit 2.77× faster and predicted 1.42× faster. On the creator's overlap-permitting folds, DarkoFit's single-model median wall time was 24.70% lower. | Current but workload-specific. |
 | ChimeraBoost ensemble | M3a ensemble8/single was `0.950230` on player-disjoint sports RMSE with 9/9 cell wins, `0.977935` on cold players, and `0.947797` on six selected general medium cells with 6/6 wins. | Current Tier-E donor signal at `f14be60`; three spent sports seasons and a small general slice, not a default claim. |
 | DarkoFit ensembles | M3a group8/single was `1.025482` on player-disjoint sports RMSE; row5, row8, and group5 were also worse. Row8/single was `1.019556` on the selected general slice. | Current Tier-E closure of the shipped bootstrap/member policy; no repeat timing. |
-| Private ensemble-v3 attribution | M3b combined/control was `0.979638` for aggregate loss and `0.557873` for fit time, but combined/single archive bytes were `5.534767` against the frozen `4.0` ceiling. B1 and B2 also failed their value and archive/single checks. | Frozen close remains historical. Owner record `671f2e0` supersedes only the archive gate's forward effect and authorizes a public-contract freeze plus private non-exported preparation; no public ship. |
+| Private ensemble-v3 attribution | M3b combined/control was `0.979638` for aggregate loss and `0.557873` for fit time, but combined/single archive bytes were `5.534767` against the frozen `4.0` ceiling. B1 and B2 also failed their value and archive/single checks. | Frozen close remains historical. The later public-contract/private-candidate preparation and Tier-E characterization are complete; no public ship follows without its owner gate. |
 | B-archive exact-factoring feasibility | Across the same 13-case portfolio, current combined/single archive bytes had median `6.032405`; exact canonical numeric-preprocessor factoring produced an effective median `4.152525` against the unchanged `4.0` limit. Eleven numeric cases were eligible; two member-local categorical cases remained unchanged. | Frozen Tier-E size evidence. The non-loadable simulation is optional telemetry after `671f2e0`; no serializer format is implemented or authorized. |
 | Fused-lane dispatch calibration | The one-shot v4 calibration was exact on 30/30 cells. Its selected threshold candidate used both lanes and had worst ratio `1.0`, but six cells missed the stability limit and selected/current-fused geomean was `0.973846` against `<=0.97`. | Binding Tier-E evidence close remains. A later owner override activates threshold `1048576` within the encoded macOS-arm64 envelope, without validation or a speed/portability claim. |
 | Quantization on sports | ChimeraBoost's default quantization mildly worsened its player-disjoint sports quality. M3a float/quantized ratios were `1.001949` for singles and `1.002315` for ensembles. | Current only for this small, noisy workload. |
 | Large-n engine comparison | M1 DarkoFit/current-quantized-Chimera fit ratio was `0.844722`; Chimera quantized/float was `0.903595`, missing the frozen `0.90` donor bar. | Current Tier-E matched-capacity result; Q closed under its conjunctive rule. |
 | Broad 13-dataset comparison | The historical DarkoFit/ChimeraBoost RMSE ratio was 1.0125 and training-time ratio was 0.9093 against ChimeraBoost 0.14.1. | Historically valid for its pins; stale for 0.18. |
-| Prediction throughput | M3a supplies single descriptive sports-workload costs; no repeat series was allowed after DarkoFit group8 failed quality. | Current but not timing-decision eligible. |
+| Prediction throughput | The current repeat-series grid found DarkoFit single at `0.485145x` pinned-Chimera time, ensemble-v3 at `3.013607x` Chimera and `6.207940x` DarkoFit-single time. Nine 8,192-row single intervals missed the floor; all 65,536+ intervals met it. | Current Tier-E characterization; full-grid aggregate is descriptive, not timing-decision eligible or certified. |
 | Product breadth and conformal result | ChimeraBoost 0.18 did not directly test these DarkoFit capabilities. | Unchallenged, not re-won or newly improved. |
 | Sports early stopping + exact refit | The prior candidate lost 7/10 creator folds, worsened the overlap-exposed holdout, and was only 11.7% faster. | Closed predecessor; any successor needs a distinct causal hypothesis. |
 | Panel 3 | Power was 50.00% for T5 and 10.64% for guarded cross features versus the required 80%; no candidate was retained and the lockbox stayed sealed. | Closed and immutable. A new guard is a new campaign. |
@@ -303,7 +310,7 @@ been refreshed.
 | H — hygiene | Complete for Wave 1 | Tier-E engineering | Clean documentation checkpoint | Published H1 audit and tested fixes | Reopen only for a newly confirmed gap |
 | M — Wave 1 complete; quality-only M6 v2 eligible | Tier-E descriptive/infrastructure | Passed `m6-quality-successor-v2`; new mechanisms require its exact clean runner and inspection index | M1, Q0, M3a, M5, terminal M6 v3, invalid v1 binding, and hash-bound v2 result | Successor never ships, never ranks speed, and is spent per mechanism |
 | Q — historically closed at G-M; future local screen separately gated | Q0 engineering, Q1/Q2 Tier-E opt-in, Q3 Tier-D automatic | Separate owner authorization for a measured local causal microprototype against the post-dispatch baseline | New local microprototype result if authorized | The `13.28%` assumed-prior projection sizes work only; it cannot fund Q1 and M1 is not relaxed |
-| B — reopened for Tier-E ship preparation | Spent private B0/B1/B2 attribution; Tier-D for any changed default | Binding public API/archive contract, then private non-exported release-candidate invariants | Public contract and private correctness checkpoint; later ship only by owner release sign-off | Preserve historical M3b/B-archive artifacts; no public surface, B3, or release from preparation alone |
+| B — preparation/characterization complete; public ship gated | Spent private B0/B1/B2 attribution and Tier-E characterization; Tier-D for any changed default | Separate owner public-ship sign-off | Published public contract, private correctness checkpoint, uncertainty/resource/prediction characterization, and post-run audit | Preserve historical artifacts; no public surface, B3, or release without its separate gate |
 | X — cross features | Rolling backlog via Track I | Tier-E explicit research opt-in; Tier-D for automatic engagement | Promotion from the backlog; X0 then defines separate force and guarded semantics plus full product obligations | Narrow opt-in result or deferral | No general safety claim from the three-task spent result |
 | S — sports speed | Conditional successor to a failed candidate | Tier-D if automatic | One justified, preregistered group-safe candidate | Spent screen, then fresh result only if powered | Close automatic route on a failed spent screen |
 | P — harm-bounded composite | New campaign only | Tier-D | New exact candidate and new protocol identity | Published power GO/NO-GO; fresh result only after GO and owner authorization | No fresh access below the preregistered 80% power bar |
@@ -850,9 +857,12 @@ successful Q1/Q2 opt-in may remain.
 B0 plus one private sequential B1/B2 attribution prototype were funded at
 G-M on 2026-07-20 and completed the same day. The work used a new private
 candidate identity without silently changing the meaning of existing
-`n_ensembles` configurations. M3b retained no arm, so B3, a public option,
-and any default are closed rather than merely conditional. The current
-bootstrap member policy also remains closed as a quality route.
+`n_ensembles` configurations. At the frozen M3b close, no arm was retained, so
+B3, a public option, and any default closed. The later owner supersession leaves
+that historical verdict intact but authorized the now-complete public-contract,
+private-candidate, and Tier-E characterization work. Public ship, B3, and any
+default remain separately gated. The current bootstrap member policy remains
+closed as a quality route.
 
 1. **B1 — sampling:** add explicit row and group subsampling without
    replacement, with a declared fraction. Preserve the existing bootstrap
@@ -921,8 +931,8 @@ or default surface, fresh confirmation, TabArena, or lockbox access.
 
 That disposition remains the immutable result of the frozen campaign. The
 later owner record at `671f2e0` supersedes only its forward archive-gate effect:
-the combined arm may now receive a public-contract freeze and private,
-non-exported release-candidate hardening. Public parameters/exports, ship,
+the combined arm has now received its public-contract freeze, private,
+non-exported release-candidate hardening, and Tier-E characterization. Public parameters/exports, ship,
 B3, M2/M4, release, fresh confirmation, and lockbox access remain unauthorized
 until their separate owner gates.
 
@@ -1358,7 +1368,8 @@ no default claim rests on spent evidence; the testing log and public claim
 surfaces agree; and any unused lockbox remains sealed.
 
 Wave 1 reached that stopping point on 2026-07-20. The later owner record at
-`671f2e0` starts an authorized preparation cycle: freeze the ensemble-v3 public
-contract, harden its private non-exported release candidate, and build/backtest
-an M6 successor. M2/M4, public ship/release, B3, Q, fresh confirmation, and the
-lockbox remain separately gated; the lockbox remains sealed.
+`671f2e0` authorized a preparation cycle that is now complete: the ensemble-v3
+public contract, private non-exported release candidate, M6 v2 backtest, and
+Tier-E characterization plus post-run audit are published. M2/M4, public
+ship/release, B3, Q, fresh confirmation, and the lockbox remain separately
+gated; the lockbox remains sealed.

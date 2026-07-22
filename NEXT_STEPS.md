@@ -114,9 +114,9 @@ schedule:**
   the minimum-duration gate, despite `0.805–0.987` no-slower medians): the
   certification stays closed. Prediction against 0.18 is not literally
   unmeasured — M1, the 0.18 sports diagnostic, and M3a all carry narrow or
-  workload-specific current measurements — but no dedicated, repeat-series,
-  grid-wide characterization exists, and inference speed is an explicit
-  owner priority. The remedy is a measurement, not a certificate: see §4.5.
+  workload-specific current measurements. The dedicated repeat-series grid is
+  now published under §4.5 as characterization rather than certification; its
+  post-run audit keeps the small-batch duration misses explicit.
 
 **Gates and disciplines affirmed at current strictness — this reform does
 not touch** (the governing text is
@@ -141,8 +141,9 @@ Execution order (rationale in the subsections): **(0)** commit this
 document as the supersession/authorization record → **(1)** freeze the
 public ensemble-v3 API and archive-schema contract (§4.2), with the M6
 successor build running in parallel (§4.8) → **(2)** implement and
-validate sequential ensemble-v3 (§4.2) → **(3)** run the dedicated
-prediction characterization plus milestone M2/M4 evidence (§4.5) →
+validate sequential ensemble-v3 (§4.2) → **(3a, complete)** run the dedicated
+prediction characterization (§4.5) → **(3b, separately gated)** run milestone
+M2/M4 evidence only after its owner sign-off →
 **(4)** ship v0.11 with the already-promoted dispatch and honestly
 characterized ensemble-v3 → then **three distinct mechanism slots, one at
 a time, each with its own entry and exit**: **(5)** T7b quality levers
@@ -185,7 +186,7 @@ public ship separately gated).**
    propagation, and existing-bootstrap non-regression. Do not add public
    constructor parameters, exports, or public documentation until the public-
    ship row in §6 receives its separate owner sign-off.
-3. Publish the honest characterization **with uncertainty, per Tier-E
+3. **Completed:** publish the honest characterization **with uncertainty, per Tier-E
    policy** — point estimates and win counts alone are insufficient.
    Quality from the immutable r3 readout (13/13 vs single; sports view
    labeled player-disjoint cold-player within held teams; general view
@@ -193,9 +194,10 @@ public ship separately gated).**
    for the nine sports cells** (three season clusters, cluster-bootstrap
    dispersion as in M3a) and dispersion plus leave-one-case-out
    sensitivity for the four general cases; never imply 13 independent
-   datasets. Costs disclosed plainly — fit `0.56×` the current ensemble,
-   RSS `1.07×` single, archive ~5.5× single (~0.5 MB typical) with the
-   gate-retraction note. Additive surface; existing `n_ensembles`
+   datasets. The historical M3b attribution costs were fit `0.56×` the then-
+   current ensemble, RSS `1.07×` single, and archive ~5.5× single (~0.5 MB
+   typical) with the gate-retraction note; the current-source checkpoint below
+   supersedes those figures for release planning. Additive surface; existing `n_ensembles`
    bootstrap semantics unchanged. No default change; no sports-safe claim
    beyond the panel's scope; eight members documented as the only
    evaluated recipe.
@@ -211,7 +213,10 @@ plus current fit/process-tree-RSS/safe-NPZ telemetry. Quality remained 13/13;
 the candidate cost `6.14x` single fit time, `1.14x` process-tree peak RSS,
 `8.13x` safe-NPZ bytes, and `6.21x` single prediction time. Nine small-batch
 single-model intervals missed the duration target and remain disclosed; no
-rerun or subset replaced them. This checkpoint does not authorize items 4.2.4
+rerun or subset replaced them. A post-run audit supplies the protocol's omitted
+peak-minus-start aggregate (`3.262867x` v3/single), marks the full prediction
+grid non-certifying and non-timing-decision-eligible, and retires the v1 harness
+without changing any frozen artifact. This checkpoint does not authorize items 4.2.4
 or any §6 ship, milestone, or release row.
 
 **4.3 — B3: a fresh authorization, operationalized.** B3 was deferred for
@@ -240,15 +245,15 @@ mechanisms, per the anti-drift guard and the promotion record's own
 **4.5 — v0.11 milestone measurements.** M2 (first broad-panel reading
 against ChimeraBoost 0.18 — the calibrated-yardstick test) and the first
 M4 TabArena-Lite placement ride the release, as already planned. Added by
-this document: a **dedicated, grid-wide prediction-throughput
-characterization against the 0.18 pin** — Tier-E measurement with
-dispersion, no certification — covering single models and the new
-ensemble opt-in's predict path. Current data on this axis is real but
-workload-specific and scattered — M1's narrow report-only medians, the
-0.18 sports diagnostic's timing, M3a's descriptive sports costs — and
-**no dedicated, repeat-series, grid-wide characterization exists** on the
-axis where ChimeraBoost leads at product level and which the owner has
-named a priority.
+this document, the **dedicated prediction characterization is complete**
+against the exact 0.18 pin for DarkoFit single and the private ensemble-v3
+candidate. It is a Tier-E repeat-series measurement, not a certificate: nine
+8,192-row DarkoFit-single intervals missed the duration floor, so the full-grid
+aggregate is descriptive and not timing-decision eligible; every 65,536-row-and-
+larger interval met the floor. The create-only post-run audit retires that v1
+harness and records the limitation without a favorable rerun or subset. M2 and
+M4 remain independently owner-gated milestone work; this completed prediction
+grid does not authorize either one.
 
 **4.6 — Q funding revisit: strike the donor prong.** Q closed on a
 conjunctive rule whose second prong conditioned DarkoFit's funding on
@@ -353,7 +358,7 @@ table.
 | §4.9 standing gate-design rules | **This document, on commit** | To be copied into the plan's evidence-discipline section per §4.1. |
 | Ensemble-v3 **public contract freeze** (§4.2.1) | **This document, on commit** | Contract work only; no public code ships from it. |
 | Ensemble-v3 **implementation + correctness suite** (§4.2.2) | **This document, on commit** | Private and non-exported until the public-ship row; no constructor/API surface is authorized here. |
-| Ensemble-v3 **public ship** (§4.2.3–4) | Owner sign-off at the v0.11 release checkpoint | Requires the §4.2.3 characterization with uncertainty, published. |
+| Ensemble-v3 **public ship** (§4.2.3–4) | Owner sign-off at the v0.11 release checkpoint | The §4.2.3 characterization prerequisite is published, including its post-run correction; owner ship sign-off is still required. |
 | M6 successor **build + backtest** (§4.8) | **This document, on commit** | Ranking eligibility only via a passed backtest, never by fiat. |
 | M2 broad panel | Owner sign-off at the v0.11 milestone | Frozen protocol per the plan; not started earlier. |
 | **M4 TabArena-Lite placement** | Owner sign-off at the v0.11 release, explicitly | **Not authorized by this document.** Resolves the §3/§4.5 tension: §4.5 schedules it; only this row authorizes it. |

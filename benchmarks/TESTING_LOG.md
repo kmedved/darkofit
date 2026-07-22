@@ -1284,6 +1284,38 @@ B-archive simulation remains non-loadable, optional size telemetry.
     supports only an honestly described explicit opt-in and awaits the
     separately gated public-ship decision.
 
+### 36. Ensemble-v3 characterization post-run audit (2026-07-21)
+
+1. **Scope:** fresh-eyes audit of the frozen contract, runner, analyzer, raw
+   artifact, generated result, interpretation, tests, and live plan state; no
+   model rerun, M2/M4, fresh data, lockbox, API, default, or release action.
+2. **Immutable evidence:** contract/raw/result/note/interpretation retain their
+   published hashes. The audit is additive and create-only.
+3. **Memory correction:** the protocol-promised but omitted equal-case
+   peak-minus-start RSS ratio is `3.262867x` v3/single, computed from the four
+   case-median paired ratios retained in the immutable result. This sits beside,
+   rather than replacing, the `1.135581x` absolute peak-RSS ratio and absolute
+   v3 deltas.
+4. **Prediction limitation:** nine of 144 intervals missed `0.75 s`; the
+   minimum was `0.006492584 s` after an anomalous first warm call selected only
+   eight formal calls. The full-grid aggregate remains descriptive and is not
+   timing-decision eligible or certified. No subset or rerun replaces it.
+5. **Harness audit:** the v1 loader did not assert every declarative contract
+   field, create-only write failures could leave partial targets, and RSS
+   teardown could mask a primary exception. None occurred in the completed
+   run; v1 is retired rather than amended.
+6. **Disposition:** preserve all v1 artifacts. Any successor requires a new
+   identity with full contract validation, failure-safe output/telemetry, and
+   stabilized timing calibration or a fail-closed duration floor.
+7. **Record:**
+   [`ensemble_v3_characterization_post_run_audit_20260721.json`](ensemble_v3_characterization_post_run_audit_20260721.json)
+   SHA-256
+   `6fcccf098c217e07513a02f6ca588f95deb883f22d92600976077cead406fbdf`;
+   and
+   [`ensemble_v3_characterization_post_run_audit_20260721.md`](ensemble_v3_characterization_post_run_audit_20260721.md)
+   SHA-256
+   `2726b699193eb669e2840bba527743c07d77505dfb8ed782a0fd8076cd94287c`.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
