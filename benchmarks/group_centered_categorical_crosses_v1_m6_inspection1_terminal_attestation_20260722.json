@@ -1,0 +1,14 @@
+{
+  "contract_id": "group-centered-categorical-crosses-v1-development-20260722",
+  "created_at_utc": "2026-07-23T03:21:08.476664+00:00",
+  "disposition": "advance",
+  "inspection_index": 1,
+  "launch_manifest_sha256": "45ec167150ecece277dd72474cc256fba8f0ae18ef0a5eabbe3f14dd0864277a",
+  "m6_manifest_sha256": "75ddda2ecf21d2ea7e65847688206ee56caddafb17ec4605a3db027333342837",
+  "mechanism_id": "group_centered_categorical_crosses_v1",
+  "raw_sha256": "3b9c4301b0d593cea03634d8ecd9aa34f151fface8453d650b820f0742fe84ec",
+  "rerun_authorized": false,
+  "result_sha256": "fa2bdf46e1439a5b1cbc043541db133c1d6a854fc04d26e40709fbcf838f6fa4",
+  "schema_version": 1,
+  "shipping_or_default_claim_eligible": false
+}

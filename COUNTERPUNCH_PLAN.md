@@ -1137,7 +1137,7 @@ terminal and may not be treated as an available favorable rerun.
 
 Initial backlog, unrated and unauthorized:
 
-- **Funded R1 quality slot — group-centered categorical crosses v1**
+- **R1 quality slot advanced — group-centered categorical crosses v1**
   (ChimeraBoost 0.20 mechanism retained in the source-pinned 0.21.0 release):
   target-free `x - mean_fit(x | category)` columns, weight-aware with global
   unseen-category fallback. Expected value is concentrated on mixed
@@ -1146,10 +1146,16 @@ Initial backlog, unrated and unauthorized:
   after removing it. Complexity is bounded to a private scalar-RMSE automatic
   selector and at most 12 columns (top four numeric × top three categorical).
   It is materially distinct from the closed category-by-category combination
-  donor. The exact candidate stops on the immutable M6 v3 aggregate, worst-
-  dataset, or LOO gates; advancement authorizes only mechanism-specific spent
-  attribution. Source and 0.21.0 follow-ups are recorded in
-  `benchmarks/chimeraboost_v0210_changelog_triage_20260722.md`.
+  donor. Exact private candidate `c3f2608c` passed invariants and M5, then
+  advanced through its sole inspection: the immutable M6 v3 aggregate,
+  worst-dataset, and LOO gates all passed at `0.992606`, `1.000000`, and
+  `1.000000`; the selected categorical-regression group was `0.928473`.
+  Engaged-cell fit/RSS telemetry was materially higher at
+  `2.145607×`/`1.096926×`. The candidate is eligible only for a
+  separately frozen mechanism-specific spent attribution; it remains private,
+  unmerged, and non-shipping. Source and 0.21.0 follow-ups are recorded in
+  `benchmarks/chimeraboost_v0210_changelog_triage_20260722.md`; the terminal
+  evidence is in `benchmarks/group_centered_categorical_crosses_v1_result.md`.
 - **Monotonic and interaction constraints** (CatBoost/LightGBM/XGBoost):
   mainstream general-tabular capability, direct sports value as domain
   priors, absent from DarkoFit today. Treat as a high-value capability gap,
@@ -1357,6 +1363,7 @@ These are planning ranges, not delivery promises.
 | 5 | **Characterization complete:** ensemble-v3 public contract/private candidate complete; M6 v2 passed; Tier-E uncertainty/resource/prediction evidence published | Completed 2026-07-21; quality 13/13, with material `6.14x` fit and `6.21x` prediction costs vs single | Await separate public-ship decision; no public API/export, M2/M4, release, B3, Q, fresh data, or lockbox access |
 | 6 | **Development complete:** T7b L2 v1 closed in M6 v3; exact automatic-depth candidate `41e948f0` advanced through invariants, M5, its one M6 v3 inspection, and its one spent-sports successor | Completed 2026-07-22/23; sports cold-player ratio `0.950266`, 9/9 improved, season-cluster p95 `0.966591` | Candidate remains private/unmerged; only owner-authorized fresh Tier-D campaign design may follow—no reruns or public claim |
 | 7 | **Selector re-adjudication complete:** automatic linear-selector v2 passed M6 v3 and remained harm-free in the artifact-only historical replay, but Protein attempt 2 failed its frozen all-coordinate engagement/exactness invariant | Closed 2026-07-22/23; Protein aggregate `0.968638×`, coordinate 1 margin `0.025179 < 0.03`; historical 21-lineage replay `0.962739×`, worst lineage/split `1.0×` | Exact candidate killed; no rerun, merge, fresh design, default, or claim. Open the separately governed categorical-crosses slot next. |
+| 8 | **Catcross general development complete:** group-centered categorical crosses v1 passed invariants/M5 and advanced through its sole M6 v3 inspection | Completed 2026-07-22/23; aggregate `0.992606×`, categorical-regression group `0.928473×`, worst group/LOO `1.0×`; engaged fit/RSS `2.145607×`/`1.096926×` | Candidate remains private/unmerged; only a separately frozen mechanism-specific spent attribution may follow. Open B3 as the next separately governed speed slot. |
 | Later | M2/M4 release milestones, other Track I backlog, and Z cleanup | Independent backlog with explicit owner gates | No coupling to unfinished speculative tracks or lockbox access |
 
 Benchmark waves use fresh workers and exclusive machine access. Parallelize

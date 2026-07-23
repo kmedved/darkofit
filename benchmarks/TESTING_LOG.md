@@ -2181,6 +2181,66 @@ B-archive simulation remains non-loadable, optional size telemetry.
     Preserve its branch and artifacts; do not rerun or merge. The next
     separately governed mechanism slot is categorical crosses.
 
+### 52. Group-centered categorical crosses v1 general development (2026-07-22/23)
+
+1. **Execution date/source:** 2026-07-22/23; clean published evidence harness
+   `9c63f8171d3e57add4e3eb33681c5b6b764ff628`, clean control
+   `01ae675bcebdf435988ce9e0d493d0fc0017f54a`, and exact clean private
+   candidate `c3f2608cd3033cfc00aa0737897a92ed868b5865`.
+2. **Comparators:** default scalar-RMSE CatBoost policy versus the same policy
+   with the frozen automatic group-centered-cross selector; all ineligible
+   cells executed the exact control lane.
+3. **Evidence class:** invariants and non-ranking M5, one metadata-only M6
+   engagement companion, and one spent general-development inspection under
+   M6 quality-successor-v3. It ranks only this development decision.
+4. **Data/splits:** exact frozen 60-cell medium grid: ten regression and
+   classification datasets, three seeds, unweighted and stress-weighted
+   policies, fixed adapter splits and fingerprints. Engagement occurred only
+   on the six `categorical_reg` cells.
+5. **Arms/policies:** `control_default` and `candidate_default`; 1,000-round
+   public defaults and four threads. Eligible candidates used a deterministic
+   15% audition holdout, bounded top-four-numeric by top-three-categorical
+   target-free crosses, and strict lower validation RMSE selection.
+6. **Environment/repeats:** `darko311`, macOS arm64, four threads, three
+   repeats in each fresh worker; exclusive-machine audit found no conflicting
+   benchmark process before the create-only launch manifest was written.
+7. **Runner/command:** `python
+   benchmarks/run_group_centered_categorical_crosses_v1.py --control
+   /private/tmp/darkofit-catcross-control-01ae675 --candidate
+   /private/tmp/darkofit-catcross-v1-20260722 --invariants
+   /private/tmp/catcross_v1_invariants_20260722.json --m5-result
+   /private/tmp/catcross_v1_m5_20260722.json --engagement
+   /private/tmp/catcross_v1_m6_engagement_20260722.json --output-prefix
+   /private/tmp/catcross_v1_m6_inspection1_20260722`.
+8. **Hashes:** invariants
+   `9cf91f57894cc66776a4128826398dd8fe37ba4ef79466094afe2b62db9b95b4`;
+   M5 `254fcc551668a619d8589b617a55a67210f17459b65323e2117929bcda406c62`;
+   engagement `b1b7f1c372bfb502fa6d66ece6def5cdbe305b8e311fc59addc342cca0f78940`;
+   launch `45ec167150ecece277dd72474cc256fba8f0ae18ef0a5eabbe3f14dd0864277a`;
+   raw `3b9c4301b0d593cea03634d8ecd9aa34f151fface8453d650b820f0742fe84ec`;
+   result `fa2bdf46e1439a5b1cbc043541db133c1d6a854fc04d26e40709fbcf838f6fa4`;
+   generic manifest
+   `75ddda2ecf21d2ea7e65847688206ee56caddafb17ec4605a3db027333342837`;
+   terminal attestation
+   `bd02744c4afcd2117cd2f9db333bc33f2aa877402a162382936d96c9ab23cef7`.
+9. **Primary results:** equal-cell geometric-mean ratio `0.992606`; selected
+   `categorical_reg` group `0.928473`; worst dataset-group and LOO ratios both
+   `1.000000`. Its six selected coordinates ranged `0.900282`--`0.964085`;
+   every other coordinate was exactly `1.000000`.
+10. **Costs, passed and failed conditions:** aggregate `<=1.000000`, worst
+    group `<=1.020000`, and worst LOO `<=1.003000` all passed. Non-gating
+    all-cell fit/predict/RSS geomeans were `1.083311`, `1.004975`, and
+    `1.008625`; on engaged cells they were `2.145607`, `1.045341`, and
+    `1.096926`.
+11. **Limitations/non-claims:** one dependent, fixed, spent medium panel. The
+    mechanism engaged on one synthetic family and its two-audition fit cost is
+    material. No fresh, sports, public, merge, default, release, TabArena,
+    lockbox, or general quality claim is authorized.
+12. **Terminal decision/next action:** frozen disposition `advance`, meaning
+    only `eligible_for_mechanism_specific_spent_attribution`. Inspection 1 is
+    spent and rerun is false. Keep candidate `c3f2608c` private and unmerged;
+    any attribution needs a separate frozen contract.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

@@ -1,0 +1,110 @@
+{
+  "bindings": {
+    "contract_sha256": "f55f096173aeec15936c3a0b63570ac96cd0d7fc6c571781ae0c74fc809ab039",
+    "engagement_protocol_sha256": "3c06c8de29c8127b70cc4d5f1c3228176a521c702a3debdb71f82e9af89ba58a",
+    "engagement_runner_sha256": "c36dc74d0fd3d31adc44858b170f17294da4d83dcdeea3eceeb47dd0ded7109e",
+    "invariant_runner_sha256": "564f9e84cbcb59f9dfbed46d275c477f6985dc9f8b5998be205ca988f619b39f",
+    "m5_runner_sha256": "5975d8037e3d94c54b63611b9eb50b28e1098e23f7e9f064608b97141cec61ca",
+    "m6_contract_sha256": "1fedb2d2d2e043f56c8547fd67bf32ef028f98866f7455c05c2e8fa6c9d0e2b3",
+    "m6_rule_sha256": "2415c7a7bde2bed23283067fdfe200892c15cf1c70d869153cc9cade81f9694c",
+    "m6_runner_sha256": "950c3867f387112a65a5dd103f830cce71f7e74af42c5f5208499e787e609d39",
+    "wrapper_sha256": "77dc124975c215da009c4be143a1e05c62897d47ae6de78b20ae8e3a87e81fd5"
+  },
+  "candidate_file_allowlist": [
+    "darkofit/booster.py",
+    "darkofit/preprocessing.py",
+    "darkofit/serialization.py",
+    "darkofit/sklearn_api.py",
+    "tests/test_darkofit.py",
+    "tests/test_group_centered_preprocessing.py",
+    "tests/test_group_centered_selector.py"
+  ],
+  "command": [
+    "/opt/anaconda3/envs/darko311/bin/python",
+    "/private/tmp/darkofit-catcross-evidence-20260722/benchmarks/run_m6_quality_successor_v3.py",
+    "--control",
+    "/private/tmp/darkofit-catcross-control-01ae675",
+    "--candidate",
+    "/private/tmp/darkofit-catcross-v1-20260722",
+    "--mechanism-id",
+    "group_centered_categorical_crosses_v1",
+    "--inspection-index",
+    "1",
+    "--raw-csv",
+    "/private/tmp/catcross_v1_m6_inspection1_20260722_raw.csv",
+    "--output",
+    "/private/tmp/catcross_v1_m6_inspection1_20260722_result.json"
+  ],
+  "contract_id": "group-centered-categorical-crosses-v1-development-20260722",
+  "created_at_utc": "2026-07-23T03:07:54.177245+00:00",
+  "exclusive_machine": {
+    "checked_at_utc": "2026-07-23T03:07:54.202531+00:00",
+    "conflicting_benchmark_processes": [],
+    "load_average": [
+      13.69287109375,
+      12.02734375,
+      8.6123046875
+    ]
+  },
+  "hardware": {
+    "machine": "arm64",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.11.8 (main, Feb 26 2024, 15:36:12) [Clang 14.0.6 ]"
+  },
+  "harness_file_allowlist": [
+    "benchmarks/group_centered_categorical_crosses_v1_m6_engagement_companion.md",
+    "benchmarks/run_group_centered_categorical_crosses_v1.py",
+    "benchmarks/run_group_centered_categorical_crosses_v1_engagement.py",
+    "benchmarks/run_group_centered_categorical_crosses_v1_invariants.py",
+    "tests/test_group_centered_campaign_harness.py"
+  ],
+  "inspection_index": 1,
+  "inspection_spent_on_manifest_creation": true,
+  "mechanism_id": "group_centered_categorical_crosses_v1",
+  "outputs": {
+    "launch_manifest": "/private/tmp/catcross_v1_m6_inspection1_20260722_launch_manifest.json",
+    "m6_manifest": "/private/tmp/catcross_v1_m6_inspection1_20260722_result.json.manifest.json",
+    "raw": "/private/tmp/catcross_v1_m6_inspection1_20260722_raw.csv",
+    "result": "/private/tmp/catcross_v1_m6_inspection1_20260722_result.json",
+    "terminal_attestation": "/private/tmp/catcross_v1_m6_inspection1_20260722_terminal_attestation.json"
+  },
+  "preconditions": {
+    "engagement": {
+      "path": "/private/tmp/catcross_v1_m6_engagement_20260722.json",
+      "sha256": "b1b7f1c372bfb502fa6d66ece6def5cdbe305b8e311fc59addc342cca0f78940"
+    },
+    "invariants": {
+      "path": "/private/tmp/catcross_v1_invariants_20260722.json",
+      "sha256": "9cf91f57894cc66776a4128826398dd8fe37ba4ef79466094afe2b62db9b95b4"
+    },
+    "m5": {
+      "path": "/private/tmp/catcross_v1_m5_20260722.json",
+      "sha256": "254fcc551668a619d8589b617a55a67210f17459b65323e2117929bcda406c62"
+    }
+  },
+  "rerun_authorized": false,
+  "schema_version": 1,
+  "sources": {
+    "candidate": {
+      "clean": true,
+      "head": "c3f2608cd3033cfc00aa0737897a92ed868b5865",
+      "path": "/private/tmp/darkofit-catcross-v1-20260722",
+      "status": [],
+      "tree": "baab0a10dc5e482813051f9b57ef3f5fe7087831"
+    },
+    "control": {
+      "clean": true,
+      "head": "01ae675bcebdf435988ce9e0d493d0fc0017f54a",
+      "path": "/private/tmp/darkofit-catcross-control-01ae675",
+      "status": [],
+      "tree": "c82697a334a3fb5fb868c01255b8a362e3a61d71"
+    },
+    "harness": {
+      "clean": true,
+      "head": "9c63f8171d3e57add4e3eb33681c5b6b764ff628",
+      "path": "/private/tmp/darkofit-catcross-evidence-20260722",
+      "status": [],
+      "tree": "d1dadfc0c25e2e327d7f84fcf584051a86172008"
+    }
+  }
+}

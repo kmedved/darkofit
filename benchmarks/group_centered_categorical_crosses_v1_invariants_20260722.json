@@ -1,0 +1,76 @@
+{
+  "analysis": {
+    "focused_invariants_passed": true,
+    "mechanism_synthetic_engaged": true,
+    "nested_ensemble_and_thread_checks_passed": true,
+    "safe_npz_roundtrip_and_corruption_checks_passed": true
+  },
+  "bindings": {
+    "candidate_files": {
+      "darkofit/booster.py": "f82bfe1d72ae007b3e3e05d0b655f831d427adf6e8ab51e9b7602cf85dc2623d",
+      "darkofit/preprocessing.py": "a4e0970a8ed394e474e64d97665b59dc4b5cf4c564e5e808819bc37a5e7dc41a",
+      "darkofit/serialization.py": "bc7fad25bfdf7ae39ddeadb25f55adc22b32cc763b67459176d4991b0ced11cc",
+      "darkofit/sklearn_api.py": "4f9545ef5f4ff490e0faf5dc9221f62fbcde961ac84df25e0f049110e4506385",
+      "tests/test_darkofit.py": "764280c4422e7b0523728c7e671ef43ffba88ff6a6eb4fbd9716343096a8846a",
+      "tests/test_group_centered_preprocessing.py": "9ff184d60b2c414ea67fa51fb8cf26c169eaef6033890da07967782a9d82ad3a",
+      "tests/test_group_centered_selector.py": "de7e709022d59c79e9089a8cb88ba806102755cb54e50a6e5ef89b492d29d997"
+    },
+    "contract_sha256": "f55f096173aeec15936c3a0b63570ac96cd0d7fc6c571781ae0c74fc809ab039",
+    "runner_sha256": "564f9e84cbcb59f9dfbed46d275c477f6985dc9f8b5998be205ca988f619b39f"
+  },
+  "contract_id": "group-centered-categorical-crosses-v1-development-20260722",
+  "created_at_utc": "2026-07-23T03:02:29.127431+00:00",
+  "execution": {
+    "command": [
+      "/opt/anaconda3/envs/darko311/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "--disable-warnings",
+      "tests/test_group_centered_preprocessing.py",
+      "tests/test_group_centered_selector.py",
+      "tests/test_thread_state_restoration.py",
+      "tests/test_payload_hardening.py",
+      "tests/test_ensemble_api.py",
+      "tests/test_public_ensemble_v3.py",
+      "tests/test_private_ensemble_v3.py",
+      "tests/test_deprecations.py",
+      "tests/test_basketball_native_ordinal.py::test_normalized_archive_identity_removes_only_inactive_declaration",
+      "tests/test_native_ordinal_c2.py::test_empty_explicit_ordinal_archive_normalizes_to_control"
+    ],
+    "stderr": "",
+    "stdout": "........................................................................ [ 27%]\n........................................................................ [ 54%]\n........................................................................ [ 81%]\n.................................................                        [100%]\n265 passed, 32 warnings in 6.18s",
+    "tests": [
+      "tests/test_group_centered_preprocessing.py",
+      "tests/test_group_centered_selector.py",
+      "tests/test_thread_state_restoration.py",
+      "tests/test_payload_hardening.py",
+      "tests/test_ensemble_api.py",
+      "tests/test_public_ensemble_v3.py",
+      "tests/test_private_ensemble_v3.py",
+      "tests/test_deprecations.py",
+      "tests/test_basketball_native_ordinal.py::test_normalized_archive_identity_removes_only_inactive_declaration",
+      "tests/test_native_ordinal_c2.py::test_empty_explicit_ordinal_archive_normalizes_to_control"
+    ]
+  },
+  "identity": "group-centered-categorical-crosses-v1-invariants-20260722",
+  "quality_outcomes_inspected": false,
+  "schema_version": 1,
+  "shipping_or_default_claim_authorized": false,
+  "sources": {
+    "candidate": {
+      "clean": true,
+      "head": "c3f2608cd3033cfc00aa0737897a92ed868b5865",
+      "path": "/private/tmp/darkofit-catcross-v1-20260722",
+      "status": [],
+      "tree": "baab0a10dc5e482813051f9b57ef3f5fe7087831"
+    },
+    "harness": {
+      "clean": true,
+      "head": "9c63f8171d3e57add4e3eb33681c5b6b764ff628",
+      "path": "/private/tmp/darkofit-catcross-evidence-20260722",
+      "status": [],
+      "tree": "d1dadfc0c25e2e327d7f84fcf584051a86172008"
+    }
+  }
+}

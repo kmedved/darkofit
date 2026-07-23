@@ -43,9 +43,10 @@ def test_contract_freezes_candidate_scope_and_one_m6_inspection() -> None:
         assert phrase in text
 
 
-def test_binding_plan_records_expected_value_and_stop_rule() -> None:
+def test_binding_plan_records_expected_value_and_terminal_disposition() -> None:
     text = (ROOT / "COUNTERPUNCH_PLAN.md").read_text(encoding="utf-8")
 
-    assert "Funded R1 quality slot — group-centered categorical crosses v1" in text
+    assert "R1 quality slot advanced — group-centered categorical crosses v1" in text
     assert "diamonds at\n  `1.386479×`" in text
-    assert "immutable M6 v3 aggregate, worst-\n  dataset, or LOO gates" in text
+    assert "immutable M6 v3 aggregate,\n  worst-dataset, and LOO gates all passed" in text
+    assert "eligible only for a\n  separately frozen mechanism-specific spent attribution" in text
