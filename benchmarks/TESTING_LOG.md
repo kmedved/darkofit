@@ -2241,6 +2241,64 @@ B-archive simulation remains non-loadable, optional size telemetry.
     spent and rerun is false. Keep candidate `c3f2608c` private and unmerged;
     any attribution needs a separate frozen contract.
 
+### 53. B3 parallel ensemble-members v1 (2026-07-22/23)
+
+1. **Execution date/source:** 2026-07-22/23; clean published evidence harness
+   `5a236e4f37d429fa55c40a6ebc65dc9b2b6d00f5`, clean sequential control
+   `c4dae58fcf7a8d456533ba2d9b469f039adc453c`, and exact clean private
+   candidate `5116470e21675f8a869ee7a84145eb2a663ed809`.
+2. **Comparators:** public sequential ensemble-v3 `1 worker × 14 threads`
+   versus the private process-parallel route `7 workers × 2 threads`; both
+   used the same eight deterministic member plans.
+3. **Evidence class:** Tier-E behavior and resource invariants plus one spent
+   general-development timing inspection. It ranks only the frozen B3 v1
+   engineering decision.
+4. **Data/splits:** four already-spent general cases from the ensemble-v3
+   characterization: Friedman numeric, categorical regression, numeric
+   binary, and categorical multiclass, with exact frozen generators, splits,
+   weights, and fingerprints.
+5. **Arms/policies:** eight public v3 members, 600 maximum rounds, patience
+   30, validation fraction 0.15, random state 4; sequential `1x14` control and
+   private `7x2` candidate. No sampling, member-policy, preprocessing,
+   prediction, or archive-format change.
+6. **Environment/repeats:** `darko311`, macOS arm64, 14 physical cores and 24
+   GiB RAM; three paired blocks with rotated arm order, fresh outer workers,
+   and both first-use cold and immediately repeated steady fits. The
+   exclusive-machine audit found no conflicting benchmark process.
+7. **Runner/command:** `python benchmarks/run_b3_parallel_ensemble_v1.py
+   --control /private/tmp/darkofit-b3-control-c4dae58 --candidate
+   /private/tmp/darkofit-b3-candidate-20260723 --invariants
+   /private/tmp/b3_parallel_ensemble_v1_invariants_20260723.json
+   --output-prefix
+   /private/tmp/b3_parallel_ensemble_v1_inspection1_20260723`.
+8. **Hashes:** contract
+   `306fbea95a1e33e0bee22b937d9dd15b2ff205f3479b2c39fa116786f6d5b662`;
+   invariants
+   `9797ebc23bbc790835c2f88428129746c0cbb7744adb158d80f763db7c62e9db`;
+   launch `cdf93e46af80c560d7e809f51bb97d053981738b69cc75d9d55ac014f68ee5dd`;
+   raw `7ba73e1d113d8cf412318201268ecc768cfc0102e61ed66696fd473112d344cc`;
+   result `9d1e97e23e1bec0ae4449e4c0a9c842bddaf87d45adc2fea6a8e827791d7bb35`;
+   terminal attestation
+   `2b6a43dbf71435c87dab16ba48b77dfb606fb5f343f5ce4f966498a04921025e`.
+9. **Primary results:** cold equal-case fit ratio `0.684187`, cold case
+   medians `0.497480`/`0.867852`/`1.075049`/`0.462523`, and cold worst LOO
+   `0.770631`. Steady equal-case fit ratio `0.260379`, worst case median
+   `0.362653`, and worst LOO `0.286485`.
+10. **Costs, passed and failed conditions:** behavior exactness, execution
+    integrity, hybrid RSS, and every steady speed gate passed. The cold all-
+    case gate failed because Friedman numeric was 7.5% slower. Maximum
+    candidate process-tree peak RSS was `2,399,551,488` bytes, below 6 GiB;
+    archive bytes and predictions were exact. Prediction time is raw-artifact
+    telemetry.
+11. **Limitations/non-claims:** one dependent, fixed, spent four-case panel on
+    one 14-core ARM machine. No rival, fresh, sports, public, merge, default,
+    release, TabArena, lockbox, or portable-speed claim is authorized.
+12. **Terminal decision/next action:** frozen disposition `kill`. Inspection
+    1 is spent, rerun is false, and private candidate `5116470e` stays
+    unmerged. A warm-worker lifecycle or short-fit activation rule is a new
+    mechanism requiring a new identity and owner authority; proceed now only
+    to the authorized powered fresh Tier-D panel design.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

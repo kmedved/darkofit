@@ -871,12 +871,15 @@ closed as a quality route.
    learning rate, column sampling, and related automatic choices. Explicit
    user parameters win, and all resolutions are persisted.
 3. **B3 — parallel members:** the owner-authorized private v1 campaign is
-   frozen in `benchmarks/b3_parallel_ensemble_v1_contract.md`. It compares a
-   deterministic `7 workers × 2 threads` candidate with the sequential
-   `1 × 14` control under one total CPU budget, while testing same-thread
-   model equivalence separately. It adds no public `ensemble_n_jobs` surface.
-   Worker failures, nested oversubscription, ambient thread restoration, and
-   hybrid process-tree memory are hard obligations.
+   closed under `benchmarks/b3_parallel_ensemble_v1_contract.md`. Its
+   deterministic `7 workers × 2 threads` candidate was behavior-exact and
+   passed hybrid process-tree memory. It improved the cold equal-case fit
+   geomean to `0.684187×` and the steady geomean to `0.260379×`, but the cold
+   Friedman case regressed to `1.075049×`, failing the frozen all-case stable-
+   direction gate. The exact topology is killed with no rerun or merge. A
+   warm-worker lifecycle or short-fit activation rule would be a distinct
+   future mechanism needing new owner authority. No public
+   `ensemble_n_jobs` surface was added.
 4. **M3b — attribution:** compare sampling-only, member-policy-only, and
    combined arms on the spent player-disjoint panel and a small
    broad-tabular development set. Freeze the M3b protocol before inspecting
@@ -1366,6 +1369,7 @@ These are planning ranges, not delivery promises.
 | 6 | **Development complete:** T7b L2 v1 closed in M6 v3; exact automatic-depth candidate `41e948f0` advanced through invariants, M5, its one M6 v3 inspection, and its one spent-sports successor | Completed 2026-07-22/23; sports cold-player ratio `0.950266`, 9/9 improved, season-cluster p95 `0.966591` | Candidate remains private/unmerged; only owner-authorized fresh Tier-D campaign design may follow—no reruns or public claim |
 | 7 | **Selector re-adjudication complete:** automatic linear-selector v2 passed M6 v3 and remained harm-free in the artifact-only historical replay, but Protein attempt 2 failed its frozen all-coordinate engagement/exactness invariant | Closed 2026-07-22/23; Protein aggregate `0.968638×`, coordinate 1 margin `0.025179 < 0.03`; historical 21-lineage replay `0.962739×`, worst lineage/split `1.0×` | Exact candidate killed; no rerun, merge, fresh design, default, or claim. Open the separately governed categorical-crosses slot next. |
 | 8 | **Catcross general development complete:** group-centered categorical crosses v1 passed invariants/M5 and advanced through its sole M6 v3 inspection | Completed 2026-07-22/23; aggregate `0.992606×`, categorical-regression group `0.928473×`, worst group/LOO `1.0×`; engaged fit/RSS `2.145607×`/`1.096926×` | Candidate remains private/unmerged; only a separately frozen mechanism-specific spent attribution may follow. Open B3 as the next separately governed speed slot. |
+| 9 | **B3 parallel-members v1 complete and closed:** exact private `7x2` process topology passed behavior and hybrid RSS but failed the frozen cold all-case speed gate | Completed 2026-07-23; cold equal-case `0.684187×`, steady `0.260379×`, but cold Friedman `1.075049×` | Exact topology killed, inspection spent, no rerun/merge. Proceed to the authorized powered fresh Tier-D panel design; any B3 successor needs a new identity and owner authority. |
 | Later | M2/M4 release milestones, other Track I backlog, and Z cleanup | Independent backlog with explicit owner gates | No coupling to unfinished speculative tracks or lockbox access |
 
 Benchmark waves use fresh workers and exclusive machine access. Parallelize

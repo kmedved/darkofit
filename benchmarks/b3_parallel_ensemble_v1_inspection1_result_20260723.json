@@ -1,0 +1,305 @@
+{
+  "analysis": {
+    "disposition": "kill",
+    "gates": {
+      "behavior_exact": true,
+      "cold_speed_stable": false,
+      "execution_integrity": true,
+      "hybrid_rss": true,
+      "steady_speed_stable": true
+    },
+    "memory": {
+      "absolute_ceiling_bytes": 6442450944,
+      "checks": [
+        {
+          "block": 0,
+          "candidate_peak_bytes": 2328608768,
+          "case_id": "general_friedman_numeric",
+          "control_peak_bytes": 332890112,
+          "delta_bytes": 1995718656,
+          "mode": "cold_executor",
+          "passes": true,
+          "ratio": 6.995127473176494
+        },
+        {
+          "block": 0,
+          "candidate_peak_bytes": 2399551488,
+          "case_id": "general_friedman_numeric",
+          "control_peak_bytes": 359153664,
+          "delta_bytes": 2040397824,
+          "mode": "steady_executor",
+          "passes": true,
+          "ratio": 6.681127685780758
+        },
+        {
+          "block": 1,
+          "candidate_peak_bytes": 2066857984,
+          "case_id": "general_friedman_numeric",
+          "control_peak_bytes": 311361536,
+          "delta_bytes": 1755496448,
+          "mode": "cold_executor",
+          "passes": true,
+          "ratio": 6.6381288149863185
+        },
+        {
+          "block": 1,
+          "candidate_peak_bytes": 2143617024,
+          "case_id": "general_friedman_numeric",
+          "control_peak_bytes": 328663040,
+          "delta_bytes": 1814953984,
+          "mode": "steady_executor",
+          "passes": true,
+          "ratio": 6.522233300099701
+        },
+        {
+          "block": 2,
+          "candidate_peak_bytes": 2064875520,
+          "case_id": "general_friedman_numeric",
+          "control_peak_bytes": 290947072,
+          "delta_bytes": 1773928448,
+          "mode": "cold_executor",
+          "passes": true,
+          "ratio": 7.0970830048428875
+        },
+        {
+          "block": 2,
+          "candidate_peak_bytes": 2140160000,
+          "case_id": "general_friedman_numeric",
+          "control_peak_bytes": 329154560,
+          "delta_bytes": 1811005440,
+          "mode": "steady_executor",
+          "passes": true,
+          "ratio": 6.501991040318567
+        },
+        {
+          "block": 0,
+          "candidate_peak_bytes": 2169520128,
+          "case_id": "general_categorical_reg",
+          "control_peak_bytes": 312131584,
+          "delta_bytes": 1857388544,
+          "mode": "cold_executor",
+          "passes": true,
+          "ratio": 6.950658758070443
+        },
+        {
+          "block": 0,
+          "candidate_peak_bytes": 2253930496,
+          "case_id": "general_categorical_reg",
+          "control_peak_bytes": 316833792,
+          "delta_bytes": 1937096704,
+          "mode": "steady_executor",
+          "passes": true,
+          "ratio": 7.113920777743304
+        },
+        {
+          "block": 1,
+          "candidate_peak_bytes": 2079244288,
+          "case_id": "general_categorical_reg",
+          "control_peak_bytes": 304234496,
+          "delta_bytes": 1775009792,
+          "mode": "cold_executor",
+          "passes": true,
+          "ratio": 6.834347568528192
+        },
+        {
+          "block": 1,
+          "candidate_peak_bytes": 2166013952,
+          "case_id": "general_categorical_reg",
+          "control_peak_bytes": 310722560,
+          "delta_bytes": 1855291392,
+          "mode": "steady_executor",
+          "passes": true,
+          "ratio": 6.970893751647772
+        },
+        {
+          "block": 2,
+          "candidate_peak_bytes": 2078081024,
+          "case_id": "general_categorical_reg",
+          "control_peak_bytes": 293421056,
+          "delta_bytes": 1784659968,
+          "mode": "cold_executor",
+          "passes": true,
+          "ratio": 7.082249148472835
+        },
+        {
+          "block": 2,
+          "candidate_peak_bytes": 2173812736,
+          "case_id": "general_categorical_reg",
+          "control_peak_bytes": 303710208,
+          "delta_bytes": 1870102528,
+          "mode": "steady_executor",
+          "passes": true,
+          "ratio": 7.1575227922533315
+        },
+        {
+          "block": 0,
+          "candidate_peak_bytes": 2283339776,
+          "case_id": "general_numeric_binary",
+          "control_peak_bytes": 375570432,
+          "delta_bytes": 1907769344,
+          "mode": "cold_executor",
+          "passes": true,
+          "ratio": 6.079657985429481
+        },
+        {
+          "block": 0,
+          "candidate_peak_bytes": 2356576256,
+          "case_id": "general_numeric_binary",
+          "control_peak_bytes": 409550848,
+          "delta_bytes": 1947025408,
+          "mode": "steady_executor",
+          "passes": true,
+          "ratio": 5.754050486058327
+        },
+        {
+          "block": 1,
+          "candidate_peak_bytes": 2134147072,
+          "case_id": "general_numeric_binary",
+          "control_peak_bytes": 351698944,
+          "delta_bytes": 1782448128,
+          "mode": "cold_executor",
+          "passes": true,
+          "ratio": 6.068107705208236
+        },
+        {
+          "block": 1,
+          "candidate_peak_bytes": 2228486144,
+          "case_id": "general_numeric_binary",
+          "control_peak_bytes": 406798336,
+          "delta_bytes": 1821687808,
+          "mode": "steady_executor",
+          "passes": true,
+          "ratio": 5.478110274276048
+        },
+        {
+          "block": 2,
+          "candidate_peak_bytes": 2140176384,
+          "case_id": "general_numeric_binary",
+          "control_peak_bytes": 372834304,
+          "delta_bytes": 1767342080,
+          "mode": "cold_executor",
+          "passes": true,
+          "ratio": 5.7402882756196165
+        },
+        {
+          "block": 2,
+          "candidate_peak_bytes": 2232647680,
+          "case_id": "general_numeric_binary",
+          "control_peak_bytes": 401375232,
+          "delta_bytes": 1831272448,
+          "mode": "steady_executor",
+          "passes": true,
+          "ratio": 5.562494897542656
+        },
+        {
+          "block": 0,
+          "candidate_peak_bytes": 2180448256,
+          "case_id": "general_categorical_multiclass",
+          "control_peak_bytes": 316981248,
+          "delta_bytes": 1863467008,
+          "mode": "cold_executor",
+          "passes": true,
+          "ratio": 6.87879257766062
+        },
+        {
+          "block": 0,
+          "candidate_peak_bytes": 2281488384,
+          "case_id": "general_categorical_multiclass",
+          "control_peak_bytes": 334561280,
+          "delta_bytes": 1946927104,
+          "mode": "steady_executor",
+          "passes": true,
+          "ratio": 6.819343780607248
+        },
+        {
+          "block": 1,
+          "candidate_peak_bytes": 2102624256,
+          "case_id": "general_categorical_multiclass",
+          "control_peak_bytes": 307724288,
+          "delta_bytes": 1794899968,
+          "mode": "cold_executor",
+          "passes": true,
+          "ratio": 6.832818656160153
+        },
+        {
+          "block": 1,
+          "candidate_peak_bytes": 2199519232,
+          "case_id": "general_categorical_multiclass",
+          "control_peak_bytes": 316080128,
+          "delta_bytes": 1883439104,
+          "mode": "steady_executor",
+          "passes": true,
+          "ratio": 6.958739373833714
+        },
+        {
+          "block": 2,
+          "candidate_peak_bytes": 2096234496,
+          "case_id": "general_categorical_multiclass",
+          "control_peak_bytes": 304250880,
+          "delta_bytes": 1791983616,
+          "mode": "cold_executor",
+          "passes": true,
+          "ratio": 6.8898222940226175
+        },
+        {
+          "block": 2,
+          "candidate_peak_bytes": 2195193856,
+          "case_id": "general_categorical_multiclass",
+          "control_peak_bytes": 317161472,
+          "delta_bytes": 1878032384,
+          "mode": "steady_executor",
+          "passes": true,
+          "ratio": 6.921376175224713
+        }
+      ],
+      "delta_allowance_bytes": 2147483648,
+      "maximum_candidate_peak_bytes": 2399551488,
+      "ratio_allowance": 5.0
+    },
+    "speed": {
+      "cold_executor": {
+        "case_median_ratios": {
+          "general_categorical_multiclass": 0.4974801363804804,
+          "general_categorical_reg": 0.8678515059814952,
+          "general_friedman_numeric": 1.0750492166030006,
+          "general_numeric_binary": 0.4625234261833078
+        },
+        "equal_case_geometric_mean_ratio": 0.6841873544165569,
+        "leave_one_case_out_ratios": {
+          "general_categorical_multiclass": 0.7625777796824558,
+          "general_categorical_reg": 0.631650619550558,
+          "general_friedman_numeric": 0.590326671094291,
+          "general_numeric_binary": 0.7706313880234534
+        },
+        "passes": false,
+        "worst_case_median_ratio": 1.0750492166030006,
+        "worst_leave_one_out_ratio": 0.7706313880234534
+      },
+      "steady_executor": {
+        "case_median_ratios": {
+          "general_categorical_multiclass": 0.1982041196254533,
+          "general_categorical_reg": 0.222422434301338,
+          "general_friedman_numeric": 0.36265292211018296,
+          "general_numeric_binary": 0.282096552594489
+        },
+        "equal_case_geometric_mean_ratio": 0.26037869896495397,
+        "leave_one_case_out_ratios": {
+          "general_categorical_multiclass": 0.28648543122747894,
+          "general_categorical_reg": 0.27373930280431996,
+          "general_friedman_numeric": 0.23346136532792536,
+          "general_numeric_binary": 0.2510539687162964
+        },
+        "passes": true,
+        "worst_case_median_ratio": 0.36265292211018296,
+        "worst_leave_one_out_ratio": 0.28648543122747894
+      }
+    }
+  },
+  "candidate_merge_eligible": false,
+  "candidate_public_or_default_eligible": false,
+  "contract_id": "b3-parallel-ensemble-members-v1-20260723",
+  "created_at_utc": "2026-07-23T03:54:20.581806+00:00",
+  "inspection_index": 1,
+  "next_eligibility": "closed",
+  "schema_version": 1
+}

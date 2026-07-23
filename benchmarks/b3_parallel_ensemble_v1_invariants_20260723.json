@@ -1,0 +1,81 @@
+{
+  "candidate_file_allowlist": [
+    "darkofit/sklearn_api.py",
+    "tests/test_b3_parallel_ensemble_candidate.py"
+  ],
+  "candidate_tests": {
+    "path": "tests/test_b3_parallel_ensemble_candidate.py",
+    "sha256": "54ad5a22daf94b55bedb116444784546012a7a672eff5de5942b73771226f97f"
+  },
+  "command": [
+    "/opt/anaconda3/envs/darko311/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/test_b3_parallel_ensemble_candidate.py",
+    "tests/test_b3_parallel_ensemble_contract.py",
+    "tests/test_ensemble_api.py",
+    "tests/test_private_ensemble_v3.py",
+    "tests/test_public_ensemble_v3.py",
+    "tests/test_ensemble_v3_release_candidate.py",
+    "tests/test_ensemble_archive_components.py",
+    "tests/test_ensemble_v3_public_contract.py",
+    "tests/test_thread_state_restoration.py"
+  ],
+  "contract": {
+    "path": "/private/tmp/darkofit-b3-evidence-20260723/benchmarks/b3_parallel_ensemble_v1_contract.md",
+    "sha256": "306fbea95a1e33e0bee22b937d9dd15b2ff205f3479b2c39fa116786f6d5b662"
+  },
+  "contract_id": "b3-parallel-ensemble-members-v1-20260723",
+  "created_at_utc": "2026-07-23T03:50:35.374876+00:00",
+  "implementation": {
+    "path": "darkofit/sklearn_api.py",
+    "sha256": "122d940a1ea737846f2ac91aeb014c05a53c9cea679d83f44cde205368c67cc3"
+  },
+  "passed": true,
+  "returncode": 0,
+  "schema_version": 1,
+  "sources": {
+    "candidate": {
+      "head": "5116470e21675f8a869ee7a84145eb2a663ed809",
+      "path": "/private/tmp/darkofit-b3-candidate-20260723",
+      "published_refs": [
+        "origin/codex/b3-candidate-20260723"
+      ],
+      "tree": "34fcaccbce66ca2dc8f968ce405e1d3064aea177"
+    },
+    "control": {
+      "head": "c4dae58fcf7a8d456533ba2d9b469f039adc453c",
+      "path": "/private/tmp/darkofit-b3-control-c4dae58",
+      "published_refs": [
+        "origin/HEAD -> origin/main",
+        "origin/codex/b3-candidate-20260723",
+        "origin/codex/b3-evidence-20260723",
+        "origin/codex/catcross-evidence-20260722",
+        "origin/main"
+      ],
+      "tree": "a7b868346f09026895487dcb8933a855a760ed35"
+    },
+    "harness": {
+      "head": "5a236e4f37d429fa55c40a6ebc65dc9b2b6d00f5",
+      "path": "/private/tmp/darkofit-b3-evidence-20260723",
+      "published_refs": [
+        "origin/codex/b3-evidence-20260723"
+      ],
+      "tree": "2a6831cdfcb76d57459481c7a34afb3fa6ef33ba"
+    }
+  },
+  "stderr": "",
+  "stdout": "........................................................................ [ 33%]\n........................................................................ [ 66%]\n.......................................................................  [100%]\n=============================== warnings summary ===============================\ntests/test_ensemble_api.py::test_single_linear_residual_save_freezes_fitted_params\ntests/test_ensemble_api.py::test_single_linear_residual_save_freezes_fitted_params\ntests/test_ensemble_api.py::test_single_linear_residual_save_freezes_fitted_params\ntests/test_ensemble_api.py::test_single_load_rejects_self_consistent_linear_residual_forgery\ntests/test_ensemble_api.py::test_single_load_rejects_self_consistent_linear_residual_forgery\ntests/test_ensemble_api.py::test_single_load_rejects_stripped_linear_residual_state\ntests/test_ensemble_api.py::test_single_load_rejects_stripped_linear_residual_state\ntests/test_ensemble_api.py::test_ensemble_refit_clears_stale_single_model_state\ntests/test_ensemble_api.py::test_ensemble_refit_clears_stale_single_model_state\n  /private/tmp/darkofit-b3-candidate-20260723/darkofit/linear_residual.py:542: RuntimeWarning: divide by zero encountered in matmul\n    return self.intercept_ + matrix @ self.coef_\n\ntests/test_ensemble_api.py::test_single_linear_residual_save_freezes_fitted_params\ntests/test_ensemble_api.py::test_single_linear_residual_save_freezes_fitted_params\ntests/test_ensemble_api.py::test_single_linear_residual_save_freezes_fitted_params\ntests/test_ensemble_api.py::test_single_load_rejects_self_consistent_linear_residual_forgery\ntests/test_ensemble_api.py::test_single_load_rejects_self_consistent_linear_residual_forgery\ntests/test_ensemble_api.py::test_single_load_rejects_stripped_linear_residual_state\ntests/test_ensemble_api.py::test_single_load_rejects_stripped_linear_residual_state\ntests/test_ensemble_api.py::test_ensemble_refit_clears_stale_single_model_state\ntests/test_ensemble_api.py::test_ensemble_refit_clears_stale_single_model_state\n  /private/tmp/darkofit-b3-candidate-20260723/darkofit/linear_residual.py:542: RuntimeWarning: overflow encountered in matmul\n    return self.intercept_ + matrix @ self.coef_\n\ntests/test_ensemble_api.py::test_single_linear_residual_save_freezes_fitted_params\ntests/test_ensemble_api.py::test_single_linear_residual_save_freezes_fitted_params\ntests/test_ensemble_api.py::test_single_linear_residual_save_freezes_fitted_params\ntests/test_ensemble_api.py::test_single_load_rejects_self_consistent_linear_residual_forgery\ntests/test_ensemble_api.py::test_single_load_rejects_self_consistent_linear_residual_forgery\ntests/test_ensemble_api.py::test_single_load_rejects_stripped_linear_residual_state\ntests/test_ensemble_api.py::test_single_load_rejects_stripped_linear_residual_state\ntests/test_ensemble_api.py::test_ensemble_refit_clears_stale_single_model_state\ntests/test_ensemble_api.py::test_ensemble_refit_clears_stale_single_model_state\n  /private/tmp/darkofit-b3-candidate-20260723/darkofit/linear_residual.py:542: RuntimeWarning: invalid value encountered in matmul\n    return self.intercept_ + matrix @ self.coef_\n\ntests/test_public_ensemble_v3.py::test_public_v3_unsupported_surfaces_fail_transactionally[estimator_kwargs2-fit_kwargs2-auto_learning_rate_probe=True]\n  /private/tmp/darkofit-b3-candidate-20260723/tests/test_public_ensemble_v3.py:282: FutureWarning: auto_learning_rate_probe, auto_learning_rate_probe_values, and auto_learning_rate_probe_iterations are deprecated and will be removed in DarkoFit 1.0; use an explicit validation-backed learning-rate search instead\n    estimator.fit(X, y, **fit_kwargs)\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n215 passed, 28 warnings in 6.80s\n",
+  "test_paths": [
+    "tests/test_b3_parallel_ensemble_candidate.py",
+    "tests/test_b3_parallel_ensemble_contract.py",
+    "tests/test_ensemble_api.py",
+    "tests/test_private_ensemble_v3.py",
+    "tests/test_public_ensemble_v3.py",
+    "tests/test_ensemble_v3_release_candidate.py",
+    "tests/test_ensemble_archive_components.py",
+    "tests/test_ensemble_v3_public_contract.py",
+    "tests/test_thread_state_restoration.py"
+  ]
+}

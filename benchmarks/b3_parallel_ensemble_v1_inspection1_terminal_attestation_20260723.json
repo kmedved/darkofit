@@ -1,0 +1,12 @@
+{
+  "candidate_merge_eligible": false,
+  "contract_id": "b3-parallel-ensemble-members-v1-20260723",
+  "created_at_utc": "2026-07-23T03:54:20.582195+00:00",
+  "disposition": "kill",
+  "inspection_index": 1,
+  "launch_sha256": "cdf93e46af80c560d7e809f51bb97d053981738b69cc75d9d55ac014f68ee5dd",
+  "raw_sha256": "7ba73e1d113d8cf412318201268ecc768cfc0102e61ed66696fd473112d344cc",
+  "rerun_authorized": false,
+  "result_sha256": "9d1e97e23e1bec0ae4449e4c0a9c842bddaf87d45adc2fea6a8e827791d7bb35",
+  "schema_version": 1
+}

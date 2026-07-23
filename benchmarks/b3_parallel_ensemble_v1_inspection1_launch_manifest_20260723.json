@@ -1,0 +1,110 @@
+{
+  "bindings": {
+    "contract": {
+      "bytes": 7822,
+      "path": "/private/tmp/darkofit-b3-evidence-20260723/benchmarks/b3_parallel_ensemble_v1_contract.md",
+      "sha256": "306fbea95a1e33e0bee22b937d9dd15b2ff205f3479b2c39fa116786f6d5b662"
+    },
+    "invariant_runner": {
+      "bytes": 5653,
+      "path": "/private/tmp/darkofit-b3-evidence-20260723/benchmarks/run_b3_parallel_ensemble_v1_invariants.py",
+      "sha256": "1fa759b59a56b052c555fb7cb3f3f12bfda367281dd9c30e281adbd753e52972"
+    },
+    "runner": {
+      "bytes": 27727,
+      "path": "/private/tmp/darkofit-b3-evidence-20260723/benchmarks/run_b3_parallel_ensemble_v1.py",
+      "sha256": "185a4eddb58714325fa85fa41cb4332a0c3f01546afa4f2db95dca8a11915bc1"
+    }
+  },
+  "contract_id": "b3-parallel-ensemble-members-v1-20260723",
+  "created_at_utc": "2026-07-23T03:51:22.791755+00:00",
+  "exclusive_machine": {
+    "checked_at_utc": "2026-07-23T03:51:22.807043+00:00",
+    "conflicting_benchmark_processes": [],
+    "load_average": [
+      7.1337890625,
+      3.85205078125,
+      5.30029296875
+    ]
+  },
+  "execution": {
+    "arms": [
+      "sequential_1x14",
+      "parallel_7x2"
+    ],
+    "blocks": 3,
+    "candidate_topology": {
+      "member_threads": 2,
+      "workers": 7
+    },
+    "cases": [
+      "general_friedman_numeric",
+      "general_categorical_reg",
+      "general_numeric_binary",
+      "general_categorical_multiclass"
+    ],
+    "control_topology": {
+      "member_threads": 14,
+      "workers": 1
+    },
+    "iterations": 600,
+    "modes": [
+      "cold_executor",
+      "steady_executor"
+    ],
+    "patience": 30,
+    "random_state": 4,
+    "validation_fraction": 0.15
+  },
+  "hardware": {
+    "machine": "arm64",
+    "physical_cores": 14,
+    "physical_memory_bytes": 25769803776,
+    "platform": "macOS-26.5.2-arm64-arm-64bit"
+  },
+  "inspection_index": 1,
+  "inspection_spent_on_manifest_creation": true,
+  "invariants": {
+    "bytes": 6619,
+    "path": "/private/tmp/b3_parallel_ensemble_v1_invariants_20260723.json",
+    "sha256": "9797ebc23bbc790835c2f88428129746c0cbb7744adb158d80f763db7c62e9db"
+  },
+  "outputs": {
+    "launch": "/private/tmp/b3_parallel_ensemble_v1_inspection1_20260723_launch_manifest.json",
+    "raw": "/private/tmp/b3_parallel_ensemble_v1_inspection1_20260723_raw.json",
+    "result": "/private/tmp/b3_parallel_ensemble_v1_inspection1_20260723_result.json",
+    "terminal": "/private/tmp/b3_parallel_ensemble_v1_inspection1_20260723_terminal_attestation.json"
+  },
+  "rerun_authorized": false,
+  "schema_version": 1,
+  "sources": {
+    "candidate": {
+      "head": "5116470e21675f8a869ee7a84145eb2a663ed809",
+      "path": "/private/tmp/darkofit-b3-candidate-20260723",
+      "published_refs": [
+        "origin/codex/b3-candidate-20260723"
+      ],
+      "tree": "34fcaccbce66ca2dc8f968ce405e1d3064aea177"
+    },
+    "control": {
+      "head": "c4dae58fcf7a8d456533ba2d9b469f039adc453c",
+      "path": "/private/tmp/darkofit-b3-control-c4dae58",
+      "published_refs": [
+        "origin/HEAD -> origin/main",
+        "origin/codex/b3-candidate-20260723",
+        "origin/codex/b3-evidence-20260723",
+        "origin/codex/catcross-evidence-20260722",
+        "origin/main"
+      ],
+      "tree": "a7b868346f09026895487dcb8933a855a760ed35"
+    },
+    "harness": {
+      "head": "5a236e4f37d429fa55c40a6ebc65dc9b2b6d00f5",
+      "path": "/private/tmp/darkofit-b3-evidence-20260723",
+      "published_refs": [
+        "origin/codex/b3-evidence-20260723"
+      ],
+      "tree": "2a6831cdfcb76d57459481c7a34afb3fa6ef33ba"
+    }
+  }
+}
