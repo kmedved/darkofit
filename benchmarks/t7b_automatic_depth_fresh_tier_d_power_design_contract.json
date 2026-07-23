@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "contract_id": "t7b-automatic-depth-shared-tier-d-power-v1-20260723",
+  "authority": {
+    "roadmap": "BEAT_CHIMERABOOST_PLAN.md Revision R1 item R1-4",
+    "policy": "benchmarks/SHIPPING_POLICY.md Tier-D",
+    "scope": "design-time power and reusable analyzer infrastructure only"
+  },
+  "candidate": {
+    "mechanism_id": "t7b_automatic_scalar_rmse_depth_v1",
+    "source_commit": "41e948f0c53b1d124e16071a7fa66eba47d084d3",
+    "control_commit": "e23d2b164f10374b1c0e02521c33fc96d48980da",
+    "requested_surface": "automatic scalar-RMSE CatBoost depth when depth is None",
+    "branches": [
+      "depth_4",
+      "depth_8"
+    ],
+    "middle_density_behavior": "depth_6 exact no-op",
+    "classification_behavior": "ineligible exact no-op",
+    "candidate_must_remain_byte_identical": true
+  },
+  "spent_sizing_inputs": [
+    {
+      "path": "benchmarks/t7b_automatic_depth_v1_m6_inspection1_result_20260722.json",
+      "file_sha256": "7af0c480221b5886c7bbf41f810147663d9da6e2c4171a70bc9db3a431eebb28",
+      "use": "only the two changed low-density regression group profiles and their coordinates"
+    },
+    {
+      "path": "benchmarks/t7b_automatic_depth_sports_v1_inspection1_result_20260722.json",
+      "file_sha256": "1ec0d2d37ef75195b66b779ec94920e05f5047147538de6eb17622947fd1a0da",
+      "use": "only the three spent season-cluster profiles and their nested target coordinates"
+    }
+  ],
+  "panel_template": {
+    "analysis_unit": "independent_lineage_cluster",
+    "lineage_count": 32,
+    "coordinates_per_lineage": 3,
+    "paired_model_fits": 192,
+    "strata": [
+      {
+        "stratum": "low_density_numeric",
+        "branch": "depth_4",
+        "feature_family": "numeric",
+        "lineages": 8
+      },
+      {
+        "stratum": "low_density_categorical_or_grouped",
+        "branch": "depth_4",
+        "feature_family": "categorical_or_grouped",
+        "lineages": 8
+      },
+      {
+        "stratum": "high_density_numeric",
+        "branch": "depth_8",
+        "feature_family": "numeric",
+        "lineages": 8
+      },
+      {
+        "stratum": "high_density_categorical_or_grouped",
+        "branch": "depth_8",
+        "feature_family": "categorical_or_grouped",
+        "lineages": 8
+      }
+    ],
+    "middle_density_policy": "exact_noop_invariants_not_quality_power",
+    "classification_policy": "exact_noop_invariants_not_quality_power",
+    "weight_coverage": "every stratum must contain both ordinary and nonuniform-weight coordinates",
+    "group_coverage": "at least four low-density lineages must exercise group-safe validation",
+    "identity_status": "anonymous_role_template_only_no_dataset_or_target_access"
+  },
+  "effect_scenario": {
+    "derivation": "geometric spent effect and log dispersion from five complete changed-lane development clusters, then multiply each log-scale effect component by the retained fraction",
+    "selection_bias_warning": "the spent inputs selected this candidate and are not independent evidence of its true effect",
+    "primary_retained_log_effect_fraction": 0.2,
+    "primary_interpretation": "scale every spent log effect and within-lineage deviation to 20 percent of its observed magnitude; this joint shrinkage is a sizing alternative, not a conservative bound or quality estimate",
+    "high_density_transport_warning": "the DarkoFit sizing profiles exercised depth_4; applying the same structured alternative to depth_8 is a prospective planning assumption, not DarkoFit evidence, and the fresh branch-direction gate prevents depth_4 from carrying depth_8",
+    "sensitivity_retained_log_effect_fractions": [
+      0.1,
+      0.15,
+      0.25
+    ],
+    "true_lineage_ratio_cap": 1.015,
+    "cap_interpretation": "power is conditional on a candidate whose true lineage effects satisfy the intended unguarded Tier-D harm envelope; observed panels still face the 1.02 worst-lineage gate"
+  },
+  "quality_gates": {
+    "equal_lineage_geomean_ratio_at_most": 0.995,
+    "bootstrap_upper_ratio_at_most": 1.002,
+    "leave_one_favorable_lineage_out_ratio_at_most": 0.998,
+    "worst_lineage_ratio_at_most": 1.02,
+    "each_branch_geomean_ratio_at_most": 1.0
+  },
+  "simulation": {
+    "outer_panel_simulations": 5000,
+    "outer_seed": 20260723,
+    "lineage_bootstrap_replicates": 5000,
+    "lineage_bootstrap_seed": 20260724,
+    "lineage_bootstrap_percentile": 95.0,
+    "outer_batch": 100,
+    "power_floor": 0.8,
+    "power_wilson_one_sided_confidence": 0.95,
+    "power_decision_rule": "point_estimate_and_one_sided_wilson_lower_bound_at_least_floor"
+  },
+  "execution_contract_requirements": [
+    "separate owner authorization before any fresh identity or target access",
+    "prospectively frozen eligible lineage registry and contamination review",
+    "exact candidate and control pins with byte-identical candidate verification",
+    "paired fresh workers and group-safe splits where groups exist",
+    "the same cluster bootstrap, aggregate, branch, concentration, and harm rules implemented by the final analyzer",
+    "harm-justified fit, prediction, and process-tree RSS budgets frozen before launch",
+    "create-only launch, raw, result, and terminal artifacts with no rerun",
+    "no default, merge, release, or product claim unless every quality, cost, and integrity gate passes"
+  ],
+  "authorization": {
+    "fresh_access_authorized": false,
+    "registry_build_authorized": false,
+    "confirmation_run_authorized": false,
+    "candidate_merge_authorized": false,
+    "default_change_authorized": false,
+    "release_authorized": false,
+    "lockbox_access_authorized": false
+  }
+}
