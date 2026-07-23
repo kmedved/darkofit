@@ -968,6 +968,7 @@ def _preprocessing_cache_key(
         int(prep.ts_permutations),
         prep.target_ordered_cat_codes,
         None if prep.bin_sample_count is None else int(prep.bin_sample_count),
+        tuple(getattr(prep, "group_centered_pairs", ())),
         tuple([] if cat_features is None else [int(c) for c in cat_features]),
         int(X.shape[1]),
         _array_content_signature(X),
@@ -2383,6 +2384,9 @@ class _BaseBooster:
             ts_permutations=self.ts_permutations,
             target_ordered_cat_codes=self.target_ordered_cat_codes,
             bin_sample_count=self.bin_sample_count,
+            group_centered_pairs=getattr(
+                self, "_group_centered_pairs", None
+            ),
         )
 
     def _fit_transform_preprocessor(

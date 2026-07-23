@@ -62,7 +62,8 @@ class FeaturePreprocessor:
                  target_encoding_folds=20,
                  ts_permutations=1,
                  target_ordered_cat_codes="off",
-                 bin_sample_count=DEFAULT_BIN_SAMPLE_COUNT):
+                 bin_sample_count=DEFAULT_BIN_SAMPLE_COUNT,
+                 group_centered_pairs=None):
         self.max_bins = int(max_bins)
         self.cat_smoothing = float(cat_smoothing)
         self.random_state = random_state
@@ -76,6 +77,11 @@ class FeaturePreprocessor:
             target_ordered_cat_codes
         )
         self.bin_sample_count = bin_sample_count
+        self.group_centered_pairs = (
+            []
+            if group_centered_pairs is None
+            else [tuple(pair) for pair in group_centered_pairs]
+        )
 
     # ---- helpers -------------------------------------------------------------
     def _split_columns_fit(self, X, cat_features):
@@ -223,10 +229,112 @@ class FeaturePreprocessor:
             out[valid, j] = remap[col[valid]]
         return out
 
+    def _fit_group_centered(self, X, codes, sample_weight):
+        """Fit target-free numeric means indexed by categorical codes."""
+        num_set = set(self.num_features_)
+        cat_positions = {
+            feature: position
+            for position, feature in enumerate(self.cat_features_)
+        }
+        pairs = []
+        seen = set()
+        for raw_pair in self.group_centered_pairs:
+            if len(raw_pair) != 2:
+                raise ValueError(
+                    "group-centered pairs must contain numeric/categorical indices"
+                )
+            numeric, categorical = (int(raw_pair[0]), int(raw_pair[1]))
+            pair = (numeric, categorical)
+            if pair in seen:
+                raise ValueError("group-centered pairs must be unique")
+            if numeric not in num_set or categorical not in cat_positions:
+                raise ValueError(
+                    "group-centered pairs must reference one numeric and one "
+                    "categorical input feature"
+                )
+            seen.add(pair)
+            pairs.append(pair)
+        self.group_centered_pairs_ = pairs
+        self.group_centered_means_ = []
+        self.group_centered_global_means_ = []
+        if not pairs:
+            return
+
+        weights = (
+            np.ones(X.shape[0], dtype=np.float64)
+            if sample_weight is None
+            else np.asarray(sample_weight, dtype=np.float64)
+        )
+        for numeric, categorical in pairs:
+            values = np.asarray(X[:, numeric], dtype=np.float64)
+            feature_codes = np.asarray(
+                codes[:, cat_positions[categorical]], dtype=np.int64
+            )
+            n_categories = len(
+                self.cat_categories_[cat_positions[categorical]]
+            )
+            valid = (
+                np.isfinite(values)
+                & np.isfinite(weights)
+                & (weights > 0.0)
+                & (feature_codes >= 0)
+                & (feature_codes < n_categories)
+            )
+            total_weight = float(np.sum(weights[valid]))
+            global_mean = (
+                float(np.sum(values[valid] * weights[valid]) / total_weight)
+                if total_weight > 0.0
+                else 0.0
+            )
+            sums = np.bincount(
+                feature_codes[valid],
+                weights=values[valid] * weights[valid],
+                minlength=n_categories,
+            ).astype(np.float64, copy=False)
+            counts = np.bincount(
+                feature_codes[valid],
+                weights=weights[valid],
+                minlength=n_categories,
+            ).astype(np.float64, copy=False)
+            means = np.full(n_categories, global_mean, dtype=np.float64)
+            nonempty = counts > 0.0
+            means[nonempty] = sums[nonempty] / counts[nonempty]
+            self.group_centered_means_.append(means)
+            self.group_centered_global_means_.append(global_mean)
+
+    def _group_centered_block(self, X, codes):
+        pairs = getattr(self, "group_centered_pairs_", ())
+        if not pairs:
+            return np.empty((X.shape[0], 0), dtype=np.float64)
+        cat_positions = {
+            feature: position
+            for position, feature in enumerate(self.cat_features_)
+        }
+        block = np.empty((X.shape[0], len(pairs)), dtype=np.float64)
+        for column, (numeric, categorical) in enumerate(pairs):
+            values = np.asarray(X[:, numeric], dtype=np.float64)
+            feature_codes = np.asarray(
+                codes[:, cat_positions[categorical]], dtype=np.int64
+            )
+            means = np.asarray(
+                self.group_centered_means_[column], dtype=np.float64
+            )
+            centered_at = np.full(
+                X.shape[0],
+                float(self.group_centered_global_means_[column]),
+                dtype=np.float64,
+            )
+            known = (feature_codes >= 0) & (feature_codes < len(means))
+            centered_at[known] = means[feature_codes[known]]
+            block[:, column] = values - centered_at
+        return block
+
     # ---- fit / transform -----------------------------------------------------
     def fit_transform(self, X, encode_targets, cat_features, sample_weight=None):
         """encode_targets: list of 1D arrays used for ordered TS (len T)."""
         num, codes = self._split_columns_fit(X, cat_features)
+        self._fit_group_centered(X, codes, sample_weight)
+        group_centered = self._group_centered_block(X, codes)
 
         encoded_blocks = []
         code_blocks = []
@@ -259,12 +367,22 @@ class FeaturePreprocessor:
                 )
                 self.encoders_.append(enc)
 
-        self._build_feature_map(num.shape[1], codes.shape[1], len(encode_targets))
+        self._build_feature_map(
+            num.shape[1],
+            codes.shape[1],
+            len(encode_targets),
+            group_centered.shape[1],
+        )
 
         self.binner_ = Binner(self.max_bins, sample_count=self.bin_sample_count,
                               random_state=self.random_state)
+        blocks = [num]
+        if group_centered.shape[1]:
+            blocks.append(group_centered)
+        blocks.extend(code_blocks)
+        blocks.extend(encoded_blocks)
         X_binned = self.binner_.fit_transform_blocks(
-            [num] + code_blocks + encoded_blocks,
+            blocks,
             sample_weight=sample_weight,
         )
         self.n_bins_ = self.binner_.n_bins_
@@ -288,20 +406,30 @@ class FeaturePreprocessor:
             num = np.asarray(X[:, self.num_features_], dtype=np.float64)
         encoded_blocks = []
         code_blocks = []
+        codes = np.empty((X.shape[0], 0), dtype=np.int64)
         if self.cat_features_:
             codes = self._codes_for_transform(X)
             if self.include_cat_codes:
                 code_blocks.append(self._raw_code_block(codes))
             for enc in self.encoders_:
                 encoded_blocks.append(enc.transform(codes))
-        return self.binner_.transform_blocks(
-            [num] + code_blocks + encoded_blocks
-        )
+        group_centered = self._group_centered_block(X, codes)
+        blocks = [num]
+        if group_centered.shape[1]:
+            blocks.append(group_centered)
+        blocks.extend(code_blocks)
+        blocks.extend(encoded_blocks)
+        return self.binner_.transform_blocks(blocks)
 
     # ---- internals -----------------------------------------------------------
-    def _build_feature_map(self, n_num, n_cat, n_targets):
+    def _build_feature_map(self, n_num, n_cat, n_targets, n_group_centered=0):
         """Combined column index -> original input column index."""
         fmap = list(self.num_features_)            # numeric block
+        if n_group_centered:
+            pairs = getattr(self, "group_centered_pairs_", ())
+            if len(pairs) != n_group_centered:
+                raise RuntimeError("group-centered feature layout is inconsistent")
+            fmap.extend(numeric for numeric, _ in pairs)
         if self.include_cat_codes:
             fmap.extend(self.cat_features_)        # raw category-code block
         for _ in range(n_targets):                 # each TS target adds a block

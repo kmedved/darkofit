@@ -45,7 +45,7 @@ from .tree import (
     ObliviousTree,
 )
 
-FORMAT_VERSION = 4
+FORMAT_VERSION = 5
 BASE_FORMAT_VERSION = 2
 ENSEMBLE_FORMAT_VERSION = 4
 MAX_ENSEMBLE_MEMBERS = 256
@@ -153,6 +153,8 @@ def _booster_constructor_params(booster, *, include_linear=True):
 
 
 def _archive_format_version(prep, booster, wrapper_header=None):
+    if len(getattr(prep, "group_centered_pairs_", ())):
+        return 5
     wrapper_params = (
         wrapper_header.get("params", {})
         if isinstance(wrapper_header, dict)
@@ -1462,7 +1464,9 @@ def _restore_training_metadata(booster):
     booster.training_metadata_ = dict(training)
 
 
-def _validate_preprocessor_payload(data, prep_cfg, n_input_features):
+def _validate_preprocessor_payload(
+    data, prep_cfg, n_input_features, format_version
+):
     n_input_features = int(n_input_features)
     if n_input_features <= 0:
         _invalid_model("n_input_features must be positive")
@@ -1511,6 +1515,91 @@ def _validate_preprocessor_payload(data, prep_cfg, n_input_features):
     if len(cat_features) == 0 and n_encoders != 0:
         _invalid_model("preprocessor encoders require categorical features")
 
+    pair_count = _require_header_integer(
+        "preprocessor group_centered_pair_count",
+        prep_cfg.get("group_centered_pair_count", 0),
+        minimum=0,
+    )
+    pair_keys = {
+        "prep__group_centered_pairs",
+        "prep__group_centered_means_flat",
+        "prep__group_centered_mean_offsets",
+        "prep__group_centered_global_means",
+    }
+    present_pair_keys = pair_keys.intersection(data.files)
+    if pair_count == 0:
+        if present_pair_keys:
+            _invalid_model(
+                "group-centered payload requires a positive pair count"
+            )
+        group_centered_pairs = np.empty((0, 2), dtype=np.int64)
+        group_centered_means = []
+        group_centered_global_means = np.empty(0, dtype=np.float64)
+    else:
+        if int(format_version) < 5:
+            _invalid_model(
+                "group-centered payload requires format version 5"
+            )
+        missing_pair_keys = pair_keys.difference(data.files)
+        if missing_pair_keys:
+            _invalid_model("missing group-centered preprocessing payload")
+        group_centered_pairs = _require_integer_array(
+            "preprocessor group-centered pairs",
+            data["prep__group_centered_pairs"],
+            ndim=2,
+        )
+        if group_centered_pairs.shape != (pair_count, 2):
+            _invalid_model(
+                "preprocessor group-centered pair shape does not match count"
+            )
+        if np.unique(group_centered_pairs, axis=0).shape[0] != pair_count:
+            _invalid_model("preprocessor group-centered pairs must be unique")
+        num_set = set(num_features.tolist())
+        cat_positions = {
+            int(feature): position
+            for position, feature in enumerate(cat_features.tolist())
+        }
+        for numeric, categorical in group_centered_pairs:
+            if int(numeric) not in num_set or int(categorical) not in cat_positions:
+                _invalid_model(
+                    "preprocessor group-centered pairs must reference one "
+                    "numeric and one categorical input feature"
+                )
+        means_flat = _require_finite_numeric_array(
+            "preprocessor group-centered means",
+            data["prep__group_centered_means_flat"],
+        ).astype(np.float64, copy=False)
+        mean_offsets = _require_offsets(
+            "preprocessor group-centered mean",
+            data["prep__group_centered_mean_offsets"],
+            len(means_flat),
+            expected_count=pair_count + 1,
+        )
+        group_centered_global_means = _require_finite_numeric_array(
+            "preprocessor group-centered global means",
+            data["prep__group_centered_global_means"],
+        ).astype(np.float64, copy=False)
+        if len(group_centered_global_means) != pair_count:
+            _invalid_model(
+                "preprocessor group-centered global mean count does not "
+                "match pairs"
+            )
+        group_centered_means = []
+        for pair_index, (_, categorical) in enumerate(group_centered_pairs):
+            position = cat_positions[int(categorical)]
+            category_key = f"cat{position}__values"
+            if category_key not in data.files:
+                _invalid_model(
+                    "group-centered means require categorical payload"
+                )
+            start = int(mean_offsets[pair_index])
+            stop = int(mean_offsets[pair_index + 1])
+            if stop - start != len(data[category_key]):
+                _invalid_model(
+                    "group-centered mean length does not match category count"
+                )
+            group_centered_means.append(means_flat[start:stop].copy())
+
     borders = _require_array_ndim("binner borders", data["bin__borders_flat"], 1)
     if not np.issubdtype(borders.dtype, np.number):
         _invalid_model("binner borders must be numeric")
@@ -1539,6 +1628,8 @@ def _validate_preprocessor_payload(data, prep_cfg, n_input_features):
             _invalid_model("binner borders must be strictly increasing")
 
     expected_widths = [len(num_features)]
+    if pair_count:
+        expected_widths.append(pair_count)
     if len(cat_features):
         if prep_cfg["include_cat_codes"]:
             expected_widths.append(len(cat_features))
@@ -1550,6 +1641,8 @@ def _validate_preprocessor_payload(data, prep_cfg, n_input_features):
         _invalid_model("binner block_widths do not sum to n_bins")
 
     expected_feature_map = list(num_features)
+    if pair_count:
+        expected_feature_map.extend(group_centered_pairs[:, 0])
     if len(cat_features):
         if prep_cfg["include_cat_codes"]:
             expected_feature_map.extend(cat_features)
@@ -1568,7 +1661,15 @@ def _validate_preprocessor_payload(data, prep_cfg, n_input_features):
         borders[offsets[f]:offsets[f + 1]].copy()
         for f in range(len(n_bins))
     ]
-    return num_features.tolist(), cat_features.tolist(), feature_map, binner
+    return (
+        num_features.tolist(),
+        cat_features.tolist(),
+        feature_map,
+        binner,
+        [tuple(map(int, pair)) for pair in group_centered_pairs.tolist()],
+        group_centered_means,
+        group_centered_global_means.tolist(),
+    )
 
 
 def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
@@ -1650,6 +1751,9 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
                 )
                 for cat_map in getattr(prep, "cat_maps_", [])
             ],
+            "group_centered_pair_count": len(
+                getattr(prep, "group_centered_pairs_", ())
+            ),
         },
     }
     if wrapper_header is None and hasattr(booster, "feature_names_in_"):
@@ -1733,6 +1837,30 @@ def save_booster(booster, path, wrapper_header=None, wrapper_arrays=None):
     arrays["prep__cat_features"] = np.asarray(prep.cat_features_,
                                               dtype=np.int64)
     arrays["prep__feature_map"] = prep.feature_map_
+    group_centered_pairs = list(
+        getattr(prep, "group_centered_pairs_", ())
+    )
+    if group_centered_pairs:
+        group_centered_means = list(prep.group_centered_means_)
+        group_centered_globals = np.asarray(
+            prep.group_centered_global_means_, dtype=np.float64
+        )
+        if (
+            len(group_centered_means) != len(group_centered_pairs)
+            or len(group_centered_globals) != len(group_centered_pairs)
+        ):
+            raise ValueError(
+                "group-centered preprocessing state does not match pair count"
+            )
+        means_flat, mean_offsets = _concat_with_offsets(
+            group_centered_means
+        )
+        arrays["prep__group_centered_pairs"] = np.asarray(
+            group_centered_pairs, dtype=np.int64
+        )
+        arrays["prep__group_centered_means_flat"] = means_flat
+        arrays["prep__group_centered_mean_offsets"] = mean_offsets
+        arrays["prep__group_centered_global_means"] = group_centered_globals
     binner = prep.binner_
     arrays["bin__borders_flat"] = binner._borders_flat_
     arrays["bin__border_offsets"] = binner._border_offsets_
@@ -2115,8 +2243,11 @@ def _load_booster_payload(path, return_wrapper_payload=False):
             cat_features,
             feature_map,
             binner,
+            group_centered_pairs,
+            group_centered_means,
+            group_centered_global_means,
         ) = _validate_preprocessor_payload(
-            data, prep_cfg, n_input_features
+            data, prep_cfg, n_input_features, format_version
         )
         n_bins = np.asarray(binner.n_bins_, dtype=np.int64)
         if "shap__background" in data.files:
@@ -2220,6 +2351,7 @@ def _load_booster_payload(path, return_wrapper_payload=False):
             bin_sample_count=prep_cfg.get(
                 "bin_sample_count", DEFAULT_BIN_SAMPLE_COUNT
             ),
+            group_centered_pairs=group_centered_pairs,
         )
         prep.num_features_ = num_features
         prep.cat_features_ = cat_features
@@ -2229,6 +2361,14 @@ def _load_booster_payload(path, return_wrapper_payload=False):
         prep.cat_categories_ = []
         prep.cat_maps_ = []
         prep.cat_code_remaps_ = []
+        prep.group_centered_pairs_ = list(group_centered_pairs)
+        prep.group_centered_means_ = [
+            np.asarray(means, dtype=np.float64).copy()
+            for means in group_centered_means
+        ]
+        prep.group_centered_global_means_ = list(
+            group_centered_global_means
+        )
         legacy_aliases = prep_cfg.get("legacy_missing_aliases", [])
         for j in range(len(prep.cat_features_)):
             cats = _decode_categories(
