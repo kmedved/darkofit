@@ -7995,7 +7995,7 @@ def test_load_legacy_v1_missing_category_archive(tmp_path):
     with np.load(path, allow_pickle=False) as data:
         arrays = {key: data[key] for key in data.files}
     header = json.loads(str(arrays["header"]))
-    assert FORMAT_VERSION == 4
+    assert FORMAT_VERSION == 5
     assert header["format_version"] == 2
 
     kinds = arrays["cat0__kinds"].copy()

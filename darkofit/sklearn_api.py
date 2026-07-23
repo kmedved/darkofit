@@ -3,6 +3,7 @@
 import hashlib
 import json
 import math
+import time
 import warnings
 from collections.abc import Mapping
 from functools import wraps
@@ -91,6 +92,61 @@ _SIGMA_MIN = 1e-12
 _GROUP_AFFINE_DEFAULT_FEATURE = "metric_code"
 _SCALAR_REGRESSION_LOSSES = frozenset({"RMSE", "MAE", "Quantile"})
 _ORDINAL_STATE_VERSION = 1
+_GROUP_CENTERED_CROSSES_VERSION = 1
+_GROUP_CENTERED_CROSSES_MIN_SELECTION_ROWS = 2_000
+_GROUP_CENTERED_CROSSES_VALIDATION_FRACTION = 0.15
+_GROUP_CENTERED_CROSSES_TOP_NUMERIC = 4
+_GROUP_CENTERED_CROSSES_TOP_CATEGORICAL = 3
+
+
+def _group_centered_candidate_pairs(importances, cat_features, n_features):
+    """Return deterministic top-importance numeric/category pairs."""
+    cat = sorted({int(index) for index in (cat_features or ())})
+    cat_set = set(cat)
+    numeric = [index for index in range(int(n_features)) if index not in cat_set]
+    values = np.asarray(importances, dtype=np.float64)
+    if values.shape != (int(n_features),) or not np.all(np.isfinite(values)):
+        raise RuntimeError("group-centered candidate importances are invalid")
+    numeric = sorted(numeric, key=lambda index: (-values[index], index))[
+        :_GROUP_CENTERED_CROSSES_TOP_NUMERIC
+    ]
+    cat = sorted(cat, key=lambda index: (-values[index], index))[
+        :_GROUP_CENTERED_CROSSES_TOP_CATEGORICAL
+    ]
+    return [(numeric_index, cat_index) for numeric_index in numeric for cat_index in cat]
+
+
+def _group_centered_preprocessing_record(prep):
+    """Return compact, deterministic provenance for fitted centered columns."""
+    pairs = [
+        [int(numeric), int(categorical)]
+        for numeric, categorical in getattr(prep, "group_centered_pairs_", ())
+    ]
+    means = list(getattr(prep, "group_centered_means_", ()))
+    globals_ = np.asarray(
+        getattr(prep, "group_centered_global_means_", ()), dtype="<f8"
+    )
+    if len(means) != len(pairs) or len(globals_) != len(pairs):
+        raise RuntimeError("group-centered fitted preprocessing is inconsistent")
+    digest = hashlib.sha256()
+    digest.update(np.asarray(pairs, dtype="<i8").reshape(-1, 2).tobytes())
+    category_counts = []
+    for values in means:
+        values = np.ascontiguousarray(np.asarray(values, dtype="<f8"))
+        if values.ndim != 1 or not np.all(np.isfinite(values)):
+            raise RuntimeError("group-centered fitted means are invalid")
+        category_counts.append(int(len(values)))
+        digest.update(values.tobytes())
+    if not np.all(np.isfinite(globals_)):
+        raise RuntimeError("group-centered fitted global means are invalid")
+    digest.update(np.ascontiguousarray(globals_).tobytes())
+    return {
+        "pair_count": len(pairs),
+        "pairs": pairs,
+        "category_counts": category_counts,
+        "global_means": globals_.tolist(),
+        "means_sha256": digest.hexdigest(),
+    }
 
 
 def _normalize_tree_mode_token(tree_mode):
@@ -4804,6 +4860,8 @@ class _RefitParamsMixin:
                 use_best_model=True,
                 refit=False,
             )
+            if hasattr(self, "_group_centered_crosses_private_mode"):
+                member._group_centered_crosses_private_mode = "off"
             member._suppress_wrapper_deprecation_warning = True
             if shared_eligible:
                 member._shared_numeric_preprocessing_ = {
@@ -5797,6 +5855,15 @@ class _RefitParamsMixin:
         if hasattr(self, "preset_"):
             state["preset"] = self.preset_
             state["preset_params"] = dict(self.preset_params_)
+        if (
+            hasattr(self, "group_centered_categorical_crosses_")
+            and getattr(
+                self, "_group_centered_cross_metadata_persisted_", False
+            )
+        ):
+            state["group_centered_categorical_crosses"] = dict(
+                self.group_centered_categorical_crosses_
+            )
         if hasattr(self, "_selection_n_total_"):
             state["selection_n_total"] = self._selection_n_total_
         if hasattr(self, "_selection_n_train_"):
@@ -6099,6 +6166,51 @@ class _RefitParamsMixin:
         ) is not None:
             raise ValueError(
                 "invalid DarkoFit model: booster tree mode selection "
+                "provenance has no wrapper fitted state"
+            )
+        cross_state = state.get("group_centered_categorical_crosses")
+        fitted_cross_state = getattr(self.model_, "auto_params_", {}).get(
+            "group_centered_categorical_crosses"
+        )
+        if cross_state is not None:
+            if (
+                not isinstance(cross_state, Mapping)
+                or not isinstance(fitted_cross_state, Mapping)
+                or dict(cross_state) != dict(fitted_cross_state)
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: group-centered cross wrapper and "
+                    "booster provenance disagree"
+                )
+            selected = cross_state.get("selected")
+            final_pairs = cross_state.get("final_pairs")
+            final_preprocessing = cross_state.get("final_preprocessing")
+            fitted_pairs = [
+                list(pair)
+                for pair in getattr(
+                    self.model_.prep_, "group_centered_pairs_", ()
+                )
+            ]
+            if (
+                not isinstance(selected, bool)
+                or not isinstance(final_pairs, list)
+                or final_pairs != fitted_pairs
+                or bool(fitted_pairs) != selected
+                or not isinstance(final_preprocessing, Mapping)
+                or dict(final_preprocessing)
+                != _group_centered_preprocessing_record(self.model_.prep_)
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: group-centered cross fitted "
+                    "state disagrees with preprocessing payload"
+                )
+            self.group_centered_categorical_crosses_ = dict(cross_state)
+            self._group_centered_cross_metadata_persisted_ = True
+        elif fitted_cross_state is not None or getattr(
+            self.model_.prep_, "group_centered_pairs_", ()
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: group-centered cross booster "
                 "provenance has no wrapper fitted state"
             )
         if "preset" in state:
@@ -7305,6 +7417,8 @@ def _fit_private_ensemble_v3(
                 ensemble_member_colsample=_ENSEMBLE_V3_POLICY_SENTINEL,
                 **policy_member_params,
             )
+            if hasattr(estimator, "_group_centered_crosses_private_mode"):
+                member._group_centered_crosses_private_mode = "off"
             member._suppress_wrapper_deprecation_warning = True
             if shared_eligible:
                 member._shared_numeric_preprocessing_ = {
@@ -7822,11 +7936,403 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self.auto_learning_rate_probe_values = auto_learning_rate_probe_values
         self.auto_learning_rate_probe_iterations = auto_learning_rate_probe_iterations
 
+    def _clear_group_centered_cross_state(self):
+        if hasattr(self, "group_centered_categorical_crosses_"):
+            del self.group_centered_categorical_crosses_
+        if hasattr(self, "_group_centered_cross_metadata_persisted_"):
+            del self._group_centered_cross_metadata_persisted_
+
+    def _attach_group_centered_cross_metadata(self, metadata, *, persist=True):
+        metadata = dict(metadata)
+        self.group_centered_categorical_crosses_ = metadata
+        self._group_centered_cross_metadata_persisted_ = bool(persist)
+        model = getattr(self, "model_", None)
+        if persist and model is not None and not hasattr(self, "estimators_"):
+            model.auto_params_["group_centered_categorical_crosses"] = metadata
+            model.auto_params_.setdefault("diagnostics", {})[
+                "group_centered_categorical_crosses"
+            ] = metadata
+
+    def _group_centered_cross_ineligible_reason(
+        self, X, cat_features, *, eval_set, callbacks, ordinal_features
+    ):
+        if _normalize_n_ensembles(self.n_ensembles) != 1 or (
+            str(self.ensemble_mode).strip().lower().replace("-", "_")
+            != "bootstrap"
+        ):
+            return "ensemble"
+        if _normalize_regression_preset(self.preset) is not None:
+            return "preset"
+        if self.loss != "RMSE":
+            return "non_rmse_loss"
+        if _is_auto_tree_mode(self.tree_mode):
+            return "automatic_tree_mode"
+        if _normalize_tree_mode(self.tree_mode) != "catboost":
+            return "non_catboost_tree_mode"
+        if self.auto_learning_rate_probe:
+            return "automatic_learning_rate_probe"
+        if _should_use_linear_residual(self.linear_residual):
+            return "linear_residual"
+        if self.linear_leaves:
+            return "linear_leaves"
+        if self.refit:
+            return "refit"
+        if _normalize_dist_calibration(
+            self.dist_calibration, self.sigma_calibration
+        ) is not None:
+            return "distributional_calibration"
+        if _normalize_interval_calibration(self.interval_calibration) is not None:
+            return "interval_calibration"
+        if callbacks:
+            return "callbacks"
+        if ordinal_features is not None:
+            return "ordinal_features"
+        if self.ordered_boosting is True or (
+            isinstance(self.ordered_boosting, np.bool_)
+            and bool(self.ordered_boosting)
+        ):
+            return "ordered_boosting"
+        X_checked, normalized_cats, n_features = _coerce_fit_X(X, cat_features)
+        n_cats = len(normalized_cats)
+        if n_cats == 0:
+            return "no_categorical_features"
+        if n_cats == n_features:
+            return "no_numeric_features"
+        minimum_rows = (
+            _GROUP_CENTERED_CROSSES_MIN_SELECTION_ROWS
+            if eval_set is not None
+            else math.ceil(
+                _GROUP_CENTERED_CROSSES_MIN_SELECTION_ROWS
+                / (1.0 - _GROUP_CENTERED_CROSSES_VALIDATION_FRACTION)
+            )
+        )
+        if X_checked.shape[0] < minimum_rows:
+            return "below_min_samples"
+        return None
+
+    def _fit_group_centered_cross_fallback(
+        self,
+        reason,
+        X,
+        y,
+        *,
+        cat_features,
+        eval_set,
+        groups,
+        sample_weight,
+        eval_sample_weight,
+        callbacks,
+        ordinal_features,
+    ):
+        previous_mode = getattr(
+            self, "_group_centered_crosses_private_mode", "auto"
+        )
+        previous_fallback_active = getattr(
+            self, "_group_centered_cross_fallback_active", None
+        )
+        try:
+            self._group_centered_crosses_private_mode = "off"
+            self._group_centered_cross_fallback_active = True
+            fitted = self.fit(
+                X,
+                y,
+                cat_features=cat_features,
+                eval_set=eval_set,
+                groups=groups,
+                sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight,
+                callbacks=callbacks,
+                ordinal_features=ordinal_features,
+            )
+        finally:
+            self._group_centered_crosses_private_mode = previous_mode
+            if previous_fallback_active is None:
+                if hasattr(self, "_group_centered_cross_fallback_active"):
+                    del self._group_centered_cross_fallback_active
+            else:
+                self._group_centered_cross_fallback_active = (
+                    previous_fallback_active
+                )
+        self._attach_group_centered_cross_metadata(
+            {
+                "version": _GROUP_CENTERED_CROSSES_VERSION,
+                "eligible": False,
+                "reason": str(reason),
+                "selected": False,
+                "pairs": [],
+                "split": {"source": "none"},
+                "control_validation_rmse": None,
+                "augmented_validation_rmse": None,
+                "relative_validation_improvement": None,
+                "selection_total_seconds": 0.0,
+                "final_pairs": [],
+                "final_preprocessing": _group_centered_preprocessing_record(
+                    getattr(getattr(self, "model_", None), "prep_", None)
+                ),
+            },
+            persist=False,
+        )
+        return fitted
+
+    @staticmethod
+    def _group_centered_cross_fit_record(name, model, seconds):
+        score = float(model.best_score_)
+        if not np.isfinite(score) or score < 0.0:
+            raise RuntimeError(
+                "group-centered cross selector produced invalid validation RMSE"
+            )
+        return {
+            "name": name,
+            "validation_rmse": score,
+            "best_n_estimators": int(model.best_n_estimators_),
+            "fit_seconds": float(seconds),
+        }
+
+    def _fit_group_centered_cross_selector(
+        self,
+        X,
+        y,
+        *,
+        cat_features,
+        eval_set,
+        groups,
+        sample_weight,
+        eval_sample_weight,
+        callbacks,
+        ordinal_features,
+    ):
+        self._clear_group_centered_cross_state()
+        reason = self._group_centered_cross_ineligible_reason(
+            X,
+            cat_features,
+            eval_set=eval_set,
+            callbacks=callbacks,
+            ordinal_features=ordinal_features,
+        )
+        if reason is not None:
+            return self._fit_group_centered_cross_fallback(
+                reason,
+                X,
+                y,
+                cat_features=cat_features,
+                eval_set=eval_set,
+                groups=groups,
+                sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight,
+                callbacks=callbacks,
+                ordinal_features=ordinal_features,
+            )
+
+        _ensure_dense(X)
+        X_checked, normalized_cats, n_features = _coerce_fit_X(X, cat_features)
+        n_rows = X_checked.shape[0]
+        y_checked = validate_target_vector(y, n_rows, dtype=np.float64)
+        weights = _validate_wrapper_sample_weight(sample_weight, n_rows)
+        requested_random_state = self.random_state
+        fit_seed = normalize_random_state_seed(requested_random_state)
+        if fit_seed is None:
+            fit_seed = 0
+        if eval_set is None:
+            if eval_sample_weight is not None:
+                raise ValueError("eval_sample_weight requires an explicit eval_set")
+            group_values = None if groups is None else np.asarray(groups)
+            if group_values is not None and group_values.shape != (n_rows,):
+                raise ValueError(
+                    "groups must be one-dimensional with one value per training row"
+                )
+            train_idx, validation_idx, policy = _make_eval_split(
+                X_checked,
+                y_checked,
+                _GROUP_CENTERED_CROSSES_VALIDATION_FRACTION,
+                fit_seed,
+                groups=group_values,
+                sample_weight=weights,
+                validation_strategy="weighted_stratified",
+            )
+            selection_X = _take_rows(X, train_idx)
+            selection_y = y_checked[train_idx]
+            selection_eval_set = (
+                _take_rows(X, validation_idx),
+                y_checked[validation_idx],
+            )
+            selection_groups = (
+                None if group_values is None else group_values[train_idx]
+            )
+            selection_weight = None if weights is None else weights[train_idx]
+            selection_eval_weight = (
+                None if weights is None else weights[validation_idx]
+            )
+            if np.intersect1d(train_idx, validation_idx).size:
+                raise RuntimeError("group-centered selection rows overlap")
+            group_disjoint = None
+            if group_values is not None:
+                group_disjoint = not bool(
+                    np.intersect1d(
+                        np.unique(group_values[train_idx]),
+                        np.unique(group_values[validation_idx]),
+                    ).size
+                )
+                if not group_disjoint:
+                    raise RuntimeError("group-centered selection groups overlap")
+            split = {
+                "source": "automatic_holdout",
+                "policy": policy,
+                "train_rows": int(len(train_idx)),
+                "validation_rows": int(len(validation_idx)),
+                "train_positions_sha256": _index_sha256(train_idx),
+                "validation_positions_sha256": _index_sha256(validation_idx),
+                "rows_disjoint": True,
+                "group_disjoint": group_disjoint,
+                "sample_weight_provided": weights is not None,
+            }
+        else:
+            normalized_eval_set = _ensure_dense_eval_set(eval_set)
+            selection_X = X
+            selection_y = y_checked
+            selection_eval_set = normalized_eval_set
+            selection_groups = groups
+            selection_weight = weights
+            eval_rows = n_samples_from_array_like(normalized_eval_set[0])
+            selection_eval_weight = _validate_wrapper_sample_weight(
+                eval_sample_weight,
+                eval_rows,
+                name="eval_sample_weight",
+            )
+            split = {
+                "source": "explicit_eval_set",
+                "policy": "explicit_eval_set",
+                "train_rows": int(n_rows),
+                "validation_rows": int(eval_rows),
+                "train_positions_sha256": _index_sha256(np.arange(n_rows)),
+                "validation_positions_sha256": None,
+                "rows_disjoint": None,
+                "group_disjoint": None,
+                "sample_weight_provided": (
+                    weights is not None or selection_eval_weight is not None
+                ),
+            }
+
+        def fit_audition(name, pairs):
+            candidate = clone(self).set_params(
+                random_state=fit_seed,
+                early_stopping=True,
+                early_stopping_rounds=None,
+                use_best_model=True,
+                refit=False,
+                diagnostic_warnings="never",
+            )
+            candidate._group_centered_crosses_private_mode = "forced"
+            candidate._group_centered_pairs_override = list(pairs)
+            started = time.perf_counter_ns()
+            candidate.fit(
+                selection_X,
+                selection_y,
+                cat_features=cat_features,
+                eval_set=selection_eval_set,
+                groups=selection_groups,
+                sample_weight=selection_weight,
+                eval_sample_weight=selection_eval_weight,
+                ordinal_features=ordinal_features,
+            )
+            seconds = (time.perf_counter_ns() - started) / 1e9
+            return candidate, self._group_centered_cross_fit_record(
+                name, candidate, seconds
+            )
+
+        selection_started = time.perf_counter_ns()
+        control, control_record = fit_audition("control", ())
+        pairs = _group_centered_candidate_pairs(
+            control.feature_importances_, normalized_cats, n_features
+        )
+        if not pairs or len(pairs) > 12:
+            raise RuntimeError("group-centered candidate pair budget is invalid")
+        augmented, augmented_record = fit_audition("augmented", pairs)
+        selection_seconds = (time.perf_counter_ns() - selection_started) / 1e9
+        control_score = control_record["validation_rmse"]
+        augmented_score = augmented_record["validation_rmse"]
+        selected = augmented_score < control_score
+        margin = (
+            0.0
+            if control_score == 0.0 and augmented_score == 0.0
+            else -1.0
+            if control_score == 0.0
+            else (control_score - augmented_score) / control_score
+        )
+        del control, augmented
+        metadata = {
+            "version": _GROUP_CENTERED_CROSSES_VERSION,
+            "eligible": True,
+            "reason": "selected_augmented" if selected else "control_won",
+            "selected": bool(selected),
+            "fit_random_state_seed": int(fit_seed),
+            "pairs": [list(pair) for pair in pairs],
+            "split": split,
+            "control_validation_rmse": float(control_score),
+            "augmented_validation_rmse": float(augmented_score),
+            "relative_validation_improvement": float(margin),
+            "selection_fits": [control_record, augmented_record],
+            "selection_total_seconds": float(selection_seconds),
+        }
+        previous_mode = getattr(
+            self, "_group_centered_crosses_private_mode", "auto"
+        )
+        previous_pairs = getattr(self, "_group_centered_pairs_override", None)
+        try:
+            self._group_centered_crosses_private_mode = "forced"
+            self._group_centered_pairs_override = pairs if selected else []
+            self.random_state = fit_seed
+            fitted = self.fit(
+                X,
+                y,
+                cat_features=cat_features,
+                eval_set=eval_set,
+                groups=groups,
+                sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight,
+                callbacks=callbacks,
+                ordinal_features=ordinal_features,
+            )
+        finally:
+            self._group_centered_crosses_private_mode = previous_mode
+            self.random_state = requested_random_state
+            if previous_pairs is None:
+                if hasattr(self, "_group_centered_pairs_override"):
+                    del self._group_centered_pairs_override
+            else:
+                self._group_centered_pairs_override = previous_pairs
+        metadata["final_pairs"] = [
+            list(pair)
+            for pair in getattr(self.model_.prep_, "group_centered_pairs_", ())
+        ]
+        metadata["final_preprocessing"] = _group_centered_preprocessing_record(
+            self.model_.prep_
+        )
+        self._attach_group_centered_cross_metadata(metadata)
+        return fitted
+
     @_restore_fitted_state_on_fit_failure
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
             sample_weight=None, eval_sample_weight=None, callbacks=None,
             ordinal_features=None):
         """Fit the model, resolving any opt-in product preset."""
+        private_cross_mode = getattr(
+            self, "_group_centered_crosses_private_mode", "auto"
+        )
+        if private_cross_mode == "auto":
+            return self._fit_group_centered_cross_selector(
+                X,
+                y,
+                cat_features=cat_features,
+                eval_set=eval_set,
+                groups=groups,
+                sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight,
+                callbacks=_normalize_callbacks(callbacks),
+                ordinal_features=ordinal_features,
+            )
+        if private_cross_mode not in {"off", "forced"}:
+            raise RuntimeError("invalid private group-centered cross mode")
+        self._clear_group_centered_cross_state()
         oblivious_kernel = _normalize_oblivious_kernel(self.oblivious_kernel)
         if oblivious_kernel != "auto" and _is_auto_tree_mode(self.tree_mode):
             raise ValueError(
@@ -7839,7 +8345,15 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         )
         self._clear_ensemble_state()
         if not getattr(self, "_suppress_wrapper_deprecation_warning", False):
-            self._warn_wrapper_deprecated_options(stacklevel=4)
+            self._warn_wrapper_deprecated_options(
+                stacklevel=(
+                    8
+                    if getattr(
+                        self, "_group_centered_cross_fallback_active", False
+                    )
+                    else 4
+                )
+            )
         if ensemble_mode == "v3":
             return _fit_public_ensemble_v3(
                 self,
@@ -8265,6 +8779,9 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 model = GradientBoosting(
                     loss=self.loss, loss_kwargs=loss_kwargs, **model_kw
                 )
+            model._group_centered_pairs = list(
+                getattr(self, "_group_centered_pairs_override", ())
+            )
             if preprocessing_cache is not None:
                 model._preprocessing_cache = preprocessing_cache
             return self._configure_model_preprocessing(model)
@@ -8677,6 +9194,14 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         oblivious leaves are supported; distributional heads and active global
         linear residuals are intentionally outside this scalar explanation.
         """
+        cross_metadata = getattr(
+            self, "group_centered_categorical_crosses_", None
+        )
+        if isinstance(cross_metadata, Mapping) and cross_metadata.get("selected"):
+            raise NotImplementedError(
+                "shap_values() is not implemented with active group-centered "
+                "categorical crosses"
+            )
         X = _check_predict_input(self, X)
         self._check_fitted_loss_matches_params("shap_values")
         if self._fitted_distributional():
