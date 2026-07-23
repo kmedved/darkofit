@@ -2868,6 +2868,47 @@ B-archive simulation remains non-loadable, optional size telemetry.
     new identity, fresh owner authorization, contamination review, and branch
     verification against the exact post-validation fit population.
 
+### 66. Automatic-depth 32-lineage development rerun (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; clean local harness
+   `ce7962f20923c98333512c1a80a46810a5795d0e`.
+2. **Comparators:** exact control
+   `e23d2b164f10374b1c0e02521c33fc96d48980da` and unchanged candidate
+   `41e948f0c53b1d124e16071a7fa66eba47d084d3`.
+3. **Evidence class:** paired development benchmark under `SHIP_RULES.md`;
+   not holdout or shipping evidence.
+4. **Data/splits:** all 32 verified P1-v3 lineages, three deterministic
+   coordinates each, with the historical selected views and split hashes.
+5. **Arms/policies:** scalar-RMSE CatBoost, 600 maximum rounds, early
+   stopping 30, validation 0.15, no refit, seed 20260723; control depth 6,
+   candidate `depth=None`.
+6. **Environment/repeats:** `darko311`, macOS arm64, 14 logical CPUs, fresh
+   worker per arm/coordinate, alternating paired arm order, three 50,000-row
+   prediction repeats.
+7. **Runner/command:**
+   `python benchmarks/run_t7b_automatic_depth_development_v1.py execute
+   --preflight /private/tmp/t7b_auto_depth_dev_v1_preflight_20260723.json
+   --control /private/tmp/darkofit-t7b-auto-depth-control-e23d2b1
+   --candidate /private/tmp/darkofit-t7b-auto-depth-v1-20260722
+   --output-prefix /private/tmp/t7b_auto_depth_dev_v1_run1_20260723`.
+8. **Hashes:** preflight `cfc94b9c57f86bc30b3654052490406c027b292002e27a2b10c0f3f441770334`;
+   launch `987f71bb45f19fa0a76bcb91b0478760eb8e5ad2a74b377f98f5088a5dc18b2d`;
+   raw `db7b96cbeec9ee21f1696453e16792560d57a6d6fe9ab5c7eae0f1fded19b30e`;
+   result `7e92d584b4adb8a96675d1f116a35682ddc2d4e2adc43051eadbca316d5c3307`.
+9. **Primary results:** equal-lineage RMSE `0.996860×`, bootstrap upper
+   `0.999869×`, leave-one-favorable-out `0.998192×`, worst lineage
+   `1.016344×`; low-density panel `0.994098×`, high-density panel
+   `1.000000×`.
+10. **Costs and integrity:** 192/192 rows, 96 pairs, and 32 lineages passed;
+    fit `0.807402×`, predict `0.943500×`, RSS `0.991148×`, mean RSS delta
+    `-15,380,480` bytes.
+11. **Limitations/non-claims:** development evidence only; no CTR23,
+    newest-season sports, TabArena, or release claim. Desktop activity makes
+    cost ratios telemetry rather than a release timing claim.
+12. **Decision/next action:** development is clearly positive under
+    `SHIP_RULES`; proceed once to the CTR23 and newest-untouched-season
+    ship-check, without tuning from holdout outcomes.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
