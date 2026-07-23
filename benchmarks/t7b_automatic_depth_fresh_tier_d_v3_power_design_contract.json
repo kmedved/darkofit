@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "contract_id": "t7b-automatic-depth-fresh-tier-d-v3-power-v1-20260723",
+  "authority": {
+    "roadmap": "R2_PLAN.md P1-v3",
+    "roadmap_sha256": "574c315c90a3c278d99dfb40618a829103c37ab3051936fbdf7396fa15da9810",
+    "policy": "benchmarks/SHIPPING_POLICY.md Tier-D",
+    "scope": "prospective power recomputation on the verified as-built registry only"
+  },
+  "candidate": {
+    "mechanism_id": "t7b_automatic_scalar_rmse_depth_v1",
+    "source_commit": "41e948f0c53b1d124e16071a7fa66eba47d084d3",
+    "control_commit": "e23d2b164f10374b1c0e02521c33fc96d48980da",
+    "requested_surface": "automatic scalar-RMSE CatBoost depth when depth is None",
+    "branches": [
+      "depth_4",
+      "depth_8"
+    ],
+    "middle_density_behavior": "depth_6 exact no-op",
+    "classification_behavior": "ineligible exact no-op",
+    "candidate_must_remain_byte_identical": true
+  },
+  "verified_registry": {
+    "enumeration_id": "t7b-automatic-depth-fresh-tier-d-v3-enumeration-v2-20260723",
+    "artifact_path": "benchmarks/t7b_automatic_depth_fresh_tier_d_v3_enumeration_v2_20260723.json",
+    "artifact_sha256": "c7c76259823d6ee4d3ce6202b127d4bed984493e6153775dfb0f05a105b22851",
+    "predesign_note_path": "benchmarks/t7b_automatic_depth_fresh_tier_d_v3_predesign_note_20260723.md",
+    "predesign_note_sha256": "12b824867fbca67bf91f4a3106290b4dec0342b4e5cbbacf793749be7a3310f8",
+    "eligible_lineage_ids": [
+      "airlines_departure_delay_10m",
+      "bangladesh_station_rainfall",
+      "beijing_pm25",
+      "bng_auto_horse_price",
+      "candy_crush_level",
+      "iot_room_temperature",
+      "kaggle_30_days_tabular",
+      "reddit_climate_opinion",
+      "rossmann_store_sales",
+      "video_game_fps_hardware",
+      "automl_yolanda",
+      "bng_pwlinear",
+      "french_rte_load",
+      "mtpl_claim_count",
+      "twitter_buzz_annotation",
+      "aids_joint_model_survival_time",
+      "asp_potassco_runtime",
+      "chscase_foot",
+      "cpmp_2015_runtime",
+      "mip_2016_par10",
+      "optical_interconnection_network",
+      "sat11_hand_runtime",
+      "uci_auto_mpg",
+      "ankara_weather",
+      "carpenter_fda_survival_time",
+      "chscase_census5",
+      "friedman_c4_500_100",
+      "galaxy_velocity",
+      "los_angeles_mortality_timeseries",
+      "qsar_aquatic_toxicity",
+      "uci_liver_disorders",
+      "usa_treasury_rates"
+    ]
+  },
+  "spent_sizing_inputs": [
+    {
+      "path": "benchmarks/t7b_automatic_depth_v1_m6_inspection1_result_20260722.json",
+      "file_sha256": "7af0c480221b5886c7bbf41f810147663d9da6e2c4171a70bc9db3a431eebb28",
+      "use": "only the two changed low-density regression group profiles and their coordinates"
+    },
+    {
+      "path": "benchmarks/t7b_automatic_depth_sports_v1_inspection1_result_20260722.json",
+      "file_sha256": "1ec0d2d37ef75195b66b779ec94920e05f5047147538de6eb17622947fd1a0da",
+      "use": "only the three spent season-cluster profiles and their nested target coordinates"
+    }
+  ],
+  "panel_template": {
+    "analysis_unit": "independent_lineage_cluster",
+    "lineage_count": 32,
+    "coordinates_per_lineage": 3,
+    "paired_model_fits": 192,
+    "strata": [
+      {
+        "stratum": "low_density_numeric",
+        "branch": "depth_4",
+        "feature_family": "numeric",
+        "lineages": 9
+      },
+      {
+        "stratum": "low_density_categorical_or_grouped",
+        "branch": "depth_4",
+        "feature_family": "categorical_or_grouped",
+        "lineages": 8
+      },
+      {
+        "stratum": "high_density_numeric",
+        "branch": "depth_8",
+        "feature_family": "numeric",
+        "lineages": 5
+      },
+      {
+        "stratum": "high_density_categorical_or_grouped",
+        "branch": "depth_8",
+        "feature_family": "categorical_or_grouped",
+        "lineages": 10
+      }
+    ],
+    "branch_counts": {
+      "depth_4": 17,
+      "depth_8": 15
+    },
+    "group_safe_lineages": 3,
+    "middle_density_policy": "exact_noop_invariants_not_quality_power",
+    "classification_policy": "exact_noop_invariants_not_quality_power",
+    "weight_coverage": "every lineage supplies ordinary coordinates 0/2 and nonuniform-weight coordinate 1",
+    "identity_status": "all 32 concrete identities loaded and verified before this power design"
+  },
+  "effect_scenario": {
+    "derivation": "unchanged v1 method: geometric spent effect and log dispersion from five complete changed-lane development clusters, then multiply each log-scale effect component by the retained fraction",
+    "selection_bias_warning": "the spent inputs selected this candidate and are not independent evidence of its true effect",
+    "primary_retained_log_effect_fraction": 0.2,
+    "primary_interpretation": "scale every spent log effect and within-lineage deviation to 20 percent of its observed magnitude; this joint shrinkage is a sizing alternative, not a conservative bound or quality estimate",
+    "high_density_transport_warning": "the DarkoFit sizing profiles exercised depth_4; applying the same structured alternative to depth_8 is a prospective planning assumption, not DarkoFit evidence, and the fresh branch-direction gate prevents depth_4 from carrying depth_8",
+    "sensitivity_retained_log_effect_fractions": [
+      0.1,
+      0.15,
+      0.25
+    ],
+    "true_lineage_ratio_cap": 1.015,
+    "cap_interpretation": "power is conditional on a candidate whose true lineage effects satisfy the intended unguarded Tier-D harm envelope; observed panels still face the 1.02 worst-lineage gate"
+  },
+  "quality_gates": {
+    "equal_lineage_geomean_ratio_at_most": 0.995,
+    "bootstrap_upper_ratio_at_most": 1.002,
+    "leave_one_favorable_lineage_out_ratio_at_most": 0.998,
+    "worst_lineage_ratio_at_most": 1.02,
+    "each_branch_geomean_ratio_at_most": 1.0
+  },
+  "simulation": {
+    "outer_panel_simulations": 5000,
+    "outer_seed": 20260723,
+    "lineage_bootstrap_replicates": 5000,
+    "lineage_bootstrap_seed": 20260724,
+    "lineage_bootstrap_percentile": 95.0,
+    "outer_batch": 100,
+    "power_floor": 0.8,
+    "power_wilson_one_sided_confidence": 0.95,
+    "power_decision_rule": "point_estimate_and_one_sided_wilson_lower_bound_at_least_floor"
+  },
+  "execution_contract_requirements": [
+    "owner freeze review after this as-built power result",
+    "design and execution freeze together over these exact 32 verified identities",
+    "exact candidate and control pins with byte-identical candidate verification",
+    "paired fresh workers and the already-attested row/group splits",
+    "the same cluster bootstrap, aggregate, branch, concentration, and harm rules implemented by the final analyzer",
+    "harm-justified fit, prediction, and process-tree RSS budgets frozen before launch",
+    "create-only launch, raw, result, and terminal artifacts with no rerun",
+    "no default, merge, release, or product claim unless every quality, cost, and integrity gate passes"
+  ],
+  "authorization": {
+    "confirmation_design_freeze_authorized": false,
+    "fresh_access_authorized": false,
+    "confirmation_run_authorized": false,
+    "candidate_merge_authorized": false,
+    "default_change_authorized": false,
+    "release_authorized": false,
+    "lockbox_access_authorized": false
+  }
+}

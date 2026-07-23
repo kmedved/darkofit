@@ -51,6 +51,37 @@ fillability last. The successor inverts that order.
 
 ### P1-v3 — fillability-first redesign (historical authorization; superseded)
 
+**Enumeration complete 2026-07-23:** 32/40 concrete identities are verified
+before design freeze: 17 depth-4 lineages (9 numeric, 8
+categorical-or-grouped), 15 depth-8 lineages (5 numeric, 10
+categorical-or-grouped), and three group-safe lineages. Eight identities were
+rejected for concrete schema, target-validity, or OpenML-binding reasons; no
+model ran and the fresh inspection remains unspent. The dated pre-design note
+and hash-bound JSON are the only permitted inputs to the P1-v3 power
+recalculation.
+
+**As-built power qualified 2026-07-23:** the exact 32-identity, 17/15
+depth-branch panel passed the unchanged primary design at `0.998000`
+simulated power with one-sided Wilson lower `0.996657`. All downstream
+authority remains false pending the combined design/execution freeze review.
+
+**Freeze review ready 2026-07-23:** the combined contract/harness is published
+and its data-free 32-lineage preflight passed. The harness requires a separate
+hash-bound owner record and cannot launch without it. No model has run and the
+fresh inspection remains unspent.
+
+**P1-v3 execution closed 2026-07-23:** the owner authorized the exact
+one-shot and the launch manifest spent the fresh inspection. The first
+candidate worker then failed the frozen branch-integrity check before a
+control arm or paired comparison: the registry classified the outer
+training split as depth 8 (`23,373 / 9 = 2,597` rows per feature), while
+the actual automatic policy saw the post-validation fit population
+(`19,867 / 9 = 2,207.444444`) and correctly resolved depth 6. The runner
+published no raw/result artifact and forbids a rerun. This is a
+prospective-design failure, not a quality verdict. Automatic depth remains
+private and unpromoted; P3 is unchanged. See the dated terminal note and
+create-only launch/failure records.
+
 1. **Concrete registry enumeration before anything freezes:** for every
    proposed slot, name the exact dataset/lineage identity, verify it loads
    in the frozen worker environment (the `autogluon.common` lesson), and

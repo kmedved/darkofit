@@ -341,6 +341,11 @@ discipline):**
    arbitrary minimum speedup, with exactness, bounded resources and
    complexity, stable direction, defined scope, and rollback all still
    required. Tier-D automatic policies are out of scope for this rule.
+5. No design freezes over unverified resources. Every dataset, slot,
+   dependency, environment import, and other execution prerequisite must be
+   concretely identified and proven available before the freeze that relies
+   on it. Power belongs to the verified as-built panel, never to abstract
+   slots that execution is expected to discover or replace later.
 
 ## 5. Open questions for the owner
 

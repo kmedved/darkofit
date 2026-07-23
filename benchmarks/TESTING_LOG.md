@@ -2506,6 +2506,368 @@ B-archive simulation remains non-loadable, optional size telemetry.
     its existing Tier-E basis. Any future confirmation requires a genuinely
     new prospective design and explicit owner authorization.
 
+### 58. T7b automatic-depth P1-v3 enumeration harness (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; clean branch based on published
+   `main` at `974b5eeaad96df28f3577335a0defab6147428e7`.
+2. **Comparators:** no model arms or model comparison. The resource audit will
+   inspect the 40 exact identities already named in the immutable v1 registry.
+3. **Evidence class:** prospective pre-design fillability infrastructure
+   authorized by `R2_PLAN.md` P1-v3. It is not quality evidence and freezes no
+   confirmation panel.
+4. **Data/splits:** no data was loaded while authoring this checkpoint. The
+   future create-only enumeration verifies each concrete identity
+   independently: loadability, history/fingerprint contamination, all three
+   deterministic split coordinates, group disjointness, and the realized
+   depth branch.
+5. **Arms/policies:** no candidate/control fit. Existing value-free v1/v2
+   resource contact is disclosed; no abstract-slot replacement or outcome
+   selection is permitted.
+6. **Environment/repeats:** future enumeration is pinned to `darko311` and
+   records exact module paths/versions plus DarkoFit and ChimeraBoost commits.
+   No timed workers or repeats are involved.
+7. **Runner/command:** after clean commit and publication:
+   `python benchmarks/enumerate_t7b_automatic_depth_fresh_tier_d_v3.py
+   --output benchmarks/t7b_automatic_depth_fresh_tier_d_v3_enumeration_20260723.json`.
+   Focused verification ran the new tests plus the existing fresh execution,
+   power-design/result, and thread-state suites.
+8. **Hashes:** protocol
+   `f352081f33a5729849c2fa727437f02aa92c08e831e09b728350719aeaeddbf7`;
+   runner
+   `df077068a2938602ab4bc03b55d628dd761d6a5044d12bf073bb3b38dd8c71ed`;
+   R2 authorization
+   `edc583db280f2706e656ae635a82b76e5ac2a3da9a0a5b6d241b854a093918dd`;
+   v1 registry file
+   `ce539f5fefdba07a4983904921a5841e35371765304cd11f92f3b5759db25878`;
+   reused v2 eligibility helpers
+   `f7d3dc9651a4559470921b9b9d686cff8fbe9961e378939009cb697974032deb`.
+9. **Primary results:** harness validation passed, including independent
+   identity evaluation and narrow disclosure-path classification: 27 tests
+   passed.
+10. **Costs, passed and failed conditions:** no model cost or evidence gate
+    was evaluated. The future audit fails as a whole on unexpected harness,
+    dependency, network, or environment errors rather than mislabeling them as
+    dataset ineligibility.
+11. **Limitations/non-claims:** this checkpoint proves only that the
+    enumeration machinery is internally consistent. It makes no claim about
+    how many resources are fillable, whether an as-built panel has 80% power,
+    or whether automatic depth should ship.
+12. **Terminal decision/next action:** publish the clean harness, run the
+    create-only enumeration once, and write a dated pre-design note naming the
+    verified resources. Only then may prospective power be recomputed; the
+    confirmation freeze and fresh run remain separately owner-gated.
+
+### 59. T7b P1-v3 enumeration v1 failure and v2 supersession (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; published v1 enumeration harness
+   `44cc2b086289218e9674b9e9a8eeac51cf5304d8`.
+2. **Comparators:** no model arms, model fits, or quality comparisons.
+3. **Evidence class:** pre-design harness failure and prospective
+   infrastructure supersession. Neither v1 nor v2 is confirmation evidence.
+4. **Data/splits:** v1 rejected all 40 declarations on repository-history
+   self-matches before loading any resource, so no feature matrix, target, or
+   split was accessed. V2 retains the same 40 identities and every substantive
+   loadability, contamination, split, and branch check.
+5. **Arms/policies:** no automatic-depth candidate or control was run.
+6. **Environment/repeats:** `darko311`; no timed worker or repeat. V1's failure
+   occurred inside local path classification.
+7. **Runner/command:** v1:
+   `python benchmarks/enumerate_t7b_automatic_depth_fresh_tier_d_v3.py
+   --output benchmarks/t7b_automatic_depth_fresh_tier_d_v3_enumeration_20260723.json`.
+   V2 changes only removal of a valid 40-hex revision prefix from `git grep`
+   output before applying the unchanged disclosure allowlist.
+8. **Hashes:** immutable v1 raw artifact
+   `0077494a73eb82f3454fd0a4f2ededbd833e35884b82a4dc3666f805496dfdfa`;
+   create-only failure record
+   `717e1b33a48701a9e5f6218c73f4125ec107514983629b210f311592832d4f90`;
+   v2 protocol
+   `9d6e76bac717f9671b02b8c76fad3466515d63a6407c4c889ee594ee06c94f89`;
+   v2 runner
+   `c883a831db59bcf4da23d38bba2e14c4484d0b4295c300f944f8b656e61e2fb7`.
+9. **Primary results:** v1's reported 0/40 was invalid: each rejection named
+   only the P1 registry/declaration files with a revision-prefixed path. The
+   added regression tests cover both prefixed disclosure and non-disclosure
+   paths; the focused suite passed 27 tests.
+10. **Costs, passed and failed conditions:** no data or model cost was
+    measured. V1 failed path-normalization integrity; no dataset eligibility
+    condition was genuinely evaluated.
+11. **Limitations/non-claims:** the v1 0/40 count cannot inform panel
+    composition or power. V2 still has not run and supplies no fillability,
+    power, quality, or shipping claim.
+12. **Terminal decision/next action:** close v1 as an invalid harness result,
+    publish the v2 path-normalization repair, and run a distinct create-only
+    v2 enumeration. The candidate pool is unchanged and the fresh
+    confirmation inspection remains unspent.
+
+### 60. T7b P1-v3 as-built resource enumeration (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; published DarkoFit enumeration head
+   `a83530fe13a80be9d74dad9dc7d943b636ec1922`; ChimeraBoost history pin
+   `6a76586dfdff90275e7e816f25e35c927b8527fb`.
+2. **Comparators:** no candidate/control fit and no model comparison.
+3. **Evidence class:** P1-v3 pre-design fillability audit. It is fresh
+   resource metadata/fingerprint evidence but not quality evidence.
+4. **Data/splits:** all 40 concrete v1-registry identities were evaluated
+   independently. Thirty-two loaded and passed exact history/fingerprint,
+   target-validity, schema, three-coordinate split/group, and branch checks:
+   9 low numeric, 8 low categorical/grouped, 5 high numeric, and 10 high
+   categorical/grouped; 17 depth-4, 15 depth-8, and three group-safe.
+5. **Arms/policies:** no model arms. No abstract-slot replacement occurred;
+   the eight rejected resources remain rejected under their declared roles.
+6. **Environment/repeats:** `darko311`, Python 3.11, NumPy 2.2.6, pandas
+   2.2.3, sklearn 1.7.1, Numba 0.61.2, OpenML 0.15.1, macOS arm64, 14 logical
+   CPUs. No timed repeat.
+7. **Runner/command:**
+   `python benchmarks/enumerate_t7b_automatic_depth_fresh_tier_d_v3.py
+   --output benchmarks/t7b_automatic_depth_fresh_tier_d_v3_enumeration_v2_20260723.json`.
+   The sandboxed first invocation failed on DNS before output; the unchanged
+   published identity then completed with OpenML network access.
+8. **Hashes:** create-only enumeration
+   `c7c76259823d6ee4d3ce6202b127d4bed984493e6153775dfb0f05a105b22851`;
+   dated pre-design note
+   `12b824867fbca67bf91f4a3106290b4dec0342b4e5cbbacf793749be7a3310f8`;
+   v2 protocol
+   `9d6e76bac717f9671b02b8c76fad3466515d63a6407c4c889ee594ee06c94f89`;
+   v2 runner
+   `c883a831db59bcf4da23d38bba2e14c4484d0b4295c300f944f8b656e61e2fb7`.
+9. **Primary results:** 32 eligible and 8 ineligible. Rejections: four
+   declared-numeric roles had categorical inputs, three targets contained
+   non-finite values, and one OpenML task target had drifted. All eligible
+   identities loaded; no unexpected dependency or environment failure
+   remained.
+10. **Costs, passed and failed conditions:** only download, normalization,
+    fingerprint, and deterministic split work was performed. No fit,
+    prediction, RSS, archive, quality, or confirmation gate was evaluated.
+11. **Limitations/non-claims:** the 32 identities are verified resources, not
+    a frozen panel and not evidence that the candidate works. The old 99.8%
+    power figure does not transfer to the new 17/15 branch composition.
+12. **Terminal decision/next action:** publish the enumeration and dated
+    pre-design note, then prospectively recompute power on exactly these 32
+    identities. Design/execution freeze and the fresh run remain owner-gated.
+
+### 61. T7b P1-v3 as-built power-contract freeze (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; contract branch based on published
+   as-built enumeration commit `ce0ba0be55ede9a7ff10a49949664facd76a4d19`.
+2. **Comparators:** no model comparison. The future simulation sizes the
+   unchanged candidate/control decision only.
+3. **Evidence class:** prospective design-time Tier-D power infrastructure,
+   not quality evidence and not confirmation authorization.
+4. **Data/splits:** exact hash-bound 32-identity census from enumeration v2:
+   9/8/5/10 across the four strata, 17 depth-4, 15 depth-8, three group-safe,
+   and three already-attested coordinates per lineage.
+5. **Arms/policies:** unchanged candidate `41e948f0` and control `e23d2b16`.
+   The same v1 spent-effect derivation, 20% retained primary alternative,
+   sensitivities, true-ratio cap, and quality gates bind.
+6. **Environment/repeats:** design simulation only; 5,000 outer panels and
+   5,000 lineage-bootstrap draws with the original seeds and 95% one-sided
+   Wilson decision.
+7. **Runner/command:** after clean commit/publish:
+   `python benchmarks/tier_d_fresh_power_design_v3.py`. Focused validation
+   covered exact registry/branch binding and a small both-branch simulation.
+8. **Hashes:** contract
+   `bcf44533c94312b41ff3efdb2a6d08639ccd69ac22cc8a0050fda021111ed82b`;
+   protocol
+   `41ea9ac266642ed1e5329aa8fcc1d777b0fc07e7222340b41083a5aae7ed0657`;
+   runner
+   `4f3de13fcffa3d43b2747093f60845268a5d91b3bea5151e4abde2f4601b5763`;
+   tests
+   `4e545f4b3d867edcb0b0876185c9612b95e707ea13e244dd4c1aa1304d1d7e71`;
+   verified enumeration
+   `c7c76259823d6ee4d3ce6202b127d4bed984493e6153775dfb0f05a105b22851`;
+   reused simulation engine
+   `f1482d20fbc6ad2f84d4bdc9a338adf4d6d87cb7a4fe640d997aeb9f9ee93fce`.
+9. **Primary results:** contract and harness verification passed: 22 focused
+   tests.
+10. **Costs, passed and failed conditions:** no power result or quality gate
+    has been evaluated yet. The contract will qualify only if both simulated
+    pass probability and one-sided Wilson lower bound reach 80%.
+11. **Limitations/non-claims:** effect inputs selected the candidate and the
+    depth-8 alternative remains a transport assumption. Power qualification
+    would size the panel, not confirm the mechanism or authorize a run.
+12. **Terminal decision/next action:** publish this power contract, execute
+    its create-only simulation once, and return the result for owner freeze
+    review. Combined design/execution freeze and fresh access remain false.
+
+### 62. T7b P1-v3 as-built power result (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; published power-contract head
+   `9c58065bfbd1844448bd1bc8b142e8ae2c6d1060`.
+2. **Comparators:** no model fit; the design simulates the future unchanged
+   candidate/control paired decision.
+3. **Evidence class:** prospective Tier-D design-time power result, not
+   candidate-quality or shipping evidence.
+4. **Data/splits:** exact 32 verified identities, 17 depth-4 and 15 depth-8,
+   with three already-attested coordinates per lineage.
+5. **Arms/policies:** candidate `41e948f0`, control `e23d2b16`; unchanged
+   spent-effect derivation, gates, and branch-direction rule.
+6. **Environment/repeats:** 5,000 outer panels, 5,000 lineage bootstrap
+   draws, original deterministic seeds.
+7. **Runner/command:**
+   `python benchmarks/tier_d_fresh_power_design_v3.py`.
+8. **Hashes:** result file
+   `d6d572e47c672262b007c436cc048b6259a753097e860357523bcec033085ba8`;
+   result self-hash
+   `78e74a48e060edfe09e371a4d1b5355a684847c4c2dba16e3966ae5c6ac858c1`;
+   dated result note
+   `9a0d0802f4d3bc69b9cde886b5bd3199e8e994b9915f0c49e9bbd1aee781275d`;
+   contract
+   `bcf44533c94312b41ff3efdb2a6d08639ccd69ac22cc8a0050fda021111ed82b`.
+9. **Primary results:** `design_power_qualified`; primary pass probability
+   `0.998000`, one-sided 95% Wilson lower `0.996657`, both above `0.800000`.
+   Retained-effect sensitivities: 10% `0.217600` (lacks power), 15%
+   `0.957600` (passes), 25% `0.991800` (passes).
+10. **Costs, passed and failed conditions:** primary power and Wilson gates
+    passed. The 10% sensitivity failed and is disclosure only. No fit,
+    prediction, RSS, archive, or observed-quality gate was evaluated.
+11. **Limitations/non-claims:** spent inputs selected the candidate; depth-8
+    behavior is transported for sizing. The result does not confirm the
+    mechanism or authorize a model run, merge, default, or release.
+12. **Terminal decision/next action:** prepare the combined design/execution
+    freeze over these exact identities for owner review. Every fresh,
+    confirmation, merge, default, release, and lockbox authority remains
+    false until separately granted.
+
+### 63. T7b P1-v3 combined execution freeze review (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; freeze-review branch based on
+   published qualified-power commit
+   `ff7de35ead18184fbffc505ef4b2912fee8904a8`.
+2. **Comparators:** future unchanged candidate `41e948f0` versus control
+   `e23d2b16`; no model run in this checkpoint.
+3. **Evidence class:** prospective Tier-D design/execution freeze package.
+   It is not fresh confirmation or shipping evidence.
+4. **Data/splits:** exact hash-bound 32-identity enumeration with 96 fixed
+   coordinates, 17 depth-4 and 15 depth-8 lineages, and three group-safe
+   lineages. Execution-time discovery and substitution are absent.
+5. **Arms/policies:** scalar-RMSE CatBoost `depth=None`, 600 maximum rounds,
+   early stopping 30, validation 0.15, best model, no refit, seed 20260723.
+6. **Environment/repeats:** future fresh `darko311` workers, 14 threads,
+   alternating arm order, two-round same-source warmup, and three fixed
+   50,000-row prediction repeats.
+7. **Runner/command:** preflight after publication:
+   `python benchmarks/run_t7b_automatic_depth_fresh_tier_d_v3.py preflight
+   --output benchmarks/t7b_automatic_depth_fresh_tier_d_v3_preflight_20260723.json`.
+   Execution has no authorized command until a later owner record exists.
+8. **Hashes:** execution contract
+   `12ff0db7553b2748eaa75b2e0f0610fa423abc3112df79fb061bb4b59a4dc34d`;
+   protocol
+   `f6afe07c839aaf2f136e7ec987a0440315a1ebff8dd867f0b4b2199098ec944f`;
+   runner
+   `a214d392746342cb58468980aae6cdf323ac4670097e28b92926c2b141f66986`;
+   analyzer
+   `bef784604e1e9da50180b104e6b9fce012ab15953a9c3e3e45b9b0c097e10c36`;
+   focused tests
+   `bccb68b93ee5b0ae043584bf67aa63463db347bca880cd27705280efbc654d93`;
+   owner freeze-review note
+   `0097f56c74136c7ea406a8f9a7c2d647077b2c5ba263b7101d44c05c01ace60f`.
+9. **Primary results:** exact contract, registry, qualified-power, future
+   authorization, preflight, and analyzer bindings passed 32 focused tests.
+10. **Costs, passed and failed conditions:** no observed gate was evaluated.
+    The frozen future gates require all quality gates plus non-regressing fit
+    and prediction geomeans, hard/hybrid RSS, and all integrity checks.
+11. **Limitations/non-claims:** the package cannot execute itself. It grants
+    no fresh access, model fitting, default, release, TabArena, CTR23, or
+    lockbox authority. A later exact owner record is mandatory.
+12. **Terminal decision/next action:** publish the freeze-review package,
+    create and publish its data-free execution preflight, then stop for the
+    owner's explicit one-shot decision. Launch-manifest creation remains
+    forbidden.
+
+### 64. T7b P1-v3 data-free execution preflight (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; published non-executable freeze head
+   `d4078fadef239d1e0878a62a0c660e0a06de6f72`.
+2. **Comparators:** no model arms were run.
+3. **Evidence class:** data-free execution-integrity preflight, not fresh
+   confirmation or quality evidence.
+4. **Data/splits:** exact projection of the hash-bound verified enumeration:
+   32 lineages, 96 coordinates, 17 depth 4, 15 depth 8, three group-safe.
+5. **Arms/policies:** future candidate/control bindings only; no fit.
+6. **Environment/repeats:** no OpenML access, worker, thread allocation,
+   warmup, or repeat.
+7. **Runner/command:**
+   `python benchmarks/run_t7b_automatic_depth_fresh_tier_d_v3.py preflight
+   --output benchmarks/t7b_automatic_depth_fresh_tier_d_v3_preflight_20260723.json`.
+8. **Hashes:** preflight
+   `ea496a2851c29bf3d254af49057daf94cf2c8cd5b912e59e00962b5e0b068f22`;
+   dated preflight note
+   `3fc92e4c0ec9441840f7243bdb00780e67349ac853858e284620fcd59e95c03e`;
+   execution contract
+   `12ff0db7553b2748eaa75b2e0f0610fa423abc3112df79fb061bb4b59a4dc34d`;
+   enumeration
+   `c7c76259823d6ee4d3ce6202b127d4bed984493e6153775dfb0f05a105b22851`;
+   power result
+   `d6d572e47c672262b007c436cc048b6259a753097e860357523bcec033085ba8`.
+9. **Primary results:** `preflight_passed`; every resource, fingerprint,
+   branch, split, group, contract, and power binding is present.
+10. **Costs, passed and failed conditions:** no observed quality or resource
+    cost gate was evaluated. Preflight integrity passed.
+11. **Limitations/non-claims:** the preflight does not authorize launch and
+    cannot predict the confirmation result. No fresh inspection was spent.
+12. **Terminal decision/next action:** publish the preflight and stop for the
+    owner's exact one-shot authorization. Without that create-only record, the
+    harness refuses before launch-manifest creation.
+
+### 65. T7b P1-v3 fresh one-shot terminal integrity failure (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; published harness
+   `37bf561a1415cef072c767a2a5240d10849f905d`.
+2. **Comparators:** exact control
+   `e23d2b164f10374b1c0e02521c33fc96d48980da` and candidate
+   `41e948f0c53b1d124e16071a7fa66eba47d084d3`; the run stopped on the
+   first candidate worker before a control comparison.
+3. **Evidence class:** authorized prospective Tier-D fresh one-shot,
+   terminally failed after launch. The sole inspection is spent; this is
+   neither quality nor shipping evidence.
+4. **Data/splits:** the first bound lineage,
+   `airlines_departure_delay_10m` / OpenML task `359929`, coordinate 0,
+   ordinary weights, split SHA-256
+   `a55dcff590b2441d7fc8bc6584a5a358665fb5fa0ab85ca3a82f0ceb74a68d1f`.
+   No other lineage was fitted.
+5. **Arms/policies:** candidate scalar-RMSE CatBoost `depth=None`, 600
+   maximum rounds, early stopping 30, validation 0.15, best model, no
+   refit, seed 20260723. The registry expected depth 8; the actual
+   post-validation policy resolved depth 6.
+6. **Environment/repeats:** `darko311`, macOS arm64, 14 logical CPUs,
+   Python 3.11.8, NumPy 2.2.6, Numba 0.61.2, sklearn 1.7.1; exclusive
+   audit found no conflicting benchmark process. The first worker completed
+   its frozen warmup/prediction/serialization checks before integrity
+   rejection.
+7. **Runner/command:**
+   `python benchmarks/run_t7b_automatic_depth_fresh_tier_d_v3.py execute
+   --preflight benchmarks/t7b_automatic_depth_fresh_tier_d_v3_preflight_20260723.json
+   --owner-authorization benchmarks/t7b_automatic_depth_fresh_tier_d_v3_owner_run_authorization_20260723.json
+   --control /private/tmp/darkofit-t7b-auto-depth-control-e23d2b1
+   --candidate /private/tmp/darkofit-t7b-auto-depth-v1-20260722
+   --output-prefix /private/tmp/t7b_automatic_depth_fresh_tier_d_v3_inspection1_20260723`.
+8. **Hashes:** owner authorization
+   `775cdd0d3ff2f7913470e2d2badc35cbcd1b78ce72630ed6e8be4df60baf5bda`;
+   launch manifest
+   `cb0198d3bf42224ef1ca7c2e7feed9e2145ca72d9c8f85b43544a2e6203f1b54`;
+   terminal failure
+   `10b0b225c16a3f8c1039ada13fbb4884379d4ae7c982fc3c4963f1d72c17aeae`;
+   dated terminal note
+   `91010904b561070e7262eaab0d39919c2ac582db5b2cbd3138972a5f5ed5fe6f`;
+   focused test file
+   `4a9be9d3ca382bc0cf44124fd2fda82991c2e4736c6cad93f46f20354e34ef61`;
+   frozen contract, enumeration, and power hashes remain those in entry 64.
+9. **Primary results:** no paired result and no quality verdict. Registry
+   rows per feature were `2,597` from 23,373 outer-training rows; the
+   candidate used 19,867 post-validation rows, or `2,207.444444` per
+   feature, resolved `middle_density`, and fit depth 6 rather than the
+   frozen expected depth 8.
+10. **Costs, passed and failed conditions:** the branch-integrity condition
+    failed. No quality, fit, prediction, RSS, or archive gate was evaluated.
+11. **Limitations/non-claims:** the runner published no raw/result artifact;
+    one completed row remains unpublished and unread except for the terminal
+    failure payload emitted by the runner. No inference about transfer
+    quality is permitted. P3's explicit opt-in basis is unaffected.
+12. **Terminal decision/next action:** campaign closed; rerun forbidden.
+    Automatic depth remains private and unpromoted. Any successor requires a
+    new identity, fresh owner authorization, contamination review, and branch
+    verification against the exact post-validation fit population.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

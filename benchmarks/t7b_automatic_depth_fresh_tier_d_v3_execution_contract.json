@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "contract_id": "t7b-automatic-depth-fresh-tier-d-v3-execution-v1-20260723",
+  "authority": {
+    "roadmap": "R2_PLAN.md P1-v3",
+    "shipping_policy": "benchmarks/SHIPPING_POLICY.md Tier-D",
+    "scope": "combined design and execution freeze for owner review; run remains separately gated"
+  },
+  "candidate": {
+    "mechanism_id": "t7b_automatic_scalar_rmse_depth_v1",
+    "source_commit": "41e948f0c53b1d124e16071a7fa66eba47d084d3",
+    "control_commit": "e23d2b164f10374b1c0e02521c33fc96d48980da",
+    "candidate_must_remain_byte_identical": true,
+    "changed_surface": "depth=None for scalar RMSE CatBoost only",
+    "low_density_resolution": 4,
+    "middle_density_resolution": 6,
+    "high_density_resolution": 8,
+    "low_density_boundary": 100.0,
+    "high_density_boundary": 2500.0,
+    "p3_explicit_opt_in_affected_by_no_go": false
+  },
+  "verified_registry": {
+    "enumeration_id": "t7b-automatic-depth-fresh-tier-d-v3-enumeration-v2-20260723",
+    "path": "benchmarks/t7b_automatic_depth_fresh_tier_d_v3_enumeration_v2_20260723.json",
+    "sha256": "c7c76259823d6ee4d3ce6202b127d4bed984493e6153775dfb0f05a105b22851",
+    "eligible_lineage_ids": [
+      "airlines_departure_delay_10m",
+      "bangladesh_station_rainfall",
+      "beijing_pm25",
+      "bng_auto_horse_price",
+      "candy_crush_level",
+      "iot_room_temperature",
+      "kaggle_30_days_tabular",
+      "reddit_climate_opinion",
+      "rossmann_store_sales",
+      "video_game_fps_hardware",
+      "automl_yolanda",
+      "bng_pwlinear",
+      "french_rte_load",
+      "mtpl_claim_count",
+      "twitter_buzz_annotation",
+      "aids_joint_model_survival_time",
+      "asp_potassco_runtime",
+      "chscase_foot",
+      "cpmp_2015_runtime",
+      "mip_2016_par10",
+      "optical_interconnection_network",
+      "sat11_hand_runtime",
+      "uci_auto_mpg",
+      "ankara_weather",
+      "carpenter_fda_survival_time",
+      "chscase_census5",
+      "friedman_c4_500_100",
+      "galaxy_velocity",
+      "los_angeles_mortality_timeseries",
+      "qsar_aquatic_toxicity",
+      "uci_liver_disorders",
+      "usa_treasury_rates"
+    ],
+    "lineage_count": 32,
+    "coordinates_per_lineage": 3,
+    "branch_counts": {
+      "depth_4": 17,
+      "depth_8": 15
+    },
+    "group_safe_lineages": 3,
+    "execution_time_substitution_allowed": false
+  },
+  "power_design": {
+    "contract_id": "t7b-automatic-depth-fresh-tier-d-v3-power-v1-20260723",
+    "contract_path": "benchmarks/t7b_automatic_depth_fresh_tier_d_v3_power_design_contract.json",
+    "contract_sha256": "bcf44533c94312b41ff3efdb2a6d08639ccd69ac22cc8a0050fda021111ed82b",
+    "result_path": "benchmarks/t7b_automatic_depth_fresh_tier_d_v3_power_design_result_20260723.json",
+    "result_sha256": "d6d572e47c672262b007c436cc048b6259a753097e860357523bcec033085ba8",
+    "result_status": "design_power_qualified",
+    "simulated_power": 0.998,
+    "wilson_lower_bound": 0.99665735839545,
+    "required_power": 0.8
+  },
+  "execution": {
+    "python_environment": "darko311",
+    "logical_cpu_count": 14,
+    "threads_per_worker": 14,
+    "fresh_worker_per_arm_coordinate": true,
+    "paired_arm_order": "alternate by lineage-index plus coordinate parity",
+    "iterations": 600,
+    "early_stopping": true,
+    "early_stopping_rounds": 30,
+    "validation_fraction": 0.15,
+    "use_best_model": true,
+    "refit": false,
+    "random_state": 20260723,
+    "depth_input": null,
+    "prediction_rows_per_repeat": 50000,
+    "prediction_repeats": 3,
+    "same_source_warmup_iterations": 2,
+    "high_density_cap_rows_per_input_feature": 3250,
+    "coordinate_folds": [
+      0,
+      1,
+      2
+    ],
+    "ordinary_folds": [
+      0,
+      2
+    ],
+    "nonuniform_weight_fold": 1,
+    "nonuniform_weight_values": [
+      1.0,
+      1.25
+    ]
+  },
+  "quality_gates": {
+    "equal_lineage_geomean_ratio_at_most": 0.995,
+    "bootstrap_upper_ratio_at_most": 1.002,
+    "leave_one_favorable_lineage_out_ratio_at_most": 0.998,
+    "worst_lineage_ratio_at_most": 1.02,
+    "each_branch_geomean_ratio_at_most": 1.0
+  },
+  "cost_gates": {
+    "fit_ratio_at_most": 1.0,
+    "fit_justification": "A default cannot move backward on the product's quality-versus-fit-compute frontier.",
+    "predict_ratio_at_most": 1.0,
+    "predict_justification": "A default cannot move backward on the product's quality-versus-prediction-compute frontier; each ratio uses three fixed 50000-row repeats.",
+    "rss_hard_fraction_of_physical_memory": 0.5,
+    "rss_ratio_allowance": 1.1,
+    "rss_absolute_delta_allowance_bytes": 268435456,
+    "rss_justification": "Half physical RAM prevents one fit from crowding out the host. The conjunctive ratio and 256 MiB delta implement the repository's hybrid RSS rule.",
+    "archive_bytes_gate": null
+  },
+  "preflight": {
+    "source": "hash-bound fillability enumeration only",
+    "new_data_access": false,
+    "resource_discovery": false,
+    "all_32_verified_identities_required": true,
+    "split_and_branch_attestations_bound": true,
+    "smaller_or_recomposed_panel_allowed": false
+  },
+  "one_shot": {
+    "launch_manifest_spends_inspection": true,
+    "rerun_authorized": false,
+    "partial_reads_authorized": false,
+    "partial_rows_published": false,
+    "raw_rows_required": 192,
+    "create_only_artifacts": [
+      "preflight",
+      "owner_authorization",
+      "launch_manifest",
+      "raw",
+      "result",
+      "terminal_attestation",
+      "dated_result_note"
+    ]
+  },
+  "terminal_rule": {
+    "go": "promote the unchanged automatic depth policy to the public default for v0.12; fresh terminal record is sole shipping quality evidence",
+    "no_go": "close this candidate for defaults; keep the existing P3 explicit opt-in unchanged",
+    "all_quality_cost_integrity_gates_required": true,
+    "development_values_are_shipping_evidence": false
+  },
+  "owner_authorization_requirement": {
+    "separate_create_only_record_required": true,
+    "record_must_bind_contract_enumeration_and_power_hashes": true,
+    "record_must_be_committed_and_published_before_launch": true,
+    "absence_means_execution_refuses": true
+  },
+  "source_hashes": {
+    "protocol": "f6afe07c839aaf2f136e7ec987a0440315a1ebff8dd867f0b4b2199098ec944f",
+    "enumeration": "c7c76259823d6ee4d3ce6202b127d4bed984493e6153775dfb0f05a105b22851",
+    "power_contract": "bcf44533c94312b41ff3efdb2a6d08639ccd69ac22cc8a0050fda021111ed82b",
+    "power_result": "d6d572e47c672262b007c436cc048b6259a753097e860357523bcec033085ba8",
+    "runner": "a214d392746342cb58468980aae6cdf323ac4670097e28b92926c2b141f66986",
+    "analyzer": "bef784604e1e9da50180b104e6b9fce012ab15953a9c3e3e45b9b0c097e10c36",
+    "helper_runner": "f7d3dc9651a4559470921b9b9d686cff8fbe9961e378939009cb697974032deb",
+    "helper_analyzer": "498671de591cb51b998dcf6c07d842d4ce7070f630c1eac8648eb3c1b3ce5274"
+  },
+  "authorization": {
+    "freeze_package_authorized_by_r2": true,
+    "execution_preflight_authorized": true,
+    "fresh_access_authorized": false,
+    "confirmation_run_authorized": false,
+    "candidate_modification": false,
+    "gate_relaxation": false,
+    "second_attempt": false,
+    "partial_read": false,
+    "tabarena": false,
+    "ctr23": false,
+    "lockbox": false,
+    "v0_12_release_publication": false
+  }
+}
