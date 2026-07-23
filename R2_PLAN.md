@@ -13,7 +13,7 @@ Every item below maps to a measured frontier deficit or an earned candidate:
 
 | Item | Frontier target | State |
 | --- | --- | --- |
-| P1 Depth fresh Tier-D run | Broad + sports quality; first automatic default | V3 has 32 verified identities and power-qualified at 99.8% / 99.67% Wilson lower; awaiting combined freeze review |
+| P1 Depth fresh Tier-D run | Broad + sports quality; first automatic default | V3 registry, power, combined execution freeze, and data-free preflight complete; awaiting owner one-shot authorization |
 | P2 Catcross attribution → path to ship | Diamonds/healthcare (0.20's categorical blow) | M6 `advance`; holds the current mechanism slot |
 | P3 Depth opt-in exposure | Immediate user value (−5% sports, spent) | Candidate validated, private |
 | P4 B3-v2 activation-gated parallelism | 6.1× ensemble fit optic; rescue the 3.84× | Successor to a clean kill |
@@ -52,6 +52,11 @@ recalculation.
 depth-branch panel passed the unchanged primary design at `0.998000`
 simulated power with one-sided Wilson lower `0.996657`. All downstream
 authority remains false pending the combined design/execution freeze review.
+
+**Freeze review ready 2026-07-23:** the combined contract/harness is published
+and its data-free 32-lineage preflight passed. The harness requires a separate
+hash-bound owner record and cannot launch without it. No model has run and the
+fresh inspection remains unspent.
 
 1. **Concrete registry enumeration before anything freezes:** for every
    proposed slot, name the exact dataset/lineage identity, verify it loads

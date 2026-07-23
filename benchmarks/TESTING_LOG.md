@@ -2774,6 +2774,41 @@ B-archive simulation remains non-loadable, optional size telemetry.
     owner's explicit one-shot decision. Launch-manifest creation remains
     forbidden.
 
+### 64. T7b P1-v3 data-free execution preflight (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; published non-executable freeze head
+   `d4078fadef239d1e0878a62a0c660e0a06de6f72`.
+2. **Comparators:** no model arms were run.
+3. **Evidence class:** data-free execution-integrity preflight, not fresh
+   confirmation or quality evidence.
+4. **Data/splits:** exact projection of the hash-bound verified enumeration:
+   32 lineages, 96 coordinates, 17 depth 4, 15 depth 8, three group-safe.
+5. **Arms/policies:** future candidate/control bindings only; no fit.
+6. **Environment/repeats:** no OpenML access, worker, thread allocation,
+   warmup, or repeat.
+7. **Runner/command:**
+   `python benchmarks/run_t7b_automatic_depth_fresh_tier_d_v3.py preflight
+   --output benchmarks/t7b_automatic_depth_fresh_tier_d_v3_preflight_20260723.json`.
+8. **Hashes:** preflight
+   `ea496a2851c29bf3d254af49057daf94cf2c8cd5b912e59e00962b5e0b068f22`;
+   dated preflight note
+   `3fc92e4c0ec9441840f7243bdb00780e67349ac853858e284620fcd59e95c03e`;
+   execution contract
+   `12ff0db7553b2748eaa75b2e0f0610fa423abc3112df79fb061bb4b59a4dc34d`;
+   enumeration
+   `c7c76259823d6ee4d3ce6202b127d4bed984493e6153775dfb0f05a105b22851`;
+   power result
+   `d6d572e47c672262b007c436cc048b6259a753097e860357523bcec033085ba8`.
+9. **Primary results:** `preflight_passed`; every resource, fingerprint,
+   branch, split, group, contract, and power binding is present.
+10. **Costs, passed and failed conditions:** no observed quality or resource
+    cost gate was evaluated. Preflight integrity passed.
+11. **Limitations/non-claims:** the preflight does not authorize launch and
+    cannot predict the confirmation result. No fresh inspection was spent.
+12. **Terminal decision/next action:** publish the preflight and stop for the
+    owner's exact one-shot authorization. Without that create-only record, the
+    harness refuses before launch-manifest creation.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
