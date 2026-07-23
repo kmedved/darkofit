@@ -260,3 +260,55 @@ killed — rebuilt as an automatic feature, because automation is the
 product; audit every other verdict the dead rules produced; keep the
 leads you hold; and grade yourself at every release on the whole
 quality-versus-compute curve against whatever ChimeraBoost has become.**
+
+---
+
+## Revision R1 — post-ladder reprioritization (owner decision, 2026-07-22)
+
+The v0.11 compute ladder against ChimeraBoost 0.20 did not achieve
+dominance. The owner reviewed the decomposition and decided: **the fork
+stands — no re-fork, no rebase.** The measured deficits are feature-level
+with named fixes, while the engine wins at scale (fit ratios 0.23–0.76 on
+the three largest datasets); re-forking would trade ~25k lines of
+differentiated work and the test suite's guarantees for four portable
+features. This section supersedes the earlier sequencing table.
+
+**Ladder attribution (from the per-dataset rows):**
+
+- The singles aggregate deficit (1.0145, W-L 7-6 in DarkoFit's favor) is
+  carried by **diamonds (1.3865)** and healthcare — the categorical
+  datasets — flipped by 0.20's group-centered categorical crosses.
+  Excluding diamonds alone, DarkoFit leads the other twelve by ~1.2%.
+- The default fit aggregate (1.38×) is a **small-dataset overhead**
+  artifact: DarkoFit is 1.3–4.3× faster on every large dataset and
+  4.5–9.4× slower on the three tiny ones.
+- The ensemble fit gap (6.10×) is principally **B3 parallelism**
+  (their members fit in parallel; ours sequentially) plus member-recipe
+  cost; the ensemble quality gap (1.0363) is the diamonds deficit flowing
+  through plus their broad-tuned member policy (+3.5% over their default
+  vs our +1.5%).
+
+**Revised mechanism order (one at a time, unchanged discipline):**
+
+| # | Work | State / gate |
+| --- | --- | --- |
+| R1-1 | **Finish the selector campaign**: Protein attribution attempt 2 (loader preflighted after the env-failed attempt 1), guardrail replay, then close as `ready_for_powered_fresh_design` or killed | In flight; one step from closure |
+| R1-2 | **Categorical-crosses port/build** — the 0.20 counter, targeting diamonds/healthcare; Apache-licensed public design; develop via M6 v3 | Next quality mechanism slot |
+| R1-3 | **B3 parallel members** — kills the 6.10× ensemble-fit optic; campaign already scoped with the §4.3 memory rules | Next speed slot |
+| R1-4 | **Powered fresh Tier-D panel design** — one shared design effort (≥80% power, Panel 3's lesson) serving the queued candidates: the T7b automatic-depth policy (`eligible_for_fresh_tier_d_design`) and, if it closes ready, the selector | After R1-2/R1-3 development; owner authorizes the fresh run |
+| R1-5 | **Member-policy retune on broad data** via M6 v3 (their blessed member recipe is public; ours was sports-attributed and transferred at only +1.5% broad) | Track I, next after R1-3 |
+| R1-6 | **Small-dataset fit fast-path** (the 4.5–9.4× tiny-data overhead) | Track I, engineering |
+| R1-7 | T7b automatic-L2 | Closed in M6; stays dead |
+
+**Standing additions:**
+
+- **Rival-changelog triage at every milestone**: read their CHANGELOG,
+  triage each shipped idea into Track I with an expected-value note.
+  (0.21.0 is already out: bagged-member categorical-transform sharing at
+  predict and a parent-thread-restore fix — the predict items are
+  directly relevant to R1-3/R1-5.)
+- **Re-fork tripwires (falsifiable, evaluated at each milestone):**
+  reopen the re-fork question only if (a) a matched-config large-n
+  engine comparison against their latest shows their engine ahead at
+  scale, or (b) the unported-feature backlog grows across two
+  consecutive rival releases despite triage. Neither is true today.
