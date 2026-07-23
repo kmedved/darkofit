@@ -190,7 +190,7 @@ exactly that. Conditions, all binding:
 
 ### P2a. Mechanism-specific spent attribution (next step, authorized)
 
-Mirror the protein-attribution pattern on the categorical targets. Frozen
+Mirror the protein-attribution pattern on the categorical targets. Declared
 three-arm design per dataset, on `diamonds` and
 `healthcare_insurance_expenses` at the three registered M2 coordinates:
 
@@ -198,61 +198,61 @@ three-arm design per dataset, on `diamonds` and
 - **automatic** (the private candidate `c3f2608c`'s guarded engagement);
 - **forced** (crosses unconditionally on).
 
-Gates, frozen before execution: automatic/constant aggregate ≤ 1.000 per
+Gates, declared before execution: automatic/constant aggregate ≤ 1.000 per
 dataset; harm bound ≤ 1.02 per coordinate; and the behavior rule stated
 with the selector lesson applied — **engagement completeness is evaluated
 against the arm's own margin rule, and a decline-with-value-left counts as
 a calibration finding for the successor, not an automatic identity kill,
-unless the frozen contract explicitly says otherwise.** Write the rule
-either way *before* seeing outcomes; do not leave it implicit.
+unless the declared benchmark rule explicitly says otherwise.** For this
+attribution, such a finding is descriptive and does not fail either gate;
+it must still be reported and carried into any selector successor.
 
 ### P2b. Implementation spec (the candidate surface, for the record and
 for the eventual public contract)
 
-**What it is:** group-centered categorical cross features, ported in
+**What it is:** category-centered numeric interaction features, ported in
 design (not code-copied without attribution — NOTICE applies if any
 ChimeraBoost code is adapted) from ChimeraBoost 0.20's CATCROSS.
 
-- **Candidate generation:** ordered pairs of declared-or-detected
-  categorical columns, capped by a deterministic budget
-  (`max_cross_candidates`, default from the development contract; ties
-  broken by column index). No triples in v1.
-- **Encoding:** each selected pair becomes one synthetic column encoded
-  with the existing ordered-target-statistics machinery in
-  `darkofit/target_encoding.py`, with **group centering**: when `groups`
-  is supplied, the target statistic is computed on group-aggregated
-  residuals (subtract the group mean target before encoding) so a
-  cross cannot memorize entity identity — this is the generic-abstraction
-  form of the fix for the old categorical-combinations donor, which was
-  killed for −0.091 cold-player R². Without `groups`, plain ordered
-  statistics apply.
+- **Candidate generation:** rank original inputs by a control audition's
+  split-gain importance, then pair at most the top four numeric inputs with
+  the top three declared categorical inputs (at most 12 deterministic
+  numeric×categorical pairs; ties break by column index). No categorical
+  pair-products or triples in v1.
+- **Encoding:** each pair `(x, c)` becomes the target-free numeric residual
+  `x - mean_fit(x | c)`. Category means and the unseen-category global fallback
+  are fit on training rows only, sample-weight aware, and exclude zero-weight
+  and non-finite numeric values. This is materially different from the killed
+  target-dependent categorical-combinations donor and never uses group target
+  residuals.
 - **Audition:** each candidate cross is auditioned on the fit's internal
-  validation split: fit-with vs fit-without on a capped-iteration probe,
-  keep if the validation gain clears the engagement margin. The margin is
-  **noise-derived, not a constant**: engage when
-  `gain > k × SE(gain)` with `k` frozen prospectively in the development
-  contract (the selector-v1 lesson: a fixed 0.03 constant is a knob that
-  kills identities). Audition cost is bounded by a declared fraction of
-  total fit time; borrow ChimeraBoost 0.20's audition train-loss skip
-  idea (triaged from their changelog) to keep probes cheap.
-- **Determinism and observability:** fixed-seed audition order; selected
-  pairs, per-pair validation gains, margins, and decline reasons persisted
-  in fitted metadata (`catcross_` state); safe-NPZ round-trips the
+  validation split: fit-with vs fit-without under the same iteration budget,
+  selecting the augmented lane only when validation RMSE is strictly lower;
+  ties select control. That strict-win rule is the tested v1 candidate
+  identity. Selection cost is measured and disclosed; reducing the two-audition
+  overhead is successor work, not silently part of this attribution.
+- **Determinism and observability:** fixed-seed audition order; candidate
+  pairs, both lane RMSEs, relative improvement, decision, selection costs,
+  final pairs, and preprocessing digest persisted in fitted metadata
+  (`group_centered_categorical_crosses_` state); safe-NPZ round-trips the
   selected pairs and their encodings exactly; prediction-time
   reconstruction from stored encodings only (no target access).
 - **Support matrix (loud pre-fit errors, ensemble-v3 pattern):**
-  regression and binary first; multiclass deferred; incompatible with
-  `linear_leaves` in v1 (interaction untested); weights supported
-  (weighted target statistics); missing categorical levels at predict
-  fall back to the pair's prior, recorded.
-- **SHAP:** synthetic columns appear as their own features with a
-  documented mapping back to the source pair; no silent attribution to
-  parents in v1.
+  non-ensemble scalar-RMSE CatBoost regression only; classification,
+  multiclass, ensembles, distributional/interval fits, presets, auto tree
+  mode, callbacks, refit, ordered boosting, ordinal features, linear leaves,
+  and linear residuals are ineligible in v1. Weights are supported for the
+  target-free category means; missing or unseen categories use the recorded
+  global numeric mean.
+- **Attribution:** ordinary feature importance folds each centered column into
+  its numeric parent. Exact TreeSHAP fails loudly while centered columns are
+  active because assigning the interaction to one original feature would be
+  misleading.
 - **Invariants/tests:** `catcross=off` byte-identical to current engine;
-  fixed-seed repeatability; save/load prediction identity; group-centered
-  encoding proven leak-free on a synthetic entity-memorization test
-  (a generator where identity memorization is the only signal — the
-  mechanism must score ~zero); audition budget respected.
+  fixed-seed repeatability; save/load prediction identity; centered columns
+  proven target-free and weight-correct, including unseen categories and
+  zero-weight rows; selection and validation rows disjoint (and group-disjoint
+  when groups are supplied); selection cost recorded.
 
 ### P2c. Evidence path after attribution
 
@@ -300,10 +300,11 @@ The mechanism is validated (0.9686 protein aggregate, zero harm; 0.951/0.955
 where engaged); only the engagement margin failed. Successor rules:
 
 - **Anti-grind (binding):** the new margin may not be a constant chosen to
-  capture the known coordinate-1 miss (margin 0.0252 vs old 0.03). Use the
-  same noise-derived form as P2b (`gain > k × SE(gain)`, `k` frozen
-  prospectively), calibrated on spent data *excluding* the protein
-  coordinates that produced the kill.
+  capture the known coordinate-1 miss (margin 0.0252 vs old 0.03). Use a
+  noise-derived form (`gain > k × SE(gain)`, with `k` declared before the
+  successor benchmark), calibrated on spent data *excluding* the protein
+  coordinates that produced the kill. This is selector-v3 successor work;
+  it is not the catcross v1 selector's strict-win rule.
 - Default candidacy via the SHIP_RULES ship-check (dev + holdout +
   revertible flag), never by re-testing against the coordinates that
   produced the kill.
