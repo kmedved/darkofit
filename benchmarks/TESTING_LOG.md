@@ -2951,6 +2951,54 @@ B-archive simulation remains non-loadable, optional size telemetry.
     do not tune from these holdout outcomes, and move the mechanism slot to
     catcross.
 
+### 68. Group-centered categorical-cross v1 spent attribution (2026-07-23)
+
+1. **Source:** clean harness
+   `1b2f6b6f81bcf0a7ad6c9ca593cf18684c6c1e27`; clean private candidate
+   `c3f2608cd3033cfc00aa0737897a92ed868b5865`.
+2. **Comparator:** the candidate's private explicit-off lane as constant
+   control; automatic v1 selector; and an exact forced-pair lane.
+3. **Evidence:** mechanism-specific spent development attribution on M2
+   coordinates already observed in the v0.11 campaign; no holdout or fresh
+   data.
+4. **Data/splits:** OpenML tasks `363631` (`diamonds`) and `363675`
+   (`healthcare_insurance_expenses`), official repeat/fold coordinates
+   `0/0`, `1/1`, and `2/2`, sample 0. Exact index hashes are in the raw
+   artifact.
+5. **Arms/policies:** scalar RMSE CatBoost mode, 1,000 iterations, seeds 0,
+   1001, and 2002. Automatic supplied its exact candidate pairs when
+   eligible; below the sample floor, forced pairs came from that coordinate's
+   full-train constant-model importance.
+6. **Environment:** `darko311`, macOS arm64, 14 logical CPUs, fresh process
+   per coordinate, 14 threads per arm. No competing benchmark process;
+   timing is telemetry only.
+7. **Execution:** `python
+   benchmarks/run_group_centered_categorical_crosses_v1_attribution.py
+   execute --manifest
+   /private/tmp/catcross_v1_attribution_manifest_20260723.json --source
+   /private/tmp/darkofit-catcross-v1-20260722 --output-prefix
+   /private/tmp/catcross_v1_attribution_run1_20260723`.
+8. **Artifacts/hashes:** manifest
+   `3c4897e2165c769ab4cb2df8f65f515149370781d55846a1fa22c4a8f8150819`;
+   launch `4f024f8bf0fce8e5378e37602f18c5995146c7f83558990821ac16bd7c28a2df`;
+   raw `7679133a3740f6998067366a0b1205a7c19a4ff84d546bf864c450e8913dc5d4`;
+   result `c9d7f4268a3018aeb518cf215b7b1fa39532a8e268fbd33786c3cd95eeb851f4`.
+9. **Primary results:** Diamonds automatic/control and forced/control both
+   `0.724496x`, with 3/3 engagement. Healthcare automatic/control
+   `1.000000x` via exact ineligible fallback; forced/control `1.008072x`.
+   The pooled automatic/control `0.851173x` is descriptive, not universal.
+10. **Costs and checks:** 6/6 workers and 18/18 arms passed; every arm
+    resolved 14 threads and restored the ambient Numba mask. Per-dataset
+    automatic quality and the `1.02` harm check passed; all-coordinate
+    eligibility failed at 3/6. Eligible Diamonds automatic fit was
+    `2.440972x` constant because it includes two auditions and the final fit.
+11. **Limitations/non-claims:** no sports, holdout, prediction-throughput,
+    memory, archive, release-ladder, or default claim. Forced healthcare
+    pairs probe latent mechanism value under a different pair-source path.
+12. **Decision/next action:** continue to the cold-player sports guardrail
+    for an honestly scoped large-data opt-in. Record a small-data selector
+    successor; do not claim the current automatic policy solves healthcare.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

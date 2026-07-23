@@ -22,7 +22,7 @@ Every item below maps to a measured frontier deficit or an earned candidate:
 | Item | Frontier target | State |
 | --- | --- | --- |
 | P1 Automatic-depth paired development benchmark → ship-check | Broad + sports quality; first automatic default | **Closed for defaults:** development improved `0.996860x`, but CTR23 holdout regressed `1.026662x`; P3 opt-in remains |
-| P2 Catcross attribution → path to ship | Diamonds/healthcare (0.20's categorical blow) | M6 `advance`; holds the current mechanism slot |
+| P2 Catcross attribution → path to ship | Diamonds/healthcare (0.20's categorical blow) | Attribution complete: Diamonds `0.724496x`; healthcare automatic fallback and forced `1.008072x`; sports guardrail next |
 | P3 Depth opt-in exposure | Immediate user value (−5% sports, spent) | Candidate validated, private |
 | P4 B3-v2 activation-gated parallelism | 6.1× ensemble fit optic; rescue the 3.84× | Successor to a clean kill |
 | P5 Selector-v3 principled margin | Smooth-data quality (protein) | Successor to a clean kill |
@@ -188,7 +188,7 @@ exactly that. Conditions, all binding:
 ## P2 — Catcross: finish attribution, then the ship path
 (current mechanism slot)
 
-### P2a. Mechanism-specific spent attribution (next step, authorized)
+### P2a. Mechanism-specific spent attribution (complete)
 
 Mirror the protein-attribution pattern on the categorical targets. Declared
 three-arm design per dataset, on `diamonds` and
@@ -217,6 +217,16 @@ a calibration finding for the successor, not an automatic identity kill,
 unless the declared benchmark rule explicitly says otherwise.** For this
 attribution, such a finding is descriptive and does not fail either gate;
 it must still be reported and carried into any selector successor.
+
+**Result (2026-07-23):** integrity passed for all 6 workers and 18 arms.
+Automatic selected on all three Diamonds coordinates and matched the forced
+arm exactly at `0.724496x` control RMSE. Healthcare was ineligible on all
+three coordinates and took exact control fallback; the separately labeled
+forced probe was `1.008072x` in aggregate. Both quality/harm checks passed,
+while target-wide eligibility did not. Preserve the result as a large-data
+signal plus a small-data selector gap; do not summarize the pooled
+`0.851173x` ratio as universal catcross value. See
+[`benchmarks/group_centered_categorical_crosses_v1_attribution_result_20260723.md`](benchmarks/group_centered_categorical_crosses_v1_attribution_result_20260723.md).
 
 ### P2b. Implementation spec (the candidate surface, for the record and
 for the eventual public contract)
@@ -265,12 +275,14 @@ ChimeraBoost code is adapted) from ChimeraBoost 0.20's CATCROSS.
   zero-weight rows; selection and validation rows disjoint (and group-disjoint
   when groups are supplied); selection cost recorded.
 
-### P2c. Evidence path after attribution
+### P2c. Evidence path after attribution (next)
 
 Sports guardrail replay (cold-player view — the failure mode that killed
-the old donor), then per SHIP_RULES: **opt-in ship** with honest
-characterization at the next release, and **automatic-default candidacy**
-via the standard ship-check (clearly better on dev, not worse on the
+the old donor), then per SHIP_RULES: **opt-in ship** with honest large-data
+eligibility and small-data fallback characterization at the next release.
+The current selector does not earn an automatic-default claim across the two
+categorical targets; any small-data successor must return through development
+before the standard ship-check (clearly better on dev, not worse on the
 holdout, revertible flag), respecting one-automatic-default-per-release.
 
 ## P3 — Depth `"auto"` opt-in exposure (product work, authorized)
@@ -422,8 +434,8 @@ new-entity/group-shift mechanism through the normal pipeline.
    **Complete and closed for defaults:** CTR23 regressed `1.026662x`; the
    untouched sports season remains unused because it cannot change the
    conjunctive decision.
-3. **Next:** finish catcross attribution and its resulting development or
-   opt-in path.
+3. **Next:** run catcross's cold-player sports guardrail, then close the
+   honestly scoped opt-in path and record the small-data selector successor.
 4. Build B3's deterministic minimum-work threshold with sequential fallback.
 5. Rebuild the linear-leaf selector with a noise- and cost-aware margin.
 6. After catcross, choose one next categorical mechanism: the declared-order
