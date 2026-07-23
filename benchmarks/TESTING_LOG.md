@@ -2599,6 +2599,52 @@ B-archive simulation remains non-loadable, optional size telemetry.
     v2 enumeration. The candidate pool is unchanged and the fresh
     confirmation inspection remains unspent.
 
+### 60. T7b P1-v3 as-built resource enumeration (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; published DarkoFit enumeration head
+   `a83530fe13a80be9d74dad9dc7d943b636ec1922`; ChimeraBoost history pin
+   `6a76586dfdff90275e7e816f25e35c927b8527fb`.
+2. **Comparators:** no candidate/control fit and no model comparison.
+3. **Evidence class:** P1-v3 pre-design fillability audit. It is fresh
+   resource metadata/fingerprint evidence but not quality evidence.
+4. **Data/splits:** all 40 concrete v1-registry identities were evaluated
+   independently. Thirty-two loaded and passed exact history/fingerprint,
+   target-validity, schema, three-coordinate split/group, and branch checks:
+   9 low numeric, 8 low categorical/grouped, 5 high numeric, and 10 high
+   categorical/grouped; 17 depth-4, 15 depth-8, and three group-safe.
+5. **Arms/policies:** no model arms. No abstract-slot replacement occurred;
+   the eight rejected resources remain rejected under their declared roles.
+6. **Environment/repeats:** `darko311`, Python 3.11, NumPy 2.2.6, pandas
+   2.2.3, sklearn 1.7.1, Numba 0.61.2, OpenML 0.15.1, macOS arm64, 14 logical
+   CPUs. No timed repeat.
+7. **Runner/command:**
+   `python benchmarks/enumerate_t7b_automatic_depth_fresh_tier_d_v3.py
+   --output benchmarks/t7b_automatic_depth_fresh_tier_d_v3_enumeration_v2_20260723.json`.
+   The sandboxed first invocation failed on DNS before output; the unchanged
+   published identity then completed with OpenML network access.
+8. **Hashes:** create-only enumeration
+   `c7c76259823d6ee4d3ce6202b127d4bed984493e6153775dfb0f05a105b22851`;
+   dated pre-design note
+   `12b824867fbca67bf91f4a3106290b4dec0342b4e5cbbacf793749be7a3310f8`;
+   v2 protocol
+   `9d6e76bac717f9671b02b8c76fad3466515d63a6407c4c889ee594ee06c94f89`;
+   v2 runner
+   `c883a831db59bcf4da23d38bba2e14c4484d0b4295c300f944f8b656e61e2fb7`.
+9. **Primary results:** 32 eligible and 8 ineligible. Rejections: four
+   declared-numeric roles had categorical inputs, three targets contained
+   non-finite values, and one OpenML task target had drifted. All eligible
+   identities loaded; no unexpected dependency or environment failure
+   remained.
+10. **Costs, passed and failed conditions:** only download, normalization,
+    fingerprint, and deterministic split work was performed. No fit,
+    prediction, RSS, archive, quality, or confirmation gate was evaluated.
+11. **Limitations/non-claims:** the 32 identities are verified resources, not
+    a frozen panel and not evidence that the candidate works. The old 99.8%
+    power figure does not transfer to the new 17/15 branch composition.
+12. **Terminal decision/next action:** publish the enumeration and dated
+    pre-design note, then prospectively recompute power on exactly these 32
+    identities. Design/execution freeze and the fresh run remain owner-gated.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

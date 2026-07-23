@@ -39,6 +39,15 @@ fillability last. The successor inverts that order.
 
 ### P1-v3 — fillability-first redesign (authorized)
 
+**Enumeration complete 2026-07-23:** 32/40 concrete identities are verified
+before design freeze: 17 depth-4 lineages (9 numeric, 8
+categorical-or-grouped), 15 depth-8 lineages (5 numeric, 10
+categorical-or-grouped), and three group-safe lineages. Eight identities were
+rejected for concrete schema, target-validity, or OpenML-binding reasons; no
+model ran and the fresh inspection remains unspent. The dated pre-design note
+and hash-bound JSON are the only permitted inputs to the P1-v3 power
+recalculation.
+
 1. **Concrete registry enumeration before anything freezes:** for every
    proposed slot, name the exact dataset/lineage identity, verify it loads
    in the frozen worker environment (the `autogluon.common` lesson), and
