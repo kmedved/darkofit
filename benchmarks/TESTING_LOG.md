@@ -2463,6 +2463,49 @@ B-archive simulation remains non-loadable, optional size telemetry.
     preflight, and create the sole launch manifest only if all 32 slots pass.
     The one-shot remains unspent.
 
+### 57. T7b automatic-depth fresh Tier-D preflight closure (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; published v2 harness
+   `383fc4c5518766f905911ac4657fed9a309bb375`, candidate
+   `41e948f0c53b1d124e16071a7fa66eba47d084d3`, and control
+   `e23d2b164f10374b1c0e02521c33fc96d48980da`.
+2. **Comparators:** no model comparison; neither arm was fitted.
+3. **Evidence class:** value-free fresh-registry preflight under the
+   prospectively frozen Tier-D execution contract. It is neither development
+   nor confirmation-quality evidence.
+4. **Data/splits:** the preflight followed the frozen 32-slot OpenML registry,
+   exact/near-lineage fingerprint review, and exact branch/split attestations.
+   It terminated because slot `high_density_numeric_02` had no eligible frozen
+   identity. The contract's all-32 requirement forbids a smaller or recomposed
+   panel.
+5. **Arms/policies:** unchanged automatic-depth candidate and control were
+   bound but never run. P3 remains unaffected.
+6. **Environment/repeats:** `darko311`; no 14-thread worker, warmup, model
+   repeat, or timed operation started.
+7. **Runner/command:**
+   `python benchmarks/run_t7b_automatic_depth_fresh_tier_d.py preflight
+   --output benchmarks/t7b_automatic_depth_fresh_tier_d_preflight_v2_20260723.json`.
+8. **Hashes:** v2 execution contract
+   `1a8e8f5e68fb557c504ddc25688ff9aa319436282cbc925b37df5a87e880dac1`;
+   create-only terminal record
+   `36447f32695910d62b76b22d3f73d17346391244c55a9ff80cd9c875c9a995cf`.
+   No preflight output, launch manifest, raw result, or analyzer result exists.
+9. **Primary results:** `all_32_slots_required` failed at
+   `high_density_numeric_02`. No target statistic, candidate metric, control
+   metric, partial panel, or quality outcome was inspected.
+10. **Costs, passed and failed conditions:** no fit, prediction, RSS, or
+    archive cost was measured. Registry completeness failed; all quality and
+    cost gates are unevaluated.
+11. **Limitations/non-claims:** this is not a GO or NO-GO result about the
+    automatic-depth mechanism. It supplies no shipping evidence and does not
+    justify a default, public API, or release change. The prior development
+    evidence remains historical only.
+12. **Terminal decision/next action:** close this fresh execution identity
+    before launch with no rerun, registry expansion, or panel recomposition.
+    Automatic depth remains private and unpromoted; P3 remains available under
+    its existing Tier-E basis. Any future confirmation requires a genuinely
+    new prospective design and explicit owner authorization.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

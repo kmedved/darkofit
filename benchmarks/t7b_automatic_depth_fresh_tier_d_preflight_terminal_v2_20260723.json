@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "contract_id": "t7b-automatic-depth-fresh-tier-d-execution-v2-20260723",
+  "created_at_utc": "2026-07-23T11:55:14Z",
+  "status": "closed_before_launch",
+  "execution_contract": {
+    "path": "benchmarks/t7b_automatic_depth_fresh_tier_d_execution_contract_v2.json",
+    "sha256": "1a8e8f5e68fb557c504ddc25688ff9aa319436282cbc925b37df5a87e880dac1"
+  },
+  "published_harness_commit": "383fc4c5518766f905911ac4657fed9a309bb375",
+  "failed_stage": "frozen registry preflight",
+  "failed_condition": "all_32_slots_required",
+  "unresolved_slot": "high_density_numeric_02",
+  "error": "no eligible frozen identity for slot high_density_numeric_02",
+  "preflight_artifact_published": false,
+  "launch_manifest_created": false,
+  "fresh_inspection_spent": false,
+  "model_fit_started": false,
+  "raw_rows_published": false,
+  "partial_read_performed": false,
+  "quality_decision": null,
+  "default_promoted": false,
+  "p3_explicit_opt_in_affected": false,
+  "rerun_authorized": false,
+  "panel_recomposition_authorized": false,
+  "disposition": "close this fresh execution identity before launch; the frozen power result does not transfer to a smaller or recomposed panel; automatic-depth remains private and unpromoted"
+}
