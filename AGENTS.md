@@ -68,6 +68,10 @@ deferred by owner decision.
   user-visible harm it prevents at plausible absolute magnitudes;
   no round-number materiality bars; no rival-conditioned funding prongs;
   size ratios are telemetry, never gates.
+- **Fillability before freeze**: every frozen dataset, slot, dependency, and
+  environment import must be concretely identified and verified first.
+  Recompute power on the verified as-built panel; never discover or replace
+  resources during frozen execution.
 - **Retraction completeness**: when a rule is retracted, sweep its
   historical casualties for re-adjudication (a retracted rule with
   unexamined victims is an unfinished retraction).

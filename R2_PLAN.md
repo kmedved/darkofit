@@ -13,7 +13,7 @@ Every item below maps to a measured frontier deficit or an earned candidate:
 
 | Item | Frontier target | State |
 | --- | --- | --- |
-| P1 Depth fresh Tier-D run | Broad + sports quality; first automatic default | Design qualified (99.8% power); awaiting execution contract |
+| P1 Depth fresh Tier-D run | Broad + sports quality; first automatic default | V1/v2 closed before launch; v3 fillability-first enumeration authorized |
 | P2 Catcross attribution → path to ship | Diamonds/healthcare (0.20's categorical blow) | M6 `advance`; holds the current mechanism slot |
 | P3 Depth opt-in exposure | Immediate user value (−5% sports, spent) | Candidate validated, private |
 | P4 B3-v2 activation-gated parallelism | 6.1× ensemble fit optic; rescue the 3.84× | Successor to a clean kill |

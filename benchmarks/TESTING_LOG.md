@@ -2506,6 +2506,57 @@ B-archive simulation remains non-loadable, optional size telemetry.
     its existing Tier-E basis. Any future confirmation requires a genuinely
     new prospective design and explicit owner authorization.
 
+### 58. T7b automatic-depth P1-v3 enumeration harness (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; clean branch based on published
+   `main` at `974b5eeaad96df28f3577335a0defab6147428e7`.
+2. **Comparators:** no model arms or model comparison. The resource audit will
+   inspect the 40 exact identities already named in the immutable v1 registry.
+3. **Evidence class:** prospective pre-design fillability infrastructure
+   authorized by `R2_PLAN.md` P1-v3. It is not quality evidence and freezes no
+   confirmation panel.
+4. **Data/splits:** no data was loaded while authoring this checkpoint. The
+   future create-only enumeration verifies each concrete identity
+   independently: loadability, history/fingerprint contamination, all three
+   deterministic split coordinates, group disjointness, and the realized
+   depth branch.
+5. **Arms/policies:** no candidate/control fit. Existing value-free v1/v2
+   resource contact is disclosed; no abstract-slot replacement or outcome
+   selection is permitted.
+6. **Environment/repeats:** future enumeration is pinned to `darko311` and
+   records exact module paths/versions plus DarkoFit and ChimeraBoost commits.
+   No timed workers or repeats are involved.
+7. **Runner/command:** after clean commit and publication:
+   `python benchmarks/enumerate_t7b_automatic_depth_fresh_tier_d_v3.py
+   --output benchmarks/t7b_automatic_depth_fresh_tier_d_v3_enumeration_20260723.json`.
+   Focused verification ran the new tests plus the existing fresh execution,
+   power-design/result, and thread-state suites.
+8. **Hashes:** protocol
+   `f352081f33a5729849c2fa727437f02aa92c08e831e09b728350719aeaeddbf7`;
+   runner
+   `df077068a2938602ab4bc03b55d628dd761d6a5044d12bf073bb3b38dd8c71ed`;
+   R2 authorization
+   `edc583db280f2706e656ae635a82b76e5ac2a3da9a0a5b6d241b854a093918dd`;
+   v1 registry file
+   `ce539f5fefdba07a4983904921a5841e35371765304cd11f92f3b5759db25878`;
+   reused v2 eligibility helpers
+   `f7d3dc9651a4559470921b9b9d686cff8fbe9961e378939009cb697974032deb`.
+9. **Primary results:** harness validation passed, including independent
+   identity evaluation and narrow disclosure-path classification: 27 tests
+   passed.
+10. **Costs, passed and failed conditions:** no model cost or evidence gate
+    was evaluated. The future audit fails as a whole on unexpected harness,
+    dependency, network, or environment errors rather than mislabeling them as
+    dataset ineligibility.
+11. **Limitations/non-claims:** this checkpoint proves only that the
+    enumeration machinery is internally consistent. It makes no claim about
+    how many resources are fillable, whether an as-built panel has 80% power,
+    or whether automatic depth should ship.
+12. **Terminal decision/next action:** publish the clean harness, run the
+    create-only enumeration once, and write a dated pre-design note naming the
+    verified resources. Only then may prospective power be recomputed; the
+    confirmation freeze and fresh run remain separately owner-gated.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
