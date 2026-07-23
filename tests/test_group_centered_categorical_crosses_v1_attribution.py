@@ -33,16 +33,27 @@ def _rows(
     automatic=(0.99, 1.0, 1.01),
     forced=(0.98, 0.99, 1.0),
     selected=(True, False, True),
+    ineligible_datasets=(),
 ):
     rows = []
     for dataset, task_id in runner.DATASETS:
         for index, (coordinate, repeat, fold) in enumerate(runner.COORDINATES):
             pairs = [[1, 0]]
-            selector = {
-                "eligible": True,
-                "selected": selected[index],
-                "pairs": pairs,
-            }
+            eligible = dataset not in ineligible_datasets
+            selector = (
+                {
+                    "eligible": True,
+                    "selected": selected[index],
+                    "pairs": pairs,
+                }
+                if eligible
+                else {
+                    "eligible": False,
+                    "selected": False,
+                    "pairs": [],
+                    "reason": "below_min_samples",
+                }
+            )
             rows.append(
                 {
                     "schema_version": 1,
@@ -61,8 +72,12 @@ def _rows(
                             "selector": None,
                         },
                         "automatic": {
-                            "rmse": 10.0 * automatic[index],
-                            "fitted_pairs": pairs if selected[index] else [],
+                            "rmse": (
+                                10.0 * automatic[index] if eligible else 10.0
+                            ),
+                            "fitted_pairs": (
+                                pairs if eligible and selected[index] else []
+                            ),
                             "selector": selector,
                         },
                         "forced": {
@@ -71,6 +86,11 @@ def _rows(
                             "selector": None,
                         },
                     },
+                    "forced_pair_source": (
+                        "automatic_selector"
+                        if eligible
+                        else "constant_full_train_importance"
+                    ),
                 }
             )
     return rows
@@ -114,6 +134,25 @@ def test_analyzer_rejects_harm_and_incomplete_or_drifted_rows():
     nonfinite[0]["arms"]["automatic"]["rmse"] = float("nan")
     with pytest.raises(RuntimeError, match="provenance"):
         runner.analyze(nonfinite)
+
+
+def test_analyzer_reports_small_dataset_coverage_gap_without_losing_forced_probe():
+    result = runner.analyze(
+        _rows(ineligible_datasets={"healthcare_insurance_expenses"})
+    )
+
+    assert result["gates"]["automatic_not_worse_each_dataset"] is True
+    assert result["gates"]["automatic_worst_coordinate_at_most_1_02"] is True
+    assert result["gates"]["automatic_eligible_all_coordinates"] is False
+    assert result["gates"]["passes"] is False
+    assert result["engagement"]["eligible_coordinates"] == 3
+    assert result["engagement"]["ineligible_coordinates"] == 3
+    assert {
+        finding["reason"]
+        for finding in result["engagement"]["calibration_findings"]
+        if finding["dataset"] == "healthcare_insurance_expenses"
+    } == {"automatic_ineligible_with_forced_value_left"}
+    assert result["disposition"] == "attribution_requires_selector_successor"
 
 
 def test_output_paths_reject_the_source_tree(tmp_path):

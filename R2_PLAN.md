@@ -198,8 +198,19 @@ three-arm design per dataset, on `diamonds` and
 - **automatic** (the private candidate `c3f2608c`'s guarded engagement);
 - **forced** (crosses unconditionally on).
 
-Gates, declared before execution: automatic/constant aggregate ≤ 1.000 per
-dataset; harm bound ≤ 1.02 per coordinate; and the behavior rule stated
+The pre-run data rehearsal found that the healthcare coordinates have 892
+training rows, below v1's approximately 2,353-row automatic-eligibility
+floor. Preserve that finding rather than failing or silently dropping the
+dataset: the automatic arm must record its exact constant fallback, while
+the forced arm uses pairs generated from the same coordinate's full-train
+constant-model importance. Forced healthcare results therefore characterize
+the mechanism's latent value, not the unchanged automatic policy.
+
+Gates, declared before quality execution: automatic/constant aggregate ≤
+1.000 per dataset; harm bound ≤ 1.02 per coordinate; and automatic
+eligibility on every target coordinate. A quality-safe result with an
+eligibility gap routes to a selector successor rather than claiming the
+current automatic surface solved the target. The behavior rule is stated
 with the selector lesson applied — **engagement completeness is evaluated
 against the arm's own margin rule, and a decline-with-value-left counts as
 a calibration finding for the successor, not an automatic identity kill,

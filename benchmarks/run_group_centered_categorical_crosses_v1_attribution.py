@@ -167,7 +167,8 @@ def build_manifest() -> dict[str, Any]:
         "execution": {
             "fresh_process_per_coordinate": True,
             "automatic_runs_before_forced_to_supply_the_exact_candidate_pairs": True,
-            "constant_forced_order_alternates_by_coordinate": True,
+            "constant_forced_order_alternates_when_automatic_is_eligible": True,
+            "ineligible_automatic_uses_constant_full_train_importance_pairs": True,
             "worker_timeout_seconds": WORKER_TIMEOUT_SECONDS,
         },
         "interpretation": [
@@ -293,23 +294,49 @@ def _fit_arm(
         )
     ]
     if arm == "automatic":
-        if (
-            not isinstance(selector, Mapping)
-            or selector.get("eligible") is not True
-            or not isinstance(selector.get("selected"), bool)
-            or not selector.get("pairs")
+        if not isinstance(selector, Mapping) or not isinstance(
+            selector.get("eligible"), bool
         ):
             raise RuntimeError("automatic attribution selector state is invalid")
-        candidate_pairs = [
-            [int(pair[0]), int(pair[1])] for pair in selector["pairs"]
-        ]
-        expected_final = candidate_pairs if selector["selected"] else []
+        if selector["eligible"]:
+            if (
+                not isinstance(selector.get("selected"), bool)
+                or not selector.get("pairs")
+            ):
+                raise RuntimeError("automatic attribution selector state is invalid")
+            candidate_pairs = [
+                [int(pair[0]), int(pair[1])] for pair in selector["pairs"]
+            ]
+            expected_final = candidate_pairs if selector["selected"] else []
+        else:
+            if (
+                selector.get("reason") != "below_min_samples"
+                or selector.get("selected") is not False
+                or selector.get("pairs") != []
+            ):
+                raise RuntimeError("unexpected automatic attribution ineligibility")
+            candidate_pairs = []
+            expected_final = []
         if fitted_pairs != expected_final:
             raise RuntimeError("automatic attribution final lane drifted")
     else:
         if selector is not None:
             raise RuntimeError("explicit attribution arm has selector state")
-        candidate_pairs = fitted_pairs
+        if arm == "constant":
+            from darkofit.sklearn_api import _group_centered_candidate_pairs
+
+            candidate_pairs = [
+                [int(numeric), int(categorical)]
+                for numeric, categorical in _group_centered_candidate_pairs(
+                    model.feature_importances_,
+                    model.model_.prep_.cat_features_,
+                    data["X_train"].shape[1],
+                )
+            ]
+            if not candidate_pairs:
+                raise RuntimeError("constant attribution produced no candidate pairs")
+        else:
+            candidate_pairs = fitted_pairs
     return (
         {
             "arm": arm,
@@ -360,12 +387,24 @@ def run_worker(spec: Mapping[str, Any], source: Path) -> dict[str, Any]:
         data=data,
         cat_features=cat_features,
     )
-    trailing = (
-        ("constant", "forced")
-        if int(spec["coordinate"]) % 2 == 0
-        else ("forced", "constant")
-    )
     arms = {"automatic": automatic}
+    if pairs:
+        pair_source = "automatic_selector"
+        trailing = (
+            ("constant", "forced")
+            if int(spec["coordinate"]) % 2 == 0
+            else ("forced", "constant")
+        )
+    else:
+        pair_source = "constant_full_train_importance"
+        constant, pairs = _fit_arm(
+            "constant",
+            seed=int(spec["seed"]),
+            data=data,
+            cat_features=cat_features,
+        )
+        arms["constant"] = constant
+        trailing = ("forced",)
     for arm in trailing:
         row, _ = _fit_arm(
             arm,
@@ -391,6 +430,7 @@ def run_worker(spec: Mapping[str, Any], source: Path) -> dict[str, Any]:
         "categorical_features": cat_features,
         "train_index_sha256": data["train_index_sha256"],
         "test_index_sha256": data["test_index_sha256"],
+        "forced_pair_source": pair_source,
         "arms": arms,
     }
 
@@ -450,17 +490,36 @@ def analyze(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
                 for arm in ARMS
             )
             or not isinstance(selector, Mapping)
-            or selector.get("eligible") is not True
-            or not isinstance(selector.get("selected"), bool)
-            or not isinstance(selector.get("pairs"), list)
-            or not selector["pairs"]
-            or automatic["fitted_pairs"] != (
-                selector["pairs"] if selector["selected"] else []
-            )
-            or forced["fitted_pairs"] != selector["pairs"]
             or constant["fitted_pairs"] != []
         ):
             raise RuntimeError("attribution lane provenance is invalid")
+        if selector.get("eligible") is True:
+            if (
+                not isinstance(selector.get("selected"), bool)
+                or not isinstance(selector.get("pairs"), list)
+                or not selector["pairs"]
+                or automatic["fitted_pairs"] != (
+                    selector["pairs"] if selector["selected"] else []
+                )
+                or forced["fitted_pairs"] != selector["pairs"]
+                or row.get("forced_pair_source") != "automatic_selector"
+            ):
+                raise RuntimeError("eligible attribution lane provenance is invalid")
+        elif selector.get("eligible") is False:
+            if (
+                selector.get("reason") != "below_min_samples"
+                or selector.get("selected") is not False
+                or selector.get("pairs") != []
+                or automatic["fitted_pairs"] != []
+                or not forced["fitted_pairs"]
+                or row.get("forced_pair_source")
+                != "constant_full_train_importance"
+            ):
+                raise RuntimeError(
+                    "ineligible attribution lane provenance is invalid"
+                )
+        else:
+            raise RuntimeError("attribution selector eligibility is invalid")
         indexed[key] = row
     if set(indexed) != set(expected_specs):
         raise RuntimeError("attribution coordinate grid drifted")
@@ -493,13 +552,20 @@ def analyze(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         ):
             selected = bool(row["arms"]["automatic"]["selector"]["selected"])
             if not selected and forced_ratio < 1.0:
+                eligible = (
+                    row["arms"]["automatic"]["selector"]["eligible"] is True
+                )
                 calibration_findings.append(
                     {
                         "dataset": dataset,
                         "coordinate": int(row["coordinate"]),
                         "forced_ratio": forced_ratio,
                         "automatic_ratio": automatic_ratio,
-                        "reason": "automatic_declined_with_forced_value_left",
+                        "reason": (
+                            "automatic_declined_with_forced_value_left"
+                            if eligible
+                            else "automatic_ineligible_with_forced_value_left"
+                        ),
                     }
                 )
         datasets.append(
@@ -515,12 +581,22 @@ def analyze(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
                         for row in coordinate_rows
                     )
                 ),
+                "automatic_eligible_coordinates": int(
+                    sum(
+                        row["arms"]["automatic"]["selector"]["eligible"] is True
+                        for row in coordinate_rows
+                    )
+                ),
             }
         )
     dataset_gate_passes = all(
         row["automatic_constant_geomean_ratio"] <= 1.0 for row in datasets
     )
     harm_gate_passes = worst_automatic <= 1.02
+    coverage_gate_passes = all(
+        row["automatic_eligible_coordinates"] == len(COORDINATES)
+        for row in datasets
+    )
     return {
         "schema_version": 1,
         "attribution_id": ATTRIBUTION_ID,
@@ -538,22 +614,41 @@ def analyze(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
             "selected_coordinates": int(
                 sum(row["automatic_selected_coordinates"] for row in datasets)
             ),
-            "eligible_coordinates": 6,
+            "eligible_coordinates": int(
+                sum(row["automatic_eligible_coordinates"] for row in datasets)
+            ),
+            "ineligible_coordinates": int(
+                len(rows)
+                - sum(
+                    row["automatic_eligible_coordinates"] for row in datasets
+                )
+            ),
             "calibration_findings": calibration_findings,
         },
         "gates": {
             "automatic_not_worse_each_dataset": dataset_gate_passes,
             "automatic_worst_coordinate_at_most_1_02": harm_gate_passes,
-            "passes": bool(dataset_gate_passes and harm_gate_passes),
+            "automatic_eligible_all_coordinates": coverage_gate_passes,
+            "passes": bool(
+                dataset_gate_passes
+                and harm_gate_passes
+                and coverage_gate_passes
+            ),
         },
         "disposition": (
             "attribution_supports_opt_in_product_path"
+            if dataset_gate_passes
+            and harm_gate_passes
+            and coverage_gate_passes
+            else "attribution_requires_selector_successor"
             if dataset_gate_passes and harm_gate_passes
             else "attribution_does_not_support_automatic_path"
         ),
         "limitations": [
             "Spent development evidence on two categorical datasets.",
             "No holdout, sports, release-ladder, or default claim.",
+            "Forced pairs for ineligible automatic rows come from the same "
+            "coordinate's full-train constant-model importance.",
             "Fit times include different numbers of auditions and are telemetry only.",
         ],
     }
