@@ -2358,6 +2358,61 @@ B-archive simulation remains non-loadable, optional size telemetry.
     precede any fresh target access or confirmation run. Candidate `41e948f0`
     stays private and unmerged.
 
+### 55. T7b automatic-depth fresh Tier-D registry/contract freeze (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; contract worktree based on published
+   authorization commit `9f0662e1c87f992c474fa37ebcaf30054c669231`,
+   candidate `41e948f0c53b1d124e16071a7fa66eba47d084d3`, and control
+   `e23d2b164f10374b1c0e02521c33fc96d48980da`.
+2. **Comparators:** no model comparison. This checkpoint binds the future
+   control/candidate pair and exact one-shot analyzer.
+3. **Evidence class:** prospective Tier-D execution infrastructure and
+   target-blind contamination review. It is not quality evidence.
+4. **Data/splits:** OpenML task/dataset metadata only; no feature matrix or
+   target value was downloaded. The frozen registry has 32 primaries plus two
+   ordered same-stratum reserves in each of four 8-lineage strata, three
+   coordinates per active lineage, four group-safe low-density primaries,
+   frozen row/group hashes, weights, and the 3,250-row-per-feature high-density
+   cap.
+5. **Arms/policies:** unchanged automatic-depth candidate versus its exact
+   control. The owner addendum makes terminal GO authorize v0.12 default
+   promotion and terminal NO-GO close the default candidate while preserving
+   P3.
+6. **Environment/repeats:** registry generation used `darko311` and exact Git
+   history at DarkoFit `9f0662e1` and ChimeraBoost `6a76586d`. The future run
+   is frozen to fresh 14-thread workers, 600 maximum rounds, three coordinates,
+   and three fixed 50,000-row prediction repeats.
+7. **Runner/command:** registry:
+   `python benchmarks/build_t7b_automatic_depth_fresh_tier_d_registry.py`;
+   verification adds `--verify-existing`. Focused verification:
+   `python -m pytest -q` over the fresh/power/development/sports/thread suites.
+8. **Hashes:** registry file
+   `ce539f5fefdba07a4983904921a5841e35371765304cd11f92f3b5759db25878`;
+   registry self-hash
+   `704393992270b80679a9ad76c0f65174df1da87b87e5ca8cdfe0b7ff7ad5cb48`;
+   execution contract
+   `04156b35517a5701ca7e0cb7a8aad92cb6ea696a09587148dd19dd939c24f25b`;
+   runner
+   `ce35cf557f1f38939d774afb3bb762967f605362a7eeb578a54c381af7ff8c72`;
+   analyzer
+   `2e230316513486563961467e113e6e490355c903f6ceede3015d68e00c818dd8`.
+9. **Primary results:** all 40 declared identities passed exact pre-freeze
+   name/alias/task-ID/dataset-ID history checks in both repositories; the
+   registry reproduced byte-for-byte. The 51-test focused suite passed.
+10. **Costs, passed and failed conditions:** no model cost was measured.
+    Quality gates are copied unchanged by hash from the qualified power design.
+    Fit/predict Pareto and hybrid RSS gates are frozen prospectively; archive
+    bytes are telemetry.
+11. **Limitations/non-claims:** near-lineage feature/target fingerprinting,
+    target validity, realized splits/branches, and model outcomes remain
+    unopened until this checkpoint is clean, committed, and published. No
+    default has changed; no v0.12 release, TabArena, CTR23, or lockbox access is
+    authorized.
+12. **Terminal decision/next action:** publish this single freeze commit, run
+    the create-only target preflight, and launch exactly one inspection only
+    if all 32 slots resolve cleanly. Launch-manifest creation is terminal and
+    permits no rerun or partial read.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

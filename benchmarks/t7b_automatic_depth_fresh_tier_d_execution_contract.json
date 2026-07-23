@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "contract_id": "t7b-automatic-depth-fresh-tier-d-execution-v1-20260723",
+  "authority": {
+    "initial_owner_authorization": {
+      "path": "benchmarks/t7b_automatic_depth_fresh_tier_d_execution_authorization_20260723.md",
+      "sha256": "4bd9619b1907e78da4953533a20abd56762cfb86e155a44391aec9c323e1e54b"
+    },
+    "owner_terminal_addendum": {
+      "path": "benchmarks/t7b_automatic_depth_fresh_tier_d_owner_addendum_20260723.md",
+      "sha256": "3b0e2f1997a742d6098430b16ef2fb25b377fa8977566d85df5c3be653169650"
+    },
+    "shipping_policy": "benchmarks/SHIPPING_POLICY.md Tier-D",
+    "roadmap": "BEAT_CHIMERABOOST_PLAN.md Revision R1 item R1-4"
+  },
+  "candidate": {
+    "mechanism_id": "t7b_automatic_scalar_rmse_depth_v1",
+    "source_commit": "41e948f0c53b1d124e16071a7fa66eba47d084d3",
+    "control_commit": "e23d2b164f10374b1c0e02521c33fc96d48980da",
+    "candidate_must_remain_byte_identical": true,
+    "changed_surface": "depth=None for scalar RMSE CatBoost only",
+    "low_density_resolution": 4,
+    "middle_density_resolution": 6,
+    "high_density_resolution": 8,
+    "low_density_boundary": 100.0,
+    "high_density_boundary": 2500.0,
+    "p3_explicit_opt_in_affected_by_no_go": false
+  },
+  "power_design": {
+    "contract_id": "t7b-automatic-depth-shared-tier-d-power-v1-20260723",
+    "contract": {
+      "path": "benchmarks/t7b_automatic_depth_fresh_tier_d_power_design_contract.json",
+      "sha256": "1aa89083b16ed31ee816f005bc961751b3b22785b2ec1ec2a54fc1e2d0d94595"
+    },
+    "result": {
+      "path": "benchmarks/t7b_automatic_depth_fresh_tier_d_power_design_result_20260723.json",
+      "sha256": "5b767ce0a27e09d479bb18d6314d9adce3bbac78380aeff481639b13152714ad"
+    },
+    "protocol": {
+      "path": "benchmarks/t7b_automatic_depth_fresh_tier_d_power_design_protocol.md",
+      "sha256": "c325fe1bc32aea9bd0298394b8179861b4a354a17ee71b0c3227809b2824f012"
+    },
+    "result_status": "design_power_qualified",
+    "simulated_power": 0.998,
+    "wilson_lower_bound": 0.996657,
+    "required_power": 0.8
+  },
+  "registry": {
+    "path": "benchmarks/t7b_automatic_depth_fresh_tier_d_contamination_registry.json",
+    "file_sha256": "ce539f5fefdba07a4983904921a5841e35371765304cd11f92f3b5759db25878",
+    "registry_sha256": "704393992270b80679a9ad76c0f65174df1da87b87e5ca8cdfe0b7ff7ad5cb48",
+    "primary_lineages": 32,
+    "reserve_lineages": 8,
+    "strata": {
+      "low_density_numeric": 8,
+      "low_density_categorical_or_grouped": 8,
+      "high_density_numeric": 8,
+      "high_density_categorical_or_grouped": 8
+    },
+    "coordinates_per_active_lineage": 3,
+    "minimum_group_safe_low_density_lineages": 4,
+    "reserve_policy": "frozen primary per slot; on a value-free eligibility failure, first unused eligible identity from the frozen same-stratum reserve queue"
+  },
+  "execution": {
+    "python_environment": "darko311",
+    "logical_cpu_count": 14,
+    "threads_per_worker": 14,
+    "fresh_worker_per_arm_coordinate": true,
+    "paired_arm_order": "alternate by lineage-index plus coordinate parity",
+    "iterations": 600,
+    "early_stopping": true,
+    "early_stopping_rounds": 30,
+    "validation_fraction": 0.15,
+    "use_best_model": true,
+    "refit": false,
+    "random_state": 20260723,
+    "depth_input": null,
+    "prediction_rows_per_repeat": 50000,
+    "prediction_repeats": 3,
+    "same_source_warmup_iterations": 2,
+    "high_density_cap_rows_per_input_feature": 3250,
+    "coordinate_folds": [0, 1, 2],
+    "ordinary_folds": [0, 2],
+    "nonuniform_weight_fold": 1,
+    "nonuniform_weight_values": [1.0, 1.25]
+  },
+  "quality_gates": {
+    "equal_lineage_geomean_ratio_at_most": 0.995,
+    "bootstrap_upper_ratio_at_most": 1.002,
+    "leave_one_favorable_lineage_out_ratio_at_most": 0.998,
+    "worst_lineage_ratio_at_most": 1.02,
+    "each_branch_geomean_ratio_at_most": 1.0
+  },
+  "cost_gates": {
+    "fit_ratio_at_most": 1.0,
+    "fit_justification": "A default cannot move backward on the product's quality-versus-fit-compute frontier.",
+    "predict_ratio_at_most": 1.0,
+    "predict_justification": "A default cannot move backward on the product's quality-versus-prediction-compute frontier; each ratio uses three fixed 50000-row repeats.",
+    "rss_hard_fraction_of_physical_memory": 0.5,
+    "rss_ratio_allowance": 1.1,
+    "rss_absolute_delta_allowance_bytes": 268435456,
+    "rss_justification": "Half physical RAM prevents one fit from crowding out the host. The conjunctive ratio and 256 MiB delta implement the repository's hybrid RSS rule in the owner's stated hundreds-of-megabytes harm region.",
+    "archive_bytes_gate": null
+  },
+  "preflight": {
+    "target_policy": "numeric float64, one-dimensional, all finite",
+    "target_statistics_forbidden": true,
+    "target_values_persisted": false,
+    "exact_and_near_lineage_fingerprint_review_required": true,
+    "split_and_branch_attestation_required": true,
+    "all_32_slots_required": true,
+    "smaller_or_recomposed_panel_allowed": false
+  },
+  "one_shot": {
+    "launch_manifest_spends_inspection": true,
+    "rerun_authorized": false,
+    "partial_reads_authorized": false,
+    "partial_rows_published": false,
+    "raw_rows_required": 192,
+    "create_only_artifacts": [
+      "preflight",
+      "launch_manifest",
+      "raw",
+      "result",
+      "terminal_attestation",
+      "dated_result_note"
+    ]
+  },
+  "terminal_rule": {
+    "go": "promote the unchanged automatic depth policy to the public default for v0.12; fresh terminal record is sole shipping quality evidence",
+    "no_go": "close this candidate for defaults; keep the existing P3 explicit opt-in unchanged",
+    "all_quality_cost_integrity_gates_required": true,
+    "development_values_are_shipping_evidence": false
+  },
+  "source_hashes": {
+    "protocol": "078515ee4d269e8d60ad05f9ec47fac7248ae7621a61c56704dc896529e6b8e6",
+    "registry_declarations": "6ccefd1e862b99985e3c691f6c80150ca7668fd1afc7a847812e84d5f29b324f",
+    "registry_builder": "c2417f01d5491c85437a91eaa2003354e48454fea9ad7e4fdc62689e59f213b1",
+    "runner": "ce35cf557f1f38939d774afb3bb762967f605362a7eeb578a54c381af7ff8c72",
+    "analyzer": "2e230316513486563961467e113e6e490355c903f6ceede3015d68e00c818dd8"
+  },
+  "authorization": {
+    "registry_and_contamination_review": true,
+    "target_preflight_after_publish": true,
+    "one_shot_fresh_confirmation_after_clean_preflight": true,
+    "go_default_promotion_for_v0_12": true,
+    "no_go_closes_default_candidate": true,
+    "candidate_modification": false,
+    "gate_relaxation": false,
+    "second_attempt": false,
+    "partial_read": false,
+    "tabarena": false,
+    "ctr23": false,
+    "lockbox": false,
+    "v0_12_release_publication": false
+  }
+}
