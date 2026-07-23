@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "authorization_id": "t7b-automatic-depth-fresh-tier-d-v3-owner-run-authorization-v1",
+  "contract_id": "t7b-automatic-depth-fresh-tier-d-v3-execution-v1-20260723",
+  "execution_contract_sha256": "12ff0db7553b2748eaa75b2e0f0610fa423abc3112df79fb061bb4b59a4dc34d",
+  "enumeration_sha256": "c7c76259823d6ee4d3ce6202b127d4bed984493e6153775dfb0f05a105b22851",
+  "power_result_sha256": "d6d572e47c672262b007c436cc048b6259a753097e860357523bcec033085ba8",
+  "confirmation_run_authorized": true,
+  "candidate_modification_authorized": false,
+  "panel_change_authorized": false,
+  "gate_change_authorized": false,
+  "rerun_authorized": false,
+  "partial_read_authorized": false,
+  "tabarena_authorized": false,
+  "ctr23_authorized": false,
+  "lockbox_authorized": false,
+  "release_publication_authorized": false
+}
