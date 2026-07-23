@@ -2557,6 +2557,48 @@ B-archive simulation remains non-loadable, optional size telemetry.
     verified resources. Only then may prospective power be recomputed; the
     confirmation freeze and fresh run remain separately owner-gated.
 
+### 59. T7b P1-v3 enumeration v1 failure and v2 supersession (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; published v1 enumeration harness
+   `44cc2b086289218e9674b9e9a8eeac51cf5304d8`.
+2. **Comparators:** no model arms, model fits, or quality comparisons.
+3. **Evidence class:** pre-design harness failure and prospective
+   infrastructure supersession. Neither v1 nor v2 is confirmation evidence.
+4. **Data/splits:** v1 rejected all 40 declarations on repository-history
+   self-matches before loading any resource, so no feature matrix, target, or
+   split was accessed. V2 retains the same 40 identities and every substantive
+   loadability, contamination, split, and branch check.
+5. **Arms/policies:** no automatic-depth candidate or control was run.
+6. **Environment/repeats:** `darko311`; no timed worker or repeat. V1's failure
+   occurred inside local path classification.
+7. **Runner/command:** v1:
+   `python benchmarks/enumerate_t7b_automatic_depth_fresh_tier_d_v3.py
+   --output benchmarks/t7b_automatic_depth_fresh_tier_d_v3_enumeration_20260723.json`.
+   V2 changes only removal of a valid 40-hex revision prefix from `git grep`
+   output before applying the unchanged disclosure allowlist.
+8. **Hashes:** immutable v1 raw artifact
+   `0077494a73eb82f3454fd0a4f2ededbd833e35884b82a4dc3666f805496dfdfa`;
+   create-only failure record
+   `717e1b33a48701a9e5f6218c73f4125ec107514983629b210f311592832d4f90`;
+   v2 protocol
+   `9d6e76bac717f9671b02b8c76fad3466515d63a6407c4c889ee594ee06c94f89`;
+   v2 runner
+   `c883a831db59bcf4da23d38bba2e14c4484d0b4295c300f944f8b656e61e2fb7`.
+9. **Primary results:** v1's reported 0/40 was invalid: each rejection named
+   only the P1 registry/declaration files with a revision-prefixed path. The
+   added regression tests cover both prefixed disclosure and non-disclosure
+   paths; the focused suite passed 27 tests.
+10. **Costs, passed and failed conditions:** no data or model cost was
+    measured. V1 failed path-normalization integrity; no dataset eligibility
+    condition was genuinely evaluated.
+11. **Limitations/non-claims:** the v1 0/40 count cannot inform panel
+    composition or power. V2 still has not run and supplies no fillability,
+    power, quality, or shipping claim.
+12. **Terminal decision/next action:** close v1 as an invalid harness result,
+    publish the v2 path-normalization repair, and run a distinct create-only
+    v2 enumeration. The candidate pool is unchanged and the fresh
+    confirmation inspection remains unspent.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

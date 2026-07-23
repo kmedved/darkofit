@@ -26,12 +26,14 @@ from benchmarks import (
 from benchmarks import run_t7b_automatic_depth_fresh_tier_d as v2_runner
 
 
-ENUMERATION_ID = "t7b-automatic-depth-fresh-tier-d-v3-enumeration-v1-20260723"
+ENUMERATION_ID = "t7b-automatic-depth-fresh-tier-d-v3-enumeration-v2-20260723"
 V1_REGISTRY = (
     ROOT / "benchmarks" / "t7b_automatic_depth_fresh_tier_d_contamination_registry.json"
 )
 PROTOCOL = (
-    ROOT / "benchmarks" / "t7b_automatic_depth_fresh_tier_d_v3_enumeration_protocol.md"
+    ROOT
+    / "benchmarks"
+    / "t7b_automatic_depth_fresh_tier_d_v3_enumeration_protocol_v2.md"
 )
 R2_PLAN = ROOT / "R2_PLAN.md"
 CHIMERABOOST_ROOT = Path("/Users/konstantinmedvedovsky/code/chimeraboost")
@@ -93,6 +95,13 @@ def _source_state(repository: Path) -> dict[str, Any]:
 
 
 def _is_disclosure_path(path: str) -> bool:
+    revision, separator, tree_path = path.partition(":")
+    if (
+        separator
+        and len(revision) == 40
+        and all(character in "0123456789abcdef" for character in revision.casefold())
+    ):
+        path = tree_path
     return path in DISCLOSURE_PATHS or path.startswith(DISCLOSURE_PREFIXES)
 
 

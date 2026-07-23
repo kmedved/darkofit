@@ -14,11 +14,16 @@ def test_only_declared_p1_resource_files_are_disclosure_paths():
         "benchmarks/t7b_automatic_depth_fresh_tier_d_execution_contract.json"
     )
     assert enumeration._is_disclosure_path(
+        ("a" * 40)
+        + ":benchmarks/t7b_automatic_depth_fresh_tier_d_execution_contract.json"
+    )
+    assert enumeration._is_disclosure_path(
         "benchmarks/enumerate_t7b_automatic_depth_fresh_tier_d_v3.py"
     )
     assert enumeration._is_disclosure_path("R2_PLAN.md")
     assert not enumeration._is_disclosure_path("benchmarks/m6_v3_raw.csv")
     assert not enumeration._is_disclosure_path("darkofit/booster.py")
+    assert not enumeration._is_disclosure_path(("b" * 40) + ":benchmarks/m6_v3_raw.csv")
 
 
 def test_enumeration_evaluates_identities_independently(monkeypatch):
