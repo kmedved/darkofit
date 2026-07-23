@@ -60,3 +60,35 @@ def test_frozen_contract_cannot_execute_without_later_owner_record():
 def test_v3_analyzer_binds_v3_contract_and_power_paths():
     assert analyzer.CONTRACT == runner.CONTRACT
     assert analyzer.POWER_CONTRACT == runner.POWER_CONTRACT
+
+
+def test_v3_one_shot_is_terminally_closed_without_quality_verdict():
+    authorization_path = (
+        runner.ROOT
+        / "benchmarks"
+        / "t7b_automatic_depth_fresh_tier_d_v3_owner_run_authorization_20260723.json"
+    )
+    launch_path = (
+        runner.ROOT
+        / "benchmarks"
+        / "t7b_automatic_depth_fresh_tier_d_v3_launch_manifest_20260723.json"
+    )
+    terminal_path = (
+        runner.ROOT
+        / "benchmarks"
+        / "t7b_automatic_depth_fresh_tier_d_v3_terminal_failure_20260723.json"
+    )
+    authorization = json.loads(authorization_path.read_text())
+    runner.validate_owner_authorization(authorization, _contract())
+    launch = json.loads(launch_path.read_text())
+    terminal = json.loads(terminal_path.read_text())
+
+    assert launch["sole_inspection_spent"] is True
+    assert launch["no_rerun"] is True
+    assert launch["partial_reads_forbidden"] is True
+    assert terminal["status"] == "terminal_failed_after_launch"
+    assert terminal["rerun_authorized"] is False
+    assert terminal["completed_rows_unpublished_and_unread"] == 1
+    assert terminal["launch_sha256"] == runner.file_sha256(launch_path)
+    assert "'branch': 'depth_8'" in terminal["error"]
+    assert "'fitted_depth': 6" in terminal["error"]

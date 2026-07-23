@@ -2809,6 +2809,65 @@ B-archive simulation remains non-loadable, optional size telemetry.
     owner's exact one-shot authorization. Without that create-only record, the
     harness refuses before launch-manifest creation.
 
+### 65. T7b P1-v3 fresh one-shot terminal integrity failure (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; published harness
+   `37bf561a1415cef072c767a2a5240d10849f905d`.
+2. **Comparators:** exact control
+   `e23d2b164f10374b1c0e02521c33fc96d48980da` and candidate
+   `41e948f0c53b1d124e16071a7fa66eba47d084d3`; the run stopped on the
+   first candidate worker before a control comparison.
+3. **Evidence class:** authorized prospective Tier-D fresh one-shot,
+   terminally failed after launch. The sole inspection is spent; this is
+   neither quality nor shipping evidence.
+4. **Data/splits:** the first bound lineage,
+   `airlines_departure_delay_10m` / OpenML task `359929`, coordinate 0,
+   ordinary weights, split SHA-256
+   `a55dcff590b2441d7fc8bc6584a5a358665fb5fa0ab85ca3a82f0ceb74a68d1f`.
+   No other lineage was fitted.
+5. **Arms/policies:** candidate scalar-RMSE CatBoost `depth=None`, 600
+   maximum rounds, early stopping 30, validation 0.15, best model, no
+   refit, seed 20260723. The registry expected depth 8; the actual
+   post-validation policy resolved depth 6.
+6. **Environment/repeats:** `darko311`, macOS arm64, 14 logical CPUs,
+   Python 3.11.8, NumPy 2.2.6, Numba 0.61.2, sklearn 1.7.1; exclusive
+   audit found no conflicting benchmark process. The first worker completed
+   its frozen warmup/prediction/serialization checks before integrity
+   rejection.
+7. **Runner/command:**
+   `python benchmarks/run_t7b_automatic_depth_fresh_tier_d_v3.py execute
+   --preflight benchmarks/t7b_automatic_depth_fresh_tier_d_v3_preflight_20260723.json
+   --owner-authorization benchmarks/t7b_automatic_depth_fresh_tier_d_v3_owner_run_authorization_20260723.json
+   --control /private/tmp/darkofit-t7b-auto-depth-control-e23d2b1
+   --candidate /private/tmp/darkofit-t7b-auto-depth-v1-20260722
+   --output-prefix /private/tmp/t7b_automatic_depth_fresh_tier_d_v3_inspection1_20260723`.
+8. **Hashes:** owner authorization
+   `775cdd0d3ff2f7913470e2d2badc35cbcd1b78ce72630ed6e8be4df60baf5bda`;
+   launch manifest
+   `cb0198d3bf42224ef1ca7c2e7feed9e2145ca72d9c8f85b43544a2e6203f1b54`;
+   terminal failure
+   `10b0b225c16a3f8c1039ada13fbb4884379d4ae7c982fc3c4963f1d72c17aeae`;
+   dated terminal note
+   `91010904b561070e7262eaab0d39919c2ac582db5b2cbd3138972a5f5ed5fe6f`;
+   focused test file
+   `4a9be9d3ca382bc0cf44124fd2fda82991c2e4736c6cad93f46f20354e34ef61`;
+   frozen contract, enumeration, and power hashes remain those in entry 64.
+9. **Primary results:** no paired result and no quality verdict. Registry
+   rows per feature were `2,597` from 23,373 outer-training rows; the
+   candidate used 19,867 post-validation rows, or `2,207.444444` per
+   feature, resolved `middle_density`, and fit depth 6 rather than the
+   frozen expected depth 8.
+10. **Costs, passed and failed conditions:** the branch-integrity condition
+    failed. No quality, fit, prediction, RSS, or archive gate was evaluated.
+11. **Limitations/non-claims:** the runner published no raw/result artifact;
+    one completed row remains unpublished and unread except for the terminal
+    failure payload emitted by the runner. No inference about transfer
+    quality is permitted. P3's explicit opt-in basis is unaffected.
+12. **Terminal decision/next action:** campaign closed; rerun forbidden.
+    Automatic depth remains private and unpromoted. Any successor requires a
+    new identity, fresh owner authorization, contamination review, and branch
+    verification against the exact post-validation fit population.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

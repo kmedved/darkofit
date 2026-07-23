@@ -13,7 +13,7 @@ Every item below maps to a measured frontier deficit or an earned candidate:
 
 | Item | Frontier target | State |
 | --- | --- | --- |
-| P1 Depth fresh Tier-D run | Broad + sports quality; first automatic default | V3 registry, power, combined execution freeze, and data-free preflight complete; awaiting owner one-shot authorization |
+| P1 Depth fresh Tier-D run | Broad + sports quality; first automatic default | V3 one-shot terminally closed on branch-integrity failure before any paired result; no quality verdict |
 | P2 Catcross attribution → path to ship | Diamonds/healthcare (0.20's categorical blow) | M6 `advance`; holds the current mechanism slot |
 | P3 Depth opt-in exposure | Immediate user value (−5% sports, spent) | Candidate validated, private |
 | P4 B3-v2 activation-gated parallelism | 6.1× ensemble fit optic; rescue the 3.84× | Successor to a clean kill |
@@ -57,6 +57,18 @@ authority remains false pending the combined design/execution freeze review.
 and its data-free 32-lineage preflight passed. The harness requires a separate
 hash-bound owner record and cannot launch without it. No model has run and the
 fresh inspection remains unspent.
+
+**P1-v3 execution closed 2026-07-23:** the owner authorized the exact
+one-shot and the launch manifest spent the fresh inspection. The first
+candidate worker then failed the frozen branch-integrity check before a
+control arm or paired comparison: the registry classified the outer
+training split as depth 8 (`23,373 / 9 = 2,597` rows per feature), while
+the actual automatic policy saw the post-validation fit population
+(`19,867 / 9 = 2,207.444444`) and correctly resolved depth 6. The runner
+published no raw/result artifact and forbids a rerun. This is a
+prospective-design failure, not a quality verdict. Automatic depth remains
+private and unpromoted; P3 is unchanged. See the dated terminal note and
+create-only launch/failure records.
 
 1. **Concrete registry enumeration before anything freezes:** for every
    proposed slot, name the exact dataset/lineage identity, verify it loads
@@ -234,9 +246,10 @@ always.
 
 | Item | Authorized by this document | Still owner-gated later |
 | --- | --- | --- |
-| P1-v3 fillability enumeration, power recompute, design+execution freeze | ✔ | The fresh run itself (final sign-off at freeze review) |
+| P1-v3 fillability enumeration, power recompute, design+execution freeze | ✔ | Completed |
+| P1-v3 fresh one-shot | ✔ by separate owner record; terminally closed | No rerun; any successor needs a new identity and authorization |
 | P1 v1/v2 closure branch landed on `main` | ✔ | — |
-| P1 default promotion on GO | — | ✔ release-time sign-off |
+| P1 default promotion on GO | — | Not reached; no GO verdict exists |
 | P2a attribution runs | ✔ | — |
 | P2b candidate development (private) | ✔ | Public opt-in ship (release sign-off) |
 | P2c powered fresh candidacy | — | ✔ own campaign authorization |
