@@ -1,0 +1,324 @@
+{
+  "candidate": {
+    "branches": [
+      "depth_4",
+      "depth_8"
+    ],
+    "candidate_must_remain_byte_identical": true,
+    "classification_behavior": "ineligible exact no-op",
+    "control_commit": "e23d2b164f10374b1c0e02521c33fc96d48980da",
+    "mechanism_id": "t7b_automatic_scalar_rmse_depth_v1",
+    "middle_density_behavior": "depth_6 exact no-op",
+    "requested_surface": "automatic scalar-RMSE CatBoost depth when depth is None",
+    "source_commit": "41e948f0c53b1d124e16071a7fa66eba47d084d3"
+  },
+  "candidate_merge_authorized": false,
+  "confirmation_run_authorized": false,
+  "contract_id": "t7b-automatic-depth-shared-tier-d-power-v1-20260723",
+  "default_change_authorized": false,
+  "disposition": "design_power_qualified",
+  "effect_model": {
+    "selection_bias_treatment": "retain_only_declared_fraction_of_spent_log_effect_and_log_dispersion",
+    "source_between_lineage_sd_log": 0.03459520178139722,
+    "source_coordinate_count": 21,
+    "source_geometric_mean_ratio": 0.9561736534103875,
+    "source_lineage_count": 5,
+    "source_lineage_ratios": [
+      1.0111235759924502,
+      0.9211784578411847,
+      0.9720275932640814,
+      0.9236046298511094,
+      0.9558090968676863
+    ],
+    "source_mean_log_ratio": -0.04481573659957619,
+    "source_within_lineage_coordinate_sd_log": 0.02574184410763089
+  },
+  "fresh_access_authorized": false,
+  "lockbox_access_authorized": false,
+  "panel_template": {
+    "analysis_unit": "independent_lineage_cluster",
+    "classification_policy": "exact_noop_invariants_not_quality_power",
+    "coordinates_per_lineage": 3,
+    "group_coverage": "at least four low-density lineages must exercise group-safe validation",
+    "identity_status": "anonymous_role_template_only_no_dataset_or_target_access",
+    "lineage_count": 32,
+    "middle_density_policy": "exact_noop_invariants_not_quality_power",
+    "paired_model_fits": 192,
+    "strata": [
+      {
+        "branch": "depth_4",
+        "feature_family": "numeric",
+        "lineages": 8,
+        "stratum": "low_density_numeric"
+      },
+      {
+        "branch": "depth_4",
+        "feature_family": "categorical_or_grouped",
+        "lineages": 8,
+        "stratum": "low_density_categorical_or_grouped"
+      },
+      {
+        "branch": "depth_8",
+        "feature_family": "numeric",
+        "lineages": 8,
+        "stratum": "high_density_numeric"
+      },
+      {
+        "branch": "depth_8",
+        "feature_family": "categorical_or_grouped",
+        "lineages": 8,
+        "stratum": "high_density_categorical_or_grouped"
+      }
+    ],
+    "weight_coverage": "every stratum must contain both ordinary and nonuniform-weight coordinates"
+  },
+  "power_qualified": true,
+  "primary_scenario": {
+    "component_pass_probability": {
+      "bootstrap_upper": 1.0,
+      "each_branch_direction": 1.0,
+      "leave_one_favorable_out": 1.0,
+      "point": 0.9984,
+      "worst_lineage": 0.9996
+    },
+    "implied_between_lineage_sd_log": 0.006919040356279444,
+    "implied_geometric_mean_true_ratio": 0.9910769019398978,
+    "implied_within_lineage_coordinate_sd_log": 0.005148368821526178,
+    "metric_percentiles": {
+      "bootstrap_upper": {
+        "p05": 0.9910150230619016,
+        "p50": 0.9931839207297684,
+        "p95": 0.9954517788925041
+      },
+      "branch_depth_4": {
+        "p05": 0.987987071012196,
+        "p50": 0.9911035293954353,
+        "p95": 0.994232564288291
+      },
+      "branch_depth_8": {
+        "p05": 0.9878997176685703,
+        "p50": 0.9910698196436569,
+        "p95": 0.9940332241853915
+      },
+      "leave_one_favorable_out": {
+        "p05": 0.9894134564920641,
+        "p50": 0.9915610493161542,
+        "p95": 0.9937319948808541
+      },
+      "point": {
+        "p05": 0.9889354745201655,
+        "p50": 0.9910595426843409,
+        "p95": 0.9932473259958817
+      },
+      "worst_lineage": {
+        "p05": 1.001068926341809,
+        "p50": 1.0062247210447193,
+        "p95": 1.0130951539688031
+      }
+    },
+    "minimum_required_probability": 0.8,
+    "outer_panel_simulations": 5000,
+    "pass_probability": 0.998,
+    "passing_simulations": 4990,
+    "power_floor_passes": true,
+    "retained_log_effect_fraction": 0.2,
+    "true_lineage_ratio_cap": 1.015,
+    "wilson_lower_bound": 0.99665735839545,
+    "wilson_one_sided_confidence": 0.95
+  },
+  "published_refs": [
+    "origin/codex/tier-d-power-design-20260723"
+  ],
+  "quality_gates": {
+    "bootstrap_upper_ratio_at_most": 1.002,
+    "each_branch_geomean_ratio_at_most": 1.0,
+    "equal_lineage_geomean_ratio_at_most": 0.995,
+    "leave_one_favorable_lineage_out_ratio_at_most": 0.998,
+    "worst_lineage_ratio_at_most": 1.02
+  },
+  "registry_build_authorized": false,
+  "release_authorized": false,
+  "result_name": "t7b_automatic_depth_shared_tier_d_power_design_v1",
+  "result_sha256": "735604d24828f6294e60e023ceda053caf272095c50ae83310593833ccdd07d1",
+  "schema_version": 1,
+  "sensitivity_scenarios": [
+    {
+      "component_pass_probability": {
+        "bootstrap_upper": 1.0,
+        "each_branch_direction": 1.0,
+        "leave_one_favorable_out": 0.9994,
+        "point": 0.2176,
+        "worst_lineage": 1.0
+      },
+      "implied_between_lineage_sd_log": 0.003459520178139722,
+      "implied_geometric_mean_true_ratio": 0.9955284536063738,
+      "implied_within_lineage_coordinate_sd_log": 0.002574184410763089,
+      "metric_percentiles": {
+        "bootstrap_upper": {
+          "p05": 0.9954985895191397,
+          "p50": 0.9965862862293347,
+          "p95": 0.9977232977593501
+        },
+        "branch_depth_4": {
+          "p05": 0.9939753875283813,
+          "p50": 0.9955418270446672,
+          "p95": 0.9971121121961342
+        },
+        "branch_depth_8": {
+          "p05": 0.9939320611746956,
+          "p50": 0.9955248965463671,
+          "p95": 0.9970121484642959
+        },
+        "leave_one_favorable_out": {
+          "p05": 0.9946926442334113,
+          "p50": 0.9957715849109364,
+          "p95": 0.9968610710027824
+        },
+        "point": {
+          "p05": 0.9944523490445203,
+          "p50": 0.9955200388020855,
+          "p95": 0.9966179438458819
+        },
+        "worst_lineage": {
+          "p05": 1.0005343204215562,
+          "p50": 1.003107532144282,
+          "p95": 1.0065373031224003
+        }
+      },
+      "minimum_required_probability": 0.8,
+      "outer_panel_simulations": 5000,
+      "pass_probability": 0.2176,
+      "passing_simulations": 1088,
+      "power_floor_passes": false,
+      "retained_log_effect_fraction": 0.1,
+      "true_lineage_ratio_cap": 1.015,
+      "wilson_lower_bound": 0.20815598806028413,
+      "wilson_one_sided_confidence": 0.95
+    },
+    {
+      "component_pass_probability": {
+        "bootstrap_upper": 1.0,
+        "each_branch_direction": 1.0,
+        "leave_one_favorable_out": 1.0,
+        "point": 0.9576,
+        "worst_lineage": 1.0
+      },
+      "implied_between_lineage_sd_log": 0.005189280267209583,
+      "implied_geometric_mean_true_ratio": 0.9933001840295924,
+      "implied_within_lineage_coordinate_sd_log": 0.0038612766161446334,
+      "metric_percentiles": {
+        "bootstrap_upper": {
+          "p05": 0.9932554885001658,
+          "p50": 0.9948838018741757,
+          "p95": 0.9965868911423947
+        },
+        "branch_depth_4": {
+          "p05": 0.9909767059736458,
+          "p50": 0.9933201993540398,
+          "p95": 0.995671297262135
+        },
+        "branch_depth_8": {
+          "p05": 0.990911913213316,
+          "p50": 0.9932948603868731,
+          "p95": 0.9955215720866968
+        },
+        "leave_one_favorable_out": {
+          "p05": 0.9920495387218364,
+          "p50": 0.9936640869093887,
+          "p95": 0.9952953032676533
+        },
+        "point": {
+          "p05": 0.9916900754217699,
+          "p50": 0.9932875901017935,
+          "p95": 0.9949312075537504
+        },
+        "worst_lineage": {
+          "p05": 1.000801587684813,
+          "p50": 1.004664917626621,
+          "p95": 1.0098219633917367
+        }
+      },
+      "minimum_required_probability": 0.8,
+      "outer_panel_simulations": 5000,
+      "pass_probability": 0.9576,
+      "passing_simulations": 4788,
+      "power_floor_passes": true,
+      "retained_log_effect_fraction": 0.15,
+      "true_lineage_ratio_cap": 1.015,
+      "wilson_lower_bound": 0.9526600191755663,
+      "wilson_one_sided_confidence": 0.95
+    },
+    {
+      "component_pass_probability": {
+        "bootstrap_upper": 1.0,
+        "each_branch_direction": 1.0,
+        "leave_one_favorable_out": 1.0,
+        "point": 0.9998,
+        "worst_lineage": 0.992
+      },
+      "implied_between_lineage_sd_log": 0.008648800445349304,
+      "implied_geometric_mean_true_ratio": 0.9888585961739066,
+      "implied_within_lineage_coordinate_sd_log": 0.0064354610269077225,
+      "metric_percentiles": {
+        "bootstrap_upper": {
+          "p05": 0.9887814213066388,
+          "p50": 0.9914867988265853,
+          "p95": 0.9943028232322865
+        },
+        "branch_depth_4": {
+          "p05": 0.9850064553517537,
+          "p50": 0.9888906981434757,
+          "p95": 0.9927959102661948
+        },
+        "branch_depth_8": {
+          "p05": 0.9848975942910749,
+          "p50": 0.9888479856357533,
+          "p95": 0.9925450584623883
+        },
+        "leave_one_favorable_out": {
+          "p05": 0.9867832847547889,
+          "p50": 0.9894613478312585,
+          "p95": 0.9921672756042481
+        },
+        "point": {
+          "p05": 0.9861880612444832,
+          "p50": 0.988836945720426,
+          "p95": 0.9915563845141869
+        },
+        "worst_lineage": {
+          "p05": 1.001336336411615,
+          "p50": 1.0077817461791403,
+          "p95": 1.0160551450029538
+        }
+      },
+      "minimum_required_probability": 0.8,
+      "outer_panel_simulations": 5000,
+      "pass_probability": 0.9918,
+      "passing_simulations": 4959,
+      "power_floor_passes": true,
+      "retained_log_effect_fraction": 0.25,
+      "true_lineage_ratio_cap": 1.015,
+      "wilson_lower_bound": 0.9894200094106078,
+      "wilson_one_sided_confidence": 0.95
+    }
+  ],
+  "simulation": {
+    "lineage_bootstrap_percentile": 95.0,
+    "lineage_bootstrap_replicates": 5000,
+    "lineage_bootstrap_seed": 20260724,
+    "outer_batch": 100,
+    "outer_panel_simulations": 5000,
+    "outer_seed": 20260723,
+    "power_decision_rule": "point_estimate_and_one_sided_wilson_lower_bound_at_least_floor",
+    "power_floor": 0.8,
+    "power_wilson_one_sided_confidence": 0.95
+  },
+  "source_head": "f895e480fcd2ffc117dc85fd9bd0b9bf0d492414",
+  "source_sha256": {
+    "builder": "f1482d20fbc6ad2f84d4bdc9a338adf4d6d87cb7a4fe640d997aeb9f9ee93fce",
+    "contract": "1aa89083b16ed31ee816f005bc961751b3b22785b2ec1ec2a54fc1e2d0d94595",
+    "protocol": "c325fe1bc32aea9bd0298394b8179861b4a354a17ee71b0c3227809b2824f012",
+    "shipping_policy": "32070321337e8c08da1d2c7e97aa6e8980f3a3c84b52aed1694edcb132ff7e82",
+    "tests": "e0f0bb48d1606733f8fb7b21d7f534e429604d519d88d86392217e8382da8405"
+  }
+}

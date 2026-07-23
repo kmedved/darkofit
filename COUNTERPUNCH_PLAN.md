@@ -1136,9 +1136,12 @@ mechanism. Its private candidate `41e948f0` passed invariants and M5 and
 advanced through its one spent M6 v3 inspection. Its one separately frozen
 spent-sports inspection then advanced at cold-player ratio `0.950266`, with
 all nine lineages improved and season-cluster p95 `0.966591`. It is now
-eligible only for owner-authorized fresh Tier-D campaign design; it is not
-merged or shipping. The tested automatic scalar-RMSE L2 v1 identity is
-terminal and may not be treated as an available favorable rerun.
+served by a frozen, power-qualified 32-lineage Tier-D design (`0.998000`
+simulated power; one-sided Wilson lower `0.996657`) but remains ineligible for
+fresh identities/access, registry construction, confirmation execution,
+merge, or shipping without separate owner authority. The tested automatic
+scalar-RMSE L2 v1 identity is terminal and may not be treated as an available
+favorable rerun.
 
 Initial backlog, unrated and unauthorized:
 
@@ -1175,9 +1178,12 @@ Initial backlog, unrated and unauthorized:
   advanced through its one M6 v3 inspection (aggregate `0.992921`, worst
   dataset group `1.011124`, worst leave-one-out `1.001230`) and its one
   spent-sports successor (cold-player `0.950266`, all nine lineages improved,
-  season-cluster p95 `0.966591`). It is eligible only for a separately
-  authorized fresh Tier-D design. Automatic scalar-RMSE L2 v1 is closed in
-  M6 v3 and retained only as historical evidence.
+  season-cluster p95 `0.966591`). Its separately frozen 32-lineage Tier-D
+  design is power-qualified at `0.998000` with one-sided Wilson lower
+  `0.996657` under the declared primary sizing alternative. That result grants
+  no fresh access, registry, execution, merge, or default authority.
+  Automatic scalar-RMSE L2 v1 is closed in M6 v3 and retained only as
+  historical evidence.
 - **Historically closed; optional and unscheduled — B-archive shared-component
   size simulation** (internal, from Wave 2 M3b): the dated matched-single
   readout confirmed that the r3
@@ -1370,6 +1376,7 @@ These are planning ranges, not delivery promises.
 | 7 | **Selector re-adjudication complete:** automatic linear-selector v2 passed M6 v3 and remained harm-free in the artifact-only historical replay, but Protein attempt 2 failed its frozen all-coordinate engagement/exactness invariant | Closed 2026-07-22/23; Protein aggregate `0.968638×`, coordinate 1 margin `0.025179 < 0.03`; historical 21-lineage replay `0.962739×`, worst lineage/split `1.0×` | Exact candidate killed; no rerun, merge, fresh design, default, or claim. Open the separately governed categorical-crosses slot next. |
 | 8 | **Catcross general development complete:** group-centered categorical crosses v1 passed invariants/M5 and advanced through its sole M6 v3 inspection | Completed 2026-07-22/23; aggregate `0.992606×`, categorical-regression group `0.928473×`, worst group/LOO `1.0×`; engaged fit/RSS `2.145607×`/`1.096926×` | Candidate remains private/unmerged; only a separately frozen mechanism-specific spent attribution may follow. Open B3 as the next separately governed speed slot. |
 | 9 | **B3 parallel-members v1 complete and closed:** exact private `7x2` process topology passed behavior and hybrid RSS but failed the frozen cold all-case speed gate | Completed 2026-07-23; cold equal-case `0.684187×`, steady `0.260379×`, but cold Friedman `1.075049×` | Exact topology killed, inspection spent, no rerun/merge. Proceed to the authorized powered fresh Tier-D panel design; any B3 successor needs a new identity and owner authority. |
+| 10 | **Shared Tier-D power design complete:** exact automatic-depth candidate now has a frozen 32-lineage, two-branch confirmation template and reusable cluster-bootstrap analyzer | Completed 2026-07-23; primary simulated power `0.998000`, one-sided Wilson lower `0.996657`; 10%-effect sensitivity explicitly lacks power at `0.217600` | Design power-qualified only. Fresh identities/access, registry, confirmation execution, merge/default, release, and lockbox remain separately owner-gated. |
 | Later | M2/M4 release milestones, other Track I backlog, and Z cleanup | Independent backlog with explicit owner gates | No coupling to unfinished speculative tracks or lockbox access |
 
 Benchmark waves use fresh workers and exclusive machine access. Parallelize

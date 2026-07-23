@@ -2299,6 +2299,65 @@ B-archive simulation remains non-loadable, optional size telemetry.
     mechanism requiring a new identity and owner authority; proceed now only
     to the authorized powered fresh Tier-D panel design.
 
+### 54. T7b automatic-depth shared Tier-D power design (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; clean published power-design source
+   `f895e480fcd2ffc117dc85fd9bd0b9bf0d492414`, exact private candidate
+   `41e948f0c53b1d124e16071a7fa66eba47d084d3`, and control
+   `e23d2b164f10374b1c0e02521c33fc96d48980da`.
+2. **Comparators:** no fresh model comparison occurred. The design contrasts
+   the frozen automatic-depth candidate/control estimand under a synthetic
+   structured effect alternative sized from already-spent profiles.
+3. **Evidence class:** Tier-D design-time power only. It qualifies a panel
+   template, not the candidate's quality and not fresh access or a default.
+4. **Data/splits:** no prospective identities or targets. Sizing used the two
+   complete changed general group profiles and three spent season clusters
+   (five lineage clusters, 21 nested coordinates), then proposed an anonymous
+   32-lineage template balanced across depth 4/depth 8 and numeric/
+   categorical-or-grouped strata.
+5. **Arms/policies:** primary alternative scales every spent log effect and
+   within-lineage deviation to 20% of observed magnitude; sensitivities use
+   10%, 15%, and 25%. The exact Tier-D aggregate, cluster-bootstrap,
+   leave-one-favorable-out, worst-lineage, and two branch-direction gates are
+   applied.
+6. **Environment/repeats:** `darko311`, deterministic NumPy simulation; 5,000
+   outer panels, 5,000 lineage-bootstrap draws, seeds `20260723`/`20260724`,
+   32 lineage clusters and three coordinates per lineage.
+7. **Runner/command:** `python -m benchmarks.tier_d_fresh_power_design`. One
+   prior direct-file invocation failed before importing the contract or
+   running the simulator; it produced no result. The unchanged published
+   module entry point produced the sole create-only outcome.
+8. **Hashes:** general sizing input
+   `7af0c480221b5886c7bbf41f810147663d9da6e2c4171a70bc9db3a431eebb28`;
+   sports sizing input
+   `1ec0d2d37ef75195b66b779ec94920e05f5047147538de6eb17622947fd1a0da`;
+   contract `1aa89083b16ed31ee816f005bc961751b3b22785b2ec1ec2a54fc1e2d0d94595`;
+   builder `f1482d20fbc6ad2f84d4bdc9a338adf4d6d87cb7a4fe640d997aeb9f9ee93fce`;
+   result file
+   `5b767ce0a27e09d479bb18d6314d9adce3bbac78380aeff481639b13152714ad`;
+   result self-hash
+   `735604d24828f6294e60e023ceda053caf272095c50ae83310593833ccdd07d1`.
+9. **Primary results:** the 20% scenario implies true geometric-mean ratio
+   `0.991077`; 4,990/5,000 panels passed, for power `0.998000` and one-sided
+   95% Wilson lower `0.996657` against the required `0.800000`.
+10. **Costs, passed and failed conditions:** primary point and Wilson power
+    floors passed. Component pass probabilities were `0.9984` point,
+    `1.0000` bootstrap, `1.0000` LOO, `0.9996` worst-lineage, and `1.0000`
+    branch direction. The 10% sensitivity failed power at `0.217600`; 15%
+    and 25% passed at `0.957600` and `0.991800`. Operational costs are not
+    simulated and must receive separately harm-justified frozen budgets.
+11. **Limitations/non-claims:** the sizing evidence selected the candidate;
+    joint 20% shrinkage is a structured alternative, not a conservative bound
+    or effect estimate. DarkoFit evidence exercised depth 4, so depth 8 is a
+    prospective transport assumption protected by its own fresh direction
+    gate. No fresh, quality, public, merge, default, release, TabArena,
+    lockbox, or product claim is authorized.
+12. **Terminal decision/next action:** `design_power_qualified`. The design
+    work is complete. A separate owner decision is required before exact
+    registry/execution-contract work, and another explicit authorization must
+    precede any fresh target access or confirmation run. Candidate `41e948f0`
+    stays private and unmerged.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
