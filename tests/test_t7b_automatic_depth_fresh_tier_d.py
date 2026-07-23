@@ -19,7 +19,7 @@ def _load(name):
 
 
 def test_execution_contract_registry_and_power_bindings_are_frozen():
-    contract = _load("t7b_automatic_depth_fresh_tier_d_execution_contract.json")
+    contract = _load("t7b_automatic_depth_fresh_tier_d_execution_contract_v2.json")
     registry = _load("t7b_automatic_depth_fresh_tier_d_contamination_registry.json")
     runner.validate_contract(contract)
 
@@ -199,7 +199,7 @@ def _synthetic_raw(*, candidate_quality=0.98, depth8_quality=None):
 
 
 def test_analyzer_go_requires_all_quality_cost_and_integrity_gates():
-    contract = _load("t7b_automatic_depth_fresh_tier_d_execution_contract.json")
+    contract = _load("t7b_automatic_depth_fresh_tier_d_execution_contract_v2.json")
     power = _load("t7b_automatic_depth_fresh_tier_d_power_design_contract.json")
     result = analyzer.analyze(_synthetic_raw(), contract, power)
 
@@ -211,7 +211,7 @@ def test_analyzer_go_requires_all_quality_cost_and_integrity_gates():
 
 
 def test_analyzer_no_go_when_depth8_branch_is_harmful():
-    contract = _load("t7b_automatic_depth_fresh_tier_d_execution_contract.json")
+    contract = _load("t7b_automatic_depth_fresh_tier_d_execution_contract_v2.json")
     power = _load("t7b_automatic_depth_fresh_tier_d_power_design_contract.json")
     result = analyzer.analyze(
         _synthetic_raw(candidate_quality=0.97, depth8_quality=1.001),
