@@ -1,4 +1,7 @@
 import json
+import os
+import subprocess
+import sys
 
 from benchmarks import run_automatic_linear_selector_v2_protein_attribution as attempt1
 from benchmarks import run_automatic_linear_selector_v2_protein_attribution_attempt2 as attempt2
@@ -102,3 +105,21 @@ def test_attempt1_result_has_no_scientific_rows():
     result = json.loads(attempt2.ATTEMPT1_RESULT_PATH.read_text())
     assert result["analysis"]["completed_worker_count"] == 0
     assert "raw" not in result["artifacts"]
+
+
+def test_direct_runner_import_is_anchored_against_ambient_pythonpath(tmp_path):
+    foreign = tmp_path / "benchmarks"
+    foreign.mkdir()
+    (foreign / "__init__.py").write_text("raise RuntimeError('foreign benchmarks')\n")
+    environment = os.environ.copy()
+    environment["PYTHONPATH"] = str(tmp_path)
+    completed = subprocess.run(
+        [sys.executable, str(attempt2.RUNNER_PATH), "--help"],
+        cwd=tmp_path,
+        env=environment,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert "Run the one-shot spent Protein attribution" in completed.stdout

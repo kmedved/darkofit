@@ -10,12 +10,17 @@ from importlib.metadata import version as distribution_version
 from pathlib import Path
 from typing import Any, Iterator, Sequence
 
-from benchmarks import run_automatic_linear_selector_v2_protein_attribution as _base
-
-
 RUNNER_PATH = Path(__file__).resolve()
 ROOT = RUNNER_PATH.parents[1]
 BENCH = RUNNER_PATH.parent
+_root_text = str(ROOT)
+if _root_text in sys.path:
+    sys.path.remove(_root_text)
+sys.path.insert(0, _root_text)
+
+from benchmarks import run_automatic_linear_selector_v2_protein_attribution as _base
+
+
 PROTOCOL_PATH = (
     BENCH / "automatic_linear_selector_v2_protein_attribution_attempt2_protocol.md"
 )
