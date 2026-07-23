@@ -870,11 +870,13 @@ closed as a quality route.
 2. **B2 — member policy:** add a named, explicit policy for member-level
    learning rate, column sampling, and related automatic choices. Explicit
    user parameters win, and all resolutions are persisted.
-3. **B3 — parallel members:** add `ensemble_n_jobs` only with deterministic
-   member seeds, nested-parallelism prevention, equal-total-CPU timing,
-   worker-failure propagation, and peak-memory accounting. Test model
-   equivalence at the same per-member thread count separately from throughput
-   under divided CPU budgets.
+3. **B3 — parallel members:** the owner-authorized private v1 campaign is
+   frozen in `benchmarks/b3_parallel_ensemble_v1_contract.md`. It compares a
+   deterministic `7 workers × 2 threads` candidate with the sequential
+   `1 × 14` control under one total CPU budget, while testing same-thread
+   model equivalence separately. It adds no public `ensemble_n_jobs` surface.
+   Worker failures, nested oversubscription, ambient thread restoration, and
+   hybrid process-tree memory are hard obligations.
 4. **M3b — attribution:** compare sampling-only, member-policy-only, and
    combined arms on the spent player-disjoint panel and a small
    broad-tabular development set. Freeze the M3b protocol before inspecting
