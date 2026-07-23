@@ -1137,6 +1137,19 @@ terminal and may not be treated as an available favorable rerun.
 
 Initial backlog, unrated and unauthorized:
 
+- **Funded R1 quality slot — group-centered categorical crosses v1**
+  (ChimeraBoost 0.20 mechanism retained in the source-pinned 0.21.0 release):
+  target-free `x - mean_fit(x | category)` columns, weight-aware with global
+  unseen-category fallback. Expected value is concentrated on mixed
+  categorical regressions: the release ladder's largest miss was diamonds at
+  `1.386479×`, while the other twelve cases favored DarkoFit by about 1.2%
+  after removing it. Complexity is bounded to a private scalar-RMSE automatic
+  selector and at most 12 columns (top four numeric × top three categorical).
+  It is materially distinct from the closed category-by-category combination
+  donor. The exact candidate stops on the immutable M6 v3 aggregate, worst-
+  dataset, or LOO gates; advancement authorizes only mechanism-specific spent
+  attribution. Source and 0.21.0 follow-ups are recorded in
+  `benchmarks/chimeraboost_v0210_changelog_triage_20260722.md`.
 - **Monotonic and interaction constraints** (CatBoost/LightGBM/XGBoost):
   mainstream general-tabular capability, direct sports value as domain
   priors, absent from DarkoFit today. Treat as a high-value capability gap,
