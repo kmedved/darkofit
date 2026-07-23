@@ -1,0 +1,17 @@
+{
+  "candidate_commit": "a53d4bf543534678189d87d88dcad87dd2a8bd8f",
+  "contract_id": "automatic-linear-selector-v2-development-20260722",
+  "created_at_utc": "2026-07-23T02:14:33Z",
+  "disposition": "killed",
+  "fresh_confirmation_authorized": false,
+  "guardrail_replay_sha256": "1d0ac7eedbcc86dd83b47f826e77efb70071381d88a27a68c6dc61d31e707122",
+  "merge_authorized": false,
+  "protein_attempt": 2,
+  "protein_launch_manifest_sha256": "d6cbee2249046bc8eca05080eea38457c21d0d130076a59839b313c52c8b54b7",
+  "protein_raw_sha256": "0caaa2f97fd527976233f6511267c3df2b6487bc8d5a665d87c9fad2c3b11be7",
+  "protein_result_sha256": "4b75f4ae048e926ec07bf3a17c4a9e9356b52a7adfd869409594cc3878f7e61c",
+  "reason": "Protein coordinate 1 failed the frozen all-selector and exactness invariant: the 0.025179 validation margin was below 0.03, so automatic mode declined while explicit linear leaves improved RMSE.",
+  "rerun_authorized": false,
+  "schema_version": 1,
+  "shipping_or_default_claim_eligible": false
+}

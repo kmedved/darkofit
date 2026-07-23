@@ -292,10 +292,10 @@ features. This section supersedes the earlier sequencing table.
 
 | # | Work | State / gate |
 | --- | --- | --- |
-| R1-1 | **Finish the selector campaign**: Protein attribution attempt 2 (loader preflighted after the env-failed attempt 1), guardrail replay, then close as `ready_for_powered_fresh_design` or killed | In flight; one step from closure |
+| R1-1 | **Finish the selector campaign**: Protein attribution attempt 2 (loader preflighted after the env-failed attempt 1), guardrail replay, then close as `ready_for_powered_fresh_design` or killed | **Closed 2026-07-22: killed.** Protein improved `0.968638×` in aggregate and passed both harm gates, but coordinate 1's `0.025179` validation margin missed the frozen `0.03` engagement rule, so automatic mode declined while explicit linear helped. The artifact-only historical replay remained harm-free (`0.962739×` across 21 dependent lineages; worst lineage/split `1.0×`) but cannot reverse the terminal Protein invariant failure. No rerun, merge, fresh campaign, default, or claim. |
 | R1-2 | **Categorical-crosses port/build** — the 0.20 counter, targeting diamonds/healthcare; Apache-licensed public design; develop via M6 v3 | Next quality mechanism slot |
 | R1-3 | **B3 parallel members** — kills the 6.10× ensemble-fit optic; campaign already scoped with the §4.3 memory rules | Next speed slot |
-| R1-4 | **Powered fresh Tier-D panel design** — one shared design effort (≥80% power, Panel 3's lesson) serving the queued candidates: the T7b automatic-depth policy (`eligible_for_fresh_tier_d_design`) and, if it closes ready, the selector | After R1-2/R1-3 development; owner authorizes the fresh run |
+| R1-4 | **Powered fresh Tier-D panel design** — one shared design effort (≥80% power, Panel 3's lesson) serving the queued T7b automatic-depth policy (`eligible_for_fresh_tier_d_design`); the killed selector is excluded | After R1-2/R1-3 development; owner authorizes the fresh run |
 | R1-5 | **Member-policy retune on broad data** via M6 v3 (their blessed member recipe is public; ours was sports-attributed and transferred at only +1.5% broad) | Track I, next after R1-3 |
 | R1-6 | **Small-dataset fit fast-path** (the 4.5–9.4× tiny-data overhead) | Track I, engineering |
 | R1-7 | T7b automatic-L2 | Closed in M6; stays dead |

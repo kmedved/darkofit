@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import subprocess
@@ -16,7 +17,23 @@ def test_attempt2_is_new_identity_without_mutating_attempt1_module():
     assert attempt1.PROTOCOL_PATH != attempt2.PROTOCOL_PATH
 
 
-def test_attempt2_binds_terminal_attempt1_and_r1_authority():
+def test_attempt2_binds_terminal_attempt1_and_r1_authority(monkeypatch):
+    # The live plan now records the terminal selector close. Reconstruct the
+    # exact authorization blob from its immutable R1 commit when validating
+    # this spent execution harness instead of requiring the mutable plan to
+    # remain frozen forever.
+    historical_plan = subprocess.check_output(
+        ["git", "show", f"{attempt2.R1_COMMIT}:BEAT_CHIMERABOOST_PLAN.md"],
+        cwd=attempt2.ROOT,
+    )
+    historical_hash = attempt2.EXPECTED_HASHES[attempt2.R1_PLAN_PATH]
+    assert hashlib.sha256(historical_plan).hexdigest() == historical_hash
+    expected_hashes = {
+        path: expected
+        for path, expected in attempt2.EXPECTED_HASHES.items()
+        if path != attempt2.R1_PLAN_PATH
+    }
+    monkeypatch.setattr(attempt2, "EXPECTED_HASHES", expected_hashes)
     with attempt2._configured_base():
         bindings = attempt2.validate_bound_evidence()
     lineage = bindings["attempt1_terminal_lineage"]
@@ -30,6 +47,9 @@ def test_attempt2_binds_terminal_attempt1_and_r1_authority():
         "candidate_commit": attempt1.CANDIDATE_COMMIT,
     }
     assert bindings["r1_authorization_commit"] == attempt2.R1_COMMIT
+    assert "Closed 2026-07-22: killed" in (
+        attempt2.ROOT / "BEAT_CHIMERABOOST_PLAN.md"
+    ).read_text()
 
 
 def test_attempt2_keeps_grid_policy_and_harm_rule_exact():

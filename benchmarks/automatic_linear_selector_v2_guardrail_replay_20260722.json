@@ -1,0 +1,367 @@
+{
+  "analysis": {
+    "by_stratum": {
+      "categorical": {
+        "equal_lineage_geomean_ratio": 0.8247808891857068,
+        "leave_one_lineage_out": {
+          "apparel_price": 0.7490449565407802,
+          "book_price": 0.7490449565407802,
+          "munich_rent": 1.0
+        },
+        "lineage_count": 3,
+        "split_count": 9,
+        "worst_leave_one_lineage_out": "munich_rent",
+        "worst_leave_one_lineage_out_ratio": 1.0,
+        "worst_lineage": "apparel_price",
+        "worst_lineage_ratio": 1.0,
+        "worst_split_ratio": 1.0
+      },
+      "group_safe_sports": {
+        "equal_lineage_geomean_ratio": 1.0,
+        "leave_one_lineage_out": {},
+        "lineage_count": 1,
+        "split_count": 11,
+        "worst_leave_one_lineage_out": null,
+        "worst_leave_one_lineage_out_ratio": null,
+        "worst_lineage": "basketball_group_safe",
+        "worst_lineage_ratio": 1.0,
+        "worst_split_ratio": 1.0
+      },
+      "noisy_tabular": {
+        "equal_lineage_geomean_ratio": 0.9774558860405056,
+        "leave_one_lineage_out": {
+          "pakistan_hunger": 0.9663751401964215,
+          "sustainable_development_zero_hunger": 1.0,
+          "trs_scz": 0.9663751401964215
+        },
+        "lineage_count": 3,
+        "split_count": 9,
+        "worst_leave_one_lineage_out": "sustainable_development_zero_hunger",
+        "worst_leave_one_lineage_out_ratio": 1.0,
+        "worst_lineage": "pakistan_hunger",
+        "worst_lineage_ratio": 1.0,
+        "worst_split_ratio": 1.0
+      },
+      "smooth_process": {
+        "equal_lineage_geomean_ratio": 0.9892642728306964,
+        "leave_one_lineage_out": {
+          "bkd1kmc1": 0.9884432374258403,
+          "bng_mv_generator": 0.9884432374258403,
+          "bng_stock_generator": 0.9884432374258403,
+          "climate_agriculture_impact": 0.9884432374258403,
+          "climate_insights": 0.9884432374258403,
+          "coffee_distribution": 0.9985043387926229,
+          "debutanizer_process": 0.9899238280937783,
+          "infrared_thermography_temperature": 0.9884432374258403,
+          "iot_agriculture": 0.9884432374258403,
+          "mabbob_ela_algorithm_performance": 0.9884432374258403,
+          "news_popularity": 0.9884432374258403,
+          "qsar_bioconcentration": 0.9884432374258403,
+          "rssi_3d_localization": 0.9884432374258403,
+          "temperature_emissions_trends": 0.9884432374258403
+        },
+        "lineage_count": 14,
+        "split_count": 42,
+        "worst_leave_one_lineage_out": "coffee_distribution",
+        "worst_leave_one_lineage_out_ratio": 0.9985043387926229,
+        "worst_lineage": "bkd1kmc1",
+        "worst_lineage_ratio": 1.0,
+        "worst_split_ratio": 1.0
+      }
+    },
+    "combined": {
+      "equal_lineage_geomean_ratio": 0.9627389943025977,
+      "leave_one_lineage_out": {
+        "apparel_price": 0.9609128270735774,
+        "basketball_group_safe": 0.9609128270735774,
+        "bkd1kmc1": 0.9609128270735774,
+        "bng_mv_generator": 0.9609128270735774,
+        "bng_stock_generator": 0.9609128270735774,
+        "book_price": 0.9609128270735774,
+        "climate_agriculture_impact": 0.9609128270735774,
+        "climate_insights": 0.9609128270735774,
+        "coffee_distribution": 0.9672591238416993,
+        "debutanizer_process": 0.9618481613278852,
+        "infrared_thermography_temperature": 0.9609128270735774,
+        "iot_agriculture": 0.9609128270735774,
+        "mabbob_ela_algorithm_performance": 0.9609128270735774,
+        "munich_rent": 0.9890840587907411,
+        "news_popularity": 0.9609128270735774,
+        "pakistan_hunger": 0.9609128270735774,
+        "qsar_bioconcentration": 0.9609128270735774,
+        "rssi_3d_localization": 0.9609128270735774,
+        "sustainable_development_zero_hunger": 0.9642050812216265,
+        "temperature_emissions_trends": 0.9609128270735774,
+        "trs_scz": 0.9609128270735774
+      },
+      "lineage_count": 21,
+      "split_count": 71,
+      "worst_leave_one_lineage_out": "munich_rent",
+      "worst_leave_one_lineage_out_ratio": 0.9890840587907411,
+      "worst_lineage": "apparel_price",
+      "worst_lineage_ratio": 1.0,
+      "worst_split_ratio": 1.0
+    }
+  },
+  "created_at": "2026-07-23T02:13:25.123043+00:00",
+  "execution_class": "artifact_only_historical_recomputation",
+  "limitations": {
+    "can_reverse_protein_terminal_close": false,
+    "candidate_code_executed": false,
+    "dependent_on_prior_artifacts": true,
+    "fresh_evidence": false,
+    "note": "This replay is a consistency check over spent evidence. It is not independent confirmation and cannot rescue a terminal Protein failure.",
+    "prior_outcomes_known": true
+  },
+  "lineages": [
+    {
+      "lineage": "apparel_price",
+      "ratio": 1.0,
+      "source": "benchmarks/fresh_selector_confirmation.json",
+      "split_ratios": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "stratum": "categorical"
+    },
+    {
+      "lineage": "book_price",
+      "ratio": 1.0,
+      "source": "benchmarks/fresh_selector_confirmation.json",
+      "split_ratios": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "stratum": "categorical"
+    },
+    {
+      "lineage": "munich_rent",
+      "ratio": 0.5610683469191793,
+      "source": "benchmarks/fresh_selector_confirmation.json",
+      "split_ratios": [
+        0.5291576751920312,
+        0.45713044999624103,
+        0.730166753077665
+      ],
+      "stratum": "categorical"
+    },
+    {
+      "lineage": "pakistan_hunger",
+      "ratio": 1.0,
+      "source": "benchmarks/fresh_selector_confirmation.json",
+      "split_ratios": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "stratum": "noisy_tabular"
+    },
+    {
+      "lineage": "sustainable_development_zero_hunger",
+      "ratio": 0.9338809115896531,
+      "source": "benchmarks/fresh_selector_confirmation.json",
+      "split_ratios": [
+        0.9265762152037916,
+        0.923794392735113,
+        0.951520229725943
+      ],
+      "stratum": "noisy_tabular"
+    },
+    {
+      "lineage": "trs_scz",
+      "ratio": 1.0,
+      "source": "benchmarks/fresh_selector_confirmation.json",
+      "split_ratios": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "stratum": "noisy_tabular"
+    },
+    {
+      "lineage": "bkd1kmc1",
+      "ratio": 1.0,
+      "source": "benchmarks/fresh_selector_confirmation.json",
+      "split_ratios": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "stratum": "smooth_process"
+    },
+    {
+      "lineage": "bng_mv_generator",
+      "ratio": 1.0,
+      "source": "benchmarks/fresh_selector_confirmation.json",
+      "split_ratios": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "stratum": "smooth_process"
+    },
+    {
+      "lineage": "bng_stock_generator",
+      "ratio": 1.0,
+      "source": "benchmarks/fresh_selector_confirmation.json",
+      "split_ratios": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "stratum": "smooth_process"
+    },
+    {
+      "lineage": "climate_agriculture_impact",
+      "ratio": 1.0,
+      "source": "benchmarks/fresh_selector_confirmation.json",
+      "split_ratios": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "stratum": "smooth_process"
+    },
+    {
+      "lineage": "climate_insights",
+      "ratio": 1.0,
+      "source": "benchmarks/fresh_selector_confirmation.json",
+      "split_ratios": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "stratum": "smooth_process"
+    },
+    {
+      "lineage": "coffee_distribution",
+      "ratio": 0.8766436989572787,
+      "source": "benchmarks/fresh_selector_confirmation.json",
+      "split_ratios": [
+        0.8406346857976548,
+        0.8273939710380077,
+        0.9686116519023004
+      ],
+      "stratum": "smooth_process"
+    },
+    {
+      "lineage": "debutanizer_process",
+      "ratio": 0.9807299371651931,
+      "source": "benchmarks/fresh_selector_confirmation.json",
+      "split_ratios": [
+        0.9491826789331516,
+        1.0,
+        0.9937988574188922
+      ],
+      "stratum": "smooth_process"
+    },
+    {
+      "lineage": "infrared_thermography_temperature",
+      "ratio": 1.0,
+      "source": "benchmarks/fresh_selector_confirmation.json",
+      "split_ratios": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "stratum": "smooth_process"
+    },
+    {
+      "lineage": "iot_agriculture",
+      "ratio": 1.0,
+      "source": "benchmarks/fresh_selector_confirmation.json",
+      "split_ratios": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "stratum": "smooth_process"
+    },
+    {
+      "lineage": "mabbob_ela_algorithm_performance",
+      "ratio": 1.0,
+      "source": "benchmarks/fresh_selector_confirmation.json",
+      "split_ratios": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "stratum": "smooth_process"
+    },
+    {
+      "lineage": "news_popularity",
+      "ratio": 1.0,
+      "source": "benchmarks/fresh_selector_confirmation.json",
+      "split_ratios": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "stratum": "smooth_process"
+    },
+    {
+      "lineage": "qsar_bioconcentration",
+      "ratio": 1.0,
+      "source": "benchmarks/fresh_selector_confirmation.json",
+      "split_ratios": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "stratum": "smooth_process"
+    },
+    {
+      "lineage": "rssi_3d_localization",
+      "ratio": 1.0,
+      "source": "benchmarks/fresh_selector_confirmation.json",
+      "split_ratios": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "stratum": "smooth_process"
+    },
+    {
+      "lineage": "temperature_emissions_trends",
+      "ratio": 1.0,
+      "source": "benchmarks/fresh_selector_confirmation.json",
+      "split_ratios": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "stratum": "smooth_process"
+    },
+    {
+      "lineage": "basketball_group_safe",
+      "ratio": 1.0,
+      "ratio_interpretation": "exact prediction, model-state, fold-score, and held-team/cold-player score equality; 1.0 records equality rather than dividing R-squared",
+      "source": "benchmarks/basketball_group_linear_selector.json",
+      "split_ratios": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "stratum": "group_safe_sports"
+    }
+  ],
+  "schema_version": "automatic-linear-selector-v2-guardrail-replay-v1",
+  "source_artifacts": {
+    "benchmarks/basketball_group_linear_selector.json": {
+      "sha256": "cb56ab34769609cd9639245f9ca6ea2012a0ea1a2b532aae458a9e6cfd9f2f25"
+    },
+    "benchmarks/fresh_selector_confirmation.json": {
+      "sha256": "4dc158ec4fd11cf29a5822dc2a09aa76715ce9446773673fa9a2828da1b71a7d"
+    }
+  }
+}

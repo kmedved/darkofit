@@ -1,0 +1,980 @@
+{
+  "attempt_index": 2,
+  "contract_id": "automatic-linear-selector-v2-protein-attribution-attempt2-20260722",
+  "mechanism_id": "automatic_linear_selector_v2",
+  "rows": [
+    {
+      "arm": "constant",
+      "categorical_features": [],
+      "completed_at_utc": "2026-07-23T02:05:58.620326+00:00",
+      "coordinate": 0,
+      "core_booster_state_sha256": "4843c708b41952ec9e9e1b5d951c8f815b09af7215e2e66ca0197c98f8cadb74",
+      "dataset": "physiochemical_protein",
+      "environment": {
+        "CHIMERABOOST_WARMUP": "0",
+        "DARKOFIT_WARMUP": "0",
+        "MKL_DYNAMIC": "FALSE",
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0"
+      },
+      "feature_count": 9,
+      "fingerprints": {
+        "X_test": "bfe984e9ad9876e14684f72e561f8bcb078ada9d4f34720dcdb3d2873d0251e9",
+        "X_train": "2de75270b4f17b4c3a914727fe384bd17af7bf87114fb94a6eb9b6cf83a4bba6",
+        "combined_sha256": "88e9e1cb742d160a72bd4fc1977613f41f2a48bb713ebe1ec4bd17365d165e9a",
+        "y_test": "8dd2415697e8aa6a17aac1b395d80476f234ae55bac535b2edc0ea9c66a172b8",
+        "y_train": "f94dcf15be72db52d567424b361578ce0a79fb5930bf02721d18dfa75469dcc9"
+      },
+      "fit_rss": {
+        "end_bytes": 326451200,
+        "errors": [],
+        "interval_seconds": 0.005,
+        "peak_bytes": 326483968,
+        "peak_delta_bytes": 12992512,
+        "samples": 154,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 313491456
+      },
+      "fit_seconds": 2.29680775,
+      "fold": 0,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module": "darkofit.sklearn_api",
+        "module_path": "/private/tmp/darkofit-smooth-selector-20260722/darkofit/sklearn_api.py",
+        "module_sha256": "1fc4ba6a3f7b9c2ff57a6c94a933624eaee6d4dcdf84d9403141ed7838f07c9c"
+      },
+      "kind": "automatic_linear_selector_v2_protein_worker",
+      "model": {
+        "best_n_estimators": 1000,
+        "learning_rate": 0.070253,
+        "linear_leaves_active": false,
+        "requested_linear_leaves": false,
+        "resolved_thread_count": 14,
+        "selected_linear_leaves": false,
+        "tree_count": 1000
+      },
+      "numba_threads_after_fit": 14,
+      "numba_threads_after_predict": 14,
+      "numba_threads_after_timing": 14,
+      "numba_threads_before_fit": 14,
+      "parent_pid": 24548,
+      "pid": 24616,
+      "position": 0,
+      "prediction": {
+        "calls": 113,
+        "interval_seconds": 0.998336125,
+        "pilot_median_seconds": 0.00888925,
+        "pilots_seconds": [
+          0.009007833,
+          0.008394334,
+          0.00888925
+        ],
+        "prediction_sha256": "98495198693824f22a3c48640ce3174e053ccc13c404315a243422bc2fb238ec",
+        "rows": 15244,
+        "rows_per_second": 1725442.9213407459,
+        "seconds_per_call": 0.00883483296460177
+      },
+      "prediction_sha256": "98495198693824f22a3c48640ce3174e053ccc13c404315a243422bc2fb238ec",
+      "repeat": 0,
+      "schema_version": 1,
+      "seed": 0,
+      "selector": null,
+      "started_at_utc": "2026-07-23T02:05:53.766216+00:00",
+      "task_id": 363693,
+      "test_rmse": 3.8594681426514903,
+      "test_rows": 15244,
+      "train_rows": 30486,
+      "warmup": {
+        "iterations": 2,
+        "linear_leaves": false,
+        "rows": 1400
+      },
+      "warnings": []
+    },
+    {
+      "arm": "automatic",
+      "categorical_features": [],
+      "completed_at_utc": "2026-07-23T02:06:11.560580+00:00",
+      "coordinate": 0,
+      "core_booster_state_sha256": "cb1f610223f43b44d6e1b0c7a6a033c3ada4310d58fda87ecdc89807eee1267f",
+      "dataset": "physiochemical_protein",
+      "environment": {
+        "CHIMERABOOST_WARMUP": "0",
+        "DARKOFIT_WARMUP": "0",
+        "MKL_DYNAMIC": "FALSE",
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0"
+      },
+      "feature_count": 9,
+      "fingerprints": {
+        "X_test": "bfe984e9ad9876e14684f72e561f8bcb078ada9d4f34720dcdb3d2873d0251e9",
+        "X_train": "2de75270b4f17b4c3a914727fe384bd17af7bf87114fb94a6eb9b6cf83a4bba6",
+        "combined_sha256": "88e9e1cb742d160a72bd4fc1977613f41f2a48bb713ebe1ec4bd17365d165e9a",
+        "y_test": "8dd2415697e8aa6a17aac1b395d80476f234ae55bac535b2edc0ea9c66a172b8",
+        "y_train": "f94dcf15be72db52d567424b361578ce0a79fb5930bf02721d18dfa75469dcc9"
+      },
+      "fit_rss": {
+        "end_bytes": 343851008,
+        "errors": [],
+        "interval_seconds": 0.005,
+        "peak_bytes": 343883776,
+        "peak_delta_bytes": 24788992,
+        "samples": 691,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 319094784
+      },
+      "fit_seconds": 10.398656625,
+      "fold": 0,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module": "darkofit.sklearn_api",
+        "module_path": "/private/tmp/darkofit-smooth-selector-20260722/darkofit/sklearn_api.py",
+        "module_sha256": "1fc4ba6a3f7b9c2ff57a6c94a933624eaee6d4dcdf84d9403141ed7838f07c9c"
+      },
+      "kind": "automatic_linear_selector_v2_protein_worker",
+      "model": {
+        "best_n_estimators": 1000,
+        "learning_rate": 0.070253,
+        "linear_leaves_active": true,
+        "requested_linear_leaves": "auto",
+        "resolved_thread_count": 14,
+        "selected_linear_leaves": true,
+        "tree_count": 1000
+      },
+      "numba_threads_after_fit": 14,
+      "numba_threads_after_predict": 14,
+      "numba_threads_after_timing": 14,
+      "numba_threads_before_fit": 14,
+      "parent_pid": 24548,
+      "pid": 24624,
+      "position": 1,
+      "prediction": {
+        "calls": 55,
+        "interval_seconds": 1.011637375,
+        "pilot_median_seconds": 0.018483417,
+        "pilots_seconds": [
+          0.01810625,
+          0.018957083,
+          0.018483417
+        ],
+        "prediction_sha256": "c5ebb330587528e49c361ba1521ec75ffb436b6ea9dc08dded1ea9516fd265b5",
+        "rows": 15244,
+        "rows_per_second": 828775.2318364077,
+        "seconds_per_call": 0.01839340681818182
+      },
+      "prediction_sha256": "c5ebb330587528e49c361ba1521ec75ffb436b6ea9dc08dded1ea9516fd265b5",
+      "repeat": 0,
+      "schema_version": 1,
+      "seed": 0,
+      "selector": {
+        "constant_validation_rmse": 3.7406078973221306,
+        "eligible": true,
+        "final_booster_linear_leaves": true,
+        "final_linear_leaves_active": true,
+        "fit_random_state_seed": 0,
+        "linear_validation_rmse": 3.619458189634627,
+        "minimum_relative_improvement": 0.03,
+        "reason": "selected_linear",
+        "relative_validation_improvement": 0.03238770569196352,
+        "requested": "auto",
+        "resolved_linear_leaves": true,
+        "selection_fits": [
+          {
+            "best_n_estimators": 1000,
+            "fit_seconds": 2.218138542,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 3.7406078973221306
+          },
+          {
+            "best_n_estimators": 999,
+            "fit_seconds": 4.04561025,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 3.619458189634627
+          }
+        ],
+        "selection_total_seconds": 6.265587542,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": false,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "36bc87548e691ac78442fa04e46b3f7fbe5b7cecda688e77e96ab2c8a576ff80",
+          "train_rows": 24388,
+          "train_weight_sum": null,
+          "validation_positions_sha256": "87127ebd876be42716914a91b2e6add04eda62dfb0e3900e3170cbec155733b7",
+          "validation_rows": 6098,
+          "validation_weight_sum": null
+        },
+        "version": 1
+      },
+      "started_at_utc": "2026-07-23T02:05:58.797174+00:00",
+      "task_id": 363693,
+      "test_rmse": 3.6720283232358732,
+      "test_rows": 15244,
+      "train_rows": 30486,
+      "warmup": {
+        "iterations": 2,
+        "linear_leaves": "auto",
+        "rows": 1400
+      },
+      "warnings": []
+    },
+    {
+      "arm": "explicit_linear",
+      "categorical_features": [],
+      "completed_at_utc": "2026-07-23T02:06:18.204185+00:00",
+      "coordinate": 0,
+      "core_booster_state_sha256": "cb1f610223f43b44d6e1b0c7a6a033c3ada4310d58fda87ecdc89807eee1267f",
+      "dataset": "physiochemical_protein",
+      "environment": {
+        "CHIMERABOOST_WARMUP": "0",
+        "DARKOFIT_WARMUP": "0",
+        "MKL_DYNAMIC": "FALSE",
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0"
+      },
+      "feature_count": 9,
+      "fingerprints": {
+        "X_test": "bfe984e9ad9876e14684f72e561f8bcb078ada9d4f34720dcdb3d2873d0251e9",
+        "X_train": "2de75270b4f17b4c3a914727fe384bd17af7bf87114fb94a6eb9b6cf83a4bba6",
+        "combined_sha256": "88e9e1cb742d160a72bd4fc1977613f41f2a48bb713ebe1ec4bd17365d165e9a",
+        "y_test": "8dd2415697e8aa6a17aac1b395d80476f234ae55bac535b2edc0ea9c66a172b8",
+        "y_train": "f94dcf15be72db52d567424b361578ce0a79fb5930bf02721d18dfa75469dcc9"
+      },
+      "fit_rss": {
+        "end_bytes": 324206592,
+        "errors": [],
+        "interval_seconds": 0.005,
+        "peak_bytes": 324239360,
+        "peak_delta_bytes": 13139968,
+        "samples": 275,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 311099392
+      },
+      "fit_seconds": 4.102707334,
+      "fold": 0,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module": "darkofit.sklearn_api",
+        "module_path": "/private/tmp/darkofit-smooth-selector-20260722/darkofit/sklearn_api.py",
+        "module_sha256": "1fc4ba6a3f7b9c2ff57a6c94a933624eaee6d4dcdf84d9403141ed7838f07c9c"
+      },
+      "kind": "automatic_linear_selector_v2_protein_worker",
+      "model": {
+        "best_n_estimators": 1000,
+        "learning_rate": 0.070253,
+        "linear_leaves_active": true,
+        "requested_linear_leaves": true,
+        "resolved_thread_count": 14,
+        "selected_linear_leaves": true,
+        "tree_count": 1000
+      },
+      "numba_threads_after_fit": 14,
+      "numba_threads_after_predict": 14,
+      "numba_threads_after_timing": 14,
+      "numba_threads_before_fit": 14,
+      "parent_pid": 24548,
+      "pid": 24659,
+      "position": 2,
+      "prediction": {
+        "calls": 56,
+        "interval_seconds": 1.008355708,
+        "pilot_median_seconds": 0.018096209,
+        "pilots_seconds": [
+          0.018096209,
+          0.018815666,
+          0.01693675
+        ],
+        "prediction_sha256": "c5ebb330587528e49c361ba1521ec75ffb436b6ea9dc08dded1ea9516fd265b5",
+        "rows": 15244,
+        "rows_per_second": 846590.1399945265,
+        "seconds_per_call": 0.01800635192857143
+      },
+      "prediction_sha256": "c5ebb330587528e49c361ba1521ec75ffb436b6ea9dc08dded1ea9516fd265b5",
+      "repeat": 0,
+      "schema_version": 1,
+      "seed": 0,
+      "selector": null,
+      "started_at_utc": "2026-07-23T02:06:11.742703+00:00",
+      "task_id": 363693,
+      "test_rmse": 3.6720283232358732,
+      "test_rows": 15244,
+      "train_rows": 30486,
+      "warmup": {
+        "iterations": 2,
+        "linear_leaves": true,
+        "rows": 1400
+      },
+      "warnings": []
+    },
+    {
+      "arm": "automatic",
+      "categorical_features": [],
+      "completed_at_utc": "2026-07-23T02:06:29.173987+00:00",
+      "coordinate": 1,
+      "core_booster_state_sha256": "a879e43162d4da81b3e574f79ff9025cef9fcd42d9dc426ee1755efbefee1f30",
+      "dataset": "physiochemical_protein",
+      "environment": {
+        "CHIMERABOOST_WARMUP": "0",
+        "DARKOFIT_WARMUP": "0",
+        "MKL_DYNAMIC": "FALSE",
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0"
+      },
+      "feature_count": 9,
+      "fingerprints": {
+        "X_test": "c36be17af45971260dc369d8a8bb339795841b4d43561b005c0d99ad66c0ecbf",
+        "X_train": "a959d1eaadf00d1dd36fed3de96ee8d8329ff63b5ee3781ef417d8aaf798b13e",
+        "combined_sha256": "2d7f22d94f5308ee464da1eea65e64bf98923453222fdd0aee99377e8323d173",
+        "y_test": "c178054de8605fe1eb81c388ebdf1d0aad28e862df8293aca1b79bc3731bcc11",
+        "y_train": "200ff370886d9aa70f46887b4baf09ece9032ad5270bd65398f02c3ec89d41b5"
+      },
+      "fit_rss": {
+        "end_bytes": 342130688,
+        "errors": [],
+        "interval_seconds": 0.005,
+        "peak_bytes": 342163456,
+        "peak_delta_bytes": 28229632,
+        "samples": 568,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 313933824
+      },
+      "fit_seconds": 8.557627125,
+      "fold": 1,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module": "darkofit.sklearn_api",
+        "module_path": "/private/tmp/darkofit-smooth-selector-20260722/darkofit/sklearn_api.py",
+        "module_sha256": "1fc4ba6a3f7b9c2ff57a6c94a933624eaee6d4dcdf84d9403141ed7838f07c9c"
+      },
+      "kind": "automatic_linear_selector_v2_protein_worker",
+      "model": {
+        "best_n_estimators": 1000,
+        "learning_rate": 0.070254,
+        "linear_leaves_active": false,
+        "requested_linear_leaves": "auto",
+        "resolved_thread_count": 14,
+        "selected_linear_leaves": false,
+        "tree_count": 1000
+      },
+      "numba_threads_after_fit": 14,
+      "numba_threads_after_predict": 14,
+      "numba_threads_after_timing": 14,
+      "numba_threads_before_fit": 14,
+      "parent_pid": 24548,
+      "pid": 24719,
+      "position": 0,
+      "prediction": {
+        "calls": 115,
+        "interval_seconds": 0.977218542,
+        "pilot_median_seconds": 0.008744791,
+        "pilots_seconds": [
+          0.008671917,
+          0.008855,
+          0.008744791
+        ],
+        "prediction_sha256": "1bc7480c550062cd37faae60006a6601fb4bbc72744f058841ecdeb6f4a0cde1",
+        "rows": 15243,
+        "rows_per_second": 1793810.621329778,
+        "seconds_per_call": 0.008497552539130435
+      },
+      "prediction_sha256": "1bc7480c550062cd37faae60006a6601fb4bbc72744f058841ecdeb6f4a0cde1",
+      "repeat": 1,
+      "schema_version": 1,
+      "seed": 1001,
+      "selector": {
+        "constant_validation_rmse": 3.8221733216481106,
+        "eligible": true,
+        "final_booster_linear_leaves": false,
+        "final_linear_leaves_active": false,
+        "fit_random_state_seed": 1001,
+        "linear_validation_rmse": 3.7259366662375974,
+        "minimum_relative_improvement": 0.03,
+        "reason": "margin_below_threshold",
+        "relative_validation_improvement": 0.025178516857267005,
+        "requested": "auto",
+        "resolved_linear_leaves": false,
+        "selection_fits": [
+          {
+            "best_n_estimators": 1000,
+            "fit_seconds": 2.205906541,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 3.8221733216481106
+          },
+          {
+            "best_n_estimators": 941,
+            "fit_seconds": 3.94297475,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 3.7259366662375974
+          }
+        ],
+        "selection_total_seconds": 6.150432083,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": false,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "a41d06b749c84e469fffe3007e288874ac62f9e8039d26701aa5406a3bf2d2cc",
+          "train_rows": 24389,
+          "train_weight_sum": null,
+          "validation_positions_sha256": "592d1d70e6e69a96207104283985be197ffacb4b0497308e7c884e5f0bd69d47",
+          "validation_rows": 6098,
+          "validation_weight_sum": null
+        },
+        "version": 1
+      },
+      "started_at_utc": "2026-07-23T02:06:18.375307+00:00",
+      "task_id": 363693,
+      "test_rmse": 3.8162381424149006,
+      "test_rows": 15243,
+      "train_rows": 30487,
+      "warmup": {
+        "iterations": 2,
+        "linear_leaves": "auto",
+        "rows": 1400
+      },
+      "warnings": []
+    },
+    {
+      "arm": "explicit_linear",
+      "categorical_features": [],
+      "completed_at_utc": "2026-07-23T02:06:35.872842+00:00",
+      "coordinate": 1,
+      "core_booster_state_sha256": "0edf3a200c8a48816791aca29e378c257af6c9c948ecbd208dad3239dd4d4683",
+      "dataset": "physiochemical_protein",
+      "environment": {
+        "CHIMERABOOST_WARMUP": "0",
+        "DARKOFIT_WARMUP": "0",
+        "MKL_DYNAMIC": "FALSE",
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0"
+      },
+      "feature_count": 9,
+      "fingerprints": {
+        "X_test": "c36be17af45971260dc369d8a8bb339795841b4d43561b005c0d99ad66c0ecbf",
+        "X_train": "a959d1eaadf00d1dd36fed3de96ee8d8329ff63b5ee3781ef417d8aaf798b13e",
+        "combined_sha256": "2d7f22d94f5308ee464da1eea65e64bf98923453222fdd0aee99377e8323d173",
+        "y_test": "c178054de8605fe1eb81c388ebdf1d0aad28e862df8293aca1b79bc3731bcc11",
+        "y_train": "200ff370886d9aa70f46887b4baf09ece9032ad5270bd65398f02c3ec89d41b5"
+      },
+      "fit_rss": {
+        "end_bytes": 328876032,
+        "errors": [],
+        "interval_seconds": 0.005,
+        "peak_bytes": 328876032,
+        "peak_delta_bytes": 18300928,
+        "samples": 277,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 310575104
+      },
+      "fit_seconds": 4.101892208,
+      "fold": 1,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module": "darkofit.sklearn_api",
+        "module_path": "/private/tmp/darkofit-smooth-selector-20260722/darkofit/sklearn_api.py",
+        "module_sha256": "1fc4ba6a3f7b9c2ff57a6c94a933624eaee6d4dcdf84d9403141ed7838f07c9c"
+      },
+      "kind": "automatic_linear_selector_v2_protein_worker",
+      "model": {
+        "best_n_estimators": 1000,
+        "learning_rate": 0.070254,
+        "linear_leaves_active": true,
+        "requested_linear_leaves": true,
+        "resolved_thread_count": 14,
+        "selected_linear_leaves": true,
+        "tree_count": 1000
+      },
+      "numba_threads_after_fit": 14,
+      "numba_threads_after_predict": 14,
+      "numba_threads_after_timing": 14,
+      "numba_threads_before_fit": 14,
+      "parent_pid": 24548,
+      "pid": 24755,
+      "position": 1,
+      "prediction": {
+        "calls": 46,
+        "interval_seconds": 0.9843215,
+        "pilot_median_seconds": 0.022020042,
+        "pilots_seconds": [
+          0.01980725,
+          0.022020042,
+          0.026024083
+        ],
+        "prediction_sha256": "9ba53fa38183e5cbc66628251929c09ab31e2549233195a57b8a6477113374f3",
+        "rows": 15243,
+        "rows_per_second": 712346.5249920884,
+        "seconds_per_call": 0.021398293478260867
+      },
+      "prediction_sha256": "9ba53fa38183e5cbc66628251929c09ab31e2549233195a57b8a6477113374f3",
+      "repeat": 1,
+      "schema_version": 1,
+      "seed": 1001,
+      "selector": null,
+      "started_at_utc": "2026-07-23T02:06:29.357718+00:00",
+      "task_id": 363693,
+      "test_rmse": 3.6119958522288966,
+      "test_rows": 15243,
+      "train_rows": 30487,
+      "warmup": {
+        "iterations": 2,
+        "linear_leaves": true,
+        "rows": 1400
+      },
+      "warnings": []
+    },
+    {
+      "arm": "constant",
+      "categorical_features": [],
+      "completed_at_utc": "2026-07-23T02:06:40.694115+00:00",
+      "coordinate": 1,
+      "core_booster_state_sha256": "a879e43162d4da81b3e574f79ff9025cef9fcd42d9dc426ee1755efbefee1f30",
+      "dataset": "physiochemical_protein",
+      "environment": {
+        "CHIMERABOOST_WARMUP": "0",
+        "DARKOFIT_WARMUP": "0",
+        "MKL_DYNAMIC": "FALSE",
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0"
+      },
+      "feature_count": 9,
+      "fingerprints": {
+        "X_test": "c36be17af45971260dc369d8a8bb339795841b4d43561b005c0d99ad66c0ecbf",
+        "X_train": "a959d1eaadf00d1dd36fed3de96ee8d8329ff63b5ee3781ef417d8aaf798b13e",
+        "combined_sha256": "2d7f22d94f5308ee464da1eea65e64bf98923453222fdd0aee99377e8323d173",
+        "y_test": "c178054de8605fe1eb81c388ebdf1d0aad28e862df8293aca1b79bc3731bcc11",
+        "y_train": "200ff370886d9aa70f46887b4baf09ece9032ad5270bd65398f02c3ec89d41b5"
+      },
+      "fit_rss": {
+        "end_bytes": 322207744,
+        "errors": [],
+        "interval_seconds": 0.005,
+        "peak_bytes": 322224128,
+        "peak_delta_bytes": 10190848,
+        "samples": 153,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 312033280
+      },
+      "fit_seconds": 2.29635575,
+      "fold": 1,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module": "darkofit.sklearn_api",
+        "module_path": "/private/tmp/darkofit-smooth-selector-20260722/darkofit/sklearn_api.py",
+        "module_sha256": "1fc4ba6a3f7b9c2ff57a6c94a933624eaee6d4dcdf84d9403141ed7838f07c9c"
+      },
+      "kind": "automatic_linear_selector_v2_protein_worker",
+      "model": {
+        "best_n_estimators": 1000,
+        "learning_rate": 0.070254,
+        "linear_leaves_active": false,
+        "requested_linear_leaves": false,
+        "resolved_thread_count": 14,
+        "selected_linear_leaves": false,
+        "tree_count": 1000
+      },
+      "numba_threads_after_fit": 14,
+      "numba_threads_after_predict": 14,
+      "numba_threads_after_timing": 14,
+      "numba_threads_before_fit": 14,
+      "parent_pid": 24548,
+      "pid": 24767,
+      "position": 2,
+      "prediction": {
+        "calls": 110,
+        "interval_seconds": 0.974435792,
+        "pilot_median_seconds": 0.009164833,
+        "pilots_seconds": [
+          0.008663209,
+          0.009164833,
+          0.00952275
+        ],
+        "prediction_sha256": "1bc7480c550062cd37faae60006a6601fb4bbc72744f058841ecdeb6f4a0cde1",
+        "rows": 15243,
+        "rows_per_second": 1720718.8136619679,
+        "seconds_per_call": 0.008858507199999999
+      },
+      "prediction_sha256": "1bc7480c550062cd37faae60006a6601fb4bbc72744f058841ecdeb6f4a0cde1",
+      "repeat": 1,
+      "schema_version": 1,
+      "seed": 1001,
+      "selector": null,
+      "started_at_utc": "2026-07-23T02:06:36.055528+00:00",
+      "task_id": 363693,
+      "test_rmse": 3.8162381424149006,
+      "test_rows": 15243,
+      "train_rows": 30487,
+      "warmup": {
+        "iterations": 2,
+        "linear_leaves": false,
+        "rows": 1400
+      },
+      "warnings": []
+    },
+    {
+      "arm": "explicit_linear",
+      "categorical_features": [],
+      "completed_at_utc": "2026-07-23T02:06:47.294096+00:00",
+      "coordinate": 2,
+      "core_booster_state_sha256": "033ca4a77d64bf9c7cc3e7761669d584bd22f994a8038abaa6dbf439f29caa26",
+      "dataset": "physiochemical_protein",
+      "environment": {
+        "CHIMERABOOST_WARMUP": "0",
+        "DARKOFIT_WARMUP": "0",
+        "MKL_DYNAMIC": "FALSE",
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0"
+      },
+      "feature_count": 9,
+      "fingerprints": {
+        "X_test": "8127fa53dca6422b157668bf50cead66b169d0630ed4a944646c7e57958d013f",
+        "X_train": "17011c2857c0d756306b24342629cf0c02fee6633edd94b106ad93957d277cb7",
+        "combined_sha256": "e9e44958b94bbcb462434041a9c0df76eae8cfd6d893fbac3ce8bd9a9b6ad819",
+        "y_test": "263d6c8db9979a19fb79426eabc5ed3731edb124f08785661a8a3fed3967d9a7",
+        "y_train": "2ced6120f46ed8882697e64ef45be82790870f049287b04fa8307143cb38a0a1"
+      },
+      "fit_rss": {
+        "end_bytes": 330711040,
+        "errors": [],
+        "interval_seconds": 0.005,
+        "peak_bytes": 330711040,
+        "peak_delta_bytes": 17285120,
+        "samples": 278,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 313425920
+      },
+      "fit_seconds": 4.151264416,
+      "fold": 2,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module": "darkofit.sklearn_api",
+        "module_path": "/private/tmp/darkofit-smooth-selector-20260722/darkofit/sklearn_api.py",
+        "module_sha256": "1fc4ba6a3f7b9c2ff57a6c94a933624eaee6d4dcdf84d9403141ed7838f07c9c"
+      },
+      "kind": "automatic_linear_selector_v2_protein_worker",
+      "model": {
+        "best_n_estimators": 1000,
+        "learning_rate": 0.070254,
+        "linear_leaves_active": true,
+        "requested_linear_leaves": true,
+        "resolved_thread_count": 14,
+        "selected_linear_leaves": true,
+        "tree_count": 1000
+      },
+      "numba_threads_after_fit": 14,
+      "numba_threads_after_predict": 14,
+      "numba_threads_after_timing": 14,
+      "numba_threads_before_fit": 14,
+      "parent_pid": 24548,
+      "pid": 24802,
+      "position": 0,
+      "prediction": {
+        "calls": 46,
+        "interval_seconds": 0.887084875,
+        "pilot_median_seconds": 0.021870625,
+        "pilots_seconds": [
+          0.021870625,
+          0.022216625,
+          0.019305542
+        ],
+        "prediction_sha256": "272c4fb64763cea02b2d56269cf1405fa901483ba3e72b4cf1fe4127ccef4a2c",
+        "rows": 15243,
+        "rows_per_second": 790429.4388967009,
+        "seconds_per_call": 0.019284453804347824
+      },
+      "prediction_sha256": "272c4fb64763cea02b2d56269cf1405fa901483ba3e72b4cf1fe4127ccef4a2c",
+      "repeat": 2,
+      "schema_version": 1,
+      "seed": 2002,
+      "selector": null,
+      "started_at_utc": "2026-07-23T02:06:40.869817+00:00",
+      "task_id": 363693,
+      "test_rmse": 3.6642873541999106,
+      "test_rows": 15243,
+      "train_rows": 30487,
+      "warmup": {
+        "iterations": 2,
+        "linear_leaves": true,
+        "rows": 1400
+      },
+      "warnings": []
+    },
+    {
+      "arm": "constant",
+      "categorical_features": [],
+      "completed_at_utc": "2026-07-23T02:06:52.015503+00:00",
+      "coordinate": 2,
+      "core_booster_state_sha256": "220d8e92760435edff727fba0fae070bc4df46c34ef5b8e69a20bba2c13b7a61",
+      "dataset": "physiochemical_protein",
+      "environment": {
+        "CHIMERABOOST_WARMUP": "0",
+        "DARKOFIT_WARMUP": "0",
+        "MKL_DYNAMIC": "FALSE",
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0"
+      },
+      "feature_count": 9,
+      "fingerprints": {
+        "X_test": "8127fa53dca6422b157668bf50cead66b169d0630ed4a944646c7e57958d013f",
+        "X_train": "17011c2857c0d756306b24342629cf0c02fee6633edd94b106ad93957d277cb7",
+        "combined_sha256": "e9e44958b94bbcb462434041a9c0df76eae8cfd6d893fbac3ce8bd9a9b6ad819",
+        "y_test": "263d6c8db9979a19fb79426eabc5ed3731edb124f08785661a8a3fed3967d9a7",
+        "y_train": "2ced6120f46ed8882697e64ef45be82790870f049287b04fa8307143cb38a0a1"
+      },
+      "fit_rss": {
+        "end_bytes": 323141632,
+        "errors": [],
+        "interval_seconds": 0.005,
+        "peak_bytes": 323158016,
+        "peak_delta_bytes": 7831552,
+        "samples": 151,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 315326464
+      },
+      "fit_seconds": 2.265994417,
+      "fold": 2,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module": "darkofit.sklearn_api",
+        "module_path": "/private/tmp/darkofit-smooth-selector-20260722/darkofit/sklearn_api.py",
+        "module_sha256": "1fc4ba6a3f7b9c2ff57a6c94a933624eaee6d4dcdf84d9403141ed7838f07c9c"
+      },
+      "kind": "automatic_linear_selector_v2_protein_worker",
+      "model": {
+        "best_n_estimators": 1000,
+        "learning_rate": 0.070254,
+        "linear_leaves_active": false,
+        "requested_linear_leaves": false,
+        "resolved_thread_count": 14,
+        "selected_linear_leaves": false,
+        "tree_count": 1000
+      },
+      "numba_threads_after_fit": 14,
+      "numba_threads_after_predict": 14,
+      "numba_threads_after_timing": 14,
+      "numba_threads_before_fit": 14,
+      "parent_pid": 24548,
+      "pid": 24846,
+      "position": 1,
+      "prediction": {
+        "calls": 119,
+        "interval_seconds": 1.009433833,
+        "pilot_median_seconds": 0.008460125,
+        "pilots_seconds": [
+          0.008460125,
+          0.00828425,
+          0.0085165
+        ],
+        "prediction_sha256": "0c6d8e0f1f37b114e3c3c628dfd51a4cf1d90af7a614770779d7a83e0972ea03",
+        "rows": 15243,
+        "rows_per_second": 1796964.7347851477,
+        "seconds_per_call": 0.00848263725210084
+      },
+      "prediction_sha256": "0c6d8e0f1f37b114e3c3c628dfd51a4cf1d90af7a614770779d7a83e0972ea03",
+      "repeat": 2,
+      "schema_version": 1,
+      "seed": 2002,
+      "selector": null,
+      "started_at_utc": "2026-07-23T02:06:47.475849+00:00",
+      "task_id": 363693,
+      "test_rmse": 3.836046937794856,
+      "test_rows": 15243,
+      "train_rows": 30487,
+      "warmup": {
+        "iterations": 2,
+        "linear_leaves": false,
+        "rows": 1400
+      },
+      "warnings": []
+    },
+    {
+      "arm": "automatic",
+      "categorical_features": [],
+      "completed_at_utc": "2026-07-23T02:07:05.034153+00:00",
+      "coordinate": 2,
+      "core_booster_state_sha256": "033ca4a77d64bf9c7cc3e7761669d584bd22f994a8038abaa6dbf439f29caa26",
+      "dataset": "physiochemical_protein",
+      "environment": {
+        "CHIMERABOOST_WARMUP": "0",
+        "DARKOFIT_WARMUP": "0",
+        "MKL_DYNAMIC": "FALSE",
+        "MKL_NUM_THREADS": "14",
+        "NUMBA_NUM_THREADS": "14",
+        "NUMEXPR_NUM_THREADS": "14",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_NUM_THREADS": "14",
+        "OPENBLAS_NUM_THREADS": "14",
+        "PYTHONHASHSEED": "0"
+      },
+      "feature_count": 9,
+      "fingerprints": {
+        "X_test": "8127fa53dca6422b157668bf50cead66b169d0630ed4a944646c7e57958d013f",
+        "X_train": "17011c2857c0d756306b24342629cf0c02fee6633edd94b106ad93957d277cb7",
+        "combined_sha256": "e9e44958b94bbcb462434041a9c0df76eae8cfd6d893fbac3ce8bd9a9b6ad819",
+        "y_test": "263d6c8db9979a19fb79426eabc5ed3731edb124f08785661a8a3fed3967d9a7",
+        "y_train": "2ced6120f46ed8882697e64ef45be82790870f049287b04fa8307143cb38a0a1"
+      },
+      "fit_rss": {
+        "end_bytes": 335921152,
+        "errors": [],
+        "interval_seconds": 0.005,
+        "peak_bytes": 335953920,
+        "peak_delta_bytes": 24739840,
+        "samples": 697,
+        "scope": "worker_plus_recursive_children",
+        "start_bytes": 311214080
+      },
+      "fit_seconds": 10.4466835,
+      "fold": 2,
+      "implementation": {
+        "class": "DarkoRegressor",
+        "module": "darkofit.sklearn_api",
+        "module_path": "/private/tmp/darkofit-smooth-selector-20260722/darkofit/sklearn_api.py",
+        "module_sha256": "1fc4ba6a3f7b9c2ff57a6c94a933624eaee6d4dcdf84d9403141ed7838f07c9c"
+      },
+      "kind": "automatic_linear_selector_v2_protein_worker",
+      "model": {
+        "best_n_estimators": 1000,
+        "learning_rate": 0.070254,
+        "linear_leaves_active": true,
+        "requested_linear_leaves": "auto",
+        "resolved_thread_count": 14,
+        "selected_linear_leaves": true,
+        "tree_count": 1000
+      },
+      "numba_threads_after_fit": 14,
+      "numba_threads_after_predict": 14,
+      "numba_threads_after_timing": 14,
+      "numba_threads_before_fit": 14,
+      "parent_pid": 24548,
+      "pid": 24854,
+      "position": 2,
+      "prediction": {
+        "calls": 53,
+        "interval_seconds": 1.01685375,
+        "pilot_median_seconds": 0.018869375,
+        "pilots_seconds": [
+          0.017471,
+          0.018869375,
+          0.019762041
+        ],
+        "prediction_sha256": "272c4fb64763cea02b2d56269cf1405fa901483ba3e72b4cf1fe4127ccef4a2c",
+        "rows": 15243,
+        "rows_per_second": 794488.8829883354,
+        "seconds_per_call": 0.019185919811320753
+      },
+      "prediction_sha256": "272c4fb64763cea02b2d56269cf1405fa901483ba3e72b4cf1fe4127ccef4a2c",
+      "repeat": 2,
+      "schema_version": 1,
+      "seed": 2002,
+      "selector": {
+        "constant_validation_rmse": 3.8758016766461716,
+        "eligible": true,
+        "final_booster_linear_leaves": true,
+        "final_linear_leaves_active": true,
+        "fit_random_state_seed": 2002,
+        "linear_validation_rmse": 3.730986489584949,
+        "minimum_relative_improvement": 0.03,
+        "reason": "selected_linear",
+        "relative_validation_improvement": 0.037363931166502475,
+        "requested": "auto",
+        "resolved_linear_leaves": true,
+        "selection_fits": [
+          {
+            "best_n_estimators": 1000,
+            "fit_seconds": 2.244686125,
+            "linear_leaves": false,
+            "linear_leaves_active": false,
+            "name": "constant",
+            "validation_rmse": 3.8758016766461716
+          },
+          {
+            "best_n_estimators": 995,
+            "fit_seconds": 4.018048292,
+            "linear_leaves": true,
+            "linear_leaves_active": true,
+            "name": "linear",
+            "validation_rmse": 3.730986489584949
+          }
+        ],
+        "selection_total_seconds": 6.264301166,
+        "split": {
+          "group_disjoint": null,
+          "policy": "weighted_target_stratified",
+          "rows_disjoint": true,
+          "sample_weight_provided": false,
+          "source": "automatic_holdout",
+          "train_positions_sha256": "ab8b29a32e0d670f2e6cb840da1e23d082892c5082d7d12b3d6b6aea744e4c9f",
+          "train_rows": 24389,
+          "train_weight_sum": null,
+          "validation_positions_sha256": "861edaedea87a7130399fc9966beb3651c32029e7d6364b6d42873534bddc89b",
+          "validation_rows": 6098,
+          "validation_weight_sum": null
+        },
+        "version": 1
+      },
+      "started_at_utc": "2026-07-23T02:06:52.188711+00:00",
+      "task_id": 363693,
+      "test_rmse": 3.6642873541999106,
+      "test_rows": 15243,
+      "train_rows": 30487,
+      "warmup": {
+        "iterations": 2,
+        "linear_leaves": "auto",
+        "rows": 1400
+      },
+      "warnings": []
+    }
+  ],
+  "schema_version": 1
+}

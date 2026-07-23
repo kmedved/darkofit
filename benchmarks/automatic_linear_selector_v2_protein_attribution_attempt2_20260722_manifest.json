@@ -1,0 +1,263 @@
+{
+  "attempt_index": 2,
+  "attempt_spent": true,
+  "bindings": {
+    "BEAT_CHIMERABOOST_PLAN.md": {
+      "sha256": "b620b4e8cc522c02b08076607bc3c064d873c5d3a2997676343e628537ed0119"
+    },
+    "attempt1_terminal_lineage": {
+      "attempt_index": 1,
+      "attempt_spent": true,
+      "candidate_commit": "a53d4bf543534678189d87d88dcad87dd2a8bd8f",
+      "completed_worker_count": 0,
+      "contract_id": "automatic-linear-selector-v2-protein-attribution-20260722",
+      "disposition": "terminal_execution_failure",
+      "scientific_outcome_observed": false
+    },
+    "benchmarks/automatic_linear_selector_v2_development_contract.md": {
+      "sha256": "fe2d476417e8e8087a3c7342eee0d5cb82a6b8a4ee3f360a1806ee4c0922163b"
+    },
+    "benchmarks/automatic_linear_selector_v2_m6_v3_inspection1_result_20260722.json": {
+      "sha256": "7445b70ca3bc727bb24f8990ceef590ca933eb1dd45ccefe9ee5788eff211948"
+    },
+    "benchmarks/automatic_linear_selector_v2_m6_v3_inspection1_result_20260722.json.manifest.json": {
+      "sha256": "601f069896cdf664fcab470abe8c3643f0c0aacf5f79572a6663e304af3d7782"
+    },
+    "benchmarks/automatic_linear_selector_v2_protein_attribution_attempt1_20260722_manifest.json": {
+      "sha256": "4b4471cdba3beab6cc9dc2cce8d1c8835bfa01cebc986321b9541f89e191def4"
+    },
+    "benchmarks/automatic_linear_selector_v2_protein_attribution_attempt1_20260722_result.json": {
+      "sha256": "e4bb44356c90d18e88c252bc2a9c8d197303e4a4cb750daacee6eda3c104ab0f"
+    },
+    "benchmarks/automatic_linear_selector_v2_protein_attribution_attempt1_result.md": {
+      "sha256": "9c1283bfbeda19fdd32a320c113220913e684da91a2eaa0564bf8114e26cddad"
+    },
+    "benchmarks/automatic_linear_selector_v2_protein_attribution_attempt2_protocol.md": {
+      "sha256": "736d2033ae46593ee36667bc3ac80da261895b9b9648531a4f72f2d875f9191e"
+    },
+    "benchmarks/automatic_linear_selector_v2_protein_attribution_protocol.md": {
+      "sha256": "e231ab25297cb61280ed72716a423d2ec86c71403a5521d40c3ea5d346580d8f"
+    },
+    "benchmarks/run_automatic_linear_selector_v2_protein_attribution.py": {
+      "sha256": "cfb21064b48c8acc73587118a88004eb3c65e74f3552408a1133c9243257711d"
+    },
+    "benchmarks/run_automatic_linear_selector_v2_protein_attribution_attempt2.py": {
+      "sha256": "e14ffd3efca20b5ed29f7d534802a7f7df09144c0d757b7e789142f4840586d6"
+    },
+    "benchmarks/run_v011_compute_ladder.py": {
+      "sha256": "db5b47af68fa0d74458c9d48d0c441caee8621cf1922542df2a27668118d14fb"
+    },
+    "benchmarks/v011_compute_ladder_contract_v3_20260722.json": {
+      "sha256": "61e788f06b88eefcc2e3c08a38402bf93246e7334980a77061b46763650b581a"
+    },
+    "benchmarks/v011_compute_ladder_v3_raw.json": {
+      "sha256": "96f594da1a0ea885aa55d45636049d97b9b6e1a7f56d85679dfe879420636f79"
+    },
+    "r1_authorization_commit": "d938d99bbc6324a0d8d34129a4c3b1c0ba2da5a9",
+    "tests/test_automatic_linear_selector_v2_protein_attribution.py": {
+      "sha256": "0229511ab9d83122f406348b72c33c5f7ed3f6bde620b26ec349dc19b850d6e7"
+    },
+    "tests/test_automatic_linear_selector_v2_protein_attribution_attempt2.py": {
+      "sha256": "a1f48e9bdbfec4a29549d123e08b37d848aad1ffac44e3af8ef544313fa215ba"
+    }
+  },
+  "command": [
+    "/private/tmp/darkofit-selector-protein-runenv-20260722/bin/python",
+    "benchmarks/run_automatic_linear_selector_v2_protein_attribution_attempt2.py",
+    "--candidate-source",
+    "/private/tmp/darkofit-smooth-selector-20260722",
+    "--tabarena-source",
+    "/private/tmp/tabarena-m2-4cd1d25",
+    "--output-prefix",
+    "/private/tmp/automatic_linear_selector_v2_protein_attribution_attempt2_20260722"
+  ],
+  "contract_id": "automatic-linear-selector-v2-protein-attribution-attempt2-20260722",
+  "created_at_utc": "2026-07-23T02:05:53.765681+00:00",
+  "data_loader_preflight": {
+    "checked_at_utc": "2026-07-23T02:05:53.761294+00:00",
+    "coordinates": [
+      {
+        "combined_split_sha256": "88e9e1cb742d160a72bd4fc1977613f41f2a48bb713ebe1ec4bd17365d165e9a",
+        "coordinate": 0,
+        "feature_count": 9,
+        "fold": 0,
+        "repeat": 0,
+        "seed": 0,
+        "task_id": 363693,
+        "test_rows": 15244,
+        "train_rows": 30486
+      },
+      {
+        "combined_split_sha256": "2d7f22d94f5308ee464da1eea65e64bf98923453222fdd0aee99377e8323d173",
+        "coordinate": 1,
+        "feature_count": 9,
+        "fold": 1,
+        "repeat": 1,
+        "seed": 1001,
+        "task_id": 363693,
+        "test_rows": 15243,
+        "train_rows": 30487
+      },
+      {
+        "combined_split_sha256": "e9e44958b94bbcb462434041a9c0df76eae8cfd6d893fbac3ce8bd9a9b6ad819",
+        "coordinate": 2,
+        "feature_count": 9,
+        "fold": 2,
+        "repeat": 2,
+        "seed": 2002,
+        "task_id": 363693,
+        "test_rows": 15243,
+        "train_rows": 30487
+      }
+    ],
+    "darkofit_remained_unloaded": true,
+    "loader": "direct_openml_equivalent_to_tabarena_openml_task_wrapper",
+    "packages": {
+      "numpy": "2.2.6",
+      "openml": "0.15.1",
+      "pandas": "2.2.3",
+      "scikit-learn": "1.7.1"
+    },
+    "product_modules_before": {
+      "darkofit": false,
+      "tabarena": false
+    },
+    "python_executable": "/private/tmp/darkofit-selector-protein-runenv-20260722/bin/python"
+  },
+  "exclusive_machine_audit": {
+    "checked_at_utc": "2026-07-23T02:05:52.632750+00:00",
+    "conflicting_benchmark_processes": []
+  },
+  "grid": [
+    {
+      "arm": "constant",
+      "coordinate": 0,
+      "fold": 0,
+      "position": 0,
+      "repeat": 0,
+      "seed": 0
+    },
+    {
+      "arm": "automatic",
+      "coordinate": 0,
+      "fold": 0,
+      "position": 1,
+      "repeat": 0,
+      "seed": 0
+    },
+    {
+      "arm": "explicit_linear",
+      "coordinate": 0,
+      "fold": 0,
+      "position": 2,
+      "repeat": 0,
+      "seed": 0
+    },
+    {
+      "arm": "automatic",
+      "coordinate": 1,
+      "fold": 1,
+      "position": 0,
+      "repeat": 1,
+      "seed": 1001
+    },
+    {
+      "arm": "explicit_linear",
+      "coordinate": 1,
+      "fold": 1,
+      "position": 1,
+      "repeat": 1,
+      "seed": 1001
+    },
+    {
+      "arm": "constant",
+      "coordinate": 1,
+      "fold": 1,
+      "position": 2,
+      "repeat": 1,
+      "seed": 1001
+    },
+    {
+      "arm": "explicit_linear",
+      "coordinate": 2,
+      "fold": 2,
+      "position": 0,
+      "repeat": 2,
+      "seed": 2002
+    },
+    {
+      "arm": "constant",
+      "coordinate": 2,
+      "fold": 2,
+      "position": 1,
+      "repeat": 2,
+      "seed": 2002
+    },
+    {
+      "arm": "automatic",
+      "coordinate": 2,
+      "fold": 2,
+      "position": 2,
+      "repeat": 2,
+      "seed": 2002
+    }
+  ],
+  "hardware": {
+    "load_average": [
+      4.54931640625,
+      4.556640625,
+      4.06884765625
+    ],
+    "logical_cpus": 14,
+    "machine": "arm64",
+    "memory_bytes": 25769803776,
+    "physical_cpus": 14,
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.11.8 (main, Feb 26 2024, 15:36:12) [Clang 14.0.6 ]"
+  },
+  "mechanism_id": "automatic_linear_selector_v2",
+  "ordered_grid_sha256": "ac0b11c552cb3117a7d90a28c3778d4d8f4167c652f2d0d1608fbf2bc4799645",
+  "planned_outputs": {
+    "manifest": "/private/tmp/automatic_linear_selector_v2_protein_attribution_attempt2_20260722_manifest.json",
+    "raw": "/private/tmp/automatic_linear_selector_v2_protein_attribution_attempt2_20260722_raw.json",
+    "result": "/private/tmp/automatic_linear_selector_v2_protein_attribution_attempt2_20260722_result.json"
+  },
+  "schema_version": 1,
+  "sources": {
+    "candidate": {
+      "clean": true,
+      "head": "a53d4bf543534678189d87d88dcad87dd2a8bd8f",
+      "package_init_sha256": "d43d95eb23e994b0b165d23473262a3f49581e8a72267a48dfe271163413b9ba",
+      "path": "/private/tmp/darkofit-smooth-selector-20260722",
+      "status": [],
+      "tree": "983238140d1f3fd95a13b0a02aa01e30045ba4bc"
+    },
+    "harness": {
+      "clean": true,
+      "head": "4cb9debef576025590ca69a10fe3dd85080fbb6a",
+      "path": "/private/tmp/darkofit-selector-protein-attempt2-20260722",
+      "status": [],
+      "tree": "7a70d006ef8917aa21073f9302e07d12fa814a47"
+    },
+    "tabarena": {
+      "commit": "4cd1d2526874962daae048a6f2dcf34aa272f3fa",
+      "module_sha256": "5384bfdb2df380b6557cc7a71d16891415bccaa87699406e236f752c6415389f",
+      "path": "/private/tmp/tabarena-m2-4cd1d25",
+      "status": "",
+      "tree": "a293df372a613c7358ba5fcd746f58d580cde7d6"
+    }
+  },
+  "status": "launched_before_worker_zero",
+  "worker_environment": {
+    "CHIMERABOOST_WARMUP": "0",
+    "DARKOFIT_WARMUP": "0",
+    "MKL_DYNAMIC": "FALSE",
+    "MKL_NUM_THREADS": "14",
+    "NUMBA_NUM_THREADS": "14",
+    "NUMEXPR_NUM_THREADS": "14",
+    "OMP_DYNAMIC": "FALSE",
+    "OMP_NUM_THREADS": "14",
+    "OPENBLAS_NUM_THREADS": "14",
+    "PYTHONHASHSEED": "0"
+  }
+}

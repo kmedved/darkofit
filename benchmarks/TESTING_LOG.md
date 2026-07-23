@@ -2124,6 +2124,63 @@ B-archive simulation remains non-loadable, optional size telemetry.
     allowed. Candidate remains private/unmerged. A powered fresh Tier-D design
     requires a separate owner authorization before data access.
 
+### 51. Automatic linear-selector v2 Protein attempt 2 and terminal replay (2026-07-22/23)
+
+1. **Execution date/source:** 2026-07-22/23; clean published attempt-2 harness
+   `4cb9debef576025590ca69a10fe3dd85080fbb6a`, published artifact-only replay
+   analyzer `f72b549`, and exact clean private candidate
+   `a53d4bf543534678189d87d88dcad87dd2a8bd8f`.
+2. **Comparators:** constant leaves, the automatic 3% validation-margin
+   selector, and explicit linear leaves under the same Protein configuration.
+3. **Evidence class:** three already-spent Protein release-ladder coordinates,
+   followed by a dependent, prior-outcome-known historical artifact replay.
+   Neither is fresh or independent confirmation.
+4. **Data/splits:** OpenML task 363693 (`physiochemical_protein`), coordinates
+   `(repeat, fold, seed)` `(0,0,0)`, `(1,1,1001)`, `(2,2,2002)`; all direct-
+   loader split fingerprints matched the immutable v0.11 ladder rows before
+   manifest creation. Replay covered 14 smooth/process, three categorical,
+   three noisy-tabular, and one group-safe sports lineage.
+5. **Arms/policies:** cyclic Latin rotation of constant, automatic, and
+   explicit-linear arms; automatic selects linear only at relative validation
+   improvement `>=0.03`, then refits from scratch under original full-fit
+   semantics.
+6. **Environment/repeats:** isolated Python 3.11 run environment with OpenML
+   0.15.1, NumPy 2.2.6, pandas 2.3.3, scikit-learn 1.5.2; 14 threads, fresh
+   worker per arm, one completed cell per arm/coordinate, and exclusive-machine
+   audit passed. The replay fitted no model.
+7. **Runner/command:** `/private/tmp/darkofit-selector-protein-runenv-20260722/bin/python
+   benchmarks/run_automatic_linear_selector_v2_protein_attribution_attempt2.py
+   --candidate-source /private/tmp/darkofit-smooth-selector-20260722
+   --tabarena-source /private/tmp/tabarena-m2-4cd1d25 --output-prefix
+   /private/tmp/automatic_linear_selector_v2_protein_attribution_attempt2_20260722`;
+   then `python benchmarks/analyze_automatic_linear_selector_v2_guardrail_replay.py
+   --output /private/tmp/automatic_linear_selector_v2_guardrail_replay_20260722.json`.
+8. **Hashes:** attempt-2 manifest
+   `d6cbee2249046bc8eca05080eea38457c21d0d130076a59839b313c52c8b54b7`;
+   raw `0caaa2f97fd527976233f6511267c3df2b6487bc8d5a665d87c9fad2c3b11be7`;
+   result `4b75f4ae048e926ec07bf3a17c4a9e9356b52a7adfd869409594cc3878f7e61c`;
+   replay `1d0ac7eedbcc86dd83b47f826e77efb70071381d88a27a68c6dc61d31e707122`;
+   terminal attestation
+   `e35b6907ce1872a9f01ce5359d2b49064ef2bcd112b5952fcdd53db6a166387a`.
+9. **Primary results:** Protein automatic/constant equal-coordinate ratio
+   `0.968638`; coordinate ratios `0.951434`, `1.000000`, `0.955225`. Coordinate
+   1 margin was `0.025179`, so automatic declined and did not match explicit
+   linear. Historical combined ratio was `0.962739` across 21 lineages, with
+   worst lineage/split `1.0` and worst LOO `0.989084`.
+10. **Costs, passed and failed conditions:** both Protein harm gates passed;
+    the required all-coordinate selector/exactness gate failed. Automatic fit,
+    predict-call, and peak-RSS geomeans were `9.7597 s`, `0.01442 s`, and
+    `340.65 MB` versus constant `2.2863 s`, `0.00872 s`, and `323.95 MB`;
+    descriptive only.
+11. **Limitations/non-claims:** attempt 1's environment failure stays terminal;
+    attempt 2 is spent and may not rerun. Historical replay has prior outcome
+    knowledge and dependence, ran no candidate code, and cannot reverse the
+    Protein close. No fresh, merge, default, public, release, TabArena,
+    lockbox, quality, or speed claim.
+12. **Terminal decision/next action:** exact candidate disposition `killed`.
+    Preserve its branch and artifacts; do not rerun or merge. The next
+    separately governed mechanism slot is categorical crosses.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
