@@ -17,16 +17,15 @@ library.
 Consequences:
 
 - Quality mechanisms target **automatic engagement** as their end state.
-  Automatic policies and defaults take the full Tier-D path
-  (prospectively frozen protocol, design-time power ≥ 80%, harm bounds,
-  no-rerun); that path is core product work, not overhead.
-- Explicit opt-ins ship earlier under Tier-E (correctness + honest
-  characterization with uncertainty; measurements, never pass/fail
-  certificates), but the roadmap's destination is always the automatic
-  surface.
-- Behavior-exact engineering (dispatch, kernels) needs no materiality
-  bar: exactness, stable direction, bounded complexity, defined
-  envelope, rollback (`NEXT_STEPS.md` §4.7/§4.9).
+  Automatic defaults ship via the SHIP_RULES check: clearly better on
+  dev, not worse on the holdout, revertible flag — at most one
+  quality-changing automatic default per release.
+- Explicit opt-ins ship on correctness + honest characterization
+  (measurements with labels, never pass/fail certificates); the
+  roadmap's destination is always the automatic surface.
+- Behavior-exact engineering (dispatch, kernels, parallelism) needs no
+  materiality bar: exactness, stable direction, bounded complexity,
+  defined envelope, rollback.
 
 ## The goal: strict Pareto dominance over ChimeraBoost, moving target
 
@@ -42,40 +41,36 @@ deferred by owner decision.
 
 ## Governing documents, in precedence order
 
-1. [`benchmarks/SHIPPING_POLICY.md`](benchmarks/SHIPPING_POLICY.md) —
-   claim tiers and the Tier-D decision rule.
-2. [`NEXT_STEPS.md`](NEXT_STEPS.md) — gate reform: retracted gate
-   classes, standing gate-design rules (§4.9), authorization-matrix
-   pattern (§6).
-3. [`BEAT_CHIMERABOOST_PLAN.md`](BEAT_CHIMERABOOST_PLAN.md) — current
-   roadmap, victory conditions, sequencing.
-4. [`COUNTERPUNCH_PLAN.md`](COUNTERPUNCH_PLAN.md) — campaign history and
-   track definitions (largely executed; consult for context and frozen
-   records).
+1. [`SHIP_RULES.md`](SHIP_RULES.md) — **the current regime** (owner,
+   2026-07-23): the ship rule, the holdout, the scoreboard. The
+   preregistration/Tier-D apparatus is retired; prior campaign records
+   stand as history.
+2. [`BEAT_CHIMERABOOST_PLAN.md`](BEAT_CHIMERABOOST_PLAN.md) +
+   [`R2_PLAN.md`](R2_PLAN.md) — roadmap, victory definition, sequencing.
+3. [`NEXT_STEPS.md`](NEXT_STEPS.md), [`COUNTERPUNCH_PLAN.md`](COUNTERPUNCH_PLAN.md),
+   [`benchmarks/SHIPPING_POLICY.md`](benchmarks/SHIPPING_POLICY.md) —
+   historical context for how the evidence to date was produced.
 
-## Non-negotiable discipline
+## Working discipline (the light version)
 
-- **Frozen artifacts are immutable.** Wrong decisions are superseded by
-  new dated create-only records, never by editing history.
-- **One mechanism at a time**, through the pipeline: profile → smallest
-  private prototype → correctness invariants → M5 sentinels → M6 v2
-  (quality ranking only, see caution below) → sports panel → milestone.
-- **Every material run**: exact source pins (never a checkout's implicit
-  HEAD — the rival repo moves), fresh workers, exclusive machine for
-  timed work, create-only raw artifacts, a 12-field `TESTING_LOG.md`
-  entry, no rerun-to-improve.
-- **Gate design** (`NEXT_STEPS.md` §4.9): every gate names the
-  user-visible harm it prevents at plausible absolute magnitudes;
-  no round-number materiality bars; no rival-conditioned funding prongs;
-  size ratios are telemetry, never gates.
-- **Retraction completeness**: when a rule is retracted, sweep its
-  historical casualties for re-adjudication (a retracted rule with
-  unexamined victims is an unfinished retraction).
+- **Defaults ship** when clearly better on dev, not worse on the holdout,
+  and revertible via a documented flag. **Opt-ins ship** on correctness +
+  honest docs. Behavior-exact engineering ships on exactness tests.
+- **Never tune against the holdout** (SHIP_RULES). Label dev vs holdout
+  numbers everywhere they appear.
+- **Benchmarks are normal software**: fix bugs and rerun; keep source
+  pins (never a checkout's implicit HEAD — the rival repo moves) and
+  fixed seeds; note material runs in `TESTING_LOG.md` as a lab notebook.
+- **Exclusive machine for timed runs**; M5 sentinels stay on as cheap
+  regression detection.
 - **No sports-specific code**: sports needs enter only as generic
   abstractions (groups, group-safe validation/OOB, weights,
   deterministic sampling).
-- **No fresh-confirmation, TabArena, or lockbox access** without
-  explicit owner authorization naming the access.
+- **TabArena and the holdout are consulted deliberately** (ship-checks
+  and releases), not casually — they stay meaningful by staying rare.
+- **Don't rebuild the bureaucracy.** When a check fails, fix the bug and
+  rerun; do not add a new governance layer. Complexity in the evidence
+  machinery is a cost, not a virtue.
 
 ## Known tripwires
 
@@ -90,3 +85,11 @@ deferred by owner decision.
 - **Historical protocols may pin 18 threads**; the current machine has
   14. Machine-infeasible replays record `lacks_power`, they are not
   silently skipped.
+- **Expectations by execution, never by hand:** any frozen expectation
+  about candidate behavior (branch choices, engagement decisions,
+  resolved parameters) must be generated by executing the pinned
+  candidate code on the exact frozen inputs at design time — and every
+  campaign freeze requires a data-free rehearsal of the full worker path
+  (imports, warmup, policy resolution, integrity checks) first. The
+  P1-v3 one-shot was spent by a hand-derived expectation that used the
+  wrong row basis; a correct candidate failed an incorrect contract.

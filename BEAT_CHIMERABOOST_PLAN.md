@@ -1,12 +1,15 @@
 # BEAT_CHIMERABOOST_PLAN — the pathway to a clean win over the rival
 
-> **Status:** owner direction, 2026-07-22. Execution instruction for Codex.
-> Authorization: Phase A is signed off by the owner's adoption of this
-> document; each later phase names its own gate. Governing discipline is
-> unchanged: [`benchmarks/SHIPPING_POLICY.md`](benchmarks/SHIPPING_POLICY.md),
-> the gate-design rules in [`NEXT_STEPS.md`](NEXT_STEPS.md) §4.9, create-only
-> artifacts, TESTING_LOG entries, exclusive machine for timed runs, no
-> fresh-confirmation or lockbox access anywhere in this plan.
+> **Regime note (2026-07-23):** [`SHIP_RULES.md`](SHIP_RULES.md) governs
+> process, and [`R2_PLAN.md`](R2_PLAN.md) governs current sequencing and
+> owner decision points. References below to Tier-D, powered panels,
+> one-shots, campaign identities, authorizations, or sequencing are
+> historical. The strategy content (victory definition, frontier analysis,
+> mechanism targets) remains in force.
+> **Status:** strategy record. Current execution instructions are in
+> `R2_PLAN.md`. Historical authorizations below do not override SHIP_RULES or
+> R2. Exact source pins, fixed seeds, exclusive-machine timing, and
+> TESTING_LOG notes remain current working discipline.
 
 ## 0. What "beat ChimeraBoost" means (owner definition, 2026-07-22)
 
@@ -22,11 +25,12 @@ curve at every evaluated budget, with the memory lead retained and the
 prediction curves reported the same way. A win at one budget cannot excuse
 a loss at another; dominance means the whole curve.
 
-Today's known frontier positions vs the 0.18 pin: DarkoFit is ahead on
+Historical pre-v0.11 frontier snapshot against the 0.18 pin: DarkoFit was
+ahead on
 sports quality (−2.9%), training speed (0.81×), memory (0.84×), and
 grid-shape prediction (0.49×, 16/16); behind on broad singles quality
 (1.0174, W-L 6-7) and panel-shape prediction (1.32×); the ensemble
-comparison becomes measurable once v0.11 ships.
+comparison would become measurable once v0.11 shipped.
 
 The two structural facts this plan exploits: the broad-quality deficit is
 **concentrated** — near-parity on 11/13 datasets, with `airfoil_self_noise`
@@ -40,17 +44,17 @@ selectors, auto dispatch, auto compute-budget configuration. Manual knobs
 exist as escape hatches and research surfaces, not as the product story:
 a library where everything must be configured by hand is too complicated
 to be the best library. Consequence for this program: quality mechanisms
-target **automatic engagement** as their end state, which means the
-Tier-D path (powered panels, harm-bounded selectors) is core product
-work, not an optional extra. This directive is recorded durably in
+target **automatic engagement** as their end state. Automatic defaults use
+the SHIP_RULES check: clearly better on development, not worse on the
+holdout, and revertible. This directive is recorded durably in
 [`AGENTS.md`](AGENTS.md).
 
 ---
 
-## Phase A — Ship what is built: v0.11 (authorized now)
+## Phase A — Ship what is built: v0.11 (completed; historical)
 
-The evidence conditions gated on are met (reproduction clean, stop
-conditions clear). Execute:
+The evidence conditions were met (reproduction clean, stop conditions
+clear). Historical execution record:
 
 1. **Expose ensemble-v3 publicly** exactly per the frozen
    [`ensemble_v3_public_contract.md`](benchmarks/ensemble_v3_public_contract.md):
@@ -84,11 +88,12 @@ conditions clear). Execute:
    already recorded.
 5. The unrelated README/site/dossier edits remain a separate checkpoint.
 
-**Deliverable:** public v0.11, the first release where a user can opt into an
+**Historical deliverable:** public v0.11, the first release where a user
+could opt into an
 ensemble that beat the matched DarkoFit single on all 13 fixed development
 cases, while retaining the single-model speed/memory posture as a separate
 compute point. No cross-engine quality claim is made until Phase E measures
-the compute ladder directly. Estimated effort: half a day; M4 is deferred.
+the compute ladder directly. M4 remained deferred.
 
 ---
 
@@ -242,7 +247,7 @@ linear-leaves selector as an expectation. M6 v2 stays frozen and usable
 under its existing caution; any future M6 v3 must draw its backtest
 expectations only from verdicts that survive this audit.
 
-## Sequencing summary
+## Historical sequencing summary (superseded by Revision R1 and R2)
 
 | Order | Work | Gate |
 | --- | --- | --- |
@@ -254,7 +259,7 @@ expectations only from verdicts that survive this audit.
 | D | Panel-shape prediction mechanism | Owner confirms at its slot |
 | E | Milestone frontier ladder + scoreboard each release | Standing, per release sign-off |
 
-The one-sentence version: **ship the ensemble now; verify, then take back
+The historical one-sentence version: **ship the ensemble now; verify, then take back
 the two smooth-data datasets using the selector your own abolished gate
 killed — rebuilt as an automatic feature, because automation is the
 product; audit every other verdict the dead rules produced; keep the
@@ -263,7 +268,7 @@ quality-versus-compute curve against whatever ChimeraBoost has become.**
 
 ---
 
-## Revision R1 — post-ladder reprioritization (owner decision, 2026-07-22)
+## Revision R1 — post-ladder reprioritization (historical; superseded by R2)
 
 The v0.11 compute ladder against ChimeraBoost 0.20 did not achieve
 dominance. The owner reviewed the decomposition and decided: **the fork
