@@ -264,8 +264,12 @@ _PRIVATE_ENSEMBLE_V3_MEMBER_OVERRIDES = frozenset({
     "ensemble_mode",
     "ensemble_member_learning_rate",
     "ensemble_member_colsample",
+    "thread_count",
     *_PRIVATE_ENSEMBLE_V3_POLICY_FIELDS,
 })
+_B3_PARALLEL_ENSEMBLE_CONTRACT = (
+    "b3-parallel-ensemble-members-v1-20260723"
+)
 
 
 def _is_private_ensemble_v3_metadata(metadata):
@@ -791,6 +795,60 @@ def _validate_loaded_private_ensemble_v3_metadata(
     allow_legacy_param_schema=True,
 ):
     """Fail closed on private B1/B2 fitted and persistence provenance."""
+    member_count = len(members)
+    b3_schedule = metadata.get("private_b3_schedule")
+    if b3_schedule is None:
+        scheduling_valid = metadata.get("sequential") is True
+        expected_member_thread_count = None
+    else:
+        scheduling_valid = (
+            metadata.get("sequential") is False
+            and isinstance(b3_schedule, Mapping)
+            and set(b3_schedule)
+            == {
+                "contract",
+                "mode",
+                "workers",
+                "member_threads",
+                "total_thread_budget",
+                "maximum_model_threads",
+                "result_order",
+            }
+            and b3_schedule.get("contract")
+            == _B3_PARALLEL_ENSEMBLE_CONTRACT
+            and b3_schedule.get("mode") == "private_process_workers"
+            and b3_schedule.get("result_order") == "member_index"
+        )
+        if scheduling_valid:
+            for name in (
+                "workers",
+                "member_threads",
+                "total_thread_budget",
+                "maximum_model_threads",
+            ):
+                value = b3_schedule.get(name)
+                if (
+                    isinstance(value, bool)
+                    or not isinstance(value, int)
+                    or value < 1
+                ):
+                    scheduling_valid = False
+                    break
+        if scheduling_valid:
+            expected_topology = _resolve_b3_parallel_topology(
+                member_count, b3_schedule["total_thread_budget"]
+            )
+            scheduling_valid = (
+                expected_topology
+                == (b3_schedule["workers"], b3_schedule["member_threads"])
+                and b3_schedule["maximum_model_threads"]
+                == b3_schedule["workers"] * b3_schedule["member_threads"]
+                and b3_schedule["maximum_model_threads"]
+                <= b3_schedule["total_thread_budget"]
+            )
+        expected_member_thread_count = (
+            b3_schedule.get("member_threads") if scheduling_valid else None
+        )
     release_candidate = _is_ensemble_v3_release_candidate_metadata(metadata)
     expected_version = (
         _ENSEMBLE_V3_RELEASE_CANDIDATE_METADATA_VERSION
@@ -808,13 +866,12 @@ def _validate_loaded_private_ensemble_v3_metadata(
         or metadata.get("claim_tier") != "E"
         or metadata.get("default_changed") is not False
         or metadata.get("public_fit_surface") is not False
-        or metadata.get("sequential") is not True
+        or not scheduling_valid
         or metadata.get("oob_early_stopping") is not True
     ):
         raise ValueError(
             "invalid DarkoFit model: private ensemble-v3 provenance is invalid"
         )
-    member_count = len(members)
     if (
         isinstance(metadata.get("member_count"), bool)
         or not isinstance(metadata.get("member_count"), int)
@@ -1164,6 +1221,7 @@ def _validate_loaded_private_ensemble_v3_metadata(
                     saved_base_params,
                     seed=seed,
                     policy_resolutions=resolutions,
+                    thread_count=expected_member_thread_count,
                 )
             )
             actual_booster_params = _booster_constructor_params(
@@ -1424,6 +1482,21 @@ def _validate_loaded_private_ensemble_v3_metadata(
         ):
             raise ValueError(
                 "invalid DarkoFit model: private ensemble-v3 fitted metadata differs"
+            )
+        if b3_schedule is None:
+            if "prediction_thread_count" in record:
+                raise ValueError(
+                    "invalid DarkoFit model: sequential ensemble carries B3 "
+                    "thread provenance"
+                )
+        elif (
+            record.get("fitted_thread_count")
+            != expected_member_thread_count
+            or record.get("prediction_thread_count")
+            != int(model.n_threads_)
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: B3 member thread provenance differs"
             )
         validation = getattr(model, "auto_params_", {}).get(
             "validation_split"
@@ -7079,7 +7152,7 @@ def _private_ensemble_v3_base_constructor_params(
 
 
 def _private_ensemble_v3_expected_member_params(
-    base_params, *, seed, policy_resolutions
+    base_params, *, seed, policy_resolutions, thread_count=None
 ):
     expected = dict(base_params)
     expected.update({
@@ -7094,7 +7167,108 @@ def _private_ensemble_v3_expected_member_params(
     })
     for name in _PRIVATE_ENSEMBLE_V3_POLICY_FIELDS:
         expected[name] = policy_resolutions[name]["resolved"]
+    if thread_count is not None:
+        expected["thread_count"] = int(thread_count)
     return expected
+
+
+def _resolve_b3_parallel_topology(n_members, total_thread_budget):
+    """Resolve the contract-frozen private B3 worker topology."""
+    if isinstance(n_members, (bool, np.bool_)) or not isinstance(
+        n_members, (int, np.integer)
+    ):
+        raise TypeError("n_members must be a positive integer")
+    if isinstance(total_thread_budget, (bool, np.bool_)) or not isinstance(
+        total_thread_budget, (int, np.integer)
+    ):
+        raise TypeError("total_thread_budget must be a positive integer")
+    n_members = int(n_members)
+    total_thread_budget = int(total_thread_budget)
+    if n_members < 1:
+        raise ValueError("n_members must be positive")
+    if total_thread_budget < 1:
+        raise ValueError("total_thread_budget must be positive")
+    workers = min(n_members, max(1, total_thread_budget // 2))
+    member_threads = max(1, total_thread_budget // workers)
+    if workers * member_threads > total_thread_budget:
+        raise RuntimeError("B3 topology exceeds the total thread budget")
+    return workers, member_threads
+
+
+def _fit_private_ensemble_v3_member(payload):
+    """Fit one preplanned v3 member; suitable for a process worker."""
+    estimator = payload["estimator"]
+    member_index = int(payload["member_index"])
+    member_seed = int(payload["member_seed"])
+    plan = payload["plan"]
+    sampled = plan["sampled"]
+    oob = plan["oob"]
+    member = clone(estimator)
+    overrides = {
+        "n_ensembles": 1,
+        "random_state": member_seed,
+        "early_stopping": True,
+        "use_best_model": True,
+        "refit": False,
+        "ensemble_mode": "bootstrap",
+        "ensemble_member_learning_rate": _ENSEMBLE_V3_POLICY_SENTINEL,
+        "ensemble_member_colsample": _ENSEMBLE_V3_POLICY_SENTINEL,
+        **payload["policy_member_params"],
+    }
+    if payload["member_thread_count"] is not None:
+        overrides["thread_count"] = int(payload["member_thread_count"])
+    member.set_params(**overrides)
+    if hasattr(estimator, "_group_centered_crosses_private_mode"):
+        member._group_centered_crosses_private_mode = "off"
+    member._suppress_wrapper_deprecation_warning = True
+    if payload["shared_eligible"]:
+        member._shared_numeric_preprocessing_ = {
+            "prep": payload["shared_prep"],
+            "X_binned": np.asarray(payload["full_binned"][sampled]),
+        }
+    sample_weight = payload["sample_weight_checked"]
+    member_sample_weight = (
+        None if sample_weight is None else sample_weight[sampled]
+    )
+    member_eval_weight = None if sample_weight is None else sample_weight[oob]
+    group_values = payload["group_values"]
+    try:
+        member.fit(
+            _take_rows(payload["X"], sampled),
+            _take_rows(payload["y"], sampled),
+            cat_features=payload["cat_features"],
+            eval_set=(
+                _take_rows(payload["X"], oob),
+                _take_rows(payload["y"], oob),
+            ),
+            groups=(
+                None if group_values is None else group_values[sampled]
+            ),
+            sample_weight=member_sample_weight,
+            eval_sample_weight=member_eval_weight,
+            ordinal_features=payload["member_ordinal_features"],
+        )
+    finally:
+        if hasattr(member, "_shared_numeric_preprocessing_"):
+            del member._shared_numeric_preprocessing_
+        if hasattr(member, "_suppress_wrapper_deprecation_warning"):
+            del member._suppress_wrapper_deprecation_warning
+    validation = dict(member.model_.auto_params_.get("validation_split", {}))
+    if (
+        validation.get("source") != "explicit_eval_set"
+        or int(validation.get("train_n_samples", -1)) != len(sampled)
+        or int(validation.get("eval_n_samples", -1)) != len(oob)
+    ):
+        raise RuntimeError(
+            "private ensemble-v3 member did not bind training/OOB rows"
+        )
+    return {
+        "member_index": member_index,
+        "member_seed": member_seed,
+        "member": member,
+        "plan": plan,
+        "validation": validation,
+    }
 
 
 def _private_ensemble_v3_expected_booster_params(member, wrapper_params):
@@ -7148,12 +7322,15 @@ def _fit_private_ensemble_v3(
     eval_sample_weight=None,
     callbacks=None,
     ordinal_features=None,
+    b3_parallel=False,
+    b3_total_thread_budget=None,
 ):
     """Fit the contract-frozen private sequential B1/B2 prototype.
 
     This deliberately bypasses the public ``fit`` routing without adding a
     constructor surface. It is prediction/serialization capable, but only the
-    benchmark and invariant tests should call it.
+    benchmark and invariant tests should call it. ``b3_parallel`` is the
+    contract-frozen private scheduling experiment; public callers never set it.
     """
     previous_state = dict(estimator.__dict__)
     try:
@@ -7163,6 +7340,30 @@ def _fit_private_ensemble_v3(
             raise ValueError(
                 "the private ensemble-v3 prototype requires n_ensembles > 1"
             )
+        if not isinstance(b3_parallel, (bool, np.bool_)):
+            raise TypeError("b3_parallel must be a bool")
+        b3_parallel = bool(b3_parallel)
+        if b3_parallel:
+            b3_workers, b3_member_threads = _resolve_b3_parallel_topology(
+                n_members, b3_total_thread_budget
+            )
+            b3_schedule = {
+                "contract": _B3_PARALLEL_ENSEMBLE_CONTRACT,
+                "mode": "private_process_workers",
+                "workers": b3_workers,
+                "member_threads": b3_member_threads,
+                "total_thread_budget": int(b3_total_thread_budget),
+                "maximum_model_threads": b3_workers * b3_member_threads,
+                "result_order": "member_index",
+            }
+        else:
+            if b3_total_thread_budget is not None:
+                raise ValueError(
+                    "b3_total_thread_budget requires b3_parallel=True"
+                )
+            b3_workers = 1
+            b3_member_threads = None
+            b3_schedule = None
         if (
             hasattr(estimator, "preset")
             and _normalize_regression_preset(estimator.preset) is not None
@@ -7417,6 +7618,7 @@ def _fit_private_ensemble_v3(
         estimators = []
         member_metadata = []
         base_constructor_params = None
+        member_tasks = []
         for member_index, member_seed in enumerate(member_seeds):
             if sampling == "bootstrap":
                 plan = _ensemble_bootstrap_plan(
@@ -7439,72 +7641,56 @@ def _fit_private_ensemble_v3(
                     required_class_count=required_class_count,
                     sample_weight=sample_weight_checked,
                 )
+            member_tasks.append({
+                "estimator": estimator,
+                "member_index": member_index,
+                "member_seed": member_seed,
+                "plan": plan,
+                "X": X,
+                "y": y,
+                "cat_features": cat_features,
+                "group_values": group_values,
+                "sample_weight_checked": sample_weight_checked,
+                "member_ordinal_features": member_ordinal_features,
+                "policy_member_params": policy_member_params,
+                "shared_eligible": shared_eligible,
+                "shared_prep": shared_prep,
+                "full_binned": full_binned,
+                "member_thread_count": b3_member_threads,
+            })
+        if b3_parallel:
+            from joblib import Parallel, delayed, parallel_config
+
+            with parallel_config(
+                backend="loky", inner_max_num_threads=b3_member_threads
+            ):
+                member_outcomes = Parallel(n_jobs=b3_workers)(
+                    delayed(_fit_private_ensemble_v3_member)(task)
+                    for task in member_tasks
+                )
+        else:
+            member_outcomes = [
+                _fit_private_ensemble_v3_member(task)
+                for task in member_tasks
+            ]
+        if (
+            len(member_outcomes) != n_members
+            or {outcome.get("member_index") for outcome in member_outcomes}
+            != set(range(n_members))
+        ):
+            raise RuntimeError("private ensemble-v3 member results are invalid")
+        member_outcomes.sort(key=lambda outcome: outcome["member_index"])
+
+        for outcome in member_outcomes:
+            member_index = int(outcome["member_index"])
+            member_seed = int(outcome["member_seed"])
+            if member_seed != member_seeds[member_index]:
+                raise RuntimeError("private ensemble-v3 member seed changed")
+            member = outcome["member"]
+            plan = outcome["plan"]
+            validation = outcome["validation"]
             sampled = plan["sampled"]
             oob = plan["oob"]
-            member = clone(estimator)
-            member.set_params(
-                n_ensembles=1,
-                random_state=member_seed,
-                early_stopping=True,
-                use_best_model=True,
-                refit=False,
-                ensemble_mode="bootstrap",
-                ensemble_member_learning_rate=_ENSEMBLE_V3_POLICY_SENTINEL,
-                ensemble_member_colsample=_ENSEMBLE_V3_POLICY_SENTINEL,
-                **policy_member_params,
-            )
-            if hasattr(estimator, "_group_centered_crosses_private_mode"):
-                member._group_centered_crosses_private_mode = "off"
-            member._suppress_wrapper_deprecation_warning = True
-            if shared_eligible:
-                member._shared_numeric_preprocessing_ = {
-                    "prep": shared_prep,
-                    "X_binned": np.asarray(full_binned[sampled]),
-                }
-            member_sample_weight = (
-                None
-                if sample_weight_checked is None
-                else sample_weight_checked[sampled]
-            )
-            member_eval_weight = (
-                None
-                if sample_weight_checked is None
-                else sample_weight_checked[oob]
-            )
-            try:
-                member.fit(
-                    _take_rows(X, sampled),
-                    _take_rows(y, sampled),
-                    cat_features=cat_features,
-                    eval_set=(
-                        _take_rows(X, oob),
-                        _take_rows(y, oob),
-                    ),
-                    groups=(
-                        None
-                        if group_values is None
-                        else group_values[sampled]
-                    ),
-                    sample_weight=member_sample_weight,
-                    eval_sample_weight=member_eval_weight,
-                    ordinal_features=member_ordinal_features,
-                )
-            finally:
-                if hasattr(member, "_shared_numeric_preprocessing_"):
-                    del member._shared_numeric_preprocessing_
-                if hasattr(member, "_suppress_wrapper_deprecation_warning"):
-                    del member._suppress_wrapper_deprecation_warning
-            validation = dict(
-                member.model_.auto_params_.get("validation_split", {})
-            )
-            if (
-                validation.get("source") != "explicit_eval_set"
-                or int(validation.get("train_n_samples", -1)) != len(sampled)
-                or int(validation.get("eval_n_samples", -1)) != len(oob)
-            ):
-                raise RuntimeError(
-                    "private ensemble-v3 member did not bind training/OOB rows"
-                )
             member_constructor_params = (
                 _private_ensemble_v3_wrapper_constructor_params(member)
             )
@@ -7523,6 +7709,7 @@ def _fit_private_ensemble_v3(
                     base_constructor_params,
                     seed=member_seed,
                     policy_resolutions=serializable_policy_resolutions,
+                    thread_count=b3_member_threads,
                 )
             )
             if not _private_ensemble_v3_values_equal(
@@ -7608,6 +7795,15 @@ def _fit_private_ensemble_v3(
                     _private_ensemble_v3_scalar(member.colsample)
                 ),
                 "fitted_thread_count": int(member.model_.n_threads_),
+                **(
+                    {
+                        "prediction_thread_count": int(
+                            member.model_.n_threads_
+                        )
+                    }
+                    if b3_parallel
+                    else {}
+                ),
                 "best_iteration": int(member.best_n_estimators_),
                 "resolved_learning_rate": float(member.learning_rate_),
                 "stop_reason": str(
@@ -7632,7 +7828,7 @@ def _fit_private_ensemble_v3(
             "claim_tier": "E",
             "default_changed": False,
             "public_fit_surface": public_v3,
-            "sequential": True,
+            "sequential": not b3_parallel,
             "member_count": n_members,
             "member_seeds": list(member_seeds),
             "fit_random_state_seed": fit_seed,
@@ -7671,6 +7867,8 @@ def _fit_private_ensemble_v3(
             ),
             "members": member_metadata,
         }
+        if b3_schedule is not None:
+            metadata["private_b3_schedule"] = dict(b3_schedule)
         if public_v3:
             metadata.update({
                 "ensemble_mode": "v3",
@@ -7802,6 +8000,60 @@ def _fit_public_ensemble_v3(
         eval_sample_weight=eval_sample_weight,
         callbacks=callbacks,
         ordinal_features=ordinal_features,
+    )
+
+
+def _fit_public_ensemble_v3_parallel_candidate(
+    estimator,
+    X,
+    y,
+    *,
+    total_thread_budget,
+    cat_features=None,
+    eval_set=None,
+    groups=None,
+    sample_weight=None,
+    eval_sample_weight=None,
+    callbacks=None,
+    ordinal_features=None,
+):
+    """Fit the private B3 process-scheduled public-v3 candidate."""
+    ensemble_mode, future_values, explicit_values = (
+        _resolve_public_ensemble_surface(estimator)
+    )
+    if ensemble_mode != "v3":
+        raise ValueError("the private B3 candidate requires ensemble_mode='v3'")
+    n_members = _normalize_n_ensembles(estimator.n_ensembles)
+    if n_members != _ENSEMBLE_V3_RELEASE_CANDIDATE_MEMBERS:
+        raise ValueError(
+            "the private B3 candidate requires n_ensembles=8"
+        )
+    release_candidate_params = {
+        "ensemble_mode": "v3",
+        "ensemble_member_learning_rate": future_values["learning_rate"],
+        "ensemble_member_colsample": future_values["colsample"],
+    }
+    return _fit_private_ensemble_v3(
+        estimator,
+        X,
+        y,
+        sampling="without_replacement",
+        sampling_unit=estimator.ensemble_bootstrap,
+        sample_fraction=0.8,
+        member_policy="donor_balanced_v1",
+        explicit_user_params=tuple(explicit_values),
+        explicit_user_values=explicit_values,
+        release_candidate_params=release_candidate_params,
+        public_fit_surface=True,
+        cat_features=cat_features,
+        eval_set=eval_set,
+        groups=groups,
+        sample_weight=sample_weight,
+        eval_sample_weight=eval_sample_weight,
+        callbacks=callbacks,
+        ordinal_features=ordinal_features,
+        b3_parallel=True,
+        b3_total_thread_budget=total_thread_budget,
     )
 
 
