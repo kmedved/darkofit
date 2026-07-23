@@ -1,0 +1,120 @@
+{
+  "case_manifests_sha256": "7019b8ccfd27fa36458635f02c300ef227d55091115a1ceba266dbb63abc90a7",
+  "contract_id": "t7b-automatic-depth-spent-sports-v1-20260722",
+  "contract_sha256": "ac5a745378a086ed119af1d55a68e961ea95e1f74c4f307dce72ad9b6717fe1b",
+  "created_at_utc": "2026-07-23T00:03:49.980247+00:00",
+  "exclusive_machine": {
+    "checked_at_utc": "2026-07-23T00:03:49.980224+00:00",
+    "conflicting_benchmark_processes": [],
+    "load_average": [
+      5.93798828125,
+      4.84765625,
+      4.64697265625
+    ]
+  },
+  "general_preconditions": {
+    "invariants": {
+      "path": "benchmarks/t7b_automatic_depth_v1_invariants_20260722.json",
+      "sha256": "02362e5d7080c155add0846a58b6960db997bd29a0374e936a16a5a5364e5aff"
+    },
+    "launch": {
+      "path": "benchmarks/t7b_automatic_depth_v1_m6_inspection1_launch_manifest_20260722.json",
+      "sha256": "7eb95710c761f0682c00cf4b5971233089c70e654c5e5adc316d5388d933dc46"
+    },
+    "m5": {
+      "path": "benchmarks/t7b_automatic_depth_v1_m5_20260722.json",
+      "sha256": "1d3eac70f81babeb628850cf19844d7b4c590c6df67ded723fcf7caba019bca1"
+    },
+    "manifest": {
+      "path": "benchmarks/t7b_automatic_depth_v1_m6_inspection1_result_20260722.json.manifest.json",
+      "sha256": "dbb47702f4e7992f34e653ea1155a8638e4e1945dbda0da1eb582345c73c32c7"
+    },
+    "raw": {
+      "path": "benchmarks/t7b_automatic_depth_v1_m6_inspection1_raw_20260722.csv",
+      "sha256": "e8e651459fafdea7ace0d298ccedd2c8d87145b945928111d475a007b955bafe"
+    },
+    "result": {
+      "path": "benchmarks/t7b_automatic_depth_v1_m6_inspection1_result_20260722.json",
+      "sha256": "7af0c480221b5886c7bbf41f810147663d9da6e2c4171a70bc9db3a431eebb28"
+    },
+    "terminal": {
+      "path": "benchmarks/t7b_automatic_depth_v1_m6_inspection1_terminal_attestation_20260722.json",
+      "sha256": "b925aab09fdd71ca0f8887e1d3a4023c20412b2eefc337f2a2a7c1d5a267f598"
+    }
+  },
+  "harness": {
+    "clean": true,
+    "head": "ac51c3e3379f855ba960f684375bee49cf0910e4",
+    "path": "/private/tmp/darkofit-t7b-auto-depth-sports-contract-20260722",
+    "status": [],
+    "tree": "9445ce1b70544b6b97989ea432fda27417a339c7"
+  },
+  "inspection_index": 1,
+  "inspection_spent_on_manifest_creation": true,
+  "outputs": {
+    "launch": "/private/tmp/t7b_automatic_depth_sports_v1_inspection1_20260722_launch_manifest.json",
+    "raw": "/private/tmp/t7b_automatic_depth_sports_v1_inspection1_20260722_raw.json",
+    "result": "/private/tmp/t7b_automatic_depth_sports_v1_inspection1_20260722_result.json",
+    "terminal": "/private/tmp/t7b_automatic_depth_sports_v1_inspection1_20260722_terminal_attestation.json"
+  },
+  "panel_cache": {
+    "bytes": 379702,
+    "sha256": "8f7eab3765b4166740b150ed372f9607bcd6dd9673e0e73cc6541583230a59e6"
+  },
+  "quality_orders": {
+    "sports_2014_box_plus_minus": [
+      "control",
+      "candidate"
+    ],
+    "sports_2014_game_score": [
+      "candidate",
+      "control"
+    ],
+    "sports_2014_minutes_per_game": [
+      "control",
+      "candidate"
+    ],
+    "sports_2015_box_plus_minus": [
+      "candidate",
+      "control"
+    ],
+    "sports_2015_game_score": [
+      "control",
+      "candidate"
+    ],
+    "sports_2015_minutes_per_game": [
+      "candidate",
+      "control"
+    ],
+    "sports_2016_box_plus_minus": [
+      "control",
+      "candidate"
+    ],
+    "sports_2016_game_score": [
+      "candidate",
+      "control"
+    ],
+    "sports_2016_minutes_per_game": [
+      "control",
+      "candidate"
+    ]
+  },
+  "rerun_authorized": false,
+  "schema_version": 1,
+  "sources": {
+    "candidate": {
+      "clean": true,
+      "head": "41e948f0c53b1d124e16071a7fa66eba47d084d3",
+      "path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722",
+      "status": [],
+      "tree": "219baa9b0e0c6cc642163e44b2fef56dd86f40b7"
+    },
+    "control": {
+      "clean": true,
+      "head": "e23d2b164f10374b1c0e02521c33fc96d48980da",
+      "path": "/private/tmp/darkofit-t7b-auto-depth-control-e23d2b1",
+      "status": [],
+      "tree": "227e80df4c2a3761927b3682cc8ee8ed1edcf471"
+    }
+  }
+}

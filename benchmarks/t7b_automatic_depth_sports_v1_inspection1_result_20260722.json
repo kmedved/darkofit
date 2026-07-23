@@ -1,0 +1,142 @@
+{
+  "analysis": {
+    "case_count": 9,
+    "cold_player": {
+      "cluster_bootstrap": {
+        "cluster_count": 3,
+        "draws": 100000,
+        "percentiles": {
+          "p2_5": 0.9236046298511094,
+          "p50": 0.9502662058671156,
+          "p95": 0.9665910782546924,
+          "p97_5": 0.9720275932640814
+        },
+        "seed": 20260722
+      },
+      "leave_one_season_out": {
+        "omit_2014": 0.9395688942918463,
+        "omit_2015": 0.9638842337377516,
+        "omit_2016": 0.9475068260871458
+      },
+      "per_lineage_ratio": {
+        "sports_2014_box_plus_minus": 0.9948778533788128,
+        "sports_2014_game_score": 0.9762695090688718,
+        "sports_2014_minutes_per_game": 0.9455756757749116,
+        "sports_2015_box_plus_minus": 0.9691910799485384,
+        "sports_2015_game_score": 0.8781743212316692,
+        "sports_2015_minutes_per_game": 0.9256955195972124,
+        "sports_2016_box_plus_minus": 0.9097030229037966,
+        "sports_2016_game_score": 0.9625685811668391,
+        "sports_2016_minutes_per_game": 0.9971997454168474
+      },
+      "point_ratio": 0.9502662058671157,
+      "season_ratio": {
+        "2014": 0.9720275932640814,
+        "2015": 0.9236046298511094,
+        "2016": 0.9558090968676863
+      },
+      "worst_lineage": "sports_2016_minutes_per_game",
+      "worst_lineage_ratio": 0.9971997454168474,
+      "worst_loo_omission": "omit_2015",
+      "worst_loo_ratio": 0.9638842337377516,
+      "worst_season": "2014",
+      "worst_season_ratio": 0.9720275932640814
+    },
+    "disposition": "eligible_for_fresh_tier_d_design",
+    "fresh_confirmation_authorized": false,
+    "gates": {
+      "cluster_bootstrap_p95_at_most_1_010": true,
+      "cold_player_aggregate_at_most_1_000": true,
+      "held_team_aggregate_at_most_1_010": true,
+      "worst_lineage_at_most_1_030": true,
+      "worst_loo_at_most_1_003": true,
+      "worst_season_at_most_1_020": true
+    },
+    "held_team": {
+      "per_lineage_ratio": {
+        "sports_2014_box_plus_minus": 0.9963052704156407,
+        "sports_2014_game_score": 0.9744232601597804,
+        "sports_2014_minutes_per_game": 0.9442599708552323,
+        "sports_2015_box_plus_minus": 0.9683260511353927,
+        "sports_2015_game_score": 0.8808865573576681,
+        "sports_2015_minutes_per_game": 0.9316397300773737,
+        "sports_2016_box_plus_minus": 0.9111298022478425,
+        "sports_2016_game_score": 0.9626577694534555,
+        "sports_2016_minutes_per_game": 0.9964912252846276
+      },
+      "point_ratio": 0.9510784082154787,
+      "season_ratio": {
+        "2014": 0.9714278492431268,
+        "2015": 0.9262535094245339,
+        "2016": 0.9561115189128088
+      }
+    },
+    "season_cluster_count": 3,
+    "shipping_or_default_claim_eligible": false,
+    "telemetry_only": {
+      "archive_bytes": {
+        "equal_lineage_geomean_ratio": 0.7324515796823494,
+        "per_lineage_ratio": {
+          "sports_2014_box_plus_minus": 0.7999672284054098,
+          "sports_2014_game_score": 0.7763735115939001,
+          "sports_2014_minutes_per_game": 0.8558544240931304,
+          "sports_2015_box_plus_minus": 0.7823442031548419,
+          "sports_2015_game_score": 0.7570265583823976,
+          "sports_2015_minutes_per_game": 0.5670770916192336,
+          "sports_2016_box_plus_minus": 0.4788038723152042,
+          "sports_2016_game_score": 0.954038275359626,
+          "sports_2016_minutes_per_game": 0.7440342594742408
+        }
+      },
+      "fit_seconds": {
+        "equal_lineage_geomean_ratio": 0.6012813478686296,
+        "per_lineage_ratio": {
+          "sports_2014_box_plus_minus": 0.6205480949718056,
+          "sports_2014_game_score": 0.5101799867889123,
+          "sports_2014_minutes_per_game": 0.9551102760845387,
+          "sports_2015_box_plus_minus": 0.6839384171361352,
+          "sports_2015_game_score": 0.623275037828593,
+          "sports_2015_minutes_per_game": 0.38423643628260057,
+          "sports_2016_box_plus_minus": 0.360680868537149,
+          "sports_2016_game_score": 0.9670460910397713,
+          "sports_2016_minutes_per_game": 0.5946776905040241
+        }
+      },
+      "peak_rss_bytes": {
+        "equal_lineage_geomean_ratio": 0.9881957845941585,
+        "per_lineage_ratio": {
+          "sports_2014_box_plus_minus": 0.9957861635220125,
+          "sports_2014_game_score": 0.991304347826087,
+          "sports_2014_minutes_per_game": 0.9872388541891018,
+          "sports_2015_box_plus_minus": 1.002018800075705,
+          "sports_2015_game_score": 0.972872307405798,
+          "sports_2015_minutes_per_game": 0.9855586521408665,
+          "sports_2016_box_plus_minus": 1.0031414928373963,
+          "sports_2016_game_score": 0.9787658011084127,
+          "sports_2016_minutes_per_game": 0.9775443452006541
+        }
+      },
+      "predict_seconds": {
+        "equal_lineage_geomean_ratio": 1.038137649969455,
+        "per_lineage_ratio": {
+          "sports_2014_box_plus_minus": 0.23591672428719057,
+          "sports_2014_game_score": 4.424802922449675,
+          "sports_2014_minutes_per_game": 1.1413818317790385,
+          "sports_2015_box_plus_minus": 1.008216232690538,
+          "sports_2015_game_score": 1.0395777522873515,
+          "sports_2015_minutes_per_game": 1.1767407113844826,
+          "sports_2016_box_plus_minus": 0.747625213530869,
+          "sports_2016_game_score": 1.1666300739278643,
+          "sports_2016_minutes_per_game": 1.0927034421390536
+        }
+      }
+    }
+  },
+  "contract_id": "t7b-automatic-depth-spent-sports-v1-20260722",
+  "contract_sha256": "ac5a745378a086ed119af1d55a68e961ea95e1f74c4f307dce72ad9b6717fe1b",
+  "created_at_utc": "2026-07-23T00:04:16.293418+00:00",
+  "evidence_scope": "spent_player_disjoint_sports_development",
+  "raw_sha256": "31b4d18576ed35efae3fe89e07375f18b82c02668586a562aa9969d1c9f0830d",
+  "schema_version": 1,
+  "shipping_or_default_claim_eligible": false
+}

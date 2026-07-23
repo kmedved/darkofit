@@ -1,0 +1,2596 @@
+{
+  "case_manifests": {
+    "sports_2014_box_plus_minus": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "5ef55ab6dd5e69bb10627d45496def73f1a78f54c19024f4a552cdfba87f4880",
+        "dataset_sha256": "6ea65e3375612cbf824b8b47a956015e14c557b33b2c0be479e6c46c77634450",
+        "split_sha256": "016583436255659ec452ce44bbc45ecb18a242a44511cf53d8a2bfa77df104d5",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 221,
+      "primary_rows": 115,
+      "test_rows": 121
+    },
+    "sports_2014_game_score": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "e35bc194aa36dcbbaeed9d3db2ec982c1bd3a7b4ca19faf3e05134e5232a450c",
+        "dataset_sha256": "93ff2c8390d6dc967b9d06210650ec41ae1e17669268318e6ae1c45dadeab822",
+        "split_sha256": "aede51b29f865a67070eb82ec66f182e0e99d40368b14bc9f23fb15726aafeda",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 221,
+      "primary_rows": 115,
+      "test_rows": 121
+    },
+    "sports_2014_minutes_per_game": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "c42b6132305c228e05a825815e506e638994022d69ce6314dd11dd5c30a6caa2",
+        "dataset_sha256": "ee0e7943a6adf9e04f70bf5154d154d1790e745ea6a24d994d971feec772545d",
+        "split_sha256": "148e4a11ae70a0361a38574b54c336cedf16d03d872b0105cb8739fb7b765bcf",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 221,
+      "primary_rows": 115,
+      "test_rows": 121
+    },
+    "sports_2015_box_plus_minus": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "a4fd0f5dc35da2a5f6a3523b0ba8cbfff669ccf682330683fb8b6f0d13f0f129",
+        "dataset_sha256": "1c2ed4dab3e978c4f0e2c3d11a72da6180e0b5948fb1ddd48f0c62d839abd3ba",
+        "split_sha256": "7e06b911aaf699361400a73dab73286e3924e6f1c93dfaf111135caad77c61a7",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 246,
+      "primary_rows": 125,
+      "test_rows": 134
+    },
+    "sports_2015_game_score": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "e83acf48784293b507fd1f5b44b048940302b578e3efafbace0111e26224085e",
+        "dataset_sha256": "15ec3a7c5cc56c5e9ffeae3763b21e270ae0f1afd3c72f87806b74c54b4120c9",
+        "split_sha256": "6a882c06042173e9743dd2e68e48dd9c493cf0ba0e51ff4e41f416f5b4022599",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 246,
+      "primary_rows": 125,
+      "test_rows": 134
+    },
+    "sports_2015_minutes_per_game": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "8a827d3f9beee6fb225a42da5b0458154b9be29c8861506cf802225eb9484fa4",
+        "dataset_sha256": "ab7b59e8e0d9ad1460928b1374a58d14719c08b56dacff38d53973711f47c43a",
+        "split_sha256": "f0af2b701ab5058f74b8c4529467c222f20044d8dbc8229d71ec215fd50f9c00",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 246,
+      "primary_rows": 125,
+      "test_rows": 134
+    },
+    "sports_2016_box_plus_minus": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "545c2dd15de872e023a848191ed851c4d9886ab355c9ac1dc986598195ca1195",
+        "dataset_sha256": "83e84a46f21320399343da8a72d15aea68b8825170e0c237140d3ab4fe22c07b",
+        "split_sha256": "d58edfc33e53e9a36b028e3e02a7f8aaa20d9231b1dec5f9c7bf4e28f33ca574",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 232,
+      "primary_rows": 117,
+      "test_rows": 120
+    },
+    "sports_2016_game_score": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "1d9edd586ad426fc4ef4ec30f34da8f8b10761c888e499c2c061558bcb778a6d",
+        "dataset_sha256": "e11d73e3c304c90afd95ba99bff5992ed076cb7c6e6e7200a35486e07786e3db",
+        "split_sha256": "8c59397eb0bbbd42381e4057ea01541e54ff69f4457cd504f17c3fd7af6c9285",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 232,
+      "primary_rows": 117,
+      "test_rows": 120
+    },
+    "sports_2016_minutes_per_game": {
+      "class_count": null,
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "34f0081c4dd3ba8aa979c6e43a39eba1540e70658e0875e84f5212c5bf89f918",
+        "dataset_sha256": "74cf5edcecd31047d90a78a3b53e842c5bfea6de48b7ed64b75f8fb592eac9b8",
+        "split_sha256": "7c5d8edaae599396ed6b89fef1dbf75a518f4e0e92c1ad27a4b73459be7aae00",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 232,
+      "primary_rows": 117,
+      "test_rows": 120
+    }
+  },
+  "claims": {
+    "fresh_confirmation_authorized": false,
+    "lockbox_access_authorized": false,
+    "release_authorized": false,
+    "shipping_or_default_change_authorized": false,
+    "spent_player_disjoint_sports_development": true,
+    "tabarena_or_m2_authorized": false,
+    "tier": "E",
+    "timing_and_resources_are_single_run_telemetry": true
+  },
+  "contract_id": "t7b-automatic-depth-spent-sports-v1-20260722",
+  "contract_sha256": "ac5a745378a086ed119af1d55a68e961ea95e1f74c4f307dce72ad9b6717fe1b",
+  "created_at_utc": "2026-07-23T00:04:16.290519+00:00",
+  "execution": {
+    "bootstrap_clusters": [
+      2014,
+      2015,
+      2016
+    ],
+    "bootstrap_draws": 100000,
+    "bootstrap_seed": 20260722,
+    "create_only_no_rerun": true,
+    "early_stopping_rounds": 30,
+    "fresh_worker_per_case_arm": true,
+    "iterations": 600,
+    "quality_repeats": 1,
+    "random_state": 4,
+    "refit": false,
+    "same_arm_warmup_outside_measurement": true,
+    "threads": 4,
+    "use_best_model": true,
+    "validation_fraction": 0.15,
+    "validation_strategy": "group"
+  },
+  "launch_manifest_sha256": "07567f2585df0183bbd0f6dee9b3c18d678e28b3280ddd41c21331a23439bac1",
+  "panel_cache": {
+    "bytes": 379702,
+    "sha256": "8f7eab3765b4166740b150ed372f9607bcd6dd9673e0e73cc6541583230a59e6"
+  },
+  "rows": [
+    {
+      "ambient_thread_count_after_predict": 4,
+      "ambient_thread_count_before_fit": 4,
+      "archive_bytes": 50338,
+      "arm": "control",
+      "auto_structure": {
+        "candidates": {
+          "l2_leaf_reg": {
+            "base": 3.0,
+            "rule": "base_by_tree_mode_times_weight_concentration"
+          }
+        },
+        "n_eff": 187.0,
+        "n_eff_fraction": 1.0,
+        "resolved": {
+          "cat_smoothing": {
+            "cat_cardinalities": [],
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "depth": {
+            "input": null,
+            "resolved": 6,
+            "source": "default"
+          },
+          "l2_leaf_reg": {
+            "input": "auto",
+            "resolved": 3.0,
+            "source": "auto"
+          },
+          "min_child_samples": {
+            "input": 20,
+            "resolved": 20,
+            "source": "default"
+          },
+          "min_child_weight": {
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "num_leaves": {
+            "input": null,
+            "resolved": null,
+            "source": "default"
+          }
+        }
+      },
+      "case_id": "sports_2014_minutes_per_game",
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "c42b6132305c228e05a825815e506e638994022d69ce6314dd11dd5c30a6caa2",
+        "dataset_sha256": "ee0e7943a6adf9e04f70bf5154d154d1790e745ea6a24d994d971feec772545d",
+        "split_sha256": "148e4a11ae70a0361a38574b54c336cedf16d03d872b0105cb8739fb7b765bcf",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 221,
+      "fit_seconds": 0.12611645797733217,
+      "fitted_thread_counts": [
+        4
+      ],
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-control-e23d2b1/darkofit/sklearn_api.py",
+      "l2_leaf_reg": 3.0,
+      "numpy": "2.2.6",
+      "peak_rss_bytes": 304283648,
+      "predict_seconds": 0.2577420419838745,
+      "prediction_sha256": "267b1f667ec3229c8cf0b131e85f716159d3c39599526ff06ef6d89891037be3",
+      "primary_loss": 3.2721362058578696,
+      "primary_metric": "cold_player_rmse",
+      "primary_rows": 115,
+      "python": "3.11.8",
+      "requested_depth": null,
+      "requested_threads": 4,
+      "resolved_depth": 6,
+      "rss_errors": [],
+      "rss_samples": 18,
+      "runtime_after": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "safe_roundtrip_exact": true,
+      "season": 2014,
+      "secondary_loss": 3.2817460208863354,
+      "secondary_metric": "held_team_rmse",
+      "source_head": "e23d2b164f10374b1c0e02521c33fc96d48980da",
+      "source_tree": "227e80df4c2a3761927b3682cc8ee8ed1edcf471",
+      "target": "minutes_per_game",
+      "test_rows": 121,
+      "warnings": []
+    },
+    {
+      "ambient_thread_count_after_predict": 4,
+      "ambient_thread_count_before_fit": 4,
+      "archive_bytes": 43082,
+      "arm": "candidate",
+      "auto_structure": {
+        "candidates": {
+          "depth": {
+            "branch": "low_density",
+            "effective_rows_per_feature": 12.466666666666667,
+            "high_threshold": 2500.0,
+            "input_feature_count": 15,
+            "low_threshold": 100.0,
+            "n_eff": 187.0,
+            "rule": "scalar_rmse_catboost_n_eff_per_input_feature_4_6_8"
+          },
+          "l2_leaf_reg": {
+            "base": 3.0,
+            "rule": "base_by_tree_mode_times_weight_concentration"
+          }
+        },
+        "n_eff": 187.0,
+        "n_eff_fraction": 1.0,
+        "resolved": {
+          "cat_smoothing": {
+            "cat_cardinalities": [],
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "depth": {
+            "input": null,
+            "resolved": 4,
+            "source": "auto"
+          },
+          "l2_leaf_reg": {
+            "input": "auto",
+            "resolved": 3.0,
+            "source": "auto"
+          },
+          "min_child_samples": {
+            "input": 20,
+            "resolved": 20,
+            "source": "default"
+          },
+          "min_child_weight": {
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "num_leaves": {
+            "input": null,
+            "resolved": null,
+            "source": "default"
+          }
+        }
+      },
+      "case_id": "sports_2014_minutes_per_game",
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "c42b6132305c228e05a825815e506e638994022d69ce6314dd11dd5c30a6caa2",
+        "dataset_sha256": "ee0e7943a6adf9e04f70bf5154d154d1790e745ea6a24d994d971feec772545d",
+        "split_sha256": "148e4a11ae70a0361a38574b54c336cedf16d03d872b0105cb8739fb7b765bcf",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 221,
+      "fit_seconds": 0.12045512499753386,
+      "fitted_thread_counts": [
+        4
+      ],
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/sklearn_api.py",
+      "l2_leaf_reg": 3.0,
+      "numpy": "2.2.6",
+      "peak_rss_bytes": 300400640,
+      "predict_seconds": 0.2941820840060245,
+      "prediction_sha256": "a8f97f4859f48a9a97fc00ba291b8763a618399aa9b757c1946c7f04667735e5",
+      "primary_loss": 3.0940524040816104,
+      "primary_metric": "cold_player_rmse",
+      "primary_rows": 115,
+      "python": "3.11.8",
+      "requested_depth": null,
+      "requested_threads": 4,
+      "resolved_depth": 4,
+      "rss_errors": [],
+      "rss_samples": 19,
+      "runtime_after": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "safe_roundtrip_exact": true,
+      "season": 2014,
+      "secondary_loss": 3.0988214020364055,
+      "secondary_metric": "held_team_rmse",
+      "source_head": "41e948f0c53b1d124e16071a7fa66eba47d084d3",
+      "source_tree": "219baa9b0e0c6cc642163e44b2fef56dd86f40b7",
+      "target": "minutes_per_game",
+      "test_rows": 121,
+      "warnings": []
+    },
+    {
+      "ambient_thread_count_after_predict": 4,
+      "ambient_thread_count_before_fit": 4,
+      "archive_bytes": 44598,
+      "arm": "candidate",
+      "auto_structure": {
+        "candidates": {
+          "depth": {
+            "branch": "low_density",
+            "effective_rows_per_feature": 12.466666666666667,
+            "high_threshold": 2500.0,
+            "input_feature_count": 15,
+            "low_threshold": 100.0,
+            "n_eff": 187.0,
+            "rule": "scalar_rmse_catboost_n_eff_per_input_feature_4_6_8"
+          },
+          "l2_leaf_reg": {
+            "base": 3.0,
+            "rule": "base_by_tree_mode_times_weight_concentration"
+          }
+        },
+        "n_eff": 187.0,
+        "n_eff_fraction": 1.0,
+        "resolved": {
+          "cat_smoothing": {
+            "cat_cardinalities": [],
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "depth": {
+            "input": null,
+            "resolved": 4,
+            "source": "auto"
+          },
+          "l2_leaf_reg": {
+            "input": "auto",
+            "resolved": 3.0,
+            "source": "auto"
+          },
+          "min_child_samples": {
+            "input": 20,
+            "resolved": 20,
+            "source": "default"
+          },
+          "min_child_weight": {
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "num_leaves": {
+            "input": null,
+            "resolved": null,
+            "source": "default"
+          }
+        }
+      },
+      "case_id": "sports_2014_game_score",
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "e35bc194aa36dcbbaeed9d3db2ec982c1bd3a7b4ca19faf3e05134e5232a450c",
+        "dataset_sha256": "93ff2c8390d6dc967b9d06210650ec41ae1e17669268318e6ae1c45dadeab822",
+        "split_sha256": "aede51b29f865a67070eb82ec66f182e0e99d40368b14bc9f23fb15726aafeda",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 221,
+      "fit_seconds": 0.04023791698273271,
+      "fitted_thread_counts": [
+        4
+      ],
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/sklearn_api.py",
+      "l2_leaf_reg": 3.0,
+      "numpy": "2.2.6",
+      "peak_rss_bytes": 257753088,
+      "predict_seconds": 0.010325459006708115,
+      "prediction_sha256": "ab513cb41fb1e6c29b964674d3294343447236f604071ba0bb6285d4e14988cb",
+      "primary_loss": 1.4906798553543867,
+      "primary_metric": "cold_player_rmse",
+      "primary_rows": 115,
+      "python": "3.11.8",
+      "requested_depth": null,
+      "requested_threads": 4,
+      "resolved_depth": 4,
+      "rss_errors": [],
+      "rss_samples": 5,
+      "runtime_after": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "safe_roundtrip_exact": true,
+      "season": 2014,
+      "secondary_loss": 1.4993528086474395,
+      "secondary_metric": "held_team_rmse",
+      "source_head": "41e948f0c53b1d124e16071a7fa66eba47d084d3",
+      "source_tree": "219baa9b0e0c6cc642163e44b2fef56dd86f40b7",
+      "target": "game_score",
+      "test_rows": 121,
+      "warnings": []
+    },
+    {
+      "ambient_thread_count_after_predict": 4,
+      "ambient_thread_count_before_fit": 4,
+      "archive_bytes": 57444,
+      "arm": "control",
+      "auto_structure": {
+        "candidates": {
+          "l2_leaf_reg": {
+            "base": 3.0,
+            "rule": "base_by_tree_mode_times_weight_concentration"
+          }
+        },
+        "n_eff": 187.0,
+        "n_eff_fraction": 1.0,
+        "resolved": {
+          "cat_smoothing": {
+            "cat_cardinalities": [],
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "depth": {
+            "input": null,
+            "resolved": 6,
+            "source": "default"
+          },
+          "l2_leaf_reg": {
+            "input": "auto",
+            "resolved": 3.0,
+            "source": "auto"
+          },
+          "min_child_samples": {
+            "input": 20,
+            "resolved": 20,
+            "source": "default"
+          },
+          "min_child_weight": {
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "num_leaves": {
+            "input": null,
+            "resolved": null,
+            "source": "default"
+          }
+        }
+      },
+      "case_id": "sports_2014_game_score",
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "e35bc194aa36dcbbaeed9d3db2ec982c1bd3a7b4ca19faf3e05134e5232a450c",
+        "dataset_sha256": "93ff2c8390d6dc967b9d06210650ec41ae1e17669268318e6ae1c45dadeab822",
+        "split_sha256": "aede51b29f865a67070eb82ec66f182e0e99d40368b14bc9f23fb15726aafeda",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 221,
+      "fit_seconds": 0.07887004199437797,
+      "fitted_thread_counts": [
+        4
+      ],
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-control-e23d2b1/darkofit/sklearn_api.py",
+      "l2_leaf_reg": 3.0,
+      "numpy": "2.2.6",
+      "peak_rss_bytes": 260014080,
+      "predict_seconds": 0.0023335409932769835,
+      "prediction_sha256": "990b8aaafeeec9d5648dde00513cc38409d667d33aa12ccfe16c3ee5f8ffc664",
+      "primary_loss": 1.5269142808486764,
+      "primary_metric": "cold_player_rmse",
+      "primary_rows": 115,
+      "python": "3.11.8",
+      "requested_depth": null,
+      "requested_threads": 4,
+      "resolved_depth": 6,
+      "rss_errors": [],
+      "rss_samples": 7,
+      "runtime_after": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "safe_roundtrip_exact": true,
+      "season": 2014,
+      "secondary_loss": 1.5387079413535183,
+      "secondary_metric": "held_team_rmse",
+      "source_head": "e23d2b164f10374b1c0e02521c33fc96d48980da",
+      "source_tree": "227e80df4c2a3761927b3682cc8ee8ed1edcf471",
+      "target": "game_score",
+      "test_rows": 121,
+      "warnings": []
+    },
+    {
+      "ambient_thread_count_after_predict": 4,
+      "ambient_thread_count_before_fit": 4,
+      "archive_bytes": 79337,
+      "arm": "control",
+      "auto_structure": {
+        "candidates": {
+          "l2_leaf_reg": {
+            "base": 3.0,
+            "rule": "base_by_tree_mode_times_weight_concentration"
+          }
+        },
+        "n_eff": 187.0,
+        "n_eff_fraction": 1.0,
+        "resolved": {
+          "cat_smoothing": {
+            "cat_cardinalities": [],
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "depth": {
+            "input": null,
+            "resolved": 6,
+            "source": "default"
+          },
+          "l2_leaf_reg": {
+            "input": "auto",
+            "resolved": 3.0,
+            "source": "auto"
+          },
+          "min_child_samples": {
+            "input": 20,
+            "resolved": 20,
+            "source": "default"
+          },
+          "min_child_weight": {
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "num_leaves": {
+            "input": null,
+            "resolved": null,
+            "source": "default"
+          }
+        }
+      },
+      "case_id": "sports_2014_box_plus_minus",
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "5ef55ab6dd5e69bb10627d45496def73f1a78f54c19024f4a552cdfba87f4880",
+        "dataset_sha256": "6ea65e3375612cbf824b8b47a956015e14c557b33b2c0be479e6c46c77634450",
+        "split_sha256": "016583436255659ec452ce44bbc45ecb18a242a44511cf53d8a2bfa77df104d5",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 221,
+      "fit_seconds": 0.12298583402298391,
+      "fitted_thread_counts": [
+        4
+      ],
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-control-e23d2b1/darkofit/sklearn_api.py",
+      "l2_leaf_reg": 3.0,
+      "numpy": "2.2.6",
+      "peak_rss_bytes": 260505600,
+      "predict_seconds": 0.010215290996711701,
+      "prediction_sha256": "2d89f840a095b51d19185ef346e6da3cd74384c75526aa9dc655de4e80dfca51",
+      "primary_loss": 1.1591607625250577,
+      "primary_metric": "cold_player_rmse",
+      "primary_rows": 115,
+      "python": "3.11.8",
+      "requested_depth": null,
+      "requested_threads": 4,
+      "resolved_depth": 6,
+      "rss_errors": [],
+      "rss_samples": 9,
+      "runtime_after": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "safe_roundtrip_exact": true,
+      "season": 2014,
+      "secondary_loss": 1.138481313473055,
+      "secondary_metric": "held_team_rmse",
+      "source_head": "e23d2b164f10374b1c0e02521c33fc96d48980da",
+      "source_tree": "227e80df4c2a3761927b3682cc8ee8ed1edcf471",
+      "target": "box_plus_minus",
+      "test_rows": 121,
+      "warnings": []
+    },
+    {
+      "ambient_thread_count_after_predict": 4,
+      "ambient_thread_count_before_fit": 4,
+      "archive_bytes": 63467,
+      "arm": "candidate",
+      "auto_structure": {
+        "candidates": {
+          "depth": {
+            "branch": "low_density",
+            "effective_rows_per_feature": 12.466666666666667,
+            "high_threshold": 2500.0,
+            "input_feature_count": 15,
+            "low_threshold": 100.0,
+            "n_eff": 187.0,
+            "rule": "scalar_rmse_catboost_n_eff_per_input_feature_4_6_8"
+          },
+          "l2_leaf_reg": {
+            "base": 3.0,
+            "rule": "base_by_tree_mode_times_weight_concentration"
+          }
+        },
+        "n_eff": 187.0,
+        "n_eff_fraction": 1.0,
+        "resolved": {
+          "cat_smoothing": {
+            "cat_cardinalities": [],
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "depth": {
+            "input": null,
+            "resolved": 4,
+            "source": "auto"
+          },
+          "l2_leaf_reg": {
+            "input": "auto",
+            "resolved": 3.0,
+            "source": "auto"
+          },
+          "min_child_samples": {
+            "input": 20,
+            "resolved": 20,
+            "source": "default"
+          },
+          "min_child_weight": {
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "num_leaves": {
+            "input": null,
+            "resolved": null,
+            "source": "default"
+          }
+        }
+      },
+      "case_id": "sports_2014_box_plus_minus",
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "5ef55ab6dd5e69bb10627d45496def73f1a78f54c19024f4a552cdfba87f4880",
+        "dataset_sha256": "6ea65e3375612cbf824b8b47a956015e14c557b33b2c0be479e6c46c77634450",
+        "split_sha256": "016583436255659ec452ce44bbc45ecb18a242a44511cf53d8a2bfa77df104d5",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 221,
+      "fit_seconds": 0.07631862501148134,
+      "fitted_thread_counts": [
+        4
+      ],
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/sklearn_api.py",
+      "l2_leaf_reg": 3.0,
+      "numpy": "2.2.6",
+      "peak_rss_bytes": 259407872,
+      "predict_seconds": 0.0024099579895846546,
+      "prediction_sha256": "9570beb4fd29360b76cdc0189fe6da9be913372f1c1fb9f542b95ec26473e81b",
+      "primary_loss": 1.1532233711418773,
+      "primary_metric": "cold_player_rmse",
+      "primary_rows": 115,
+      "python": "3.11.8",
+      "requested_depth": null,
+      "requested_threads": 4,
+      "resolved_depth": 4,
+      "rss_errors": [],
+      "rss_samples": 7,
+      "runtime_after": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "safe_roundtrip_exact": true,
+      "season": 2014,
+      "secondary_loss": 1.1342749328829258,
+      "secondary_metric": "held_team_rmse",
+      "source_head": "41e948f0c53b1d124e16071a7fa66eba47d084d3",
+      "source_tree": "219baa9b0e0c6cc642163e44b2fef56dd86f40b7",
+      "target": "box_plus_minus",
+      "test_rows": 121,
+      "warnings": []
+    },
+    {
+      "ambient_thread_count_after_predict": 4,
+      "ambient_thread_count_before_fit": 4,
+      "archive_bytes": 47622,
+      "arm": "candidate",
+      "auto_structure": {
+        "candidates": {
+          "depth": {
+            "branch": "low_density",
+            "effective_rows_per_feature": 13.8,
+            "high_threshold": 2500.0,
+            "input_feature_count": 15,
+            "low_threshold": 100.0,
+            "n_eff": 207.0,
+            "rule": "scalar_rmse_catboost_n_eff_per_input_feature_4_6_8"
+          },
+          "l2_leaf_reg": {
+            "base": 3.0,
+            "rule": "base_by_tree_mode_times_weight_concentration"
+          }
+        },
+        "n_eff": 207.0,
+        "n_eff_fraction": 1.0,
+        "resolved": {
+          "cat_smoothing": {
+            "cat_cardinalities": [],
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "depth": {
+            "input": null,
+            "resolved": 4,
+            "source": "auto"
+          },
+          "l2_leaf_reg": {
+            "input": "auto",
+            "resolved": 3.0,
+            "source": "auto"
+          },
+          "min_child_samples": {
+            "input": 20,
+            "resolved": 20,
+            "source": "default"
+          },
+          "min_child_weight": {
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "num_leaves": {
+            "input": null,
+            "resolved": null,
+            "source": "default"
+          }
+        }
+      },
+      "case_id": "sports_2015_minutes_per_game",
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "8a827d3f9beee6fb225a42da5b0458154b9be29c8861506cf802225eb9484fa4",
+        "dataset_sha256": "ab7b59e8e0d9ad1460928b1374a58d14719c08b56dacff38d53973711f47c43a",
+        "split_sha256": "f0af2b701ab5058f74b8c4529467c222f20044d8dbc8229d71ec215fd50f9c00",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 246,
+      "fit_seconds": 0.04696933401282877,
+      "fitted_thread_counts": [
+        4
+      ],
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/sklearn_api.py",
+      "l2_leaf_reg": 3.0,
+      "numpy": "2.2.6",
+      "peak_rss_bytes": 254935040,
+      "predict_seconds": 0.0029056670027785003,
+      "prediction_sha256": "d8cfb0b35b62d84c38d29ece5ee346a69255e0cf496de7a2ba66ce8c174c72f0",
+      "primary_loss": 3.152681637881411,
+      "primary_metric": "cold_player_rmse",
+      "primary_rows": 125,
+      "python": "3.11.8",
+      "requested_depth": null,
+      "requested_threads": 4,
+      "resolved_depth": 4,
+      "rss_errors": [],
+      "rss_samples": 6,
+      "runtime_after": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "safe_roundtrip_exact": true,
+      "season": 2015,
+      "secondary_loss": 3.1439961296781087,
+      "secondary_metric": "held_team_rmse",
+      "source_head": "41e948f0c53b1d124e16071a7fa66eba47d084d3",
+      "source_tree": "219baa9b0e0c6cc642163e44b2fef56dd86f40b7",
+      "target": "minutes_per_game",
+      "test_rows": 134,
+      "warnings": []
+    },
+    {
+      "ambient_thread_count_after_predict": 4,
+      "ambient_thread_count_before_fit": 4,
+      "archive_bytes": 83978,
+      "arm": "control",
+      "auto_structure": {
+        "candidates": {
+          "l2_leaf_reg": {
+            "base": 3.0,
+            "rule": "base_by_tree_mode_times_weight_concentration"
+          }
+        },
+        "n_eff": 207.0,
+        "n_eff_fraction": 1.0,
+        "resolved": {
+          "cat_smoothing": {
+            "cat_cardinalities": [],
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "depth": {
+            "input": null,
+            "resolved": 6,
+            "source": "default"
+          },
+          "l2_leaf_reg": {
+            "input": "auto",
+            "resolved": 3.0,
+            "source": "auto"
+          },
+          "min_child_samples": {
+            "input": 20,
+            "resolved": 20,
+            "source": "default"
+          },
+          "min_child_weight": {
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "num_leaves": {
+            "input": null,
+            "resolved": null,
+            "source": "default"
+          }
+        }
+      },
+      "case_id": "sports_2015_minutes_per_game",
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "8a827d3f9beee6fb225a42da5b0458154b9be29c8861506cf802225eb9484fa4",
+        "dataset_sha256": "ab7b59e8e0d9ad1460928b1374a58d14719c08b56dacff38d53973711f47c43a",
+        "split_sha256": "f0af2b701ab5058f74b8c4529467c222f20044d8dbc8229d71ec215fd50f9c00",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 246,
+      "fit_seconds": 0.12224070800584741,
+      "fitted_thread_counts": [
+        4
+      ],
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-control-e23d2b1/darkofit/sklearn_api.py",
+      "l2_leaf_reg": 3.0,
+      "numpy": "2.2.6",
+      "peak_rss_bytes": 258670592,
+      "predict_seconds": 0.002469250001013279,
+      "prediction_sha256": "1f0d26bd4e15192d382d0e55ea4aa2e368c7915e554ced4279068f9e0860f529",
+      "primary_loss": 3.405743650194183,
+      "primary_metric": "cold_player_rmse",
+      "primary_rows": 125,
+      "python": "3.11.8",
+      "requested_depth": null,
+      "requested_threads": 4,
+      "resolved_depth": 6,
+      "rss_errors": [],
+      "rss_samples": 9,
+      "runtime_after": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "safe_roundtrip_exact": true,
+      "season": 2015,
+      "secondary_loss": 3.374690911278544,
+      "secondary_metric": "held_team_rmse",
+      "source_head": "e23d2b164f10374b1c0e02521c33fc96d48980da",
+      "source_tree": "227e80df4c2a3761927b3682cc8ee8ed1edcf471",
+      "target": "minutes_per_game",
+      "test_rows": 134,
+      "warnings": []
+    },
+    {
+      "ambient_thread_count_after_predict": 4,
+      "ambient_thread_count_before_fit": 4,
+      "archive_bytes": 102077,
+      "arm": "control",
+      "auto_structure": {
+        "candidates": {
+          "l2_leaf_reg": {
+            "base": 3.0,
+            "rule": "base_by_tree_mode_times_weight_concentration"
+          }
+        },
+        "n_eff": 207.0,
+        "n_eff_fraction": 1.0,
+        "resolved": {
+          "cat_smoothing": {
+            "cat_cardinalities": [],
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "depth": {
+            "input": null,
+            "resolved": 6,
+            "source": "default"
+          },
+          "l2_leaf_reg": {
+            "input": "auto",
+            "resolved": 3.0,
+            "source": "auto"
+          },
+          "min_child_samples": {
+            "input": 20,
+            "resolved": 20,
+            "source": "default"
+          },
+          "min_child_weight": {
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "num_leaves": {
+            "input": null,
+            "resolved": null,
+            "source": "default"
+          }
+        }
+      },
+      "case_id": "sports_2015_game_score",
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "e83acf48784293b507fd1f5b44b048940302b578e3efafbace0111e26224085e",
+        "dataset_sha256": "15ec3a7c5cc56c5e9ffeae3763b21e270ae0f1afd3c72f87806b74c54b4120c9",
+        "split_sha256": "6a882c06042173e9743dd2e68e48dd9c493cf0ba0e51ff4e41f416f5b4022599",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 246,
+      "fit_seconds": 0.1787905840028543,
+      "fitted_thread_counts": [
+        4
+      ],
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-control-e23d2b1/darkofit/sklearn_api.py",
+      "l2_leaf_reg": 3.0,
+      "numpy": "2.2.6",
+      "peak_rss_bytes": 263929856,
+      "predict_seconds": 0.0024582500045653433,
+      "prediction_sha256": "98e2f248de19212051d311c023cd4afaaf72fea1c1b6d520c2d0420a2e4dabe4",
+      "primary_loss": 1.4170274415357549,
+      "primary_metric": "cold_player_rmse",
+      "primary_rows": 125,
+      "python": "3.11.8",
+      "requested_depth": null,
+      "requested_threads": 4,
+      "resolved_depth": 6,
+      "rss_errors": [],
+      "rss_samples": 12,
+      "runtime_after": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "safe_roundtrip_exact": true,
+      "season": 2015,
+      "secondary_loss": 1.412542632178736,
+      "secondary_metric": "held_team_rmse",
+      "source_head": "e23d2b164f10374b1c0e02521c33fc96d48980da",
+      "source_tree": "227e80df4c2a3761927b3682cc8ee8ed1edcf471",
+      "target": "game_score",
+      "test_rows": 134,
+      "warnings": []
+    },
+    {
+      "ambient_thread_count_after_predict": 4,
+      "ambient_thread_count_before_fit": 4,
+      "archive_bytes": 77275,
+      "arm": "candidate",
+      "auto_structure": {
+        "candidates": {
+          "depth": {
+            "branch": "low_density",
+            "effective_rows_per_feature": 13.8,
+            "high_threshold": 2500.0,
+            "input_feature_count": 15,
+            "low_threshold": 100.0,
+            "n_eff": 207.0,
+            "rule": "scalar_rmse_catboost_n_eff_per_input_feature_4_6_8"
+          },
+          "l2_leaf_reg": {
+            "base": 3.0,
+            "rule": "base_by_tree_mode_times_weight_concentration"
+          }
+        },
+        "n_eff": 207.0,
+        "n_eff_fraction": 1.0,
+        "resolved": {
+          "cat_smoothing": {
+            "cat_cardinalities": [],
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "depth": {
+            "input": null,
+            "resolved": 4,
+            "source": "auto"
+          },
+          "l2_leaf_reg": {
+            "input": "auto",
+            "resolved": 3.0,
+            "source": "auto"
+          },
+          "min_child_samples": {
+            "input": 20,
+            "resolved": 20,
+            "source": "default"
+          },
+          "min_child_weight": {
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "num_leaves": {
+            "input": null,
+            "resolved": null,
+            "source": "default"
+          }
+        }
+      },
+      "case_id": "sports_2015_game_score",
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "e83acf48784293b507fd1f5b44b048940302b578e3efafbace0111e26224085e",
+        "dataset_sha256": "15ec3a7c5cc56c5e9ffeae3763b21e270ae0f1afd3c72f87806b74c54b4120c9",
+        "split_sha256": "6a882c06042173e9743dd2e68e48dd9c493cf0ba0e51ff4e41f416f5b4022599",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 246,
+      "fit_seconds": 0.11143570800777525,
+      "fitted_thread_counts": [
+        4
+      ],
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/sklearn_api.py",
+      "l2_leaf_reg": 3.0,
+      "numpy": "2.2.6",
+      "peak_rss_bytes": 256770048,
+      "predict_seconds": 0.002555542014306411,
+      "prediction_sha256": "3fc40f9c57d9985fde62b5cf612528fe30f485140eff0ef17ebe42d9df61655d",
+      "primary_loss": 1.2443971116373103,
+      "primary_metric": "cold_player_rmse",
+      "primary_rows": 125,
+      "python": "3.11.8",
+      "requested_depth": null,
+      "requested_threads": 4,
+      "resolved_depth": 4,
+      "rss_errors": [],
+      "rss_samples": 9,
+      "runtime_after": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "safe_roundtrip_exact": true,
+      "season": 2015,
+      "secondary_loss": 1.2442898163808656,
+      "secondary_metric": "held_team_rmse",
+      "source_head": "41e948f0c53b1d124e16071a7fa66eba47d084d3",
+      "source_tree": "219baa9b0e0c6cc642163e44b2fef56dd86f40b7",
+      "target": "game_score",
+      "test_rows": 134,
+      "warnings": []
+    },
+    {
+      "ambient_thread_count_after_predict": 4,
+      "ambient_thread_count_before_fit": 4,
+      "archive_bytes": 110600,
+      "arm": "candidate",
+      "auto_structure": {
+        "candidates": {
+          "depth": {
+            "branch": "low_density",
+            "effective_rows_per_feature": 13.8,
+            "high_threshold": 2500.0,
+            "input_feature_count": 15,
+            "low_threshold": 100.0,
+            "n_eff": 207.0,
+            "rule": "scalar_rmse_catboost_n_eff_per_input_feature_4_6_8"
+          },
+          "l2_leaf_reg": {
+            "base": 3.0,
+            "rule": "base_by_tree_mode_times_weight_concentration"
+          }
+        },
+        "n_eff": 207.0,
+        "n_eff_fraction": 1.0,
+        "resolved": {
+          "cat_smoothing": {
+            "cat_cardinalities": [],
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "depth": {
+            "input": null,
+            "resolved": 4,
+            "source": "auto"
+          },
+          "l2_leaf_reg": {
+            "input": "auto",
+            "resolved": 3.0,
+            "source": "auto"
+          },
+          "min_child_samples": {
+            "input": 20,
+            "resolved": 20,
+            "source": "default"
+          },
+          "min_child_weight": {
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "num_leaves": {
+            "input": null,
+            "resolved": null,
+            "source": "default"
+          }
+        }
+      },
+      "case_id": "sports_2015_box_plus_minus",
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "a4fd0f5dc35da2a5f6a3523b0ba8cbfff669ccf682330683fb8b6f0d13f0f129",
+        "dataset_sha256": "1c2ed4dab3e978c4f0e2c3d11a72da6180e0b5948fb1ddd48f0c62d839abd3ba",
+        "split_sha256": "7e06b911aaf699361400a73dab73286e3924e6f1c93dfaf111135caad77c61a7",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 246,
+      "fit_seconds": 0.1794590000063181,
+      "fitted_thread_counts": [
+        4
+      ],
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/sklearn_api.py",
+      "l2_leaf_reg": 3.0,
+      "numpy": "2.2.6",
+      "peak_rss_bytes": 260227072,
+      "predict_seconds": 0.003072791005251929,
+      "prediction_sha256": "ad3233e07e13206bf41e7c65a9841fb06540aeaf48d0243295a58f5a590ce550",
+      "primary_loss": 1.223378978181259,
+      "primary_metric": "cold_player_rmse",
+      "primary_rows": 125,
+      "python": "3.11.8",
+      "requested_depth": null,
+      "requested_threads": 4,
+      "resolved_depth": 4,
+      "rss_errors": [],
+      "rss_samples": 13,
+      "runtime_after": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "safe_roundtrip_exact": true,
+      "season": 2015,
+      "secondary_loss": 1.1924091327993522,
+      "secondary_metric": "held_team_rmse",
+      "source_head": "41e948f0c53b1d124e16071a7fa66eba47d084d3",
+      "source_tree": "219baa9b0e0c6cc642163e44b2fef56dd86f40b7",
+      "target": "box_plus_minus",
+      "test_rows": 134,
+      "warnings": []
+    },
+    {
+      "ambient_thread_count_after_predict": 4,
+      "ambient_thread_count_before_fit": 4,
+      "archive_bytes": 141370,
+      "arm": "control",
+      "auto_structure": {
+        "candidates": {
+          "l2_leaf_reg": {
+            "base": 3.0,
+            "rule": "base_by_tree_mode_times_weight_concentration"
+          }
+        },
+        "n_eff": 207.0,
+        "n_eff_fraction": 1.0,
+        "resolved": {
+          "cat_smoothing": {
+            "cat_cardinalities": [],
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "depth": {
+            "input": null,
+            "resolved": 6,
+            "source": "default"
+          },
+          "l2_leaf_reg": {
+            "input": "auto",
+            "resolved": 3.0,
+            "source": "auto"
+          },
+          "min_child_samples": {
+            "input": 20,
+            "resolved": 20,
+            "source": "default"
+          },
+          "min_child_weight": {
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "num_leaves": {
+            "input": null,
+            "resolved": null,
+            "source": "default"
+          }
+        }
+      },
+      "case_id": "sports_2015_box_plus_minus",
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "a4fd0f5dc35da2a5f6a3523b0ba8cbfff669ccf682330683fb8b6f0d13f0f129",
+        "dataset_sha256": "1c2ed4dab3e978c4f0e2c3d11a72da6180e0b5948fb1ddd48f0c62d839abd3ba",
+        "split_sha256": "7e06b911aaf699361400a73dab73286e3924e6f1c93dfaf111135caad77c61a7",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 246,
+      "fit_seconds": 0.2623905829968862,
+      "fitted_thread_counts": [
+        4
+      ],
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-control-e23d2b1/darkofit/sklearn_api.py",
+      "l2_leaf_reg": 3.0,
+      "numpy": "2.2.6",
+      "peak_rss_bytes": 259702784,
+      "predict_seconds": 0.003047749982215464,
+      "prediction_sha256": "f617ccb9e7e87be4d3cff9e271c896b37d11fa36e09b92782c17c9fb1dbe72b7",
+      "primary_loss": 1.26226809500374,
+      "primary_metric": "cold_player_rmse",
+      "primary_rows": 125,
+      "python": "3.11.8",
+      "requested_depth": null,
+      "requested_threads": 4,
+      "resolved_depth": 6,
+      "rss_errors": [],
+      "rss_samples": 16,
+      "runtime_after": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "safe_roundtrip_exact": true,
+      "season": 2015,
+      "secondary_loss": 1.2314128401288131,
+      "secondary_metric": "held_team_rmse",
+      "source_head": "e23d2b164f10374b1c0e02521c33fc96d48980da",
+      "source_tree": "227e80df4c2a3761927b3682cc8ee8ed1edcf471",
+      "target": "box_plus_minus",
+      "test_rows": 134,
+      "warnings": []
+    },
+    {
+      "ambient_thread_count_after_predict": 4,
+      "ambient_thread_count_before_fit": 4,
+      "archive_bytes": 77526,
+      "arm": "control",
+      "auto_structure": {
+        "candidates": {
+          "l2_leaf_reg": {
+            "base": 3.0,
+            "rule": "base_by_tree_mode_times_weight_concentration"
+          }
+        },
+        "n_eff": 196.0,
+        "n_eff_fraction": 1.0,
+        "resolved": {
+          "cat_smoothing": {
+            "cat_cardinalities": [],
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "depth": {
+            "input": null,
+            "resolved": 6,
+            "source": "default"
+          },
+          "l2_leaf_reg": {
+            "input": "auto",
+            "resolved": 3.0,
+            "source": "auto"
+          },
+          "min_child_samples": {
+            "input": 20,
+            "resolved": 20,
+            "source": "default"
+          },
+          "min_child_weight": {
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "num_leaves": {
+            "input": null,
+            "resolved": null,
+            "source": "default"
+          }
+        }
+      },
+      "case_id": "sports_2016_minutes_per_game",
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "34f0081c4dd3ba8aa979c6e43a39eba1540e70658e0875e84f5212c5bf89f918",
+        "dataset_sha256": "74cf5edcecd31047d90a78a3b53e842c5bfea6de48b7ed64b75f8fb592eac9b8",
+        "split_sha256": "7c5d8edaae599396ed6b89fef1dbf75a518f4e0e92c1ad27a4b73459be7aae00",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 232,
+      "fit_seconds": 0.11273158399853855,
+      "fitted_thread_counts": [
+        4
+      ],
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-control-e23d2b1/darkofit/sklearn_api.py",
+      "l2_leaf_reg": 3.0,
+      "numpy": "2.2.6",
+      "peak_rss_bytes": 260472832,
+      "predict_seconds": 0.002328208996914327,
+      "prediction_sha256": "3b370fcb801071a01aa3b1fc677a9388d0411df24e42628c0081d1a2a1129dc6",
+      "primary_loss": 4.171098381105,
+      "primary_metric": "cold_player_rmse",
+      "primary_rows": 117,
+      "python": "3.11.8",
+      "requested_depth": null,
+      "requested_threads": 4,
+      "resolved_depth": 6,
+      "rss_errors": [],
+      "rss_samples": 9,
+      "runtime_after": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "safe_roundtrip_exact": true,
+      "season": 2016,
+      "secondary_loss": 4.129875087482898,
+      "secondary_metric": "held_team_rmse",
+      "source_head": "e23d2b164f10374b1c0e02521c33fc96d48980da",
+      "source_tree": "227e80df4c2a3761927b3682cc8ee8ed1edcf471",
+      "target": "minutes_per_game",
+      "test_rows": 120,
+      "warnings": []
+    },
+    {
+      "ambient_thread_count_after_predict": 4,
+      "ambient_thread_count_before_fit": 4,
+      "archive_bytes": 57682,
+      "arm": "candidate",
+      "auto_structure": {
+        "candidates": {
+          "depth": {
+            "branch": "low_density",
+            "effective_rows_per_feature": 13.066666666666666,
+            "high_threshold": 2500.0,
+            "input_feature_count": 15,
+            "low_threshold": 100.0,
+            "n_eff": 196.0,
+            "rule": "scalar_rmse_catboost_n_eff_per_input_feature_4_6_8"
+          },
+          "l2_leaf_reg": {
+            "base": 3.0,
+            "rule": "base_by_tree_mode_times_weight_concentration"
+          }
+        },
+        "n_eff": 196.0,
+        "n_eff_fraction": 1.0,
+        "resolved": {
+          "cat_smoothing": {
+            "cat_cardinalities": [],
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "depth": {
+            "input": null,
+            "resolved": 4,
+            "source": "auto"
+          },
+          "l2_leaf_reg": {
+            "input": "auto",
+            "resolved": 3.0,
+            "source": "auto"
+          },
+          "min_child_samples": {
+            "input": 20,
+            "resolved": 20,
+            "source": "default"
+          },
+          "min_child_weight": {
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "num_leaves": {
+            "input": null,
+            "resolved": null,
+            "source": "default"
+          }
+        }
+      },
+      "case_id": "sports_2016_minutes_per_game",
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "34f0081c4dd3ba8aa979c6e43a39eba1540e70658e0875e84f5212c5bf89f918",
+        "dataset_sha256": "74cf5edcecd31047d90a78a3b53e842c5bfea6de48b7ed64b75f8fb592eac9b8",
+        "split_sha256": "7c5d8edaae599396ed6b89fef1dbf75a518f4e0e92c1ad27a4b73459be7aae00",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 232,
+      "fit_seconds": 0.0670389580191113,
+      "fitted_thread_counts": [
+        4
+      ],
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/sklearn_api.py",
+      "l2_leaf_reg": 3.0,
+      "numpy": "2.2.6",
+      "peak_rss_bytes": 254623744,
+      "predict_seconds": 0.0025440419849473983,
+      "prediction_sha256": "c490ae914255539253bf73a5e52b6cfb5793de61f3c5d000acec3d7456ae9a98",
+      "primary_loss": 4.15941824374653,
+      "primary_metric": "cold_player_rmse",
+      "primary_rows": 117,
+      "python": "3.11.8",
+      "requested_depth": null,
+      "requested_threads": 4,
+      "resolved_depth": 4,
+      "rss_errors": [],
+      "rss_samples": 6,
+      "runtime_after": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "safe_roundtrip_exact": true,
+      "season": 2016,
+      "secondary_loss": 4.115384286198292,
+      "secondary_metric": "held_team_rmse",
+      "source_head": "41e948f0c53b1d124e16071a7fa66eba47d084d3",
+      "source_tree": "219baa9b0e0c6cc642163e44b2fef56dd86f40b7",
+      "target": "minutes_per_game",
+      "test_rows": 120,
+      "warnings": []
+    },
+    {
+      "ambient_thread_count_after_predict": 4,
+      "ambient_thread_count_before_fit": 4,
+      "archive_bytes": 97559,
+      "arm": "candidate",
+      "auto_structure": {
+        "candidates": {
+          "depth": {
+            "branch": "low_density",
+            "effective_rows_per_feature": 13.066666666666666,
+            "high_threshold": 2500.0,
+            "input_feature_count": 15,
+            "low_threshold": 100.0,
+            "n_eff": 196.0,
+            "rule": "scalar_rmse_catboost_n_eff_per_input_feature_4_6_8"
+          },
+          "l2_leaf_reg": {
+            "base": 3.0,
+            "rule": "base_by_tree_mode_times_weight_concentration"
+          }
+        },
+        "n_eff": 196.0,
+        "n_eff_fraction": 1.0,
+        "resolved": {
+          "cat_smoothing": {
+            "cat_cardinalities": [],
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "depth": {
+            "input": null,
+            "resolved": 4,
+            "source": "auto"
+          },
+          "l2_leaf_reg": {
+            "input": "auto",
+            "resolved": 3.0,
+            "source": "auto"
+          },
+          "min_child_samples": {
+            "input": 20,
+            "resolved": 20,
+            "source": "default"
+          },
+          "min_child_weight": {
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "num_leaves": {
+            "input": null,
+            "resolved": null,
+            "source": "default"
+          }
+        }
+      },
+      "case_id": "sports_2016_game_score",
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "1d9edd586ad426fc4ef4ec30f34da8f8b10761c888e499c2c061558bcb778a6d",
+        "dataset_sha256": "e11d73e3c304c90afd95ba99bff5992ed076cb7c6e6e7200a35486e07786e3db",
+        "split_sha256": "8c59397eb0bbbd42381e4057ea01541e54ff69f4457cd504f17c3fd7af6c9285",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 232,
+      "fit_seconds": 0.15741983300540596,
+      "fitted_thread_counts": [
+        4
+      ],
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/sklearn_api.py",
+      "l2_leaf_reg": 3.0,
+      "numpy": "2.2.6",
+      "peak_rss_bytes": 257523712,
+      "predict_seconds": 0.002901457977714017,
+      "prediction_sha256": "b0ba4445ad12a35bc51d313f2f002c5fac3296a37353fc33a7a74855a607ac67",
+      "primary_loss": 1.792519922409336,
+      "primary_metric": "cold_player_rmse",
+      "primary_rows": 117,
+      "python": "3.11.8",
+      "requested_depth": null,
+      "requested_threads": 4,
+      "resolved_depth": 4,
+      "rss_errors": [],
+      "rss_samples": 11,
+      "runtime_after": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "safe_roundtrip_exact": true,
+      "season": 2016,
+      "secondary_loss": 1.7732498042951206,
+      "secondary_metric": "held_team_rmse",
+      "source_head": "41e948f0c53b1d124e16071a7fa66eba47d084d3",
+      "source_tree": "219baa9b0e0c6cc642163e44b2fef56dd86f40b7",
+      "target": "game_score",
+      "test_rows": 120,
+      "warnings": []
+    },
+    {
+      "ambient_thread_count_after_predict": 4,
+      "ambient_thread_count_before_fit": 4,
+      "archive_bytes": 102259,
+      "arm": "control",
+      "auto_structure": {
+        "candidates": {
+          "l2_leaf_reg": {
+            "base": 3.0,
+            "rule": "base_by_tree_mode_times_weight_concentration"
+          }
+        },
+        "n_eff": 196.0,
+        "n_eff_fraction": 1.0,
+        "resolved": {
+          "cat_smoothing": {
+            "cat_cardinalities": [],
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "depth": {
+            "input": null,
+            "resolved": 6,
+            "source": "default"
+          },
+          "l2_leaf_reg": {
+            "input": "auto",
+            "resolved": 3.0,
+            "source": "auto"
+          },
+          "min_child_samples": {
+            "input": 20,
+            "resolved": 20,
+            "source": "default"
+          },
+          "min_child_weight": {
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "num_leaves": {
+            "input": null,
+            "resolved": null,
+            "source": "default"
+          }
+        }
+      },
+      "case_id": "sports_2016_game_score",
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "1d9edd586ad426fc4ef4ec30f34da8f8b10761c888e499c2c061558bcb778a6d",
+        "dataset_sha256": "e11d73e3c304c90afd95ba99bff5992ed076cb7c6e6e7200a35486e07786e3db",
+        "split_sha256": "8c59397eb0bbbd42381e4057ea01541e54ff69f4457cd504f17c3fd7af6c9285",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 232,
+      "fit_seconds": 0.16278420900925994,
+      "fitted_thread_counts": [
+        4
+      ],
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-control-e23d2b1/darkofit/sklearn_api.py",
+      "l2_leaf_reg": 3.0,
+      "numpy": "2.2.6",
+      "peak_rss_bytes": 263110656,
+      "predict_seconds": 0.002487041987478733,
+      "prediction_sha256": "1a7b381e73e856c64976891463e0affe0e668ad842f8ca92ef228959990d807c",
+      "primary_loss": 1.8622256714803824,
+      "primary_metric": "cold_player_rmse",
+      "primary_rows": 117,
+      "python": "3.11.8",
+      "requested_depth": null,
+      "requested_threads": 4,
+      "resolved_depth": 6,
+      "rss_errors": [],
+      "rss_samples": 11,
+      "runtime_after": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "safe_roundtrip_exact": true,
+      "season": 2016,
+      "secondary_loss": 1.8420355193329765,
+      "secondary_metric": "held_team_rmse",
+      "source_head": "e23d2b164f10374b1c0e02521c33fc96d48980da",
+      "source_tree": "227e80df4c2a3761927b3682cc8ee8ed1edcf471",
+      "target": "game_score",
+      "test_rows": 120,
+      "warnings": []
+    },
+    {
+      "ambient_thread_count_after_predict": 4,
+      "ambient_thread_count_before_fit": 4,
+      "archive_bytes": 141724,
+      "arm": "control",
+      "auto_structure": {
+        "candidates": {
+          "l2_leaf_reg": {
+            "base": 3.0,
+            "rule": "base_by_tree_mode_times_weight_concentration"
+          }
+        },
+        "n_eff": 196.0,
+        "n_eff_fraction": 1.0,
+        "resolved": {
+          "cat_smoothing": {
+            "cat_cardinalities": [],
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "depth": {
+            "input": null,
+            "resolved": 6,
+            "source": "default"
+          },
+          "l2_leaf_reg": {
+            "input": "auto",
+            "resolved": 3.0,
+            "source": "auto"
+          },
+          "min_child_samples": {
+            "input": 20,
+            "resolved": 20,
+            "source": "default"
+          },
+          "min_child_weight": {
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "num_leaves": {
+            "input": null,
+            "resolved": null,
+            "source": "default"
+          }
+        }
+      },
+      "case_id": "sports_2016_box_plus_minus",
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "545c2dd15de872e023a848191ed851c4d9886ab355c9ac1dc986598195ca1195",
+        "dataset_sha256": "83e84a46f21320399343da8a72d15aea68b8825170e0c237140d3ab4fe22c07b",
+        "split_sha256": "d58edfc33e53e9a36b028e3e02a7f8aaa20d9231b1dec5f9c7bf4e28f33ca574",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 232,
+      "fit_seconds": 0.26452666701516137,
+      "fitted_thread_counts": [
+        4
+      ],
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-control-e23d2b1/darkofit/sklearn_api.py",
+      "l2_leaf_reg": 3.0,
+      "numpy": "2.2.6",
+      "peak_rss_bytes": 260767744,
+      "predict_seconds": 0.0032020829967223108,
+      "prediction_sha256": "3c30485f3a4cf2764e7398a9c274b87994c3da65d08b8d3d715c0bb8d029dc36",
+      "primary_loss": 1.0683162273608007,
+      "primary_metric": "cold_player_rmse",
+      "primary_rows": 117,
+      "python": "3.11.8",
+      "requested_depth": null,
+      "requested_threads": 4,
+      "resolved_depth": 6,
+      "rss_errors": [],
+      "rss_samples": 16,
+      "runtime_after": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "safe_roundtrip_exact": true,
+      "season": 2016,
+      "secondary_loss": 1.0572084177051118,
+      "secondary_metric": "held_team_rmse",
+      "source_head": "e23d2b164f10374b1c0e02521c33fc96d48980da",
+      "source_tree": "227e80df4c2a3761927b3682cc8ee8ed1edcf471",
+      "target": "box_plus_minus",
+      "test_rows": 120,
+      "warnings": []
+    },
+    {
+      "ambient_thread_count_after_predict": 4,
+      "ambient_thread_count_before_fit": 4,
+      "archive_bytes": 67858,
+      "arm": "candidate",
+      "auto_structure": {
+        "candidates": {
+          "depth": {
+            "branch": "low_density",
+            "effective_rows_per_feature": 13.066666666666666,
+            "high_threshold": 2500.0,
+            "input_feature_count": 15,
+            "low_threshold": 100.0,
+            "n_eff": 196.0,
+            "rule": "scalar_rmse_catboost_n_eff_per_input_feature_4_6_8"
+          },
+          "l2_leaf_reg": {
+            "base": 3.0,
+            "rule": "base_by_tree_mode_times_weight_concentration"
+          }
+        },
+        "n_eff": 196.0,
+        "n_eff_fraction": 1.0,
+        "resolved": {
+          "cat_smoothing": {
+            "cat_cardinalities": [],
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "depth": {
+            "input": null,
+            "resolved": 4,
+            "source": "auto"
+          },
+          "l2_leaf_reg": {
+            "input": "auto",
+            "resolved": 3.0,
+            "source": "auto"
+          },
+          "min_child_samples": {
+            "input": 20,
+            "resolved": 20,
+            "source": "default"
+          },
+          "min_child_weight": {
+            "input": 1.0,
+            "resolved": 1.0,
+            "source": "default"
+          },
+          "num_leaves": {
+            "input": null,
+            "resolved": null,
+            "source": "default"
+          }
+        }
+      },
+      "case_id": "sports_2016_box_plus_minus",
+      "feature_count": 15,
+      "fingerprints": {
+        "case_sha256": "545c2dd15de872e023a848191ed851c4d9886ab355c9ac1dc986598195ca1195",
+        "dataset_sha256": "83e84a46f21320399343da8a72d15aea68b8825170e0c237140d3ab4fe22c07b",
+        "split_sha256": "d58edfc33e53e9a36b028e3e02a7f8aaa20d9231b1dec5f9c7bf4e28f33ca574",
+        "weight_sha256": "6a062ca35079ac7eee4173e5098a3af8e9a6a4b0b75aa38042f2eacdeb671b89"
+      },
+      "fit_rows": 232,
+      "fit_seconds": 0.0954097080102656,
+      "fitted_thread_counts": [
+        4
+      ],
+      "implementation_path": "/private/tmp/darkofit-t7b-auto-depth-v1-20260722/darkofit/sklearn_api.py",
+      "l2_leaf_reg": 3.0,
+      "numpy": "2.2.6",
+      "peak_rss_bytes": 261586944,
+      "predict_seconds": 0.0023939579841680825,
+      "prediction_sha256": "19d6a1e159a2835c281cbb9ad2913c2cb4c861207139fd05aa18e9df2ed41c9b",
+      "primary_loss": 0.9718505014473,
+      "primary_metric": "cold_player_rmse",
+      "primary_rows": 117,
+      "python": "3.11.8",
+      "requested_depth": null,
+      "requested_threads": 4,
+      "resolved_depth": 4,
+      "rss_errors": [],
+      "rss_samples": 8,
+      "runtime_after": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "runtime_before": {
+        "ceiling": 4,
+        "current": 4,
+        "environment": {
+          "DARKOFIT_WARMUP": "0",
+          "MKL_DYNAMIC": "FALSE",
+          "MKL_NUM_THREADS": "4",
+          "NUMBA_CACHE_DIR": "/private/tmp/t7b_automatic_depth_sports_v1_cache_20260722",
+          "NUMBA_DISABLE_JIT": "0",
+          "NUMBA_NUM_THREADS": "4",
+          "NUMBA_THREADING_LAYER": "default",
+          "NUMEXPR_NUM_THREADS": "4",
+          "OMP_DYNAMIC": "FALSE",
+          "OMP_NUM_THREADS": "4",
+          "OMP_THREAD_LIMIT": "4",
+          "OPENBLAS_NUM_THREADS": "4",
+          "PYTHONHASHSEED": "0",
+          "PYTHONPATH": null,
+          "VECLIB_MAXIMUM_THREADS": "4"
+        },
+        "threading_layer": "workqueue"
+      },
+      "safe_roundtrip_exact": true,
+      "season": 2016,
+      "secondary_loss": 0.9632540965584129,
+      "secondary_metric": "held_team_rmse",
+      "source_head": "41e948f0c53b1d124e16071a7fa66eba47d084d3",
+      "source_tree": "219baa9b0e0c6cc642163e44b2fef56dd86f40b7",
+      "target": "box_plus_minus",
+      "test_rows": 120,
+      "warnings": []
+    }
+  ],
+  "schema_version": 1,
+  "sources": {
+    "candidate": {
+      "head": "41e948f0c53b1d124e16071a7fa66eba47d084d3",
+      "tree": "219baa9b0e0c6cc642163e44b2fef56dd86f40b7"
+    },
+    "control": {
+      "head": "e23d2b164f10374b1c0e02521c33fc96d48980da",
+      "tree": "227e80df4c2a3761927b3682cc8ee8ed1edcf471"
+    },
+    "harness": "ab11a5f1bd8921acaec5f429ad0e4e94cb102fd2"
+  },
+  "status": "complete"
+}

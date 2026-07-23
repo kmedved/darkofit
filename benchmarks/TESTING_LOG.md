@@ -2073,6 +2073,57 @@ B-archive simulation remains non-loadable, optional size telemetry.
     private and unmerged; freeze a separate spent-sports contract before any
     sports outcome is inspected.
 
+### 50. T7b automatic depth spent-sports successor (2026-07-22/23)
+
+1. **Execution date/source:** 2026-07-22/23; clean published contract harness
+   `ac51c3e3379f855ba960f684375bee49cf0910e4`, clean control
+   `e23d2b164f10374b1c0e02521c33fc96d48980da`, and exact clean private
+   candidate `41e948f0c53b1d124e16071a7fa66eba47d084d3`.
+2. **Comparators:** the same scalar-RMSE CatBoost policy in both arms except
+   that the candidate's automatic samples-per-feature rule resolved depth 4;
+   control retained depth 6 and both retained L2 `3.0`.
+3. **Evidence class:** one spent, player-disjoint, Tier-E sports-development
+   successor under `t7b-automatic-depth-spent-sports-v1-20260722`; it can
+   prioritize fresh Tier-D design but cannot ship or change a default.
+4. **Data/splits:** exact frozen sports-panel-v2 cache, seasons 2014--2016
+   crossed with three targets. Fit rows exclude held teams and use player
+   groups for validation; primary RMSE uses cold-player held-team rows.
+5. **Arms/policies:** one control and one candidate fit per case; 600 maximum
+   rounds, patience 30, `use_best_model=True`, `refit=False`, 0.15 group
+   validation, random state 4, and no sample weights.
+6. **Environment/repeats:** `darko311`, macOS arm64, four fixed threads,
+   fresh worker per arm/case, same-arm two-round warmup, one quality fit only;
+   no-conflicting-benchmark audit passed before manifest creation.
+7. **Runner/command:** `python
+   benchmarks/run_t7b_automatic_depth_sports_v1.py --control
+   /private/tmp/darkofit-t7b-auto-depth-control-e23d2b1 --candidate
+   /private/tmp/darkofit-t7b-auto-depth-v1-20260722 --panel-cache
+   /Users/konstantinmedvedovsky/code/darkofit/.cache/basketball-sports-panel-v2/panel.csv
+   --cache-dir
+   /private/tmp/t7b_automatic_depth_sports_v1_cache_20260722 --output-prefix
+   /private/tmp/t7b_automatic_depth_sports_v1_inspection1_20260722`.
+8. **Hashes:** contract
+   `ac5a745378a086ed119af1d55a68e961ea95e1f74c4f307dce72ad9b6717fe1b`;
+   launch `07567f2585df0183bbd0f6dee9b3c18d678e28b3280ddd41c21331a23439bac1`;
+   raw `31b4d18576ed35efae3fe89e07375f18b82c02668586a562aa9969d1c9f0830d`;
+   result `1ec0d2d37ef75195b66b779ec94920e05f5047147538de6eb17622947fd1a0da`;
+   terminal `180e7ea418b4a5e53c0672c2c5b5c1672824dc83fc3f9b3e279bca0cd19d9644`.
+9. **Primary results:** cold-player equal-lineage ratio `0.950266`, held-team
+   `0.951078`; all nine cold-player lineages improved. Season ratios were
+   `0.972028`, `0.923605`, and `0.955809`; clustered p95 was `0.966591` and
+   worst leave-one-season-out was `0.963884`.
+10. **Costs, passed and failed conditions:** all six frozen quality,
+    uncertainty, concentration, and harm gates passed. Single-run non-gating
+    telemetry was `0.601281` fit, `1.038138` predict, `0.988196` RSS, and
+    `0.732452` archive bytes; prediction ratios were visibly noisy.
+11. **Limitations/non-claims:** three dependent, already-spent seasons, not
+    nine independent datasets or fresh confirmation. No speed, merge,
+    default, public API, M2, TabArena, release, or lockbox claim is authorized.
+12. **Terminal decision/next action:** disposition
+    `eligible_for_fresh_tier_d_design`; inspection 1 is spent and no rerun is
+    allowed. Candidate remains private/unmerged. A powered fresh Tier-D design
+    requires a separate owner authorization before data access.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

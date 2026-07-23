@@ -245,10 +245,13 @@ unchanged. The separate samples-per-feature depth candidate `41e948f0` passed
 its invariants and M5 and advanced through its only M6 v3 inspection:
 aggregate `0.992921`, worst dataset group `1.011124`, and worst leave-one-out
 `1.001230`, all within the frozen gates. The inspection is spent and cannot be
-rerun. The candidate remains private and unmerged; its only authorized next
-step is a separately frozen check on already-spent sports data, with
-season-clustered uncertainty and concentration/harm guards. This is not a
-public, fresh, shipping, release, or default claim.
+rerun. Its separately frozen spent-sports successor also advanced: cold-player
+ratio `0.950266`, all-held-team `0.951078`, season-cluster p95 `0.966591`, and
+all nine cold-player lineages improved. That inspection is likewise spent.
+Candidate `41e948f0` remains private and unmerged; it is eligible only for the
+design of a separately owner-authorized, powered Tier-D campaign on eligible
+fresh confirmation data. Fresh access, merge, public/default behavior,
+shipping, release, M2, TabArena, and lockbox work remain unauthorized.
 
 **4.5 — v0.11 milestone measurements.** M2 (first broad-panel reading
 against ChimeraBoost 0.18 — the calibrated-yardstick test) and the first
