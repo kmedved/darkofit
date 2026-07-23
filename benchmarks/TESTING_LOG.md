@@ -2645,6 +2645,50 @@ B-archive simulation remains non-loadable, optional size telemetry.
     pre-design note, then prospectively recompute power on exactly these 32
     identities. Design/execution freeze and the fresh run remain owner-gated.
 
+### 61. T7b P1-v3 as-built power-contract freeze (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; contract branch based on published
+   as-built enumeration commit `ce0ba0be55ede9a7ff10a49949664facd76a4d19`.
+2. **Comparators:** no model comparison. The future simulation sizes the
+   unchanged candidate/control decision only.
+3. **Evidence class:** prospective design-time Tier-D power infrastructure,
+   not quality evidence and not confirmation authorization.
+4. **Data/splits:** exact hash-bound 32-identity census from enumeration v2:
+   9/8/5/10 across the four strata, 17 depth-4, 15 depth-8, three group-safe,
+   and three already-attested coordinates per lineage.
+5. **Arms/policies:** unchanged candidate `41e948f0` and control `e23d2b16`.
+   The same v1 spent-effect derivation, 20% retained primary alternative,
+   sensitivities, true-ratio cap, and quality gates bind.
+6. **Environment/repeats:** design simulation only; 5,000 outer panels and
+   5,000 lineage-bootstrap draws with the original seeds and 95% one-sided
+   Wilson decision.
+7. **Runner/command:** after clean commit/publish:
+   `python benchmarks/tier_d_fresh_power_design_v3.py`. Focused validation
+   covered exact registry/branch binding and a small both-branch simulation.
+8. **Hashes:** contract
+   `bcf44533c94312b41ff3efdb2a6d08639ccd69ac22cc8a0050fda021111ed82b`;
+   protocol
+   `41ea9ac266642ed1e5329aa8fcc1d777b0fc07e7222340b41083a5aae7ed0657`;
+   runner
+   `4f3de13fcffa3d43b2747093f60845268a5d91b3bea5151e4abde2f4601b5763`;
+   tests
+   `4e545f4b3d867edcb0b0876185c9612b95e707ea13e244dd4c1aa1304d1d7e71`;
+   verified enumeration
+   `c7c76259823d6ee4d3ce6202b127d4bed984493e6153775dfb0f05a105b22851`;
+   reused simulation engine
+   `f1482d20fbc6ad2f84d4bdc9a338adf4d6d87cb7a4fe640d997aeb9f9ee93fce`.
+9. **Primary results:** contract and harness verification passed: 22 focused
+   tests.
+10. **Costs, passed and failed conditions:** no power result or quality gate
+    has been evaluated yet. The contract will qualify only if both simulated
+    pass probability and one-sided Wilson lower bound reach 80%.
+11. **Limitations/non-claims:** effect inputs selected the candidate and the
+    depth-8 alternative remains a transport assumption. Power qualification
+    would size the panel, not confirm the mechanism or authorize a run.
+12. **Terminal decision/next action:** publish this power contract, execute
+    its create-only simulation once, and return the result for owner freeze
+    review. Combined design/execution freeze and fresh access remain false.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
