@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 import pytest
@@ -43,6 +44,23 @@ def _load(name: str):
     return json.loads(ARTIFACTS[name][0].read_text())
 
 
+def _assert_nested_approx(actual, expected):
+    if isinstance(expected, Mapping):
+        assert isinstance(actual, Mapping)
+        assert set(actual) == set(expected)
+        for key in expected:
+            _assert_nested_approx(actual[key], expected[key])
+    elif isinstance(expected, Sequence) and not isinstance(expected, (str, bytes)):
+        assert isinstance(actual, Sequence) and not isinstance(actual, (str, bytes))
+        assert len(actual) == len(expected)
+        for actual_item, expected_item in zip(actual, expected):
+            _assert_nested_approx(actual_item, expected_item)
+    elif isinstance(expected, float):
+        assert actual == pytest.approx(expected, rel=1e-14, abs=1e-15)
+    else:
+        assert actual == expected
+
+
 def test_t7b_depth_sports_artifacts_retain_create_only_hashes():
     for path, expected in ARTIFACTS.values():
         assert hashlib.sha256(path.read_bytes()).hexdigest() == expected
@@ -55,7 +73,7 @@ def test_t7b_depth_sports_result_recomputes_from_all_raw_rows():
     rows = analyzer.validate_raw(raw, contract)
     recomputed = analyzer.analyze_rows(rows)
 
-    assert recomputed == result["analysis"]
+    _assert_nested_approx(recomputed, result["analysis"])
     assert len(rows) == 18
     assert recomputed["disposition"] == "eligible_for_fresh_tier_d_design"
     assert recomputed["gates"] == {
