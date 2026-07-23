@@ -13,7 +13,7 @@ Every item below maps to a measured frontier deficit or an earned candidate:
 
 | Item | Frontier target | State |
 | --- | --- | --- |
-| P1 Depth fresh Tier-D run | Broad + sports quality; first automatic default | V1/v2 closed before launch; v3 fillability-first enumeration authorized |
+| P1 Depth fresh Tier-D run | Broad + sports quality; first automatic default | V3 has 32 verified identities and power-qualified at 99.8% / 99.67% Wilson lower; awaiting combined freeze review |
 | P2 Catcross attribution → path to ship | Diamonds/healthcare (0.20's categorical blow) | M6 `advance`; holds the current mechanism slot |
 | P3 Depth opt-in exposure | Immediate user value (−5% sports, spent) | Candidate validated, private |
 | P4 B3-v2 activation-gated parallelism | 6.1× ensemble fit optic; rescue the 3.84× | Successor to a clean kill |
@@ -47,6 +47,11 @@ rejected for concrete schema, target-validity, or OpenML-binding reasons; no
 model ran and the fresh inspection remains unspent. The dated pre-design note
 and hash-bound JSON are the only permitted inputs to the P1-v3 power
 recalculation.
+
+**As-built power qualified 2026-07-23:** the exact 32-identity, 17/15
+depth-branch panel passed the unchanged primary design at `0.998000`
+simulated power with one-sided Wilson lower `0.996657`. All downstream
+authority remains false pending the combined design/execution freeze review.
 
 1. **Concrete registry enumeration before anything freezes:** for every
    proposed slot, name the exact dataset/lineage identity, verify it loads

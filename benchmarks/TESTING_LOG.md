@@ -2689,6 +2689,45 @@ B-archive simulation remains non-loadable, optional size telemetry.
     its create-only simulation once, and return the result for owner freeze
     review. Combined design/execution freeze and fresh access remain false.
 
+### 62. T7b P1-v3 as-built power result (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; published power-contract head
+   `9c58065bfbd1844448bd1bc8b142e8ae2c6d1060`.
+2. **Comparators:** no model fit; the design simulates the future unchanged
+   candidate/control paired decision.
+3. **Evidence class:** prospective Tier-D design-time power result, not
+   candidate-quality or shipping evidence.
+4. **Data/splits:** exact 32 verified identities, 17 depth-4 and 15 depth-8,
+   with three already-attested coordinates per lineage.
+5. **Arms/policies:** candidate `41e948f0`, control `e23d2b16`; unchanged
+   spent-effect derivation, gates, and branch-direction rule.
+6. **Environment/repeats:** 5,000 outer panels, 5,000 lineage bootstrap
+   draws, original deterministic seeds.
+7. **Runner/command:**
+   `python benchmarks/tier_d_fresh_power_design_v3.py`.
+8. **Hashes:** result file
+   `d6d572e47c672262b007c436cc048b6259a753097e860357523bcec033085ba8`;
+   result self-hash
+   `78e74a48e060edfe09e371a4d1b5355a684847c4c2dba16e3966ae5c6ac858c1`;
+   dated result note
+   `9a0d0802f4d3bc69b9cde886b5bd3199e8e994b9915f0c49e9bbd1aee781275d`;
+   contract
+   `bcf44533c94312b41ff3efdb2a6d08639ccd69ac22cc8a0050fda021111ed82b`.
+9. **Primary results:** `design_power_qualified`; primary pass probability
+   `0.998000`, one-sided 95% Wilson lower `0.996657`, both above `0.800000`.
+   Retained-effect sensitivities: 10% `0.217600` (lacks power), 15%
+   `0.957600` (passes), 25% `0.991800` (passes).
+10. **Costs, passed and failed conditions:** primary power and Wilson gates
+    passed. The 10% sensitivity failed and is disclosure only. No fit,
+    prediction, RSS, archive, or observed-quality gate was evaluated.
+11. **Limitations/non-claims:** spent inputs selected the candidate; depth-8
+    behavior is transported for sizing. The result does not confirm the
+    mechanism or authorize a model run, merge, default, or release.
+12. **Terminal decision/next action:** prepare the combined design/execution
+    freeze over these exact identities for owner review. Every fresh,
+    confirmation, merge, default, release, and lockbox authority remains
+    false until separately granted.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
