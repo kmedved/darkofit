@@ -2728,6 +2728,52 @@ B-archive simulation remains non-loadable, optional size telemetry.
     confirmation, merge, default, release, and lockbox authority remains
     false until separately granted.
 
+### 63. T7b P1-v3 combined execution freeze review (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; freeze-review branch based on
+   published qualified-power commit
+   `ff7de35ead18184fbffc505ef4b2912fee8904a8`.
+2. **Comparators:** future unchanged candidate `41e948f0` versus control
+   `e23d2b16`; no model run in this checkpoint.
+3. **Evidence class:** prospective Tier-D design/execution freeze package.
+   It is not fresh confirmation or shipping evidence.
+4. **Data/splits:** exact hash-bound 32-identity enumeration with 96 fixed
+   coordinates, 17 depth-4 and 15 depth-8 lineages, and three group-safe
+   lineages. Execution-time discovery and substitution are absent.
+5. **Arms/policies:** scalar-RMSE CatBoost `depth=None`, 600 maximum rounds,
+   early stopping 30, validation 0.15, best model, no refit, seed 20260723.
+6. **Environment/repeats:** future fresh `darko311` workers, 14 threads,
+   alternating arm order, two-round same-source warmup, and three fixed
+   50,000-row prediction repeats.
+7. **Runner/command:** preflight after publication:
+   `python benchmarks/run_t7b_automatic_depth_fresh_tier_d_v3.py preflight
+   --output benchmarks/t7b_automatic_depth_fresh_tier_d_v3_preflight_20260723.json`.
+   Execution has no authorized command until a later owner record exists.
+8. **Hashes:** execution contract
+   `12ff0db7553b2748eaa75b2e0f0610fa423abc3112df79fb061bb4b59a4dc34d`;
+   protocol
+   `f6afe07c839aaf2f136e7ec987a0440315a1ebff8dd867f0b4b2199098ec944f`;
+   runner
+   `a214d392746342cb58468980aae6cdf323ac4670097e28b92926c2b141f66986`;
+   analyzer
+   `bef784604e1e9da50180b104e6b9fce012ab15953a9c3e3e45b9b0c097e10c36`;
+   focused tests
+   `bccb68b93ee5b0ae043584bf67aa63463db347bca880cd27705280efbc654d93`;
+   owner freeze-review note
+   `0097f56c74136c7ea406a8f9a7c2d647077b2c5ba263b7101d44c05c01ace60f`.
+9. **Primary results:** exact contract, registry, qualified-power, future
+   authorization, preflight, and analyzer bindings passed 32 focused tests.
+10. **Costs, passed and failed conditions:** no observed gate was evaluated.
+    The frozen future gates require all quality gates plus non-regressing fit
+    and prediction geomeans, hard/hybrid RSS, and all integrity checks.
+11. **Limitations/non-claims:** the package cannot execute itself. It grants
+    no fresh access, model fitting, default, release, TabArena, CTR23, or
+    lockbox authority. A later exact owner record is mandatory.
+12. **Terminal decision/next action:** publish the freeze-review package,
+    create and publish its data-free execution preflight, then stop for the
+    owner's explicit one-shot decision. Launch-manifest creation remains
+    forbidden.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
