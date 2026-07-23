@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "contract_id": "t7b-automatic-depth-fresh-tier-d-execution-v1-20260723",
+  "status": "preflight_harness_failure",
+  "attempt_spent": false,
+  "fresh_one_shot_launch_created": false,
+  "feature_matrix_loaded": false,
+  "target_values_loaded": false,
+  "model_fit_started": false,
+  "partial_result_published": false,
+  "failure_stage": "local contamination-helper import before first OpenML lineage load",
+  "failure_type": "ImportError",
+  "failure_message": "Python resolved the generic benchmarks package to /Users/konstantinmedvedovsky/code/sift/benchmarks instead of this published DarkoFit checkout.",
+  "disposition": "v1 preflight identity closed; superseded prospectively by v2 with repository-root import binding only; registry, candidate, control, gates, power assumptions, splits, execution settings, and terminal rules unchanged"
+}

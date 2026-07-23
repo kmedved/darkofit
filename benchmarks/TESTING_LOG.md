@@ -2413,6 +2413,56 @@ B-archive simulation remains non-loadable, optional size telemetry.
     if all 32 slots resolve cleanly. Launch-manifest creation is terminal and
     permits no rerun or partial read.
 
+### 56. T7b fresh preflight v1 harness failure and v2 freeze (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; published v1 freeze
+   `987b1c900667519583438900f8306a19b4ac37e5`, unchanged candidate
+   `41e948f0c53b1d124e16071a7fa66eba47d084d3`, and unchanged control
+   `e23d2b164f10374b1c0e02521c33fc96d48980da`.
+2. **Comparators:** no model comparison and no dataset comparison.
+3. **Evidence class:** pre-launch harness failure plus prospective Tier-D
+   execution-infrastructure supersession. It is not quality evidence and did
+   not spend the fresh inspection.
+4. **Data/splits:** the v1 command failed while importing the local
+   contamination helper, before the first OpenML lineage load. No feature
+   matrix or target value was loaded and no split was realized. V2 reuses the
+   immutable 32-primary/8-reserve v1 registry and every frozen split rule.
+5. **Arms/policies:** candidate, control, automatic-depth policy, terminal
+   decisions, gates, power assumptions, and cost rules are byte-for-byte
+   unchanged from v1. The only repair places the published DarkoFit root first
+   on `sys.path` before local `benchmarks` imports in the runner and analyzer.
+6. **Environment/repeats:** `darko311`, 14 logical CPUs planned; no worker,
+   warmup, repeat, or model fit started.
+7. **Runner/command:** failed v1 command:
+   `python benchmarks/run_t7b_automatic_depth_fresh_tier_d.py preflight
+   --output benchmarks/t7b_automatic_depth_fresh_tier_d_preflight_20260723.json`.
+   V2 verification used an isolated module-load probe plus the same 51-test
+   focused fresh/power/development/sports/thread suite.
+8. **Hashes:** v1 failure record
+   `37208219b2af77a89f2855981b9b793d39834a13fd6fb0dfd7341684b0f302cc`;
+   v2 protocol
+   `2c1151ef742592682acd90d8aa7247b43fa17ddd1667ada56874369a917e7d4f`;
+   v2 contract
+   `1a8e8f5e68fb557c504ddc25688ff9aa319436282cbc925b37df5a87e880dac1`;
+   repaired runner
+   `f7d3dc9651a4559470921b9b9d686cff8fbe9961e378939009cb697974032deb`;
+   repaired analyzer
+   `498671de591cb51b998dcf6c07d842d4ce7070f630c1eac8648eb3c1b3ce5274`.
+9. **Primary results:** the import probe resolved `benchmarks` to this
+   worktree, not the unrelated `sift` checkout. The complete focused suite
+   passed: 51 tests.
+10. **Costs, passed and failed conditions:** no quality or resource gate was
+    evaluated. V1 preflight failed its harness-integrity prerequisite; v2's
+    source-hash and contract checks passed.
+11. **Limitations/non-claims:** v2 still has not read a feature matrix or
+    target value, fitted a model, created a launch manifest, or inspected a
+    result. No default, public API, release, TabArena, CTR23, or lockbox claim
+    follows.
+12. **Terminal decision/next action:** v1 preflight identity is closed by a
+    create-only failure record. Publish the v2 freeze, run one create-only v2
+    preflight, and create the sole launch manifest only if all 32 slots pass.
+    The one-shot remains unspent.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

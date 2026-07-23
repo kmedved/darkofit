@@ -22,19 +22,24 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path[:1]:
+    sys.path.insert(0, str(ROOT))
 REGISTRY = (
     ROOT
     / "benchmarks"
     / ("t7b_automatic_depth_fresh_tier_d_contamination_registry.json")
 )
 CONTRACT = (
-    ROOT / "benchmarks" / ("t7b_automatic_depth_fresh_tier_d_execution_contract.json")
+    ROOT
+    / "benchmarks"
+    / ("t7b_automatic_depth_fresh_tier_d_execution_contract_v2.json")
 )
 ANALYZER = ROOT / "benchmarks" / ("analyze_t7b_automatic_depth_fresh_tier_d.py")
 FRESH_REGISTRY = ROOT / "benchmarks" / "fresh_confirmation_registry.json"
 CTR_SNAPSHOT = ROOT / "benchmarks" / "ctr23_suite_snapshot.json"
 CTR_DECLARATIONS = ROOT / "benchmarks" / "ctr23_contamination_sources.json"
-CONTRACT_ID = "t7b-automatic-depth-fresh-tier-d-execution-v1-20260723"
+CONTRACT_ID = "t7b-automatic-depth-fresh-tier-d-execution-v2-20260723"
+REGISTRY_CONTRACT_ID = "t7b-automatic-depth-fresh-tier-d-execution-v1-20260723"
 CONTROL_HEAD = "e23d2b164f10374b1c0e02521c33fc96d48980da"
 CANDIDATE_HEAD = "41e948f0c53b1d124e16071a7fa66eba47d084d3"
 THREADS = 14
@@ -118,7 +123,7 @@ def validate_contract(contract: Mapping[str, Any]) -> None:
     bindings = {
         "protocol": ROOT
         / "benchmarks"
-        / "t7b_automatic_depth_fresh_tier_d_execution_protocol.md",
+        / "t7b_automatic_depth_fresh_tier_d_execution_protocol_v2.md",
         "registry_declarations": ROOT
         / "benchmarks"
         / "t7b_automatic_depth_fresh_tier_d_registry_declarations.json",
@@ -550,7 +555,7 @@ def _preflight_lineage(
 def build_preflight() -> dict[str, Any]:
     validate_contract(_load_json(CONTRACT))
     registry = _load_json(REGISTRY)
-    if registry["contract_id"] != CONTRACT_ID:
+    if registry["contract_id"] != REGISTRY_CONTRACT_ID:
         raise RuntimeError("registry contract identity changed")
     if registry["registry_sha256"] != json_sha256(
         {key: value for key, value in registry.items() if key != "registry_sha256"}

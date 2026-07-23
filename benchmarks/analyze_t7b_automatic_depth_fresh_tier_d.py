@@ -7,18 +7,24 @@ import argparse
 import hashlib
 import json
 import math
+import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 import numpy as np
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path[:1]:
+    sys.path.insert(0, str(ROOT))
+
 from benchmarks.tier_d_fresh_power_design import evaluate_panel_logs
 
 
-ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = (
-    ROOT / "benchmarks" / ("t7b_automatic_depth_fresh_tier_d_execution_contract.json")
+    ROOT
+    / "benchmarks"
+    / ("t7b_automatic_depth_fresh_tier_d_execution_contract_v2.json")
 )
 POWER_CONTRACT = (
     ROOT
