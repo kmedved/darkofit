@@ -21,7 +21,7 @@ Every item below maps to a measured frontier deficit or an earned candidate:
 
 | Item | Frontier target | State |
 | --- | --- | --- |
-| P1 Automatic-depth paired development benchmark → ship-check | Broad + sports quality; first automatic default | Fix harness, then rerun 32 lineages; consult holdout only if development clearly improves |
+| P1 Automatic-depth paired development benchmark → ship-check | Broad + sports quality; first automatic default | **Closed for defaults:** development improved `0.996860x`, but CTR23 holdout regressed `1.026662x`; P3 opt-in remains |
 | P2 Catcross attribution → path to ship | Diamonds/healthcare (0.20's categorical blow) | M6 `advance`; holds the current mechanism slot |
 | P3 Depth opt-in exposure | Immediate user value (−5% sports, spent) | Candidate validated, private |
 | P4 B3-v2 activation-gated parallelism | 6.1× ensemble fit optic; rescue the 3.84× | Successor to a clean kill |
@@ -139,6 +139,18 @@ entirely:
    better on the panel and not worse on the holdout ship-check
    (SHIP_RULES), it becomes the v0.12 default with a documented revert
    flag. If not, it stays an opt-in and we say so in the docs.
+
+**Outcome, 2026-07-23:** the repaired 32-lineage development panel was
+clearly positive (`0.996860x` equal-lineage RMSE; bootstrap upper
+`0.999869x`; worst lineage `1.016344x`). The deliberate CTR23 ship-check then
+failed materially: `1.026662x` task-equal RMSE, bootstrap upper `1.062082x`,
+worst task `1.165018x`, and 1/5/3 task wins/ties/losses. All 54 rows and 27
+pairs passed integrity. The automatic-default route is closed. P3's explicit
+`depth="auto"` exposure remains authorized, with these development and
+holdout results labeled honestly. The newest untouched sports season was not
+consulted because a second conjunctive holdout could not reverse the failed
+default decision. CTR23 is now observed release-validation rather than a
+pristine lockbox. See the dated result note and hash-bound artifacts.
 
 The section below is retained for historical context only.
 
@@ -392,12 +404,14 @@ new-entity/group-shift mechanism through the normal pipeline.
 
 ## Execution queue
 
-1. Fix the automatic-depth harness and rerun all 32 lineages as a paired
-   development benchmark.
-2. **Only if depth is clearly better in development**, consult CTR23 and the
-   newest untouched sports season once as the release ship-check. Otherwise
-   keep depth opt-in and do not spend the holdout.
-3. Finish catcross attribution and its resulting development or opt-in path.
+1. ~~Fix the automatic-depth harness and rerun all 32 lineages as a paired
+   development benchmark.~~ **Complete:** development improved `0.996860x`.
+2. ~~If depth is clearly better in development, consult the holdout.~~
+   **Complete and closed for defaults:** CTR23 regressed `1.026662x`; the
+   untouched sports season remains unused because it cannot change the
+   conjunctive decision.
+3. **Next:** finish catcross attribution and its resulting development or
+   opt-in path.
 4. Build B3's deterministic minimum-work threshold with sequential fallback.
 5. Rebuild the linear-leaf selector with a noise- and cost-aware margin.
 6. After catcross, choose one next categorical mechanism: the declared-order

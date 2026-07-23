@@ -2909,6 +2909,48 @@ B-archive simulation remains non-loadable, optional size telemetry.
     `SHIP_RULES`; proceed once to the CTR23 and newest-untouched-season
     ship-check, without tuning from holdout outcomes.
 
+### 67. Automatic-depth CTR23 holdout ship-check (2026-07-23)
+
+1. **Source:** clean harness `3226b36`; control
+   `e23d2b164f10374b1c0e02521c33fc96d48980da`; unchanged candidate
+   `41e948f0c53b1d124e16071a7fa66eba47d084d3`.
+2. **Comparator:** the fixed-depth-6 control and automatic-depth candidate
+   from the paired development run; no rival library arm.
+3. **Evidence:** deliberate `SHIP_RULES` holdout ship-check on the nine sealed
+   CTR23 lockbox tasks. CTR23 is observed release-validation after this run.
+4. **Data/splits:** OpenML tasks `361247`, `361253`, `361254`, `361261`,
+   `361264`, `361272`, `361616`, `361617`, and `361618`; official repeat 0,
+   folds 0–2, sample 0. Exact train/test sizes and index SHA-256 values were
+   checked against `ctr23_suite_snapshot.json` before every fit.
+5. **Arms:** scalar RMSE CatBoost mode, 600 maximum iterations, early stopping
+   30, validation fraction 0.15, best-model retention, no refit, seed
+   `20260723`; control depth 6 versus candidate automatic depth.
+6. **Environment:** `darko311`, Python 3.11.8, NumPy 2.2.6, Numba 0.61.2,
+   pandas 2.2.3, sklearn 1.7.1, OpenML 0.15.1, macOS 26.5.2 arm64, 14 logical
+   CPUs and 24 GiB RAM. The audit found no competing benchmark process; high
+   macOS background load makes cost ratios telemetry only.
+7. **Execution:** `python
+   benchmarks/run_t7b_automatic_depth_ctr23_ship_check_v1.py execute` with
+   the hash-bound manifest and exact control/candidate worktrees; 54 isolated
+   fresh workers with alternating arm order.
+8. **Artifacts/hashes:** manifest
+   `4edfd594ef967b383a75cdaab8caf8593c8f387f1d1a7741aee1666ab0db6cac`;
+   launch `5bcdff4b305f4ccc6dfac1a7df11a86f4254d207a93fdc82983a2cc0f4078d9f`;
+   raw `4bad8f98a80a0fac3769e7a3e9887491c9bd067fb757c6e7a7646c61e5927483`;
+   result `ceb1f6d4ee3feee4c850fa2632a8966603e98b453dc441d53764189d1616a553`.
+9. **Primary results:** task-equal RMSE ratio `1.026662x`, task-bootstrap
+   upper `1.062082x`, leave-one-task-out maximum `1.031063x`, worst task
+   `1.165018x`, and 1/5/3 task wins/ties/losses.
+10. **Costs and integrity:** 54/54 rows, 27/27 pairs, and 9/9 tasks passed;
+    fit `0.922137x` and predict `1.048893x` are descriptive only.
+11. **Limitations/non-claims:** this is holdout evidence for the unchanged
+    automatic-depth candidate, not a general CTR23 tuning surface or clean
+    timing result. The newest untouched sports season was not consulted.
+12. **Decision/next action:** automatic depth is closed for the public
+    default because it is worse on CTR23. Preserve P3's explicit opt-in path,
+    do not tune from these holdout outcomes, and move the mechanism slot to
+    catcross.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
