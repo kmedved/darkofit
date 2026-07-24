@@ -3046,6 +3046,41 @@ B-archive simulation remains non-loadable, optional size telemetry.
     small-data-fallback, sports, and selection-cost documentation. Do not
     change the default.
 
+### 70. Catcross v1 public opt-in exposure (2026-07-23)
+
+1. **Source:** clean product commit
+   `2249d13db72fa58b7b124820b7a50d39f5b7a3cd`.
+2. **Comparator:** the prior public `DarkoRegressor` path, preserved by the
+   new default `categorical_crosses=False`.
+3. **Evidence:** correctness and honest product characterization only; the
+   previously recorded spent attribution and sports guardrail remain the
+   quality evidence. No new benchmark or holdout contact.
+4. **Data/splits:** deterministic synthetic mixed, numeric-only, and
+   all-categorical test fixtures; the selector tests include group-disjoint
+   validation.
+5. **Arms/policies:** default-off exact control; explicit automatic audition;
+   selected, control-win, and data-ineligible fallback states; incompatible
+   requested modes; repeated true-to-false fit.
+6. **Environment:** macOS arm64; focused verification in `darko311`, broader
+   core sweep in the local Python 3.12 environment.
+7. **Execution:** `python -m pytest -q` over the five group-centered suites;
+   the focused suites plus thread/input validation in `darko311`; broader
+   `tests/test_darkofit.py` core subset; strict MkDocs in `darko311`.
+8. **Artifacts/hashes:** implementation commit above; no generated benchmark
+   artifacts.
+9. **Primary results:** 84 focused/API/thread/input tests passed in
+   `darko311`; 387 broader core tests passed; strict MkDocs passed.
+10. **Failed as well as passed checks:** the full local non-campaign sweep
+    reached 1,569 passes and three unrelated historical-evidence failures:
+    unavailable M3b sports cache, a one-ULP frozen power-result mismatch, and
+    an old compute-ladder governing-plan hash invalidated by later plan edits.
+11. **Limitations/non-claims:** no new quality, speed, memory, holdout,
+    release-ladder, default, or release claim. Classification and the listed
+    multi-fit or alternate-head modes remain unsupported by this opt-in.
+12. **Decision/next action:** the default-off public opt-in is complete. Keep
+    the small-data selector successor separate and advance to B3's
+    deterministic minimum-work threshold.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

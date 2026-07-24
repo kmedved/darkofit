@@ -306,7 +306,7 @@ the worst fold was `1.010136x`. This is spent opt-in guardrail evidence, not
 holdout/default evidence. See
 [`benchmarks/group_centered_categorical_crosses_v1_sports_guardrail_result_20260723.md`](benchmarks/group_centered_categorical_crosses_v1_sports_guardrail_result_20260723.md).
 
-### P2d. Public opt-in exposure (next, authorized)
+### P2d. Public opt-in exposure (complete, 2026-07-23)
 
 Expose the validated selector as `categorical_crosses=False` by default;
 `categorical_crosses=True` requests the automatic v1 audition and never means
@@ -328,6 +328,18 @@ unconditional forcing. Preserve the private forced lane for research only.
   scopes plus the roughly two-audition fit overhead.
 - No default change is authorized. The small-data successor remains separate
   future automation work.
+
+**Result:** commit `2249d13db72fa58b7b124820b7a50d39f5b7a3cd`
+exposes the regressor-only, default-off surface exactly as scoped above.
+Selected and data-fallback metadata round-trip through safe NPZ; incompatible
+requested modes fail loudly; disabling the option on a repeated fit clears all
+selector state. The final repeated fresh-eyes pass found no remaining defect.
+Validation: 84 focused/API/thread/input tests in `darko311`, 387 broader core
+tests, and strict MkDocs all passed. The broader local non-campaign sweep
+reported 1,569 passes plus three unrelated historical-evidence failures
+(missing M3b cache, a one-ULP frozen power recomputation difference, and an
+old compute-ladder binding invalidated by subsequent governing-plan edits).
+No default changed and no new benchmark was run for product exposure.
 
 ## P3 — Depth `"auto"` opt-in exposure (product work, authorized)
 
@@ -478,10 +490,12 @@ new-entity/group-shift mechanism through the normal pipeline.
    **Complete and closed for defaults:** CTR23 regressed `1.026662x`; the
    untouched sports season remains unused because it cannot change the
    conjunctive decision.
-3. **Next:** expose the validated catcross selector as the honestly scoped
+3. ~~Expose the validated catcross selector as the honestly scoped
    `categorical_crosses=True` opt-in, and record the small-data selector
-   successor.
-4. Build B3's deterministic minimum-work threshold with sequential fallback.
+   successor.~~ **Complete:** public default remains `False`; explicit `True`
+   runs the supported automatic audition.
+4. **Next:** build B3's deterministic minimum-work threshold with sequential
+   fallback.
 5. Rebuild the linear-leaf selector with a noise- and cost-aware margin.
 6. After catcross, choose one next categorical mechanism: the declared-order
    selector or the small DarkoFit-local one-hot donor probe.
