@@ -101,7 +101,13 @@ every world.
   binning, forest walk, audition fits, param resolution, allocation}.
   Test the thread-switch hypothesis first (a ~1 ms OpenMP re-team on a
   ~100–300 µs call would *be* the 10x; skip-when-ambient-equal is the
-  fix if so).
+  fix if so). **Paired donor reference arm (Codex amendment 1):** run
+  the same ledger on pinned ChimeraBoost `6667843` — called directly
+  from the proof harness, no renamed branch — in the same session, so
+  the comparison is attribution-vs-attribution (where their ~36 µs goes
+  vs where our ~300 µs goes), not fresh numbers against last week's
+  ladder. All gate timing cells carry this pinned reference arm; the
+  pin does not refresh mid-gate even if the donor releases.
 - **(b) Member-path facts.** Establish by execution: do v3 members run
   the linear-selector audition per member (the airfoil 17x arithmetic
   says probably yes)? Does the catcross audition reach members at all
@@ -128,14 +134,19 @@ every world.
   bit-exact guard decline. This doubles as P2's dev evidence if salvage
   wins. Measure D8 on diamonds too if (b) says members audition:
   quality gain vs stacked-audition fit cost, both reported.
-- **(e) Matched-member ensemble decomposition.** Benchmark-only index
-  shims on both stacks: inject identical member train/OOB indices,
-  identical resolved horizons/policies, selectors off, on the six proof
-  cells (QSAR_fish, healthcare, diamonds, protein, airfoil, concrete).
-  With members forced identical, what remains of their 3.5%-vs-1.0%
-  lift wedge and their 0.57x ensemble fit economics? This is P4's core
-  question answered in days: lift that disappears under matched members
-  is portable policy; lift that survives is foundation. Record member
+- **(e) Matched-member ensemble decomposition, two stages (Codex
+  amendment 2).** Benchmark-only index shims on both stacks: inject
+  identical member train/OOB indices, seeds, and parameters, selectors
+  off, on the six proof cells (QSAR_fish, healthcare, diamonds,
+  protein, airfoil, concrete). **Stage 1:** each engine chooses its own
+  stopping horizon per member — measures the stopping/orchestration
+  contribution to the lift wedge. **Stage 2:** additionally force
+  identical horizons (the donor's stage-1 selected horizons as the
+  common reference) — isolates preprocessing/tree-engine differences.
+  Forcing horizons immediately would erase one of the two leading wedge
+  hypotheses before measuring it; the stage-1−stage-2 difference IS the
+  horizon effect. Lift that disappears across the stages is portable
+  policy; lift that survives stage 2 is foundation. Record member
   retained rounds, member-prediction correlation, and per-member wall
   time on both sides.
 
@@ -159,26 +170,42 @@ triggers it*, with the port bill priced honestly first.
 3. matched members collapse most of the ensemble lift wedge (their
    advantage is portable policy/baseline property, not foundation).
 
-**Re-fork program triggered** if ANY of: the ledger shows kernels at
+**Donor-core proof funded** if ANY of: the ledger shows kernels at
 parity with the gap smeared across the abstraction stack (architecture,
-not policy); the lift wedge survives matched members; or diamonds fails
-to close under real defaults. The program is then: two-branch proof at
-pinned `a9eb4db` vs `6667843` per the external reviews, with the donor's
-**mandatory pre-adoption fixes** (its bagging is row-based — verified:
-members take an explicit row-complement OOB `eval_set`, bypassing the
-group-aware splitter, so one player's rows can sit on both sides; and
-its rare-class bagged-OOB scoring can misencode absent classes), the
-layered migration architecture (`policy/`, `heads/`, `io/`, `groups/`
-over a vendored core; fitted policy off the hot path), and the honest
-6–10 week bill to sports-pipeline parity including revalidation of the
-distributional/conformal/NPZ stack the live pipeline depends on.
+not policy); the lift wedge survives stage 2 of the matched-member
+decomposition; or diamonds fails to close under real defaults.
 
-**Tie-breaker** (owner pre-decision, so the gate can't be argued after
-the fact): my recommendation is that ties go to the incumbent — the
-port bill is real, the rival moves during any port, and the live sports
-pipeline sits on surfaces that would all need revalidation. Reviews 2–3
-recommend ties go to the smaller donor foundation. The owner picks the
-tie rule before the gate runs.
+**Wording that matters (Codex):** those are the gate's only two
+outcomes — *salvage confirmed* or *donor-core proof funded*. The gate
+cannot itself select ChimeraBoost: no cutover decision exists until a
+donor-core branch has carried DarkoFit's required contracts (group
+safety, rare-class safety, sample-weight semantics, safe NPZ, and one
+representative extension — the 2-SE selector) **without losing the
+donor's cost advantage**. The funded proof is that build: two branches
+at pinned `a9eb4db` vs `6667843` per the external reviews, with the
+donor's **mandatory pre-adoption fixes** (its bagging is row-based —
+verified: members take an explicit row-complement OOB `eval_set`,
+bypassing the group-aware splitter, so one player's rows can sit on
+both sides; and its rare-class bagged-OOB scoring can misencode absent
+classes), the layered migration architecture (`policy/`, `heads/`,
+`io/`, `groups/` over a vendored core; fitted policy off the hot
+path), and the honest 6–10 week bill to sports-pipeline parity
+including revalidation of the distributional/conformal/NPZ stack the
+live pipeline depends on.
+
+**Two-tier tie rule (Codex amendment 3, reconciling the reviews):**
+
+- *This screening gate:* ties go to incumbent DarkoFit. An ambiguous
+  reading does not justify paying six-to-ten weeks of migration and
+  revalidation while the rival keeps shipping.
+- *The funded donor-core proof, if it runs:* ties go to ChimeraBoost —
+  but only once the required contracts above are in place on that
+  foundation without erasing its advantage. At that point the port
+  cost is sunk into the proof itself, and at equal performance the
+  dramatically smaller foundation rationally wins.
+
+Both rules are fixed now, before any measurement, so neither verdict
+can be argued backward from a preference.
 
 ### Gate hygiene
 
@@ -186,7 +213,9 @@ Dev data only; no holdout consultation; no new percentage gates —
 readings 1–3 are judgment calls made on the published numbers, by the
 owner, with my recommendation attached. Time-box: three working days of
 machine time; instrumentation runs don't need the exclusive machine,
-the before/after timings do.
+the before/after timings do. Execution uses clean worktrees at the
+tagged pins (`a9eb4db`, `6667843`); the uncommitted Fresh Eyes repair
+set in the local tree stays untouched and out of the gate branches.
 
 ## 1. The R3 mechanisms (amended; execution order set by the gate)
 
@@ -326,7 +355,8 @@ its own plan document with the port bill and layered architecture.
 
 ## 4. Standing owner decision points
 
-1. **Gate go/no-go, and the tie-breaker rule, before it runs.**
+1. **Gate go/no-go.** The two-tier tie rule (§0.5) is part of the
+   authorization — a single yes adopts both.
 2. Gate verdict sign-off (salvage vs re-fork program).
 3. Release sign-off on v0.13 (catcross default scope).
 4. P4's mechanism choice before it becomes v0.14's default.
