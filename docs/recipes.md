@@ -135,11 +135,28 @@ Declare order only when it comes from domain semantics. Unknown non-missing
 values fail closed. The representation is target-free and does not add
 columns.
 
-This can be powerful but is dataset-specific. In categorical development,
-declared order reduced Diamonds RMSE by about `25%`, while an automatically
-identified ordinal policy regressed the FPS benchmark by about `32%` and its
-worst split by `144%`. Never infer a universal order merely because category
-labels look sortable.
+If the input uses ordered pandas categoricals, the regressor can audition the
+declared order automatically:
+
+```python
+model = DarkoRegressor()
+model.fit(X_train, y_train, ordinal_features="select")
+print(model.automatic_ordinal_selector_["selected"])
+```
+
+For a mapping such as `orders`, request the same audition with
+`ordinal_selection=True`. The selector never treats bare integer category
+codes as semantic order. It currently supports scalar-RMSE CatBoost fits and
+records exact fallback or a loud incompatibility instead of silently changing
+the request. `ordinal_features=None` is the rollback.
+
+This can be powerful but is dataset-specific. On the two historical
+declared-order development domains, the selector engaged in all six
+seeded comparisons and reduced equal-dataset outer-test RMSE by about `18.5%`
+without losing any coordinate. Those datasets were already used to develop
+the mechanism; this is not evidence for arbitrary categoricals or new
+datasets. Never infer a universal order merely because category labels look
+sortable.
 
 ## Accuracy profile
 

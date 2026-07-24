@@ -3381,6 +3381,55 @@ B-archive simulation remains non-loadable, optional size telemetry.
 - **Disposition:** keep the behavior-exact optimization and proceed to the
   declared-order native-vs-ordinal selector.
 
+### 79. Declared-order selector development (2026-07-23)
+
+- **Question:** when category order is supplied externally rather than inferred
+  from the target, can a native-vs-ordinal audition select the better
+  representation without harming disjoint outer-test rows?
+- **Evidence class:** spent development evidence only. The two domains are the
+  historical safe-ordinal datasets; neither is a holdout. The unrelated
+  GPBoost comparator study does not count as DarkoFit candidate-development
+  contact, holdout inspection, or contamination.
+- **Source and data:** DarkoFit
+  `8b87e562ffbf9321805e67309df7fd507abd7628`; UCI Airfoil Self-Noise archive
+  SHA-256
+  `5c7767ba53ad827d3f48ba1eb9434117f4892df8f10bc4c99e118a9e8a7ae07c`;
+  ggplot2 Diamonds CSV SHA-256
+  `974c2ce1c1ce245508bd357ca11a7fba2b37813ecf0f1158808a9249ebff67a1`.
+  Seeds were 4, 17, and 29. Each coordinate used an 80/20 outer development
+  split and an 80/20 inner train/validation split; the selector saw only the
+  inner validation rows.
+- **Arms:** native categorical handling, forced externally declared ordinal
+  handling, and `ordinal_features="select"`. Model settings and splits were
+  identical across arms. Airfoil declared attack-angle order; Diamonds
+  declared the published cut, color, and clarity orders.
+- **Result:** the selector engaged on all 6 coordinates and exactly reproduced
+  the corresponding forced-ordinal final prediction vector each time.
+  Equal-dataset selector/native outer-test RMSE was `0.815447`; the worst
+  coordinate was `0.974516`. Airfoil's dataset-level ratio was `0.870938`;
+  Diamonds was `0.763492`.
+- **Costs:** the selector deliberately pays for both inner-validation fits
+  before the selected final fit. These short-run timings are telemetry, not a
+  speed claim; the preceding transform microbenchmark isolates inference
+  overhead.
+- **Boundary:** this supports only explicit mappings and ordered pandas
+  categoricals. It does not infer semantic order, does not apply to bare
+  integer category codes, and does not establish transfer to unseen datasets
+  or an automatic default.
+- **Artifacts:** protocol
+  [`declared_ordinal_selector_development.md`](declared_ordinal_selector_development.md),
+  raw
+  [`JSON`](declared_ordinal_selector_development_raw_20260723.json), and
+  rendered
+  [`result`](declared_ordinal_selector_development_result_20260723.md).
+  Raw SHA-256:
+  `0689c9810a0d1720178b5effef264c5ee450bf8ec299c255996879517182998d`;
+  rendered-result SHA-256:
+  `d2fd397b52a154a69305020778b15d6161fec868a14e550b2ed6704460c4e0fa`.
+- **Disposition:** keep the explicit automatic audition, retain native handling
+  as the default and `ordinal_features=None` as the rollback, close this
+  mechanism slot, and proceed to ensemble member-policy retuning.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

@@ -19,6 +19,20 @@
   back exactly with recorded metadata; unsupported mode combinations fail
   loudly. The fitted preprocessing and selector provenance round-trip through
   safe NPZ archives.
+- Add the explicit declared-order audition for scalar-RMSE regressors.
+  `ordinal_features="select"` discovers only ordered pandas categoricals;
+  explicit mappings opt in with `ordinal_selection=True`. The selector
+  compares native and target-free ordinal representations on held-out rows,
+  records its decision in `automatic_ordinal_selector_`, refits the winner
+  from scratch, and preserves fitted provenance through safe NPZ archives.
+  Bare integer category codes never trigger it, and `ordinal_features=None`
+  remains the rollback.
+
+### Performance
+
+- Reuse exact matching pandas categorical codes for declared-ordinal
+  prediction instead of rebuilding category lookups. Predictions remain
+  bit-identical to the generic mapping fallback.
 
 ## 0.11.0 - 2026-07-22
 

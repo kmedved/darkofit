@@ -120,6 +120,14 @@ fits fall back exactly and record why in `automatic_linear_selector_`.
 
 `ordinal_features={column: order}` explicitly maps declared ordered
 categories into the numeric binner; unknown non-missing values fail closed.
+For scalar-RMSE regressors, `ordinal_features="select"` automatically
+discovers only ordered pandas categoricals and auditions native versus ordinal
+representation on held-out rows. To audition an explicit mapping, pass the
+mapping together with `ordinal_selection=True`. Bare integer category codes do
+not count as an order declaration. The decision is recorded in
+`automatic_ordinal_selector_`; small or unsupported data falls back exactly,
+while incompatible requested modes fail loudly. `ordinal_features=None`
+bypasses both declaration and audition.
 
 `oblivious_kernel` is a bounded observability and escape-hatch option for the
 eligible scalar CatBoost lane. `"fused"` and `"unfused"` force the two

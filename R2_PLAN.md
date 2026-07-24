@@ -550,6 +550,20 @@ isolates the public `ordinal_features` transform; it does not relabel the
 historical AutoGluon adapter timing. Continue to the quality-selector half of
 the mechanism.
 
+**Selector result, 2026-07-23:** the automatic declared-order audition is
+complete as an explicit opt-in. On the two already-spent historical domains
+(Airfoil Self-Noise and Diamonds), across three fixed seeds each, it selected
+ordinal representation on all six inner-validation comparisons and exactly
+reproduced the corresponding forced-ordinal final fit. On disjoint outer-test
+rows the selector beat native categorical handling on all six coordinates:
+equal-dataset RMSE was `0.815447x` native and the worst coordinate was
+`0.974516x`. This is strong development evidence for the narrow
+source-declared-order surface, not a claim about arbitrary categoricals or new
+datasets. The public default remains native; `ordinal_features="select"` is
+the explicit automatic audition and `ordinal_features=None` is the rollback.
+The unrelated GPBoost comparator study is outside DarkoFit candidate
+development and does not count as contact with these domains or any holdout.
+
 5. **Q reprofile** — last, against the post-dispatch engine.
 
 **Accuracy-v2 integration project (the capstone, not a revival list):**
@@ -600,10 +614,13 @@ new-entity/group-shift mechanism through the normal pipeline.
 5. ~~Rebuild the linear-leaf selector with a noise- and cost-aware margin.~~
    **Complete:** the two-standard-error selector passed Protein development,
    CTR23 release validation, and the exact-fallback 2020 sports ship-check.
-6. **Next:** optimize the declared-order transform and build a
-   native-vs-ordinal selector restricted to explicitly declared orders; the
-   one-hot donor probe remains behind it.
-7. Retune the ensemble member policy.
+6. ~~Optimize the declared-order transform and build a native-vs-ordinal
+   selector restricted to explicitly declared orders.~~ **Complete:** the
+   transform is behavior-exact and faster at every measured shape; the
+   explicit selector engaged 6/6 and improved every outer-test coordinate on
+   its two narrow historical domains. The one-hot donor probe remains
+   unselected.
+7. **Next:** retune the ensemble member policy.
 8. Build accuracy-v2 with component ablations and A10 as the fallback.
 9. Reprofile Q against the post-dispatch engine.
 
