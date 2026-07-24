@@ -342,24 +342,57 @@ and the residual predict tail after P1.
   sentinel). Verified: `categorical_crosses=False` remains the product
   default on the branch; the flip stays out of main until its
   ship-check passes.
+- **Horizon dev measurement immediately (Opus amendment, 2026-07-24):**
+  the public default is `early_stopping=False, iterations=1000`
+  (sklearn_api.py:10230/13121) while every internal surface — members,
+  auditions — sets `early_stopping=True`; on small data we build each
+  tree ~31% cheaper than the donor and lose ~7x by building ~9–23x as
+  many. Because every later measurement (B3 calibration, catcross cost
+  profile, Q1 payoff, the serving sentinel) is polluted while the
+  baseline builds 1,000 trees, the horizon question is measured FIRST:
+  dev-slice run of `early_stopping=True` at two validation fractions,
+  plus the early-stop-then-refit-at-chosen-horizon variant (recovers
+  the donor policy's permanent ~20% row forfeit; the existing `refit`
+  is selection-scoped, so this is new build — if it slows the
+  measurement, run the ES-only arms first and refit as fast-follow).
+  **Slot rule, pre-stated:** quality-neutral-or-better on the dev
+  slice → horizon policy takes v0.13's single quality-default slot and
+  catcross moves to v0.14; a real quality cost → catcross ships v0.13
+  as planned and horizon work continues on the refit variant for
+  v0.14. Owner signs the slot assignment either way.
+- **Thread-topology generalization (behavior-exact family, ships when
+  proven):** the gate ledger shows intra-tree parallelism is mostly
+  overhead on tiny fits (our own forced-parallel route: 0.325 →
+  0.071 ms/tree from 14 threads to 2/member — within-engine, same
+  models). Generalize B3's insight to single-model fits: resolve
+  thread topology from problem size. **Exactness requirement:**
+  identical tree counts across routes is NOT proof — histogram
+  reduction order is the classic float trap — so thread-invariant
+  bit-exact fits must be verified in the exactness suite per lane
+  before any claim; where bit-exactness fails, the lane is a measured
+  quality-neutral dispatch change, not behavior-exact.
 - **v0.13** = integrated P1 + **B3 threshold reshape** (behavior-exact,
-  measured envelope, memory guard, rollback) + **P2 catcross as the
-  release's one quality default**, now unblocked: run the CTR23 +
-  newest-sports ship-check, ship scoped to single-model fits with the
-  release claim scoped to match (members don't audition; D8 diamonds
-  stays open until decision-passing exists). Ladder at release against
+  measured envelope, memory guard, rollback) + the slot-rule winner as
+  the release's one quality default (the loser leads v0.14). Catcross,
+  whichever release it lands in, ships scoped to single-model fits
+  with the release claim scoped to match, and the release notes state
+  explicitly that ensemble diamonds (1.35x) remains open until
+  parent-to-member decision passing exists. Ladder at release against
   the then-current donor pin.
-- **v0.14** = **default horizon/early-stopping policy** as its one
-  quality default, designed from the ledger + matched-member evidence
-  (the donor-horizon replay reaching 0.999 is the existence proof).
-  Evaluate it on the quality-vs-compute frontier at the default point,
-  holdout-checked like any quality default; an explicit small quality
-  trade for a large cost win is an owner sign-off, not a silent ship.
-  Member horizon policy rides the same coherent flag if it can honestly
-  be one policy; otherwise it queues.
+- **v0.14** = the slot-rule loser as its quality default; member
+  horizon policy rides the same coherent flag as the default horizon
+  change if it can honestly be one policy.
 - **v0.15 candidate** = parent-level decision passing to members
   (extends catcross + linear leaves to ensembles; fixes D8 diamonds),
-  plus Q1 and any remaining P3 tail.
+  plus Q1 — **re-scoped after the horizon change lands**: quantization
+  accelerates tree construction, and a default that builds an order of
+  magnitude fewer trees shrinks Q1's absolute payoff; re-measure before
+  funding the integration.
+- **Timing hygiene note:** the gate's fit/ensemble ledgers ran at load
+  average ~5.5 with `formal_timing_evidence: false`. Tree counts and
+  route facts are structural and stand; the ms-per-tree ratios are
+  directional only and get re-measured on the exclusive machine before
+  appearing in any result doc.
 - v0.13 tracking targets (not continuation gates): D0/M0 quality ≤1.00
   with diamonds ≤1.05; D0 predict ≤2x aggregate on registered batches
   (horizon-limited until v0.14); D8 worst small-set fit ≤4x. The v0.13
