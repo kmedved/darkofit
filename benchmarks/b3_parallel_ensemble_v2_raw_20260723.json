@@ -1,0 +1,5118 @@
+{
+  "benchmark_id": "b3-activation-gated-parallel-members-v2-20260723",
+  "rows": [
+    {
+      "arm": "sequential_1x14",
+      "block": 0,
+      "case_id": "general_friedman_numeric",
+      "fingerprints": {
+        "case_sha256": "0369aa4e3418043609ae82ba9a6ab915815be6cc2e670d49e30e29c18cba1589",
+        "dataset_sha256": "1559c497096dd7421e971f02a3756c1ff766fda062a162f5c90cbc99d4cec9b6",
+        "split_sha256": "2b82a6af55ad4e79c44757f793662596c31e77dafea7d831d88cb637e942aee5",
+        "weight_sha256": "378a14dab00abd23e9ae42c352bf6044ec6e41d5246c594cde235f4b5295247e"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 900322,
+          "fit_rss": {
+            "end_bytes": 350289920,
+            "errors": [],
+            "peak_bytes": 350289920,
+            "peak_delta_bytes": 124059648,
+            "samples": 152,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 226230272
+          },
+          "fit_seconds": 3.665844,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              117,
+              113,
+              107,
+              148,
+              74,
+              114,
+              129,
+              150
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.062961208,
+          "prediction_sha256": "6b96e0551fe190a9a719fcea50e14260d2287fb050d6bd3b64be0ed4f684804c",
+          "probability_sha256": null
+        },
+        {
+          "archive_bytes": 900322,
+          "fit_rss": {
+            "end_bytes": 372359168,
+            "errors": [],
+            "peak_bytes": 372391936,
+            "peak_delta_bytes": 15204352,
+            "samples": 83,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 357187584
+          },
+          "fit_seconds": 1.835630375,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              117,
+              113,
+              107,
+              148,
+              74,
+              114,
+              129,
+              150
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.008727875,
+          "prediction_sha256": "6b96e0551fe190a9a719fcea50e14260d2287fb050d6bd3b64be0ed4f684804c",
+          "probability_sha256": null
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "regression",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "parallel_7x2",
+      "block": 0,
+      "case_id": "general_friedman_numeric",
+      "fingerprints": {
+        "case_sha256": "0369aa4e3418043609ae82ba9a6ab915815be6cc2e670d49e30e29c18cba1589",
+        "dataset_sha256": "1559c497096dd7421e971f02a3756c1ff766fda062a162f5c90cbc99d4cec9b6",
+        "split_sha256": "2b82a6af55ad4e79c44757f793662596c31e77dafea7d831d88cb637e942aee5",
+        "weight_sha256": "378a14dab00abd23e9ae42c352bf6044ec6e41d5246c594cde235f4b5295247e"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 900322,
+          "fit_rss": {
+            "end_bytes": 309919744,
+            "errors": [],
+            "peak_bytes": 309919744,
+            "peak_delta_bytes": 83181568,
+            "samples": 89,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 226738176
+          },
+          "fit_seconds": 1.917356042,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              117,
+              113,
+              107,
+              148,
+              74,
+              114,
+              129,
+              150
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.00978175,
+          "prediction_sha256": "6b96e0551fe190a9a719fcea50e14260d2287fb050d6bd3b64be0ed4f684804c",
+          "probability_sha256": null
+        },
+        {
+          "archive_bytes": 900322,
+          "fit_rss": {
+            "end_bytes": 334823424,
+            "errors": [],
+            "peak_bytes": 334856192,
+            "peak_delta_bytes": 21692416,
+            "samples": 83,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 313163776
+          },
+          "fit_seconds": 1.8168235,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              117,
+              113,
+              107,
+              148,
+              74,
+              114,
+              129,
+              150
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.008650625,
+          "prediction_sha256": "6b96e0551fe190a9a719fcea50e14260d2287fb050d6bd3b64be0ed4f684804c",
+          "probability_sha256": null
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "regression",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "parallel_7x2",
+      "block": 1,
+      "case_id": "general_friedman_numeric",
+      "fingerprints": {
+        "case_sha256": "0369aa4e3418043609ae82ba9a6ab915815be6cc2e670d49e30e29c18cba1589",
+        "dataset_sha256": "1559c497096dd7421e971f02a3756c1ff766fda062a162f5c90cbc99d4cec9b6",
+        "split_sha256": "2b82a6af55ad4e79c44757f793662596c31e77dafea7d831d88cb637e942aee5",
+        "weight_sha256": "378a14dab00abd23e9ae42c352bf6044ec6e41d5246c594cde235f4b5295247e"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 900322,
+          "fit_rss": {
+            "end_bytes": 311459840,
+            "errors": [],
+            "peak_bytes": 311459840,
+            "peak_delta_bytes": 86179840,
+            "samples": 91,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 225280000
+          },
+          "fit_seconds": 1.950262208,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              117,
+              113,
+              107,
+              148,
+              74,
+              114,
+              129,
+              150
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.009974125,
+          "prediction_sha256": "6b96e0551fe190a9a719fcea50e14260d2287fb050d6bd3b64be0ed4f684804c",
+          "probability_sha256": null
+        },
+        {
+          "archive_bytes": 900322,
+          "fit_rss": {
+            "end_bytes": 327319552,
+            "errors": [],
+            "peak_bytes": 327352320,
+            "peak_delta_bytes": 12369920,
+            "samples": 85,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 314982400
+          },
+          "fit_seconds": 1.834477917,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              117,
+              113,
+              107,
+              148,
+              74,
+              114,
+              129,
+              150
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.008549333,
+          "prediction_sha256": "6b96e0551fe190a9a719fcea50e14260d2287fb050d6bd3b64be0ed4f684804c",
+          "probability_sha256": null
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "regression",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "sequential_1x14",
+      "block": 1,
+      "case_id": "general_friedman_numeric",
+      "fingerprints": {
+        "case_sha256": "0369aa4e3418043609ae82ba9a6ab915815be6cc2e670d49e30e29c18cba1589",
+        "dataset_sha256": "1559c497096dd7421e971f02a3756c1ff766fda062a162f5c90cbc99d4cec9b6",
+        "split_sha256": "2b82a6af55ad4e79c44757f793662596c31e77dafea7d831d88cb637e942aee5",
+        "weight_sha256": "378a14dab00abd23e9ae42c352bf6044ec6e41d5246c594cde235f4b5295247e"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 900322,
+          "fit_rss": {
+            "end_bytes": 297598976,
+            "errors": [],
+            "peak_bytes": 297598976,
+            "peak_delta_bytes": 72253440,
+            "samples": 89,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 225345536
+          },
+          "fit_seconds": 1.930464709,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              117,
+              113,
+              107,
+              148,
+              74,
+              114,
+              129,
+              150
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.009938334,
+          "prediction_sha256": "6b96e0551fe190a9a719fcea50e14260d2287fb050d6bd3b64be0ed4f684804c",
+          "probability_sha256": null
+        },
+        {
+          "archive_bytes": 900322,
+          "fit_rss": {
+            "end_bytes": 326549504,
+            "errors": [],
+            "peak_bytes": 326582272,
+            "peak_delta_bytes": 24854528,
+            "samples": 86,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 301727744
+          },
+          "fit_seconds": 1.8343405,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              117,
+              113,
+              107,
+              148,
+              74,
+              114,
+              129,
+              150
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.008600959,
+          "prediction_sha256": "6b96e0551fe190a9a719fcea50e14260d2287fb050d6bd3b64be0ed4f684804c",
+          "probability_sha256": null
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "regression",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "sequential_1x14",
+      "block": 2,
+      "case_id": "general_friedman_numeric",
+      "fingerprints": {
+        "case_sha256": "0369aa4e3418043609ae82ba9a6ab915815be6cc2e670d49e30e29c18cba1589",
+        "dataset_sha256": "1559c497096dd7421e971f02a3756c1ff766fda062a162f5c90cbc99d4cec9b6",
+        "split_sha256": "2b82a6af55ad4e79c44757f793662596c31e77dafea7d831d88cb637e942aee5",
+        "weight_sha256": "378a14dab00abd23e9ae42c352bf6044ec6e41d5246c594cde235f4b5295247e"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 900322,
+          "fit_rss": {
+            "end_bytes": 298598400,
+            "errors": [],
+            "peak_bytes": 298598400,
+            "peak_delta_bytes": 71614464,
+            "samples": 91,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 226983936
+          },
+          "fit_seconds": 1.96303025,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              117,
+              113,
+              107,
+              148,
+              74,
+              114,
+              129,
+              150
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.010092,
+          "prediction_sha256": "6b96e0551fe190a9a719fcea50e14260d2287fb050d6bd3b64be0ed4f684804c",
+          "probability_sha256": null
+        },
+        {
+          "archive_bytes": 900322,
+          "fit_rss": {
+            "end_bytes": 325681152,
+            "errors": [],
+            "peak_bytes": 325713920,
+            "peak_delta_bytes": 22298624,
+            "samples": 93,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 303415296
+          },
+          "fit_seconds": 2.072375833,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              117,
+              113,
+              107,
+              148,
+              74,
+              114,
+              129,
+              150
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.009371459,
+          "prediction_sha256": "6b96e0551fe190a9a719fcea50e14260d2287fb050d6bd3b64be0ed4f684804c",
+          "probability_sha256": null
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "regression",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "parallel_7x2",
+      "block": 2,
+      "case_id": "general_friedman_numeric",
+      "fingerprints": {
+        "case_sha256": "0369aa4e3418043609ae82ba9a6ab915815be6cc2e670d49e30e29c18cba1589",
+        "dataset_sha256": "1559c497096dd7421e971f02a3756c1ff766fda062a162f5c90cbc99d4cec9b6",
+        "split_sha256": "2b82a6af55ad4e79c44757f793662596c31e77dafea7d831d88cb637e942aee5",
+        "weight_sha256": "378a14dab00abd23e9ae42c352bf6044ec6e41d5246c594cde235f4b5295247e"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 900322,
+          "fit_rss": {
+            "end_bytes": 305217536,
+            "errors": [],
+            "peak_bytes": 305217536,
+            "peak_delta_bytes": 78512128,
+            "samples": 89,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 226705408
+          },
+          "fit_seconds": 1.9609465,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              117,
+              113,
+              107,
+              148,
+              74,
+              114,
+              129,
+              150
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.010170125,
+          "prediction_sha256": "6b96e0551fe190a9a719fcea50e14260d2287fb050d6bd3b64be0ed4f684804c",
+          "probability_sha256": null
+        },
+        {
+          "archive_bytes": 900322,
+          "fit_rss": {
+            "end_bytes": 324288512,
+            "errors": [],
+            "peak_bytes": 324321280,
+            "peak_delta_bytes": 16678912,
+            "samples": 85,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 307642368
+          },
+          "fit_seconds": 1.856169667,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              117,
+              113,
+              107,
+              148,
+              74,
+              114,
+              129,
+              150
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.008668625,
+          "prediction_sha256": "6b96e0551fe190a9a719fcea50e14260d2287fb050d6bd3b64be0ed4f684804c",
+          "probability_sha256": null
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "regression",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "parallel_7x2",
+      "block": 0,
+      "case_id": "general_categorical_reg",
+      "fingerprints": {
+        "case_sha256": "df4f83e0f53415aa2a3fd89ac4a68562c4ff62f107db34469224559d3eb8ce82",
+        "dataset_sha256": "6a03d593411cb53da6b398999047453fefea2dc02ea146dfffa17b5cf0450439",
+        "split_sha256": "984b0e56f7a78ab0e049a3fa3704c7e0bdf67b10558b265f48a010f91eb2c00d",
+        "weight_sha256": "3b750906252e8026ff8fac3bc860c71a328ac84c0a4440df2ae57b773b689a21"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 762782,
+          "fit_rss": {
+            "end_bytes": 310099968,
+            "errors": [],
+            "peak_bytes": 310099968,
+            "peak_delta_bytes": 58605568,
+            "samples": 108,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 251494400
+          },
+          "fit_seconds": 2.391795291,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              136,
+              125,
+              164,
+              110,
+              124,
+              101,
+              138,
+              120
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.016589125,
+          "prediction_sha256": "8c0b8278b97eb2ed85e5496454a626502911c7acd8f7de4e2f44a83183c90077",
+          "probability_sha256": null
+        },
+        {
+          "archive_bytes": 762782,
+          "fit_rss": {
+            "end_bytes": 322748416,
+            "errors": [],
+            "peak_bytes": 322781184,
+            "peak_delta_bytes": 9224192,
+            "samples": 89,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 313556992
+          },
+          "fit_seconds": 1.918031917,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              136,
+              125,
+              164,
+              110,
+              124,
+              101,
+              138,
+              120
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.014541458,
+          "prediction_sha256": "8c0b8278b97eb2ed85e5496454a626502911c7acd8f7de4e2f44a83183c90077",
+          "probability_sha256": null
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "regression",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "sequential_1x14",
+      "block": 0,
+      "case_id": "general_categorical_reg",
+      "fingerprints": {
+        "case_sha256": "df4f83e0f53415aa2a3fd89ac4a68562c4ff62f107db34469224559d3eb8ce82",
+        "dataset_sha256": "6a03d593411cb53da6b398999047453fefea2dc02ea146dfffa17b5cf0450439",
+        "split_sha256": "984b0e56f7a78ab0e049a3fa3704c7e0bdf67b10558b265f48a010f91eb2c00d",
+        "weight_sha256": "3b750906252e8026ff8fac3bc860c71a328ac84c0a4440df2ae57b773b689a21"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 762782,
+          "fit_rss": {
+            "end_bytes": 294191104,
+            "errors": [],
+            "peak_bytes": 294191104,
+            "peak_delta_bytes": 41091072,
+            "samples": 94,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 253100032
+          },
+          "fit_seconds": 2.041555584,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              136,
+              125,
+              164,
+              110,
+              124,
+              101,
+              138,
+              120
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.015980917,
+          "prediction_sha256": "8c0b8278b97eb2ed85e5496454a626502911c7acd8f7de4e2f44a83183c90077",
+          "probability_sha256": null
+        },
+        {
+          "archive_bytes": 762782,
+          "fit_rss": {
+            "end_bytes": 306823168,
+            "errors": [],
+            "peak_bytes": 306855936,
+            "peak_delta_bytes": 9732096,
+            "samples": 85,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 297123840
+          },
+          "fit_seconds": 1.827711667,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              136,
+              125,
+              164,
+              110,
+              124,
+              101,
+              138,
+              120
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.014149459,
+          "prediction_sha256": "8c0b8278b97eb2ed85e5496454a626502911c7acd8f7de4e2f44a83183c90077",
+          "probability_sha256": null
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "regression",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "sequential_1x14",
+      "block": 1,
+      "case_id": "general_categorical_reg",
+      "fingerprints": {
+        "case_sha256": "df4f83e0f53415aa2a3fd89ac4a68562c4ff62f107db34469224559d3eb8ce82",
+        "dataset_sha256": "6a03d593411cb53da6b398999047453fefea2dc02ea146dfffa17b5cf0450439",
+        "split_sha256": "984b0e56f7a78ab0e049a3fa3704c7e0bdf67b10558b265f48a010f91eb2c00d",
+        "weight_sha256": "3b750906252e8026ff8fac3bc860c71a328ac84c0a4440df2ae57b773b689a21"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 762782,
+          "fit_rss": {
+            "end_bytes": 297893888,
+            "errors": [],
+            "peak_bytes": 297893888,
+            "peak_delta_bytes": 54165504,
+            "samples": 91,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 243728384
+          },
+          "fit_seconds": 1.968898875,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              136,
+              125,
+              164,
+              110,
+              124,
+              101,
+              138,
+              120
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.01590875,
+          "prediction_sha256": "8c0b8278b97eb2ed85e5496454a626502911c7acd8f7de4e2f44a83183c90077",
+          "probability_sha256": null
+        },
+        {
+          "archive_bytes": 762782,
+          "fit_rss": {
+            "end_bytes": 303267840,
+            "errors": [],
+            "peak_bytes": 303300608,
+            "peak_delta_bytes": 2015232,
+            "samples": 85,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 301285376
+          },
+          "fit_seconds": 1.826665625,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              136,
+              125,
+              164,
+              110,
+              124,
+              101,
+              138,
+              120
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.014144916,
+          "prediction_sha256": "8c0b8278b97eb2ed85e5496454a626502911c7acd8f7de4e2f44a83183c90077",
+          "probability_sha256": null
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "regression",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "parallel_7x2",
+      "block": 1,
+      "case_id": "general_categorical_reg",
+      "fingerprints": {
+        "case_sha256": "df4f83e0f53415aa2a3fd89ac4a68562c4ff62f107db34469224559d3eb8ce82",
+        "dataset_sha256": "6a03d593411cb53da6b398999047453fefea2dc02ea146dfffa17b5cf0450439",
+        "split_sha256": "984b0e56f7a78ab0e049a3fa3704c7e0bdf67b10558b265f48a010f91eb2c00d",
+        "weight_sha256": "3b750906252e8026ff8fac3bc860c71a328ac84c0a4440df2ae57b773b689a21"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 762782,
+          "fit_rss": {
+            "end_bytes": 298958848,
+            "errors": [],
+            "peak_bytes": 298958848,
+            "peak_delta_bytes": 49627136,
+            "samples": 94,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 249331712
+          },
+          "fit_seconds": 2.032223708,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              136,
+              125,
+              164,
+              110,
+              124,
+              101,
+              138,
+              120
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.015640708,
+          "prediction_sha256": "8c0b8278b97eb2ed85e5496454a626502911c7acd8f7de4e2f44a83183c90077",
+          "probability_sha256": null
+        },
+        {
+          "archive_bytes": 762782,
+          "fit_rss": {
+            "end_bytes": 307609600,
+            "errors": [],
+            "peak_bytes": 307642368,
+            "peak_delta_bytes": 4800512,
+            "samples": 90,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 302841856
+          },
+          "fit_seconds": 1.936351,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              136,
+              125,
+              164,
+              110,
+              124,
+              101,
+              138,
+              120
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.01463525,
+          "prediction_sha256": "8c0b8278b97eb2ed85e5496454a626502911c7acd8f7de4e2f44a83183c90077",
+          "probability_sha256": null
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "regression",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "parallel_7x2",
+      "block": 2,
+      "case_id": "general_categorical_reg",
+      "fingerprints": {
+        "case_sha256": "df4f83e0f53415aa2a3fd89ac4a68562c4ff62f107db34469224559d3eb8ce82",
+        "dataset_sha256": "6a03d593411cb53da6b398999047453fefea2dc02ea146dfffa17b5cf0450439",
+        "split_sha256": "984b0e56f7a78ab0e049a3fa3704c7e0bdf67b10558b265f48a010f91eb2c00d",
+        "weight_sha256": "3b750906252e8026ff8fac3bc860c71a328ac84c0a4440df2ae57b773b689a21"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 762782,
+          "fit_rss": {
+            "end_bytes": 300154880,
+            "errors": [],
+            "peak_bytes": 300154880,
+            "peak_delta_bytes": 46514176,
+            "samples": 92,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 253640704
+          },
+          "fit_seconds": 2.001689959,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              136,
+              125,
+              164,
+              110,
+              124,
+              101,
+              138,
+              120
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.016098375,
+          "prediction_sha256": "8c0b8278b97eb2ed85e5496454a626502911c7acd8f7de4e2f44a83183c90077",
+          "probability_sha256": null
+        },
+        {
+          "archive_bytes": 762782,
+          "fit_rss": {
+            "end_bytes": 306233344,
+            "errors": [],
+            "peak_bytes": 306266112,
+            "peak_delta_bytes": 2605056,
+            "samples": 88,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 303661056
+          },
+          "fit_seconds": 1.913337667,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              136,
+              125,
+              164,
+              110,
+              124,
+              101,
+              138,
+              120
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.014412875,
+          "prediction_sha256": "8c0b8278b97eb2ed85e5496454a626502911c7acd8f7de4e2f44a83183c90077",
+          "probability_sha256": null
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "regression",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "sequential_1x14",
+      "block": 2,
+      "case_id": "general_categorical_reg",
+      "fingerprints": {
+        "case_sha256": "df4f83e0f53415aa2a3fd89ac4a68562c4ff62f107db34469224559d3eb8ce82",
+        "dataset_sha256": "6a03d593411cb53da6b398999047453fefea2dc02ea146dfffa17b5cf0450439",
+        "split_sha256": "984b0e56f7a78ab0e049a3fa3704c7e0bdf67b10558b265f48a010f91eb2c00d",
+        "weight_sha256": "3b750906252e8026ff8fac3bc860c71a328ac84c0a4440df2ae57b773b689a21"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 762782,
+          "fit_rss": {
+            "end_bytes": 297484288,
+            "errors": [],
+            "peak_bytes": 297484288,
+            "peak_delta_bytes": 50774016,
+            "samples": 91,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 246710272
+          },
+          "fit_seconds": 1.990752792,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              136,
+              125,
+              164,
+              110,
+              124,
+              101,
+              138,
+              120
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.016357541,
+          "prediction_sha256": "8c0b8278b97eb2ed85e5496454a626502911c7acd8f7de4e2f44a83183c90077",
+          "probability_sha256": null
+        },
+        {
+          "archive_bytes": 762782,
+          "fit_rss": {
+            "end_bytes": 304480256,
+            "errors": [],
+            "peak_bytes": 304513024,
+            "peak_delta_bytes": 3489792,
+            "samples": 88,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 301023232
+          },
+          "fit_seconds": 1.913156541,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              136,
+              125,
+              164,
+              110,
+              124,
+              101,
+              138,
+              120
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.014478125,
+          "prediction_sha256": "8c0b8278b97eb2ed85e5496454a626502911c7acd8f7de4e2f44a83183c90077",
+          "probability_sha256": null
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "regression",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "sequential_1x14",
+      "block": 0,
+      "case_id": "general_numeric_binary",
+      "fingerprints": {
+        "case_sha256": "e2c828dcf3d18c4e9220ebf65854d3cb09af1f067886fb6f31f096f6f17144a9",
+        "dataset_sha256": "cfff46e19209ebc91052e4ac39b8ba99ee07da27aea41e159cb9fd29e02e1b60",
+        "split_sha256": "fddf360db0a6bf9ba0217e12f5666fdc3979112f79c60843f821ca03a6f39383",
+        "weight_sha256": "beeb96737971792bb64607e51cc2e1215aace9df643924cba615b9ca93373063"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 1783289,
+          "fit_rss": {
+            "end_bytes": 374161408,
+            "errors": [],
+            "peak_bytes": 374161408,
+            "peak_delta_bytes": 140902400,
+            "samples": 363,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 233259008
+          },
+          "fit_seconds": 8.068469583,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              532,
+              318,
+              354,
+              329,
+              273,
+              314,
+              327,
+              314
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.027121875,
+          "prediction_sha256": "16a3ed64431f10e438d94ba5399956d055ba3d9a3133a8dab7cc6b25b9030ede",
+          "probability_sha256": "d63b4af61d12c1e9c8225f35b6361dad1e11c4ee0434e43a5f9d6ea547c0fd2d"
+        },
+        {
+          "archive_bytes": 1783289,
+          "fit_rss": {
+            "end_bytes": 409468928,
+            "errors": [],
+            "peak_bytes": 409501696,
+            "peak_delta_bytes": 28360704,
+            "samples": 336,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 381140992
+          },
+          "fit_seconds": 7.341798417,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              532,
+              318,
+              354,
+              329,
+              273,
+              314,
+              327,
+              314
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.026705208,
+          "prediction_sha256": "16a3ed64431f10e438d94ba5399956d055ba3d9a3133a8dab7cc6b25b9030ede",
+          "probability_sha256": "d63b4af61d12c1e9c8225f35b6361dad1e11c4ee0434e43a5f9d6ea547c0fd2d"
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "binary",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "parallel_7x2",
+      "block": 0,
+      "case_id": "general_numeric_binary",
+      "fingerprints": {
+        "case_sha256": "e2c828dcf3d18c4e9220ebf65854d3cb09af1f067886fb6f31f096f6f17144a9",
+        "dataset_sha256": "cfff46e19209ebc91052e4ac39b8ba99ee07da27aea41e159cb9fd29e02e1b60",
+        "split_sha256": "fddf360db0a6bf9ba0217e12f5666fdc3979112f79c60843f821ca03a6f39383",
+        "weight_sha256": "beeb96737971792bb64607e51cc2e1215aace9df643924cba615b9ca93373063"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 1783456,
+          "fit_rss": {
+            "end_bytes": 2366750720,
+            "errors": [],
+            "peak_bytes": 2367815680,
+            "peak_delta_bytes": 2123988992,
+            "samples": 192,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 243826688
+          },
+          "fit_seconds": 4.676469167,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              532,
+              318,
+              354,
+              329,
+              273,
+              314,
+              327,
+              314
+            ],
+            "fitted_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": {
+              "contract": "b3-parallel-ensemble-members-v1-20260723",
+              "maximum_model_threads": 14,
+              "member_threads": 2,
+              "mode": "private_process_workers",
+              "result_order": "member_index",
+              "total_thread_budget": 14,
+              "workers": 7
+            },
+            "sequential": false
+          },
+          "predict_seconds": 0.030157917,
+          "prediction_sha256": "16a3ed64431f10e438d94ba5399956d055ba3d9a3133a8dab7cc6b25b9030ede",
+          "probability_sha256": "d63b4af61d12c1e9c8225f35b6361dad1e11c4ee0434e43a5f9d6ea547c0fd2d"
+        },
+        {
+          "archive_bytes": 1783456,
+          "fit_rss": {
+            "end_bytes": 2439282688,
+            "errors": [],
+            "peak_bytes": 2452717568,
+            "peak_delta_bytes": 78659584,
+            "samples": 89,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 2374057984
+          },
+          "fit_seconds": 2.094484125,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              532,
+              318,
+              354,
+              329,
+              273,
+              314,
+              327,
+              314
+            ],
+            "fitted_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": {
+              "contract": "b3-parallel-ensemble-members-v1-20260723",
+              "maximum_model_threads": 14,
+              "member_threads": 2,
+              "mode": "private_process_workers",
+              "result_order": "member_index",
+              "total_thread_budget": 14,
+              "workers": 7
+            },
+            "sequential": false
+          },
+          "predict_seconds": 0.027899541,
+          "prediction_sha256": "16a3ed64431f10e438d94ba5399956d055ba3d9a3133a8dab7cc6b25b9030ede",
+          "probability_sha256": "d63b4af61d12c1e9c8225f35b6361dad1e11c4ee0434e43a5f9d6ea547c0fd2d"
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "binary",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "parallel_7x2",
+      "block": 1,
+      "case_id": "general_numeric_binary",
+      "fingerprints": {
+        "case_sha256": "e2c828dcf3d18c4e9220ebf65854d3cb09af1f067886fb6f31f096f6f17144a9",
+        "dataset_sha256": "cfff46e19209ebc91052e4ac39b8ba99ee07da27aea41e159cb9fd29e02e1b60",
+        "split_sha256": "fddf360db0a6bf9ba0217e12f5666fdc3979112f79c60843f821ca03a6f39383",
+        "weight_sha256": "beeb96737971792bb64607e51cc2e1215aace9df643924cba615b9ca93373063"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 1783456,
+          "fit_rss": {
+            "end_bytes": 2136965120,
+            "errors": [],
+            "peak_bytes": 2137833472,
+            "peak_delta_bytes": 1899233280,
+            "samples": 150,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 238600192
+          },
+          "fit_seconds": 3.584729833,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              532,
+              318,
+              354,
+              329,
+              273,
+              314,
+              327,
+              314
+            ],
+            "fitted_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": {
+              "contract": "b3-parallel-ensemble-members-v1-20260723",
+              "maximum_model_threads": 14,
+              "member_threads": 2,
+              "mode": "private_process_workers",
+              "result_order": "member_index",
+              "total_thread_budget": 14,
+              "workers": 7
+            },
+            "sequential": false
+          },
+          "predict_seconds": 0.031159459,
+          "prediction_sha256": "16a3ed64431f10e438d94ba5399956d055ba3d9a3133a8dab7cc6b25b9030ede",
+          "probability_sha256": "d63b4af61d12c1e9c8225f35b6361dad1e11c4ee0434e43a5f9d6ea547c0fd2d"
+        },
+        {
+          "archive_bytes": 1783456,
+          "fit_rss": {
+            "end_bytes": 2217050112,
+            "errors": [],
+            "peak_bytes": 2226405376,
+            "peak_delta_bytes": 81772544,
+            "samples": 90,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 2144632832
+          },
+          "fit_seconds": 2.105967083,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              532,
+              318,
+              354,
+              329,
+              273,
+              314,
+              327,
+              314
+            ],
+            "fitted_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": {
+              "contract": "b3-parallel-ensemble-members-v1-20260723",
+              "maximum_model_threads": 14,
+              "member_threads": 2,
+              "mode": "private_process_workers",
+              "result_order": "member_index",
+              "total_thread_budget": 14,
+              "workers": 7
+            },
+            "sequential": false
+          },
+          "predict_seconds": 0.028913375,
+          "prediction_sha256": "16a3ed64431f10e438d94ba5399956d055ba3d9a3133a8dab7cc6b25b9030ede",
+          "probability_sha256": "d63b4af61d12c1e9c8225f35b6361dad1e11c4ee0434e43a5f9d6ea547c0fd2d"
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "binary",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "sequential_1x14",
+      "block": 1,
+      "case_id": "general_numeric_binary",
+      "fingerprints": {
+        "case_sha256": "e2c828dcf3d18c4e9220ebf65854d3cb09af1f067886fb6f31f096f6f17144a9",
+        "dataset_sha256": "cfff46e19209ebc91052e4ac39b8ba99ee07da27aea41e159cb9fd29e02e1b60",
+        "split_sha256": "fddf360db0a6bf9ba0217e12f5666fdc3979112f79c60843f821ca03a6f39383",
+        "weight_sha256": "beeb96737971792bb64607e51cc2e1215aace9df643924cba615b9ca93373063"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 1783289,
+          "fit_rss": {
+            "end_bytes": 346996736,
+            "errors": [],
+            "peak_bytes": 346996736,
+            "peak_delta_bytes": 111083520,
+            "samples": 336,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 235913216
+          },
+          "fit_seconds": 7.579721833,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              532,
+              318,
+              354,
+              329,
+              273,
+              314,
+              327,
+              314
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.027363167,
+          "prediction_sha256": "16a3ed64431f10e438d94ba5399956d055ba3d9a3133a8dab7cc6b25b9030ede",
+          "probability_sha256": "d63b4af61d12c1e9c8225f35b6361dad1e11c4ee0434e43a5f9d6ea547c0fd2d"
+        },
+        {
+          "archive_bytes": 1783289,
+          "fit_rss": {
+            "end_bytes": 402063360,
+            "errors": [],
+            "peak_bytes": 402096128,
+            "peak_delta_bytes": 47185920,
+            "samples": 332,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 354910208
+          },
+          "fit_seconds": 7.420618125,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              532,
+              318,
+              354,
+              329,
+              273,
+              314,
+              327,
+              314
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.026138042,
+          "prediction_sha256": "16a3ed64431f10e438d94ba5399956d055ba3d9a3133a8dab7cc6b25b9030ede",
+          "probability_sha256": "d63b4af61d12c1e9c8225f35b6361dad1e11c4ee0434e43a5f9d6ea547c0fd2d"
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "binary",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "sequential_1x14",
+      "block": 2,
+      "case_id": "general_numeric_binary",
+      "fingerprints": {
+        "case_sha256": "e2c828dcf3d18c4e9220ebf65854d3cb09af1f067886fb6f31f096f6f17144a9",
+        "dataset_sha256": "cfff46e19209ebc91052e4ac39b8ba99ee07da27aea41e159cb9fd29e02e1b60",
+        "split_sha256": "fddf360db0a6bf9ba0217e12f5666fdc3979112f79c60843f821ca03a6f39383",
+        "weight_sha256": "beeb96737971792bb64607e51cc2e1215aace9df643924cba615b9ca93373063"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 1783289,
+          "fit_rss": {
+            "end_bytes": 352632832,
+            "errors": [],
+            "peak_bytes": 352632832,
+            "peak_delta_bytes": 112672768,
+            "samples": 338,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 239960064
+          },
+          "fit_seconds": 7.476256625,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              532,
+              318,
+              354,
+              329,
+              273,
+              314,
+              327,
+              314
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.027101584,
+          "prediction_sha256": "16a3ed64431f10e438d94ba5399956d055ba3d9a3133a8dab7cc6b25b9030ede",
+          "probability_sha256": "d63b4af61d12c1e9c8225f35b6361dad1e11c4ee0434e43a5f9d6ea547c0fd2d"
+        },
+        {
+          "archive_bytes": 1783289,
+          "fit_rss": {
+            "end_bytes": 402440192,
+            "errors": [],
+            "peak_bytes": 402472960,
+            "peak_delta_bytes": 44613632,
+            "samples": 336,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 357859328
+          },
+          "fit_seconds": 7.408551625,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              532,
+              318,
+              354,
+              329,
+              273,
+              314,
+              327,
+              314
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.026099041,
+          "prediction_sha256": "16a3ed64431f10e438d94ba5399956d055ba3d9a3133a8dab7cc6b25b9030ede",
+          "probability_sha256": "d63b4af61d12c1e9c8225f35b6361dad1e11c4ee0434e43a5f9d6ea547c0fd2d"
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "binary",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "parallel_7x2",
+      "block": 2,
+      "case_id": "general_numeric_binary",
+      "fingerprints": {
+        "case_sha256": "e2c828dcf3d18c4e9220ebf65854d3cb09af1f067886fb6f31f096f6f17144a9",
+        "dataset_sha256": "cfff46e19209ebc91052e4ac39b8ba99ee07da27aea41e159cb9fd29e02e1b60",
+        "split_sha256": "fddf360db0a6bf9ba0217e12f5666fdc3979112f79c60843f821ca03a6f39383",
+        "weight_sha256": "beeb96737971792bb64607e51cc2e1215aace9df643924cba615b9ca93373063"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 1783456,
+          "fit_rss": {
+            "end_bytes": 2138996736,
+            "errors": [],
+            "peak_bytes": 2140176384,
+            "peak_delta_bytes": 1897185280,
+            "samples": 151,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 242991104
+          },
+          "fit_seconds": 3.612435917,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              532,
+              318,
+              354,
+              329,
+              273,
+              314,
+              327,
+              314
+            ],
+            "fitted_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": {
+              "contract": "b3-parallel-ensemble-members-v1-20260723",
+              "maximum_model_threads": 14,
+              "member_threads": 2,
+              "mode": "private_process_workers",
+              "result_order": "member_index",
+              "total_thread_budget": 14,
+              "workers": 7
+            },
+            "sequential": false
+          },
+          "predict_seconds": 0.029893542,
+          "prediction_sha256": "16a3ed64431f10e438d94ba5399956d055ba3d9a3133a8dab7cc6b25b9030ede",
+          "probability_sha256": "d63b4af61d12c1e9c8225f35b6361dad1e11c4ee0434e43a5f9d6ea547c0fd2d"
+        },
+        {
+          "archive_bytes": 1783456,
+          "fit_rss": {
+            "end_bytes": 2225356800,
+            "errors": [],
+            "peak_bytes": 2230255616,
+            "peak_delta_bytes": 84328448,
+            "samples": 90,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 2145927168
+          },
+          "fit_seconds": 2.087945542,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              532,
+              318,
+              354,
+              329,
+              273,
+              314,
+              327,
+              314
+            ],
+            "fitted_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": {
+              "contract": "b3-parallel-ensemble-members-v1-20260723",
+              "maximum_model_threads": 14,
+              "member_threads": 2,
+              "mode": "private_process_workers",
+              "result_order": "member_index",
+              "total_thread_budget": 14,
+              "workers": 7
+            },
+            "sequential": false
+          },
+          "predict_seconds": 0.028018,
+          "prediction_sha256": "16a3ed64431f10e438d94ba5399956d055ba3d9a3133a8dab7cc6b25b9030ede",
+          "probability_sha256": "d63b4af61d12c1e9c8225f35b6361dad1e11c4ee0434e43a5f9d6ea547c0fd2d"
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "binary",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "parallel_7x2",
+      "block": 0,
+      "case_id": "general_categorical_multiclass",
+      "fingerprints": {
+        "case_sha256": "6cbed5568493125396e514ee958931ec4b239ec0caeaf11ce35d0984297b5684",
+        "dataset_sha256": "860f5ea4ef2aa75d020e5a978c1ecda583b6835b3b30f8b8dd42ae2edf5e91d3",
+        "split_sha256": "66f15ba2e7c18a3501cd709a951b35c9d7c2de71eb107dd66ae9964dcdf55218",
+        "weight_sha256": "c4687224c205fc8d8ae063f30632bb1d4c23917b7a27090186131fa07cdc9c08"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 1022815,
+          "fit_rss": {
+            "end_bytes": 2188509184,
+            "errors": [],
+            "peak_bytes": 2188509184,
+            "peak_delta_bytes": 1945944064,
+            "samples": 107,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 242565120
+          },
+          "fit_seconds": 2.524207416,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              96,
+              53,
+              87,
+              75,
+              83,
+              83,
+              96,
+              64
+            ],
+            "fitted_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": {
+              "contract": "b3-parallel-ensemble-members-v1-20260723",
+              "maximum_model_threads": 14,
+              "member_threads": 2,
+              "mode": "private_process_workers",
+              "result_order": "member_index",
+              "total_thread_budget": 14,
+              "workers": 7
+            },
+            "sequential": false
+          },
+          "predict_seconds": 0.263246959,
+          "prediction_sha256": "e02103d41ba18b54183143cd7487121e1780e93bc2ef36b1b01ea6c660b6d9fa",
+          "probability_sha256": "3f23af55045ff3740fd4ff9287f2a920419939e2aa4b0a5e8539fa47a83a89d6"
+        },
+        {
+          "archive_bytes": 1022815,
+          "fit_rss": {
+            "end_bytes": 2287845376,
+            "errors": [],
+            "peak_bytes": 2287878144,
+            "peak_delta_bytes": 56295424,
+            "samples": 38,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 2231582720
+          },
+          "fit_seconds": 0.8653285,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              96,
+              53,
+              87,
+              75,
+              83,
+              83,
+              96,
+              64
+            ],
+            "fitted_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": {
+              "contract": "b3-parallel-ensemble-members-v1-20260723",
+              "maximum_model_threads": 14,
+              "member_threads": 2,
+              "mode": "private_process_workers",
+              "result_order": "member_index",
+              "total_thread_budget": 14,
+              "workers": 7
+            },
+            "sequential": false
+          },
+          "predict_seconds": 0.019833166,
+          "prediction_sha256": "e02103d41ba18b54183143cd7487121e1780e93bc2ef36b1b01ea6c660b6d9fa",
+          "probability_sha256": "3f23af55045ff3740fd4ff9287f2a920419939e2aa4b0a5e8539fa47a83a89d6"
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "multiclass",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "sequential_1x14",
+      "block": 0,
+      "case_id": "general_categorical_multiclass",
+      "fingerprints": {
+        "case_sha256": "6cbed5568493125396e514ee958931ec4b239ec0caeaf11ce35d0984297b5684",
+        "dataset_sha256": "860f5ea4ef2aa75d020e5a978c1ecda583b6835b3b30f8b8dd42ae2edf5e91d3",
+        "split_sha256": "66f15ba2e7c18a3501cd709a951b35c9d7c2de71eb107dd66ae9964dcdf55218",
+        "weight_sha256": "c4687224c205fc8d8ae063f30632bb1d4c23917b7a27090186131fa07cdc9c08"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 1022578,
+          "fit_rss": {
+            "end_bytes": 306020352,
+            "errors": [],
+            "peak_bytes": 306036736,
+            "peak_delta_bytes": 52051968,
+            "samples": 215,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 253984768
+          },
+          "fit_seconds": 4.766518375,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              96,
+              53,
+              87,
+              75,
+              83,
+              83,
+              96,
+              64
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.0167405,
+          "prediction_sha256": "e02103d41ba18b54183143cd7487121e1780e93bc2ef36b1b01ea6c660b6d9fa",
+          "probability_sha256": "3f23af55045ff3740fd4ff9287f2a920419939e2aa4b0a5e8539fa47a83a89d6"
+        },
+        {
+          "archive_bytes": 1022578,
+          "fit_rss": {
+            "end_bytes": 316325888,
+            "errors": [],
+            "peak_bytes": 316358656,
+            "peak_delta_bytes": 6029312,
+            "samples": 204,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 310329344
+          },
+          "fit_seconds": 4.539301792,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              96,
+              53,
+              87,
+              75,
+              83,
+              83,
+              96,
+              64
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.01456675,
+          "prediction_sha256": "e02103d41ba18b54183143cd7487121e1780e93bc2ef36b1b01ea6c660b6d9fa",
+          "probability_sha256": "3f23af55045ff3740fd4ff9287f2a920419939e2aa4b0a5e8539fa47a83a89d6"
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "multiclass",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "sequential_1x14",
+      "block": 1,
+      "case_id": "general_categorical_multiclass",
+      "fingerprints": {
+        "case_sha256": "6cbed5568493125396e514ee958931ec4b239ec0caeaf11ce35d0984297b5684",
+        "dataset_sha256": "860f5ea4ef2aa75d020e5a978c1ecda583b6835b3b30f8b8dd42ae2edf5e91d3",
+        "split_sha256": "66f15ba2e7c18a3501cd709a951b35c9d7c2de71eb107dd66ae9964dcdf55218",
+        "weight_sha256": "c4687224c205fc8d8ae063f30632bb1d4c23917b7a27090186131fa07cdc9c08"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 1022578,
+          "fit_rss": {
+            "end_bytes": 311607296,
+            "errors": [],
+            "peak_bytes": 311607296,
+            "peak_delta_bytes": 60751872,
+            "samples": 209,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 250855424
+          },
+          "fit_seconds": 4.6444355,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              96,
+              53,
+              87,
+              75,
+              83,
+              83,
+              96,
+              64
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.016299875,
+          "prediction_sha256": "e02103d41ba18b54183143cd7487121e1780e93bc2ef36b1b01ea6c660b6d9fa",
+          "probability_sha256": "3f23af55045ff3740fd4ff9287f2a920419939e2aa4b0a5e8539fa47a83a89d6"
+        },
+        {
+          "archive_bytes": 1022578,
+          "fit_rss": {
+            "end_bytes": 319373312,
+            "errors": [],
+            "peak_bytes": 319406080,
+            "peak_delta_bytes": 3719168,
+            "samples": 204,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 315686912
+          },
+          "fit_seconds": 4.523261834,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              96,
+              53,
+              87,
+              75,
+              83,
+              83,
+              96,
+              64
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.014934375,
+          "prediction_sha256": "e02103d41ba18b54183143cd7487121e1780e93bc2ef36b1b01ea6c660b6d9fa",
+          "probability_sha256": "3f23af55045ff3740fd4ff9287f2a920419939e2aa4b0a5e8539fa47a83a89d6"
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "multiclass",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "parallel_7x2",
+      "block": 1,
+      "case_id": "general_categorical_multiclass",
+      "fingerprints": {
+        "case_sha256": "6cbed5568493125396e514ee958931ec4b239ec0caeaf11ce35d0984297b5684",
+        "dataset_sha256": "860f5ea4ef2aa75d020e5a978c1ecda583b6835b3b30f8b8dd42ae2edf5e91d3",
+        "split_sha256": "66f15ba2e7c18a3501cd709a951b35c9d7c2de71eb107dd66ae9964dcdf55218",
+        "weight_sha256": "c4687224c205fc8d8ae063f30632bb1d4c23917b7a27090186131fa07cdc9c08"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 1022815,
+          "fit_rss": {
+            "end_bytes": 2107654144,
+            "errors": [],
+            "peak_bytes": 2107670528,
+            "peak_delta_bytes": 1860861952,
+            "samples": 95,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 246808576
+          },
+          "fit_seconds": 2.28171875,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              96,
+              53,
+              87,
+              75,
+              83,
+              83,
+              96,
+              64
+            ],
+            "fitted_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": {
+              "contract": "b3-parallel-ensemble-members-v1-20260723",
+              "maximum_model_threads": 14,
+              "member_threads": 2,
+              "mode": "private_process_workers",
+              "result_order": "member_index",
+              "total_thread_budget": 14,
+              "workers": 7
+            },
+            "sequential": false
+          },
+          "predict_seconds": 0.087764542,
+          "prediction_sha256": "e02103d41ba18b54183143cd7487121e1780e93bc2ef36b1b01ea6c660b6d9fa",
+          "probability_sha256": "3f23af55045ff3740fd4ff9287f2a920419939e2aa4b0a5e8539fa47a83a89d6"
+        },
+        {
+          "archive_bytes": 1022815,
+          "fit_rss": {
+            "end_bytes": 2206121984,
+            "errors": [],
+            "peak_bytes": 2206154752,
+            "peak_delta_bytes": 67649536,
+            "samples": 38,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 2138505216
+          },
+          "fit_seconds": 0.881345,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              96,
+              53,
+              87,
+              75,
+              83,
+              83,
+              96,
+              64
+            ],
+            "fitted_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": {
+              "contract": "b3-parallel-ensemble-members-v1-20260723",
+              "maximum_model_threads": 14,
+              "member_threads": 2,
+              "mode": "private_process_workers",
+              "result_order": "member_index",
+              "total_thread_budget": 14,
+              "workers": 7
+            },
+            "sequential": false
+          },
+          "predict_seconds": 0.020109625,
+          "prediction_sha256": "e02103d41ba18b54183143cd7487121e1780e93bc2ef36b1b01ea6c660b6d9fa",
+          "probability_sha256": "3f23af55045ff3740fd4ff9287f2a920419939e2aa4b0a5e8539fa47a83a89d6"
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "multiclass",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "parallel_7x2",
+      "block": 2,
+      "case_id": "general_categorical_multiclass",
+      "fingerprints": {
+        "case_sha256": "6cbed5568493125396e514ee958931ec4b239ec0caeaf11ce35d0984297b5684",
+        "dataset_sha256": "860f5ea4ef2aa75d020e5a978c1ecda583b6835b3b30f8b8dd42ae2edf5e91d3",
+        "split_sha256": "66f15ba2e7c18a3501cd709a951b35c9d7c2de71eb107dd66ae9964dcdf55218",
+        "weight_sha256": "c4687224c205fc8d8ae063f30632bb1d4c23917b7a27090186131fa07cdc9c08"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 1022815,
+          "fit_rss": {
+            "end_bytes": 2103754752,
+            "errors": [],
+            "peak_bytes": 2103771136,
+            "peak_delta_bytes": 1856421888,
+            "samples": 95,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 247349248
+          },
+          "fit_seconds": 2.237710292,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              96,
+              53,
+              87,
+              75,
+              83,
+              83,
+              96,
+              64
+            ],
+            "fitted_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": {
+              "contract": "b3-parallel-ensemble-members-v1-20260723",
+              "maximum_model_threads": 14,
+              "member_threads": 2,
+              "mode": "private_process_workers",
+              "result_order": "member_index",
+              "total_thread_budget": 14,
+              "workers": 7
+            },
+            "sequential": false
+          },
+          "predict_seconds": 0.08695475,
+          "prediction_sha256": "e02103d41ba18b54183143cd7487121e1780e93bc2ef36b1b01ea6c660b6d9fa",
+          "probability_sha256": "3f23af55045ff3740fd4ff9287f2a920419939e2aa4b0a5e8539fa47a83a89d6"
+        },
+        {
+          "archive_bytes": 1022815,
+          "fit_rss": {
+            "end_bytes": 2204499968,
+            "errors": [],
+            "peak_bytes": 2204532736,
+            "peak_delta_bytes": 68763648,
+            "samples": 38,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 2135769088
+          },
+          "fit_seconds": 0.882224625,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              96,
+              53,
+              87,
+              75,
+              83,
+              83,
+              96,
+              64
+            ],
+            "fitted_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": {
+              "contract": "b3-parallel-ensemble-members-v1-20260723",
+              "maximum_model_threads": 14,
+              "member_threads": 2,
+              "mode": "private_process_workers",
+              "result_order": "member_index",
+              "total_thread_budget": 14,
+              "workers": 7
+            },
+            "sequential": false
+          },
+          "predict_seconds": 0.0200525,
+          "prediction_sha256": "e02103d41ba18b54183143cd7487121e1780e93bc2ef36b1b01ea6c660b6d9fa",
+          "probability_sha256": "3f23af55045ff3740fd4ff9287f2a920419939e2aa4b0a5e8539fa47a83a89d6"
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "multiclass",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    },
+    {
+      "arm": "sequential_1x14",
+      "block": 2,
+      "case_id": "general_categorical_multiclass",
+      "fingerprints": {
+        "case_sha256": "6cbed5568493125396e514ee958931ec4b239ec0caeaf11ce35d0984297b5684",
+        "dataset_sha256": "860f5ea4ef2aa75d020e5a978c1ecda583b6835b3b30f8b8dd42ae2edf5e91d3",
+        "split_sha256": "66f15ba2e7c18a3501cd709a951b35c9d7c2de71eb107dd66ae9964dcdf55218",
+        "weight_sha256": "c4687224c205fc8d8ae063f30632bb1d4c23917b7a27090186131fa07cdc9c08"
+      },
+      "fit_rows": 7500,
+      "records": [
+        {
+          "archive_bytes": 1022578,
+          "fit_rss": {
+            "end_bytes": 309608448,
+            "errors": [],
+            "peak_bytes": 309624832,
+            "peak_delta_bytes": 66093056,
+            "samples": 206,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 243531776
+          },
+          "fit_seconds": 4.604779833,
+          "mode": "cold_executor",
+          "model": {
+            "best_iterations": [
+              96,
+              53,
+              87,
+              75,
+              83,
+              83,
+              96,
+              64
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.016900792,
+          "prediction_sha256": "e02103d41ba18b54183143cd7487121e1780e93bc2ef36b1b01ea6c660b6d9fa",
+          "probability_sha256": "3f23af55045ff3740fd4ff9287f2a920419939e2aa4b0a5e8539fa47a83a89d6"
+        },
+        {
+          "archive_bytes": 1022578,
+          "fit_rss": {
+            "end_bytes": 314556416,
+            "errors": [],
+            "peak_bytes": 314589184,
+            "peak_delta_bytes": 901120,
+            "samples": 201,
+            "scope": "parent_plus_recursive_children",
+            "start_bytes": 313688064
+          },
+          "fit_seconds": 4.476977875,
+          "mode": "steady_executor",
+          "model": {
+            "best_iterations": [
+              96,
+              53,
+              87,
+              75,
+              83,
+              83,
+              96,
+              64
+            ],
+            "fitted_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "member_seeds": [
+              1560023974,
+              2025197564,
+              1892783321,
+              1098067557,
+              2019575648,
+              2096467393,
+              2083673626,
+              173594038
+            ],
+            "oob_indices_sha256": [
+              "22595b2b014c7d663d572601b26de4f49880680d5cf7f2402e2fd61c3effaca1",
+              "7bbb265b64c1b8337322d291a131922f7310af72c7a6eb65d58eb34b2a5a2619",
+              "328c7437db6b019780d3800e63e84979ed5f581ca50532540f0dc8ebd25d01fa",
+              "1872418fd5c9136a5466d5e1e921500242914ce2f571bf32123321f2fb2d91a6",
+              "0f2dfe2be57d532d7d221dceb40502658b32b9bec6b88577861c69cf48cdedac",
+              "c65c0733a389c9481e835a5050fc7cd0b2b258cfa08525952285d0c156a7549e",
+              "d90cbbc432b520a959fa20dbcdde70222ede38a3f33052b1db181becd9eca06a",
+              "8476b295460231fe720df2c84b09a297aca6194cee774174c9230d0e6334187c"
+            ],
+            "prediction_thread_counts": [
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14,
+              14
+            ],
+            "sampled_indices_sha256": [
+              "f98e48061febda448c33964786e37792f28e393fe1927ea80d0b31d7407a9efc",
+              "1a36bcc32757816258b4809fbc413153c01b81f5ad0871d7308d50d71bb16d11",
+              "1924c2d1ab3dbdd2502526559d47560790b49454639e955a9bde69f50cc0394b",
+              "4aaaa5f5731a5876b01d953d0c0404dccbb0a37d5991c69e29e7f4a9b2d93599",
+              "74ba86aaa4caece6da8bd07ea95ba20a3687970eaf4fdbc0406885fe0e9cff0b",
+              "42ebf7b4d055708826cd97c5ae75eb88d0bf5de174d4167f10909b37ccc37d45",
+              "f6504b2476e7016651e60b1f83bff1fe6b5a88f03ca4a6fcc14428cfde18f900",
+              "0ef33b38c47d6658e85b85cfceaa702723a48b8a4bbe32c3a9368bd128b4da30"
+            ],
+            "schedule": null,
+            "sequential": true
+          },
+          "predict_seconds": 0.014548708,
+          "prediction_sha256": "e02103d41ba18b54183143cd7487121e1780e93bc2ef36b1b01ea6c660b6d9fa",
+          "probability_sha256": "3f23af55045ff3740fd4ff9287f2a920419939e2aa4b0a5e8539fa47a83a89d6"
+        }
+      ],
+      "runtime_after": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "runtime_before": {
+        "numba_current_threads": 14,
+        "numba_thread_ceiling": 14,
+        "numba_threading_layer": "workqueue",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "14",
+          "NUMBA_NUM_THREADS": "14",
+          "NUMEXPR_NUM_THREADS": "14",
+          "OMP_NUM_THREADS": "14",
+          "OMP_THREAD_LIMIT": "14",
+          "OPENBLAS_NUM_THREADS": "14",
+          "VECLIB_MAXIMUM_THREADS": "14"
+        }
+      },
+      "task": "multiclass",
+      "test_rows": 2500,
+      "warnings": [],
+      "worker_stderr": null,
+      "worker_stdout": null
+    }
+  ],
+  "schema_version": 1
+}

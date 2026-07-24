@@ -3081,6 +3081,55 @@ B-archive simulation remains non-loadable, optional size telemetry.
     the small-data selector successor separate and advance to B3's
     deterministic minimum-work threshold.
 
+### 71. B3-v2 activation-gated parallel ensemble characterization (2026-07-23)
+
+1. **Source:** clean candidate
+   `b35c092bbdfef45f2ac4d5b0cc16eaaf1c89bf55`.
+2. **Comparator:** public ensemble-v3's existing sequential 1×14 fit versus
+   the static B3-v2 route, which either stays sequential or uses 7×2 process
+   workers under the same 14-CPU budget.
+3. **Evidence:** behavior-exact Tier-E engineering characterization on the
+   spent B3-v1 grid; no fresh, holdout, sports, or rival evidence.
+4. **Data/splits:** B3-v1's four fixed 7,500-fit-row general cases:
+   Friedman numeric regression, categorical regression, numeric binary, and
+   categorical multiclass. Existing fingerprints are paired within every
+   block and arm.
+5. **Arms/policies:** identical eight-member public ensemble-v3 policies.
+   Candidate dispatch score is sampled rows × input features × 600 planned
+   iterations × output width, with the frozen `80,000,000` threshold.
+6. **Environment:** `darko311`, macOS arm64, 14 logical CPUs; three paired
+   blocks, cold and steady fits, alternating arm order, process-tree RSS;
+   exclusive-machine audit found no competing benchmark process.
+7. **Execution:** `python benchmarks/run_b3_parallel_ensemble_v2.py --source
+   /private/tmp/darkofit-depth-light --output-prefix
+   /private/tmp/b3_parallel_ensemble_v2_20260723`.
+8. **Artifacts/hashes:** launch
+   `707a4fc3d7283023721ed61417b20e52254d4a7b417e35696e6fe052fbf040a3`;
+   raw
+   `1d48276bcde51e9fedd778d35ba521a954ac40f6e927626442c627e0a52b7be1`;
+   result
+   `f2e34bcb695f28ceea8309177a86e239ae170f53b8c66da7b9d29b55006f7c9c`;
+   runner
+   `f90bc7d5d0e4d3aaa1429d65c91fc0e67e06d3d91e79a02607b55136c1d88495`.
+9. **Primary results:** engaged cold geomean `0.487217x`, worst `0.491280x`;
+   engaged steady geomean `0.235154x`, worst `0.283799x`. Fallback cold
+   geomean/worst `1.015415x`/`1.032163x`; fallback steady
+   `1.019149x`/`1.049417x`.
+10. **Failed as well as passed checks:** all eight declared checks passed:
+    exact behavior, routes, resource sampling, memory, engaged cold/steady
+    direction, and fallback cold/steady bound. No declared check failed.
+    Parallel process-tree RSS ratios exceeded 5×; maximum peak was about
+    2.28 GiB and every paired absolute delta remained below 2 GiB, so the
+    standing conjunctive hybrid-RSS rule passed.
+11. **Limitations/non-claims:** only four spent general shapes on this
+    14-CPU ARM host. The result makes no quality, holdout, sports, rival,
+    portability, default-quality, or release claim. Fallback ratios measure
+    timing noise around identical code.
+12. **Decision/next action:** disposition `ready_to_productize`. Integrate
+    the deterministic activation into public eight-member ensemble-v3 fit,
+    persist its resolution, retain rollback, then rerun correctness and
+    focused performance checks before moving to selector-v3.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

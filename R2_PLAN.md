@@ -22,9 +22,9 @@ Every item below maps to a measured frontier deficit or an earned candidate:
 | Item | Frontier target | State |
 | --- | --- | --- |
 | P1 Automatic-depth paired development benchmark → ship-check | Broad + sports quality; first automatic default | **Closed for defaults:** development improved `0.996860x`, but CTR23 holdout regressed `1.026662x`; P3 opt-in remains |
-| P2 Catcross attribution → path to ship | Diamonds/healthcare (0.20's categorical blow) | Attribution + sports guardrail complete; scoped public opt-in implementation next |
-| P3 Depth opt-in exposure | Immediate user value (−5% sports, spent) | Candidate validated, private |
-| P4 B3-v2 activation-gated parallelism | 6.1× ensemble fit optic; rescue the 3.84× | Successor to a clean kill |
+| P2 Catcross attribution → path to ship | Diamonds/healthcare (0.20's categorical blow) | Attribution, guardrail, and scoped public opt-in complete |
+| P3 Depth opt-in exposure | Immediate user value (−5% sports, spent) | Public explicit opt-in complete; default route closed on holdout |
+| P4 B3-v2 activation-gated parallelism | 6.1× ensemble fit optic; rescue the 3.84× | Characterization passed; public productization next |
 | P5 Selector-v3 principled margin | Smooth-data quality (protein) | Successor to a clean kill |
 | P6 Member-policy retune | Ensemble broad quality (+1.5% vs their +3.5%) | Queued (R1-5) |
 
@@ -377,6 +377,17 @@ same case:
   topology and total CPU, hard absolute ceiling plus
   ratio-or-absolute-delta allowance vs sequential control.
 - Warm-worker lifecycles stay out of v2 (a third identity if ever needed).
+
+**Result, 2026-07-23:** clean source `b35c092` passed all declared checks on
+the spent v1 grid. The eligible cases ran at `0.487217x` cold and `0.235154x`
+steady geomean; their worst case was `0.491280x` cold and `0.283799x` steady.
+Fallback cases used the exact sequential path and stayed within `1.049417x`.
+Behavior, routes, resource sampling, and the hybrid RSS rule all passed.
+Maximum process-tree RSS was about 2.28 GiB; the parallel route's greater than
+5x RSS ratio remains disclosed even though its absolute delta stayed below
+2 GiB. Disposition: productize the deterministic activation with recorded
+resolution and rollback; this is behavior-exact engineering, not quality
+evidence.
 
 ## P5 — Selector-v3: principled margin (Track I, behind P2/P4)
 

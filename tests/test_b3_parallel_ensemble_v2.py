@@ -1,10 +1,28 @@
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
+from pathlib import Path
 
 import pytest
 
 from benchmarks import run_b3_parallel_ensemble_v2 as runner
+
+
+BENCHMARKS = Path(__file__).resolve().parents[1] / "benchmarks"
+ARTIFACT_HASHES = {
+    "b3_parallel_ensemble_v2_launch_20260723.json":
+        "707a4fc3d7283023721ed61417b20e52254d4a7b417e35696e6fe052fbf040a3",
+    "b3_parallel_ensemble_v2_raw_20260723.json":
+        "1d48276bcde51e9fedd778d35ba521a954ac40f6e927626442c627e0a52b7be1",
+    "b3_parallel_ensemble_v2_result_20260723.json":
+        "f2e34bcb695f28ceea8309177a86e239ae170f53b8c66da7b9d29b55006f7c9c",
+}
+
+
+def _load(name):
+    return json.loads((BENCHMARKS / name).read_text())
 
 
 def _model(route):
@@ -125,3 +143,20 @@ def test_analyzer_rejects_incomplete_or_nonexact_rows():
     changed = copy.deepcopy(_rows())
     changed[0]["records"][0]["prediction_sha256"] = "different"
     assert runner.analyze(changed)["checks"]["behavior_exact"] is False
+
+
+def test_committed_b3_v2_result_recomputes_and_artifacts_are_immutable():
+    for name, expected in ARTIFACT_HASHES.items():
+        assert hashlib.sha256((BENCHMARKS / name).read_bytes()).hexdigest() == (
+            expected
+        )
+    launch = _load("b3_parallel_ensemble_v2_launch_20260723.json")
+    raw = _load("b3_parallel_ensemble_v2_raw_20260723.json")
+    result = _load("b3_parallel_ensemble_v2_result_20260723.json")
+
+    assert launch["source"]["head"] == (
+        "b35c092bbdfef45f2ac4d5b0cc16eaaf1c89bf55"
+    )
+    assert launch["minimum_work"] == runner.MINIMUM_WORK
+    assert runner.analyze(raw["rows"]) == result["analysis"]
+    assert result["analysis"]["disposition"] == "ready_to_productize"
