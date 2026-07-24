@@ -22,7 +22,7 @@ Every item below maps to a measured frontier deficit or an earned candidate:
 | Item | Frontier target | State |
 | --- | --- | --- |
 | P1 Automatic-depth paired development benchmark → ship-check | Broad + sports quality; first automatic default | **Closed for defaults:** development improved `0.996860x`, but CTR23 holdout regressed `1.026662x`; P3 opt-in remains |
-| P2 Catcross attribution → path to ship | Diamonds/healthcare (0.20's categorical blow) | Attribution complete: Diamonds `0.724496x`; healthcare automatic fallback and forced `1.008072x`; sports guardrail next |
+| P2 Catcross attribution → path to ship | Diamonds/healthcare (0.20's categorical blow) | Attribution + sports guardrail complete; scoped public opt-in implementation next |
 | P3 Depth opt-in exposure | Immediate user value (−5% sports, spent) | Candidate validated, private |
 | P4 B3-v2 activation-gated parallelism | 6.1× ensemble fit optic; rescue the 3.84× | Successor to a clean kill |
 | P5 Selector-v3 principled margin | Smooth-data quality (protein) | Successor to a clean kill |
@@ -258,13 +258,13 @@ ChimeraBoost code is adapted) from ChimeraBoost 0.20's CATCROSS.
   (`group_centered_categorical_crosses_` state); safe-NPZ round-trips the
   selected pairs and their encodings exactly; prediction-time
   reconstruction from stored encodings only (no target access).
-- **Support matrix (loud pre-fit errors, ensemble-v3 pattern):**
-  non-ensemble scalar-RMSE CatBoost regression only; classification,
-  multiclass, ensembles, distributional/interval fits, presets, auto tree
-  mode, callbacks, refit, ordered boosting, ordinal features, linear leaves,
-  and linear residuals are ineligible in v1. Weights are supported for the
-  target-free category means; missing or unseen categories use the recorded
-  global numeric mean.
+- **Private-prototype support matrix:** non-ensemble scalar-RMSE CatBoost
+  regression only. The private development branch used exact fallback for all
+  ineligible routes. P2d deliberately narrows that behavior for the public
+  opt-in: data-driven non-applicability remains an observable fallback, while
+  an explicit `True` combined with an incompatible requested mode fails
+  loudly. Weights are supported for the target-free category means; missing
+  or unseen categories use the recorded global numeric mean.
 - **Attribution:** ordinary feature importance folds each centered column into
   its numeric parent. Exact TreeSHAP fails loudly while centered columns are
   active because assigning the interaction to one original feature would be
@@ -275,7 +275,7 @@ ChimeraBoost code is adapted) from ChimeraBoost 0.20's CATCROSS.
   zero-weight rows; selection and validation rows disjoint (and group-disjoint
   when groups are supplied); selection cost recorded.
 
-### P2c. Evidence path after attribution (next)
+### P2c. Evidence path after attribution (complete)
 
 Sports guardrail replay (cold-player view — the failure mode that killed
 the old donor), then per SHIP_RULES: **opt-in ship** with honest large-data
@@ -297,6 +297,37 @@ all-held-team and cold-player RMSE ratios each ≤ `1.000`, and selector
 eligibility on all 11 coordinates. A declined selection must be exact control
 fallback. This is spent opt-in guardrail evidence, never a holdout/default
 claim.
+
+**Result (2026-07-23):** the mixed sports guardrail passed all checks.
+Automatic/control RMSE was `0.996016x` across the ten creator folds,
+`0.996891x` on all held-team rows, and `0.993971x` on the 585 genuinely
+cold-player rows. Automatic was eligible and selected on all 11 coordinates;
+the worst fold was `1.010136x`. This is spent opt-in guardrail evidence, not
+holdout/default evidence. See
+[`benchmarks/group_centered_categorical_crosses_v1_sports_guardrail_result_20260723.md`](benchmarks/group_centered_categorical_crosses_v1_sports_guardrail_result_20260723.md).
+
+### P2d. Public opt-in exposure (next, authorized)
+
+Expose the validated selector as `categorical_crosses=False` by default;
+`categorical_crosses=True` requests the automatic v1 audition and never means
+unconditional forcing. Preserve the private forced lane for research only.
+
+- `False` must remain prediction/model-state exact to the current public
+  engine.
+- `True` runs the v1 selector on supported scalar-RMSE, single-model CatBoost
+  regression. Data-driven ineligibility (too few rows, no categorical input,
+  or no numeric input) takes an exact, metadata-visible fallback.
+- Explicitly incompatible requested modes (classification, ensembles,
+  distributional/interval fits, presets, automatic tree mode, callbacks,
+  refit, ordered boosting, ordinal features, linear leaves/residuals, and
+  automatic-LR probes) fail loudly rather than pretending the requested
+  opt-in ran.
+- Constructor/clone/get-params behavior, safe-NPZ state, feature attribution,
+  fitted selector metadata, thread restoration, and repeated-fit cleanup are
+  public contracts. Docs disclose the Diamonds, healthcare, and mixed-sports
+  scopes plus the roughly two-audition fit overhead.
+- No default change is authorized. The small-data successor remains separate
+  future automation work.
 
 ## P3 — Depth `"auto"` opt-in exposure (product work, authorized)
 
@@ -447,8 +478,9 @@ new-entity/group-shift mechanism through the normal pipeline.
    **Complete and closed for defaults:** CTR23 regressed `1.026662x`; the
    untouched sports season remains unused because it cannot change the
    conjunctive decision.
-3. **Next:** run catcross's cold-player sports guardrail, then close the
-   honestly scoped opt-in path and record the small-data selector successor.
+3. **Next:** expose the validated catcross selector as the honestly scoped
+   `categorical_crosses=True` opt-in, and record the small-data selector
+   successor.
 4. Build B3's deterministic minimum-work threshold with sequential fallback.
 5. Rebuild the linear-leaf selector with a noise- and cost-aware margin.
 6. After catcross, choose one next categorical mechanism: the declared-order

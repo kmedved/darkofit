@@ -2999,6 +2999,53 @@ B-archive simulation remains non-loadable, optional size telemetry.
     for an honestly scoped large-data opt-in. Record a small-data selector
     successor; do not claim the current automatic policy solves healthcare.
 
+### 69. Catcross v1 mixed-feature basketball guardrail (2026-07-23)
+
+1. **Source:** clean harness
+   `6d76dfae694c621a7dbf05861755d6f0a4638a94`; clean private candidate
+   `c3f2608cd3033cfc00aa0737897a92ed868b5865`.
+2. **Comparator:** the candidate's explicit-off control lane versus the
+   unchanged private automatic selector.
+3. **Evidence:** spent basketball development guardrail; no fresh, holdout,
+   or default evidence.
+4. **Data/splits:** pinned creator CSV
+   `43af3be46074da9130a757aa1db643e207e2c0ea5405d2086d698f85555fbcb2`;
+   ten established unshuffled creator folds plus the alphabetical held-team
+   split and its 585-row genuinely cold-player subset.
+5. **Arms/policies:** the established 15 numeric features plus categorical
+   `Pos`, categorical `Age`, `Tm`, and derived `starter`; scalar RMSE CatBoost,
+   1,000 iterations, seed 4, player-group-aware internal validation, 14
+   threads. `Player` was never a model feature.
+6. **Environment:** `darko311`, macOS arm64, 14 logical CPUs, fresh process
+   per arm/coordinate with alternating order. No competing benchmark process;
+   timing is telemetry only.
+7. **Execution:** `python
+   benchmarks/run_group_centered_categorical_crosses_v1_sports_guardrail.py
+   execute --manifest
+   /private/tmp/catcross_sports_guardrail_manifest_20260723.json --source
+   /private/tmp/darkofit-catcross-v1-20260722 --data-cache
+   /private/tmp/darkofit_basketball_reference_20260723.csv --output-prefix
+   /private/tmp/catcross_sports_guardrail_run1_20260723`.
+8. **Artifacts/hashes:** manifest
+   `6343e8aff8042efa7cd0be108fadba96002047bba78e7bc8a52da679982f9bae`;
+   launch `af0d1c90b21d97fa8bf24d76d238d80a58114eca114089419381fdefef7ffc40`;
+   raw `7405b6a827caf296693003705fc6c6d155dbdd18bf1f0c5bb028986af60a40c1`;
+   result `b7c0b76f32f7a66294b29497415dc533eeab67e7fcce9cbf705b3409621a7359`.
+9. **Primary results:** equal-fold RMSE `0.996016x`, 8/0/2 fold
+   wins/ties/losses, worst fold `1.010136x`; all-held-team `0.996891x`,
+   seen-player `0.997861x`, and cold-player `0.993971x`.
+10. **Costs and checks:** 22/22 workers and 11/11 pairs passed; automatic
+    was eligible and selected 12 pairs on every coordinate. All five declared
+    checks passed. Fit `1.597123x` and single-call predict `0.860144x` are
+    telemetry only.
+11. **Limitations/non-claims:** one spent basketball workload and one mixed
+    view; no holdout, default, prediction-throughput, memory, release-ladder,
+    or release claim.
+12. **Decision/next action:** expose the validated automatic selector as the
+    explicit `categorical_crosses=True` opt-in with honest large-data,
+    small-data-fallback, sports, and selection-cost documentation. Do not
+    change the default.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
