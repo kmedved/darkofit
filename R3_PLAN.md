@@ -1,11 +1,26 @@
-# R3_PLAN — the overhead war and the catcross default (v0.13 → v0.14)
+# R3_PLAN — the foundation gate, then the overhead war (v0.13 → v0.14)
 
-> **Status:** owner direction, 2026-07-24. Execution instruction for Codex.
-> Supersedes [`R2_PLAN.md`](R2_PLAN.md) (complete: everything it queued
-> shipped in v0.12.0 or was honestly closed). [`SHIP_RULES.md`](SHIP_RULES.md)
+> **Status:** owner direction, 2026-07-24, **revised same day after external
+> review** (three independent reviews + synthesis; see §0.5). Execution
+> instruction for Codex. Supersedes [`R2_PLAN.md`](R2_PLAN.md): its v0.12
+> release work shipped or was honestly closed, while its funded Q1 mechanism
+> is carried forward here (resequenced — see Q1). [`SHIP_RULES.md`](SHIP_RULES.md)
 > governs process; [`AGENTS.md`](AGENTS.md) governs working discipline.
 > One quality-changing automatic default per release; behavior-exact
 > engineering and opt-ins ride alongside freely.
+>
+> **Revision note:** the 2026-07-24 external review confirmed the §0
+> decomposition but found two real defects in this plan's first draft
+> (cross-member preprocessing sharing was statistically invalid as
+> written; capped auditions were mislabeled decision-identical) and one
+> sequencing error (a second automatic selector before selector-cost
+> amortization). Those are fixed below. It also moved the
+> salvage-vs-re-fork question from "settled by the 2026-07-22 tripwires"
+> to "decided by a bounded experiment": the tripwires watched the engine
+> and the feature backlog, and the v0.12 loss came from neither — it came
+> from orchestration overhead the tripwires never measured. §0.5 is that
+> experiment. **P2's default flip, Q1, and P3's sharing work are frozen
+> until the gate reports.**
 
 ## 0. Where we stand (v0.12 ladder, 2026-07-24, dev slice)
 
@@ -19,201 +34,301 @@ regression datasets, ratios DarkoFit/ChimeraBoost, lower better):
 | DA/MA | 0.9881 [0.9746, 1.0037] | 1.25x | 3.35x | 0.92x | 6-7 |
 | D8/M8 | 1.0363 [1.0338, 1.0388] | 3.57x | 1.82x | 0.39x | 2-11 |
 
-**Strict Pareto victory: no.** But the per-dataset decomposition
+**Strict Pareto victory: no.** The per-dataset decomposition
 ([`per_dataset.csv`](benchmarks/v012_compute_ladder_20260724_per_dataset.csv))
-shows the deficit is **concentrated, named, and mechanistically attackable**,
-not diffuse:
+shows the deficit is concentrated and named:
 
 1. **Diamonds is ~all of the default quality deficit.** D0/M0 loses
-   1.3825x on diamonds; that single dataset contributes ~+2.5pp to the
-   13-dataset geomean. Excluding it, D0 quality ≈ **0.985 — a win**. At
-   D8/M8 diamonds is 1.3545x (~+2.4pp of the 3.6% deficit). Diamonds is
-   exactly the dataset where ChimeraBoost's group-centered categorical
-   crosses auto-engage at default — and **our identical mechanism shipped
-   in v0.12 as an opt-in**. At the accuracy points (DA/MA) diamonds is
-   1.0032 — deep trees learn the interaction unaided, confirming this is a
-   feature-representation gap, not an engine gap.
-2. **The predict loss is per-call fixed overhead, not kernel throughput.**
-   We *win* the large batches (protein 0.61x, diamonds 0.95x) and lose the
-   small ones catastrophically (QSAR_fish 10.5x, Fiat-500 6.6x,
-   healthcare 6.3x). ChimeraBoost's 0.21–0.23 releases were a systematic
-   sweep of exactly this overhead (pandas removal, single input
-   conversion, shared bagged-member transforms, serial kernel twins for
-   ≤4-row batches; their 1-row numeric predict is now 36 µs). Ours has
-   had no equivalent pass.
-3. **The fit loss is small-n fixed overhead, and it stacks 8x in the
-   ensemble.** D0/M0 fit: healthcare 7.98x, Fiat-500 6.40x, QSAR-TID
-   4.74x — versus airfoil 0.78x, protein 1.04x, concrete 1.07x at scale.
-   D8/M8 fit on tiny sets: airfoil 17.1x, concrete 18.1x — eight members
-   each paying the full per-fit overhead, while their bagged ensemble
-   fits in **0.57x their own default's time**.
-4. **Their ensemble lift is architecturally better.** M8 improves on M0 by
-   3.54% winning 13/13 datasets, at 0.57x the fit cost. Our v3 improves
-   on D0 by ~1.0% at 0.78x. The member-recipe transplant was already
-   falsified (their recipe on our engine: 1.0088 quality at 2.11x cost),
-   so the wedge is structural — how members are budgeted, diversified,
-   and early-stopped — not the hyperparameters.
+   1.3825x there; ex-diamonds the D0 aggregate is **0.9836 — a win**.
+   Diamonds is where their group-centered crosses auto-engage and ours
+   shipped opt-in. At DA/MA diamonds is 1.0032 (deep trees learn the
+   interaction) — a representation-policy gap, not an engine gap.
+   Caveat (review): ex-diamonds **D8/M8 is still 1.0134** — the cross
+   default cannot close the ensemble gap by itself, and whether v3
+   members even reach the cross audition is unverified (gate item b).
+2. **The predict loss is per-call fixed overhead, not kernel
+   throughput.** We win large batches (protein 0.61x, diamonds 0.95x)
+   and lose small ones up to 10.5x (QSAR_fish). Their 0.21–0.23
+   releases were a systematic sweep of exactly this overhead; named
+   suspects in our code are listed under P1.
+3. **The fit loss is small-n fixed overhead plus audition tax, stacking
+   in the ensemble.** D0 fit went 1.38x → 2.60x across v0.11 → v0.12
+   while quality improved — the selector's ~2.20x audition cost landing
+   at ladder scale. On tiny sets D8 fit reaches 17–18x (airfoil,
+   concrete): sequential sub-threshold members, each plausibly paying
+   the audition race (verify: gate item b). Where B3 engages, ensemble
+   fit is already at donor parity or better (protein 0.60x, QSAR-TID
+   0.89x) — the deficit is the small-n tail, not the parallel
+   architecture.
+4. **Their ensemble lift is structurally better and unexplained.** M8
+   improves on M0 by 3.54% (13/13) at 0.57x its default's fit; our v3
+   gains ~1.0% at 0.78x. Member recipes are *nearly identical* across
+   the two stacks (both ~0.8n without-replacement subagging, colsample
+   0.85, OOB-complement early stopping; the recipe transplant already
+   measured worse on our engine) — so the wedge is baseline variance,
+   member horizons, or orchestration, and the gate's matched-member
+   experiment (item e) is the instrument that separates those.
 
-What the v0.12 defaults bought: airfoil 0.953 and concrete 0.888 at D0
-(selector-era strongholds), accuracy-point quality parity-or-better at
-1.25x fit, and the 0.39x ensemble RSS. The losses that remain each have a
-name. That is what this plan attacks. Watch item: protein D0 1.0156 —
-both engines engage linear leaves there; small residual gap worth one
-diagnostic look during P4, not a campaign.
+What v0.12 bought: airfoil 0.953 and concrete 0.888 at D0
+(selector-era strongholds), a near-win accuracy point at 1.25x fit, and
+the 0.39x ensemble RSS (partly an artifact of sequential small-set
+members — do not sell it as durable). The external reviews' shared
+verdict on "did anything help": several additions created real
+capability, quality, memory, or local speed value; none has yet
+compounded into whole-curve product dominance. The blocker is
+amortization and engagement, not mechanism quality.
 
-## 1. The R3 mechanisms, in priority order
+## 0.5 The foundation gate (3 days, dev data only, owner go required)
+
+**Question:** are the v0.12 deficits removable orchestration costs
+(salvage: continue this plan in place), or is the product execution
+graph structurally inferior (trigger the re-fork program)? The
+2026-07-22 no-re-fork decision stands but its tripwires didn't cover
+this failure mode; the gate closes that hole with measurement instead
+of presumption.
+
+**Frozen until the gate reports:** the P2 default *ship* (its dev run is
+gate work), Q1, and all P3 sharing/caching work. P1's bounded predict
+fast paths are NOT frozen — they are gate instruments and keepable in
+every world.
+
+### The five gate items
+
+- **(a) The microsecond ledger.** py-spy + targeted timers on: one
+  QSAR_fish-shaped predict call, one healthcare-shaped default fit, and
+  the airfoil 1-vs-8-member marginal cost. Attribute wall time to
+  {input conversion, validation, thread-mask switch, categorical remap,
+  binning, forest walk, audition fits, param resolution, allocation}.
+  Test the thread-switch hypothesis first (a ~1 ms OpenMP re-team on a
+  ~100–300 µs call would *be* the 10x; skip-when-ambient-equal is the
+  fix if so).
+- **(b) Member-path facts.** Establish by execution: do v3 members run
+  the linear-selector audition per member (the airfoil 17x arithmetic
+  says probably yes)? Does the catcross audition reach members at all
+  (CHANGELOG scoping says probably no)? Both facts gate P2's honest
+  scope and P3's amortization design.
+- **(c) `salvage-p1` branch — the bounded predict fast paths.** Exactly
+  five, all behavior-exact, none new-policy: one input
+  conversion/validation per public call; shared per-call bag context
+  (conversion + canonical factorization shared, member-local fitted
+  maps untouched); thread-mask hygiene (restore parent after member
+  fits; switch once per bag call; skip when ambient == target); serial
+  twins on the routes that lack them (levelwise `add_predict`,
+  class-major routes, binning — scalar oblivious already gates at
+  8192; also fix `flat_predict_preferred` falling to a per-tree loop at
+  `thread_count=1`); gdiff cross-block allocation removal (reuse the
+  numeric block, write into the destination). Exactness suite on all;
+  NPZ must not capture any cache. Measure the six proof cells before/
+  after; stand up the 1-row M5 serving sentinel (donor number: 36 µs).
+- **(d) Catcross-auto dev run.** Flip the audition to automatic for
+  eligible fits on the gate branch and run the 13-dataset D0 slice
+  (three coordinates). Tests the diamonds close under *real* defaults —
+  the attribution ran against a constant control, and the interaction
+  with the live linear selector is untested — plus healthcare's
+  bit-exact guard decline. This doubles as P2's dev evidence if salvage
+  wins. Measure D8 on diamonds too if (b) says members audition:
+  quality gain vs stacked-audition fit cost, both reported.
+- **(e) Matched-member ensemble decomposition.** Benchmark-only index
+  shims on both stacks: inject identical member train/OOB indices,
+  identical resolved horizons/policies, selectors off, on the six proof
+  cells (QSAR_fish, healthcare, diamonds, protein, airfoil, concrete).
+  With members forced identical, what remains of their 3.5%-vs-1.0%
+  lift wedge and their 0.57x ensemble fit economics? This is P4's core
+  question answered in days: lift that disappears under matched members
+  is portable policy; lift that survives is foundation. Record member
+  retained rounds, member-prediction correlation, and per-member wall
+  time on both sides.
+
+Deliberately **not** built in the gate: a renamed donor-core product
+branch. Its decision-relevant facts are covered cheaper — the donor's
+overhead numbers are already measured (the ladder *is* the donor
+benchmark), the engines are byte-identical at matched config on the one
+diagnosed coordinate (RSSI), and (e) covers the ensemble question. The
+donor branch gets built as step one of the re-fork program *if the gate
+triggers it*, with the port bill priced honestly first.
+
+### Decision rules at gate close (owner decides; pre-stated readings)
+
+**Salvage confirmed** — continue this plan — if ALL of:
+
+1. diamonds D0 ≤ 1.05 under real defaults with guard declines intact;
+2. the ledger attributes the dominant share of small-call/small-fit
+   overhead to the named removable items (conversion, remap, thread
+   switches, missing serial paths, audition amortization) rather than
+   smearing it in sub-10% slices across the wrapper stack; and
+3. matched members collapse most of the ensemble lift wedge (their
+   advantage is portable policy/baseline property, not foundation).
+
+**Re-fork program triggered** if ANY of: the ledger shows kernels at
+parity with the gap smeared across the abstraction stack (architecture,
+not policy); the lift wedge survives matched members; or diamonds fails
+to close under real defaults. The program is then: two-branch proof at
+pinned `a9eb4db` vs `6667843` per the external reviews, with the donor's
+**mandatory pre-adoption fixes** (its bagging is row-based — verified:
+members take an explicit row-complement OOB `eval_set`, bypassing the
+group-aware splitter, so one player's rows can sit on both sides; and
+its rare-class bagged-OOB scoring can misencode absent classes), the
+layered migration architecture (`policy/`, `heads/`, `io/`, `groups/`
+over a vendored core; fitted policy off the hot path), and the honest
+6–10 week bill to sports-pipeline parity including revalidation of the
+distributional/conformal/NPZ stack the live pipeline depends on.
+
+**Tie-breaker** (owner pre-decision, so the gate can't be argued after
+the fact): my recommendation is that ties go to the incumbent — the
+port bill is real, the rival moves during any port, and the live sports
+pipeline sits on surfaces that would all need revalidation. Reviews 2–3
+recommend ties go to the smaller donor foundation. The owner picks the
+tie rule before the gate runs.
+
+### Gate hygiene
+
+Dev data only; no holdout consultation; no new percentage gates —
+readings 1–3 are judgment calls made on the published numbers, by the
+owner, with my recommendation attached. Time-box: three working days of
+machine time; instrumentation runs don't need the exclusive machine,
+the before/after timings do.
+
+## 1. The R3 mechanisms (amended; execution order set by the gate)
 
 ### P1 — Predict fast-path (behavior-exact; ships on exactness tests)
 
-One profiling pass, then a fixed-overhead kill list. Known suspects, in
-likely order of yield (each mirrors a measured ChimeraBoost win, so these
-are proven-yield donor ideas, implemented generically):
-
-- **Single input conversion per call**: validate/convert once, reuse the
-  same array for checks and prediction (theirs removed a full duplicate
-  `to_numpy` materialization).
-- **Per-call allocation and revalidation audit**: cache fitted-transform
-  lookups (categorical/ordinal remaps — we already reuse exact pandas
-  codes; extend to the generic path), preallocate output blocks, skip
-  dead inits.
-- **Serial kernel twins for tiny batches**: parallel binning/forest-walk
-  kernels pay the OpenMP fork/join on 1-row calls; dispatch to serial
-  twins below the measured crossover (~5 rows for them). Bit-identical by
-  construction; `warmup()` compiles both sides. This is the predict-side
-  mirror of the fused-lane dispatch we shipped fit-side.
-- **Ensemble predict de-duplication**: members share one input
-  conversion/validation and one transform cache per call (their 0.21
-  change: 8-member 50k predict 1.21 s → 0.40 s).
-
-Acceptance (SHIP_RULES behavior-exact): bit-identical predictions on the
-exactness suite, defined envelope, rollback flag per lane where dispatch
-is involved. Targets, measured on the ladder slice: worst-case per-call
-ratio ≤1.5x (from 10.5x), aggregate D0 predict ≤1.3x (from 3.27x), keep
-the large-batch wins. Add a standing **1-row serving micro** (sports
-game-state shape) to the M5 sentinels; their number to beat is 36 µs.
+The gate's item (c) list IS P1's first wave, and it ships in every
+world. Second wave (post-gate, ledger-ordered): the
+`_codes_for_transform` path (per-call pandas `Series` construction +
+`get_indexer` when pandas is imported, per-row Python fallback when
+not — replace with a NumPy/Numba canonical factorization cache with
+unique-value remapping, the donor's 0.21 design that bought ~9x at
+1-row); preallocated output blocks; dead-init removal; multiclass and
+SHAP-path reuse. Targets on the ladder slice: worst per-call ≤1.5x
+(from 10.5x), aggregate D0 predict ≤1.3x (from 3.27x), keep the
+large-batch wins, and get the 1-row sentinel within 2x of the donor's
+36 µs now, parity later.
 
 ### P2 — Catcross auto-engagement: the one quality default of v0.13
 
-The mechanism, audition guard, eligibility floor, provenance, and NPZ
-round-trip all shipped in v0.12 as `categorical_crosses=True`. R3 flips
-eligible scalar-RMSE fits to auto-audition (mirroring the selector's
-pattern: guarded, deterministic, exact fallback, decision recorded in
-fitted metadata).
+Unchanged destination, corrected path: the gate's item (d) supplies the
+dev evidence under real defaults. The ship decision additionally waits
+on **(i)** the gate verdict and **(ii)** the P3 amortization question:
+if members pay the race (gate item b), the flip must ride the
+parent-level selector architecture (below) or ship scoped to
+single-model fits with the release claim scoped to match — an automatic
+default that improves D0 while worsening the dominant D8 fit deficit
+is exactly the whole-curve failure this plan exists to end. Ship path
+per SHIP_RULES once unblocked: dev suite → CTR23 release-validation +
+newest unused sports season (expect bit-exact declines on sports) →
+`categorical_crosses=False` rollback → CHANGELOG. Consumes v0.13's
+single quality-default slot.
 
-- Dev expectation: diamonds D0 1.38 → ~1.0; D0/M0 aggregate quality from
-  1.0097 to ≈0.985. The audition guard already declines ineligible/
-  harmful cases (healthcare sits below the 2,353-row floor; forced probes
-  there measured harmful — the guard must keep declining it).
-- Ship path per SHIP_RULES: clearly better on dev suite → not worse on
-  the holdout (CTR23 release-validation set + newest unused sports
-  season; sports check should show bit-exact declines — no categorical
-  cross candidates in the sports schema) → `categorical_crosses=False`
-  as the documented rollback → CHANGELOG.
-- This consumes v0.13's single quality-default slot. Depth stays opt-in;
-  no other quality default rides this release.
+### P3 — Fit-overhead war (amended per review blockers B1/B2)
 
-### Q1 — Packed-histogram gradient quantization (already funded)
+Profile-first from the gate ledger, then, in order:
 
-Unchanged scope from the funding note (`03ae4a4`): bounded engine
-prototype → integration behind a lane with byte-identical float fallback,
-seed-exact repeatability, quality characterization (stochastic
-quantization is not behavior-exact by construction), and the 1M-row
-predict-ratio anomaly (1.114) measured properly. Expected yield: ~17%
-large-n fit — attacks the axis where we are already near parity (protein
-1.04x, concrete 1.07x) and converts them to wins. Q1 is an engine
-improvement; it is explicitly **not** the answer to small-n overhead (P3)
-or ensemble lift (P4), per the ladder result's own closing note.
-
-### P3 — The fit-overhead war (small-n default + ensemble stacking)
-
-Profile-first: measure the fixed cost of one eligible small fit
-end-to-end (input validation, auto-param resolution, binning, validation
--split machinery, selector auditions, callback plumbing) on a ~1–3k-row
-dataset, and the marginal cost of ensemble members 2–8. Then kill in
-measured order. Known structural candidates:
-
-- **Share immutable work across ensemble members**: binning/borders,
-  input validation, preprocessing — compute once, reuse per member
-  (their bagged fit shares the categorical transform; ours refits
-  everything per member).
-- **Audition cost control at small n**: the selector and (post-P2)
-  catcross auditions each fit extra models; verify their cost shows up in
-  the profile and, if material, bound audition budgets at small n
-  without changing decisions (decision-identical or it doesn't ship).
+- **Parent-level selector architecture** (the centerpiece): selection
+  races run once at the parent — group-safe, on the parent's split —
+  and members receive resolved *identities* (engage linear leaves
+  yes/no; selected cross-pair list), then fit **member-local** state
+  from scratch. The race is paid once, not eight times. This is a
+  quality-policy change for ensembles (member decisions were previously
+  member-local where they existed at all): it goes through dev +
+  holdout as part of a release, not behind a behavior-exact label.
+- **Sharing boundary (corrected).** Shareable across members: raw input
+  conversion, schema validation, immutable column metadata, canonical
+  raw-value factorization, parent-selected pair identities. **Never
+  shared:** fitted borders, ordered target statistics, category maps,
+  group-centered means, binned matrices, OOB scoring state — these are
+  sample- and weight-dependent fitted state; sharing them lets a
+  member's OOB rows shape its representation, contaminates the OOB
+  early-stopping signal, and violates the zero-weight-rows contract.
+  Fitted-preprocessing reuse is permitted only among auditions and the
+  winner refit *inside one member* when rows, weights, and split are
+  identical (the donor's intra-fit cache pattern — its measured 17–32%
+  small-fit win).
+- **Audition cost control (honest version).** Two lanes only: (1)
+  reuse that provably preserves the full decision rule
+  (shared prep + completed-fit reuse within a member; early
+  termination only where the original stopping rule's decision is
+  already information-complete); (2) capped/raced auditions as a
+  **declared quality policy** through dev + holdout — the donor's own
+  `selection_rounds` cap occasionally flips decisions with 0.5–1.5%
+  regressions, so "capped but decision-identical" is not a claimable
+  property. No third lane.
 - **Per-fit fixed costs**: lazy imports, deferred allocations, cheaper
-  split-machinery setup on the small-n path.
+  small-n split machinery — ledger-ordered.
 
-Acceptance: behavior-exact where claimed (bit-identical fits) or
-decision-identical with recorded provenance. Targets on the ladder
-slice: worst small-n D0 fit ≤2x (from 8x), D8 worst ≤4x (from 18x),
-aggregate D0 fit ≤1.8x (from 2.60x, with Q1 compounding).
+Targets: worst small-n D0 fit ≤2x (from 8x), D8 worst ≤4x (from 18x),
+aggregate D0 fit ≤1.8x (from 2.60x).
 
-### P4 — Ensemble-lift diagnosis (the v0.14 quality mechanism)
+### P4 — Ensemble lift (gate item e answers the core question)
 
-Question to answer, with instrumentation rather than speculation: **why
-does their 8-member bag beat their default by 3.5% on 13/13 datasets at
-0.57x its fit cost, while our v3 gains ~1.0% at 0.78x?** Decompose on a
-handful of datasets:
+The matched-member decomposition replaces the original instrumentation
+plan. Post-gate, whatever the wedge turns out to be (baseline variance,
+member horizons, engagement policy) is specced as v0.14's quality
+default with its falsifier stated. The member-recipe route stays dead.
+Residual watch item: protein D0 1.0156.
 
-- Member budget accounting: their effective per-member iterations /
-  early-stop behavior vs ours (do members train far shorter than the
-  default single model?).
-- Diversity source: their bagging (row sampling, seeds) vs our
-  deterministic 80% without-replacement + colsample 0.85 — measure
-  member-prediction correlation in both stacks.
-- Baseline headroom: how much of their lift is variance harvesting off a
-  higher-variance default (vs our lower-variance default having less to
-  harvest)? Compare single-model vs member variance profiles.
-- Structural sharing: what their members share (binning? transforms?)
-  that keeps M8 at 0.57x.
+### Q1 — resequenced to last, in both worlds
 
-Output: a mechanism candidate (member budget division, diversity policy,
-shared-preprocessing parallel members, or a combination) specced for the
-v0.14 quality-default slot, with the falsifier stated up front. The
-member-*recipe* route is already dead; do not re-litigate it.
+New fact (verified in donor source): **quantized-gradient histograms
+have been ChimeraBoost's default since 0.18.0** (`quantize_gradients`,
+~15-bit, leaf values from unquantized floats). Q1 is therefore
+catch-up on an axis where we are already near parity, not
+differentiation. It stays funded; it runs after P1/P2/P3 in the salvage
+world and is inherited rather than reimplemented in a re-fork world.
+Unchanged technical scope otherwise (lane + byte-identical float
+fallback + seed-exact repeatability + quality characterization + the
+1M predict-ratio anomaly).
 
 ## 2. Sequencing and releases
 
-Order: **P1 → P2 → Q1 → P3**, with **P4 diagnosis running whenever the
-timed machine is busy elsewhere** (it is mostly instrumentation and
-reading, not timed benchmarking). P1 before P2 so the predict fast-path
-is settled before the catcross ship-check re-times anything.
+**Gate first (3 days, owner go).** Then, in the salvage world:
 
-- **v0.13** = P1 (behavior-exact predict pass) + P2 (catcross default —
-  the release's one quality default) + Q1 lane + whatever P3 items have
-  landed on exactness. Rerun the ladder at release against
-  ChimeraBoost's then-current release (pin refresh; they will have
-  moved past 0.23.0 — verify at worker zero, same as this run).
-- **v0.14** = the P4-derived ensemble mechanism as its quality default,
-  plus remaining P3 items.
-- Success criteria for the v0.13 ladder (interim, honest): D0/M0 quality
-  ≤1.00 with diamonds ≤1.05; D0 predict ≤1.3x aggregate and ≤1.5x worst;
-  D0 fit ≤1.8x; D8/M8 quality ≤1.02. **Full strict dominance is a
-  two-release program** — v0.13 closes default-point quality and the
-  overhead axes; v0.14 closes ensemble lift.
+- **v0.13** = P1 (both waves) + P3 parent-level-selector + sharing-
+  boundary work + P2 as the release's one quality default (scoped per
+  gate item b), ladder rerun against the then-current donor release
+  (pin refresh at worker zero; they will have moved past 0.23.0).
+- **v0.14** = the P4-derived ensemble mechanism as its quality default
+  + remaining P3 + Q1.
+- v0.13 tracking targets (not continuation gates): D0/M0 quality ≤1.00
+  with diamonds ≤1.05; D0 predict ≤1.3x aggregate, ≤1.5x worst; D0 fit
+  ≤1.8x; D8/M8 quality ≤1.02. **Stop/cutover criteria at the v0.13
+  ladder** (any of these convenes the re-fork decision immediately —
+  the two-release runway is not unconditional): D0/M0 quality > 1.00
+  or diamonds > 1.05 despite P2; aggregate D0 predict > 2x with the
+  full P1 list landed; D8 worst small-set fit > 8x after P3 wave 1;
+  or rival velocity reopening feature gaps while these remain open.
 
-## 3. Discipline notes (unchanged, restated for this cycle)
+In the re-fork world, §0.5's program supersedes this section and gets
+its own plan document with the port bill and layered architecture.
 
-- The 13-dataset ladder slice is **development data** and stays fixed for
-  cross-release comparability; it is never a tuning set for any P-item.
-  Ship-checks consult the holdout (CTR23 release-validation set + newest
-  unused sports season) exactly as SHIP_RULES prescribes.
-- One quality default per release: P2 in v0.13, P4's mechanism in v0.14.
-  Everything else ships behavior-exact or opt-in.
-- Classification remains unmeasured on the ladder and undeveloped as a
-  product story; it is a growing blind spot (their classifier keeps
-  improving), but it stays out of R3 scope by owner priority. TabArena
-  first placement stays deferred (owner decision).
-- Rival triage at next milestone: their velocity is currently
-  polish-over-features (0.22/0.23 added no new features), so the
-  unported-feature backlog did not grow — no re-fork tripwire. The one
-  standing post-fork feature gap is cat×cat combinations; if ever
-  ported, port the 0.23 pair-coded design, not the repudiated string
-  scheme.
+## 3. Discipline notes
+
+- The 13-dataset slice is development data, fixed for comparability,
+  never a tuning set. Ship-checks consult the holdout per SHIP_RULES.
+  The gate consults no holdout at all.
+- One quality default per release. A parent-level selector change and
+  the catcross flip in the same release must be presented as the single
+  coherent default change they are, or split across releases.
+- **The overhead rule (new, permanent, from the review):** an automatic
+  feature's disabled or ineligible state performs no work beyond a
+  constant branch — no preprocessing, no allocation, no policy
+  resolution on the hot path; an engaged feature pays only its inherent
+  transform/model cost; selection never recomputes unchanged base
+  preprocessing. This is what makes automation-first compatible with
+  frontier dominance, and every future selector ships against it.
+- Classification remains out of R3 scope by owner priority (noted: a
+  donor-core world would inherit their classifier work; a salvage world
+  leaves the blind spot open — revisit at v0.14). TabArena stays
+  deferred.
+- Rival triage: 0.21–0.23 added no product surface (no backlog growth,
+  no old-tripwire fire), but the *new* lesson is that cross-cutting
+  performance polish is itself a competitive attack the backlog metric
+  misses — the gate exists because of it.
 
 ## 4. Standing owner decision points
 
-1. Release sign-off on v0.13 (defaults flip: catcross auto).
-2. P4's mechanism choice before it becomes v0.14's default.
-3. Any holdout consultation outside a scheduled ship-check (logged).
-4. Classification/TabArena scope changes — owner-initiated only.
+1. **Gate go/no-go, and the tie-breaker rule, before it runs.**
+2. Gate verdict sign-off (salvage vs re-fork program).
+3. Release sign-off on v0.13 (catcross default scope).
+4. P4's mechanism choice before it becomes v0.14's default.
+5. Any holdout consultation outside a scheduled ship-check (logged).
+6. Classification/TabArena scope changes — owner-initiated only.

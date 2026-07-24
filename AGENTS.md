@@ -26,6 +26,14 @@ Consequences:
 - Behavior-exact engineering (dispatch, kernels, parallelism) needs no
   materiality bar: exactness, stable direction, bounded complexity,
   defined envelope, rollback.
+- **The overhead rule (2026-07-24):** an automatic feature's disabled or
+  ineligible state performs no work beyond a constant branch — no
+  preprocessing, allocation, or policy resolution on the hot path; an
+  engaged feature pays only its inherent transform/model cost; selection
+  never recomputes unchanged base preprocessing, and in ensembles a
+  selection race is paid once at the parent, not once per member.
+  Automation that taxes every fit and call is how a quality win becomes
+  a frontier loss (v0.12's selector: quality shipped, fit 1.38x→2.60x).
 
 ## The goal: strict Pareto dominance over ChimeraBoost, moving target
 
