@@ -1353,6 +1353,14 @@ def test_spent_evidence_rejects_lockbox_snapshot_drift():
 
 
 def test_captured_chimera_exposure_matches_frozen_head():
+    if (
+        not registry.CHIMERA_ROOT.is_dir()
+        or not (registry.CHIMERA_ROOT / ".git").exists()
+    ):
+        pytest.skip(
+            "requires the historical sibling checkout at "
+            f"{registry.CHIMERA_ROOT}"
+        )
     current_head = registry._git(
         registry.CHIMERA_ROOT,
         "rev-parse",

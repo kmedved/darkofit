@@ -570,6 +570,13 @@ def test_m3b_terminal_failure_artifact_discards_partial_rows(tmp_path):
 
 
 def test_m3b_freezer_binds_source_cases_and_nonshipping_claims():
+    if (
+        not runner.DEFAULT_PANEL_CACHE.is_file()
+        or runner.DEFAULT_PANEL_CACHE.is_symlink()
+    ):
+        pytest.skip(
+            "historical M3b freezer requires its local sports-panel cache"
+        )
     contract = freezer.build_contract()
 
     assert contract["contract_frozen"] is True

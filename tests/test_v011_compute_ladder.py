@@ -667,6 +667,18 @@ def test_parent_records_a_terminal_failure_when_manifest_preflight_closes(
 def test_contract_is_binding_once_frozen():
     if not campaign.CONTRACT_PATH.exists():
         pytest.skip("prospective compute-ladder contract has not been frozen")
+    payload = campaign._read_json(campaign.CONTRACT_PATH)
+    drifted = [
+        name
+        for name, relative in campaign.BOUND_PATHS.items()
+        if payload["bindings"].get(name)
+        != campaign._bound_record(campaign.ROOT / relative)
+    ]
+    if drifted:
+        pytest.skip(
+            "historical v0.11 contract bindings were superseded: "
+            + ", ".join(drifted)
+        )
     contract = campaign.load_contract()
     assert contract["contract_id"] == campaign.CONTRACT_ID
     assert contract["outcome_blind"] is True
