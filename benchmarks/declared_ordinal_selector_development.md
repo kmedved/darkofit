@@ -32,9 +32,10 @@ constant leaves, and 14 requested threads:
 - `ordinal_features="select"`.
 
 The selector requires positive paired MSE gain at two standard errors. After
-selection it refits on the complete development rows. Its final prediction
-must be bit-identical to the separately fitted forced arm when it engages, or
-to native when it declines.
+selection it refits from scratch on the same inner-training rows used by the
+other arms, retaining the explicit validation set for early stopping. Its
+final prediction must be bit-identical to the separately fitted forced arm
+when it engages, or to native when it declines.
 
 The primary descriptive readout is the equal-dataset selector/native outer
 test RMSE ratio. Per-dataset ratios, the worst coordinate, engagement count,
