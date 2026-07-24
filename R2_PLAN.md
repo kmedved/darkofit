@@ -25,7 +25,7 @@ Every item below maps to a measured frontier deficit or an earned candidate:
 | P2 Catcross attribution → path to ship | Diamonds/healthcare (0.20's categorical blow) | Attribution, guardrail, and scoped public opt-in complete |
 | P3 Depth opt-in exposure | Immediate user value (−5% sports, spent) | Public explicit opt-in complete; default route closed on holdout |
 | P4 B3-v2 activation-gated parallelism | 6.1× ensemble fit optic; rescue the 3.84× | Complete in source: automatic measured-envelope activation, recorded resolution, and rollback |
-| P5 Selector-v3 principled margin | Smooth-data quality (protein) | Successor to a clean kill |
+| P5 Selector-v3 principled margin | Smooth-data quality (protein) | 2-SE noise guard calibrated without Protein; spent quality evaluation next |
 | P6 Member-policy retune | Ensemble broad quality (+1.5% vs their +3.5%) | Queued (R1-5) |
 
 ---
@@ -417,6 +417,14 @@ where engaged); only the engagement margin failed. Successor rules:
   revertible flag), never by re-testing against the coordinates that
   produced the kill.
 - Sequenced after P2 and P4 — same one-slot discipline.
+
+**Noise calibration, 2026-07-23:** the predeclared 1-SE rule engaged three
+seed-fragile cells among 18 eligible non-Protein M6 regression cells. Before
+reading Protein or holdout quality, the rule was tightened to 2 SE; a
+separately named rerun engaged zero cells and reproduced the same maximum z
+of `1.974423`. The selector now proceeds to spent Protein development
+evaluation. A default still requires clearly better development quality and
+no holdout regression under `SHIP_RULES.md`.
 
 ## P6 — Member-policy retune (after P2 resolves)
 

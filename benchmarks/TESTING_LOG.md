@@ -3168,6 +3168,42 @@ B-archive simulation remains non-loadable, optional size telemetry.
     compatibility, and a documented rollback. Move to selector-v3 after the
     required fresh-eyes stage boundary.
 
+### 73. Selector-v3 non-Protein noise calibration (2026-07-23)
+
+1. **Source:** initial 1-SE source
+   `ca2f29f31bad0457af93b7cf007e5880ce953547`; revised 2-SE source
+   `b3c006ffef8bb9f191edb273184a308fb38f6439`.
+2. **Comparator:** constant- versus linear-leaf auditions inside one
+   automatic selector; no external model comparator.
+3. **Evidence:** spent synthetic development calibration, engagement
+   statistics only; no quality outcome, Protein, holdout, or fresh evidence.
+4. **Data/splits:** 24 regression cells from the M6-v3 medium grid: four
+   datasets, three seeds, and unweighted/stress-weighted variants. Protein
+   was excluded.
+5. **Arms/policies:** paired per-row MSE gain and its weighted or unweighted
+   standard error. The initial rule required gain z at least 1.0; the
+   predeclared noisy-engagement contingency revised it to 2.0.
+6. **Environment:** `darko311`, four threads, fresh worker per cell; process
+   audit found no competing Python or benchmark worker.
+7. **Execution:** `python
+   benchmarks/run_automatic_linear_selector_v3_noise_calibration.py
+   --candidate /private/tmp/darkofit-depth-light --output ...`.
+8. **Artifacts/hashes:** 1-SE artifact
+   `626814e8522415d52085779c61935669efa3122c71313fbae8d5578735070b9f`;
+   2-SE artifact
+   `d179aa46ac3787be1f50f8b6fc11ede52745e0ddae4d7ba9ede37e901db1c7da`.
+9. **Primary results:** 18 eligible and six below-minimum-sample cells.
+   The 1-SE rule engaged three seed-fragile cells; the 2-SE rule engaged
+   none. Maximum z was `1.974423049` in both runs.
+10. **Failed as well as passed checks:** the initial rule failed its stated
+    no-obviously-noisy-engagement condition. The revised rule completed all
+    cells and passed; no cell changed its underlying gain statistic.
+11. **Limitations/non-claims:** this is selector calibration, not quality
+    evidence. It supports no default, shipping, sports, or rival claim.
+12. **Decision/next action:** retain the 2-SE rule and run the spent Protein
+    development comparison. Consult the holdout only if development is
+    clearly better.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
