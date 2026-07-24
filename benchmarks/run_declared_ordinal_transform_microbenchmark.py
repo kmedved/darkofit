@@ -10,11 +10,16 @@ import math
 import platform
 import statistics
 import subprocess
+import sys
 import time
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from darkofit import DarkoRegressor
 
