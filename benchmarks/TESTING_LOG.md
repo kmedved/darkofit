@@ -3204,6 +3204,43 @@ B-archive simulation remains non-loadable, optional size telemetry.
     development comparison. Consult the holdout only if development is
     clearly better.
 
+### 74. Selector-v3 Protein development comparison (2026-07-23)
+
+1. **Source:** clean candidate and harness commit
+   `0df50bef3a42b0d5b22cd50ad2e2c29ea5005b56`.
+2. **Comparator:** constant leaves and explicit linear leaves from the same
+   source; no external model comparator.
+3. **Evidence:** spent Protein development evidence. This is not holdout,
+   shipping, or rival evidence.
+4. **Data/splits:** OpenML task 363693 (`physiochemical_protein`), three
+   historical TabArena coordinates with split fingerprints reproduced by the
+   direct OpenML 0.15.1 loader.
+5. **Arms/policies:** constant leaves, automatic selector with the fixed
+   2-SE paired-MSE-gain guard, and explicit linear leaves. Each automatic
+   fit must be exact to its recorded explicit arm.
+6. **Environment:** `darko311`, macOS arm64, 14 threads, fresh worker per
+   arm; warmup disabled and ambient Numba masks checked after fit/predict.
+7. **Execution:** `python
+   benchmarks/run_automatic_linear_selector_v3_protein.py
+   --candidate-source /private/tmp/darkofit-depth-light
+   --tabarena-source /private/tmp/tabarena-m2-4cd1d25 --output ...`.
+8. **Artifacts/hashes:** result JSON
+   `b14cdde34d2a938c845ee31fb900ad16202dee7ce9c2617e753258374d859a72`;
+   the artifact binds the calibration inputs, source trees, split
+   fingerprints, row-level outputs, and environment.
+9. **Primary results:** automatic/constant RMSE geometric mean
+   `0.951039707x`, worst coordinate `0.955224848x`, 3/3 coordinates improved,
+   3/3 selected linear, and 3/3 exact to explicit linear.
+10. **Failed as well as passed checks:** no benchmark or integrity check
+    failed. The previously missed coordinate engaged at z `2.957600` with
+    `2.517852%` validation improvement.
+11. **Limitations/non-claims:** the three coordinates are spent and all come
+    from one smooth regression dataset. Costs are telemetry. No default or
+    general-quality claim follows from this result alone.
+12. **Decision/next action:** development is clearly positive. Run the fixed
+    SHIP_RULES holdout ship-check; only a non-regressing holdout result can
+    authorize automatic engagement, with `linear_leaves=False` as rollback.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

@@ -422,9 +422,17 @@ where engaged); only the engagement margin failed. Successor rules:
 seed-fragile cells among 18 eligible non-Protein M6 regression cells. Before
 reading Protein or holdout quality, the rule was tightened to 2 SE; a
 separately named rerun engaged zero cells and reproduced the same maximum z
-of `1.974423`. The selector now proceeds to spent Protein development
-evaluation. A default still requires clearly better development quality and
-no holdout regression under `SHIP_RULES.md`.
+of `1.974423`.
+
+**Protein development result, 2026-07-23:** the fixed 2-SE selector engaged
+on all three spent Protein coordinates, was exact to explicit linear leaves,
+and improved each one. Equal-coordinate automatic/constant RMSE was
+`0.951040x`; the worst coordinate was `0.955225x`. The formerly missed
+coordinate engaged at z `2.958` despite only `2.52%` validation improvement,
+confirming that the noise guard fixes the rigid-margin failure for the
+intended reason. The selector now proceeds to the fixed SHIP_RULES holdout
+ship-check. A default still requires no holdout regression and retains
+`linear_leaves=False` as the rollback.
 
 ## P6 — Member-policy retune (after P2 resolves)
 
