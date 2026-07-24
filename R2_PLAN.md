@@ -584,6 +584,15 @@ early-stopping ceiling instead of a raw cap) and the guarded numeric
 crosses (positive aggregate with tail harm per the Panel 3 measurement)
 belong **inside this project's ablations**, not as standalone defaults.
 
+**Accuracy-v2 result, 2026-07-23:** retain the existing `accuracy` preset.
+Across 24 spent M6 regression cells, the guarded cross audition engaged
+zero times and therefore reproduced the uncrossed fallback exactly, while
+roughly doubling fit time during selection. The 10k horizon was effectively
+neutral (`0.999914x` primary loss versus the 1k arm) and stopped early enough
+to measure `0.954112x` fit time on this slice, but that is not a new mechanism
+or a reason to fork the public preset. No holdout, sports ship-check, or
+TabArena data was consulted.
+
 **Documentation only (not mechanisms):** `hybrid` stays documented as
 experimental; `target_ordered_cat_codes` exposes deliberately leaky
 research behavior (`leaky_full`) and is documented truthfully as such.
@@ -632,9 +641,10 @@ new-entity/group-shift mechanism through the normal pipeline.
 7. ~~Retune the ensemble member policy.~~ **Complete:** the shipped
    `0.15` / `0.85` recipe beat both the legacy and midpoint recipes on broad
    quality, fit time, and archive size; no policy change.
-8. **Next:** build accuracy-v2 with component ablations and A10 as the
-   fallback.
-9. Reprofile Q against the post-dispatch engine.
+8. ~~Build accuracy-v2 with component ablations and A10 as the fallback.~~
+   **Complete:** the cross selector engaged `0/48` times and doubled
+   selection cost; the existing `accuracy` preset remains selected.
+9. **Next:** reprofile Q against the post-dispatch engine.
 
 Depth opt-in exposure and other release/documentation work do not consume a
 mechanism slot.

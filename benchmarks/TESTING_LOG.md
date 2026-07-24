@@ -3471,6 +3471,42 @@ B-archive simulation remains non-loadable, optional size telemetry.
   make no API or default change, close the retune slot, and proceed to
   accuracy-v2.
 
+### 81. Accuracy-v2 component ablation (2026-07-23)
+
+- **Question:** should the public accuracy rung add guarded top-six numeric
+  difference/product crosses, and does its existing 10k horizon remain a
+  useful component?
+- **Evidence class:** spent general development only. No holdout, TabArena,
+  sports ship-check, or external comparator data was consulted. The unrelated
+  GPBoost study does not count as DarkoFit development contact.
+- **Source and grid:** DarkoFit
+  `2def9d7662ec5d00592e18e518777665ab341ae7`; four medium M6-v3 regression
+  datasets, seeds 0--2, and ordinary plus stress-weighted views, for 24 cells.
+- **Arms:** 1k-round base, 1k plus guarded crosses, current
+  `preset="accuracy"` (10k ceiling), and accuracy plus guarded crosses. The
+  cross audition used only an inner validation split, a fixed `0.95` RMSE
+  engagement rule, and a top-six numeric diff/product candidate set. A
+  decline refit the uncrossed arm and required prediction-exact fallback.
+- **Result:** retain `accuracy`. The guarded crosses engaged `0/48` times and
+  all declines were prediction-exact. Cross selection cost `2.071968x` at 1k
+  and `2.128355x` at 10k without changing quality. The 10k/1k quality ratio
+  was `0.999914x`, worst dataset and worst leave-one-dataset-out ratios were
+  both `1.0`, fit ratio was `0.954112x`, and predict ratio was `0.890471x`.
+  The lower timing ratios reflect early stopping on this slice and are
+  telemetry, not a general speed claim.
+- **Integrity:** 96 arm rows and 24 complete cells were independently
+  reloaded; coverage, finite positive metrics, exact declined fallbacks,
+  rerun analysis, source SHA, and the rendered raw hash all matched.
+- **Artifacts:** protocol
+  [`accuracy_v2_ablation.md`](accuracy_v2_ablation.md), raw
+  [`JSON`](accuracy_v2_ablation_raw_20260723.json), and rendered
+  [`result`](accuracy_v2_ablation_result_20260723.md). Raw SHA-256:
+  `0a2f7378aa9bcada93ef6a910d557fc8e2727852a0ab21d3cf96c43e88d2279c`;
+  rendered-result SHA-256:
+  `f476c41169cb9496a296fb2bf206a8dd157a5cfad135700f3968a46f913a456f`.
+- **Disposition:** make no API or preset change, close the accuracy-v2 slot,
+  and reprofile Q against the current post-dispatch engine.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
