@@ -98,7 +98,7 @@ def test_default_auto_selects_linear_and_final_fit_matches_explicit_boolean():
     assert metadata["split"]["policy"] == "weighted_target_stratified"
     assert metadata["split"]["rows_disjoint"] is True
     assert metadata["minimum_relative_improvement"] == 0.0
-    assert metadata["minimum_gain_z"] == 1.0
+    assert metadata["minimum_gain_z"] == 2.0
     assert metadata["paired_mse_gain"] > 0.0
     assert metadata["paired_mse_gain_standard_error"] >= 0.0
     assert metadata["paired_mse_gain_z"] >= metadata["minimum_gain_z"]

@@ -61,10 +61,10 @@ def expected_identities():
 
 def configure_foundation() -> None:
     foundation.IDENTITY = (
-        "automatic-linear-selector-v3-noise-calibration-20260723"
+        "automatic-linear-selector-v3-noise-calibration-2se-20260723"
     )
     foundation.MECHANISM_ID = "automatic_linear_selector_v3"
-    foundation.INSPECTION_INDEX = 1
+    foundation.INSPECTION_INDEX = 2
     foundation.RUNNER_PATH = RUNNER_PATH
     foundation.PROTOCOL_PATH = PROTOCOL_PATH
     foundation.SELECTOR_CONTRACT_PATH = PROTOCOL_PATH

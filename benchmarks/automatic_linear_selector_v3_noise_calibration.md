@@ -16,3 +16,10 @@ no obviously noisy positive engagement. Otherwise the implementation is
 revised from the calibration evidence before any Protein or holdout result is
 read. Any later quality benchmark is a normal rerunnable benchmark, with dev
 and holdout results labeled separately.
+
+The first calibration at source `ca2f29f` found three seed-fragile
+engagements among 18 eligible cells; the largest z score was `1.974423`.
+Accordingly the implementation is revised to a `2.0`-SE rule before any
+Protein result is read. The original artifact remains create-only as
+`automatic_linear_selector_v3_noise_calibration_20260723.json`; the revised
+rule gets a separately named rerun artifact.
