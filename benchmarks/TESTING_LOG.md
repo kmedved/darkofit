@@ -3241,6 +3241,47 @@ B-archive simulation remains non-loadable, optional size telemetry.
     SHIP_RULES holdout ship-check; only a non-regressing holdout result can
     authorize automatic engagement, with `linear_leaves=False` as rollback.
 
+### 75. Selector-v3 CTR23 ship-check (2026-07-23)
+
+1. **Source:** clean candidate and harness commit
+   `d148a84c4bad9119c717d649e2d8c9e4c6704518`.
+2. **Comparator:** `linear_leaves=False` from the same source and model
+   configuration.
+3. **Evidence:** CTR23 observed release-validation. The tasks were previously
+   opened by automatic depth, so this is not pristine holdout evidence and
+   may not be used to retune the selector.
+4. **Data/splits:** nine CTR23 lockbox tasks, official repeat 0 / sample 0 /
+   folds 0–2, with task identities and split hashes checked against the
+   committed CTR23 snapshots.
+5. **Arms/policies:** constant control versus the fixed 2-SE automatic
+   selector. Current automatic depth/L2 and all other model policies are
+   shared. Declined selections must reproduce control predictions exactly.
+6. **Environment:** `darko311`, macOS arm64, 14 threads, fresh worker per
+   arm/fold; required exclusive-machine audit passed.
+7. **Execution:** `python
+   benchmarks/run_automatic_linear_selector_v3_ctr23_ship_check.py execute
+   --manifest ... --source /private/tmp/darkofit-depth-light
+   --expected-head d148a84... --output-prefix ...`.
+8. **Artifacts/hashes:** manifest `2df80293...`, launch `34fb7c07...`, raw
+   `2fcf5aed...`, result `2c770f27...`; full hashes are in the dated result
+   note.
+9. **Primary results:** equal-task RMSE `0.935613680x`, bootstrap upper
+   `0.980273900x`, worst task `1.0`, leave-one-task-out maximum
+   `0.952633650x`, and 3/6/0 task wins/ties/losses. Nine pairs selected
+   linear and 18 declined.
+10. **Failed as well as passed checks:** 54/54 rows and 27/27 pairs passed;
+    all declines were bit-exact to control. Two pre-data invocations stopped
+    harmlessly: one mistyped source SHA and one sandbox-denied process audit.
+    The unchanged command then ran with the correct SHA and OS permission.
+11. **Limitations/non-claims:** CTR23 was already observed. Three wins carry
+    the aggregate gain. Fit, prediction, and RSS ratios were `2.200467x`,
+    `1.278040x`, and `1.044868x`; this does not prove compute-frontier
+    dominance.
+12. **Decision/next action:** CTR23 passes the general half of SHIP_RULES.
+    Run the newest untouched sports-season ship-check. Only another
+    non-regressing result can authorize the automatic default; false remains
+    the documented rollback.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

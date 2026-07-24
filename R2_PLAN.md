@@ -434,6 +434,18 @@ intended reason. The selector now proceeds to the fixed SHIP_RULES holdout
 ship-check. A default still requires no holdout regression and retains
 `linear_leaves=False` as the rollback.
 
+**CTR23 ship-check, 2026-07-23:** the selector passed the general holdout
+half on all 27 official pairs. Equal-task automatic/control RMSE was
+`0.935614x` (bootstrap upper `0.980274x`), with three task wins, six exact
+ties, no losses, and worst task `1.0`. It engaged on all folds of three
+smooth regression tasks and declined 18/27 pairs; every decline reproduced
+the control prediction bit-exactly. The real cost is a `2.200467x` fit-time
+ratio (`1.278040x` prediction, `1.044868x` peak RSS), so this is quality and
+safety evidence rather than compute-frontier dominance. The selector now
+requires the newest untouched sports-season ship-check before any default
+exposure. CTR23 remains observed release-validation and must not be used for
+retuning.
+
 ## P6 — Member-policy retune (after P2 resolves)
 
 M6 v3 development comparing member recipes on the broad slice: current
