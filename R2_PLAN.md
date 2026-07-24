@@ -1,5 +1,9 @@
 # R2_PLAN — depth confirmation, catcross completion, and the successor mechanisms
 
+> **COMPLETE (2026-07-24):** everything queued here shipped in v0.12.0 or
+> was honestly closed; the v0.12 ladder ran and is recorded. Current
+> sequencing is [`R3_PLAN.md`](R3_PLAN.md). This document is history.
+
 > **Status:** owner direction, 2026-07-23. Execution instruction for Codex.
 > **Regime note:** [`SHIP_RULES.md`](SHIP_RULES.md) governs. Any remaining
 > reference in this document (or its ancestors) to Tier-D, powered fresh

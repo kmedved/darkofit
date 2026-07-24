@@ -46,7 +46,8 @@ deferred by owner decision.
    preregistration/Tier-D apparatus is retired; prior campaign records
    stand as history.
 2. [`BEAT_CHIMERABOOST_PLAN.md`](BEAT_CHIMERABOOST_PLAN.md) +
-   [`R2_PLAN.md`](R2_PLAN.md) — roadmap, victory definition, sequencing.
+   [`R3_PLAN.md`](R3_PLAN.md) — roadmap, victory definition, current
+   sequencing ([`R2_PLAN.md`](R2_PLAN.md) is complete history).
 3. [`NEXT_STEPS.md`](NEXT_STEPS.md), [`COUNTERPUNCH_PLAN.md`](COUNTERPUNCH_PLAN.md),
    [`benchmarks/SHIPPING_POLICY.md`](benchmarks/SHIPPING_POLICY.md) —
    historical context for how the evidence to date was produced.
@@ -79,9 +80,10 @@ deferred by owner decision.
   gate. Never pre-filter that selector's revival through M6's kill rule;
   any M6 v3 must draw expectations only from verdicts surviving the
   Phase F audit.
-- **Prediction speed is shape-dependent**: DarkoFit is faster than the
-  rival on the dedicated grid (0.49×) and slower on M2 panel shapes
-  (1.32×). Always report both; never collapse to one number.
+- **Prediction speed is shape-dependent**: as of the v0.12 ladder,
+  DarkoFit wins large batches (protein 0.61×) and loses small ones on
+  per-call fixed overhead (up to 10.5×). Always report both ends; never
+  collapse to one number.
 - **Historical protocols may pin 18 threads**; the current machine has
   14. Machine-infeasible replays record `lacks_power`, they are not
   silently skipped.
