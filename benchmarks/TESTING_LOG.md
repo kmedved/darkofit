@@ -3430,6 +3430,47 @@ B-archive simulation remains non-loadable, optional size telemetry.
   as the default and `ordinal_features=None` as the rollback, close this
   mechanism slot, and proceed to ensemble member-policy retuning.
 
+### 80. Ensemble-v3 member-policy retune (2026-07-23)
+
+- **Question:** does the public ensemble-v3 member recipe remain preferable to
+  the former member settings or an intermediate recipe on broad general
+  development data?
+- **Evidence class:** spent general development only. No holdout, TabArena, or
+  sports ship-check was consulted. The unrelated GPBoost comparator study does
+  not count as DarkoFit candidate-development contact or holdout use.
+- **Source and grid:** DarkoFit
+  `fb3dd4a8621328b20be9ab7af67995b791790d38`; the 10 medium M6-v3 datasets,
+  seeds 0--2, ordinary and stress-weighted views, 60 cells total. Every cell
+  used four threads, 1,500 maximum rounds, 50-round patience, and rotated arm
+  order.
+- **Arms:** matched constant-leaf single model; public current ensemble-v3
+  policy (`learning_rate=0.15`, `colsample=0.85`); legacy automatic learning
+  rate plus `colsample=1.0`; and midpoint `0.125` / `0.925`. All ensemble arms
+  used eight members, 80% without-replacement sampling, OOB early stopping,
+  and sequential scheduling.
+- **Result:** retain current. Current measured `0.943408x` the single-model
+  primary loss. The midpoint was `1.001809x` current overall and
+  `1.030807x` on its worst dataset; legacy was `1.008768x` overall and
+  `1.065336x` worst-dataset. Both alternatives failed the no-regression and
+  dataset-harm checks.
+- **Costs:** midpoint/current equal-cell geometric means were `1.198133x` fit,
+  `1.120046x` predict, and `1.086640x` safe-NPZ bytes. Legacy/current was
+  `2.111264x` fit, `2.014894x` predict, and `1.637199x` bytes. Timing is
+  single-run telemetry with rotated order, not a dedicated speed claim.
+- **Integrity:** 240 exact arm rows were independently reloaded; cell coverage,
+  finite primary metrics, resolved member policies, source SHA, rerun analysis,
+  and the rendered raw hash all matched.
+- **Artifacts:** protocol
+  [`ensemble_member_policy_retune.md`](ensemble_member_policy_retune.md), raw
+  [`JSON`](ensemble_member_policy_retune_raw_20260723.json), and rendered
+  [`result`](ensemble_member_policy_retune_result_20260723.md). Raw SHA-256:
+  `cf6ca60c3f03c67a3b473918139b344048a63bdee9b54b00efe3205cb368ed7e`;
+  rendered-result SHA-256:
+  `0dfb66810150ee6b27ba9852feeff3e077cab7043a31e520b280e87a80875e42`.
+- **Disposition:** keep the existing public `0.15` / `0.85` member policy,
+  make no API or default change, close the retune slot, and proceed to
+  accuracy-v2.
+
 ## Product behavior established by the testing
 
 ### Defaults retained

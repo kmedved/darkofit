@@ -468,12 +468,21 @@ required fresh-eyes stage boundary.
 
 ## P6 — Member-policy retune (after P2 resolves)
 
-M6 v3 development comparing member recipes on the broad slice: current
-recipe vs the rival's blessed member defaults (lr 0.15 / colsample 0.85,
-public) vs one intermediate; goal is closing the ensemble broad-quality
-wedge (+1.5% ours vs +3.5% theirs over respective singles). Winner feeds
-the ensemble opt-in's documented recipe; any default change goes through
-the SHIP_RULES ship-check.
+The original comparison wording became stale when v0.11 shipped the rival's
+public `learning_rate=0.15` / `colsample=0.85` recipe as DarkoFit's current
+ensemble-v3 policy. The corrected spent-development comparison therefore used
+the current recipe, the former auto-learning-rate / full-column recipe, and the
+midpoint `0.125` / `0.925`, with a constant-leaf single model as reference.
+
+**Result, 2026-07-23:** retain the current `0.15` / `0.85` policy. Across the
+60-cell medium M6-v3 general slice, current ensemble-v3 measured `0.943408x`
+the matched single-model primary loss. The midpoint was `1.001809x` current,
+with a `1.030807x` worst-dataset ratio, and cost `1.198133x` fit time and
+`1.086640x` archive bytes. The legacy recipe was `1.008768x` current, with a
+`1.065336x` worst-dataset ratio, `2.111264x` fit time, and `1.637199x` archive
+bytes. No public policy or constructor default changes. This closes the retune
+slot; the existing explicit v3 recipe remains the documented winner on spent
+general development evidence.
 
 ## Standing items
 
@@ -620,8 +629,11 @@ new-entity/group-shift mechanism through the normal pipeline.
    explicit selector engaged 6/6 and improved every outer-test coordinate on
    its two narrow historical domains. The one-hot donor probe remains
    unselected.
-7. **Next:** retune the ensemble member policy.
-8. Build accuracy-v2 with component ablations and A10 as the fallback.
+7. ~~Retune the ensemble member policy.~~ **Complete:** the shipped
+   `0.15` / `0.85` recipe beat both the legacy and midpoint recipes on broad
+   quality, fit time, and archive size; no policy change.
+8. **Next:** build accuracy-v2 with component ablations and A10 as the
+   fallback.
 9. Reprofile Q against the post-dispatch engine.
 
 Depth opt-in exposure and other release/documentation work do not consume a
