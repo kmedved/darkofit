@@ -15,6 +15,9 @@ Start with [Getting started](getting-started.md), then use:
   intervals, calibration, and sampling.
 - [TreeSHAP](shap.md) for supported explanation paths.
 - [Benchmarks](benchmarks.md) for the evidence boundary and current claims.
+- [TabArena tree and tree-adjacent model dossier](tabarena_tree_model_dossier.md) for a pinned
+  research review of the leading tree-based leaderboard families and scoped
+  DarkoFit experiments.
 - [Development](development.md) for local setup and test commands.
 - [FAQ](faq.md) for compatibility and troubleshooting.
 

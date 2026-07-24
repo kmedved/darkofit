@@ -79,7 +79,8 @@ The user guide is organized under [`docs/`](docs/index.md):
 [core concepts](docs/concepts.md),
 [distributional regression](docs/uncertainty.md),
 [TreeSHAP](docs/shap.md),
-[benchmarks](docs/benchmarks.md), and
+[benchmarks](docs/benchmarks.md),
+[the TabArena tree and tree-adjacent model dossier](docs/tabarena_tree_model_dossier.md), and
 [development](docs/development.md).
 The chronological [testing log](benchmarks/TESTING_LOG.md) connects the
 correctness suites, benchmark campaigns, lockbox decisions, comparator

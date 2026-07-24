@@ -3562,7 +3562,118 @@ B-archive simulation remains non-loadable, optional size telemetry.
     Stochastic gradient quantization is not presumed behavior-exact beyond
     the measured grid; Q1 must retain the float fallback and investigate the
     `1.114178x` 1M-row prediction-time reading.
+### 83. GPBoost basketball characterization v1 invalid reproducibility attempt (2026-07-23)
 
+1. **Execution date/source:** 2026-07-23; clean archive of DarkoFit commit `b666d7d5c6583f6629adb8ae43795286c1260d43`; GPBoost wheel `1.7.1.1`.
+2. **Comparators:** DarkoFit and GPBoost public defaults, plus their declared near-matched 1,000-maximum-tree lane.
+3. **Evidence class:** intended spent Tier-E descriptive third-party characterization; invalid before any result publication.
+4. **Data/splits:** frozen, already-spent basketball panel 2, 2014--2016 × three targets, player-disjoint ten-fold primary views and held-team/seen/cold guardrails; only the shared 15 numeric predictors were supplied.
+5. **Arms/policies:** random state 4; GPBoost's `GPModel`/group inputs were excluded; v1's four-thread default and near-matched-capacity settings are frozen in [`gpboost_basketball_v1_protocol.md`](gpboost_basketball_v1_protocol.md).
+6. **Environment/repeats:** `darko311`, macOS arm64, four threads, one warmup outside timing, three rotating fresh-worker blocks; idle-machine preflight found no competing Python or benchmark process.
+7. **Runner/command:** `MPLCONFIGDIR=/private/tmp/gpboost-basketball-mpl /opt/anaconda3/envs/darko311/bin/python benchmarks/bench_gpboost_basketball.py --darkofit-source /private/tmp/darkofit-gpboost-source.398bz1 --darkofit-revision b666d7d5c6583f6629adb8ae43795286c1260d43 --worker-cache /private/tmp/gpboost-basketball-mpl --output benchmarks/gpboost_basketball_v1_raw_20260723.json`.
+8. **Hashes:** protocol `8c60f702f45e49496c034498cec9e7a5e09cfadd906a1504a29f1d53fa05d564`; runner at launch `35ba9562f8863e9d55e199ab33180ad82b914f02d4c75bda158146292091f882`; no raw artifact was created because the runner failed closed.
+9. **Primary results:** none published or inspected; the post-worker reproducibility check detected different behavior fingerprints across all four arms before summary construction.
+10. **Costs, passed and failed conditions:** the twelve workers completed, but the required exact repeatability condition failed. No timing or RSS comparison is valid from this attempt.
+11. **Limitations/non-claims:** do not infer accuracy, speed, memory, or any product implication from the invalid execution. The known failure is reproducibility under the four-thread envelope, not a model-quality result.
+12. **Terminal decision/next action:** v1 is invalid and not rerun. A separately named v2, fixed single-thread execution may characterize the unchanged arms if it produces reproducible behavior; its timing is one-thread-only telemetry.
+
+### 84. GPBoost basketball characterization v2 invalid exact-prediction attempt (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; clean archive of DarkoFit commit `b666d7d5c6583f6629adb8ae43795286c1260d43`; GPBoost wheel `1.7.1.1`.
+2. **Comparators:** unchanged public-default and declared near-matched 1,000-maximum-tree DarkoFit/GPBoost lanes.
+3. **Evidence class:** intended spent Tier-E descriptive third-party characterization; invalid before any metric summary or raw artifact publication.
+4. **Data/splits:** unchanged frozen, already-spent basketball panel 2 and its nine player-disjoint target-season lineages with held-team/seen/cold views; only the shared 15 numeric predictors were supplied.
+5. **Arms/policies:** random state 4, no GPBoost `GPModel` or group input, and no parameter tuning after v1; the only changed execution control was a fixed one native thread.
+6. **Environment/repeats:** `darko311`, macOS arm64, one thread, one warmup outside timing, three rotating fresh-worker blocks; launch waited for an unrelated active benchmark to finish.
+7. **Runner/command:** `MPLCONFIGDIR=/private/tmp/gpboost-basketball-mpl-v2 /opt/anaconda3/envs/darko311/bin/python benchmarks/bench_gpboost_basketball.py --threads 1 --protocol benchmarks/gpboost_basketball_v2_protocol.md --darkofit-source /private/tmp/darkofit-gpboost-source.398bz1 --darkofit-revision b666d7d5c6583f6629adb8ae43795286c1260d43 --worker-cache /private/tmp/gpboost-basketball-mpl-v2 --output benchmarks/gpboost_basketball_v2_raw_20260723.json`.
+8. **Hashes:** protocol `ca82c2078aa4e58c744e587e3ef2790cb01f4918f876cf2aca961ec26f8e25bf`; runner launch hash `512caeece31c843ef9d36fd22c434438cc8f1f671db71d0e4523fe0d61084707`; no raw artifact was created because the exact full-prediction check failed closed.
+9. **Primary results:** none published or inspected; each arm's three full-prediction fingerprints differed despite the single-thread envelope.
+10. **Costs, passed and failed conditions:** all twelve workers completed but the v2 byte-identical-prediction requirement failed; timing and RSS from this attempt are invalid.
+11. **Limitations/non-claims:** this is not evidence of accuracy, speed, memory, or model structural instability. Do not use it to select an arm or estimate a one-thread ratio.
+12. **Terminal decision/next action:** v2 is invalid and not rerun. V3 is separately registered before outcome inspection: it requires identical split/model structure and reports all repeat-level metrics/fingerprints rather than treating an external prediction hash as a hidden quality gate.
+
+### 85. GPBoost basketball characterization v3 (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; clean archive of DarkoFit commit `b666d7d5c6583f6629adb8ae43795286c1260d43`; GPBoost wheel `1.7.1.1`.
+2. **Comparators:** DarkoFit and GPBoost public defaults; separately, the declared near-matched maximum-tree-budget lane. Both saw only the same 15 numeric predictors.
+3. **Evidence class:** spent Tier-E descriptive third-party characterization. It authorizes no DarkoFit default, release, Pareto, fresh-data, or GPBoost-random-effects claim.
+4. **Data/splits:** already-spent panel 2: 2014--2016 × `minutes_per_game`, `game_score`, and `box_plus_minus`; nine equally weighted target-season lineages, frozen ten-fold `GroupKFold(bref_id)` primary views, and all/seen/cold held-team guardrails.
+5. **Arms/policies:** public defaults retain GPBoost's 100 and DarkoFit's 1,000 trees. The capacity lane gives both at most 1,000 rounds, LR 0.1, depth 6, L2 1, 128 bins, full sampling, and no validation set; GPBoost kept 1,000 trees while DarkoFit retained 516--721. No `GPModel`, group ID, or additional input was supplied.
+6. **Environment/repeats:** `darko311`, macOS arm64, one native thread, one first-fold warmup outside timing, three rotating fresh-worker blocks, and idle-machine preflight. Split/model/fitted-tree structure was identical across repeats; the artifact retains all prediction fingerprints and repeat metrics.
+7. **Runner/command:** `MPLCONFIGDIR=/private/tmp/gpboost-basketball-mpl-v3 /opt/anaconda3/envs/darko311/bin/python benchmarks/bench_gpboost_basketball.py --threads 1 --protocol benchmarks/gpboost_basketball_v3_protocol.md --darkofit-source /private/tmp/darkofit-gpboost-source.398bz1 --darkofit-revision b666d7d5c6583f6629adb8ae43795286c1260d43 --worker-cache /private/tmp/gpboost-basketball-mpl-v3 --output benchmarks/gpboost_basketball_v3_raw_20260723.json`.
+8. **Hashes:** protocol `4d6cd4879016119562f025815f8cd65d199863f71a6ce9abab97fb6a5acfb87c`; runner `f366fbe3f8068e1a0f2afa5f2e558b223b92345b1b75cfa127285436a26afb1f`; raw `5bd3770decce28b7e8c9f9a106ba0357d1e1002bca82500d1dd5c1c51879a44e`; readable result [`gpboost_basketball_v3_result.md`](gpboost_basketball_v3_result.md).
+9. **Primary results:** public-default GPBoost/DarkoFit geometric RMSE ratios were `1.006029` primary, `1.028571` held-team, and `1.020030` cold-player. Capacity-lane ratios were `1.056729`, `1.087318`, and `1.074953`, respectively. All three blocks gave the same displayed values.
+10. **Costs, passed and failed conditions:** default GPBoost/DarkoFit median ratios were `0.009887` fit, `0.126731` predict, `0.011050` wall, and `0.666369` RSS, primarily a 100-versus-1,000-tree policy difference. Capacity-lane ratios were `0.955725`, `1.503465`, `0.957989`, and `1.661392`; GPBoost fit/wall was about 4% lower but prediction was about 50% slower and RSS about 66% higher. No pass/fail performance gate exists.
+11. **Limitations/non-claims:** already-spent basketball-only data, one-thread telemetry, different tree-growth/minimum-Hessian semantics, and feature-only inputs. Do not generalize to GPBoost's random-effects use cases or full-machine throughput.
+12. **Terminal decision/next action:** characterization complete. Do not tune either arm on this spent panel; use the v3 result as descriptive external context only.
+
+### 86. GPBoost regularization tuning and fresh basketball confirmation v2 (2026-07-23)
+
+1. **Execution date/source:** 2026-07-23; clean DarkoFit archive from commit
+   `974b5eeaad96df28f3577335a0defab6147428e7`; GPBoost wheel `1.7.1.1`.
+2. **Comparators:** DarkoFit public default, GPBoost public default, and one
+   frozen regularized GPBoost configuration. All three saw only the shared 15
+   numeric predictors; no `GPModel`, player/team ID, or group-effect input was
+   supplied.
+3. **Evidence class:** user-authorized fresh Tier-E external-comparator
+   characterization. It authorizes no DarkoFit default, release, Pareto, or
+   broad GPBoost mixed-model claim.
+4. **Data/splits:** the source-attested registry used 2008--2013 for 18
+   player-disjoint development target-season lineages, then held 2020 aside
+   for three player-disjoint ten-fold primary lineages plus a middle-third
+   held-team all/seen/cold guardrail. The 2020 target hashes were identical
+   across all nine workers.
+5. **Arms/policies:** `TPESampler(seed=20260723)` evaluated 48 sequential
+   trials with 2,000-round/50-round-early-stop candidate fitting. Trial 36,
+   selected before confirmation, set LR `0.016033593777058583`, 30 leaves,
+   depth 3, min child samples 10, min child weight `0.24612149472196407`, L2
+   `1.644117697870773`, L1 `0.376256053156132`, column sample
+   `0.8213733831219489`, row sample `0.7945928828064571`, and 255 bins. The
+   tuned confirmation arm selects an inner group-safe iteration, then refits
+   the complete outer training rows once.
+6. **Environment/repeats:** `darko311`, macOS arm64, four native threads,
+   one discarded first-fold warmup per fresh worker, and three rotating blocks
+   (nine workers) after an idle-machine preflight. The original v1 first
+   worker wrote no output because undefined one-row R-squared could not be
+   JSON serialized; V2 was registered before the valid run and changes only
+   that field to `null` below two rows.
+7. **Runner/command:** `MPLCONFIGDIR=/private/tmp/gpboost-sports-tuning-mpl
+   OMP_NUM_THREADS=4 MKL_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4
+   VECLIB_MAXIMUM_THREADS=4 NUMEXPR_NUM_THREADS=4
+   /opt/anaconda3/envs/darko311/bin/python
+   benchmarks/run_gpboost_sports_tuning_v1.py confirm --protocol
+   benchmarks/gpboost_sports_tuning_v2_protocol.md --registry-protocol
+   benchmarks/gpboost_sports_tuning_v1_protocol.md --registry
+   benchmarks/gpboost_sports_tuning_v1_registry_20260723.json
+   --development-output benchmarks/gpboost_sports_tuning_v1_development_20260723.json
+   --darkofit-source /private/tmp/darkofit-gpboost-tuning-source.xsS4Bj
+   --darkofit-revision 974b5eeaad96df28f3577335a0defab6147428e7
+   --confirmation-output
+   benchmarks/gpboost_sports_tuning_v2_confirmation_20260723.json --threads 4`.
+8. **Hashes:** registry `6141142e69f1aca57df38573df2ad5d0167bdd1225149e7e31422176df6f96fe`;
+   development `c4e6dc8ffd0e3a28fd48a1b1cd860cc71b484bdb52da8e3d9d541b6fd6fb2e76`;
+   V2 protocol `04d2f2a38c7e152c319a90dd163bd8522c07a36bfff484fa1399d2832313b738`;
+   runner `a274ff8176991579b2164b8b5733a5e56a44c213c83ecb44149783fcd7ad31b7`;
+   raw `4edd7eaba4597278acbc1c6d136889250dcd67215919fefefec568dee67570ef`;
+   readable result [`gpboost_sports_tuning_v2_result.md`](gpboost_sports_tuning_v2_result.md).
+9. **Primary results:** tuned GPBoost/DarkoFit geometric RMSE ratios were
+   `0.962774` primary, `0.890823` held-team, and `0.888861` cold-player.
+   Tuned/default-GPBoost ratios were `0.915256`, `0.911356`, and `0.910775`.
+   Default-GPBoost/DarkoFit ratios were `1.051918`, `0.977470`, and
+   `0.975940`. All displayed quality ratios were the same in all three blocks.
+10. **Costs, passed and failed conditions:** tuned-GPBoost/DarkoFit median
+    ratios were `0.811465` total fit time, `0.268411` prediction time,
+    `0.810221` steady wall time, and `0.778300` peak RSS. The V2 artifact
+    completed all nine workers and its structural/finite-score contract; no
+    pass/fail performance gate applies.
+11. **Limitations/non-claims:** only three 2020 basketball target lineages,
+    four-thread telemetry, one source export, feature-only inputs, different
+    model-growth semantics, and no uncertainty/power analysis. Do not infer a
+    DarkoFit product change, general Pareto win, or GPBoost random-effects
+    result.
+12. **Terminal decision/next action:** the regularized GPBoost recipe is the
+    only supported improvement from this study. Retain it as external context;
+    do not make a DarkoFit change or tune again on these 2008--2013/2020 rows.
 ## Product behavior established by the testing
 
 ### Defaults retained
