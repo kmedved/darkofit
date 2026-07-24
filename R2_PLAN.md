@@ -285,6 +285,19 @@ categorical targets; any small-data successor must return through development
 before the standard ship-check (clearly better on dev, not worse on the
 holdout, revertible flag), respecting one-automatic-default-per-release.
 
+The guardrail uses the already-spent basketball creator data and its
+established ten folds, alphabetical held-team split, player-group-aware
+internal validation, and genuinely cold-player subset. The test view is the
+established 15 numeric features plus the four natural categorical fields
+`Pos`, categorical `Age`, `Tm`, and derived `starter`; the numeric-only sports
+panel cannot exercise catcross. Compare the unchanged private automatic
+selector with its explicit-off lane in fresh paired workers. Before quality
+execution, require: equal-fold RMSE geomean ≤ `1.000`, worst fold ≤ `1.020`,
+all-held-team and cold-player RMSE ratios each ≤ `1.000`, and selector
+eligibility on all 11 coordinates. A declined selection must be exact control
+fallback. This is spent opt-in guardrail evidence, never a holdout/default
+claim.
+
 ## P3 — Depth `"auto"` opt-in exposure (product work, authorized)
 
 Independent of P1's outcome. The ensemble-v3 exposure pattern, smaller:
