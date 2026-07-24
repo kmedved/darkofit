@@ -80,6 +80,27 @@ amortization and engagement, not mechanism quality.
 
 ## 0.5 The foundation gate (3 days, dev data only, owner go required)
 
+> **VERDICT (2026-07-24): gate complete — salvage confirmed on all three
+> pre-stated readings.** Result:
+> `benchmarks/r3_foundation_gate_result_20260724.md` on branch
+> `codex/r3-foundation-gate-20260724` at `4f70938`. Diamonds closed at
+> 1.0045x vs donor under real defaults with healthcare's bit-exact
+> decline intact; the ledger resolved the cost deficits into named
+> policy/dispatch (default retains 1,000 trees where the donor stops at
+> 43–63; B3's threshold leaves a 4.6x forced-parallel win unengaged;
+> members pay no selector race); matched members collapsed 95.6% of the
+> ensemble lift wedge before forcing horizons, and forcing donor
+> horizons closed it entirely (0.999). The donor-core proof is **not
+> funded**; the re-fork question is closed on evidence. §2 sequencing
+> below is updated with the post-gate facts. Corrections to this plan's
+> own assumptions, recorded honestly: v3 members do NOT run the
+> audition races (the airfoil-17x arithmetic was wrong — the cost is
+> the B3 threshold plus horizon policy), so the catcross flip carries
+> no 8x ensemble cost multiplier and is naturally scoped to
+> single-model fits; and the predict deficit was roughly half
+> removable overhead (now removed: 1-row −52% default, −68% ensemble8,
+> 24/24 bit-identical fingerprints) and half retained-tree policy.
+
 **Question:** are the v0.12 deficits removable orchestration costs
 (salvage: continue this plan in place), or is the product execution
 graph structurally inferior (trigger the re-fork program)? The
@@ -307,27 +328,45 @@ Unchanged technical scope otherwise (lane + byte-identical float
 fallback + seed-exact repeatability + quality characterization + the
 1M predict-ratio anomaly).
 
-## 2. Sequencing and releases
+## 2. Sequencing and releases (post-gate, 2026-07-24)
 
-**Gate first (3 days, owner go).** Then, in the salvage world:
+The gate reordered the work. The dominant remaining deficits are, in
+measured order: **default horizon/stopping policy** (1,000 trees built
+and walked where the donor retains 43–63 — the largest single lever on
+both fit and predict at small n, and a quality-changing default),
+**B3's engagement threshold** (behavior-exact 4.6x on tiny ensembles),
+and the residual predict tail after P1.
 
-- **v0.13** = P1 (both waves) + P3 parent-level-selector + sharing-
-  boundary work + P2 as the release's one quality default (scoped per
-  gate item b), ladder rerun against the then-current donor release
-  (pin refresh at worker zero; they will have moved past 0.23.0).
-- **v0.14** = the P4-derived ensemble mechanism as its quality default
-  + remaining P3 + Q1.
+- **Integration first:** review and merge the gate branch (P1
+  behavior-exact commits, the selector-composition fix, harnesses,
+  sentinel). Verified: `categorical_crosses=False` remains the product
+  default on the branch; the flip stays out of main until its
+  ship-check passes.
+- **v0.13** = integrated P1 + **B3 threshold reshape** (behavior-exact,
+  measured envelope, memory guard, rollback) + **P2 catcross as the
+  release's one quality default**, now unblocked: run the CTR23 +
+  newest-sports ship-check, ship scoped to single-model fits with the
+  release claim scoped to match (members don't audition; D8 diamonds
+  stays open until decision-passing exists). Ladder at release against
+  the then-current donor pin.
+- **v0.14** = **default horizon/early-stopping policy** as its one
+  quality default, designed from the ledger + matched-member evidence
+  (the donor-horizon replay reaching 0.999 is the existence proof).
+  Evaluate it on the quality-vs-compute frontier at the default point,
+  holdout-checked like any quality default; an explicit small quality
+  trade for a large cost win is an owner sign-off, not a silent ship.
+  Member horizon policy rides the same coherent flag if it can honestly
+  be one policy; otherwise it queues.
+- **v0.15 candidate** = parent-level decision passing to members
+  (extends catcross + linear leaves to ensembles; fixes D8 diamonds),
+  plus Q1 and any remaining P3 tail.
 - v0.13 tracking targets (not continuation gates): D0/M0 quality ≤1.00
-  with diamonds ≤1.05; D0 predict ≤1.3x aggregate, ≤1.5x worst; D0 fit
-  ≤1.8x; D8/M8 quality ≤1.02. **Stop/cutover criteria at the v0.13
-  ladder** (any of these convenes the re-fork decision immediately —
-  the two-release runway is not unconditional): D0/M0 quality > 1.00
-  or diamonds > 1.05 despite P2; aggregate D0 predict > 2x with the
-  full P1 list landed; D8 worst small-set fit > 8x after P3 wave 1;
-  or rival velocity reopening feature gaps while these remain open.
-
-In the re-fork world, §0.5's program supersedes this section and gets
-its own plan document with the port bill and layered architecture.
+  with diamonds ≤1.05; D0 predict ≤2x aggregate on registered batches
+  (horizon-limited until v0.14); D8 worst small-set fit ≤4x. The v0.13
+  ladder still carries the stop criteria: rival velocity reopening
+  feature gaps, or regressions against these targets, convene the
+  strategy question again — but the re-fork presumption is now closed
+  and would need new evidence, not a stale reading.
 
 ## 3. Discipline notes
 
