@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any, Mapping, Sequence
 
 import pytest
 
@@ -25,6 +26,26 @@ RESULT_SELF_SHA256 = (
 
 def _result():
     return json.loads(RESULT.read_text(encoding="utf-8"))
+
+
+def _assert_recomputed_equal(actual: Any, expected: Any) -> None:
+    """Compare deterministic simulation output across Python/NumPy builds."""
+    if isinstance(expected, Mapping):
+        assert isinstance(actual, Mapping)
+        assert set(actual) == set(expected)
+        for key in expected:
+            _assert_recomputed_equal(actual[key], expected[key])
+        return
+    if isinstance(expected, Sequence) and not isinstance(expected, (str, bytes)):
+        assert isinstance(actual, Sequence) and not isinstance(actual, (str, bytes))
+        assert len(actual) == len(expected)
+        for actual_item, expected_item in zip(actual, expected):
+            _assert_recomputed_equal(actual_item, expected_item)
+        return
+    if isinstance(expected, float):
+        assert actual == pytest.approx(expected, rel=1e-14, abs=1e-15)
+        return
+    assert actual == expected
 
 
 def test_power_result_is_create_only_hash_bound_and_valid():
@@ -57,7 +78,7 @@ def test_primary_power_recomputes_from_frozen_contract_and_inputs():
         ],
     )
 
-    assert recomputed == result["primary_scenario"]
+    _assert_recomputed_equal(recomputed, result["primary_scenario"])
     assert recomputed["pass_probability"] == pytest.approx(0.998)
     assert recomputed["wilson_lower_bound"] == pytest.approx(
         0.99665735839545
