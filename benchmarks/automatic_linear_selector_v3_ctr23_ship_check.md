@@ -42,4 +42,3 @@ passes, the sports-season ship-check remains required before exposure.
 
 Benchmark bugs are fixed and rerun as normal software. Outputs are
 create-only so each material run remains auditable.
-
