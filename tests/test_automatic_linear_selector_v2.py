@@ -6,6 +6,7 @@ import pytest
 from sklearn.base import clone
 
 from darkofit import DarkoClassifier, DarkoRegressor
+from darkofit.sklearn_api import _paired_mse_gain_statistics
 
 
 def _smooth_data(n_samples=1400, seed=17):
@@ -44,6 +45,41 @@ def _rewrite_header(source, destination, mutate):
     np.savez_compressed(destination, **arrays)
 
 
+def test_paired_gain_statistics_match_unweighted_and_weighted_definitions():
+    y = np.array([0.0, 1.0, 2.0, 4.0])
+    constant = np.array([0.5, 0.0, 3.0, 2.0])
+    linear = np.array([0.1, 0.9, 2.2, 3.5])
+    differences = (y - constant) ** 2 - (y - linear) ** 2
+
+    gain, standard_error, z_score = _paired_mse_gain_statistics(
+        y, constant, linear
+    )
+    assert gain == pytest.approx(np.mean(differences))
+    assert standard_error == pytest.approx(
+        np.std(differences, ddof=1) / np.sqrt(len(y))
+    )
+    assert z_score == pytest.approx(gain / standard_error)
+
+    weights = np.array([0.5, 1.0, 1.5, 3.0])
+    gain, standard_error, z_score = _paired_mse_gain_statistics(
+        y, constant, linear, weights
+    )
+    weight_sum = np.sum(weights)
+    effective_n = weight_sum**2 / np.dot(weights, weights)
+    expected_gain = np.dot(weights, differences) / weight_sum
+    expected_variance = (
+        np.dot(weights, (differences - expected_gain) ** 2)
+        / weight_sum
+        * effective_n
+        / (effective_n - 1.0)
+    )
+    assert gain == pytest.approx(expected_gain)
+    assert standard_error == pytest.approx(
+        np.sqrt(expected_variance / effective_n)
+    )
+    assert z_score == pytest.approx(gain / standard_error)
+
+
 def test_default_auto_selects_linear_and_final_fit_matches_explicit_boolean():
     X, y = _smooth_data()
     previous_threads = numba.get_num_threads()
@@ -61,7 +97,11 @@ def test_default_auto_selects_linear_and_final_fit_matches_explicit_boolean():
     assert metadata["split"]["source"] == "automatic_holdout"
     assert metadata["split"]["policy"] == "weighted_target_stratified"
     assert metadata["split"]["rows_disjoint"] is True
-    assert metadata["relative_validation_improvement"] >= 0.03
+    assert metadata["minimum_relative_improvement"] == 0.0
+    assert metadata["minimum_gain_z"] == 1.0
+    assert metadata["paired_mse_gain"] > 0.0
+    assert metadata["paired_mse_gain_standard_error"] >= 0.0
+    assert metadata["paired_mse_gain_z"] >= metadata["minimum_gain_z"]
     np.testing.assert_array_equal(automatic.predict(X), explicit.predict(X))
     assert numba.get_num_threads() == previous_threads
     assert automatic.best_n_estimators_ == explicit.best_n_estimators_
@@ -242,6 +282,7 @@ def test_auto_safe_npz_round_trips_and_rejects_selector_corruption(tmp_path):
     first_path = tmp_path / "automatic-selector.npz"
     second_path = tmp_path / "automatic-selector-second.npz"
     corrupt_path = tmp_path / "automatic-selector-corrupt.npz"
+    corrupt_gain_path = tmp_path / "automatic-selector-corrupt-gain.npz"
     model.save_model(first_path)
 
     loaded = DarkoRegressor.load_model(first_path)
@@ -262,6 +303,21 @@ def test_auto_safe_npz_round_trips_and_rejects_selector_corruption(tmp_path):
     _rewrite_header(first_path, corrupt_path, corrupt)
     with pytest.raises(ValueError, match="selector"):
         DarkoRegressor.load_model(corrupt_path)
+
+    def corrupt_gain(header):
+        records = (
+            header["wrapper"]["state"]["automatic_linear_selector"],
+            header["auto_params"]["automatic_linear_selector"],
+            header["auto_params"]["diagnostics"][
+                "automatic_linear_selector"
+            ],
+        )
+        for record in records:
+            record["paired_mse_gain_z"] += 0.5
+
+    _rewrite_header(first_path, corrupt_gain_path, corrupt_gain)
+    with pytest.raises(ValueError, match="selector"):
+        DarkoRegressor.load_model(corrupt_gain_path)
 
     fallback = DarkoRegressor(**_params()).fit(X[:300], y[:300])
     fallback_path = tmp_path / "automatic-selector-fallback.npz"

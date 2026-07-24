@@ -106,9 +106,10 @@ _GROUP_CENTERED_CROSSES_DATA_FALLBACK_REASONS = frozenset({
     "no_numeric_features",
     "below_min_samples",
 })
-_AUTOMATIC_LINEAR_SELECTOR_VERSION = 1
+_AUTOMATIC_LINEAR_SELECTOR_VERSION = 2
 _AUTOMATIC_LINEAR_SELECTOR_VALIDATION_FRACTION = 0.2
-_AUTOMATIC_LINEAR_SELECTOR_MIN_RELATIVE_IMPROVEMENT = 0.03
+_AUTOMATIC_LINEAR_SELECTOR_MIN_RELATIVE_IMPROVEMENT = 0.0
+_AUTOMATIC_LINEAR_SELECTOR_MIN_GAIN_Z = 1.0
 _AUTOMATIC_LINEAR_SELECTOR_FALLBACK_REASONS = frozenset({
     "ensemble",
     "preset",
@@ -232,6 +233,74 @@ def _normalize_linear_leaves(linear_leaves):
     if isinstance(linear_leaves, str) and linear_leaves.strip().lower() == "auto":
         return "auto"
     raise TypeError("linear_leaves must be a bool or 'auto'")
+
+
+def _paired_mse_gain_statistics(
+    y_true, constant_prediction, linear_prediction, sample_weight=None
+):
+    """Return paired MSE gain, its standard error, and a finite z score."""
+    y_true = np.asarray(y_true, dtype=np.float64)
+    constant_prediction = np.asarray(constant_prediction, dtype=np.float64)
+    linear_prediction = np.asarray(linear_prediction, dtype=np.float64)
+    if (
+        y_true.ndim != 1
+        or constant_prediction.shape != y_true.shape
+        or linear_prediction.shape != y_true.shape
+        or y_true.size < 2
+        or not np.all(np.isfinite(y_true))
+        or not np.all(np.isfinite(constant_prediction))
+        or not np.all(np.isfinite(linear_prediction))
+    ):
+        raise RuntimeError(
+            "automatic linear selector predictions are invalid"
+        )
+    differences = (
+        np.square(y_true - constant_prediction)
+        - np.square(y_true - linear_prediction)
+    )
+    if sample_weight is None:
+        gain = float(np.mean(differences))
+        standard_error = float(
+            np.std(differences, ddof=1) / math.sqrt(differences.size)
+        )
+    else:
+        weights = np.asarray(sample_weight, dtype=np.float64)
+        if (
+            weights.shape != y_true.shape
+            or not np.all(np.isfinite(weights))
+            or np.any(weights < 0.0)
+            or not np.any(weights > 0.0)
+        ):
+            raise RuntimeError(
+                "automatic linear selector validation weights are invalid"
+            )
+        weight_sum = float(np.sum(weights))
+        weight_square_sum = float(np.dot(weights, weights))
+        effective_n = weight_sum * weight_sum / weight_square_sum
+        gain = float(np.dot(weights, differences) / weight_sum)
+        if effective_n <= 1.0:
+            standard_error = float(np.finfo(np.float64).max)
+        else:
+            centered_variance = float(
+                np.dot(weights, np.square(differences - gain)) / weight_sum
+            )
+            unbiased_variance = (
+                centered_variance * effective_n / (effective_n - 1.0)
+            )
+            standard_error = float(
+                math.sqrt(max(0.0, unbiased_variance) / effective_n)
+            )
+    if not np.isfinite(gain) or standard_error < 0.0:
+        raise RuntimeError("automatic linear selector gain is invalid")
+    if standard_error == 0.0:
+        z_score = (
+            0.0
+            if gain == 0.0
+            else math.copysign(np.finfo(np.float64).max, gain)
+        )
+    else:
+        z_score = gain / standard_error
+    return float(gain), float(standard_error), float(z_score)
 
 
 def _normalize_n_ensembles(n_ensembles):
@@ -2188,10 +2257,14 @@ def _validate_automatic_linear_selector_metadata(metadata, booster=None):
         "final_linear_leaves_active",
         "reason",
         "minimum_relative_improvement",
+        "minimum_gain_z",
         "split",
         "constant_validation_rmse",
         "linear_validation_rmse",
         "relative_validation_improvement",
+        "paired_mse_gain",
+        "paired_mse_gain_standard_error",
+        "paired_mse_gain_z",
         "selection_fits",
         "selection_total_seconds",
     }
@@ -2205,6 +2278,7 @@ def _validate_automatic_linear_selector_metadata(metadata, booster=None):
     final_active = metadata.get("final_linear_leaves_active")
     reason = metadata.get("reason")
     threshold = metadata.get("minimum_relative_improvement")
+    minimum_gain_z = metadata.get("minimum_gain_z")
     total_seconds = metadata.get("selection_total_seconds")
     fit_seed = metadata.get("fit_random_state_seed")
     if (
@@ -2229,6 +2303,9 @@ def _validate_automatic_linear_selector_metadata(metadata, booster=None):
         or not isinstance(threshold, (int, float))
         or float(threshold)
         != _AUTOMATIC_LINEAR_SELECTOR_MIN_RELATIVE_IMPROVEMENT
+        or isinstance(minimum_gain_z, bool)
+        or not isinstance(minimum_gain_z, (int, float))
+        or float(minimum_gain_z) != _AUTOMATIC_LINEAR_SELECTOR_MIN_GAIN_Z
         or isinstance(total_seconds, bool)
         or not isinstance(total_seconds, (int, float))
         or not np.isfinite(float(total_seconds))
@@ -2314,6 +2391,9 @@ def _validate_automatic_linear_selector_metadata(metadata, booster=None):
         metadata.get("linear_validation_rmse"),
     )
     margin = metadata.get("relative_validation_improvement")
+    paired_gain = metadata.get("paired_mse_gain")
+    paired_gain_se = metadata.get("paired_mse_gain_standard_error")
+    paired_gain_z = metadata.get("paired_mse_gain_z")
     if eligible:
         if (
             fit_seed is None
@@ -2345,6 +2425,40 @@ def _validate_automatic_linear_selector_metadata(metadata, booster=None):
         ):
             raise ValueError(
                 "invalid DarkoFit model: automatic linear selector margin is invalid"
+            )
+        for value in (paired_gain, paired_gain_se, paired_gain_z):
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not np.isfinite(float(value))
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: automatic linear selector "
+                    "paired-gain state is invalid"
+                )
+        if float(paired_gain_se) < 0.0:
+            raise ValueError(
+                "invalid DarkoFit model: automatic linear selector "
+                "paired-gain state is invalid"
+            )
+        expected_z = (
+            0.0
+            if float(paired_gain_se) == 0.0 and float(paired_gain) == 0.0
+            else math.copysign(
+                np.finfo(np.float64).max, float(paired_gain)
+            )
+            if float(paired_gain_se) == 0.0
+            else float(paired_gain) / float(paired_gain_se)
+        )
+        if not math.isclose(
+            float(paired_gain_z),
+            expected_z,
+            rel_tol=1e-12,
+            abs_tol=1e-15,
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: automatic linear selector "
+                "paired-gain state is inconsistent"
             )
         expected_fit_fields = {
             "name",
@@ -2383,7 +2497,8 @@ def _validate_automatic_linear_selector_metadata(metadata, booster=None):
                 )
         if resolved and (
             reason != "selected_linear"
-            or float(margin) < float(threshold)
+            or float(paired_gain) <= 0.0
+            or float(paired_gain_z) < float(minimum_gain_z)
             or fits[1]["linear_leaves_active"] is not True
         ):
             raise ValueError(
@@ -2391,10 +2506,13 @@ def _validate_automatic_linear_selector_metadata(metadata, booster=None):
             )
         if not resolved and (
             (
-                reason == "margin_below_threshold"
+                reason == "gain_not_above_noise"
                 and (
                     fits[1]["linear_leaves_active"] is not True
-                    or float(margin) >= float(threshold)
+                    or (
+                        float(paired_gain) > 0.0
+                        and float(paired_gain_z) >= float(minimum_gain_z)
+                    )
                 )
             )
             or (
@@ -2402,7 +2520,7 @@ def _validate_automatic_linear_selector_metadata(metadata, booster=None):
                 and fits[1]["linear_leaves_active"] is not False
             )
             or reason
-            not in {"margin_below_threshold", "linear_candidate_inactive"}
+            not in {"gain_not_above_noise", "linear_candidate_inactive"}
         ):
             raise ValueError(
                 "invalid DarkoFit model: automatic linear selector decision is invalid"
@@ -2449,6 +2567,9 @@ def _validate_automatic_linear_selector_metadata(metadata, booster=None):
         or reason not in _AUTOMATIC_LINEAR_SELECTOR_FALLBACK_REASONS
         or scores != (None, None)
         or margin is not None
+        or paired_gain is not None
+        or paired_gain_se is not None
+        or paired_gain_z is not None
         or fits != []
         or float(total_seconds) != 0.0
         or split.get("source") != "none"
@@ -8937,8 +9058,9 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
     linear_leaves : {False, True, "auto"}, default "auto"
         Experimental local-linear leaves for scalar RMSE CatBoost-mode fits.
         ``"auto"`` auditions constant and linear leaves on a deterministic
-        validation split, selects linear leaves only for at least a 3% RMSE
-        improvement, and otherwise retains exact constant-leaf behavior.
+        validation split, selects linear leaves only when the paired per-row
+        MSE gain is positive and at least one standard error above zero, and
+        otherwise retains exact constant-leaf behavior.
         Unsupported and small fits fall back to constant leaves with recorded
         provenance. Explicit booleans bypass the selector.
     linear_lambda : float, default 1.0
@@ -9149,10 +9271,14 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             "minimum_relative_improvement": (
                 _AUTOMATIC_LINEAR_SELECTOR_MIN_RELATIVE_IMPROVEMENT
             ),
+            "minimum_gain_z": _AUTOMATIC_LINEAR_SELECTOR_MIN_GAIN_Z,
             "split": self._automatic_linear_selector_empty_split(),
             "constant_validation_rmse": None,
             "linear_validation_rmse": None,
             "relative_validation_improvement": None,
+            "paired_mse_gain": None,
+            "paired_mse_gain_standard_error": None,
+            "paired_mse_gain_z": None,
             "selection_fits": [],
             "selection_total_seconds": 0.0,
         }
@@ -9449,6 +9575,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
 
         selection_started = time.perf_counter_ns()
         selection_fits = []
+        selection_models = []
         for name, linear_leaves in (("constant", False), ("linear", True)):
             candidate = clone(self).set_params(
                 linear_leaves=linear_leaves,
@@ -9484,7 +9611,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                     name, candidate, seconds
                 )
             )
-            del candidate
+            selection_models.append(candidate)
         selection_seconds = (time.perf_counter_ns() - selection_started) / 1e9
         constant_score = selection_fits[0]["validation_rmse"]
         linear_score = selection_fits[1]["validation_rmse"]
@@ -9492,18 +9619,28 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             margin = 0.0 if linear_score == 0.0 else -1.0
         else:
             margin = (constant_score - linear_score) / constant_score
+        validation_X, validation_y = selection_eval_set
+        paired_gain, paired_gain_se, paired_gain_z = (
+            _paired_mse_gain_statistics(
+                validation_y,
+                selection_models[0].predict(validation_X),
+                selection_models[1].predict(validation_X),
+                selection_eval_weight,
+            )
+        )
+        del selection_models
         linear_active = selection_fits[1]["linear_leaves_active"]
         selected = bool(
             linear_active
-            and margin
-            >= _AUTOMATIC_LINEAR_SELECTOR_MIN_RELATIVE_IMPROVEMENT
+            and paired_gain > 0.0
+            and paired_gain_z >= _AUTOMATIC_LINEAR_SELECTOR_MIN_GAIN_Z
         )
         decision_reason = (
             "selected_linear"
             if selected
             else "linear_candidate_inactive"
             if not linear_active
-            else "margin_below_threshold"
+            else "gain_not_above_noise"
         )
         metadata = {
             "version": _AUTOMATIC_LINEAR_SELECTOR_VERSION,
@@ -9517,10 +9654,14 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             "minimum_relative_improvement": (
                 _AUTOMATIC_LINEAR_SELECTOR_MIN_RELATIVE_IMPROVEMENT
             ),
+            "minimum_gain_z": _AUTOMATIC_LINEAR_SELECTOR_MIN_GAIN_Z,
             "split": split,
             "constant_validation_rmse": float(constant_score),
             "linear_validation_rmse": float(linear_score),
             "relative_validation_improvement": float(margin),
+            "paired_mse_gain": paired_gain,
+            "paired_mse_gain_standard_error": paired_gain_se,
+            "paired_mse_gain_z": paired_gain_z,
             "selection_fits": selection_fits,
             "selection_total_seconds": float(selection_seconds),
         }
