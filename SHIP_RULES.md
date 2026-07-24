@@ -37,6 +37,11 @@ layer. And at most **one quality-changing automatic default ships per
 release**, so each holdout reading stays interpretable; behavior-exact
 changes and opt-ins ride alongside freely.
 
+Unrelated comparator studies do not consume DarkoFit evidence. In
+particular, the GPBoost study is separate model research: it does not count
+as development contact, a holdout inspection, or contamination for any
+DarkoFit mechanism.
+
 ## The scoreboard
 
 The milestone compute ladder against ChimeraBoost's **current release**

@@ -528,6 +528,19 @@ papercut headcount as the audit's finding.)
    donor hypothesis: run a small DarkoFit-local probe before believing it
    transfers. Decide after catcross lands which categorical mechanism
    (this or the declared-ordinal selector) goes next.
+
+**Categorical mechanism decision, 2026-07-23:** pursue the declared-order
+path next. The DarkoFit-local evidence is unusually direct: source-declared,
+target-free ordinal encoding improved all 33 measured coordinates and reduced
+equal-dataset RMSE by `17.291%`; the only failed gate was the causal-path
+inference ratio (`1.265169x` against a historical `1.25x` ceiling). By
+contrast, one-hot-255 is still only a CatBoost donor result, with measured
+dataset regressions and no DarkoFit-local transfer evidence. First optimize
+the existing ordinal transform without changing predictions, then build the
+smallest native-vs-ordinal automatic audition restricted to explicit mappings
+and ordered pandas categoricals. Integer codes merely listed in
+`cat_features` are not an external order declaration and cannot trigger the
+selector. `ordinal_features=None` remains the exact rollback.
 5. **Q reprofile** — last, against the post-dispatch engine.
 
 **Accuracy-v2 integration project (the capstone, not a revival list):**
@@ -571,11 +584,16 @@ new-entity/group-shift mechanism through the normal pipeline.
    `categorical_crosses=True` opt-in, and record the small-data selector
    successor.~~ **Complete:** public default remains `False`; explicit `True`
    runs the supported automatic audition.
-4. **Next:** build B3's deterministic minimum-work threshold with sequential
-   fallback.
-5. Rebuild the linear-leaf selector with a noise- and cost-aware margin.
-6. After catcross, choose one next categorical mechanism: the declared-order
-   selector or the small DarkoFit-local one-hot donor probe.
+4. ~~Build B3's deterministic minimum-work threshold with sequential
+   fallback.~~ **Complete:** automatic activation is behavior-exact inside
+   the measured envelope, preserves the sequential fallback and rollback,
+   and records the resolved route.
+5. ~~Rebuild the linear-leaf selector with a noise- and cost-aware margin.~~
+   **Complete:** the two-standard-error selector passed Protein development,
+   CTR23 release validation, and the exact-fallback 2020 sports ship-check.
+6. **Next:** optimize the declared-order transform and build a
+   native-vs-ordinal selector restricted to explicitly declared orders; the
+   one-hot donor probe remains behind it.
 7. Retune the ensemble member policy.
 8. Build accuracy-v2 with component ablations and A10 as the fallback.
 9. Reprofile Q against the post-dispatch engine.
