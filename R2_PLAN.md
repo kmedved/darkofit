@@ -359,12 +359,17 @@ same case:
 
 - **Deterministic activation rule, dispatch precedent:** parallelize
   member fitting only when a pre-fit work estimate clears a frozen bound —
-  `member_work = rows_after_sampling × active_features × planned_iterations`
-  (exact formula frozen in the contract), with the bound calibrated the
-  same outcome-blind way as the dispatch `scan_work` threshold. Below the
-  bound: sequential path, byte-identical to today. The killing case
-  (startup overhead on short fits) is excluded *by construction*, not by
-  hope.
+  `member_work = planned_sample_rows × active_features ×
+  planned_iterations × output_width`, where output width is one for
+  regression/binary and the class count for multiclass. The original
+  three-factor draft could not separate the killed 20-feature Friedman
+  regression case from safely faster vector-output work and is superseded
+  before v2 measurement. The frozen v2 bound is `80,000,000` work units,
+  sized only from spent v1 evidence. Below the bound: sequential path,
+  byte-identical to today. On the spent four-case v1 coordinates this
+  excludes Friedman and categorical regression while engaging numeric binary
+  and categorical multiclass; the successor must now verify direction rather
+  than assume it.
 - Same member seeds ⇒ identical models either path (behavior-exact at the
   model level); acceptance per `NEXT_STEPS.md` §4.7: no materiality bar,
   no regression where not engaged, stable measured win where engaged.

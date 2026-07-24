@@ -7,6 +7,8 @@ import pytest
 from darkofit import DarkoClassifier, DarkoRegressor
 from darkofit import sklearn_api as sklearn_api_module
 from darkofit.sklearn_api import (
+    _B3_V2_PARALLEL_MINIMUM_WORK,
+    _b3_parallel_work_estimate,
     _fit_public_ensemble_v3_parallel_candidate,
     _resolve_b3_parallel_topology,
 )
@@ -35,7 +37,12 @@ def _regressor(**params):
 
 def _fit_parallel(model, X, y, **fit_params):
     return _fit_public_ensemble_v3_parallel_candidate(
-        model, X, y, total_thread_budget=14, **fit_params
+        model,
+        X,
+        y,
+        total_thread_budget=14,
+        minimum_work=0,
+        **fit_params,
     )
 
 
@@ -77,6 +84,69 @@ def test_b3_topology_rejects_invalid_budgets(value):
         _resolve_b3_parallel_topology(8, value)
 
 
+def test_b3_v2_work_estimate_includes_output_width():
+    X, y = _regression_data()
+    regression = _b3_parallel_work_estimate(_regressor(), X, y)
+    labels = np.digitize(y, [-0.5, 0.5])
+    classifier = _b3_parallel_work_estimate(
+        DarkoClassifier(iterations=12), X, labels
+    )
+    binary = _b3_parallel_work_estimate(
+        DarkoClassifier(iterations=12), X, labels > 0
+    )
+
+    assert regression == {
+        "version": 1,
+        "input_rows": 420,
+        "sampled_rows": 336,
+        "active_features": 6,
+        "planned_iterations": 12,
+        "output_width": 1,
+        "member_work": 24_192,
+    }
+    assert classifier["output_width"] == 3
+    assert classifier["member_work"] == 3 * regression["member_work"]
+    assert binary["output_width"] == 1
+    assert binary["member_work"] == regression["member_work"]
+
+
+def test_b3_v2_below_threshold_is_exact_sequential_fallback(tmp_path):
+    X, y = _regression_data(seed=3)
+    sequential = _regressor().fit(X, y)
+    candidate = _regressor()
+    _fit_public_ensemble_v3_parallel_candidate(
+        candidate,
+        X,
+        y,
+        total_thread_budget=14,
+        minimum_work=_B3_V2_PARALLEL_MINIMUM_WORK,
+    )
+
+    assert candidate.b3_parallel_dispatch_["route"] == "sequential_fallback"
+    assert candidate.b3_parallel_dispatch_["reason"] == "below_minimum_work"
+    assert candidate.ensemble_metadata_ == sequential.ensemble_metadata_
+    assert np.array_equal(candidate.predict(X), sequential.predict(X))
+    sequential_path = tmp_path / "sequential.npz"
+    candidate_path = tmp_path / "candidate.npz"
+    sequential.save_model(sequential_path)
+    candidate.save_model(candidate_path)
+    assert candidate_path.read_bytes() == sequential_path.read_bytes()
+
+
+@pytest.mark.parametrize("value", [True, -1, 1.5, "80000000"])
+def test_b3_v2_rejects_invalid_minimum_work(value):
+    X, y = _regression_data(n=80)
+    error = ValueError if value == -1 else TypeError
+    with pytest.raises(error, match="minimum_work"):
+        _fit_public_ensemble_v3_parallel_candidate(
+            _regressor(),
+            X,
+            y,
+            total_thread_budget=14,
+            minimum_work=value,
+        )
+
+
 def test_b3_parallel_matches_same_thread_sequential_and_restores_ambient():
     X, y = _regression_data()
     ambient = numba.get_num_threads()
@@ -98,6 +168,8 @@ def test_b3_parallel_matches_same_thread_sequential_and_restores_ambient():
         "result_order": "member_index",
     }
     assert candidate.ensemble_metadata_["sequential"] is False
+    assert candidate.b3_parallel_dispatch_["route"] == "process_parallel"
+    assert candidate.b3_parallel_dispatch_["minimum_work"] == 0
     assert all(member.model_.n_threads_ == 2 for member in candidate.estimators_)
     assert all(
         record["prediction_thread_count"] == 2

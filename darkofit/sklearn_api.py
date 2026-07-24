@@ -270,6 +270,8 @@ _PRIVATE_ENSEMBLE_V3_MEMBER_OVERRIDES = frozenset({
 _B3_PARALLEL_ENSEMBLE_CONTRACT = (
     "b3-parallel-ensemble-members-v1-20260723"
 )
+_B3_V2_PARALLEL_MINIMUM_WORK = 80_000_000
+_B3_V2_PARALLEL_DISPATCH_VERSION = 1
 
 
 def _is_private_ensemble_v3_metadata(metadata):
@@ -7195,6 +7197,35 @@ def _resolve_b3_parallel_topology(n_members, total_thread_budget):
     return workers, member_threads
 
 
+def _b3_parallel_work_estimate(estimator, X, y):
+    """Return the deterministic pre-fit work score for B3-v2 dispatch."""
+    n_rows = n_samples_from_array_like(X)
+    n_features = n_features_from_array_like(X)
+    sampled_rows = min(
+        n_rows - 1,
+        max(1, int(math.floor(0.8 * n_rows + 0.5))),
+    )
+    class_count = (
+        int(np.unique(np.asarray(y)).size)
+        if isinstance(estimator, ClassifierMixin)
+        else 0
+    )
+    output_width = class_count if class_count > 2 else 1
+    planned_iterations = int(estimator.iterations)
+    member_work = (
+        sampled_rows * n_features * planned_iterations * output_width
+    )
+    return {
+        "version": _B3_V2_PARALLEL_DISPATCH_VERSION,
+        "input_rows": int(n_rows),
+        "sampled_rows": int(sampled_rows),
+        "active_features": int(n_features),
+        "planned_iterations": int(planned_iterations),
+        "output_width": int(output_width),
+        "member_work": int(member_work),
+    }
+
+
 def _fit_private_ensemble_v3_member(payload):
     """Fit one preplanned v3 member; suitable for a process worker."""
     estimator = payload["estimator"]
@@ -8009,6 +8040,7 @@ def _fit_public_ensemble_v3_parallel_candidate(
     y,
     *,
     total_thread_budget,
+    minimum_work=_B3_V2_PARALLEL_MINIMUM_WORK,
     cat_features=None,
     eval_set=None,
     groups=None,
@@ -8017,7 +8049,7 @@ def _fit_public_ensemble_v3_parallel_candidate(
     callbacks=None,
     ordinal_features=None,
 ):
-    """Fit the private B3 process-scheduled public-v3 candidate."""
+    """Fit the activation-gated private B3-v2 public-v3 candidate."""
     ensemble_mode, future_values, explicit_values = (
         _resolve_public_ensemble_surface(estimator)
     )
@@ -8028,33 +8060,80 @@ def _fit_public_ensemble_v3_parallel_candidate(
         raise ValueError(
             "the private B3 candidate requires n_ensembles=8"
         )
+    if isinstance(minimum_work, (bool, np.bool_)) or not isinstance(
+        minimum_work, (int, np.integer)
+    ):
+        raise TypeError("minimum_work must be a nonnegative integer")
+    minimum_work = int(minimum_work)
+    if minimum_work < 0:
+        raise ValueError("minimum_work must be nonnegative")
+    workers, member_threads = _resolve_b3_parallel_topology(
+        n_members, total_thread_budget
+    )
+    work = _b3_parallel_work_estimate(estimator, X, y)
+    engaged = workers > 1 and work["member_work"] >= minimum_work
+    dispatch = {
+        **work,
+        "minimum_work": minimum_work,
+        "total_thread_budget": int(total_thread_budget),
+        "workers": int(workers if engaged else 1),
+        "member_threads": (
+            int(member_threads) if engaged else int(total_thread_budget)
+        ),
+        "route": "process_parallel" if engaged else "sequential_fallback",
+        "reason": (
+            "at_or_above_minimum_work"
+            if engaged
+            else "insufficient_worker_parallelism"
+            if workers <= 1
+            else "below_minimum_work"
+        ),
+    }
     release_candidate_params = {
         "ensemble_mode": "v3",
         "ensemble_member_learning_rate": future_values["learning_rate"],
         "ensemble_member_colsample": future_values["colsample"],
     }
-    return _fit_private_ensemble_v3(
-        estimator,
-        X,
-        y,
-        sampling="without_replacement",
-        sampling_unit=estimator.ensemble_bootstrap,
-        sample_fraction=0.8,
-        member_policy="donor_balanced_v1",
-        explicit_user_params=tuple(explicit_values),
-        explicit_user_values=explicit_values,
-        release_candidate_params=release_candidate_params,
-        public_fit_surface=True,
-        cat_features=cat_features,
-        eval_set=eval_set,
-        groups=groups,
-        sample_weight=sample_weight,
-        eval_sample_weight=eval_sample_weight,
-        callbacks=callbacks,
-        ordinal_features=ordinal_features,
-        b3_parallel=True,
-        b3_total_thread_budget=total_thread_budget,
-    )
+    if engaged:
+        result = _fit_private_ensemble_v3(
+            estimator,
+            X,
+            y,
+            sampling="without_replacement",
+            sampling_unit=estimator.ensemble_bootstrap,
+            sample_fraction=0.8,
+            member_policy="donor_balanced_v1",
+            explicit_user_params=tuple(explicit_values),
+            explicit_user_values=explicit_values,
+            release_candidate_params=release_candidate_params,
+            public_fit_surface=True,
+            cat_features=cat_features,
+            eval_set=eval_set,
+            groups=groups,
+            sample_weight=sample_weight,
+            eval_sample_weight=eval_sample_weight,
+            callbacks=callbacks,
+            ordinal_features=ordinal_features,
+            b3_parallel=True,
+            b3_total_thread_budget=total_thread_budget,
+        )
+    else:
+        result = _fit_public_ensemble_v3(
+            estimator,
+            X,
+            y,
+            future_values=future_values,
+            explicit_values=explicit_values,
+            cat_features=cat_features,
+            eval_set=eval_set,
+            groups=groups,
+            sample_weight=sample_weight,
+            eval_sample_weight=eval_sample_weight,
+            callbacks=callbacks,
+            ordinal_features=ordinal_features,
+        )
+    result.b3_parallel_dispatch_ = dispatch
+    return result
 
 
 class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
