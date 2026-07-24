@@ -8,6 +8,7 @@ import gc
 import hashlib
 import json
 import subprocess
+import sys
 import tempfile
 import time
 from datetime import datetime, timezone
@@ -46,6 +47,8 @@ except ImportError:  # pragma: no cover
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 SIZE = "medium"
 ARMS = {
     "single": None,

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import copy
+import subprocess
+import sys
 
 import numpy as np
 import pytest
@@ -126,3 +128,21 @@ def test_current_recipe_worker_records_resolved_policy(tmp_path, monkeypatch):
     }
     assert len(row["member_tree_counts"]) == 8
     assert np.isfinite(row["primary_value"])
+
+
+def test_runner_script_mode_can_import_darkofit():
+    command = (
+        "import importlib.util, pathlib; "
+        "p=pathlib.Path('benchmarks/run_ensemble_member_policy_retune.py'); "
+        "s=importlib.util.spec_from_file_location('member_retune_script', p); "
+        "m=importlib.util.module_from_spec(s); s.loader.exec_module(m); "
+        "import darkofit; print(darkofit.__file__)"
+    )
+    completed = subprocess.run(
+        [sys.executable, "-c", command],
+        cwd=bench.ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert str(bench.ROOT / "darkofit") in completed.stdout
