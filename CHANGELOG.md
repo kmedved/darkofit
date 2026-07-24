@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.12.0 - 2026-07-24
+
 ### Features
 
 - Make `linear_leaves="auto"` the regressor default for eligible scalar-RMSE
@@ -30,9 +32,26 @@
 
 ### Performance
 
+- Automatically parallelize sufficiently large eight-member v3 ensemble fits
+  on the measured 14-core macOS-arm64 envelope. The deterministic work score,
+  resolved worker topology, and selected route are stored in fitted metadata;
+  small fits and other machines remain sequential.
+  `ensemble_parallelism="sequential"` is the rollback, while `"parallel"`
+  provides an explicit research override. The measured engaged grid reached
+  about 2.28 GiB peak process-tree RSS, so parallelism trades memory for wall
+  time rather than claiming a free speedup.
 - Reuse exact matching pandas categorical codes for declared-ordinal
   prediction instead of rebuilding category lookups. Predictions remain
   bit-identical to the generic mapping fallback.
+
+### Documentation
+
+- Publish the pinned TabArena tree-model dossier and the feature-only GPBoost
+  basketball characterization. The GPBoost results are external comparator
+  context, not evidence about its random-effects model or a DarkoFit product
+  change.
+- Record why `depth="auto"` remains an explicit opt-in: it improved the broad
+  development panel but regressed on the CTR23 release-validation set.
 
 ## 0.11.0 - 2026-07-22
 

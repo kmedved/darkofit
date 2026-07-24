@@ -15,7 +15,7 @@ import os as _os
 
 # Single source of truth for the package version (pyproject reads this).
 # Defined before submodule imports so they may reference it safely.
-__version__ = "0.11.0"
+__version__ = "0.12.0"
 
 from .sklearn_api import (
     DarkoRegressor,
