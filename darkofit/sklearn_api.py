@@ -4350,6 +4350,33 @@ def _ordinal_column_values(X, index):
     return array_like_to_numpy(X, object)[:, int(index)]
 
 
+def _matching_categorical_ordinal_codes(X, index, categories):
+    """Return direct pandas categorical codes when their order is identical."""
+    if not (
+        hasattr(X, "dtypes")
+        and hasattr(X, "iloc")
+        and hasattr(X.iloc[:, int(index)], "cat")
+    ):
+        return None
+    try:
+        import pandas as pd
+
+        column = X.iloc[:, int(index)]
+        dtype = column.dtype
+        if not isinstance(dtype, pd.CategoricalDtype):
+            return None
+        observed_categories = [
+            _ordinal_category_scalar(value) for value in dtype.categories
+        ]
+        if observed_categories != list(categories):
+            return None
+        codes = column.cat.codes.to_numpy(dtype=np.float64, copy=True)
+    except (AttributeError, ImportError, TypeError, ValueError):
+        return None
+    codes[codes < 0.0] = np.nan
+    return codes
+
+
 def _auto_ordinal_categories(X, index, *, allow_integer_codes):
     if hasattr(X, "dtypes") and hasattr(X, "iloc"):
         try:
@@ -4541,12 +4568,16 @@ def _transform_ordinal_features(X, records):
         transformed = X.copy()
         for record in records:
             index = record["index"]
-            codes = _ordinal_codes(
-                _ordinal_column_values(transformed, index),
-                record["categories"],
-                feature=index,
-                name=record.get("name"),
+            codes = _matching_categorical_ordinal_codes(
+                transformed, index, record["categories"]
             )
+            if codes is None:
+                codes = _ordinal_codes(
+                    _ordinal_column_values(transformed, index),
+                    record["categories"],
+                    feature=index,
+                    name=record.get("name"),
+                )
             if hasattr(transformed, "isetitem"):
                 transformed.isetitem(index, codes)
             else:

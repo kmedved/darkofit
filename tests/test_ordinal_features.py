@@ -202,6 +202,50 @@ def test_auto_detects_integer_codes_and_ordered_pandas_categories_only():
     assert plain_model.model_.auto_params_["ordinal_features"]["active"] is False
 
 
+def test_matching_pandas_categorical_order_uses_exact_fast_codes(monkeypatch):
+    X, y = _frame()
+    X["level"] = pd.Categorical(
+        X["level"],
+        categories=["low", "medium", "high"],
+        ordered=True,
+    )
+    model = DarkoRegressor(**PARAMS).fit(
+        X,
+        y,
+        cat_features=["region"],
+        ordinal_features={"level": ["low", "medium", "high"]},
+    )
+    expected = model.predict(X)
+
+    def fail_generic_codes(*args, **kwargs):
+        del args, kwargs
+        raise AssertionError("matching categorical order missed the fast path")
+
+    monkeypatch.setattr(
+        "darkofit.sklearn_api._ordinal_codes",
+        fail_generic_codes,
+    )
+    assert np.array_equal(model.predict(X), expected)
+
+
+def test_different_pandas_categorical_order_keeps_declared_mapping():
+    X, y = _frame()
+    model = DarkoRegressor(**PARAMS).fit(
+        X,
+        y,
+        cat_features=["region"],
+        ordinal_features={"level": ["low", "medium", "high"]},
+    )
+    expected = model.predict(X)
+    reordered = X.copy()
+    reordered["level"] = pd.Categorical(
+        reordered["level"],
+        categories=["high", "medium", "low"],
+        ordered=True,
+    )
+    assert np.array_equal(model.predict(reordered), expected)
+
+
 @pytest.mark.parametrize(
     ("values", "categories"),
     [
