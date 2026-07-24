@@ -89,8 +89,16 @@ amortization and engagement, not mechanism quality.
 > policy/dispatch (default retains 1,000 trees where the donor stops at
 > 43–63; B3's threshold leaves a 4.6x forced-parallel win unengaged;
 > members pay no selector race); matched members collapsed 95.6% of the
-> ensemble lift wedge before forcing horizons, and forcing donor
-> horizons closed it entirely (0.999). The donor-core proof is **not
+> ensemble lift *wedge* before forcing horizons, and forcing donor
+> horizons closed the wedge entirely (0.99909).
+> **Read that number precisely:** 0.99909 is the *averaging-lift* wedge
+> — how much each stack gains from ensembling over its own single
+> model — **not** overall quality parity. At fully matched members and
+> horizons DarkoFit's RMSE is still **1.00343x** the donor's (1.00767x
+> at stage 1). The wedge result retires the "their ensemble
+> architecture is better" hypothesis; a ~0.3% matched-configuration
+> quality residual remains open and is neither explained nor claimed
+> away. The donor-core proof is **not
 > funded**; the re-fork question is closed on evidence. §2 sequencing
 > below is updated with the post-gate facts. Corrections to this plan's
 > own assumptions, recorded honestly: v3 members do NOT run the
@@ -334,14 +342,28 @@ The gate reordered the work. The dominant remaining deficits are, in
 measured order: **default horizon/stopping policy** (1,000 trees built
 and walked where the donor retains 43–63 — the largest single lever on
 both fit and predict at small n, and a quality-changing default),
-**B3's engagement threshold** (behavior-exact 4.6x on tiny ensembles),
-and the residual predict tail after P1.
+**B3's engagement threshold** (behavior-exact 4.58x wall-time win on
+tiny ensembles), and the residual predict tail after P1.
+
+**Strength of the horizon evidence, stated honestly:** the tree-count
+gap (1,000 vs 43–63 retained) is a structural fact of the two default
+policies and is not in question. The claim that it is the *dominant*
+cost driver rests on one non-formal, loaded-machine healthcare cell in
+which the two engines also trained on different row counts (the donor
+holds out its validation fraction) — so "we lose ~7x purely on volume"
+is stronger than the evidence supports. The horizon experiment below
+is what converts a well-supported hypothesis into a measurement.
 
 - **Integration first:** review and merge the gate branch (P1
   behavior-exact commits, the selector-composition fix, harnesses,
   sentinel). Verified: `categorical_crosses=False` remains the product
   default on the branch; the flip stays out of main until its
-  ship-check passes.
+  ship-check passes. **This is now urgent for a second reason:** the
+  docs commit `5d86beb` is on `main` and pushed, and it links
+  `benchmarks/r3_foundation_gate_result_20260724.md`, which exists
+  only on the gate branch — `main` currently cites evidence it does
+  not contain. Integrating the branch repairs the reference; until
+  then the link is known-broken, not a missing file.
 - **Horizon dev measurement immediately (Opus amendment, 2026-07-24):**
   the public default is `early_stopping=False, iterations=1000`
   (sklearn_api.py:10230/13121) while every internal surface — members,
@@ -350,27 +372,54 @@ and the residual predict tail after P1.
   many. Because every later measurement (B3 calibration, catcross cost
   profile, Q1 payoff, the serving sentinel) is polluted while the
   baseline builds 1,000 trees, the horizon question is measured FIRST:
-  dev-slice run of `early_stopping=True` at two validation fractions,
-  plus the early-stop-then-refit-at-chosen-horizon variant (recovers
-  the donor policy's permanent ~20% row forfeit; the existing `refit`
-  is selection-scoped, so this is new build — if it slows the
-  measurement, run the ES-only arms first and refit as fast-follow).
+  three arms on the dev slice, **all using existing code**: (1) the
+  current default; (2) `early_stopping=True` alone; (3)
+  `early_stopping=True, refit=True`, which already selects the horizon
+  on validation and then retrains on all rows
+  (`sklearn_api.py:11690`) — recovering the row forfeit the donor's
+  policy pays permanently. *Correction (Codex, 2026-07-24): an earlier
+  draft of this bullet said the refit variant needed building. It does
+  not; `refit` is implemented and only needs measuring.*
   **Slot rule, pre-stated:** quality-neutral-or-better on the dev
   slice → horizon policy takes v0.13's single quality-default slot and
   catcross moves to v0.14; a real quality cost → catcross ships v0.13
-  as planned and horizon work continues on the refit variant for
-  v0.14. Owner signs the slot assignment either way.
-- **Thread-topology generalization (behavior-exact family, ships when
-  proven):** the gate ledger shows intra-tree parallelism is mostly
-  overhead on tiny fits (our own forced-parallel route: 0.325 →
-  0.071 ms/tree from 14 threads to 2/member — within-engine, same
-  models). Generalize B3's insight to single-model fits: resolve
-  thread topology from problem size. **Exactness requirement:**
-  identical tree counts across routes is NOT proof — histogram
-  reduction order is the classic float trap — so thread-invariant
-  bit-exact fits must be verified in the exactness suite per lane
-  before any claim; where bit-exactness fails, the lane is a measured
-  quality-neutral dispatch change, not behavior-exact.
+  as planned and horizon work continues for v0.14. **Refit caveat:**
+  `refit=True` currently makes automatic catcross ineligible
+  (`sklearn_api.py:10536` returns `"refit"`), so if arm 3 wins, the
+  refit–catcross composition must be fixed and catcross re-measured
+  before the two can ship together — the same class of collateral
+  suppression the gate already caught between catcross and the linear
+  selector. Owner signs the slot assignment either way.
+- **Thread-topology hypothesis (unproven; test before planning around
+  it).** *Correction, 2026-07-24: two earlier per-tree figures in this
+  plan and in review — a "26x cheaper at one thread" donor comparison
+  and a "0.325 → 0.071 ms/tree" within-engine one — were both computed
+  by dividing **concurrent multi-worker wall time** by **aggregate**
+  tree count, which understates per-tree cost by roughly the worker
+  count. Both are withdrawn.* What the ledger actually supports: B3's
+  forced-parallel route is **4.58x faster in wall time** on tiny
+  ensembles, and that win is mostly **member-level concurrency**, not
+  per-tree thread efficiency. Correcting for the critical path (the
+  917-tree member defines the forced-parallel wall), per-tree cost at
+  2 threads vs 14 is roughly 0.26 vs 0.33 ms — a ~1.3x hint, well
+  inside the confounds (different member row counts and
+  hyperparameters, loaded machine, non-formal timing). Whether
+  single-model small-n fits are mis-threaded is therefore **an open
+  question, not a finding**: settle it with a controlled sweep at 1, 2,
+  and 14 threads on identical model, data, and horizon before any
+  design work. **Exactness requirement if it proceeds:** identical tree
+  counts across routes is NOT proof — histogram reduction order is the
+  classic float trap — so thread-invariant bit-exact fits must be
+  verified in the exactness suite per lane; where bit-exactness fails,
+  the lane is a measured quality-neutral dispatch change, not
+  behavior-exact.
+- **What does NOT wait for the horizon result (Codex, 2026-07-24):**
+  P1's exactness is independent of horizon policy; B3's members
+  already early-stop on OOB rows, so their tree counts and the
+  threshold work are unaffected; and Q1's causal microbenchmark stays
+  valid (only its product-level payoff shrinks if the default builds
+  far fewer trees). Only the *quality-slot assignment* and the
+  re-baselining of P1/Q1 economics depend on the horizon measurement.
 - **v0.13** = integrated P1 + **B3 threshold reshape** (behavior-exact,
   measured envelope, memory guard, rollback) + the slot-rule winner as
   the release's one quality default (the loser leads v0.14). Catcross,
