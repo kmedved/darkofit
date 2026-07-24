@@ -98,25 +98,26 @@ Keep it opt-in and validate it on the actual deployment panel.
 ## Smooth numeric relationships
 
 ```python
-model = DarkoRegressor(
-    linear_leaves=True,
-    tree_mode="catboost",
-    loss="RMSE",
-)
+model = DarkoRegressor()  # linear_leaves="auto"
+rollback = DarkoRegressor(linear_leaves=False)
+forced = DarkoRegressor(linear_leaves=True)
 ```
 
 Local linear leaves fit a ridge-regularized slope inside each oblivious-tree
 leaf. They are most plausible when nearby rows follow smooth numeric
-relationships. On three spent smooth development datasets, fixed linear
-leaves reduced equal-task RMSE by `7.97%`; a validation selector retained
-most of the gain. On a fresh 14-lineage panel, however, the selector's
-aggregate improvement was only `1.07%`, with the best lineage carrying most
-of it. It remains a narrow opt-in, not a default.
+relationships. The automatic selector uses a deterministic, group-safe
+holdout and a two-standard-error paired-gain guard. It fits the chosen lane
+from scratch and records the split, scores, uncertainty, reason, and final
+resolution in `automatic_linear_selector_`.
 
-Do not use this recipe as a noisy-sports default. A random-split selector
-regressed creator-fold, held-team, and cold-player basketball quality. Group-
-aware selection safely declined every basketball fold but is not yet a public
-automatic policy.
+The current evidence is deliberately asymmetric: automatic selection improved
+the three Protein development coordinates by about 4.5–5.4%, improved three
+smooth CTR23 tasks with no loss on the other six, and stayed bit-exact to
+constant leaves on all three small 2020 basketball targets. On CTR23, the
+audition cost `2.20x` fit time and `1.28x` prediction time in the recorded
+run. Use `False` when that selection cost matters more than the possible
+quality gain; use explicit `True` only when the deployment data already
+justifies forcing local-linear leaves.
 
 ## Declared ordinal categories
 

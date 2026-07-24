@@ -4,6 +4,13 @@
 
 ### Features
 
+- Make `linear_leaves="auto"` the regressor default for eligible scalar-RMSE
+  CatBoost fits. The selector auditions constant and local-linear leaves on a
+  deterministic, group-safe validation split and engages only when the paired
+  per-row MSE gain is positive and at least two standard errors above zero.
+  Small and unsupported fits fall back exactly to constant leaves, fitted
+  provenance round-trips through safe NPZ, and `linear_leaves=False` is the
+  documented rollback.
 - Add the default-off `categorical_crosses=True` regressor option. Eligible
   scalar-RMSE CatBoost fits automatically audition group-centered
   numeric-by-category features against a held-out control, fit the winner from

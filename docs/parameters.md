@@ -109,10 +109,17 @@ RSS at worst; this is engineering characterization, not a portability claim.
 DarkoFit's leaf-wise builder; it is not Microsoft LightGBM model
 compatibility. `"hybrid"` and `"auto"` remain explicit experimental paths.
 
-`linear_leaves=True` enables local linear leaf models for eligible scalar RMSE
-oblivious-tree fits. It is default-off. `ordinal_features={column: order}`
-explicitly maps declared ordered categories into the numeric binner; unknown
-non-missing values fail closed.
+`linear_leaves="auto"` is the regressor default for scalar RMSE
+oblivious-tree fits. Eligible fits audition constant and local-linear leaves
+on a deterministic validation split and select linear only when the paired
+per-row MSE gain is positive and at least two standard errors above zero.
+Groups and sample weights are honored by the audition. Small or unsupported
+fits fall back exactly and record why in `automatic_linear_selector_`.
+`linear_leaves=False` bypasses the audition and is the rollback;
+`linear_leaves=True` forces the eligible local-linear lane.
+
+`ordinal_features={column: order}` explicitly maps declared ordered
+categories into the numeric binner; unknown non-missing values fail closed.
 
 `oblivious_kernel` is a bounded observability and escape-hatch option for the
 eligible scalar CatBoost lane. `"fused"` and `"unfused"` force the two

@@ -385,32 +385,42 @@ distribution variance and does not include ridge coefficient uncertainty.
 Diagnostics are stored under `model_.auto_params_["linear_residual"]`, and the
 plain-array model archive preserves the trend without pickle.
 
-Experimental per-leaf linear models are available for controlled research via
-`linear_leaves=True`:
+Eligible scalar-RMSE CatBoost fits automatically decide between constant and
+local-linear leaves. The default `linear_leaves="auto"` auditions both lanes
+on one deterministic validation split, selects linear leaves only when their
+paired per-row MSE gain is positive and at least two standard errors above
+zero, then fits the selected lane from scratch:
 
 ```
 reg = DarkoRegressor(
     loss="RMSE",
     tree_mode="catboost",
-    linear_leaves=True,
-    linear_lambda=1.0,
 )
 ```
 
-The option is deliberately off by default. It fits a ridge-regularized local
-linear model over each oblivious tree's numeric split features while leaving
-DarkoFit's split search unchanged. The initial implementation requires scalar
-RMSE, CatBoost/oblivious trees, plain (non-ordered) leaf updates, at least 1,000
-training rows, and at least one numeric feature; ineligible small or
-all-categorical fits record an exact constant-leaf fallback. Packed prediction,
-safe `.npz` persistence, and fitted diagnostics under
-`model_.auto_params_["linear_leaves"]` are supported. This remains an explicit
-experimental mechanism: validation-selected use must pass the noisy-data and
-cold-player basketball gates before any automatic policy is considered.
-The first frozen basketball screen failed mean, leave-one-fold-out, team, and
-cold-player quality gates, so neither direct use nor that validation selector
-is an automatic default; see
-[`benchmarks/basketball_linear_leaves_result.md`](benchmarks/basketball_linear_leaves_result.md).
+The selected local model uses ridge-regularized slopes over each oblivious
+tree's numeric split features without changing split search. Unsupported and
+small fits record an exact constant-leaf fallback. When `groups` are supplied,
+the selector's internal holdout is group-disjoint. Explicit `True` forces the
+eligible local-linear lane; `False` is the rollback and bypasses the audition:
+
+```
+constant = DarkoRegressor(linear_leaves=False)
+forced_linear = DarkoRegressor(linear_leaves=True)
+```
+
+Packed prediction, safe `.npz` persistence, and full decision provenance in
+`automatic_linear_selector_` and `model_.auto_params_` are supported.
+
+Evidence scope matters. The 2-SE selector improved all three Protein
+development coordinates (`0.9510x` equal-coordinate RMSE), then passed nine
+CTR23 release-validation tasks at `0.9356x` with no task loss and exact
+fallback on six tasks. On the complete 2020 basketball ship-check it was below
+the sample threshold and reproduced `linear_leaves=False` bit for bit on all
+three targets. The CTR23 selector path cost `2.20x` fit and `1.28x` prediction
+time in that measurement; automatic selection is a quality policy, not a
+speed claim. See the dated selector-v3 Protein, CTR23, and 2020 sports records
+under [`benchmarks/`](benchmarks/).
 
 Distributional benchmark, mean over three seeds on the synthetic
 heteroscedastic gate. The calibrated DarkoFit row was refreshed after the

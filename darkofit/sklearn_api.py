@@ -9059,7 +9059,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         Experimental local-linear leaves for scalar RMSE CatBoost-mode fits.
         ``"auto"`` auditions constant and linear leaves on a deterministic
         validation split, selects linear leaves only when the paired per-row
-        MSE gain is positive and at least one standard error above zero, and
+        MSE gain is positive and at least two standard errors above zero, and
         otherwise retains exact constant-leaf behavior.
         Unsupported and small fits fall back to constant leaves with recorded
         provenance. Explicit booleans bypass the selector.
