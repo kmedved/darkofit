@@ -25,7 +25,7 @@ Every item below maps to a measured frontier deficit or an earned candidate:
 | P2 Catcross attribution → path to ship | Diamonds/healthcare (0.20's categorical blow) | Attribution, guardrail, and scoped public opt-in complete |
 | P3 Depth opt-in exposure | Immediate user value (−5% sports, spent) | Public explicit opt-in complete; default route closed on holdout |
 | P4 B3-v2 activation-gated parallelism | 6.1× ensemble fit optic; rescue the 3.84× | Complete in source: automatic measured-envelope activation, recorded resolution, and rollback |
-| P5 Selector-v3 principled margin | Smooth-data quality (protein) | 2-SE noise guard calibrated without Protein; spent quality evaluation next |
+| P5 Selector-v3 principled margin | Smooth-data quality (protein) | Complete: 2-SE automatic default passed Protein development, CTR23, and exact-fallback 2020 sports ship-check; `False` rollback documented |
 | P6 Member-policy retune | Ensemble broad quality (+1.5% vs their +3.5%) | Queued (R1-5) |
 
 ---
@@ -456,6 +456,15 @@ eligible as the automatic default, with `linear_leaves=False` as the
 documented rollback. The owner clarified that unrelated external-comparator
 characterization does not count as candidate-development contact; the
 separate GPBoost study therefore does not spend this selector holdout.
+
+**Product integration, 2026-07-23:** commit `3043be3` closes the public
+surface. `linear_leaves="auto"` is documented as the regressor default,
+the two-standard-error rule and exact fallback are stated consistently,
+`linear_leaves=False` is the rollback, the Unreleased changelog records the
+change, and the measured quality/cost boundaries are disclosed. Focused
+selector/default/archive/thread tests passed 30/30 and strict MkDocs passed.
+Selector-v3 is complete; move to the next categorical mechanism after the
+required fresh-eyes stage boundary.
 
 ## P6 — Member-policy retune (after P2 resolves)
 

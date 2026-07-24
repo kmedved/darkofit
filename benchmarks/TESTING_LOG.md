@@ -227,7 +227,7 @@ ledger is
 | Quantile, temperature, and Gaussian scalar calibration | [`basketball_quantile_calibration_result.md`](basketball_quantile_calibration_result.md), [`basketball_temperature_scaling_result.md`](basketball_temperature_scaling_result.md), [`basketball_gaussian_scalar_calibration_result.md`](basketball_gaussian_scalar_calibration_result.md) | Closed at their declared width or sports-quality gates. |
 | Explicit warmup | [`basketball_warmup_result.md`](basketball_warmup_result.md) | Shipped opt-in; no hidden import work. |
 | Input validation and sklearn compliance | [`basketball_input_validation_result.md`](basketball_input_validation_result.md) | Shipped after compatibility decisions and overhead fixes. |
-| Per-leaf linear leaves | [`basketball_linear_leaves_result.md`](basketball_linear_leaves_result.md) | Explicit default-off API shipped; automatic selector closed. |
+| Per-leaf linear leaves | [`basketball_linear_leaves_result.md`](basketball_linear_leaves_result.md) | Historical screen closed its fixed-margin selector; selector-v3 later superseded it with the shipped 2-SE automatic default. |
 | Numeric crosses and categorical combinations | [`basketball_cross_features_donor_screen_result.md`](basketball_cross_features_donor_screen_result.md), [`basketball_categorical_combinations_result.md`](basketball_categorical_combinations_result.md) | Closed before copying donor code. |
 | Fused oblivious training | [`basketball_fused_oblivious_automatic_result.md`](basketball_fused_oblivious_automatic_result.md) | Behavior-exact internal lane shipped. |
 | Small-row serial leaf descent | [`basketball_serial_leaf_descent_result.md`](basketball_serial_leaf_descent_result.md) | Behavior-exact internal router shipped. |
@@ -3322,11 +3322,41 @@ B-archive simulation remains non-loadable, optional size telemetry.
     the automatic default. Document `"auto"` and the `False` rollback, then
     run fresh-eyes product verification before closing the mechanism.
 
+### 77. Selector-v3 automatic-default product closeout (2026-07-23)
+
+1. **Source:** product documentation checkpoint
+   `3043be33f8a8b30d0bcb4c279d3e4d2950b10ec4`, layered on the selector code
+   and ship-check evidence above.
+2. **Comparator:** no new model comparator or benchmark result.
+3. **Evidence:** correctness, API-default, archive, thread-state, and
+   documentation verification; no new data contact.
+4. **Data/splits:** deterministic synthetic fixtures from the focused tests;
+   the Protein, CTR23, and 2020 artifacts remain entries 74–76.
+5. **Arms/policies:** public `linear_leaves="auto"` with the 2-SE
+   paired-gain guard; `False` rollback; explicit `True` research override.
+6. **Environment:** `darko311`, macOS arm64; strict MkDocs.
+7. **Execution:** focused selector, Protein, CTR23, sports, and thread-state
+   pytest suite followed by `mkdocs build --strict`.
+8. **Artifacts/hashes:** source commit above; no new generated measurement.
+9. **Primary results:** 30/30 focused tests passed and strict docs built.
+10. **Failed as well as passed checks:** the product fresh-eyes pass found
+    stale default-off README/parameter/recipe text and an API docstring that
+    still said one SE. All were corrected to the implemented two-SE default
+    before the final pass.
+11. **Limitations/non-claims:** automatic selection is not a speed claim.
+    The CTR23 `2.200467x` fit and `1.278040x` prediction ratios remain
+    disclosed; small sports fits fall back exactly rather than improving.
+12. **Decision/next action:** selector-v3 is complete as the first
+    SHIP_RULES-confirmed automatic quality default. Move to the next
+    categorical mechanism after a clean fresh-eyes stage boundary.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
 
 - `learning_rate=None` uses DarkoFit's transparent automatic rule.
+- `linear_leaves="auto"` uses the SHIP_RULES-confirmed 2-SE selector;
+  `linear_leaves=False` is the exact rollback.
 - Scalar regression keeps ordered leaf updates off by default.
 - Categorical regression still uses ordered target-statistic preprocessing.
 - The default horizon remains 1,000 rounds.
@@ -3346,7 +3376,7 @@ B-archive simulation remains non-loadable, optional size telemetry.
 - safe `.npz` serialization;
 - opt-in accuracy preset;
 - row- and group-aware ensemble API;
-- explicit per-leaf linear leaves;
+- explicit per-leaf linear leaves plus the automatic 2-SE selector;
 - source-declared ordinal features;
 - capped lane audition with full-budget refit semantics;
 - split-conformal Gaussian intervals;
@@ -3359,7 +3389,8 @@ B-archive simulation remains non-loadable, optional size telemetry.
 
 - global 10,000-round default;
 - automatic safe-ordinal promotion under the frozen confirmation;
-- automatic linear leaves;
+- the historical fixed-3% automatic linear-leaf selector, superseded by the
+  shipped 2-SE selector-v3;
 - automatic OOB sports ensemble;
 - auto-LR + early-stopping + exact-refit sports policy;
 - the tested cross-feature and categorical-combination donor routes;
