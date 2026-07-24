@@ -365,8 +365,9 @@ same case:
   three-factor draft could not separate the killed 20-feature Friedman
   regression case from safely faster vector-output work and is superseded
   before v2 measurement. The frozen v2 bound is `80,000,000` work units,
-  sized only from spent v1 evidence. Below the bound: sequential path,
-  byte-identical to today. On the spent four-case v1 coordinates this
+  sized only from spent v1 evidence. Below the bound: the exact sequential
+  model path; product archives differ only by the required recorded dispatch
+  metadata. On the spent four-case v1 coordinates this
   excludes Friedman and categorical regression while engaging numeric binary
   and categorical multiclass; the successor must now verify direction rather
   than assume it.

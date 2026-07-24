@@ -8,6 +8,7 @@ from darkofit import DarkoClassifier, DarkoRegressor
 from darkofit import sklearn_api as sklearn_api_module
 from darkofit.sklearn_api import (
     _B3_V2_PARALLEL_MINIMUM_WORK,
+    _b3_parallel_dispatch,
     _b3_parallel_work_estimate,
     _fit_public_ensemble_v3_parallel_candidate,
     _resolve_b3_parallel_topology,
@@ -36,6 +37,7 @@ def _regressor(**params):
 
 
 def _fit_parallel(model, X, y, **fit_params):
+    model.set_params(ensemble_parallelism="parallel")
     return _fit_public_ensemble_v3_parallel_candidate(
         model,
         X,
@@ -110,6 +112,47 @@ def test_b3_v2_work_estimate_includes_output_width():
     assert binary["member_work"] == regression["member_work"]
 
 
+def test_b3_v2_auto_dispatch_is_hardware_scoped_and_rollback_capable(
+    monkeypatch,
+):
+    X, y = _regression_data()
+    estimator = _regressor(thread_count=14)
+    monkeypatch.setattr(sklearn_api_module.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(sklearn_api_module.platform, "machine", lambda: "arm64")
+    measured = _b3_parallel_dispatch(
+        estimator,
+        X,
+        y,
+        total_thread_budget=14,
+        minimum_work=0,
+        requested="auto",
+    )
+    assert measured["route"] == "process_parallel"
+    assert measured["reason"] == "at_or_above_minimum_work"
+
+    monkeypatch.setattr(sklearn_api_module.platform, "machine", lambda: "x86_64")
+    outside = _b3_parallel_dispatch(
+        estimator,
+        X,
+        y,
+        total_thread_budget=14,
+        minimum_work=0,
+        requested="auto",
+    )
+    assert outside["route"] == "sequential_fallback"
+    assert outside["reason"] == "outside_measured_envelope"
+    rollback = _b3_parallel_dispatch(
+        estimator,
+        X,
+        y,
+        total_thread_budget=14,
+        minimum_work=0,
+        requested="sequential",
+    )
+    assert rollback["route"] == "sequential_fallback"
+    assert rollback["reason"] == "user_forced_sequential"
+
+
 def test_b3_v2_below_threshold_is_exact_sequential_fallback(tmp_path):
     X, y = _regression_data(seed=3)
     sequential = _regressor().fit(X, y)
@@ -122,15 +165,31 @@ def test_b3_v2_below_threshold_is_exact_sequential_fallback(tmp_path):
         minimum_work=_B3_V2_PARALLEL_MINIMUM_WORK,
     )
 
-    assert candidate.b3_parallel_dispatch_["route"] == "sequential_fallback"
-    assert candidate.b3_parallel_dispatch_["reason"] == "below_minimum_work"
-    assert candidate.ensemble_metadata_ == sequential.ensemble_metadata_
+    assert candidate.ensemble_parallel_dispatch_["route"] == (
+        "sequential_fallback"
+    )
+    assert candidate.ensemble_parallel_dispatch_["reason"] == (
+        "below_minimum_work"
+    )
+    candidate_metadata = dict(candidate.ensemble_metadata_)
+    sequential_metadata = dict(sequential.ensemble_metadata_)
+    candidate_metadata.pop("parallel_dispatch")
+    sequential_metadata.pop("parallel_dispatch")
+    assert candidate_metadata == sequential_metadata
     assert np.array_equal(candidate.predict(X), sequential.predict(X))
     sequential_path = tmp_path / "sequential.npz"
     candidate_path = tmp_path / "candidate.npz"
     sequential.save_model(sequential_path)
     candidate.save_model(candidate_path)
-    assert candidate_path.read_bytes() == sequential_path.read_bytes()
+    with np.load(sequential_path, allow_pickle=False) as sequential_archive:
+        with np.load(candidate_path, allow_pickle=False) as candidate_archive:
+            assert set(sequential_archive.files) == set(candidate_archive.files)
+            for name in sequential_archive.files:
+                if name == "header":
+                    continue
+                assert np.array_equal(
+                    sequential_archive[name], candidate_archive[name]
+                )
 
 
 @pytest.mark.parametrize("value", [True, -1, 1.5, "80000000"])
@@ -168,8 +227,8 @@ def test_b3_parallel_matches_same_thread_sequential_and_restores_ambient():
         "result_order": "member_index",
     }
     assert candidate.ensemble_metadata_["sequential"] is False
-    assert candidate.b3_parallel_dispatch_["route"] == "process_parallel"
-    assert candidate.b3_parallel_dispatch_["minimum_work"] == 0
+    assert candidate.ensemble_parallel_dispatch_["route"] == "process_parallel"
+    assert candidate.ensemble_parallel_dispatch_["minimum_work"] == 0
     assert all(member.model_.n_threads_ == 2 for member in candidate.estimators_)
     assert all(
         record["prediction_thread_count"] == 2

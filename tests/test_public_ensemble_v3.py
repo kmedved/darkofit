@@ -1,3 +1,4 @@
+import io
 import json
 
 import numba
@@ -46,6 +47,17 @@ def _rewrite_header(path, output, mutate):
     _rewrite_archive(path, output, apply)
 
 
+def _strip_parallelism_from_member(payload):
+    with np.load(io.BytesIO(payload), allow_pickle=False) as archive:
+        arrays = {name: archive[name].copy() for name in archive.files}
+    header = json.loads(str(arrays["header"]))
+    header["wrapper"]["params"].pop("ensemble_parallelism")
+    arrays["header"] = np.array(json.dumps(header))
+    buffer = io.BytesIO()
+    np.savez_compressed(buffer, **arrays)
+    return np.frombuffer(buffer.getvalue(), dtype=np.uint8).copy()
+
+
 def test_public_constructor_surface_is_clone_safe_and_bootstrap_is_strict():
     estimator = DarkoRegressor(
         ensemble_mode="v3",
@@ -59,6 +71,7 @@ def test_public_constructor_surface_is_clone_safe_and_bootstrap_is_strict():
     assert defaults["ensemble_mode"] == "bootstrap"
     assert defaults["ensemble_member_learning_rate"] == "policy"
     assert defaults["ensemble_member_colsample"] == "policy"
+    assert defaults["ensemble_parallelism"] == "auto"
 
     X, y = _data(n=60)
     with pytest.raises(ValueError, match="ensemble_mode"):
@@ -67,6 +80,10 @@ def test_public_constructor_surface_is_clone_safe_and_bootstrap_is_strict():
         DarkoRegressor(ensemble_member_learning_rate=0.1).fit(X, y)
     with pytest.raises(ValueError, match="requires n_ensembles=8"):
         DarkoRegressor(**_params(n_ensembles=7)).fit(X, y)
+    with pytest.raises(ValueError, match="ensemble_parallelism"):
+        DarkoRegressor(ensemble_parallelism="sequential").fit(X, y)
+    with pytest.raises(ValueError, match="ensemble_parallelism"):
+        DarkoRegressor(**_params(ensemble_parallelism="unknown")).fit(X, y)
 
 
 def test_explicit_bootstrap_mode_preserves_legacy_ensemble_behavior(tmp_path):
@@ -100,7 +117,7 @@ def test_public_v3_explicit_overrides_metadata_and_v4_roundtrip(tmp_path):
     )).fit(X, y)
 
     metadata = model.ensemble_metadata_
-    assert metadata["version"] == 1
+    assert metadata["version"] == 2
     assert metadata["ensemble_mode"] == "v3"
     assert metadata["recipe_contract"] == "ensemble-v3-public-contract-v1"
     assert metadata["recipe_version"] == 1
@@ -117,11 +134,18 @@ def test_public_v3_explicit_overrides_metadata_and_v4_roundtrip(tmp_path):
     assert metadata["base_constructor_params"]["learning_rate"] == 0.07
     assert metadata["base_constructor_params"]["colsample"] == 0.6
     assert metadata["base_constructor_params"]["ensemble_mode"] == "v3"
+    assert metadata["base_constructor_params"]["ensemble_parallelism"] == (
+        "auto"
+    )
+    assert metadata["parallel_dispatch"]["requested"] == "auto"
+    assert metadata["parallel_dispatch"]["route"] == "sequential_fallback"
+    assert model.ensemble_parallel_dispatch_ == metadata["parallel_dispatch"]
     assert all(member.n_ensembles == 1 for member in model.estimators_)
     assert all(member.ensemble_mode == "bootstrap" for member in model.estimators_)
     assert all(
         member.ensemble_member_learning_rate == "policy"
         and member.ensemble_member_colsample == "policy"
+        and member.ensemble_parallelism == "auto"
         for member in model.estimators_
     )
     assert all(member.learning_rate is None for member in model.estimators_)
@@ -155,8 +179,44 @@ def test_public_v3_explicit_overrides_metadata_and_v4_roundtrip(tmp_path):
     assert restored.ensemble_metadata_ == metadata
     assert restored.get_params(deep=False) == model.get_params(deep=False)
     assert clone(restored).get_params(deep=False) == model.get_params(deep=False)
+    assert (
+        restored.ensemble_parallel_dispatch_
+        == model.ensemble_parallel_dispatch_
+    )
     restored.save_model(resaved)
     assert resaved.read_bytes() == path.read_bytes()
+
+
+def test_public_v3_loads_pre_parallelism_v1_archive(tmp_path):
+    X, y = _data(n=80)
+    model = DarkoRegressor(
+        **_params(ensemble_parallelism="sequential")
+    ).fit(X, y)
+    source = tmp_path / "current.npz"
+    legacy = tmp_path / "legacy-v1.npz"
+    model.save_model(source)
+
+    def make_legacy(arrays):
+        header = json.loads(str(arrays["header"]))
+        header["params"].pop("ensemble_parallelism")
+        metadata = header["metadata"]
+        metadata["version"] = 1
+        metadata.pop("parallel_dispatch")
+        metadata["base_constructor_params"].pop("ensemble_parallelism")
+        for record in metadata["members"]:
+            record["member_constructor_params"].pop("ensemble_parallelism")
+        arrays["header"] = np.array(json.dumps(header))
+        for index in range(8):
+            name = f"member_{index:04d}"
+            arrays[name] = _strip_parallelism_from_member(
+                np.asarray(arrays[name], dtype=np.uint8).tobytes()
+            )
+
+    _rewrite_archive(source, legacy, make_legacy)
+    restored = DarkoRegressor.load_model(legacy)
+    np.testing.assert_array_equal(restored.predict(X), model.predict(X))
+    assert restored.ensemble_parallelism == "auto"
+    assert not hasattr(restored, "ensemble_parallel_dispatch_")
 
 
 def test_public_v3_group_classifier_is_disjoint_and_restores_threads(tmp_path):
@@ -213,6 +273,41 @@ def test_public_v3_binary_classifier_uses_soft_vote():
         [member.predict_proba(X) for member in model.estimators_], axis=0
     )
     np.testing.assert_array_equal(model.predict_proba(X), expected)
+
+
+def test_public_v3_forced_parallel_is_exact_and_round_trips(tmp_path):
+    X, y = _data(n=100)
+    sequential = DarkoRegressor(
+        **_params(
+            ensemble_parallelism="sequential",
+            thread_count=14,
+        )
+    ).fit(X, y)
+    parallel = DarkoRegressor(
+        **_params(
+            ensemble_parallelism="parallel",
+            thread_count=14,
+        )
+    ).fit(X, y)
+
+    np.testing.assert_array_equal(parallel.predict(X), sequential.predict(X))
+    assert parallel.ensemble_parallel_dispatch_["route"] == "process_parallel"
+    assert parallel.ensemble_parallel_dispatch_["reason"] == (
+        "user_forced_parallel"
+    )
+    assert sequential.ensemble_parallel_dispatch_["route"] == (
+        "sequential_fallback"
+    )
+    assert sequential.ensemble_parallel_dispatch_["reason"] == (
+        "user_forced_sequential"
+    )
+    path = tmp_path / "parallel-v3.npz"
+    parallel.save_model(path)
+    restored = DarkoRegressor.load_model(path)
+    np.testing.assert_array_equal(restored.predict(X), parallel.predict(X))
+    assert restored.ensemble_parallel_dispatch_ == (
+        parallel.ensemble_parallel_dispatch_
+    )
 
 
 def test_public_v3_invalid_refit_restores_existing_single_model():
@@ -284,7 +379,10 @@ def test_public_v3_unsupported_surfaces_fail_transactionally(
     assert not hasattr(estimator, "estimators_")
 
 
-@pytest.mark.parametrize("corruption", ["version", "extra", "metadata", "params"])
+@pytest.mark.parametrize(
+    "corruption",
+    ["version", "extra", "metadata", "params", "parallel_dispatch"],
+)
 def test_public_v4_load_rejects_schema_and_contract_corruption(
     tmp_path,
     corruption,
@@ -306,6 +404,8 @@ def test_public_v4_load_rejects_schema_and_contract_corruption(
                 header["ensemble_format_version"] = 3
             elif corruption == "metadata":
                 header["metadata"]["recipe_version"] = 2
+            elif corruption == "parallel_dispatch":
+                header["metadata"]["parallel_dispatch"]["member_work"] += 1
             else:
                 header["params"]["ensemble_member_colsample"] = 0.7
 

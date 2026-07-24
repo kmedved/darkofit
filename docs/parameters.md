@@ -64,6 +64,7 @@ historical selection path.
 | `ensemble_mode` | `"bootstrap"` | Keep legacy bootstrap behavior, or select the fixed public `"v3"` recipe. |
 | `ensemble_member_learning_rate` | `"policy"` | In v3, use recipe value `0.15`; pass `None` or a positive finite number to override members only. |
 | `ensemble_member_colsample` | `"policy"` | In v3, use recipe value `0.85`; pass a finite number in `(0, 1]` to override members only. |
+| `ensemble_parallelism` | `"auto"` | In v3, use static activation for large member fits on the measured 14-core macOS-arm64 envelope. Use `"sequential"` to roll back or `"parallel"` to force process workers. |
 
 Each member uses its out-of-bag rows as an explicit early-stopping set.
 Regression predictions are member means; classification probabilities are
@@ -90,6 +91,17 @@ dedicated member parameters override the v3 policy. They must remain
 `"policy"` in legacy bootstrap mode. V3 archives use safe-NPZ format 4 with
 the resolved policy and sample/OOB provenance; legacy bootstrap archives stay
 on format 1.
+
+V3's default `ensemble_parallelism="auto"` uses a deterministic pre-fit score:
+80%-sampled rows × input features × planned iterations × output width
+(one for regression/binary, class count for multiclass). It engages seven
+two-thread member workers at `80,000,000` work units or above only on the
+measured 14-core macOS-arm64 envelope. Other shapes and machines stay
+sequential. The resolved route, reason, CPU topology, and score are stored in
+fitted metadata. `"sequential"` is the documented rollback; `"parallel"` is
+an explicit research/escape-hatch override. Parallel fits were behavior-exact
+on the four-case development grid and used about 2.28 GiB peak process-tree
+RSS at worst; this is engineering characterization, not a portability claim.
 
 ## Structure
 

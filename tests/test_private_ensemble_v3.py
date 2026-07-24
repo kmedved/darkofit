@@ -455,6 +455,7 @@ def test_private_v3_archive_without_later_public_params_remains_readable(
         "ensemble_mode",
         "ensemble_member_learning_rate",
         "ensemble_member_colsample",
+        "ensemble_parallelism",
     }
 
     def strip_public_params(params):

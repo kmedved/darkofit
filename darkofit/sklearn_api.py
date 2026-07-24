@@ -3,6 +3,7 @@
 import hashlib
 import json
 import math
+import platform
 import time
 import warnings
 from collections.abc import Mapping
@@ -36,6 +37,7 @@ from .auto_params import (
     resolve_learning_rate_details,
 )
 from .callbacks import WallClockStopper, _normalize_callbacks
+from ._numba_runtime import numba_thread_setup
 from .losses import VECTOR_LOSSES
 from .linear_residual import WeightedRidgeTrend, validate_linear_residual_loss
 from .serialization import (
@@ -60,7 +62,8 @@ _SKLEARN_ONLY = frozenset({
     "linear_residual_standardize", "preset", "selection_rounds",
     "n_ensembles", "ensemble_bootstrap", "ensemble_shared_preprocessing",
     "ensemble_mode", "ensemble_member_learning_rate",
-    "ensemble_member_colsample", "categorical_crosses",
+    "ensemble_member_colsample", "ensemble_parallelism",
+    "categorical_crosses",
 })
 
 _REFIT_STRATEGY_EXPONENT = {
@@ -233,6 +236,15 @@ def _normalize_ensemble_mode(mode):
     return token
 
 
+def _normalize_ensemble_parallelism(value):
+    token = str(value).strip().lower().replace("-", "_")
+    if token not in {"auto", "sequential", "parallel"}:
+        raise ValueError(
+            "ensemble_parallelism must be 'auto', 'sequential', or 'parallel'"
+        )
+    return token
+
+
 _PRIVATE_ENSEMBLE_V3_POLICY_FIELDS = ("learning_rate", "colsample")
 _PRIVATE_ENSEMBLE_V3_POLICY_VALUES = {
     "learning_rate": 0.15,
@@ -245,11 +257,12 @@ _ENSEMBLE_V3_POLICY_SENTINEL = "policy"
 _ENSEMBLE_V3_RELEASE_CANDIDATE = "ensemble_v3_release_candidate"
 _ENSEMBLE_V3_RELEASE_CANDIDATE_METADATA_VERSION = 5
 _ENSEMBLE_V3_RELEASE_CANDIDATE_MEMBERS = 8
-_ENSEMBLE_V3_PUBLIC_METADATA_VERSION = 1
+_ENSEMBLE_V3_PUBLIC_METADATA_VERSION = 2
 _ENSEMBLE_V3_PUBLIC_PARAM_DEFAULTS = {
     "ensemble_mode": "bootstrap",
     "ensemble_member_learning_rate": _ENSEMBLE_V3_POLICY_SENTINEL,
     "ensemble_member_colsample": _ENSEMBLE_V3_POLICY_SENTINEL,
+    "ensemble_parallelism": "auto",
 }
 _PRIVATE_ENSEMBLE_V3_PROTOTYPES = frozenset({
     _PRIVATE_ENSEMBLE_V3_PROTOTYPE,
@@ -264,6 +277,7 @@ _PRIVATE_ENSEMBLE_V3_MEMBER_OVERRIDES = frozenset({
     "ensemble_mode",
     "ensemble_member_learning_rate",
     "ensemble_member_colsample",
+    "ensemble_parallelism",
     "thread_count",
     *_PRIVATE_ENSEMBLE_V3_POLICY_FIELDS,
 })
@@ -330,8 +344,13 @@ def _canonicalize_legacy_ensemble_v3_params(params, *, allowed):
         return params
     values = dict(params)
     missing = set(_ENSEMBLE_V3_PUBLIC_PARAM_DEFAULTS).difference(values)
-    if allowed and missing == set(_ENSEMBLE_V3_PUBLIC_PARAM_DEFAULTS):
-        values.update(_ENSEMBLE_V3_PUBLIC_PARAM_DEFAULTS)
+    legitimate_legacy_shapes = {
+        frozenset(_ENSEMBLE_V3_PUBLIC_PARAM_DEFAULTS),
+        frozenset({"ensemble_parallelism"}),
+    }
+    if allowed and frozenset(missing) in legitimate_legacy_shapes:
+        for name in missing:
+            values[name] = _ENSEMBLE_V3_PUBLIC_PARAM_DEFAULTS[name]
     return values
 
 
@@ -460,9 +479,17 @@ def _normalize_ensemble_v3_release_candidate_overrides(
 def _resolve_public_ensemble_surface(estimator):
     """Validate the additive public ensemble controls before fitting."""
     mode = _normalize_ensemble_mode(estimator.ensemble_mode)
+    parallelism = _normalize_ensemble_parallelism(
+        estimator.ensemble_parallelism
+    )
     member_learning_rate = estimator.ensemble_member_learning_rate
     member_colsample = estimator.ensemble_member_colsample
     if mode == "bootstrap":
+        if parallelism != "auto":
+            raise ValueError(
+                "ensemble_parallelism must remain 'auto' when "
+                "ensemble_mode='bootstrap'"
+            )
         if (
             not (
                 isinstance(member_learning_rate, str)
@@ -1524,9 +1551,11 @@ def _validate_loaded_public_ensemble_v3_metadata(
     base_constructor_params,
 ):
     """Validate the public v4 mapping through the frozen v3 recipe."""
+    metadata_version = metadata.get("version")
+    legacy = metadata_version == 1
     saved_base_params = metadata.get("base_constructor_params")
     if (
-        metadata.get("version") != _ENSEMBLE_V3_PUBLIC_METADATA_VERSION
+        metadata_version not in {1, _ENSEMBLE_V3_PUBLIC_METADATA_VERSION}
         or metadata.get("ensemble_mode") != "v3"
         or metadata.get("recipe_contract") != _ENSEMBLE_V3_PUBLIC_CONTRACT
         or metadata.get("recipe_version") != 1
@@ -1539,8 +1568,179 @@ def _validate_loaded_public_ensemble_v3_metadata(
         raise ValueError(
             "invalid DarkoFit model: public ensemble-v3 contract is invalid"
         )
+    dispatch = metadata.get("parallel_dispatch")
+    if legacy:
+        if dispatch is not None:
+            raise ValueError(
+                "invalid DarkoFit model: legacy ensemble-v3 carries "
+                "parallel dispatch"
+            )
+    else:
+        expected_dispatch_keys = {
+            "version",
+            "input_rows",
+            "sampled_rows",
+            "active_features",
+            "planned_iterations",
+            "output_width",
+            "member_work",
+            "requested",
+            "minimum_work",
+            "total_thread_budget",
+            "workers",
+            "member_threads",
+            "route",
+            "reason",
+            "platform_system",
+            "platform_machine",
+            "measured_auto_envelope",
+        }
+        if (
+            not isinstance(dispatch, Mapping)
+            or set(dispatch) != expected_dispatch_keys
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: ensemble-v3 parallel dispatch is "
+                "invalid"
+            )
+        integer_fields = (
+            "version",
+            "input_rows",
+            "sampled_rows",
+            "active_features",
+            "planned_iterations",
+            "output_width",
+            "member_work",
+            "minimum_work",
+            "total_thread_budget",
+            "workers",
+            "member_threads",
+        )
+        integers_valid = all(
+            not isinstance(dispatch.get(name), bool)
+            and isinstance(dispatch.get(name), int)
+            and dispatch[name] >= (0 if name == "minimum_work" else 1)
+            for name in integer_fields
+        )
+        requested = dispatch.get("requested")
+        route = dispatch.get("route")
+        reason = dispatch.get("reason")
+        input_rows = metadata.get("input_row_count")
+        input_features = metadata.get("input_feature_count")
+        input_shape_valid = (
+            not isinstance(input_rows, bool)
+            and isinstance(input_rows, int)
+            and input_rows >= 2
+            and not isinstance(input_features, bool)
+            and isinstance(input_features, int)
+            and input_features >= 1
+        )
+        expected_output_width = (
+            int(len(members[0].classes_))
+            if classification
+            and bool(getattr(members[0], "_multiclass", False))
+            else 1
+        )
+        expected_sampled_rows = min(
+            input_rows - 1,
+            max(
+                1,
+                int(
+                    math.floor(
+                        0.8 * input_rows + 0.5
+                    )
+                ),
+            ),
+        ) if input_shape_valid else None
+        schedule = metadata.get("private_b3_schedule")
+        dispatch_valid = (
+            input_shape_valid
+            and integers_valid
+            and dispatch["version"] == _B3_V2_PARALLEL_DISPATCH_VERSION
+            and dispatch["input_rows"] == input_rows
+            and dispatch["sampled_rows"] == expected_sampled_rows
+            and dispatch["active_features"] == input_features
+            and dispatch["planned_iterations"]
+            == saved_base_params.get("iterations")
+            and dispatch["output_width"] == expected_output_width
+            and dispatch["member_work"]
+            == dispatch["sampled_rows"]
+            * dispatch["active_features"]
+            * dispatch["planned_iterations"]
+            * dispatch["output_width"]
+            and requested in {"auto", "sequential", "parallel"}
+            and route in {"sequential_fallback", "process_parallel"}
+            and reason
+            in {
+                "user_forced_sequential",
+                "user_forced_parallel",
+                "outside_measured_envelope",
+                "below_minimum_work",
+                "at_or_above_minimum_work",
+            }
+            and isinstance(dispatch.get("platform_system"), str)
+            and isinstance(dispatch.get("platform_machine"), str)
+            and isinstance(dispatch.get("measured_auto_envelope"), bool)
+            and (
+                (
+                    route == "sequential_fallback"
+                    and metadata.get("sequential") is True
+                    and schedule is None
+                    and dispatch["workers"] == 1
+                    and all(
+                        record.get("fitted_thread_count")
+                        == dispatch["member_threads"]
+                        for record in metadata.get("members", ())
+                    )
+                )
+                or (
+                    route == "process_parallel"
+                    and metadata.get("sequential") is False
+                    and isinstance(schedule, Mapping)
+                    and dispatch["workers"] == schedule.get("workers")
+                    and dispatch["member_threads"]
+                    == schedule.get("member_threads")
+                    and dispatch["total_thread_budget"]
+                    == schedule.get("total_thread_budget")
+                )
+            )
+            and (
+                requested != "sequential"
+                or (
+                    route == "sequential_fallback"
+                    and reason == "user_forced_sequential"
+                )
+            )
+            and (
+                requested != "parallel"
+                or (
+                    route == "process_parallel"
+                    and reason == "user_forced_parallel"
+                )
+            )
+            and (
+                requested != "auto"
+                or reason
+                in {
+                    "outside_measured_envelope",
+                    "below_minimum_work",
+                    "at_or_above_minimum_work",
+                }
+            )
+        )
+        if not dispatch_valid:
+            raise ValueError(
+                "invalid DarkoFit model: ensemble-v3 parallel dispatch "
+                "contradicts fitted provenance"
+            )
     try:
         if _normalize_ensemble_mode(saved_base_params["ensemble_mode"]) != "v3":
+            raise ValueError
+        if _normalize_ensemble_parallelism(
+            saved_base_params.get("ensemble_parallelism", "auto")
+        ) != (
+            "auto" if legacy else dispatch["requested"]
+        ):
             raise ValueError
         future_values, _ = _normalize_ensemble_v3_release_candidate_overrides(
             saved_base_params["ensemble_member_learning_rate"],
@@ -1569,7 +1769,7 @@ def _validate_loaded_public_ensemble_v3_metadata(
         index_provenance=index_provenance,
         group_codes=group_codes,
         base_constructor_params=base_constructor_params,
-        allow_legacy_param_schema=False,
+        allow_legacy_param_schema=legacy,
     )
 
 
@@ -4286,6 +4486,7 @@ class _RefitParamsMixin:
             "_ensemble_group_codes_",
             "ensemble_best_iterations_",
             "ensemble_learning_rates_",
+            "ensemble_parallel_dispatch_",
             "expected_value_",
         ):
             if hasattr(self, name):
@@ -4367,6 +4568,9 @@ class _RefitParamsMixin:
             else float("nan")
         )
         self.ensemble_metadata_ = metadata
+        dispatch = metadata.get("parallel_dispatch")
+        if dispatch is not None:
+            self.ensemble_parallel_dispatch_ = dict(dispatch)
         return self
 
     def _ensemble_params_header(self):
@@ -7166,6 +7370,7 @@ def _private_ensemble_v3_expected_member_params(
         "ensemble_mode": "bootstrap",
         "ensemble_member_learning_rate": _ENSEMBLE_V3_POLICY_SENTINEL,
         "ensemble_member_colsample": _ENSEMBLE_V3_POLICY_SENTINEL,
+        "ensemble_parallelism": "auto",
     })
     for name in _PRIVATE_ENSEMBLE_V3_POLICY_FIELDS:
         expected[name] = policy_resolutions[name]["resolved"]
@@ -7226,6 +7431,83 @@ def _b3_parallel_work_estimate(estimator, X, y):
     }
 
 
+def _ensemble_parallel_thread_budget(thread_count):
+    """Resolve the same bounded CPU budget used by a normal member fit."""
+    with numba_thread_setup():
+        import numba
+
+        maximum = int(numba.config.NUMBA_NUM_THREADS)
+    if thread_count is None or thread_count < 0:
+        return maximum
+    return max(1, min(int(thread_count), maximum))
+
+
+def _b3_measured_auto_envelope(total_thread_budget):
+    """Return whether automatic B3 engagement is characterized here."""
+    return (
+        platform.system() == "Darwin"
+        and platform.machine().lower() in {"arm64", "aarch64"}
+        and int(total_thread_budget) == 14
+    )
+
+
+def _b3_parallel_dispatch(
+    estimator,
+    X,
+    y,
+    *,
+    total_thread_budget,
+    minimum_work,
+    requested,
+    enforce_measured_envelope=True,
+):
+    requested = _normalize_ensemble_parallelism(requested)
+    workers, member_threads = _resolve_b3_parallel_topology(
+        _normalize_n_ensembles(estimator.n_ensembles),
+        total_thread_budget,
+    )
+    work = _b3_parallel_work_estimate(estimator, X, y)
+    measured_envelope = _b3_measured_auto_envelope(total_thread_budget)
+    sequential_threads = _ensemble_parallel_thread_budget(
+        estimator.thread_count
+    )
+    if requested == "sequential":
+        engaged = False
+        reason = "user_forced_sequential"
+    elif requested == "parallel":
+        if workers <= 1:
+            raise ValueError(
+                "ensemble_parallelism='parallel' requires a thread budget "
+                "that resolves to more than one worker"
+            )
+        engaged = True
+        reason = "user_forced_parallel"
+    elif enforce_measured_envelope and not measured_envelope:
+        engaged = False
+        reason = "outside_measured_envelope"
+    elif work["member_work"] < minimum_work:
+        engaged = False
+        reason = "below_minimum_work"
+    else:
+        engaged = True
+        reason = "at_or_above_minimum_work"
+    return {
+        **work,
+        "requested": requested,
+        "minimum_work": int(minimum_work),
+        "total_thread_budget": int(total_thread_budget),
+        "workers": int(workers if engaged else 1),
+        "member_threads": (
+            int(member_threads) if engaged else int(sequential_threads)
+        ),
+        "route": "process_parallel" if engaged else "sequential_fallback",
+        "reason": reason,
+        "platform_system": platform.system(),
+        "platform_machine": platform.machine(),
+        "measured_auto_envelope": bool(measured_envelope),
+    }
+
+
 def _fit_private_ensemble_v3_member(payload):
     """Fit one preplanned v3 member; suitable for a process worker."""
     estimator = payload["estimator"]
@@ -7244,6 +7526,7 @@ def _fit_private_ensemble_v3_member(payload):
         "ensemble_mode": "bootstrap",
         "ensemble_member_learning_rate": _ENSEMBLE_V3_POLICY_SENTINEL,
         "ensemble_member_colsample": _ENSEMBLE_V3_POLICY_SENTINEL,
+        "ensemble_parallelism": "auto",
         **payload["policy_member_params"],
     }
     if payload["member_thread_count"] is not None:
@@ -8067,28 +8350,16 @@ def _fit_public_ensemble_v3_parallel_candidate(
     minimum_work = int(minimum_work)
     if minimum_work < 0:
         raise ValueError("minimum_work must be nonnegative")
-    workers, member_threads = _resolve_b3_parallel_topology(
-        n_members, total_thread_budget
+    dispatch = _b3_parallel_dispatch(
+        estimator,
+        X,
+        y,
+        total_thread_budget=total_thread_budget,
+        minimum_work=minimum_work,
+        requested=estimator.ensemble_parallelism,
+        enforce_measured_envelope=False,
     )
-    work = _b3_parallel_work_estimate(estimator, X, y)
-    engaged = workers > 1 and work["member_work"] >= minimum_work
-    dispatch = {
-        **work,
-        "minimum_work": minimum_work,
-        "total_thread_budget": int(total_thread_budget),
-        "workers": int(workers if engaged else 1),
-        "member_threads": (
-            int(member_threads) if engaged else int(total_thread_budget)
-        ),
-        "route": "process_parallel" if engaged else "sequential_fallback",
-        "reason": (
-            "at_or_above_minimum_work"
-            if engaged
-            else "insufficient_worker_parallelism"
-            if workers <= 1
-            else "below_minimum_work"
-        ),
-    }
+    engaged = dispatch["route"] == "process_parallel"
     release_candidate_params = {
         "ensemble_mode": "v3",
         "ensemble_member_learning_rate": future_values["learning_rate"],
@@ -8132,7 +8403,87 @@ def _fit_public_ensemble_v3_parallel_candidate(
             callbacks=callbacks,
             ordinal_features=ordinal_features,
         )
-    result.b3_parallel_dispatch_ = dispatch
+    result.ensemble_metadata_["parallel_dispatch"] = dict(dispatch)
+    result.ensemble_parallel_dispatch_ = dict(dispatch)
+    return result
+
+
+def _fit_public_ensemble_v3_with_parallelism(
+    estimator,
+    X,
+    y,
+    *,
+    future_values,
+    explicit_values,
+    cat_features=None,
+    eval_set=None,
+    groups=None,
+    sample_weight=None,
+    eval_sample_weight=None,
+    callbacks=None,
+    ordinal_features=None,
+):
+    """Fit public v3 through its static, rollback-capable B3 dispatch."""
+    requested = _normalize_ensemble_parallelism(
+        estimator.ensemble_parallelism
+    )
+    total_thread_budget = _ensemble_parallel_thread_budget(
+        estimator.thread_count
+    )
+    dispatch = _b3_parallel_dispatch(
+        estimator,
+        X,
+        y,
+        total_thread_budget=total_thread_budget,
+        minimum_work=_B3_V2_PARALLEL_MINIMUM_WORK,
+        requested=requested,
+    )
+    if dispatch["route"] == "process_parallel":
+        result = _fit_private_ensemble_v3(
+            estimator,
+            X,
+            y,
+            sampling="without_replacement",
+            sampling_unit=estimator.ensemble_bootstrap,
+            sample_fraction=0.8,
+            member_policy="donor_balanced_v1",
+            explicit_user_params=tuple(explicit_values),
+            explicit_user_values=explicit_values,
+            release_candidate_params={
+                "ensemble_mode": "v3",
+                "ensemble_member_learning_rate": future_values[
+                    "learning_rate"
+                ],
+                "ensemble_member_colsample": future_values["colsample"],
+            },
+            public_fit_surface=True,
+            cat_features=cat_features,
+            eval_set=eval_set,
+            groups=groups,
+            sample_weight=sample_weight,
+            eval_sample_weight=eval_sample_weight,
+            callbacks=callbacks,
+            ordinal_features=ordinal_features,
+            b3_parallel=True,
+            b3_total_thread_budget=total_thread_budget,
+        )
+    else:
+        result = _fit_public_ensemble_v3(
+            estimator,
+            X,
+            y,
+            future_values=future_values,
+            explicit_values=explicit_values,
+            cat_features=cat_features,
+            eval_set=eval_set,
+            groups=groups,
+            sample_weight=sample_weight,
+            eval_sample_weight=eval_sample_weight,
+            callbacks=callbacks,
+            ordinal_features=ordinal_features,
+        )
+    result.ensemble_metadata_["parallel_dispatch"] = dict(dispatch)
+    result.ensemble_parallel_dispatch_ = dict(dispatch)
     return result
 
 
@@ -8185,6 +8536,10 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         Keep legacy bootstrap sampling or select the fixed public v3 recipe.
         V3 requires eight members and uses deterministic 80%
         without-replacement samples with donor-balanced member settings.
+    ensemble_parallelism : {"auto", "sequential", "parallel"}, default "auto"
+        For v3, automatically parallelize sufficiently large member fits
+        inside the measured 14-core macOS-arm64 envelope. ``"sequential"`` is
+        the rollback path; ``"parallel"`` explicitly forces process workers.
     categorical_crosses : bool, default False
         Run a held-out automatic audition of group-centered numeric-by-category
         features for eligible scalar-RMSE CatBoost fits. Data that is too
@@ -8235,6 +8590,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                  ensemble_mode="bootstrap",
                  ensemble_member_learning_rate="policy",
                  ensemble_member_colsample="policy",
+                 ensemble_parallelism="auto",
                  categorical_crosses=False,
                  oblivious_kernel="auto"):
         self.iterations = iterations
@@ -8303,6 +8659,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self.ensemble_mode = ensemble_mode
         self.ensemble_member_learning_rate = ensemble_member_learning_rate
         self.ensemble_member_colsample = ensemble_member_colsample
+        self.ensemble_parallelism = ensemble_parallelism
         self.categorical_crosses = categorical_crosses
         self.oblivious_kernel = oblivious_kernel
         self.auto_learning_rate_probe = auto_learning_rate_probe
@@ -8776,7 +9133,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 )
             )
         if ensemble_mode == "v3":
-            return _fit_public_ensemble_v3(
+            return _fit_public_ensemble_v3_with_parallelism(
                 self,
                 X,
                 y,
@@ -10068,6 +10425,10 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         Keep legacy bootstrap sampling or select the fixed public v3 recipe.
         V3 requires eight members and uses deterministic 80%
         without-replacement samples with donor-balanced member settings.
+    ensemble_parallelism : {"auto", "sequential", "parallel"}, default "auto"
+        For v3, automatically parallelize sufficiently large member fits
+        inside the measured 14-core macOS-arm64 envelope. ``"sequential"`` is
+        the rollback path; ``"parallel"`` explicitly forces process workers.
     oblivious_kernel : {"auto", "fused", "unfused"}, default "auto"
         Static fused-kernel dispatch for eligible binary CatBoost-mode fits.
         On macOS arm64 within the measured shape envelope, ``"auto"`` uses a
@@ -10106,6 +10467,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
                  ensemble_mode="bootstrap",
                  ensemble_member_learning_rate="policy",
                  ensemble_member_colsample="policy",
+                 ensemble_parallelism="auto",
                  oblivious_kernel="auto"):
         self.iterations = iterations
         self.learning_rate = learning_rate
@@ -10156,6 +10518,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         self.ensemble_mode = ensemble_mode
         self.ensemble_member_learning_rate = ensemble_member_learning_rate
         self.ensemble_member_colsample = ensemble_member_colsample
+        self.ensemble_parallelism = ensemble_parallelism
         self.oblivious_kernel = oblivious_kernel
         self.auto_learning_rate_probe = auto_learning_rate_probe
         self.auto_learning_rate_probe_values = auto_learning_rate_probe_values
@@ -10215,7 +10578,7 @@ class DarkoClassifier(ClassifierMixin, _RefitParamsMixin, BaseEstimator):
         if not getattr(self, "_suppress_wrapper_deprecation_warning", False):
             self._warn_wrapper_deprecated_options(stacklevel=4)
         if ensemble_mode == "v3":
-            return _fit_public_ensemble_v3(
+            return _fit_public_ensemble_v3_with_parallelism(
                 self,
                 X,
                 y,
