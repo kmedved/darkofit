@@ -9,41 +9,40 @@ boundary, evidence class, result, limitations, and terminal decision for the
 major correctness, benchmark, confirmation, and release-verification work.
 Individual frozen artifacts remain authoritative.
 
-The binding decision constitution is
-[`SHIPPING_POLICY.md`](SHIPPING_POLICY.md). The active agenda is
-[`../PRODUCT_OFFENSE_PLAN.md`](../PRODUCT_OFFENSE_PLAN.md).
+The current shipping rules are [`../SHIP_RULES.md`](../SHIP_RULES.md), and
+the active sequence is [`../R2_PLAN.md`](../R2_PLAN.md).
+[`SHIPPING_POLICY.md`](SHIPPING_POLICY.md) remains historical context for
+records produced under the retired preregistration/Tier-D regime.
 
 ## Evidence classes
 
-- **Tier-E:** opt-in APIs, presets, recipes, and behavior-exact engine work.
-  Correctness and exactness are binding. Measured quality, speed, and memory
-  are reported descriptively with workload and dispersion; they are not
-  universal certifications.
-- **Tier-D:** defaults and automatic modeling policies. These require a
-  source-frozen protocol, design-time power analysis, fresh confirmation data,
-  bootstrap uncertainty, leave-one-dataset-out concentration, a bounded harm
-  route, declared costs, and a no-rerun decision.
+Historical entries retain their original Tier-E/Tier-D labels so their
+provenance is understandable. They are not current approval gates.
 
-Win counts are never gates. A selector's exact ties and safe declines are
-correct behavior, while magnitude, uncertainty, concentration, and worst-case
-harm determine whether a default ships.
+- **Development evidence** is where mechanisms are built and compared.
+- **Release validation** is a deliberately rare holdout check, never a tuning
+  surface.
+- **Release scoreboard** is the compute ladder against the current
+  ChimeraBoost release. It answers "are we winning" but is not tuned against.
+- **Product verification** covers correctness, compatibility, serialization,
+  packaging, and behavior-exact engineering.
+
+Defaults follow the three-part `SHIP_RULES` check: clearly better on
+development, not worse on holdout, and revertible. Opt-ins ship on correctness
+plus honest characterization.
 
 ## Artifact lifecycle
 
-1. Register dataset identity and contamination boundaries.
-2. Freeze source, environment, arms, coordinates, metrics, decision rule,
-   power calculation, and cost budgets before outcomes.
-3. Write raw results create-only and attest source hashes.
-4. Analyze the frozen artifact once. A failure is retained as a failure.
-5. Keep confirmation panels and lockboxes sealed unless the protocol
-   explicitly authorizes access.
-6. Use spent evidence for development or prioritization only, never a fresh
-   confirmation claim.
+1. Pin source versions and seeds so reruns are meaningful.
+2. Label development, release-validation, and release-scoreboard data
+   honestly.
+3. Keep raw artifacts and hashes for material comparisons.
+4. Treat benchmark harnesses as normal software: fix bugs, rerun when needed,
+   and note material reruns in `TESTING_LOG.md`.
+5. Do not tune against the holdout or the rival release ladder.
 
-Closed candidates are not retroactively promoted under a friendlier Tier-D
-rule. Tier-E product surfaces may ship immediately when an earlier rejection
-concerned only an inapplicable default-grade or binary engineering bar, but
-their documentation must retain the original outcome and scope.
+Prior frozen records are not rewritten; current conclusions are added as new
+dated evidence.
 
 ## Generated status
 

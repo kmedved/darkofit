@@ -1,0 +1,36 @@
+{
+  "decision": "descriptive_release_scoreboard",
+  "input": {
+    "executed_analyzer_sha256": "1d958ff2ba26567f3c71f8f7066664b9c3d8aaa5521e1dcbcd2cd8f0ed9d51e6",
+    "manifest_sha256": "3ddc1a8b1a2a0fab80afd0a5d6d7e7e895230d8a731a2e391c6b48965330f63b",
+    "planned_analyzer_sha256": "0cc073c3cb9493a6f6a32b2e2be85d942c318f56a4535ec2b8f720efa49cdbb2",
+    "raw_sha256": "404692f6f89d517bfeb470127267e3b18857a1c3e8bb12acf9cda6fcf9984809",
+    "terminal_sha256": "d54580ce7453ab4e8b572947722c5ab81c0f360d5c09e748985f0d395ef19037"
+  },
+  "kind": "v012_compute_ladder_analysis_attestation",
+  "outputs": {
+    "coordinate_ratios.csv": {
+      "bytes": 163310,
+      "path": "coordinate_ratios.csv",
+      "sha256": "5d03c3c73ffb6d11fe8de8e64f2cec511b29bf4689d94ce976c7a17ea2b07b34"
+    },
+    "per_dataset.csv": {
+      "bytes": 26938,
+      "path": "per_dataset.csv",
+      "sha256": "4429bd1043ef11b7fbf755e822a61069489b50a177d92fc6565db40ee09e4e48"
+    },
+    "report.md": {
+      "bytes": 2814,
+      "path": "report.md",
+      "sha256": "5c40287f6a85f3ac535951711facb9478b1cb5c30ecd5a9ae3257263ece1009a"
+    },
+    "summary.json": {
+      "bytes": 35384,
+      "path": "summary.json",
+      "sha256": "d2c1d814f549f7a5b12aef241a8670f20dedc489a413e4762a7c82b3ccc347f2"
+    }
+  },
+  "run_id": "v012-release-compute-ladder-20260724",
+  "schema_version": 1,
+  "strict_pareto_victory": false
+}

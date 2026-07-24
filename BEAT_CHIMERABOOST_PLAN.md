@@ -25,6 +25,16 @@ curve at every evaluated budget, with the memory lead retained and the
 prediction curves reported the same way. A win at one budget cannot excuse
 a loss at another; dominance means the whole curve.
 
+**Current milestone, 2026-07-24:** DarkoFit v0.12.0 does not dominate
+ChimeraBoost v0.23.0 on the fixed 13-dataset regression ladder. D0/M0 measured
+`1.009709x` RMSE, `2.601618x` fit time, and `3.271042x` prediction time.
+DA/MA measured `0.988095x`, `1.250035x`, and `3.345106x`; D8/M8 measured
+`1.036291x`, `3.570808x`, and `1.824999x`. DarkoFit had zero no-worse
+comparable budgets on both cost frontiers. The rival's ensemble is the main
+product gap: it improved on its default on all 13 datasets at `0.964608x`
+RMSE while fitting in `0.565461x` the default's time. Full evidence:
+[`benchmarks/v012_compute_ladder_20260724_result.md`](benchmarks/v012_compute_ladder_20260724_result.md).
+
 Historical pre-v0.11 frontier snapshot against the 0.18 pin: DarkoFit was
 ahead on
 sports quality (−2.9%), training speed (0.81×), memory (0.84×), and
@@ -204,8 +214,9 @@ on M2 panel shapes (1.32×). Sequence:
    singles-only M2 and runs at release cadence only.
 2. **M4 TabArena-Lite: deferred** per Phase A item 3; when re-authorized,
    once per release, descriptive, next to the rival's published position.
-3. **M5 sentinels** guard drift between milestones; **M6 v2** ranks
-   quality-development candidates (subject to the B-2 caution).
+3. **M5 sentinels** guard drift between milestones; the rebuilt **M6 v3**
+   slice supports quality-development comparisons. Historical M6 v2 verdicts
+   remain subject to the B-2 caution.
 4. **Pin policy:** every campaign declares its rival pin explicitly; the
    local ChimeraBoost checkout's HEAD is never an implicit comparator. When
    they ship a release that plausibly moves an axis (their CHANGELOG is
@@ -214,6 +225,12 @@ on M2 panel shapes (1.32×). Sequence:
 5. **Scoreboard note per milestone:** one short dated table against §0's
    victory conditions, so "are we ahead" always has a current, honest,
    one-page answer.
+
+**v0.12 cadence result:** complete against public ChimeraBoost v0.23.0.
+Neither measured cost frontier passed, and DarkoFit also missed the
+all-profile peak-RSS condition because D0/M0 was `1.022004x`. This is the
+binding current scoreboard until the next public release refreshes the rival
+pin.
 
 ---
 

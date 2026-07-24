@@ -1,8 +1,8 @@
 # DarkoFit testing log
 
-_Canonical navigation ledger. Updated 2026-07-22 after the GitHub-only
-`v0.11.0` release, public ensemble-v3 exposure, and owner-promoted static
-fused/unfused dispatch._
+_Canonical navigation ledger. Updated 2026-07-24 after the GitHub-only
+`v0.12.0` release, automatic linear-leaf selector, automatic ensemble
+parallelism, and current-release compute ladder._
 
 This file records what DarkoFit has tested, why it was tested, what happened,
 and which artifact controls the conclusion. It is intentionally broader than
@@ -20,34 +20,35 @@ the version boundary under which it was true.
 | Label | Meaning |
 | --- | --- |
 | Product verification | Unit, integration, compatibility, serialization, packaging, or CI evidence. |
-| Tier-E measurement | Descriptive performance or behavior-exact engine evidence. It can support a scoped engineering fact or opt-in product surface, not a universal default claim. |
-| Spent development | Outcomes were inspected and may guide mechanism research, but cannot provide fresh confirmation. |
-| Tier-D confirmation | Prospectively frozen evidence for a default or automatic policy, including uncertainty, concentration, harm, and cost gates. |
+| Tier-E measurement | Historical label for descriptive performance or behavior-exact engine evidence. |
+| Spent development | Historical label for outcomes inspected during mechanism research. |
+| Tier-D confirmation | Historical label for evidence produced under the retired preregistration/default path. |
 | Closed | The tested candidate has a terminal negative decision for the declared route. It is not silently retuned on the same evidence. |
-| Sealed | Registered outcomes were not accessed. A lockbox remains available only for a future candidate that earns authorization. |
+| Sealed | Historical label for outcomes that were not accessed. Current holdouts are consulted deliberately under `SHIP_RULES.md`. |
 
-The binding prospective rules are in
-[`SHIPPING_POLICY.md`](SHIPPING_POLICY.md). The generated high-level frontier
-is [`benchmark_status.md`](benchmark_status.md), and the longer numerical
-checkpoint is [`../BENCHMARK_NOTES.md`](../BENCHMARK_NOTES.md).
+The current rules are in [`../SHIP_RULES.md`](../SHIP_RULES.md).
+[`SHIPPING_POLICY.md`](SHIPPING_POLICY.md) is historical context for records
+created under the retired regime. The generated historical frontier is
+[`benchmark_status.md`](benchmark_status.md), and the longer numerical
+checkpoint is [`../BENCHMARK_NOTES.md`](../BENCHMARK_NOTES.md). Current
+release-cadence results are linked from the checkpoint table below.
 
 ## Current checkpoint
 
 | Boundary | Current state |
 | --- | --- |
-| DarkoFit release | GitHub-only `v0.11.0`, exact tag commit `0b820e332cec2c083b1dd89eef0fe306d69cfc0e`; not published to PyPI |
-| Release verification | GitHub Actions run `29942771031` passed at the exact tag commit: each Python 3.9/3.11/3.13 library lane reported `1,329 passed / 11 skipped / 4 deselected`; the campaign lane reported `1,692 passed / 29 skipped`, then 19 contract checks passed |
-| GitHub integration | Campaign, strict documentation, generated-evidence, package-build, and all supported-Python lanes passed before the annotated tag and GitHub release were published |
+| DarkoFit release | GitHub-only `v0.12.0`, exact tag commit `a9eb4dbbf8af0e6db42e9ace433e7a267c80fca7`; not published to PyPI |
+| Release verification | GitHub Actions run `30092198924` passed all five lanes at the exact tag source; the final local release suite reported `3,375 passed / 42 skipped`, and the built wheel passed isolated fit/predict smoke |
+| GitHub integration | Campaign, strict documentation, generated-evidence, package-build, and all supported-Python lanes passed before the annotated tag and GitHub release were published; the release wheel, sdist, and checksums are attached to `v0.12.0` |
 | v0.10.0 final release CI | GitHub Actions run `29686258603` passed for that tagged source |
 | Historical broad comparator | ChimeraBoost 0.14.1 on the frozen 13-dataset same-machine regression panel |
 | Historical sports comparator | ChimeraBoost 0.15.0 on the frozen player-disjoint sports panel |
-| Latest descriptive comparator | ChimeraBoost `v0.18.0-6-gf14be60`, exact commit `f14be606b641f1bf0dc92bb14b3951f1fe631c6b`, on spent basketball data |
-| CTR23 lockbox | Sealed; Panel 3 retained zero candidates and did not authorize fresh access |
+| Latest release scoreboard | ChimeraBoost `v0.23.0`, exact commit `6667843b8970454b0f582ffd1ab2be033989c578`, on the 13 fixed historical M2 regression datasets; DarkoFit did not achieve fit, prediction, memory, or strict whole-curve dominance |
+| CTR23 release validation | Observed once for selector-v3; it remains a rare release-validation set and is not a tuning surface |
 
-The two final local-suite totals differ only because 25 environment-gated
-tests passed in one environment and skipped in the other. Both collected the
-same 2,673 tests. The reconciliation and final CI boundary are recorded in
-[`FABLE_FEEDBACK_CLOSEOUT.md`](FABLE_FEEDBACK_CLOSEOUT.md).
+The older 2,673-test environment reconciliation remains documented in
+[`FABLE_FEEDBACK_CLOSEOUT.md`](FABLE_FEEDBACK_CLOSEOUT.md); it describes an
+earlier release boundary, not the current v0.12 suite.
 
 ## Chronological campaign record
 
@@ -3674,6 +3675,74 @@ B-archive simulation remains non-loadable, optional size telemetry.
 12. **Terminal decision/next action:** the regularized GPBoost recipe is the
     only supported improvement from this study. Retain it as external context;
     do not make a DarkoFit change or tune again on these 2008--2013/2020 rows.
+### 87. v0.12 release compute ladder (2026-07-24)
+
+1. **Execution date/source:** 2026-07-24; public DarkoFit `v0.12.0`, exact
+   annotated-tag commit `a9eb4dbbf8af0e6db42e9ace433e7a267c80fca7`.
+2. **Comparators:** ChimeraBoost `v0.23.0`, exact commit
+   `6667843b8970454b0f582ffd1ab2be033989c578`, verified as the latest public
+   release before worker zero and again at result close.
+3. **Evidence class:** descriptive release-cadence product scoreboard under
+   `SHIP_RULES.md`; it is not a tuning panel, default gate, fresh
+   confirmation, lockbox inspection, or TabArena placement.
+4. **Data/splits:** the 13 fixed historical M2 regression datasets and their
+   three registered `(repeat, fold)` coordinates, loaded from TabArena commit
+   `4cd1d2526874962daae048a6f2dcf34aa272f3fa`. Datasets are equally weighted
+   after averaging coordinate log ratios.
+5. **Arms/policies:** direct public default, accuracy, and ensemble8 estimators
+   for both engines. DarkoFit used `{}`, `preset="accuracy"`, and
+   `ensemble_mode="v3", n_ensembles=8`; ChimeraBoost used `{}`, `depth=10`,
+   and `n_ensembles=8`.
+6. **Environment/repeats:** one 14-core Apple-silicon host, 14-thread ceiling,
+   zero GPUs, fresh sequential workers, reduced-iteration route warmup outside
+   timing, three split coordinates per dataset, 234 workers total, and an
+   idle-machine preflight.
+7. **Runner/command:** published
+   [`run_v012_compute_ladder.py`](run_v012_compute_ladder.py), invoked from the
+   isolated ladder environment with the exact DarkoFit, ChimeraBoost, and
+   TabArena worktrees named in the manifest; analysis used
+   [`analyze_v012_compute_ladder.py`](analyze_v012_compute_ladder.py) against
+   the completed output directory.
+8. **Hashes:** protocol
+   `5b885d0ab36c5c1a7545615f9aad3cae9c714758b67157f7e45359431f3d7dfc`;
+   runner `af78f19d7bf95ad1799874936ad3f5ee11f7ceca516729cad58b230011cf9a3d`;
+   raw `404692f6f89d517bfeb470127267e3b18857a1c3e8bb12acf9cda6fcf9984809`;
+   summary `d2c1d814f549f7a5b12aef241a8670f20dedc489a413e4762a7c82b3ccc347f2`;
+   planned analyzer
+   `0cc073c3cb9493a6f6a32b2e2be85d942c318f56a4535ec2b8f720efa49cdbb2`;
+   executed analyzer
+   `1d958ff2ba26567f3c71f8f7066664b9c3d8aaa5521e1dcbcd2cd8f0ed9d51e6`.
+9. **Primary results:** D0/M0 RMSE `1.009709x`, fit `2.601618x`, predict
+   `3.271042x`; DA/MA RMSE `0.988095x`, fit `1.250035x`, predict `3.345106x`;
+   D8/M8 RMSE `1.036291x`, fit `3.570808x`, predict `1.824999x`.
+   ChimeraBoost ensemble8 improved on its default on all 13 datasets at
+   `0.964608x` aggregate RMSE and `0.565461x` fit time. DarkoFit achieved no
+   no-worse comparable budget on either stepwise frontier.
+10. **Costs, passed and failed conditions:** 234/234 workers completed once
+    with zero RSS-sampling errors, a minimum prediction interval of 0.561
+    seconds, and ambient Numba threads restored to 14 in every worker.
+    DarkoFit retained lower matched peak RSS at accuracy (`0.917149x`) and
+    ensemble8 (`0.390804x`), but not default (`1.022004x`). Fit-frontier,
+    prediction-frontier, matched-memory, and strict Pareto dominance all
+    failed. The evidence checkpoint then passed `3,383` tests with `37`
+    skips, strict MkDocs, and the generated Pareto-status check in the real
+    host environment.
+11. **Limitations/non-claims:** fixed historical regression data, one
+    Apple-silicon machine, and registered test-batch shapes only. This does not
+    cover classification, CatBoost, fresh data, CTR23, the newest sports
+    season, or TabArena placement. Cross-release changes from the v0.11/v0.20
+    ladder are descriptive because both product versions changed.
+12. **Terminal decision/next action:** record a clear current-release loss.
+    The initial analyzer verified all raw workers but stopped before producing
+    metrics because its historical summarizer expected retired
+    `CONTRACT_ID`; commit `d4b9af4` fixed only that isolated compatibility
+    path. The 234-worker measurement was not rerun. Q1 remains the funded next
+    bounded speed-mechanism slot, while ensemble quality and fit speed are the
+    dominant product deficits.
+
+Readable result:
+[`v012_compute_ladder_20260724_result.md`](v012_compute_ladder_20260724_result.md).
+
 ## Product behavior established by the testing
 
 ### Defaults retained
@@ -3685,9 +3754,9 @@ B-archive simulation remains non-loadable, optional size telemetry.
 - Categorical regression still uses ordered target-statistic preprocessing.
 - The default horizon remains 1,000 rounds.
 - `tree_mode="catboost"` remains the default.
-- Early stopping, exact refit, linear leaves, global linear residuals, cross
-  features, safe ordinal representation, ensembles, and the accuracy preset
-  remain explicit rather than silently automatic.
+- Early stopping, exact refit, global linear residuals, cross features, safe
+  ordinal representation, ensembles, and the accuracy preset remain explicit
+  rather than silently automatic.
 - No noisy-data or sports default was changed after failing its basketball
   guardrail.
 
@@ -3727,7 +3796,8 @@ B-archive simulation remains non-loadable, optional size telemetry.
 - B-archive canonical-preprocessor serialization (the non-loadable effective
   median `4.152525×` simulation missed the frozen `4.0×` archive limit; section
   31 makes it optional telemetry but still authorizes no serializer format);
-- any CTR23 lockbox run without a newly powered candidate.
+- any use of CTR23 as a tuning surface after its release-validation
+  consultation.
 
 ## Verification and release log
 
@@ -3741,6 +3811,7 @@ B-archive simulation remains non-loadable, optional size telemetry.
 | GitHub-only v0.10 release | Tag and `main` agree at `ec66a64`; wheel, source archive, and checksums were attached to the GitHub release and public URL installation was verified |
 | GitHub-only v0.10.1 release | Annotated `v0.10.1` resolves to `d3aba3d`; the user-visible thread-mask and sklearn-tag fixes are recorded in the release CHANGELOG |
 | GitHub-only v0.11.0 release | Annotated `v0.11.0` resolves to `0b820e3`; GitHub Actions run `29942771031` passed all five lanes; a clean detached worktree produced the universal wheel and source archive; the wheel passed isolated regression/classification ensemble-v3 fit/predict and exact safe-NPZ round-trip smoke; downloaded release assets matched the attached `SHA256SUMS` |
+| GitHub-only v0.12.0 release | Annotated `v0.12.0` resolves to `a9eb4db`; GitHub Actions run `30092198924` passed all five lanes; a clean detached worktree produced the universal wheel and source archive; isolated wheel fit/predict smoke passed; the published assets match `SHA256SUMS` (`4df4a445…` wheel, `b865dd4a…` sdist) |
 
 Intermediate suite totals are useful progress markers but are not permanent
 repository invariants. The release claim always binds to the exact source
@@ -3750,12 +3821,14 @@ commit and its final CI run.
 
 | Need | Start here |
 | --- | --- |
-| Governing evidence policy | [`SHIPPING_POLICY.md`](SHIPPING_POLICY.md) |
-| Current generated frontier | [`benchmark_status.md`](benchmark_status.md) |
-| Long-form current benchmark notes | [`../BENCHMARK_NOTES.md`](../BENCHMARK_NOTES.md) |
+| Governing ship rule | [`../SHIP_RULES.md`](../SHIP_RULES.md) |
+| Current execution sequence | [`../R2_PLAN.md`](../R2_PLAN.md) |
+| Current release scoreboard | [`v012_compute_ladder_20260724_result.md`](v012_compute_ladder_20260724_result.md) |
+| Historical generated frontier | [`benchmark_status.md`](benchmark_status.md) |
+| Long-form historical benchmark notes | [`../BENCHMARK_NOTES.md`](../BENCHMARK_NOTES.md) |
 | Engineering-only measurements | [`../docs/measurements.md`](../docs/measurements.md) |
 | Best-of-both terminal ledger | [`best_of_both_completion_audit.md`](best_of_both_completion_audit.md) |
-| Product Offense execution ledger | [`../PRODUCT_OFFENSE_PLAN.md`](../PRODUCT_OFFENSE_PLAN.md) |
+| Historical Product Offense ledger | [`../PRODUCT_OFFENSE_PLAN.md`](../PRODUCT_OFFENSE_PLAN.md) |
 | Review correction and final integration | [`FABLE_FEEDBACK_CLOSEOUT.md`](FABLE_FEEDBACK_CLOSEOUT.md) |
 | Historical LightGBM/speed investigation | [`FINDINGS.md`](FINDINGS.md) |
 | Every benchmark protocol and result | [`README.md`](README.md) and this log's campaign links |

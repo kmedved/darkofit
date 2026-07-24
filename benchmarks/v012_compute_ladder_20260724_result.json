@@ -1,0 +1,1129 @@
+{
+  "aggregation": {
+    "bootstrap_draws": 10000,
+    "bootstrap_seed": 20260724,
+    "coordinates_per_dataset": 3,
+    "datasets_fixed_and_equally_weighted": true,
+    "independent_dataset_claim": false,
+    "resampling_unit": "coordinates_within_each_fixed_dataset"
+  },
+  "arms_vs_chimeraboost_default": [
+    {
+      "comparison_kind": "reference",
+      "contrast": "D0/M0",
+      "datasets": 13,
+      "denominator_arm": "chimeraboost_v023_default",
+      "denominator_engine": "chimeraboost",
+      "denominator_profile": "default",
+      "head_to_head": {
+        "coordinate_quality": {
+          "losses": 18,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.5384615384615384,
+          "win_share_with_half_ties": 0.5384615384615384,
+          "wins": 21
+        },
+        "descriptive_only": true,
+        "equal_dataset_quality": {
+          "losses": 5,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.6153846153846154,
+          "win_share_with_half_ties": 0.6153846153846154,
+          "wins": 8
+        }
+      },
+      "metrics": {
+        "fit_rss_peak_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.0220000583373658,
+            "p025": 1.0196477712761887,
+            "p975": 1.0243412389502198
+          },
+          "pct": 2.20039561788985,
+          "ratio": 1.0220039561788985
+        },
+        "fit_rss_peak_delta_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.3405966390842845,
+            "p025": 1.2201564287354345,
+            "p975": 1.4690531083671312
+          },
+          "pct": 34.0575457884547,
+          "ratio": 1.340575457884547
+        },
+        "fit_seconds": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 2.6014761671675495,
+            "p025": 2.4556765719129716,
+            "p975": 2.7557178275259084
+          },
+          "pct": 160.1617953137915,
+          "ratio": 2.601617953137915
+        },
+        "prediction_seconds_per_call": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 3.2686076261301964,
+            "p025": 3.1095265448744764,
+            "p975": 3.442360323611126
+          },
+          "pct": 227.10422491561903,
+          "ratio": 3.2710422491561904
+        },
+        "test_rmse": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.009785150200643,
+            "p025": 1.0031803117160882,
+            "p975": 1.0159409977300178
+          },
+          "pct": 0.970938081286632,
+          "ratio": 1.0097093808128663
+        }
+      },
+      "numerator_arm": "darkofit_v012_default",
+      "numerator_engine": "darkofit",
+      "numerator_profile": "default",
+      "paired_coordinates": 39
+    },
+    {
+      "comparison_kind": "reference",
+      "contrast": "DA/M0",
+      "datasets": 13,
+      "denominator_arm": "chimeraboost_v023_default",
+      "denominator_engine": "chimeraboost",
+      "denominator_profile": "default",
+      "head_to_head": {
+        "coordinate_quality": {
+          "losses": 23,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.41025641025641024,
+          "win_share_with_half_ties": 0.41025641025641024,
+          "wins": 16
+        },
+        "descriptive_only": true,
+        "equal_dataset_quality": {
+          "losses": 7,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.46153846153846156,
+          "win_share_with_half_ties": 0.46153846153846156,
+          "wins": 6
+        }
+      },
+      "metrics": {
+        "fit_rss_peak_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.0117326919342917,
+            "p025": 1.0040686656877271,
+            "p975": 1.0178426604853161
+          },
+          "pct": 1.1616110058440432,
+          "ratio": 1.0116161100584404
+        },
+        "fit_rss_peak_delta_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.1121017492515333,
+            "p025": 1.0149981194534967,
+            "p975": 1.2160453201691068
+          },
+          "pct": 11.236915010168346,
+          "ratio": 1.1123691501016835
+        },
+        "fit_seconds": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.8250363096273554,
+            "p025": 1.6912249574256235,
+            "p975": 1.9693729864120595
+          },
+          "pct": 82.59676068791731,
+          "ratio": 1.825967606879173
+        },
+        "prediction_seconds_per_call": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 3.614509268080891,
+            "p025": 3.074703713442188,
+            "p975": 4.224394555036882
+          },
+          "pct": 260.9084792181955,
+          "ratio": 3.6090847921819553
+        },
+        "test_rmse": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.0035996543064039,
+            "p025": 0.9934939212526409,
+            "p975": 1.0154084683018774
+          },
+          "pct": 0.38136564226458614,
+          "ratio": 1.0038136564226459
+        }
+      },
+      "numerator_arm": "darkofit_v012_accuracy",
+      "numerator_engine": "darkofit",
+      "numerator_profile": "accuracy",
+      "paired_coordinates": 39
+    },
+    {
+      "comparison_kind": "reference",
+      "contrast": "D8/M0",
+      "datasets": 13,
+      "denominator_arm": "chimeraboost_v023_default",
+      "denominator_engine": "chimeraboost",
+      "denominator_profile": "default",
+      "head_to_head": {
+        "coordinate_quality": {
+          "losses": 11,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.717948717948718,
+          "win_share_with_half_ties": 0.717948717948718,
+          "wins": 28
+        },
+        "descriptive_only": true,
+        "equal_dataset_quality": {
+          "losses": 3,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.7692307692307693,
+          "win_share_with_half_ties": 0.7692307692307693,
+          "wins": 10
+        }
+      },
+      "metrics": {
+        "fit_rss_peak_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 2.6141107023290493,
+            "p025": 2.6021072843321096,
+            "p975": 2.624236012007857
+          },
+          "pct": 161.39210532030987,
+          "ratio": 2.6139210532030988
+        },
+        "fit_rss_peak_delta_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 13.426622889615436,
+            "p025": 12.201495756561409,
+            "p975": 14.798237232567942
+          },
+          "pct": 1243.7864126205336,
+          "ratio": 13.437864126205335
+        },
+        "fit_seconds": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 2.0197255637080245,
+            "p025": 1.849097500186202,
+            "p975": 2.200186134532167
+          },
+          "pct": 101.9154175606788,
+          "ratio": 2.019154175606788
+        },
+        "prediction_seconds_per_call": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 9.286735982806864,
+            "p025": 8.72704450074735,
+            "p975": 9.894611347491127
+          },
+          "pct": 829.187844966872,
+          "ratio": 9.29187844966872
+        },
+        "test_rmse": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 0.9997005339537132,
+            "p025": 0.9936820501416701,
+            "p975": 1.0055034179592166
+          },
+          "pct": -0.0385677793703576,
+          "ratio": 0.9996143222062964
+        }
+      },
+      "numerator_arm": "darkofit_v012_ensemble8",
+      "numerator_engine": "darkofit",
+      "numerator_profile": "ensemble",
+      "paired_coordinates": 39
+    },
+    {
+      "comparison_kind": "reference",
+      "contrast": "M0/M0",
+      "datasets": 13,
+      "denominator_arm": "chimeraboost_v023_default",
+      "denominator_engine": "chimeraboost",
+      "denominator_profile": "default",
+      "head_to_head": {
+        "coordinate_quality": {
+          "losses": 0,
+          "ties": 39,
+          "win_rate_excluding_ties": null,
+          "win_share_with_half_ties": 0.5,
+          "wins": 0
+        },
+        "descriptive_only": true,
+        "equal_dataset_quality": {
+          "losses": 0,
+          "ties": 13,
+          "win_rate_excluding_ties": null,
+          "win_share_with_half_ties": 0.5,
+          "wins": 0
+        }
+      },
+      "metrics": {
+        "fit_rss_peak_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.0,
+            "p025": 1.0,
+            "p975": 1.0
+          },
+          "pct": 0.0,
+          "ratio": 1.0
+        },
+        "fit_rss_peak_delta_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.0,
+            "p025": 1.0,
+            "p975": 1.0
+          },
+          "pct": 0.0,
+          "ratio": 1.0
+        },
+        "fit_seconds": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.0,
+            "p025": 1.0,
+            "p975": 1.0
+          },
+          "pct": 0.0,
+          "ratio": 1.0
+        },
+        "prediction_seconds_per_call": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.0,
+            "p025": 1.0,
+            "p975": 1.0
+          },
+          "pct": 0.0,
+          "ratio": 1.0
+        },
+        "test_rmse": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.0,
+            "p025": 1.0,
+            "p975": 1.0
+          },
+          "pct": 0.0,
+          "ratio": 1.0
+        }
+      },
+      "numerator_arm": "chimeraboost_v023_default",
+      "numerator_engine": "chimeraboost",
+      "numerator_profile": "default",
+      "paired_coordinates": 39
+    },
+    {
+      "comparison_kind": "reference",
+      "contrast": "MA/M0",
+      "datasets": 13,
+      "denominator_arm": "chimeraboost_v023_default",
+      "denominator_engine": "chimeraboost",
+      "denominator_profile": "default",
+      "head_to_head": {
+        "coordinate_quality": {
+          "losses": 25,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.358974358974359,
+          "win_share_with_half_ties": 0.358974358974359,
+          "wins": 14
+        },
+        "descriptive_only": true,
+        "equal_dataset_quality": {
+          "losses": 8,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.38461538461538464,
+          "win_share_with_half_ties": 0.38461538461538464,
+          "wins": 5
+        }
+      },
+      "metrics": {
+        "fit_rss_peak_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.1031957877206682,
+            "p025": 1.0897422729176878,
+            "p975": 1.1151743376238914
+          },
+          "pct": 10.300130608040314,
+          "ratio": 1.1030013060804031
+        },
+        "fit_rss_peak_delta_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 2.896050235951135,
+            "p025": 2.628202489619554,
+            "p975": 3.194163838721564
+          },
+          "pct": 189.62017183592468,
+          "ratio": 2.896201718359247
+        },
+        "fit_seconds": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.4584797374238487,
+            "p025": 1.3061398038794105,
+            "p975": 1.641884517487516
+          },
+          "pct": 46.073361744922046,
+          "ratio": 1.4607336174492205
+        },
+        "prediction_seconds_per_call": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.0774189650460626,
+            "p025": 1.0010994544226917,
+            "p975": 1.1707560983387988
+          },
+          "pct": 7.891478666322027,
+          "ratio": 1.0789147866632203
+        },
+        "test_rmse": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.01618003534594,
+            "p025": 1.0082258712329817,
+            "p975": 1.0228447852417135
+          },
+          "pct": 1.5908232613511153,
+          "ratio": 1.0159082326135112
+        }
+      },
+      "numerator_arm": "chimeraboost_v023_depth10",
+      "numerator_engine": "chimeraboost",
+      "numerator_profile": "accuracy",
+      "paired_coordinates": 39
+    },
+    {
+      "comparison_kind": "reference",
+      "contrast": "M8/M0",
+      "datasets": 13,
+      "denominator_arm": "chimeraboost_v023_default",
+      "denominator_engine": "chimeraboost",
+      "denominator_profile": "default",
+      "head_to_head": {
+        "coordinate_quality": {
+          "losses": 1,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.9743589743589743,
+          "win_share_with_half_ties": 0.9743589743589743,
+          "wins": 38
+        },
+        "descriptive_only": true,
+        "equal_dataset_quality": {
+          "losses": 0,
+          "ties": 0,
+          "win_rate_excluding_ties": 1.0,
+          "win_share_with_half_ties": 1.0,
+          "wins": 13
+        }
+      },
+      "metrics": {
+        "fit_rss_peak_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 6.689722968749768,
+            "p025": 6.623725757881945,
+            "p975": 6.747967950838733
+          },
+          "pct": 568.8577222650162,
+          "ratio": 6.688577222650162
+        },
+        "fit_rss_peak_delta_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 8.135074122708492,
+            "p025": 7.468380323527849,
+            "p975": 8.915892355175432
+          },
+          "pct": 714.1061235595806,
+          "ratio": 8.141061235595807
+        },
+        "fit_seconds": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 0.565522000394651,
+            "p025": 0.5164225150866565,
+            "p975": 0.6188240757297111
+          },
+          "pct": -43.45385438795781,
+          "ratio": 0.5654614561204219
+        },
+        "prediction_seconds_per_call": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 5.089919532279549,
+            "p025": 4.81752883766312,
+            "p975": 5.388118045618164
+          },
+          "pct": 409.14441949603537,
+          "ratio": 5.091444194960354
+        },
+        "test_rmse": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 0.9646318416260338,
+            "p025": 0.9595336710371396,
+            "p975": 0.9697725756312889
+          },
+          "pct": -3.539218241924791,
+          "ratio": 0.9646078175807521
+        }
+      },
+      "numerator_arm": "chimeraboost_v023_ensemble8",
+      "numerator_engine": "chimeraboost",
+      "numerator_profile": "ensemble",
+      "paired_coordinates": 39
+    }
+  ],
+  "campaign": "v012-release-compute-ladder-20260724",
+  "counts": {
+    "arms": 6,
+    "coordinates": 39,
+    "datasets": 13,
+    "paired_rows": 351,
+    "per_dataset_rows": 117,
+    "workers": 234
+  },
+  "decision": "descriptive_release_scoreboard",
+  "frontiers": {
+    "fit_seconds": {
+      "comparable_budget_count": 2,
+      "comparable_budgets": [
+        {
+          "budget_ratio_to_chimeraboost_default": 1.825967606879173,
+          "chimeraboost_arm": "chimeraboost_v023_ensemble8",
+          "chimeraboost_quality_ratio": 0.9646078175807521,
+          "darkofit_arm": "darkofit_v012_accuracy",
+          "darkofit_minus_chimeraboost_quality_ratio": 0.03920583884189377,
+          "darkofit_no_worse": false,
+          "darkofit_quality_ratio": 1.0038136564226459
+        },
+        {
+          "budget_ratio_to_chimeraboost_default": 2.019154175606788,
+          "chimeraboost_arm": "chimeraboost_v023_ensemble8",
+          "chimeraboost_quality_ratio": 0.9646078175807521,
+          "darkofit_arm": "darkofit_v012_ensemble8",
+          "darkofit_minus_chimeraboost_quality_ratio": 0.03500650462554433,
+          "darkofit_no_worse": false,
+          "darkofit_quality_ratio": 0.9996143222062964
+        }
+      ],
+      "cost_metric": "fit_seconds",
+      "darkofit_full_curve_dominance": false,
+      "darkofit_no_worse_budget_count": 0,
+      "darkofit_strictly_better_budget_count": 0,
+      "dominated_arms": {
+        "chimeraboost": [
+          "chimeraboost_v023_default",
+          "chimeraboost_v023_depth10"
+        ],
+        "darkofit": [
+          "darkofit_v012_default"
+        ]
+      },
+      "interpolation_used": false,
+      "nondominated_points": {
+        "chimeraboost": [
+          {
+            "arm": "chimeraboost_v023_ensemble8",
+            "code": "M8",
+            "cost_ratio": 0.5654614561204219,
+            "engine": "chimeraboost",
+            "profile": "ensemble",
+            "quality_ratio": 0.9646078175807521
+          }
+        ],
+        "darkofit": [
+          {
+            "arm": "darkofit_v012_accuracy",
+            "code": "DA",
+            "cost_ratio": 1.825967606879173,
+            "engine": "darkofit",
+            "profile": "accuracy",
+            "quality_ratio": 1.0038136564226459
+          },
+          {
+            "arm": "darkofit_v012_ensemble8",
+            "code": "D8",
+            "cost_ratio": 2.019154175606788,
+            "engine": "darkofit",
+            "profile": "ensemble",
+            "quality_ratio": 0.9996143222062964
+          }
+        ]
+      },
+      "points": [
+        {
+          "arm": "darkofit_v012_default",
+          "code": "D0",
+          "cost_ratio": 2.601617953137915,
+          "engine": "darkofit",
+          "profile": "default",
+          "quality_ratio": 1.0097093808128663
+        },
+        {
+          "arm": "darkofit_v012_accuracy",
+          "code": "DA",
+          "cost_ratio": 1.825967606879173,
+          "engine": "darkofit",
+          "profile": "accuracy",
+          "quality_ratio": 1.0038136564226459
+        },
+        {
+          "arm": "darkofit_v012_ensemble8",
+          "code": "D8",
+          "cost_ratio": 2.019154175606788,
+          "engine": "darkofit",
+          "profile": "ensemble",
+          "quality_ratio": 0.9996143222062964
+        },
+        {
+          "arm": "chimeraboost_v023_default",
+          "code": "M0",
+          "cost_ratio": 1.0,
+          "engine": "chimeraboost",
+          "profile": "default",
+          "quality_ratio": 1.0
+        },
+        {
+          "arm": "chimeraboost_v023_depth10",
+          "code": "MA",
+          "cost_ratio": 1.4607336174492205,
+          "engine": "chimeraboost",
+          "profile": "accuracy",
+          "quality_ratio": 1.0159082326135112
+        },
+        {
+          "arm": "chimeraboost_v023_ensemble8",
+          "code": "M8",
+          "cost_ratio": 0.5654614561204219,
+          "engine": "chimeraboost",
+          "profile": "ensemble",
+          "quality_ratio": 0.9646078175807521
+        }
+      ],
+      "reference_arm": "chimeraboost_v023_default"
+    },
+    "prediction_seconds_per_call": {
+      "comparable_budget_count": 4,
+      "comparable_budgets": [
+        {
+          "budget_ratio_to_chimeraboost_default": 3.2710422491561904,
+          "chimeraboost_arm": "chimeraboost_v023_default",
+          "chimeraboost_quality_ratio": 1.0,
+          "darkofit_arm": "darkofit_v012_default",
+          "darkofit_minus_chimeraboost_quality_ratio": 0.00970938081286632,
+          "darkofit_no_worse": false,
+          "darkofit_quality_ratio": 1.0097093808128663
+        },
+        {
+          "budget_ratio_to_chimeraboost_default": 3.6090847921819553,
+          "chimeraboost_arm": "chimeraboost_v023_default",
+          "chimeraboost_quality_ratio": 1.0,
+          "darkofit_arm": "darkofit_v012_accuracy",
+          "darkofit_minus_chimeraboost_quality_ratio": 0.0038136564226458614,
+          "darkofit_no_worse": false,
+          "darkofit_quality_ratio": 1.0038136564226459
+        },
+        {
+          "budget_ratio_to_chimeraboost_default": 5.091444194960354,
+          "chimeraboost_arm": "chimeraboost_v023_ensemble8",
+          "chimeraboost_quality_ratio": 0.9646078175807521,
+          "darkofit_arm": "darkofit_v012_accuracy",
+          "darkofit_minus_chimeraboost_quality_ratio": 0.03920583884189377,
+          "darkofit_no_worse": false,
+          "darkofit_quality_ratio": 1.0038136564226459
+        },
+        {
+          "budget_ratio_to_chimeraboost_default": 9.29187844966872,
+          "chimeraboost_arm": "chimeraboost_v023_ensemble8",
+          "chimeraboost_quality_ratio": 0.9646078175807521,
+          "darkofit_arm": "darkofit_v012_ensemble8",
+          "darkofit_minus_chimeraboost_quality_ratio": 0.03500650462554433,
+          "darkofit_no_worse": false,
+          "darkofit_quality_ratio": 0.9996143222062964
+        }
+      ],
+      "cost_metric": "prediction_seconds_per_call",
+      "darkofit_full_curve_dominance": false,
+      "darkofit_no_worse_budget_count": 0,
+      "darkofit_strictly_better_budget_count": 0,
+      "dominated_arms": {
+        "chimeraboost": [
+          "chimeraboost_v023_depth10"
+        ],
+        "darkofit": []
+      },
+      "interpolation_used": false,
+      "nondominated_points": {
+        "chimeraboost": [
+          {
+            "arm": "chimeraboost_v023_default",
+            "code": "M0",
+            "cost_ratio": 1.0,
+            "engine": "chimeraboost",
+            "profile": "default",
+            "quality_ratio": 1.0
+          },
+          {
+            "arm": "chimeraboost_v023_ensemble8",
+            "code": "M8",
+            "cost_ratio": 5.091444194960354,
+            "engine": "chimeraboost",
+            "profile": "ensemble",
+            "quality_ratio": 0.9646078175807521
+          }
+        ],
+        "darkofit": [
+          {
+            "arm": "darkofit_v012_default",
+            "code": "D0",
+            "cost_ratio": 3.2710422491561904,
+            "engine": "darkofit",
+            "profile": "default",
+            "quality_ratio": 1.0097093808128663
+          },
+          {
+            "arm": "darkofit_v012_accuracy",
+            "code": "DA",
+            "cost_ratio": 3.6090847921819553,
+            "engine": "darkofit",
+            "profile": "accuracy",
+            "quality_ratio": 1.0038136564226459
+          },
+          {
+            "arm": "darkofit_v012_ensemble8",
+            "code": "D8",
+            "cost_ratio": 9.29187844966872,
+            "engine": "darkofit",
+            "profile": "ensemble",
+            "quality_ratio": 0.9996143222062964
+          }
+        ]
+      },
+      "points": [
+        {
+          "arm": "darkofit_v012_default",
+          "code": "D0",
+          "cost_ratio": 3.2710422491561904,
+          "engine": "darkofit",
+          "profile": "default",
+          "quality_ratio": 1.0097093808128663
+        },
+        {
+          "arm": "darkofit_v012_accuracy",
+          "code": "DA",
+          "cost_ratio": 3.6090847921819553,
+          "engine": "darkofit",
+          "profile": "accuracy",
+          "quality_ratio": 1.0038136564226459
+        },
+        {
+          "arm": "darkofit_v012_ensemble8",
+          "code": "D8",
+          "cost_ratio": 9.29187844966872,
+          "engine": "darkofit",
+          "profile": "ensemble",
+          "quality_ratio": 0.9996143222062964
+        },
+        {
+          "arm": "chimeraboost_v023_default",
+          "code": "M0",
+          "cost_ratio": 1.0,
+          "engine": "chimeraboost",
+          "profile": "default",
+          "quality_ratio": 1.0
+        },
+        {
+          "arm": "chimeraboost_v023_depth10",
+          "code": "MA",
+          "cost_ratio": 1.0789147866632203,
+          "engine": "chimeraboost",
+          "profile": "accuracy",
+          "quality_ratio": 1.0159082326135112
+        },
+        {
+          "arm": "chimeraboost_v023_ensemble8",
+          "code": "M8",
+          "cost_ratio": 5.091444194960354,
+          "engine": "chimeraboost",
+          "profile": "ensemble",
+          "quality_ratio": 0.9646078175807521
+        }
+      ],
+      "reference_arm": "chimeraboost_v023_default"
+    }
+  },
+  "matched_profile_contrasts": [
+    {
+      "comparison_kind": "counterpart",
+      "contrast": "D0/M0",
+      "datasets": 13,
+      "denominator_arm": "chimeraboost_v023_default",
+      "denominator_engine": "chimeraboost",
+      "denominator_profile": "default",
+      "head_to_head": {
+        "coordinate_quality": {
+          "losses": 18,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.5384615384615384,
+          "win_share_with_half_ties": 0.5384615384615384,
+          "wins": 21
+        },
+        "descriptive_only": true,
+        "equal_dataset_quality": {
+          "losses": 5,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.6153846153846154,
+          "win_share_with_half_ties": 0.6153846153846154,
+          "wins": 8
+        }
+      },
+      "metrics": {
+        "fit_rss_peak_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.0220000583373658,
+            "p025": 1.0196477712761887,
+            "p975": 1.0243412389502198
+          },
+          "pct": 2.20039561788985,
+          "ratio": 1.0220039561788985
+        },
+        "fit_rss_peak_delta_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.3405966390842845,
+            "p025": 1.2201564287354345,
+            "p975": 1.4690531083671312
+          },
+          "pct": 34.0575457884547,
+          "ratio": 1.340575457884547
+        },
+        "fit_seconds": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 2.6014761671675495,
+            "p025": 2.4556765719129716,
+            "p975": 2.7557178275259084
+          },
+          "pct": 160.1617953137915,
+          "ratio": 2.601617953137915
+        },
+        "prediction_seconds_per_call": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 3.2686076261301964,
+            "p025": 3.1095265448744764,
+            "p975": 3.442360323611126
+          },
+          "pct": 227.10422491561903,
+          "ratio": 3.2710422491561904
+        },
+        "test_rmse": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.009785150200643,
+            "p025": 1.0031803117160882,
+            "p975": 1.0159409977300178
+          },
+          "pct": 0.970938081286632,
+          "ratio": 1.0097093808128663
+        }
+      },
+      "numerator_arm": "darkofit_v012_default",
+      "numerator_engine": "darkofit",
+      "numerator_profile": "default",
+      "paired_coordinates": 39
+    },
+    {
+      "comparison_kind": "counterpart",
+      "contrast": "DA/MA",
+      "datasets": 13,
+      "denominator_arm": "chimeraboost_v023_depth10",
+      "denominator_engine": "chimeraboost",
+      "denominator_profile": "accuracy",
+      "head_to_head": {
+        "coordinate_quality": {
+          "losses": 18,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.5384615384615384,
+          "win_share_with_half_ties": 0.5384615384615384,
+          "wins": 21
+        },
+        "descriptive_only": true,
+        "equal_dataset_quality": {
+          "losses": 7,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.46153846153846156,
+          "win_share_with_half_ties": 0.46153846153846156,
+          "wins": 6
+        }
+      },
+      "metrics": {
+        "fit_rss_peak_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 0.9170367587080004,
+            "p025": 0.9099688768963461,
+            "p975": 0.9253641962952419
+          },
+          "pct": -8.285139420796039,
+          "ratio": 0.9171486057920396
+        },
+        "fit_rss_peak_delta_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 0.3833848245255071,
+            "p025": 0.34990847826714305,
+            "p975": 0.4255996865097295
+          },
+          "pct": -61.59213831514949,
+          "ratio": 0.38407861684850514
+        },
+        "fit_seconds": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.2513705536645747,
+            "p025": 1.139956928776563,
+            "p975": 1.3672349642079284
+          },
+          "pct": 25.003462990585202,
+          "ratio": 1.250034629905852
+        },
+        "prediction_seconds_per_call": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 3.3480428432587908,
+            "p025": 2.8400682062298643,
+            "p975": 3.9396598287709765
+          },
+          "pct": 234.51064317543003,
+          "ratio": 3.3451064317543002
+        },
+        "test_rmse": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 0.9876555697184576,
+            "p025": 0.9745555548300935,
+            "p975": 1.0037145375294416
+          },
+          "pct": -1.1905185727012935,
+          "ratio": 0.9880948142729871
+        }
+      },
+      "numerator_arm": "darkofit_v012_accuracy",
+      "numerator_engine": "darkofit",
+      "numerator_profile": "accuracy",
+      "paired_coordinates": 39
+    },
+    {
+      "comparison_kind": "counterpart",
+      "contrast": "D8/M8",
+      "datasets": 13,
+      "denominator_arm": "chimeraboost_v023_ensemble8",
+      "denominator_engine": "chimeraboost",
+      "denominator_profile": "ensemble",
+      "head_to_head": {
+        "coordinate_quality": {
+          "losses": 29,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.2564102564102564,
+          "win_share_with_half_ties": 0.2564102564102564,
+          "wins": 10
+        },
+        "descriptive_only": true,
+        "equal_dataset_quality": {
+          "losses": 11,
+          "ties": 0,
+          "win_rate_excluding_ties": 0.15384615384615385,
+          "win_share_with_half_ties": 0.15384615384615385,
+          "wins": 2
+        }
+      },
+      "metrics": {
+        "fit_rss_peak_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 0.39077189201792617,
+            "p025": 0.38863158783646984,
+            "p975": 0.3931873639296217
+          },
+          "pct": -60.919625113225415,
+          "ratio": 0.3908037488677459
+        },
+        "fit_rss_peak_delta_bytes": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.6497385888141503,
+            "p025": 1.5610006889304957,
+            "p975": 1.7469056336042135
+          },
+          "pct": 65.06280615418906,
+          "ratio": 1.6506280615418907
+        },
+        "fit_seconds": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 3.5718270704690003,
+            "p025": 3.3966841218996944,
+            "p975": 3.7425599980140993
+          },
+          "pct": 257.0807795565795,
+          "ratio": 3.570807795565795
+        },
+        "prediction_seconds_per_call": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.825277646433515,
+            "p025": 1.7737454129950954,
+            "p975": 1.8741537501833083
+          },
+          "pct": 82.49985846581731,
+          "ratio": 1.824998584658173
+        },
+        "test_rmse": {
+          "available": true,
+          "bootstrap_ratio": {
+            "draws": 10000,
+            "median": 1.0363107958907054,
+            "p025": 1.0337724956511434,
+            "p975": 1.0387534457066092
+          },
+          "pct": 3.6290919467500293,
+          "ratio": 1.0362909194675003
+        }
+      },
+      "numerator_arm": "darkofit_v012_ensemble8",
+      "numerator_engine": "darkofit",
+      "numerator_profile": "ensemble",
+      "paired_coordinates": 39
+    }
+  ],
+  "memory_retention": {
+    "all_no_worse": false,
+    "matched_profile_ratios": {
+      "D0/M0": 1.0220039561788985,
+      "D8/M8": 0.3908037488677459,
+      "DA/MA": 0.9171486057920396
+    },
+    "metric": "fit_rss_peak_bytes"
+  },
+  "policy_advancement_allowed": false,
+  "provenance": {
+    "chimeraboost": {
+      "commit": "6667843b8970454b0f582ffd1ab2be033989c578",
+      "package_init_sha256": "c2651c16a18479ba8af66f69483bdfa5140b75bc4079d22fedfef68b8d96bc26",
+      "path": "/private/tmp/chimeraboost-v023-release-source",
+      "status": "",
+      "tag": "v0.23.0",
+      "tree": "e20ef53c07a91df61711f07236ef7ba33ce49911"
+    },
+    "darkofit": {
+      "commit": "a9eb4dbbf8af0e6db42e9ace433e7a267c80fca7",
+      "package_init_sha256": "368aa7eaacf399709e26842eb7f2a30785e691dcb286571c48545532f21a3cb1",
+      "path": "/private/tmp/darkofit-v012-release-source",
+      "status": "",
+      "tag": "v0.12.0",
+      "tree": "6fc60c6b36c664eaecf26f45f65a617ad9ecc1db"
+    },
+    "executed_analyzer_sha256": "1d958ff2ba26567f3c71f8f7066664b9c3d8aaa5521e1dcbcd2cd8f0ed9d51e6",
+    "harness_head": "fdca838b2922a4a7e9791585ef830bf322cbbf5b",
+    "manifest_sha256": "3ddc1a8b1a2a0fab80afd0a5d6d7e7e895230d8a731a2e391c6b48965330f63b",
+    "planned_analyzer_sha256": "0cc073c3cb9493a6f6a32b2e2be85d942c318f56a4535ec2b8f720efa49cdbb2",
+    "protocol_sha256": "5b885d0ab36c5c1a7545615f9aad3cae9c714758b67157f7e45359431f3d7dfc",
+    "raw_sha256": "404692f6f89d517bfeb470127267e3b18857a1c3e8bb12acf9cda6fcf9984809",
+    "run_id": "v012-release-compute-ladder-20260724",
+    "runner_sha256": "af78f19d7bf95ad1799874936ad3f5ee11f7ceca516729cad58b230011cf9a3d",
+    "tabarena": {
+      "commit": "4cd1d2526874962daae048a6f2dcf34aa272f3fa",
+      "module_sha256": "5384bfdb2df380b6557cc7a71d16891415bccaa87699406e236f752c6415389f",
+      "path": "/private/tmp/tabarena-m2-4cd1d25",
+      "status": "",
+      "tree": "a293df372a613c7358ba5fcd746f58d580cde7d6"
+    },
+    "terminal_sha256": "d54580ce7453ab4e8b572947722c5ab81c0f360d5c09e748985f0d395ef19037"
+  },
+  "schema_version": 1,
+  "scope": {
+    "catboost_included": false,
+    "classification_included": false,
+    "direct_public_estimators": true,
+    "fresh_confirmation": false,
+    "historical_m2_regression_tasks": true,
+    "latest_chimeraboost_release_at_worker_zero": "v0.23.0",
+    "lockbox": false,
+    "tabarena_placement": false
+  },
+  "strict_program_verdict": {
+    "basis": "equal_dataset_point_estimates",
+    "counterpart_peak_rss_no_worse": false,
+    "fit_frontier_dominance": false,
+    "prediction_frontier_dominance": false,
+    "strict_pareto_victory": false
+  }
+}

@@ -488,17 +488,19 @@ general development evidence.
 
 - **Docs dossier: keep.** Commit the README/docs/mkdocs + TabArena
   dossier working-tree changes as their own docs checkpoint (owner
-  decision: keep). The dossier's joint depth+L2 rows-per-feature idea is
-  a natural Track I entry if P1 confirms.
-- Rival-changelog triage continues each milestone (0.21 triage exists;
-  0.22+ when it lands).
+  decision: keep). Its joint depth+L2 rows-per-feature idea remains a donor
+  hypothesis, not a queued mechanism: automatic depth missed CTR23 and the
+  tested L2 route is closed.
+- Rival-changelog triage continues each milestone. The v0.12 ladder refreshed
+  the public rival pin through ChimeraBoost v0.23.0 and measured the shipped
+  prediction/ensemble changes directly.
 - Re-fork tripwires unchanged; next milestone frontier ladder re-runs
   against the rival's then-current release with the same compute-ladder
   protocol.
-- Next release (v0.12) assembles: P1 outcome (default or not), P3 opt-in,
-  catcross opt-in if P2c reaches it, updated characterizations, milestone
-  ladder, and — if the owner separately signs off — the deferred first
-  TabArena-Lite placement.
+- v0.12 shipped without TabArena-Lite. Its current-release ladder is complete:
+  DarkoFit achieved no no-worse comparable budget on either fit or prediction
+  frontiers against ChimeraBoost v0.23.0. The exact scoreboard is
+  [`benchmarks/v012_compute_ladder_20260724_result.md`](benchmarks/v012_compute_ladder_20260724_result.md).
 
 ## P7 — Process-kill re-triage, corrected (owner + Codex reconciliation, 2026-07-23)
 
@@ -665,6 +667,16 @@ new-entity/group-shift mechanism through the normal pipeline.
    2026-07-24 SHIP_RULES disposition funds Q1 as the next post-v0.12 speed
    mechanism; the stochastic mechanism is not presumed behavior-exact beyond
    the measured microprototype grid.
+10. ~~Ship v0.12 and run the release-cadence ladder against the current
+    rival.~~ **Complete:** public v0.12.0 is released at `a9eb4db`; the
+    234-worker comparison against ChimeraBoost v0.23.0 completed once and
+    recorded a strict Pareto loss. D0/M0 was `1.009709x` RMSE and
+    `2.601618x` fit; D8/M8 was `1.036291x` RMSE and `3.570808x` fit.
+11. **Implement Q1 as the next bounded speed mechanism.** Preserve the
+    microprototype's arithmetic bounds, float fallback, and explicit research
+    surface; characterize broad quality/resources honestly. The release
+    ladder makes clear that Q1 is incremental engine work, not a substitute
+    for a later ensemble-quality mechanism.
 
 Depth opt-in exposure and other release/documentation work do not consume a
 mechanism slot.
