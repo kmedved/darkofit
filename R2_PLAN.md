@@ -573,7 +573,18 @@ the explicit automatic audition and `ordinal_features=None` is the rollback.
 The unrelated GPBoost comparator study is outside DarkoFit candidate
 development and does not count as contact with these domains or any holdout.
 
-5. **Q reprofile** — last, against the post-dispatch engine.
+5. **Q reprofile** — complete against the post-dispatch engine. The
+   benchmark-local packed-int64 kernel measured `0.827110x` equal-size
+   end-to-end fit time, reproduced the control's fitted structure and
+   predictions at both measured shapes, and was faster in all six paired
+   comparisons. The committed diagnostic nevertheless reports
+   `close_q_at_microprototype` because the 500k paired-ratio dispersion was
+   `0.117662` against its inherited `0.10` timing-validity line; the first
+   500k control was the outlier. Under the governing light regime this is not
+   a substantive mechanism kill or shipping evidence. It is a promising,
+   narrowly scoped Q1 implementation signal whose real integration must retain
+   float leaf values, arithmetic bounds, deterministic rounding, fallbacks,
+   and honest broad characterization.
 
 **Accuracy-v2 integration project (the capstone, not a revival list):**
 rebuild the accuracy rung with component ablations and a true no-op
@@ -644,7 +655,11 @@ new-entity/group-shift mechanism through the normal pipeline.
 8. ~~Build accuracy-v2 with component ablations and A10 as the fallback.~~
    **Complete:** the cross selector engaged `0/48` times and doubled
    selection cost; the existing `accuracy` preset remains selected.
-9. **Next:** reprofile Q against the post-dispatch engine.
+9. ~~Reprofile Q against the post-dispatch engine.~~ **Complete:** the
+   packed candidate was behavior-exact on both measured synthetic shapes and
+   took `0.827110x` the control's fit time overall, but its first-size timing
+   series missed the diagnostic dispersion line. Preserve both facts; do not
+   convert the retired-style stability miss into an evidence-based kill.
 
 Depth opt-in exposure and other release/documentation work do not consume a
 mechanism slot.

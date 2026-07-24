@@ -3507,6 +3507,59 @@ B-archive simulation remains non-loadable, optional size telemetry.
 - **Disposition:** make no API or preset change, close the accuracy-v2 slot,
   and reprofile Q against the current post-dispatch engine.
 
+### 82. Q post-dispatch packed-histogram microprototype (2026-07-23)
+
+1. **Source:** clean harness and benchmark-local prototype commit
+   `832e36d3784642404a210a41855f5985def6566b`.
+2. **Comparator:** the same DarkoFit source with
+   `oblivious_kernel="auto"`: fused at 500k rows and unfused at 1M rows.
+3. **Evidence:** synthetic general development timing only. No CTR23, sports
+   ship-check, TabArena, or external comparator data was consulted. The
+   unrelated GPBoost study does not count as DarkoFit development contact.
+4. **Data/configuration:** deterministic 24-feature nonlinear regression;
+   500k and 1M training rows plus 100k test rows; 128 bins, depth 6, 40 trees,
+   unweighted scalar RMSE, full rows/features, and constant Hessian.
+5. **Candidate:** a benchmark-only packed-int64 histogram/split kernel adapted
+   under Apache-2.0 attribution. Each tree stochastic-rounds signed gradients
+   into the high 32 bits and stores the exact unit-Hessian count in the low 32
+   bits; float64 gradients still determine leaf values.
+6. **Environment:** `darko311`, macOS arm64, 14 threads, three reciprocal
+   fresh-worker blocks per size. The pre-run audit found macOS analysis and
+   Dropbox/File Provider activity; those workers were stopped before launch.
+   Residual first-block timing variation remains disclosed rather than hidden.
+7. **Execution:** `python
+   benchmarks/run_q_post_dispatch_microprototype.py --expected-source-sha
+   832e36d... --raw-output ... --result-output ...`.
+8. **Integrity:** all 12 rows loaded; exact grid, arithmetic bounds, packed
+   engagement, dispatch, fixed-thread determinism, and ambient Numba thread
+   restoration passed. Candidate and control fitted-state and prediction
+   hashes were identical at both shapes.
+9. **Results:** paired-median candidate/control fit ratios were `0.835290x`
+   at 500k and `0.819009x` at 1M; the equal-size geomean was `0.827110x`.
+   All six paired ratios favored the candidate. RMSE ratios were exactly
+   `1.0`; prediction ratios were `1.006433x` and `1.114178x`; RSS ratios were
+   `1.021816x` and `1.000413x`.
+10. **Failed check:** 500k paired-ratio `IQR / median` was `0.117662`, above
+    the benchmark's inherited `0.10` diagnostic line; 1M passed at `0.021810`.
+    The first 500k control took `0.779775s` versus `0.653161s` and `0.649820s`
+    later, while candidate fits were `0.549762s`, `0.545579s`, and
+    `0.585872s`.
+11. **Artifacts:** protocol
+    [`q_post_dispatch_microprototype.md`](q_post_dispatch_microprototype.md),
+    raw [`JSON`](q_post_dispatch_microprototype_raw_20260723.json), and
+    rendered
+    [`result`](q_post_dispatch_microprototype_result_20260723.md). Raw SHA-256:
+    `63f0660ebbb80dc7248f52038fd6d64837bda8fed2cd0ea1425527fec99e48eb`;
+    rendered-result SHA-256:
+    `c1dbdf6e6f0eb4b576c210d18398c170a07a0e66882fe132b22ee63729a9b409`.
+12. **Disposition:** preserve the generated
+    `close_q_at_microprototype` verdict under its committed diagnostic, but do
+    not treat the dispersion miss as an evidence-based mechanism kill under
+    `SHIP_RULES`. The measured direction and exact observed behavior support
+    considering a real, narrow Q1 implementation as a future mechanism slot;
+    no product code, option, default, or quality claim is authorized by this
+    microprototype.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
