@@ -24,7 +24,7 @@ Every item below maps to a measured frontier deficit or an earned candidate:
 | P1 Automatic-depth paired development benchmark → ship-check | Broad + sports quality; first automatic default | **Closed for defaults:** development improved `0.996860x`, but CTR23 holdout regressed `1.026662x`; P3 opt-in remains |
 | P2 Catcross attribution → path to ship | Diamonds/healthcare (0.20's categorical blow) | Attribution, guardrail, and scoped public opt-in complete |
 | P3 Depth opt-in exposure | Immediate user value (−5% sports, spent) | Public explicit opt-in complete; default route closed on holdout |
-| P4 B3-v2 activation-gated parallelism | 6.1× ensemble fit optic; rescue the 3.84× | Characterization passed; public productization next |
+| P4 B3-v2 activation-gated parallelism | 6.1× ensemble fit optic; rescue the 3.84× | Complete in source: automatic measured-envelope activation, recorded resolution, and rollback |
 | P5 Selector-v3 principled margin | Smooth-data quality (protein) | Successor to a clean kill |
 | P6 Member-policy retune | Ensemble broad quality (+1.5% vs their +3.5%) | Queued (R1-5) |
 
@@ -389,6 +389,18 @@ Maximum process-tree RSS was about 2.28 GiB; the parallel route's greater than
 2 GiB. Disposition: productize the deterministic activation with recorded
 resolution and rollback; this is behavior-exact engineering, not quality
 evidence.
+
+**Product integration, 2026-07-23:** commit `dc468c3` adds
+`ensemble_parallelism={"auto","sequential","parallel"}` to the public
+regressor and classifier. `auto` engages only inside the measured
+macOS-arm64, 14-thread envelope and above the frozen work threshold;
+`sequential` is the documented rollback and `parallel` is an explicit
+research escape hatch. The resolved route, reason, work inputs, topology,
+and envelope are persisted and validated in safe-NPZ metadata. Existing
+pre-parallelism public archives remain loadable. Focused public/API/archive
+tests passed 56/56; the broader ensemble and serialization suite passed
+221/221; the core ensemble/clone/thread subset and strict MkDocs also passed.
+No portability or unmeasured-shape speed claim is made.
 
 ## P5 — Selector-v3: principled margin (Track I, behind P2/P4)
 

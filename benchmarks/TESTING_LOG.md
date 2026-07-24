@@ -3130,6 +3130,44 @@ B-archive simulation remains non-loadable, optional size telemetry.
     persist its resolution, retain rollback, then rerun correctness and
     focused performance checks before moving to selector-v3.
 
+### 72. B3-v2 public automatic activation and rollback (2026-07-23)
+
+1. **Source:** product integration commit
+   `dc468c34b19d385669ed85ec0524527dea52674a`, layered on the immutable
+   characterization above.
+2. **Comparator:** no new timed comparator; this checkpoint wires the
+   characterized process route into public ensemble-v3.
+3. **Evidence:** correctness and compatibility verification for
+   behavior-exact Tier-E engineering; no fresh data or new benchmark result.
+4. **Data/splits:** deterministic synthetic regression, binary, multiclass,
+   and archive fixtures in the named test suites.
+5. **Arms/policies:** public
+   `ensemble_parallelism={"auto","sequential","parallel"}`. Automatic
+   activation is limited to the measured macOS-arm64 14-thread envelope and
+   `member_work >= 80,000,000`; sequential is the rollback and parallel is an
+   explicit research escape hatch.
+6. **Environment:** `darko311`, macOS arm64, real process workers where the
+   tests engage parallel fitting.
+7. **Execution:** focused public/B3/contract suite; broader ensemble,
+   serialization, archive, and release-candidate suite; core
+   ensemble/clone/thread subset; strict MkDocs.
+8. **Artifacts/hashes:** source commit above; the characterization artifacts
+   and hashes remain entry 71. No new generated benchmark artifact.
+9. **Primary results:** 56 focused tests passed; 221 broader ensemble and
+   serialization tests passed; four selected core tests and strict MkDocs
+   passed.
+10. **Failed as well as passed checks:** no check failed after the final
+    fresh-eyes pass. During review, incorrect fallback thread provenance,
+    an inconsistent private-fixture request label, and an overbroad legacy
+    schema repair were found, fixed, and covered by regression tests.
+11. **Limitations/non-claims:** automatic activation makes no portability or
+    unmeasured-shape speed claim. The explicit parallel option is a research
+    surface. The measured peak remains about 2.28 GiB and is documented.
+12. **Decision/next action:** B3-v2 is complete in source with deterministic
+    activation, persisted resolution, safe-NPZ validation, backward archive
+    compatibility, and a documented rollback. Move to selector-v3 after the
+    required fresh-eyes stage boundary.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
