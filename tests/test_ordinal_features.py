@@ -246,6 +246,249 @@ def test_different_pandas_categorical_order_keeps_declared_mapping():
     assert np.array_equal(model.predict(reordered), expected)
 
 
+def _selector_frame(n=1_500):
+    rng = np.random.default_rng(7)
+    categories = [f"level_{index:02d}" for index in range(50)]
+    codes = rng.integers(0, len(categories), size=n)
+    X = pd.DataFrame(
+        {
+            "x": rng.normal(size=n),
+            "level": pd.Categorical(
+                np.asarray(categories, dtype=object)[codes],
+                categories=categories,
+                ordered=True,
+            ),
+        }
+    )
+    y = (
+        codes.astype(np.float64)
+        + 0.05 * X["x"].to_numpy()
+        + rng.normal(scale=0.2, size=n)
+    )
+    return X, y
+
+
+def _selector_params(**updates):
+    params = {
+        **PARAMS,
+        "iterations": 100,
+        "depth": 4,
+        "max_bins": 64,
+        "linear_leaves": False,
+    }
+    params.update(updates)
+    return params
+
+
+def test_declared_ordinal_selector_engages_on_ordered_categorical():
+    X, y = _selector_frame()
+    model = DarkoRegressor(**_selector_params()).fit(
+        X,
+        y,
+        ordinal_features="select",
+    )
+    metadata = model.automatic_ordinal_selector_
+    assert metadata["eligible"] is True
+    assert metadata["selected"] is True
+    assert metadata["reason"] == "selected_ordinal"
+    assert metadata["feature_indices"] == [1]
+    assert metadata["feature_names"] == ["level"]
+    assert metadata["paired_mse_gain_z"] >= 2.0
+    assert model.ordinal_features_[0]["categories"] == list(
+        X["level"].cat.categories
+    )
+    assert model.model_.prep_.cat_features_ == []
+    assert (
+        model.model_.auto_params_["automatic_ordinal_selector"]
+        == metadata
+        == model.model_.auto_params_["diagnostics"][
+            "automatic_ordinal_selector"
+        ]
+    )
+
+
+def test_declared_ordinal_selector_accepts_explicit_mapping():
+    X, y = _selector_frame()
+    categories = list(X["level"].cat.categories)
+    X["level"] = X["level"].astype(object)
+    model = DarkoRegressor(**_selector_params()).fit(
+        X,
+        y,
+        ordinal_features={"level": categories},
+        ordinal_selection=True,
+    )
+    metadata = model.automatic_ordinal_selector_
+    assert metadata["eligible"] is True
+    assert metadata["selected"] is True
+    assert metadata["feature_indices"] == [1]
+    assert model.ordinal_features_[0]["categories"] == categories
+
+
+def test_declared_ordinal_selector_none_and_integer_codes_are_exact_fallbacks():
+    rng = np.random.default_rng(13)
+    X = pd.DataFrame(
+        {
+            "x": rng.normal(size=800),
+            "code": rng.integers(0, 8, size=800),
+        }
+    )
+    y = rng.normal(size=800)
+    params = _selector_params(iterations=30)
+    control = DarkoRegressor(**params).fit(
+        X,
+        y,
+        cat_features=["code"],
+    )
+    selected = DarkoRegressor(**params).fit(
+        X,
+        y,
+        cat_features=["code"],
+        ordinal_features="select",
+    )
+    assert np.array_equal(control.predict(X), selected.predict(X))
+    assert selected.automatic_ordinal_selector_["eligible"] is False
+    assert selected.automatic_ordinal_selector_["reason"] == "no_declared_order"
+    assert selected.ordinal_features_ == []
+    assert selected.model_.prep_.cat_features_ == [1]
+
+
+def test_declared_ordinal_selector_small_data_falls_back_to_native_exactly():
+    X, y = _selector_frame(n=200)
+    params = _selector_params(iterations=30)
+    control = DarkoRegressor(**params).fit(
+        X,
+        y,
+        cat_features=["level"],
+    )
+    selected = DarkoRegressor(**params).fit(
+        X,
+        y,
+        ordinal_features="select",
+    )
+    assert np.array_equal(control.predict(X), selected.predict(X))
+    metadata = selected.automatic_ordinal_selector_
+    assert metadata["eligible"] is False
+    assert metadata["selected"] is False
+    assert metadata["reason"] == "below_min_samples"
+    assert metadata["feature_indices"] == [1]
+    assert selected.ordinal_features_ == []
+    assert selected.model_.prep_.cat_features_ == [1]
+
+
+def test_declared_ordinal_selector_honors_group_disjoint_split():
+    X, y = _selector_frame(n=1_500)
+    groups = np.repeat(np.arange(300), 5)
+    model = DarkoRegressor(
+        **_selector_params(validation_strategy="group")
+    ).fit(
+        X,
+        y,
+        groups=groups,
+        ordinal_features="select",
+    )
+    split = model.automatic_ordinal_selector_["split"]
+    assert split["rows_disjoint"] is True
+    assert split["group_disjoint"] is True
+
+
+def test_declared_ordinal_selector_round_trips(tmp_path):
+    X, y = _selector_frame()
+    model = DarkoRegressor(**_selector_params()).fit(
+        X,
+        y,
+        ordinal_features="select",
+    )
+    path = tmp_path / "ordinal-selector.npz"
+    model.save_model(path)
+    loaded = DarkoRegressor.load_model(path)
+    assert (
+        loaded.automatic_ordinal_selector_
+        == model.automatic_ordinal_selector_
+    )
+    assert np.array_equal(loaded.predict(X), model.predict(X))
+
+
+def test_declared_ordinal_selector_fallback_round_trips(tmp_path):
+    rng = np.random.default_rng(19)
+    X = pd.DataFrame({"x": rng.normal(size=700)})
+    y = rng.normal(size=700)
+    model = DarkoRegressor(
+        **_selector_params(iterations=20)
+    ).fit(X, y, ordinal_features="select")
+    assert model.automatic_ordinal_selector_["reason"] == "no_declared_order"
+    path = tmp_path / "ordinal-selector-fallback.npz"
+    model.save_model(path)
+    loaded = DarkoRegressor.load_model(path)
+    assert (
+        loaded.automatic_ordinal_selector_
+        == model.automatic_ordinal_selector_
+    )
+    assert np.array_equal(loaded.predict(X), model.predict(X))
+
+
+def test_declared_ordinal_selector_corruption_is_rejected(tmp_path):
+    X, y = _selector_frame()
+    model = DarkoRegressor(**_selector_params()).fit(
+        X,
+        y,
+        ordinal_features="select",
+    )
+    valid = tmp_path / "ordinal-selector-valid.npz"
+    corrupt = tmp_path / "ordinal-selector-corrupt.npz"
+    model.save_model(valid)
+    with np.load(valid, allow_pickle=False) as archive:
+        arrays = {
+            name: np.asarray(archive[name]).copy()
+            for name in archive.files
+        }
+    header = json.loads(arrays["header"].item())
+    for metadata in (
+        header["wrapper"]["state"]["automatic_ordinal_selector"],
+        header["auto_params"]["automatic_ordinal_selector"],
+        header["auto_params"]["diagnostics"]["automatic_ordinal_selector"],
+    ):
+        metadata["selection_fits"][0]["fit_seconds"] = -1.0
+    arrays["header"] = np.asarray(json.dumps(header))
+    np.savez_compressed(corrupt, **arrays)
+    with pytest.raises(
+        ValueError,
+        match="automatic ordinal selector fit is invalid",
+    ):
+        DarkoRegressor.load_model(corrupt)
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"tree_mode": "lightgbm"},
+        {"categorical_crosses": True},
+        {"linear_leaves": True},
+    ],
+)
+def test_declared_ordinal_selector_rejects_incompatible_surfaces(kwargs):
+    X, y = _selector_frame(n=800)
+    with pytest.raises(
+        ValueError,
+        match="ordinal_features='select' is incompatible",
+    ):
+        DarkoRegressor(**_selector_params(**kwargs)).fit(
+            X,
+            y,
+            ordinal_features="select",
+        )
+
+
+def test_declared_ordinal_selector_rejects_non_boolean_selection_flag():
+    X, y = _selector_frame(n=800)
+    with pytest.raises(TypeError, match="ordinal_selection must be a bool"):
+        DarkoRegressor(**_selector_params()).fit(
+            X,
+            y,
+            ordinal_features={"level": list(X["level"].cat.categories)},
+            ordinal_selection="yes",
+        )
+
+
 @pytest.mark.parametrize(
     ("values", "categories"),
     [

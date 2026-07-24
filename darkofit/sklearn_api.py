@@ -96,6 +96,10 @@ _SIGMA_MIN = 1e-12
 _GROUP_AFFINE_DEFAULT_FEATURE = "metric_code"
 _SCALAR_REGRESSION_LOSSES = frozenset({"RMSE", "MAE", "Quantile"})
 _ORDINAL_STATE_VERSION = 1
+_AUTOMATIC_ORDINAL_SELECTOR_VERSION = 1
+_AUTOMATIC_ORDINAL_SELECTOR_VALIDATION_FRACTION = 0.2
+_AUTOMATIC_ORDINAL_SELECTOR_MIN_ROWS = 500
+_AUTOMATIC_ORDINAL_SELECTOR_MIN_GAIN_Z = 2.0
 _GROUP_CENTERED_CROSSES_VERSION = 1
 _GROUP_CENTERED_CROSSES_MIN_SELECTION_ROWS = 2_000
 _GROUP_CENTERED_CROSSES_VALIDATION_FRACTION = 0.15
@@ -202,6 +206,14 @@ def _normalize_categorical_crosses(setting):
     if not isinstance(setting, (bool, np.bool_)):
         raise TypeError("categorical_crosses must be a bool")
     return bool(setting)
+
+
+def _is_automatic_ordinal_selection(ordinal_features):
+    return (
+        isinstance(ordinal_features, str)
+        and ordinal_features.strip().lower().replace("-", "_")
+        in {"select", "auto_select"}
+    )
 
 
 def _preset_metadata_payload(preset, preset_params):
@@ -2600,6 +2612,181 @@ def _validate_automatic_linear_selector_metadata(metadata, booster=None):
             raise ValueError(
                 "invalid DarkoFit model: automatic linear selector and booster disagree"
             )
+    return dict(metadata)
+
+
+def _validate_automatic_ordinal_selector_metadata(metadata):
+    """Validate compact fitted provenance for declared-order selection."""
+    if not isinstance(metadata, Mapping):
+        raise ValueError(
+            "invalid DarkoFit model: automatic ordinal selector state is invalid"
+        )
+    required = {
+        "version",
+        "requested",
+        "eligible",
+        "selected",
+        "reason",
+        "fit_random_state_seed",
+        "feature_indices",
+        "feature_names",
+        "category_order_sha256",
+        "split",
+        "native_validation_rmse",
+        "ordinal_validation_rmse",
+        "paired_mse_gain",
+        "paired_mse_gain_standard_error",
+        "paired_mse_gain_z",
+        "minimum_gain_z",
+        "selection_fits",
+        "selection_total_seconds",
+    }
+    if set(metadata) != required:
+        raise ValueError(
+            "invalid DarkoFit model: automatic ordinal selector state is invalid"
+        )
+    digest = metadata.get("category_order_sha256")
+    try:
+        digest_is_hex = (
+            isinstance(digest, str)
+            and len(digest) == 64
+            and int(digest, 16) >= 0
+        )
+    except (TypeError, ValueError):
+        digest_is_hex = False
+    if (
+        metadata["version"] != _AUTOMATIC_ORDINAL_SELECTOR_VERSION
+        or metadata["requested"] != "select"
+        or not isinstance(metadata["eligible"], bool)
+        or not isinstance(metadata["selected"], bool)
+        or not isinstance(metadata["reason"], str)
+        or metadata["reason"] not in {
+            "selected_ordinal",
+            "native_won",
+            "no_declared_order",
+            "below_min_samples",
+        }
+        or (
+            metadata["fit_random_state_seed"] is not None
+            and (
+                isinstance(metadata["fit_random_state_seed"], bool)
+                or not isinstance(metadata["fit_random_state_seed"], int)
+            )
+        )
+        or not isinstance(metadata["feature_indices"], list)
+        or any(
+            isinstance(index, bool) or not isinstance(index, int) or index < 0
+            for index in metadata["feature_indices"]
+        )
+        or len(set(metadata["feature_indices"]))
+        != len(metadata["feature_indices"])
+        or not isinstance(metadata["feature_names"], list)
+        or len(metadata["feature_names"]) != len(metadata["feature_indices"])
+        or any(
+            name is not None and not isinstance(name, str)
+            for name in metadata["feature_names"]
+        )
+        or not digest_is_hex
+        or not isinstance(metadata["split"], Mapping)
+        or not isinstance(metadata["selection_fits"], list)
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: automatic ordinal selector state is invalid"
+        )
+    for name in (
+        "native_validation_rmse",
+        "ordinal_validation_rmse",
+        "paired_mse_gain",
+        "paired_mse_gain_standard_error",
+        "paired_mse_gain_z",
+    ):
+        value = metadata[name]
+        if value is not None and (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not np.isfinite(float(value))
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: automatic ordinal selector score is invalid"
+            )
+    if (
+        metadata["minimum_gain_z"] != _AUTOMATIC_ORDINAL_SELECTOR_MIN_GAIN_Z
+        or isinstance(metadata["selection_total_seconds"], bool)
+        or not isinstance(metadata["selection_total_seconds"], (int, float))
+        or not np.isfinite(float(metadata["selection_total_seconds"]))
+        or float(metadata["selection_total_seconds"]) < 0.0
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: automatic ordinal selector timing is invalid"
+        )
+    eligible = metadata["eligible"]
+    if eligible:
+        expected_fit_names = ("native", "ordinal")
+        for fit, expected_name in zip(
+            metadata["selection_fits"], expected_fit_names
+        ):
+            if (
+                not isinstance(fit, Mapping)
+                or set(fit) != {
+                    "name",
+                    "validation_rmse",
+                    "best_n_estimators",
+                    "fit_seconds",
+                }
+                or fit["name"] != expected_name
+                or isinstance(fit["validation_rmse"], bool)
+                or not isinstance(fit["validation_rmse"], (int, float))
+                or not np.isfinite(float(fit["validation_rmse"]))
+                or float(fit["validation_rmse"]) < 0.0
+                or isinstance(fit["best_n_estimators"], bool)
+                or not isinstance(fit["best_n_estimators"], int)
+                or fit["best_n_estimators"] < 1
+                or isinstance(fit["fit_seconds"], bool)
+                or not isinstance(fit["fit_seconds"], (int, float))
+                or not np.isfinite(float(fit["fit_seconds"]))
+                or float(fit["fit_seconds"]) < 0.0
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: automatic ordinal selector fit is invalid"
+                )
+        if (
+            not metadata["feature_indices"]
+            or len(metadata["selection_fits"]) != 2
+            or any(metadata[name] is None for name in (
+                "native_validation_rmse",
+                "ordinal_validation_rmse",
+                "paired_mse_gain",
+                "paired_mse_gain_standard_error",
+                "paired_mse_gain_z",
+            ))
+            or metadata["reason"]
+            not in {"selected_ordinal", "native_won"}
+            or metadata["selected"]
+            != (metadata["reason"] == "selected_ordinal")
+            or float(metadata["selection_fits"][0]["validation_rmse"])
+            != float(metadata["native_validation_rmse"])
+            or float(metadata["selection_fits"][1]["validation_rmse"])
+            != float(metadata["ordinal_validation_rmse"])
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: automatic ordinal selector decision is invalid"
+            )
+    elif (
+        metadata["selected"]
+        or metadata["selection_fits"]
+        or any(metadata[name] is not None for name in (
+            "native_validation_rmse",
+            "ordinal_validation_rmse",
+            "paired_mse_gain",
+            "paired_mse_gain_standard_error",
+            "paired_mse_gain_z",
+        ))
+        or metadata["reason"]
+        not in {"no_declared_order", "below_min_samples"}
+    ):
+        raise ValueError(
+            "invalid DarkoFit model: automatic ordinal selector fallback is invalid"
+        )
     return dict(metadata)
 
 
@@ -6664,6 +6851,11 @@ class _RefitParamsMixin:
             state["selection_model_persisted"] = False
         if hasattr(self, "tree_mode_selection_"):
             state["tree_mode_selection"] = self.tree_mode_selection_
+        ordinal_selector = getattr(
+            self, "automatic_ordinal_selector_", None
+        )
+        if ordinal_selector is not None:
+            state["automatic_ordinal_selector"] = dict(ordinal_selector)
         if hasattr(self, "preset_"):
             state["preset"] = self.preset_
             state["preset_params"] = dict(self.preset_params_)
@@ -6982,6 +7174,51 @@ class _RefitParamsMixin:
             raise ValueError(
                 "invalid DarkoFit model: booster tree mode selection "
                 "provenance has no wrapper fitted state"
+            )
+        ordinal_selector = state.get("automatic_ordinal_selector")
+        fitted_ordinal_selector = getattr(
+            self.model_, "auto_params_", {}
+        ).get("automatic_ordinal_selector")
+        diagnostics = getattr(self.model_, "auto_params_", {}).get(
+            "diagnostics", {}
+        )
+        diagnostic_ordinal_selector = (
+            diagnostics.get("automatic_ordinal_selector")
+            if isinstance(diagnostics, Mapping)
+            else None
+        )
+        if ordinal_selector is not None:
+            validated = _validate_automatic_ordinal_selector_metadata(
+                ordinal_selector
+            )
+            if (
+                not isinstance(fitted_ordinal_selector, Mapping)
+                or dict(fitted_ordinal_selector) != validated
+                or not isinstance(diagnostic_ordinal_selector, Mapping)
+                or dict(diagnostic_ordinal_selector) != validated
+                or bool(getattr(self, "ordinal_features_", ()))
+                is not bool(validated["selected"])
+            ):
+                raise ValueError(
+                    "invalid DarkoFit model: automatic ordinal selector "
+                    "wrapper and booster provenance disagree"
+                )
+            if validated["selected"] and [
+                int(record["index"])
+                for record in self.ordinal_features_
+            ] != validated["feature_indices"]:
+                raise ValueError(
+                    "invalid DarkoFit model: automatic ordinal selector "
+                    "feature set disagrees with fitted preprocessing"
+                )
+            self.automatic_ordinal_selector_ = validated
+        elif (
+            fitted_ordinal_selector is not None
+            or diagnostic_ordinal_selector is not None
+        ):
+            raise ValueError(
+                "invalid DarkoFit model: automatic ordinal selector fitted "
+                "state is incomplete"
             )
         cross_state = state.get("group_centered_categorical_crosses")
         fitted_cross_state = getattr(self.model_, "auto_params_", {}).get(
@@ -9252,6 +9489,436 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self.auto_learning_rate_probe_values = auto_learning_rate_probe_values
         self.auto_learning_rate_probe_iterations = auto_learning_rate_probe_iterations
 
+    def _clear_automatic_ordinal_selector_state(self):
+        if hasattr(self, "automatic_ordinal_selector_"):
+            del self.automatic_ordinal_selector_
+
+    @staticmethod
+    def _automatic_ordinal_selector_empty_split():
+        return {
+            "source": "none",
+            "policy": "none",
+            "train_rows": None,
+            "validation_rows": None,
+            "train_positions_sha256": None,
+            "validation_positions_sha256": None,
+            "rows_disjoint": None,
+            "group_disjoint": None,
+            "sample_weight_provided": False,
+        }
+
+    def _attach_automatic_ordinal_selector_metadata(self, metadata):
+        metadata = _validate_automatic_ordinal_selector_metadata(metadata)
+        selected = bool(metadata["selected"])
+        fitted_records = list(getattr(self, "ordinal_features_", ()))
+        if selected != bool(fitted_records):
+            raise RuntimeError(
+                "automatic ordinal selector disagrees with final preprocessing"
+            )
+        if selected and [
+            int(record["index"]) for record in fitted_records
+        ] != metadata["feature_indices"]:
+            raise RuntimeError(
+                "automatic ordinal selector feature set changed during refit"
+            )
+        self.automatic_ordinal_selector_ = metadata
+        self.model_.auto_params_["automatic_ordinal_selector"] = metadata
+        self.model_.auto_params_.setdefault("diagnostics", {})[
+            "automatic_ordinal_selector"
+        ] = metadata
+
+    def _automatic_ordinal_selector_ineligible_reason(
+        self, X, *, eval_set, callbacks
+    ):
+        if _normalize_n_ensembles(self.n_ensembles) != 1 or (
+            str(self.ensemble_mode).strip().lower().replace("-", "_")
+            != "bootstrap"
+        ):
+            return "ensemble"
+        if _normalize_regression_preset(self.preset) is not None:
+            return "preset"
+        if self.loss != "RMSE":
+            return "non_rmse_loss"
+        if _is_auto_tree_mode(self.tree_mode):
+            return "automatic_tree_mode"
+        if _normalize_tree_mode(self.tree_mode) != "catboost":
+            return "non_catboost_tree_mode"
+        if self.auto_learning_rate_probe:
+            return "automatic_learning_rate_probe"
+        if _should_use_linear_residual(self.linear_residual):
+            return "linear_residual"
+        if _normalize_categorical_crosses(self.categorical_crosses):
+            return "categorical_crosses"
+        if self.refit:
+            return "refit"
+        if _normalize_dist_calibration(
+            self.dist_calibration, self.sigma_calibration
+        ) is not None:
+            return "distributional_calibration"
+        if _normalize_interval_calibration(self.interval_calibration) is not None:
+            return "interval_calibration"
+        if callbacks:
+            return "callbacks"
+        if self.ordered_boosting is True or (
+            isinstance(self.ordered_boosting, np.bool_)
+            and bool(self.ordered_boosting)
+        ):
+            return "ordered_boosting"
+        if _normalize_linear_leaves(self.linear_leaves) is True:
+            return "linear_leaves"
+        minimum_rows = (
+            _AUTOMATIC_ORDINAL_SELECTOR_MIN_ROWS
+            if eval_set is not None
+            else math.ceil(
+                _AUTOMATIC_ORDINAL_SELECTOR_MIN_ROWS
+                / (1.0 - _AUTOMATIC_ORDINAL_SELECTOR_VALIDATION_FRACTION)
+            )
+        )
+        if n_samples_from_array_like(X) < minimum_rows:
+            return "below_min_samples"
+        return None
+
+    @staticmethod
+    def _automatic_ordinal_selector_records(
+        X, cat_features, declaration
+    ):
+        if declaration is None or _is_automatic_ordinal_selection(
+            declaration
+        ):
+            declaration = "auto"
+            cat_features = None
+        _, _, records = _resolve_ordinal_features(
+            X, cat_features, declaration
+        )
+        if isinstance(declaration, str):
+            records = [
+                record
+                for record in records
+                if record["source"] == "auto_ordered_categorical"
+            ]
+        return records
+
+    @staticmethod
+    def _automatic_ordinal_fit_record(name, model, seconds):
+        score = float(model.best_score_)
+        if not np.isfinite(score) or score < 0.0:
+            raise RuntimeError(
+                "automatic ordinal selector produced invalid validation RMSE"
+            )
+        return {
+            "name": str(name),
+            "validation_rmse": score,
+            "best_n_estimators": int(model.best_n_estimators_),
+            "fit_seconds": float(seconds),
+        }
+
+    def _fit_automatic_ordinal_fallback(
+        self,
+        reason,
+        records,
+        X,
+        y,
+        *,
+        cat_features,
+        eval_set,
+        groups,
+        sample_weight,
+        eval_sample_weight,
+        callbacks,
+    ):
+        fitted = self.fit(
+            X,
+            y,
+            cat_features=cat_features,
+            eval_set=eval_set,
+            groups=groups,
+            sample_weight=sample_weight,
+            eval_sample_weight=eval_sample_weight,
+            callbacks=callbacks,
+            ordinal_features=None,
+        )
+        metadata = {
+            "version": _AUTOMATIC_ORDINAL_SELECTOR_VERSION,
+            "requested": "select",
+            "eligible": False,
+            "selected": False,
+            "reason": str(reason),
+            "fit_random_state_seed": None,
+            "feature_indices": [
+                int(record["index"]) for record in records
+            ],
+            "feature_names": [
+                record.get("name") for record in records
+            ],
+            "category_order_sha256": _ordinal_category_order_sha256(records),
+            "split": self._automatic_ordinal_selector_empty_split(),
+            "native_validation_rmse": None,
+            "ordinal_validation_rmse": None,
+            "paired_mse_gain": None,
+            "paired_mse_gain_standard_error": None,
+            "paired_mse_gain_z": None,
+            "minimum_gain_z": _AUTOMATIC_ORDINAL_SELECTOR_MIN_GAIN_Z,
+            "selection_fits": [],
+            "selection_total_seconds": 0.0,
+        }
+        self._attach_automatic_ordinal_selector_metadata(metadata)
+        return fitted
+
+    def _fit_automatic_ordinal_selector(
+        self,
+        X,
+        y,
+        *,
+        cat_features,
+        eval_set,
+        groups,
+        sample_weight,
+        eval_sample_weight,
+        callbacks,
+        declaration,
+    ):
+        self._clear_automatic_ordinal_selector_state()
+        records = self._automatic_ordinal_selector_records(
+            X, cat_features, declaration
+        )
+        n_features = n_features_from_array_like(X)
+        native_cat_features = sorted({
+            *resolve_cat_features(cat_features, X, n_features),
+            *(int(record["index"]) for record in records),
+        })
+        if not records:
+            return self._fit_automatic_ordinal_fallback(
+                "no_declared_order",
+                records,
+                X,
+                y,
+                cat_features=cat_features,
+                eval_set=eval_set,
+                groups=groups,
+                sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight,
+                callbacks=callbacks,
+            )
+        reason = self._automatic_ordinal_selector_ineligible_reason(
+            X, eval_set=eval_set, callbacks=callbacks
+        )
+        if reason == "below_min_samples":
+            return self._fit_automatic_ordinal_fallback(
+                reason,
+                records,
+                X,
+                y,
+                cat_features=native_cat_features,
+                eval_set=eval_set,
+                groups=groups,
+                sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight,
+                callbacks=callbacks,
+            )
+        if reason is not None:
+            raise ValueError(
+                "ordinal_features='select' is incompatible with the requested "
+                f"fit ({reason})"
+            )
+
+        X_checked, _, _ = _coerce_fit_X(X, native_cat_features)
+        n_rows = X_checked.shape[0]
+        y_checked = validate_target_vector(y, n_rows, dtype=np.float64)
+        weights = _validate_wrapper_sample_weight(sample_weight, n_rows)
+        requested_random_state = self.random_state
+        fit_seed = normalize_random_state_seed(requested_random_state)
+        if fit_seed is None:
+            fit_seed = 0
+
+        if eval_set is None:
+            if eval_sample_weight is not None:
+                raise ValueError("eval_sample_weight requires an explicit eval_set")
+            group_values = None if groups is None else np.asarray(groups)
+            if group_values is not None and group_values.shape != (n_rows,):
+                raise ValueError(
+                    "groups must be one-dimensional with one value per training row"
+                )
+            train_idx, validation_idx, policy = _make_eval_split(
+                X_checked,
+                y_checked,
+                _AUTOMATIC_ORDINAL_SELECTOR_VALIDATION_FRACTION,
+                fit_seed,
+                groups=group_values,
+                sample_weight=weights,
+                validation_strategy="weighted_stratified",
+            )
+            selection_X = _take_rows(X, train_idx)
+            selection_y = y_checked[train_idx]
+            selection_eval_X = _take_rows(X, validation_idx)
+            selection_eval_y = y_checked[validation_idx]
+            selection_groups = (
+                None if group_values is None else group_values[train_idx]
+            )
+            selection_weight = None if weights is None else weights[train_idx]
+            selection_eval_weight = (
+                None if weights is None else weights[validation_idx]
+            )
+            group_disjoint = None
+            if group_values is not None:
+                group_disjoint = not bool(
+                    np.intersect1d(
+                        np.unique(group_values[train_idx]),
+                        np.unique(group_values[validation_idx]),
+                    ).size
+                )
+                if not group_disjoint:
+                    raise RuntimeError(
+                        "automatic ordinal selector groups overlap"
+                    )
+            split = {
+                "source": "automatic_holdout",
+                "policy": policy,
+                "train_rows": int(len(train_idx)),
+                "validation_rows": int(len(validation_idx)),
+                "train_positions_sha256": _index_sha256(train_idx),
+                "validation_positions_sha256": _index_sha256(validation_idx),
+                "rows_disjoint": not bool(
+                    np.intersect1d(train_idx, validation_idx).size
+                ),
+                "group_disjoint": group_disjoint,
+                "sample_weight_provided": weights is not None,
+            }
+            if not split["rows_disjoint"]:
+                raise RuntimeError(
+                    "automatic ordinal selector rows overlap"
+                )
+        else:
+            normalized_eval_set = _ensure_dense_eval_set(eval_set)
+            selection_X = X
+            selection_y = y_checked
+            selection_eval_X = normalized_eval_set[0]
+            selection_eval_y = validate_target_vector(
+                normalized_eval_set[1],
+                n_samples_from_array_like(selection_eval_X),
+                dtype=np.float64,
+            )
+            selection_groups = groups
+            selection_weight = weights
+            selection_eval_weight = _validate_wrapper_sample_weight(
+                eval_sample_weight,
+                len(selection_eval_y),
+                name="eval_sample_weight",
+            )
+            split = {
+                "source": "explicit_eval_set",
+                "policy": "explicit_eval_set",
+                "train_rows": int(n_rows),
+                "validation_rows": int(len(selection_eval_y)),
+                "train_positions_sha256": _index_sha256(np.arange(n_rows)),
+                "validation_positions_sha256": None,
+                "rows_disjoint": None,
+                "group_disjoint": None,
+                "sample_weight_provided": (
+                    weights is not None or selection_eval_weight is not None
+                ),
+            }
+
+        selection_eval_set = (selection_eval_X, selection_eval_y)
+        ordinal_mapping = _FrozenAutoOrdinalFeatures({
+            int(record["index"]): list(record["categories"])
+            for record in records
+        })
+
+        def fit_audition(name, declaration):
+            candidate = clone(self).set_params(
+                random_state=fit_seed,
+                linear_leaves=False,
+                early_stopping=True,
+                early_stopping_rounds=None,
+                use_best_model=True,
+                refit=False,
+                diagnostic_warnings="never",
+            )
+            started = time.perf_counter_ns()
+            candidate.fit(
+                selection_X,
+                selection_y,
+                cat_features=native_cat_features,
+                eval_set=selection_eval_set,
+                groups=selection_groups,
+                sample_weight=selection_weight,
+                eval_sample_weight=selection_eval_weight,
+                ordinal_features=declaration,
+            )
+            seconds = (time.perf_counter_ns() - started) / 1e9
+            prediction = candidate.predict(selection_eval_X)
+            return (
+                candidate,
+                prediction,
+                self._automatic_ordinal_fit_record(name, candidate, seconds),
+            )
+
+        selection_started = time.perf_counter_ns()
+        native, native_prediction, native_record = fit_audition(
+            "native", None
+        )
+        ordinal, ordinal_prediction, ordinal_record = fit_audition(
+            "ordinal", ordinal_mapping
+        )
+        selection_seconds = (time.perf_counter_ns() - selection_started) / 1e9
+        gain, gain_standard_error, gain_z = _paired_mse_gain_statistics(
+            selection_eval_y,
+            native_prediction,
+            ordinal_prediction,
+            selection_eval_weight,
+        )
+        selected = (
+            gain > 0.0
+            and gain_z >= _AUTOMATIC_ORDINAL_SELECTOR_MIN_GAIN_Z
+        )
+        del native, ordinal, native_prediction, ordinal_prediction
+
+        metadata = {
+            "version": _AUTOMATIC_ORDINAL_SELECTOR_VERSION,
+            "requested": "select",
+            "eligible": True,
+            "selected": bool(selected),
+            "reason": "selected_ordinal" if selected else "native_won",
+            "fit_random_state_seed": int(fit_seed),
+            "feature_indices": [
+                int(record["index"]) for record in records
+            ],
+            "feature_names": [
+                record.get("name") for record in records
+            ],
+            "category_order_sha256": _ordinal_category_order_sha256(records),
+            "split": split,
+            "native_validation_rmse": float(
+                native_record["validation_rmse"]
+            ),
+            "ordinal_validation_rmse": float(
+                ordinal_record["validation_rmse"]
+            ),
+            "paired_mse_gain": float(gain),
+            "paired_mse_gain_standard_error": float(gain_standard_error),
+            "paired_mse_gain_z": float(gain_z),
+            "minimum_gain_z": _AUTOMATIC_ORDINAL_SELECTOR_MIN_GAIN_Z,
+            "selection_fits": [native_record, ordinal_record],
+            "selection_total_seconds": float(selection_seconds),
+        }
+        try:
+            self.random_state = fit_seed
+            fitted = self.fit(
+                X,
+                y,
+                cat_features=native_cat_features,
+                eval_set=eval_set,
+                groups=groups,
+                sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight,
+                callbacks=callbacks,
+                ordinal_features=ordinal_mapping if selected else None,
+            )
+        finally:
+            self.random_state = requested_random_state
+        self._attach_automatic_ordinal_selector_metadata(metadata)
+        return fitted
+
     def _clear_automatic_linear_selector_state(self):
         for name in (
             "linear_leaves_selected_",
@@ -10135,8 +10802,25 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
     @_restore_fitted_state_on_fit_failure
     def fit(self, X, y, cat_features=None, eval_set=None, groups=None,
             sample_weight=None, eval_sample_weight=None, callbacks=None,
-            ordinal_features=None):
+            ordinal_features=None, ordinal_selection=False):
         """Fit the model, resolving automatic leaves and product presets."""
+        if not isinstance(ordinal_selection, (bool, np.bool_)):
+            raise TypeError("ordinal_selection must be a bool")
+        if bool(ordinal_selection) or _is_automatic_ordinal_selection(
+            ordinal_features
+        ):
+            return self._fit_automatic_ordinal_selector(
+                X,
+                y,
+                cat_features=cat_features,
+                eval_set=eval_set,
+                groups=groups,
+                sample_weight=sample_weight,
+                eval_sample_weight=eval_sample_weight,
+                callbacks=_normalize_callbacks(callbacks),
+                declaration=ordinal_features,
+            )
+        self._clear_automatic_ordinal_selector_state()
         linear_leaves = _normalize_linear_leaves(self.linear_leaves)
         if linear_leaves == "auto":
             if not getattr(
@@ -10289,12 +10973,22 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         cat_features : list of int or str, or None
             Column indices or, for named input, column names to treat as
             categoricals.
-        ordinal_features : mapping, {"auto"}, or None
+        ordinal_features : mapping, {"auto", "select"}, or None
             Ordered categorical features to encode as rank-valued numeric
             columns before binning. A mapping declares each feature's complete
             ordered category sequence. ``"auto"`` recognizes ordered pandas
             categoricals and integer-coded columns listed in *cat_features*.
+            ``"select"`` auditions only externally ordered pandas
+            categoricals against the native categorical path and requires a
+            two-standard-error paired validation gain before engaging.
             Unknown categories at prediction time are rejected.
+        ordinal_selection : bool, default False
+            Audition an explicit *ordinal_features* mapping (or the ordered
+            pandas categoricals resolved by ``ordinal_features="auto"``)
+            against the native categorical path. Integer codes alone never
+            qualify as a declared order. The string shorthand
+            ``ordinal_features="select"`` selects ordered pandas
+            categoricals with this same policy.
         eval_set : (X_val, y_val) tuple or None
             Explicit validation set.  When provided, automatic splitting is
             skipped regardless of the *early_stopping* setting.
