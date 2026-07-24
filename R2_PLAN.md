@@ -580,11 +580,14 @@ development and does not count as contact with these domains or any holdout.
    comparisons. The committed diagnostic nevertheless reports
    `close_q_at_microprototype` because the 500k paired-ratio dispersion was
    `0.117662` against its inherited `0.10` timing-validity line; the first
-   500k control was the outlier. Under the governing light regime this is not
-   a substantive mechanism kill or shipping evidence. It is a promising,
-   narrowly scoped Q1 implementation signal whose real integration must retain
-   float leaf values, arithmetic bounds, deterministic rounding, fallbacks,
-   and honest broad characterization.
+   500k control was the outlier. The dated
+   [SHIP_RULES disposition](benchmarks/q_post_dispatch_microprototype_ship_rules_amendment_20260724.md)
+   preserves that generated verdict but supersedes it for roadmap sequencing:
+   Q1 is funded as the next post-v0.12 speed-mechanism slot. This is not
+   shipping evidence. The real integration must retain float leaf values,
+   arithmetic bounds, deterministic rounding, a byte-identical float
+   fallback, and honest broad quality/resource characterization; it must also
+   explain the noisy `1.114178x` 1M-row prediction-time reading.
 
 **Accuracy-v2 integration project (the capstone, not a revival list):**
 rebuild the accuracy rung with component ablations and a true no-op
@@ -658,8 +661,10 @@ new-entity/group-shift mechanism through the normal pipeline.
 9. ~~Reprofile Q against the post-dispatch engine.~~ **Complete:** the
    packed candidate was behavior-exact on both measured synthetic shapes and
    took `0.827110x` the control's fit time overall, but its first-size timing
-   series missed the diagnostic dispersion line. Preserve both facts; do not
-   convert the retired-style stability miss into an evidence-based kill.
+   series missed the diagnostic dispersion line. Preserve both facts. The
+   2026-07-24 SHIP_RULES disposition funds Q1 as the next post-v0.12 speed
+   mechanism; the stochastic mechanism is not presumed behavior-exact beyond
+   the measured microprototype grid.
 
 Depth opt-in exposure and other release/documentation work do not consume a
 mechanism slot.

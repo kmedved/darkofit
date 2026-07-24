@@ -3553,12 +3553,15 @@ B-archive simulation remains non-loadable, optional size telemetry.
     rendered-result SHA-256:
     `c1dbdf6e6f0eb4b576c210d18398c170a07a0e66882fe132b22ee63729a9b409`.
 12. **Disposition:** preserve the generated
-    `close_q_at_microprototype` verdict under its committed diagnostic, but do
-    not treat the dispersion miss as an evidence-based mechanism kill under
-    `SHIP_RULES`. The measured direction and exact observed behavior support
-    considering a real, narrow Q1 implementation as a future mechanism slot;
-    no product code, option, default, or quality claim is authorized by this
-    microprototype.
+    `close_q_at_microprototype` verdict under its committed diagnostic. The
+    owner subsequently accepted the dated
+    [`SHIP_RULES` disposition](q_post_dispatch_microprototype_ship_rules_amendment_20260724.md):
+    the inherited dispersion miss is not a substantive mechanism kill, and Q1
+    is funded as the next post-v0.12 speed-mechanism slot. This authorizes a
+    narrow implementation, not a product option, default, or quality claim.
+    Stochastic gradient quantization is not presumed behavior-exact beyond
+    the measured grid; Q1 must retain the float fallback and investigate the
+    `1.114178x` 1M-row prediction-time reading.
 
 ## Product behavior established by the testing
 
