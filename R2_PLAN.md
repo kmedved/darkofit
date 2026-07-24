@@ -446,6 +446,17 @@ requires the newest untouched sports-season ship-check before any default
 exposure. CTR23 remains observed release-validation and must not be used for
 retuning.
 
+**2020 sports ship-check, 2026-07-23:** the newest complete season passed
+with exact fallback on all three targets. The 325-row panel produced 220
+training and 105 held-team rows (104 cold-player); every automatic fit
+recorded `below_min_samples`, every held/seen/cold prediction vector was
+bit-identical to `linear_leaves=False`, and every RMSE ratio was `1.0`.
+Together with the CTR23 result, selector-v3 satisfies `SHIP_RULES.md` and is
+eligible as the automatic default, with `linear_leaves=False` as the
+documented rollback. The owner clarified that unrelated external-comparator
+characterization does not count as candidate-development contact; the
+separate GPBoost study therefore does not spend this selector holdout.
+
 ## P6 — Member-policy retune (after P2 resolves)
 
 M6 v3 development comparing member recipes on the broad slice: current

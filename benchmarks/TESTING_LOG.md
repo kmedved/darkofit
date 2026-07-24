@@ -3282,6 +3282,46 @@ B-archive simulation remains non-loadable, optional size telemetry.
     non-regressing result can authorize the automatic default; false remains
     the documented rollback.
 
+### 76. Selector-v3 2020 sports ship-check (2026-07-23)
+
+1. **Source:** clean candidate and harness commit
+   `ad9aa8ef44bbabe2eee8140334c34c5256540c2a`.
+2. **Comparator:** `linear_leaves=False` from the same source and complete
+   model configuration.
+3. **Evidence:** newest complete sports-season holdout for this DarkoFit
+   candidate. By owner clarification, unrelated external-comparator
+   characterization does not count as candidate-development contact.
+4. **Data/splits:** fixed Basketball Reference export
+   `96e0efff...`, complete 2020 season, existing 500-minute player/team
+   aggregation and 15 predictors, deterministic middle-third ten-team
+   holdout. There were 325 panel, 220 training, 105 held-team, and 104
+   cold-player rows.
+5. **Arms/policies:** constant control versus the fixed 2-SE automatic
+   selector on `minutes_per_game`, `game_score`, and `box_plus_minus`.
+   Current depth/L2 and all other model policies were shared.
+6. **Environment:** `darko311`, macOS arm64, four requested fit threads,
+   fresh worker per target/arm; exclusive-machine audit passed.
+7. **Execution:** `python
+   benchmarks/run_automatic_linear_selector_v3_sports_2020_ship_check.py
+   execute --raw-source ... --source /private/tmp/darkofit-depth-light
+   --expected-head ad9aa8e... --output-prefix ...`.
+8. **Artifacts/hashes:** launch `88a78fe8...`, raw `922e4bbe...`, result
+   `5bd9623d...`; full hashes are in the dated result note.
+9. **Primary results:** all held-team, seen-player, and cold-player RMSE
+   ratios were exactly `1.0`; all three prediction vectors matched control
+   bit for bit; every selector resolved `below_min_samples`.
+10. **Failed as well as passed checks:** 6/6 rows and 3/3 pairs passed. The
+    first fresh-eyes draft incorrectly hard-coded the expected selector branch
+    and required exactness even for a hypothetical improving engagement; both
+    harness bugs were fixed before source-data contact.
+11. **Limitations/non-claims:** this is a small exact-fallback sports result,
+    not evidence that linear leaves improve sports. Single-run cost ratios
+    (`1.021381x` fit, `0.964238x` prediction, `1.003174x` RSS) are telemetry.
+12. **Decision/next action:** combined with positive development and the
+    no-loss CTR23 result, selector-v3 satisfies SHIP_RULES and is eligible as
+    the automatic default. Document `"auto"` and the `False` rollback, then
+    run fresh-eyes product verification before closing the mechanism.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
