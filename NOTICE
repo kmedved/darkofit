@@ -43,3 +43,9 @@ suite selection, and generator contract tests are modified from ChimeraBoost
 version namespace, removes TabArena and all declared CTR23 identities before
 calibration reduction, verifies canaries with DarkoFit, and uses a separate
 project-specific decision ledger and adoption protocol.
+
+The benchmark-only packed-int64 quantization microprototype adapts
+ChimeraBoost's gradient/Hessian packing and counter-based stochastic-rounding
+design from commit f14be606b641f1bf0dc92bb14b3951f1fe631c6b. DarkoFit's
+prototype uses its own row-major histogram shape, exact unit-Hessian count,
+split-legality semantics, post-dispatch control, and funding analysis.
