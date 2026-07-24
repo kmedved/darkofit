@@ -90,6 +90,11 @@ def test_v012_adapters_do_not_mutate_historical_modules():
 
     assert historical_analysis.campaign is historical_legacy
     assert analysis.legacy_analysis is not historical_analysis
+    assert not hasattr(campaign, "CONTRACT_ID")
+    assert analysis.legacy_analysis.campaign.CONTRACT_ID == campaign.RUN_ID
+    assert analysis.PLANNED_ANALYZER_SHA256 == (
+        "0cc073c3cb9493a6f6a32b2e2be85d942c318f56a4535ec2b8f720efa49cdbb2"
+    )
 
 
 def test_v012_worker_command_invokes_current_runner_without_retired_contract():
@@ -183,3 +188,4 @@ def test_v012_report_relabels_legacy_template(monkeypatch):
     assert "not a tuning or shipping gate" in report
     assert "fixed-protocol point-estimate readout" in report
     assert "spent" not in report
+    assert "The completed 234-worker measurement was not rerun or changed" in report

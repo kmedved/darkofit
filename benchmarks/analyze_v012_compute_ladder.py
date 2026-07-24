@@ -20,6 +20,11 @@ if __package__ in {None, ""}:
 from benchmarks import run_v012_compute_ladder as campaign
 
 
+PLANNED_ANALYZER_SHA256 = (
+    "0cc073c3cb9493a6f6a32b2e2be85d942c318f56a4535ec2b8f720efa49cdbb2"
+)
+
+
 def _load_isolated_legacy_analysis() -> ModuleType:
     name = "benchmarks._v012_isolated_legacy_analysis"
     existing = sys.modules.get(name)
@@ -39,8 +44,17 @@ def _load_isolated_legacy_analysis() -> ModuleType:
     return module
 
 
+class _LegacyCampaignView:
+    """Expose the one historical summarizer name without mutating the runner."""
+
+    CONTRACT_ID = campaign.RUN_ID
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(campaign, name)
+
+
 legacy_analysis = _load_isolated_legacy_analysis()
-legacy_analysis.campaign = campaign
+legacy_analysis.campaign = _LegacyCampaignView()
 legacy_analysis.COUNTERPARTS = (
     (campaign.DARKO_DEFAULT, campaign.CHIMERA_DEFAULT),
     (campaign.DARKO_ACCURACY, campaign.CHIMERA_ACCURACY),
@@ -149,11 +163,6 @@ def _verify_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
             ),
             campaign.ROOT / "benchmarks/run_v012_compute_ladder.py",
         ),
-        (
-            "analyzer",
-            str(campaign.ANALYZER_PATH.relative_to(campaign.ROOT)),
-            campaign.ANALYZER_PATH,
-        ),
     ):
         record = manifest.get(field)
         if (
@@ -163,6 +172,15 @@ def _verify_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
             or record.get("sha256") != campaign.sha256(current_path)
         ):
             raise RuntimeError(f"manifest {field} binding drifted")
+    analyzer = manifest.get("analyzer")
+    if (
+        not isinstance(analyzer, Mapping)
+        or set(analyzer) != {"path", "sha256"}
+        or analyzer.get("path")
+        != str(campaign.ANALYZER_PATH.relative_to(campaign.ROOT))
+        or analyzer.get("sha256") != PLANNED_ANALYZER_SHA256
+    ):
+        raise RuntimeError("manifest planned-analyzer binding drifted")
     sources = campaign.validate_product_sources(
         Path(str(manifest["darkofit_source"]["path"])),
         Path(str(manifest["chimeraboost_source"]["path"])),
@@ -350,7 +368,8 @@ def verify_run(
         "harness_head": manifest["harness_head"],
         "protocol_sha256": manifest["protocol"]["sha256"],
         "runner_sha256": manifest["runner"]["sha256"],
-        "analyzer_sha256": manifest["analyzer"]["sha256"],
+        "planned_analyzer_sha256": manifest["analyzer"]["sha256"],
+        "executed_analyzer_sha256": campaign.sha256(Path(__file__).resolve()),
         "manifest_sha256": campaign.sha256(manifest_path),
         "raw_sha256": campaign.sha256(raw_path),
         "terminal_sha256": campaign.sha256(terminal_path),
@@ -396,7 +415,15 @@ def render_report(summary: Mapping[str, Any]) -> str:
         if old not in report:
             raise RuntimeError(f"legacy report template changed: {old}")
         report = report.replace(old, new)
-    return report
+    return report + (
+        "\n## Analysis rerun note\n\n"
+        "The initially published analyzer verified all raw worker artifacts but "
+        "stopped before writing any metric output because its reused summarizer "
+        "looked for the retired compatibility name `CONTRACT_ID`. This analyzer "
+        "fix supplies that name through an isolated view. The completed 234-worker "
+        "measurement was not rerun or changed; both analyzer hashes are retained "
+        "in the summary and attestation.\n"
+    )
 
 
 def _write_create_only(path: Path, payload: bytes) -> None:
@@ -448,7 +475,12 @@ def analyze(input_dir: Path) -> dict[str, Any]:
                 "raw_sha256": provenance["raw_sha256"],
                 "manifest_sha256": provenance["manifest_sha256"],
                 "terminal_sha256": provenance["terminal_sha256"],
-                "analyzer_sha256": provenance["analyzer_sha256"],
+                "planned_analyzer_sha256": provenance[
+                    "planned_analyzer_sha256"
+                ],
+                "executed_analyzer_sha256": provenance[
+                    "executed_analyzer_sha256"
+                ],
             },
             "outputs": {
                 path.name: campaign._stable_artifact(path, root)
