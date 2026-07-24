@@ -541,6 +541,15 @@ smallest native-vs-ordinal automatic audition restricted to explicit mappings
 and ordered pandas categoricals. Integer codes merely listed in
 `cat_features` are not an external order declaration and cannot trigger the
 selector. `ordinal_features=None` remains the exact rollback.
+
+**Transform result, 2026-07-23:** the behavior-exact pandas categorical fast
+path is complete. At 128, 4,096, and 65,536 prediction rows it matched the
+generic mapping bit-for-bit and measured `0.542156x`, `0.460742x`, and
+`0.444776x` as long respectively (`0.480737x` equal-shape geomean). This
+isolates the public `ordinal_features` transform; it does not relabel the
+historical AutoGluon adapter timing. Continue to the quality-selector half of
+the mechanism.
+
 5. **Q reprofile** — last, against the post-dispatch engine.
 
 **Accuracy-v2 integration project (the capstone, not a revival list):**

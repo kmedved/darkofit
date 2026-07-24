@@ -3350,6 +3350,37 @@ B-archive simulation remains non-loadable, optional size telemetry.
     SHIP_RULES-confirmed automatic quality default. Move to the next
     categorical mechanism after a clean fresh-eyes stage boundary.
 
+### 78. Declared-ordinal pandas fast path (2026-07-23)
+
+- **Question:** can the public target-free `ordinal_features` path avoid
+  rebuilding category lookups when an incoming pandas categorical already
+  carries the exact fitted order?
+- **Source and method:** commit
+  `7738b0af27daa9d79ad7f7e833e029d58600ac99`; seed `20260723`; one model
+  thread; 15 alternating repeats at 128, 4,096, and 65,536 rows. The same
+  fitted model predicted identical values represented either as matching
+  ordered categoricals (new direct-code route) or ordinary objects
+  (established generic mapping).
+- **Result:** every prediction vector was bit-identical. The fast/generic
+  prediction-time ratios were `0.542156`, `0.460742`, and `0.444776`; the
+  equal-shape geomean was `0.480737`. Direction was favorable at every
+  measured shape.
+- **Boundary:** this isolates the public ordinal transform on the recorded
+  machine. It is not a quality result, a general hardware claim, or a
+  reinterpretation of the historical AutoGluon adapter's causal-path timing.
+  The generic route remains the correctness fallback whenever dtype category
+  order does not exactly match the fitted declaration.
+- **Artifacts:** protocol
+  [`declared_ordinal_transform_microbenchmark.md`](declared_ordinal_transform_microbenchmark.md),
+  raw
+  [`JSON`](declared_ordinal_transform_microbenchmark_raw_20260723.json), and
+  rendered
+  [`result`](declared_ordinal_transform_microbenchmark_result_20260723.md).
+  Raw SHA-256:
+  `788314a4f0f55dcae08223c9bd9ec58668754bfe4bbcd007d5b5b479b552b165`.
+- **Disposition:** keep the behavior-exact optimization and proceed to the
+  declared-order native-vs-ordinal selector.
+
 ## Product behavior established by the testing
 
 ### Defaults retained
