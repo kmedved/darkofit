@@ -37,6 +37,7 @@ def _estimator(**overrides):
         "random_state": 11,
         "thread_count": 2,
         "diagnostic_warnings": "never",
+        "categorical_crosses": True,
     }
     params.update(overrides)
     return DarkoRegressor(**params)
@@ -144,10 +145,10 @@ def test_eligible_control_win_is_exact_to_forced_control(monkeypatch) -> None:
             "below_min_samples",
         ),
         (
-            _centered_problem(n=120, seed=22)[0],
-            [0],
-            {"tree_mode": "lightgbm"},
-            "non_catboost_tree_mode",
+            np.full((120, 2), "category", dtype=object),
+            [0, 1],
+            {},
+            "no_numeric_features",
         ),
     ],
 )
@@ -179,25 +180,56 @@ def test_classifier_and_clone_surface_are_unchanged() -> None:
     regressor = _estimator(iterations=8)
     cloned = clone(regressor)
     assert cloned.get_params() == regressor.get_params()
+    assert cloned.get_params()["categorical_crosses"] is True
     assert not hasattr(cloned, "_group_centered_crosses_private_mode")
 
 
-def test_ineligible_ensemble_remains_operational() -> None:
+@pytest.mark.parametrize(
+    "overrides, fit_kwargs, reason",
+    [
+        ({"tree_mode": "lightgbm"}, {}, "non_catboost_tree_mode"),
+        ({"tree_mode": "auto"}, {}, "automatic_tree_mode"),
+        ({"n_ensembles": 2}, {}, "ensemble"),
+        ({"preset": "accuracy"}, {}, "preset"),
+        ({"loss": "MAE"}, {}, "non_rmse_loss"),
+        ({"linear_leaves": True}, {}, "linear_leaves"),
+        ({}, {"callbacks": [lambda _: False]}, "callbacks"),
+        ({}, {"ordinal_features": {0: ["0", "1"]}}, "ordinal_features"),
+    ],
+)
+def test_explicit_opt_in_rejects_incompatible_fit_modes(
+    overrides, fit_kwargs, reason
+) -> None:
     X, y, _ = _centered_problem(n=80, seed=31)
-    model = _estimator(iterations=2, n_ensembles=2).fit(
-        X, y, cat_features=[0]
-    )
-    control = _estimator(iterations=2, n_ensembles=2)
+    with pytest.raises(ValueError, match=reason):
+        _estimator(iterations=2, **overrides).fit(
+            X, y, cat_features=[0], **fit_kwargs
+        )
+
+
+def test_default_off_is_exact_and_has_no_selector_state() -> None:
+    X, y, _ = _centered_problem(n=180, seed=32)
+    default = _estimator(
+        iterations=12, categorical_crosses=False
+    ).fit(X, y, cat_features=[0])
+    control = _estimator(iterations=12, categorical_crosses=False)
     control._group_centered_crosses_private_mode = "off"
     control.fit(X, y, cat_features=[0])
 
-    assert model.group_centered_categorical_crosses_["reason"] == "ensemble"
-    assert len(model.estimators_) == 2
-    np.testing.assert_array_equal(model.predict(X), control.predict(X))
-    assert all(
-        "group_centered_categorical_crosses" not in member.model_.auto_params_
-        for member in model.estimators_
+    np.testing.assert_array_equal(default.predict(X), control.predict(X))
+    np.testing.assert_array_equal(
+        default.feature_importances_, control.feature_importances_
     )
+    assert not hasattr(default, "group_centered_categorical_crosses_")
+
+
+@pytest.mark.parametrize("value", [None, 0, 1, "auto"])
+def test_categorical_crosses_requires_boolean(value) -> None:
+    X, y, _ = _centered_problem(n=40, seed=34)
+    with pytest.raises(TypeError, match="categorical_crosses must be a bool"):
+        _estimator(iterations=2, categorical_crosses=value).fit(
+            X, y, cat_features=[0]
+        )
 
 
 def test_selected_prediction_contract_and_thread_restoration(
@@ -291,3 +323,42 @@ def test_selected_safe_npz_round_trip_and_corruption_rejection(
     _write_archive(wrong_metadata_path, wrong_metadata)
     with pytest.raises(ValueError, match="provenance disagree"):
         DarkoRegressor.load_model(wrong_metadata_path)
+
+    disabled_param = dict(arrays)
+    disabled_header = json.loads(str(arrays["header"]))
+    disabled_header["wrapper"]["params"]["categorical_crosses"] = False
+    disabled_param["header"] = np.array(json.dumps(disabled_header))
+    disabled_path = tmp_path / "disabled-param.npz"
+    _write_archive(disabled_path, disabled_param)
+    with pytest.raises(ValueError, match="requires categorical_crosses=True"):
+        DarkoRegressor.load_model(disabled_path)
+
+
+def test_data_fallback_metadata_round_trips_and_repeated_fit_cleans_state(
+    tmp_path,
+) -> None:
+    X = np.arange(240, dtype=np.float64).reshape(120, 2)
+    y = np.linspace(-1.0, 1.0, len(X))
+    model = _estimator(iterations=8).fit(X, y)
+    assert model.group_centered_categorical_crosses_["reason"] == (
+        "no_categorical_features"
+    )
+
+    path = tmp_path / "fallback.npz"
+    model.save_model(path)
+    loaded = DarkoRegressor.load_model(path)
+    assert loaded.categorical_crosses is True
+    assert (
+        loaded.group_centered_categorical_crosses_
+        == model.group_centered_categorical_crosses_
+    )
+    np.testing.assert_array_equal(model.predict(X), loaded.predict(X))
+
+    model.set_params(categorical_crosses=False)
+    model.fit(X, y)
+    control = _estimator(
+        iterations=8, categorical_crosses=False
+    ).fit(X, y)
+    assert not hasattr(model, "group_centered_categorical_crosses_")
+    assert "group_centered_categorical_crosses" not in model.model_.auto_params_
+    np.testing.assert_array_equal(model.predict(X), control.predict(X))

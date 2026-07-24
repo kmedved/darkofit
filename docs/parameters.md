@@ -120,6 +120,17 @@ Uniform sampling is the default. GOSS and MVS are explicit alternatives.
 Categorical predictors use target-statistic preprocessing. `ts_permutations`
 controls repeated ordered target-stat permutations and defaults to one.
 
+`categorical_crosses=True` opts an eligible `DarkoRegressor` into an automatic
+held-out audition of group-centered numeric-by-category features. It currently
+supports single-model scalar-RMSE fits with `tree_mode="catboost"`. The
+audition fits a control and an augmented candidate, then fits the winner from
+scratch and records the decision in
+`group_centered_categorical_crosses_`. Data with no categorical columns, no
+numeric columns, or too few selection rows falls back to the ordinary engine
+exactly and records the reason. Incompatible requested modes fail loudly
+instead of silently disabling the opt-in. The default `False` path does no
+audition and preserves the established engine.
+
 ## Distributional
 
 Set `loss` to `Gaussian`, `LogNormal`, `StudentT`, `Poisson`, or

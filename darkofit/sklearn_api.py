@@ -60,7 +60,7 @@ _SKLEARN_ONLY = frozenset({
     "linear_residual_standardize", "preset", "selection_rounds",
     "n_ensembles", "ensemble_bootstrap", "ensemble_shared_preprocessing",
     "ensemble_mode", "ensemble_member_learning_rate",
-    "ensemble_member_colsample",
+    "ensemble_member_colsample", "categorical_crosses",
 })
 
 _REFIT_STRATEGY_EXPONENT = {
@@ -97,6 +97,11 @@ _GROUP_CENTERED_CROSSES_MIN_SELECTION_ROWS = 2_000
 _GROUP_CENTERED_CROSSES_VALIDATION_FRACTION = 0.15
 _GROUP_CENTERED_CROSSES_TOP_NUMERIC = 4
 _GROUP_CENTERED_CROSSES_TOP_CATEGORICAL = 3
+_GROUP_CENTERED_CROSSES_DATA_FALLBACK_REASONS = frozenset({
+    "no_categorical_features",
+    "no_numeric_features",
+    "below_min_samples",
+})
 
 
 def _group_centered_candidate_pairs(importances, cat_features, n_features):
@@ -168,6 +173,12 @@ def _normalize_regression_preset(preset):
     if token == "accuracy":
         return token
     raise ValueError("preset must be None or 'accuracy'")
+
+
+def _normalize_categorical_crosses(setting):
+    if not isinstance(setting, (bool, np.bool_)):
+        raise TypeError("categorical_crosses must be a bool")
+    return bool(setting)
 
 
 def _preset_metadata_payload(preset, preset_params):
@@ -1771,6 +1782,14 @@ def _validate_loaded_ensemble_metadata(
 
 def _validate_loaded_wrapper_fitted_params(params, booster):
     """Reject wrapper constructor state that contradicts its fitted booster."""
+    if "categorical_crosses" in params:
+        try:
+            _normalize_categorical_crosses(params["categorical_crosses"])
+        except TypeError as exc:
+            raise ValueError(
+                "invalid DarkoFit model: wrapper categorical_crosses "
+                "parameter is invalid"
+            ) from exc
     fitted_loss = getattr(booster, "loss_name", None)
     if (
         "loss" in params
@@ -6172,7 +6191,19 @@ class _RefitParamsMixin:
         fitted_cross_state = getattr(self.model_, "auto_params_", {}).get(
             "group_centered_categorical_crosses"
         )
+        saved_crosses_enabled = (
+            _normalize_categorical_crosses(
+                wrapper_params.get("categorical_crosses", False)
+            )
+            if isinstance(wrapper_params, Mapping)
+            else False
+        )
         if cross_state is not None:
+            if not saved_crosses_enabled:
+                raise ValueError(
+                    "invalid DarkoFit model: group-centered cross fitted "
+                    "state requires categorical_crosses=True"
+                )
             if (
                 not isinstance(cross_state, Mapping)
                 or not isinstance(fitted_cross_state, Mapping)
@@ -6206,6 +6237,11 @@ class _RefitParamsMixin:
                 )
             self.group_centered_categorical_crosses_ = dict(cross_state)
             self._group_centered_cross_metadata_persisted_ = True
+        elif saved_crosses_enabled:
+            raise ValueError(
+                "invalid DarkoFit model: categorical_crosses=True has no "
+                "group-centered cross fitted state"
+            )
         elif fitted_cross_state is not None or getattr(
             self.model_.prep_, "group_centered_pairs_", ()
         ):
@@ -7818,6 +7854,10 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         Keep legacy bootstrap sampling or select the fixed public v3 recipe.
         V3 requires eight members and uses deterministic 80%
         without-replacement samples with donor-balanced member settings.
+    categorical_crosses : bool, default False
+        Run a held-out automatic audition of group-centered numeric-by-category
+        features for eligible scalar-RMSE CatBoost fits. Data that is too
+        small or lacks either feature type falls back exactly and records why.
     """
 
     def __init__(self, iterations=1000, learning_rate=None, depth=None,
@@ -7864,6 +7904,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                  ensemble_mode="bootstrap",
                  ensemble_member_learning_rate="policy",
                  ensemble_member_colsample="policy",
+                 categorical_crosses=False,
                  oblivious_kernel="auto"):
         self.iterations = iterations
         self.learning_rate = learning_rate
@@ -7931,6 +7972,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         self.ensemble_mode = ensemble_mode
         self.ensemble_member_learning_rate = ensemble_member_learning_rate
         self.ensemble_member_colsample = ensemble_member_colsample
+        self.categorical_crosses = categorical_crosses
         self.oblivious_kernel = oblivious_kernel
         self.auto_learning_rate_probe = auto_learning_rate_probe
         self.auto_learning_rate_probe_values = auto_learning_rate_probe_values
@@ -8023,9 +8065,13 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         eval_sample_weight,
         callbacks,
         ordinal_features,
+        persist_metadata,
     ):
+        had_previous_mode = hasattr(
+            self, "_group_centered_crosses_private_mode"
+        )
         previous_mode = getattr(
-            self, "_group_centered_crosses_private_mode", "auto"
+            self, "_group_centered_crosses_private_mode", None
         )
         previous_fallback_active = getattr(
             self, "_group_centered_cross_fallback_active", None
@@ -8045,7 +8091,10 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 ordinal_features=ordinal_features,
             )
         finally:
-            self._group_centered_crosses_private_mode = previous_mode
+            if had_previous_mode:
+                self._group_centered_crosses_private_mode = previous_mode
+            elif hasattr(self, "_group_centered_crosses_private_mode"):
+                del self._group_centered_crosses_private_mode
             if previous_fallback_active is None:
                 if hasattr(self, "_group_centered_cross_fallback_active"):
                     del self._group_centered_cross_fallback_active
@@ -8070,7 +8119,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                     getattr(getattr(self, "model_", None), "prep_", None)
                 ),
             },
-            persist=False,
+            persist=persist_metadata,
         )
         return fitted
 
@@ -8100,6 +8149,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
         eval_sample_weight,
         callbacks,
         ordinal_features,
+        persist_fallback_metadata=True,
     ):
         self._clear_group_centered_cross_state()
         reason = self._group_centered_cross_ineligible_reason(
@@ -8121,6 +8171,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 eval_sample_weight=eval_sample_weight,
                 callbacks=callbacks,
                 ordinal_features=ordinal_features,
+                persist_metadata=persist_fallback_metadata,
             )
 
         _ensure_dense(X)
@@ -8273,8 +8324,11 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             "selection_fits": [control_record, augmented_record],
             "selection_total_seconds": float(selection_seconds),
         }
+        had_previous_mode = hasattr(
+            self, "_group_centered_crosses_private_mode"
+        )
         previous_mode = getattr(
-            self, "_group_centered_crosses_private_mode", "auto"
+            self, "_group_centered_crosses_private_mode", None
         )
         previous_pairs = getattr(self, "_group_centered_pairs_override", None)
         try:
@@ -8293,7 +8347,10 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 ordinal_features=ordinal_features,
             )
         finally:
-            self._group_centered_crosses_private_mode = previous_mode
+            if had_previous_mode:
+                self._group_centered_crosses_private_mode = previous_mode
+            elif hasattr(self, "_group_centered_crosses_private_mode"):
+                del self._group_centered_crosses_private_mode
             self.random_state = requested_random_state
             if previous_pairs is None:
                 if hasattr(self, "_group_centered_pairs_override"):
@@ -8316,8 +8373,40 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
             ordinal_features=None):
         """Fit the model, resolving any opt-in product preset."""
         private_cross_mode = getattr(
-            self, "_group_centered_crosses_private_mode", "auto"
+            self, "_group_centered_crosses_private_mode", None
         )
+        if private_cross_mode is None:
+            if _normalize_categorical_crosses(self.categorical_crosses):
+                normalized_callbacks = _normalize_callbacks(callbacks)
+                reason = self._group_centered_cross_ineligible_reason(
+                    X,
+                    cat_features,
+                    eval_set=eval_set,
+                    callbacks=normalized_callbacks,
+                    ordinal_features=ordinal_features,
+                )
+                if (
+                    reason is not None
+                    and reason
+                    not in _GROUP_CENTERED_CROSSES_DATA_FALLBACK_REASONS
+                ):
+                    raise ValueError(
+                        "categorical_crosses=True is incompatible with the "
+                        f"requested fit ({reason})"
+                    )
+                return self._fit_group_centered_cross_selector(
+                    X,
+                    y,
+                    cat_features=cat_features,
+                    eval_set=eval_set,
+                    groups=groups,
+                    sample_weight=sample_weight,
+                    eval_sample_weight=eval_sample_weight,
+                    callbacks=normalized_callbacks,
+                    ordinal_features=ordinal_features,
+                    persist_fallback_metadata=True,
+                )
+            private_cross_mode = "off"
         if private_cross_mode == "auto":
             return self._fit_group_centered_cross_selector(
                 X,
@@ -8329,6 +8418,7 @@ class DarkoRegressor(RegressorMixin, _RefitParamsMixin, BaseEstimator):
                 eval_sample_weight=eval_sample_weight,
                 callbacks=_normalize_callbacks(callbacks),
                 ordinal_features=ordinal_features,
+                persist_fallback_metadata=False,
             )
         if private_cross_mode not in {"off", "forced"}:
             raise RuntimeError("invalid private group-centered cross mode")

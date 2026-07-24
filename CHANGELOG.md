@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- Add the default-off `categorical_crosses=True` regressor option. Eligible
+  scalar-RMSE CatBoost fits automatically audition group-centered
+  numeric-by-category features against a held-out control, fit the winner from
+  scratch, and record the decision in
+  `group_centered_categorical_crosses_`. Ordinary data ineligibility falls
+  back exactly with recorded metadata; unsupported mode combinations fail
+  loudly. The fitted preprocessing and selector provenance round-trip through
+  safe NPZ archives.
+
 ## 0.11.0 - 2026-07-22
 
 ### Features

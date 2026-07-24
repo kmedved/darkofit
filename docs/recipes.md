@@ -5,6 +5,40 @@ states both the use case and the strongest observed counterevidence. Validate
 on a split that matches deployment—especially entity- or time-disjoint splits
 for sports data.
 
+## Automatic group-centered categorical crosses
+
+```python
+model = DarkoRegressor(
+    categorical_crosses=True,
+    random_state=4,
+)
+model.fit(X_train, y_train, cat_features=categorical_columns)
+```
+
+This selector tests whether subtracting within-category numeric means creates
+useful generic interaction features, using separate control and augmented
+auditions. It never forces the crosses: inspect
+`group_centered_categorical_crosses_["selected"]` and `["reason"]` after fit.
+The two auditions make eligible fits materially more expensive than the
+default path.
+
+On the spent Diamonds development coordinates, the automatic selector reduced
+RMSE to `0.7245×` the control. A smaller healthcare coordinate was below the
+selector's row floor; forcing the same mechanism there measured `1.0081×`, so
+small-data support is deliberately deferred rather than inferred. On a
+player-disjoint basketball guardrail with mixed numeric and categorical
+features, the selector engaged in all 11 fits and measured `0.9960×` fold
+RMSE, `0.9969×` held-team RMSE, and `0.9940×` cold-player RMSE. These are
+development and guardrail measurements, not a universal quality promise.
+
+The public v1 opt-in is limited to single-model scalar-RMSE
+`tree_mode="catboost"` regressors. Ensembles, classification, distributional
+or interval modes, automatic tree-mode selection, presets, callbacks, refit,
+ordered or ordinal categorical paths, automatic learning-rate probes, and
+linear residual/leaf modes must be evaluated separately and therefore fail
+loudly when combined with this opt-in. Leaving `categorical_crosses=False`
+keeps the prior engine exactly.
+
 ## Ensemble v3
 
 ```python
